@@ -85,7 +85,7 @@ function escapeHtmlAttr(str) {
 
 function createCategoryMarker(
   producer,
-  { active = false, hovered = false, visited = false } = {},
+  { active = false, hovered = false, visited = false, approximate = false } = {},
 ) {
   // S5 FINAL: all markers are uniform 36px circles; state shows via border +
   // rings, not size (drops the old 28/32/36 size jump).
@@ -139,7 +139,11 @@ function createCategoryMarker(
   // MEH-1065: accent token value #896714 (retired the stale gold that failed AA, MEH-917).
   // Inline hex required — Leaflet divIcon renders raw HTML, no Tailwind class here.
   const premiumRing = isPremium ? ",0 0 0 6px #896714" : "";
-  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}`;
+  // MEH-1412: precision=approximate (e.g. a private home) → soft outer halo so
+  // the pin reads as "around here", not a pinpoint address. Inline rgba is the
+  // primary token (#2e6853), same divIcon raw-HTML exception noted above.
+  const approxRing = approximate ? ",0 0 0 7px rgba(46,104,83,0.14)" : "";
+  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}${approxRing}`;
 
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
@@ -162,6 +166,64 @@ function createCategoryMarker(
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
+}
+
+// MEH-1412 (MEH-1388 chunk 3): pickup / market_stand points render as a
+// SECONDARY outline marker — smaller (26px), hollow (white fill), category-
+// colour ring + category glyph in the category colour (weight "regular", not
+// the primary's white fill) — so a producer's self-pickup / market points read
+// as visually distinct from its primary business pin. No photo, no verified
+// badge (a pickup point is a place, not the business identity). Inline hex is
+// the same divIcon raw-HTML exception documented above createCategoryMarker.
+function createSecondaryMarker(
+  producer,
+  { active = false, hovered = false, visited = false, approximate = false } = {},
+) {
+  const size = 26;
+  const dimmed = visited && !active && !hovered;
+  const opacity = dimmed ? 0.7 : 1;
+  const grayscale = dimmed ? "filter:grayscale(1);" : "";
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const borderWidth = active ? 3 : 2;
+  const borderStyle = approximate ? "dashed" : "solid";
+  const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
+  const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
+  const approxRing = approximate ? ",0 0 0 7px rgba(46,104,83,0.14)" : "";
+  const boxShadow = `0 1px 5px rgba(0,0,0,0.2)${activeRing}${hoverRing}${approxRing}`;
+  const glyph = categoryGlyphSvg(GlyphIcon, {
+    color: categoryColor,
+    weight: "regular",
+    size: 14,
+  });
+  const html = `
+    <div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:#fff;
+      border:${borderWidth}px ${borderStyle} ${categoryColor};
+      box-shadow:${boxShadow};
+      opacity:${opacity};
+      ${grayscale}
+      display:flex;align-items:center;justify-content:center;
+      transition:all 0.18s ease-out;
+    ">${glyph}</div>`;
+  return L.divIcon({
+    html,
+    className: "mehamakor-marker-wrap mehamakor-marker-secondary",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+// MEH-1412: pick the marker style for a single producer_location row.
+// branch (+ the empty-locations fallback synthesised in the marker loop) →
+// the primary category pin; pickup / market_stand → the secondary outline.
+// precision flows through to both so an approximate point anchors softly.
+function createLocationIcon(producer, location, state = {}) {
+  const kind = location?.kind;
+  const opts = { ...state, approximate: location?.precision === "approximate" };
+  return kind === "pickup" || kind === "market_stand"
+    ? createSecondaryMarker(producer, opts)
+    : createCategoryMarker(producer, opts);
 }
 
 export default function MapComponent({
@@ -221,13 +283,17 @@ export default function MapComponent({
   const refreshMarkerIcon = (id) => {
     const entry = markersRef.current.get(id);
     if (!entry) return;
-    entry.marker.setIcon(
-      createCategoryMarker(entry.producer, {
-        active: activeIdRef.current === id,
-        hovered: hoveredIdRef.current === id,
-        visited: visitedSet.has(id),
-      }),
-    );
+    // MEH-1412: a producer now owns N markers (one per location) — refresh the
+    // active/hover/visited state on ALL of them so highlighting a card lights
+    // every one of that business's pins.
+    const state = {
+      active: activeIdRef.current === id,
+      hovered: hoveredIdRef.current === id,
+      visited: visitedSet.has(id),
+    };
+    entry.markers.forEach(({ marker, location }) => {
+      marker.setIcon(createLocationIcon(entry.producer, location, state));
+    });
   };
 
   // Expose imperative API via a callback prop
@@ -236,12 +302,16 @@ export default function MapComponent({
     const api = {
       focusProducer: (producerId) => {
         const entry = markersRef.current.get(producerId);
-        if (!entry || !mapInstanceRef.current) return;
+        if (!entry || !entry.markers?.length || !mapInstanceRef.current) return;
         const prev = activeIdRef.current;
         activeIdRef.current = producerId;
         if (prev) refreshMarkerIcon(prev);
         refreshMarkerIcon(producerId);
-        const latlng = entry.marker.getLatLng();
+        // MEH-1412: a producer owns N markers now — fly to its primary location
+        // (fallback: first marker).
+        const primary =
+          entry.markers.find((m) => m.location?.is_primary) || entry.markers[0];
+        const latlng = primary.marker.getLatLng();
         const coordCheck = CoordSchema.safeParse({ lat: latlng?.lat, lng: latlng?.lng });
         if (!coordCheck.success) return;
         // Suppress the "search this area" banner on programmatic flyTo.
@@ -451,48 +521,80 @@ export default function MapComponent({
     if (!Array.isArray(producers) || producers.length === 0) return;
 
     producers.forEach((p) => {
-      // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks:
-      // skip producers without coordinates or identifying data
-      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number" || isNaN(p.lat) || isNaN(p.lng)) return;
-      if (!p.id) return;
+      if (!p || !p.id) return;
 
-      const marker = L.marker([p.lat, p.lng], {
-        icon: createCategoryMarker(p, {
-          active: false,
-          hovered: false,
-          visited: visitedSet.has(p.id),
-        }),
-        // MEH-30 #8: no Leaflet tooltip or popup. Marker click opens the
-        // bottom sheet in MapClient.jsx (via onProducerClickRef). Hover
-        // syncs with card highlight — it is NOT a tooltip.
-        alt: p.name || t("marker_singular"),
-        title: p.name || t("marker_singular"),
-        keyboard: true,
-      });
+      // MEH-1412 (MEH-1388 chunk 3): fan a producer's physical presence points
+      // (locations[], from chunk 2's serializer) into one marker each — branch
+      // (+ the empty-locations fallback) → the primary category pin,
+      // pickup/market_stand → the secondary outline (createLocationIcon). Empty
+      // locations[] (Expand overlap — a producer with no location row yet)
+      // falls back to the producer's own lat/lng mirror so no business
+      // disappears from the map (parity with the chunk-2 backend COALESCE).
+      const locations =
+        Array.isArray(p.locations) && p.locations.length > 0
+          ? p.locations
+          : [
+              {
+                kind: "branch",
+                is_primary: true,
+                lat: p.lat,
+                lng: p.lng,
+                precision: "exact",
+                label: null,
+              },
+            ];
 
-      // MEH-765: keyboard a11y. `keyboard: true` (above) already makes the
-      // divIcon focusable (tabindex=0) and Leaflet maps Enter→click, so the
-      // bottom sheet opens from the keyboard. The remaining gap (axe
-      // `aria-command-name`) is the missing accessible NAME on the divIcon —
-      // unlike an <img> icon, a divIcon has no `alt`. Set role + aria-label on
-      // the actual element via the marker's `add` event, which fires each time
-      // the marker renders out of a cluster (so clustered/late-rendered pins
-      // get named too). Idempotent.
       const markerLabel = p.name || t("marker_singular");
-      marker.on("add", () => {
-        const el = marker.getElement();
-        if (el) {
-          el.setAttribute("role", "button");
-          el.setAttribute("aria-label", markerLabel);
-        }
+      const entryMarkers = [];
+
+      locations.forEach((loc) => {
+        // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks: skip a
+        // location without usable coordinates (never render a NaN marker).
+        const lat = loc?.lat;
+        const lng = loc?.lng;
+        if (
+          typeof lat !== "number" ||
+          typeof lng !== "number" ||
+          isNaN(lat) ||
+          isNaN(lng)
+        )
+          return;
+
+        const marker = L.marker([lat, lng], {
+          icon: createLocationIcon(p, loc, {
+            active: false,
+            hovered: false,
+            visited: visitedSet.has(p.id),
+          }),
+          // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
+          // sheet in MapClient (onProducerClickRef). ALL of a producer's markers
+          // open the SAME producer card. Hover syncs card highlight, not a tooltip.
+          alt: markerLabel,
+          title: markerLabel,
+          keyboard: true,
+        });
+
+        // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
+        // role + accessible name on each marker's element via the `add` event
+        // (fires each time it renders out of a cluster). Idempotent.
+        marker.on("add", () => {
+          const el = marker.getElement();
+          if (el) {
+            el.setAttribute("role", "button");
+            el.setAttribute("aria-label", markerLabel);
+          }
+        });
+
+        marker.on("click", () => onProducerClickRef.current?.(p));
+        marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
+        marker.on("mouseout", () => onProducerHoverRef.current?.(null));
+
+        clusterGroupRef.current.addLayer(marker);
+        entryMarkers.push({ marker, location: loc });
       });
 
-      marker.on("click", () => onProducerClickRef.current?.(p));
-      marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
-      marker.on("mouseout", () => onProducerHoverRef.current?.(null));
-
-      clusterGroupRef.current.addLayer(marker);
-      markersRef.current.set(p.id, { marker, producer: p });
+      if (entryMarkers.length === 0) return;
+      markersRef.current.set(p.id, { markers: entryMarkers, producer: p });
     });
 
     // MEH-58 QA: removed auto-fitBounds that overrode the initial center
