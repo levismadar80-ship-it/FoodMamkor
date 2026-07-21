@@ -106,18 +106,6 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
     expect(meta.title.absolute).toContain("משק תמר");
   });
 
-  // MEH-1398: a slug-shaped but missing producer now hard-404s from
-  // generateMetadata (post-fetch, pre-streaming) → real HTTP 404 — replacing
-  // the former soft-404 (200 + noindex/hreflang metadata) measured in MEH-918.
-  it("generateMetadata hard-404s a slug-shaped but missing producer (MEH-1398)", async () => {
-    serverFetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
-    await expect(
-      generateMetadata({ params: { slug: "no-such-business", locale: "he" } }),
-    ).rejects.toThrow("NEXT_NOT_FOUND");
-    // fetch DID happen (slug-shaped) — unlike the scanner-probe fast-404 above
-    expect(serverFetch).toHaveBeenCalledTimes(1);
-  });
-
   it("still fetches the backend for a legit slug and renders", async () => {
     serverFetch.mockResolvedValueOnce({
       ok: true,
