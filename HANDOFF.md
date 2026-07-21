@@ -3,13 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-20 — MEH-1385 — dashboard "מאחורי העסק" card (owner story chunk 3)
+## 2026-07-20 — MEH-1392 — producer write-surface gap audit (read-only, docs-only)
 
-- **Branch:** `feature/meh-1385-owner-story-card` off current `staging` tip. Sibling ticket to MEH-1335 (Done) — NOT a reopen; chunks 1+2 (schema+API+upload) already live on staging from #1969.
-- **Shipped (frontend + i18n only, YELLOW):** new `OwnerStoryCard` in `edit/cards.jsx` after DescriptionCard — bio textarea (live counter, hard 300 cap = server sanitize) + photo upload → `POST /upload/owner-photo`. Mirrors `ImagesCard.uploadFiles` (photo auto-persists on upload) + `DescriptionCard` save/dirty contract (bio via `PUT /producers/me`). Assembly in `edit/page.js`; `owner_story` he/en twins + 2 `edit_accordion` keys.
-- **Verified:** `npm run build` exit 0 · ICU + en-parity gates green · ESLint 0 errors · `/upload/owner-photo` cleared from `check_api_contract` orphan-backend · Playwright self-QA 375+1440 filled+empty (`qa-artifacts/MEH-1385/`, WebP 81 KB). QA done via a throwaway `[locale]` harness route (deleted before commit — never staged).
-- **Tier:** YELLOW — auto-merge permitted after self-QA per Smadar's instruction (diff touches NO `alembic/versions/**`, so the standing schema-gate rule doesn't apply). Pending: ready PR + Smadar mobile QA.
-- **Cross-ref:** the public OwnerCard (MEH-1334 / PR #1936) is still Draft — once it lands, the bio/photo variants wake on the data this form produces.
+- **What:** systematic map of "backend/data exists — producer has no write-UI" gaps. Output: `docs/audits/2026-07-producer-write-surface-gaps.md`. Zero code edits.
+- **Pass A** (`check_api_contract.py --json`): 37 orphan-backend, only **1** is a real producer write gap — `POST /producers/me/kashrut-request` (`producer_me.py:906`). Legacy `/availability` + `/availability-status` (`:370,405`) are by-design dead (superseded by live `/availability-state`, `dashboard/page.js:204`); the 15 `home-products`/`follow` orphans are dynamic-path false-negatives; 18 admin/infra.
+- **Pass B** (producer-owned column matrix): 5 findings. **F0** kashrut-request UI (MEH-1167), **F1** owner_bio/owner_photo_url dashboard form — schema+`POST /upload/owner-photo` shipped, form didn't (MEH-1385), **F2** contact_name admin-only (new), **F3** slug admin-only (new, likely by-design), **F4** events create-only, no edit/cancel (MEH-1166). Covered: products, delivery, recipes, group-buys, review-reply, custom_questions, license, availability.
+- **Pass C** (Linear MCP available — all verified): F0/F1/F4 already-ticketed, F2/F3 new.
+- **F0 severity note (per acceptance):** verified-only chain now closed (MEH-986 removed free-text kosher from public; MEH-1087 map chip verified-only) → kashrut-request UI is the *only* producer path to a public kashrut badge. Recommend Sapir revisit its post-launch/Low classification (recommendation only).
+- **Branch:** `feature/meh-1392-producer-gap-audit` off `origin/staging` (the harness-assigned `claude/*` branch would fail the branch-name gate — MEH-1141). Docs-only PR: 3 files (audit + CHANGELOG + HANDOFF). No tickets opened — report proposes, Sapir disposes.
+
 ## 2026-07-21 — Map selected-pin card → compact MapProducerCard (Refs MEH-1243, PR pending, auto-merge)
 
 - **What:** mobile `/map` pin tap now pins the existing compact `<MapProducerCard active/>` at the top of the sheet instead of the expanded card (hero image + green WhatsApp button). `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx` reduced to a thin wrapper around the central `MapProducerCard` (consumed as-is — NOT modified), keeping the MEH-1298 scroll-compensation `useLayoutEffect`. Deselect preserved via a minimal top-START X on the wrapper (pin re-tap does not deselect — `useMapSync.handleMarkerClick` always selects). Removed the hero+CTA JSX + imports; deleted orphaned i18n key `map.sheet.badge.verified` from `he.json`+`en.json`.
