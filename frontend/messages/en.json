@@ -3940,7 +3940,9 @@
         "hours_empty": "No hours set yet",
         "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}",
         "more_group": "More options",
-        "next_step_aria": "Next step to complete"
+        "next_step_aria": "Next step to complete",
+        "owner_present": "Owner story added",
+        "owner_missing": "No photo and story yet"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4111,6 +4113,22 @@
         "error_rate_limit": "A few descriptions were already created this hour. Try again in an hour — or keep editing manually.",
         "error_generate": "Something went wrong creating the description. Try again.",
         "error_session_expired": "Your session has expired. Log in again to continue.",
+        "error_save": "Save failed — check your connection and try again."
+      },
+      "owner_story": {
+        "heading": "Behind the business",
+        "intro": "A photo and a few personal words — shown on the \"Behind the business\" card on your page. People buy from people.",
+        "photo_label": "Your photo",
+        "photo_cta": "Upload photo",
+        "photo_replace_cta": "Replace photo",
+        "uploading": "Uploading…",
+        "upload_error": "Photo upload failed — please try again.",
+        "bio_label": "A few words about you",
+        "bio_where": "Shown on your page",
+        "bio_placeholder": "What led you to do what you do?",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
         "error_save": "Save failed — check your connection and try again."
       }
     }
