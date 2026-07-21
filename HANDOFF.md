@@ -23,6 +23,17 @@
 - PR #2001's *body* was stale (described the abandoned generateMetadata dead-end); updated this session to the middleware solution + measurement.
 
 **After merge:** re-add `"Edit(frontend/middleware.js)"` to `permissions.deny` in `.claude/settings.json`.
+## 2026-07-21 — MEH-1405 — producer manage pages for events + experiences (list "mine" + edit + cancel/delete)
+
+- **Shipped:** full producer manage UI over the existing owner-scoped PUT/DELETE. Events get list + edit + **cancel toggle (is_active)** + delete; experiences get list + edit + delete.
+- **Phase-0 evidence-vs-premise (surfaced):** Experience has **no `is_active` column** (only admin-controlled `status`) and `ExperienceUpdate` has no `is_active` — so the ticket's "cancel via is_active" for experiences needs an Alembic column = **Sapir-only (STOP e)**. Built the buildable scope: events full, experiences edit+delete (delete is their removal). **Recommend a follow-up schema ticket for `Experience.is_active`** if a reversible cancel is wanted.
+- **Backend (1 endpoint, zero schema):** `GET /events/mine` (`events.py`, `require_producer`, scoped by `producer_id`, includes inactive, declared before `/events/{id}`) — mirrors the existing `GET /experiences/mine`. Public `GET /events` already filters `is_active` (canceled hidden from the feed). `test_events_mine.py` (owner-incl-inactive / cross-owner-excluded / 403 consumer / 401 anon) → runs in CI (sandbox has no backend deps).
+- **Frontend extraction (in scope):** NEW `components/EventForm.jsx` + `ExperienceForm.jsx` (create/edit, POST vs PUT, prefill). `events/new` + `NewExperienceClient` are now thin wrappers. NEW pages: `dashboard/events/page.js`, `events/[id]/edit/page.js`, `dashboard/experiences/page.js`, `experiences/[id]/edit/page.js`. `tools/page.js` cards repointed. Delete uses `window.confirm` (recipes precedent). Cancel toggle is optimistic + reverts on error.
+- **a11y fix (from #2009 review):** the address field in both forms now has a single associated `<label htmlFor>` (dropped the duplicate AddressSearch `label` prop) — closes the MEH-1404 double-label finding, resolved inside this refactor.
+- **Verify:** build ✓, eslint 0 errors, 0 physical RTL, `check_api_contract` 0 orphan/0 mismatch. vitest `ManageEventsPage.test.jsx` (4) + `EventExperienceAddress.test.jsx` (3, still green post-extraction → drop-in proof). Playwright @375/@1440 → `qa-artifacts/MEH-1405/` (WebP 112 KB): events list (badges + toggle + edit + delete), event edit (prefilled), experiences list (status badges, edit + delete, no toggle). i18n `manage_events.*` / `manage_experiences.*` he+en twins. Docs: DATA.md + api-routes diagram (new endpoint) + MANUAL_TESTING.
+- **Left for Sapir:** mobile QA on the Vercel preview (list → edit → save → cancel toggle → delete); decide the `Experience.is_active` schema follow-up.
+- **Branch:** `feature/meh-1405-manage-events-experiences` off `origin/staging` (post-1404+1406). PR auto-merge on green (YELLOW).
+
 ## 2026-07-21 — MEH-1404 — precise address for events + experiences (AddressSearch in forms, MiniMap+Waze in detail)
 
 - **Shipped:** wired the already-present backend `lat`/`lng` into the event + experience create forms and detail pages. **Frontend only, zero backend, zero new i18n keys** (reused `field_location_label`/`field_address` + MiniMap's `map.mini.*`).
