@@ -2315,7 +2315,8 @@
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
-      "error_generic": "שגיאה בשליחת החוויה. נסו שוב."
+      "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
+      "save_cta": "שמירה"
     }
   },
   "errors": {
@@ -3768,11 +3769,28 @@
         "rejected": {
           "title": "⚠️ הבקשה לא אושרה",
           "body": "צרו קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
-          "cta": "צרו קשר ←"
+          "tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
+          "tip_photos": "הוסיפו תמונות ברורות של המוצרים",
+          "tip_address": "בדקו שכתובת העסק נכונה",
+          "support_cta": "דברו איתנו ←"
         },
         "pending_whatsapp": {
           "title": "ברוכים הבאים! כמעט שם.",
           "body": "כדי להעביר את העסק לאישור הצוות, אמתו את מספר הטלפון של העסק דרך וואטסאפ."
+        },
+        "inactive": {
+          "title": "החשבון שלך אינו פעיל כרגע",
+          "body": "העסק מוסתר מהאתר כרגע. צרו קשר איתנו כדי להחזיר אותו לפעילות.",
+          "support_cta": "דברו איתנו ←"
+        },
+        "support": {
+          "section_aria": "צרו קשר עם התמיכה",
+          "heading": "צרו קשר",
+          "body": "נשמח לעזור. בחרו את הדרך הנוחה לך:",
+          "whatsapp_label": "וואטסאפ",
+          "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
+          "email_label": "אימייל",
+          "close_cta": "סגרו"
         }
       },
       "phone_verify": {
@@ -3832,6 +3850,14 @@
         "reviews": {
           "title": "ביקורות",
           "sub": "צפייה בביקורות ומענה ללקוחות"
+        },
+        "manage_events": {
+          "title": "האירועים שלי",
+          "sub": "צפייה, עריכה וביטול אירועים"
+        },
+        "manage_experiences": {
+          "title": "החוויות שלי",
+          "sub": "צפייה, עריכה ומחיקה של חוויות"
         }
       },
       "pulse": {
@@ -4187,6 +4213,40 @@
         "status_pending": "ממתינה לאישור",
         "status_rejected": "נדחתה",
         "empty": "עוד אין תג כשרות לעסק. אפשר לבקש אחד כאן."
+      },
+      "manage_events": {
+        "heading": "האירועים שלי",
+        "create_cta": "אירוע חדש",
+        "empty": "עדיין לא יצרת אירועים. לחצי על \"אירוע חדש\" כדי להתחיל.",
+        "loading": "טוען…",
+        "back": "← חזרה לאירועים שלי",
+        "edit_heading": "עריכת אירוע",
+        "not_found": "האירוע לא נמצא.",
+        "badge_active": "פעיל",
+        "badge_inactive": "מבוטל",
+        "action_edit": "עריכה",
+        "action_cancel": "ביטול",
+        "action_activate": "הפעלה",
+        "action_delete": "מחיקה",
+        "action_error": "הפעולה נכשלה. נסי שוב.",
+        "delete_confirm": "למחוק את האירוע \"{title}\"? הפעולה בלתי הפיכה."
+      },
+      "manage_experiences": {
+        "heading": "החוויות שלי",
+        "create_cta": "חוויה חדשה",
+        "empty": "עדיין לא יצרת חוויות. לחצי על \"חוויה חדשה\" כדי להתחיל.",
+        "loading": "טוען…",
+        "back": "← חזרה לחוויות שלי",
+        "edit_heading": "עריכת חוויה",
+        "not_found": "החוויה לא נמצאה.",
+        "action_edit": "עריכה",
+        "action_delete": "מחיקה",
+        "action_error": "הפעולה נכשלה. נסי שוב.",
+        "delete_confirm": "למחוק את החוויה \"{title}\"? הפעולה בלתי הפיכה.",
+        "status_pending": "בבדיקה",
+        "status_approved": "מאושרת",
+        "status_rejected": "נדחתה",
+        "status_changes_requested": "נדרשים תיקונים"
       }
     }
   },
@@ -4284,7 +4344,9 @@
       "field_city_placeholder": "חפשו עיר...",
       "field_location_simple_placeholder": "בחווה שלנו / כתובת מלאה",
       "field_price_label_full": "מחיר (0 = חינם)",
-      "field_max_participants_label_full": "מקסימום משתתפים"
+      "field_max_participants_label_full": "מקסימום משתתפים",
+      "save": "שמירה",
+      "saving": "שומרת…"
     }
   },
   "settings": {
@@ -4294,7 +4356,6 @@
       "tabs_aria": "טאבים",
       "tab_profile": "פרופיל",
       "tab_security": "אבטחה",
-      "tab_business": "העסק שלי",
       "saving": "בשמירה...",
       "save_cta": "שמרו",
       "optional_suffix": "(אופציונלי)"
@@ -4321,27 +4382,6 @@
       "field_phone_label": "טלפון",
       "field_phone_hint": "לעדכונים בוואטסאפ מבתי עסק שאתם עוקבים אחריהם",
       "field_phone_error": "מספר טלפון לא תקין"
-    },
-    "business": {
-      "tabpanel_aria": "העסק שלי",
-      "status_pending": "הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.",
-      "status_rejected_title": "הבקשה לא אושרה",
-      "rejected_tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
-      "rejected_tip_photos": "הוסיפו תמונות ברורות של המוצרים",
-      "rejected_tip_address": "בדקו שכתובת העסק נכונה",
-      "support_cta": "דברו איתנו ←",
-      "status_suspended": "החשבון מושעה זמנית.",
-      "support_cta_short": "צרו קשר",
-      "stats_heading": "סטטיסטיקות",
-      "stats_loading": "בטעינה...",
-      "stat_views": "צפיות",
-      "stat_favorites": "מועדפים",
-      "stat_reviews": "ביקורות",
-      "stat_avg_rating": "דירוג ממוצע",
-      "stat_products": "מוצרים",
-      "stat_orders": "הזמנות",
-      "stats_unavailable": "הנתונים אינם זמינים כרגע.",
-      "edit_business_cta": "עריכת דף העסק"
     },
     "products": {
       "section_heading": "מוצרים",
@@ -4444,15 +4484,6 @@
         "grace_body": "החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.",
         "back_to_login": "חזרו לדף הכניסה"
       }
-    },
-    "support_modal": {
-      "section_aria": "צרו קשר עם התמיכה",
-      "heading": "צרו קשר",
-      "body": "נשמח לעזור. בחרו את הדרך הנוחה לך:",
-      "whatsapp_label": "וואטסאפ",
-      "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
-      "email_label": "אימייל",
-      "close_cta": "סגרו"
     }
   },
   "process": {

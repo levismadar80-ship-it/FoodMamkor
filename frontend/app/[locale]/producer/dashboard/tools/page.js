@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, Storefront, UsersThree, CookingPot, Star } from "@phosphor-icons/react";
+import { CalendarPlus, Storefront, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -65,13 +65,23 @@ export default function ProducerDashboardToolsPage() {
           MEH-1095 it targeted /producer/dashboard/edit, duplicating the
           עריכה nav tab one row above. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* MEH-1405: card now opens the manage list (create is reachable there). */}
         <Link
-          href="/producer/dashboard/events/new"
+          href="/producer/dashboard/events"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <CalendarPlus size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.add_event.title")}</p>
-          <p className="text-sm text-fg-muted">{t("quick_links.add_event.sub")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_events.title")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.manage_events.sub")}</p>
+        </Link>
+        {/* MEH-1405: manage own experiences (list + edit + delete). */}
+        <Link
+          href="/producer/dashboard/experiences"
+          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+        >
+          <Sparkle size={24} className="text-primary mb-2" aria-hidden="true" />
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_experiences.title")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.manage_experiences.sub")}</p>
         </Link>
         <Link
           href={`/producer/${producer.id}`}
