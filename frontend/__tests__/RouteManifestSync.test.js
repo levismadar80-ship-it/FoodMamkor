@@ -27,6 +27,9 @@ function filesystemSegments() {
   return readdirSync(LOCALE_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
+    // skip dynamic `[seg]`, route groups `(grp)`, private `_dir`, dotfiles.
+    // In `[[(_.]` the first `[` opens the char class; the second is a literal
+    // `[` char (not a typo).
     .filter((name) => !/^[[(_.]/.test(name))
     .toSorted();
 }

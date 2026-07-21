@@ -32,11 +32,13 @@ const intlMiddleware = createMiddleware(routing);
 
 async function producerExists(url) {
   try {
-    // revalidate:60 matches the page fetches — it is ALSO the negative cache:
-    // a 404 response is cached for 60s, so repeated misses on the same path do
-    // NOT re-query the backend. On a VALID cold page the middleware fetch and
-    // the page fetch don't share a cache entry (edge vs node), so a cold valid
-    // page pays 1 extra lookup; within the 60s window it is served from cache.
+    // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
+    // only in the Node page / Server-Component runtime — NOT in Edge Middleware,
+    // which runs on the native Web fetch. So treat every call here as an UNCACHED
+    // backend lookup: each slug-shaped request (hit OR miss) costs one GET to the
+    // producers API. Abuse is bounded by the backend's slowapi rate limiting, not
+    // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
+    // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
     const res = await fetch(url, { next: { revalidate: 60 } });
     return res.ok;
   } catch {
