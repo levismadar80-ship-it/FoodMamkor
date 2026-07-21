@@ -525,29 +525,19 @@ export default function MapComponent({
 
       // MEH-1412 (MEH-1388 chunk 3): fan a producer's physical presence points
       // (locations[], from chunk 2's serializer) into one marker each — branch
-      // (+ the empty-locations fallback) → the primary category pin,
-      // pickup/market_stand → the secondary outline (createLocationIcon). Empty
-      // locations[] (Expand overlap — a producer with no location row yet)
-      // falls back to the producer's own lat/lng mirror so no business
-      // disappears from the map (parity with the chunk-2 backend COALESCE).
-      const locations =
-        Array.isArray(p.locations) && p.locations.length > 0
-          ? p.locations
-          : [
-              {
-                kind: "branch",
-                is_primary: true,
-                lat: p.lat,
-                lng: p.lng,
-                precision: "exact",
-                label: null,
-              },
-            ];
+      // (+ the fallback below) → the primary category pin, pickup/market_stand →
+      // the secondary outline (createLocationIcon). If locations[] is empty OR
+      // no row had usable coords, the post-loop fallback pins the producer's own
+      // lat/lng mirror so no business disappears (parity with the chunk-2
+      // backend COALESCE — Expand overlap + the all-coords-invalid edge).
+      const locations = Array.isArray(p.locations) ? p.locations : [];
 
       const markerLabel = p.name || t("marker_singular");
       const entryMarkers = [];
 
-      locations.forEach((loc) => {
+      // Build + register one marker for a single location row. Returns true if a
+      // marker was added (usable coords), false otherwise.
+      const addMarker = (loc) => {
         // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks: skip a
         // location without usable coordinates (never render a NaN marker).
         const lat = loc?.lat;
@@ -558,7 +548,7 @@ export default function MapComponent({
           isNaN(lat) ||
           isNaN(lng)
         )
-          return;
+          return false;
 
         const marker = L.marker([lat, lng], {
           icon: createLocationIcon(p, loc, {
@@ -591,7 +581,25 @@ export default function MapComponent({
 
         clusterGroupRef.current.addLayer(marker);
         entryMarkers.push({ marker, location: loc });
-      });
+        return true;
+      };
+
+      locations.forEach(addMarker);
+
+      // MEH-1412: if NO location produced a marker (every row lacked usable
+      // coords) but the producer still has its own lat/lng point, fall back to
+      // it — the chunk-2 backend keeps such a producer visible via COALESCE, so
+      // the map must not silently drop it (adversarial-review finding).
+      if (entryMarkers.length === 0) {
+        addMarker({
+          kind: "branch",
+          is_primary: true,
+          lat: p.lat,
+          lng: p.lng,
+          precision: "exact",
+          label: null,
+        });
+      }
 
       if (entryMarkers.length === 0) return;
       markersRef.current.set(p.id, { markers: entryMarkers, producer: p });
