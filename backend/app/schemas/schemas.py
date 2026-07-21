@@ -1662,6 +1662,7 @@ class ExperienceUpdate(BaseModel):
     requirements: str | None = None
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
+    is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
 
     @field_validator("title")
     @classmethod
@@ -1759,6 +1760,7 @@ class ExperienceDetailOut(ExperienceListOut):
     requirements: str | None = None
     lat: float | None = None
     lng: float | None = None
+    is_active: bool = True  # MEH-1419: reversible cancel — mirrors EventOut.is_active
     moderation_status: str | None = None
     moderation_reason: str | None = None
     moderation_suggestion: str | None = None

@@ -9,13 +9,17 @@ import {
   QUICK_CHIP_KEYS,
   countActiveSheetOnlyFilters,
 } from "@/lib/map-chips";
+import { withChipIcons } from "@/lib/chip-icons";
 
-// MEH-1075: row 2 shows only the two quick chips ([מאומתים] [משלוח אליי],
+// MEH-1075: row 2 shows only the two quick chips ([רישוי מאומת] [משלוח],
 // QUICK_CHIP_KEYS order); the other 5 toggles moved into FilterSheet behind
 // the "סינון" button. Chip visuals unchanged (same ChipScrollRow).
-const QUICK_CHIPS = QUICK_CHIP_KEYS.map((key) =>
-  TOGGLE_CHIPS.find((c) => c.key === key),
-).filter(Boolean);
+// MEH-1418: quick chips carry Phosphor leading icons (withChipIcons).
+const QUICK_CHIPS = withChipIcons(
+  QUICK_CHIP_KEYS.map((key) => TOGGLE_CHIPS.find((c) => c.key === key)).filter(
+    Boolean,
+  ),
+);
 
 /**
  * Two rows of filter chips + active-filter tag list. Verbatim

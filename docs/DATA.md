@@ -252,6 +252,8 @@ experiences (
   price_per_person numeric(10,2),    -- NULL/0 = free
   requirements text,                 -- "what to bring / prerequisites"
 
+  is_active bool NOT NULL DEFAULT true,  -- MEH-1419: reversible host cancel (mirrors Event.is_active). Public list filters is_active IS TRUE; /mine returns inactive too.
+
   -- Moderation
   status: pending|approved|rejected|changes_requested,
   moderation_status: APPROVED|FLAGGED|REJECTED,  -- Claude Haiku verdict
@@ -542,11 +544,11 @@ its admin-override, so an admin still deletes (→ 200).
 
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
-GET    /experiences                    public  — filter: category, city. Only approved+upcoming.
-GET    /experiences/mine               auth    — owner's submissions, any status
+GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
 POST   /experiences                    auth    — require_verified_email (already gated pre-MEH-1164 — left unchanged by Chunk 2A). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
-PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). Any edit resets to status=pending + re-runs Claude.
+PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate.
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
 
