@@ -23,11 +23,19 @@ vi.mock("@phosphor-icons/react", () => {
   return { Check: Stub, Leaf: Stub, MagnifyingGlass: Stub };
 });
 
-// CATEGORY_ICONS keys the 6 popular glyphs to hand-drawn components.
+// MEH-683: CATEGORY_ICONS re-keyed by canonical DB name (was english slug).
+// Mock the 6 popular names so their glyph lookup resolves.
 vi.mock("@/components/CategoryIcons", () => {
   const Glyph = (props) => <span data-testid="glyph" {...props} />;
   return {
-    CATEGORY_ICONS: { dairy: Glyph, bread: Glyph, meat: Glyph, oil: Glyph, veg: Glyph, care: Glyph },
+    CATEGORY_ICONS: {
+      "חלב וגבינות": Glyph,
+      "לחמים ואפייה": Glyph,
+      "בשר": Glyph,
+      "שמנים": Glyph,
+      "ירקות": Glyph,
+      "סבונים טבעיים": Glyph,
+    },
   };
 });
 

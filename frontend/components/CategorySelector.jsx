@@ -9,7 +9,7 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
  *
  * Re-skin of the prior emoji-pill control to the S7 "card" design (MEH-203):
- * a 2-col card grid, bespoke hand-drawn glyphs (CategoryIcons.jsx) for the 6
+ * a 2-col card grid, unified geometric glyphs (CategoryIcons.jsx, MEH-683) for the 6
  * popular categories + a Phosphor Leaf fallback for the other 12, and a live
  * name+desc filter that DIMS (not hides) non-matching cards. The data contract
  * is unchanged — props categories / selectedIds / onChange(id) / onRequestCategory
@@ -200,7 +200,8 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
               const popular = POPULAR_BY_NAME[cat.name];
-              const Glyph = popular ? CATEGORY_ICONS[popular.glyph] : null;
+              // MEH-683: CATEGORY_ICONS re-keyed to canonical DB name (was slug).
+              const Glyph = popular ? CATEGORY_ICONS[popular.name] : null;
               return (
                 <button
                   key={cat.id}

@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-683 — Category icons: unified geometric set (Phosphor + vendored) — PR ready, awaiting Sapir merge
+
+- **Status: implemented, green, ready for mobile-QA + merge.** Branch `feature/meh-683-category-glyphs` off `origin/staging` (harness `claude/*` blocked by MEH-1141 gate — recreated as `feature/*` per Phase-0 flag). Frontend-only; **zero backend files**.
+- **Phase 0 surfaced 3 forks → Sapir resolved → V5 reconciled to seed as LOCKED v2.1** (Linear updated): (1) taxonomy mismatch — canonical seed names used verbatim, `נרות וארומה`→Tabler `candle`, Pill dropped (merged `צמחי מרפא ותוספים`), (2) #201507 unreachable from sandbox → CC0 design reproduced as line paths, (3) home cards **keep photos** (MEH-1183) — glyphs are the no-photo fallback only.
+- **Shipped:** `components/CategoryIcons.jsx` rewritten — 18 glyphs keyed by canonical DB name (11 Phosphor + 5 Tabler MIT + 1 Material Apache-2.0 + CC0 olive-oil). New `frontend/lib/icons/LICENSES.md` (MIT+Apache+CC0). `lib/map-categories.js` glyph swap (colours unchanged, honey `#C8821E`). `home-categories.js`/`HomeCategoryGrid.jsx` fallback re-keyed to name. `CategorySelector.jsx` + its test lookup slug→name. `categories.emoji` untouched (already retired by MEH-990/1020/657).
+- **V4 weight:** vendored line glyphs at `strokeWidth 1.5/24` (= Phosphor 6.25%). `hive` is the one filled glyph (Material honeycomb) — reads slightly heavier at 44px; flagged to Sapir, kept per lock.
+- **Gates:** `npm run build` exit 0 · full vitest **1437 pass / 10 pre-existing skip**. Backend pytest N/A (no backend change; not installed in sandbox → CI). Lineup 44px+16px rendered from the real components (for PR).
+- **Left for Sapir:** open the Vercel preview on mobile (map pins בשר/שמנים/דבש + register selector), then merge. `Closes MEH-683`. **Follow-up:** category chips use MEH-1418's `icon` prop — separate tiny PR (V6).
+
 ## 2026-07-21 — MEH-1419 — Experience.is_active reversible cancel (RED · Alembic, HARD STOP)
 
 - **Status: migration awaiting Sapir's manual apply.** PR #2019 (draft, off `origin/staging`). The Alembic revision `e4a1c7b9d2f5` (`down_revision = a9f4c2e7b1d3` — current single head, resolved past the `b7e2a4c9d1f6` merge node) was **generated and shown for review, NOT applied**. CC did not run `alembic upgrade` and did not edit `main.py` (MEH-267). **Next step for Sapir:** review the revision file → `alembic upgrade head` on the staging DB → then the endpoints querying the column go live.
