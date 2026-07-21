@@ -43,7 +43,7 @@ The **tagline** appears in: footer brand line, meta description, OpenGraph card,
 ### Strategic LOCKs (full set in `docs/CONTEXT.md` §2)
 
 - Magazine, not marketplace
-- הדף הבסיסי חינם לעולם. אין עמלות עסקה. פרימיום מסומן בלבד, מותנה-trigger — see docs/decisions/ADR-027-revenue-model.md
+- הדף הבסיסי חינם לעולם. אין עמלות עסקה. פרימיום = כלים בלבד, לעולם לא משפיע על דירוג/חשיפה גם עם סימון — see docs/decisions/ADR-027-revenue-model.md + ADR-030-premium-tools-not-ranking.md
 - Manual approval for every business
 - Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. Unlicensed food production stays out; no home cooks (unchanged)
 - No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
