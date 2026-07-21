@@ -677,6 +677,82 @@ class TestExperienceCancelToggle:
         assert ex.status == "pending"
 
 
+# ---------- Location-pin privacy (MEH-1417) ----------
+
+
+class TestExperiencePinPrivacy:
+    """A home experience hides its street address from strangers; the
+    lat/lng must be hidden too, or MEH-1404's MiniMap redraws the exact
+    residence as a pin. Public (commercial) venues keep their pin."""
+
+    def test_stranger_home_experience_hides_coords_and_address(
+        self, client, db
+    ):
+        host = make_user(db)
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="home",
+            address="רחוב מגורים פרטי 42",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(f"/experiences/{ex.id}").json()
+        assert body["address"] is None
+        assert body["lat"] is None
+        assert body["lng"] is None
+
+    def test_stranger_public_experience_keeps_coords(self, client, db):
+        host = make_user(db)
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="public",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(f"/experiences/{ex.id}").json()
+        assert body["lat"] is not None
+        assert body["lng"] is not None
+
+    def test_owner_home_experience_keeps_coords(self, client, db):
+        host = make_user(db)
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="home",
+            address="רחוב הגפן 5",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(
+            f"/experiences/{ex.id}", headers=auth_header(host)
+        ).json()
+        assert body["address"] == "רחוב הגפן 5"
+        assert body["lat"] is not None
+        assert body["lng"] is not None
+
+    def test_admin_home_experience_keeps_coords(self, client, db):
+        host = make_user(db, email="h@example.com")
+        admin = make_user(db, role="admin", email="a@example.com")
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="home",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(
+            f"/experiences/{ex.id}", headers=auth_header(admin)
+        ).json()
+        assert body["lat"] is not None
+        assert body["lng"] is not None
+
+
 # ---------- Cross-feature: existing /events is untouched ----------
 
 

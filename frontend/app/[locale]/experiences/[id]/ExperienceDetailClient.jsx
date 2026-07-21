@@ -177,10 +177,11 @@ export default function ExperienceDetailClient() {
         </div>
 
         {/* MEH-1404: map + navigation buttons when the experience has coords.
-            Without coords the city/address line above stays text-only. Note:
-            the backend returns lat/lng publicly (only the street address is
-            gated to owner/admin — experiences.py:189), so strangers see the
-            pin but not the exact address text. */}
+            Without coords the city/address line above stays text-only.
+            MEH-1417: for a HOME experience the backend now nulls lat/lng for
+            strangers (mirroring the gated street address, experiences.py:188),
+            so this block simply doesn't render — no residential pin leaks.
+            `public` venues keep their coords, so their pin still shows. */}
         {ex.lat != null && ex.lng != null && (
           <div className="mb-6">
             <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />

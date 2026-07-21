@@ -26,6 +26,13 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-1418: chip leading icons (via lib/chip-icons.js).
+  SealCheck: (p) => <span {...p} />,
+  Truck: (p) => <span {...p} />,
+  Certificate: (p) => <span {...p} />,
+  GrainsSlash: (p) => <span {...p} />,
+  Barn: (p) => <span {...p} />,
+  DropSlash: (p) => <span {...p} />,
 }));
 
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));

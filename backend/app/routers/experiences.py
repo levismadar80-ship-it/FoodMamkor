@@ -196,6 +196,14 @@ def get_experience(
         payload["moderation_suggestion"] = None
         payload["admin_feedback"] = None
         payload["rejection_reason"] = None
+        # MEH-1417: for a HOME experience the address is a host's
+        # residence, so the coords must go too — MEH-1404's MiniMap
+        # draws a precise pin from lat/lng and would otherwise leak
+        # the exact location the address-hiding above protects.
+        # `public` venues keep their pin (the location is the point).
+        if ex.location_type == "home":
+            payload["lat"] = None
+            payload["lng"] = None
     return payload
 
 
