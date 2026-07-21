@@ -17,7 +17,9 @@ test.describe("WhatsApp analytics", () => {
       test.skip(true, "No producers in staging DB — skip");
       return;
     }
-    await firstCard.click();
+    // MEH-1369: click the card's inner nav anchor (real <a href>), not the
+    // <article> wrapper whose click races hydration. See parity.spec.ts header.
+    await firstCard.locator('a[href^="/"]').first().click();
     // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
     await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
     await page.waitForLoadState("domcontentloaded");
