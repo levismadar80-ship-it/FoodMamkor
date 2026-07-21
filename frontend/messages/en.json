@@ -2715,6 +2715,8 @@
     "user_anonymous": "Anonymous",
     "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
     "summary_based_on": "{total, plural, one {Based on 1 review} other {Based on {total} reviews}}",
+    "summary_count": "{count, plural, one {1 review} other {{count} reviews}}",
+    "show_more": "Show more reviews",
     "write_cta": "Write a review",
     "form_heading": "Write a review",
     "rating_label": "Rating",

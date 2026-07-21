@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, EyeSlash, Leaf, Star } from "@phosphor-icons/react";
+import { CaretDown, EyeSlash, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
@@ -218,6 +218,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   const [total, setTotal] = useState(reviewCount);
   const [pages, setPages] = useState(1);
   const [page, setPage] = useState(1);
+  // Reviews render 3-at-a-time; "הצג עוד" reveals +3 and appends the next
+  // server page when the local buffer runs out (replaces the old carousel).
+  const [visibleCount, setVisibleCount] = useState(3);
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState(0);
   const [body, setBody] = useState("");
@@ -246,12 +249,19 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
     api
       .get(`/producers/${producerId}/reviews`, { params: { page: p } })
       .then((r) => {
-        setReviews(Array.isArray(r.data?.reviews) ? r.data.reviews : []);
+        const fresh = Array.isArray(r.data?.reviews) ? r.data.reviews : [];
+        // Append (was replace) so "הצג עוד" accumulates pages. id-dedupe guards
+        // a double page-1 fetch (StrictMode / IO re-observe) from producing
+        // duplicate React keys; an error keeps what's already loaded.
+        setReviews((prev) => {
+          const seen = new Set(prev.map((x) => x.id));
+          return [...prev, ...fresh.filter((x) => !seen.has(x.id))];
+        });
         setTotal(r.data?.total ?? 0);
         setPages(r.data?.pages ?? 1);
         setPage(p);
       })
-      .catch(() => setReviews([]))
+      .catch(() => {})
       .finally(() => {
         inFlightRef.current = false;
         setLoading(false);
@@ -317,7 +327,18 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
     setReviews((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   };
 
-  const showSummary = total >= 3 && avgRating > 0;
+  // Reveal +3; when the local buffer is exhausted and more server pages remain,
+  // append the next page. The button is disabled while loading (below) so this
+  // can't race the HOT-018 in-flight lock.
+  const handleShowMore = () => {
+    const next = visibleCount + 3;
+    setVisibleCount(next);
+    if (next > reviews.length && page < pages) {
+      fetchPage(page + 1);
+    }
+  };
+
+  const showSummary = total > 0 && avgRating > 0;
   const anonymousFallback = t("anonymous_fallback");
 
   return (
@@ -344,7 +365,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             size={20}
             ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
           />
-          <p className="text-fg-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
+          <p className="text-fg-muted text-sm mt-2">{t("summary_count", { count: total })}</p>
         </div>
       )}
 
@@ -471,7 +492,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       ) : (
         <>
           <div className="divide-y divide-border">
-            {reviews.map((review) => (
+            {reviews.slice(0, visibleCount).map((review) => (
               <div key={review.id} className="bg-background py-6">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
@@ -506,30 +527,19 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             ))}
           </div>
 
-          {pages > 1 && (
-            // MEH-877: carousel prev/next pair — RTL-correct as-is (prev→right,
-            // next→left in Hebrew reading order). Intentionally NOT bidi-flipped:
-            // documented rtl.md exception ("Carousel prev/next arrows"). Do not
-            // re-flag in future bidi sweeps.
-            <div className="flex items-center justify-center gap-3 mt-6">
+          {visibleCount < total && (
+            // Centered CTA — justify-center is the direction-neutral horizontal-
+            // center idiom (no physical props). Replaces the MEH-877 carousel.
+            // "הצג עוד" only — no "show less" (MEH-1387 anti-pattern).
+            <div className="flex justify-center mt-6">
               <button
-                onClick={() => fetchPage(page - 1)}
-                disabled={page <= 1 || loading}
-                aria-label={t("pagination.prev_aria")}
-                className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
+                type="button"
+                onClick={handleShowMore}
+                disabled={loading}
+                className="min-h-[44px] inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline disabled:opacity-50"
               >
-                <ArrowRight size={18} weight="bold" aria-hidden="true" />
-              </button>
-              <span className="text-sm text-fg-muted" dir="ltr">
-                {page} / {pages}
-              </span>
-              <button
-                onClick={() => fetchPage(page + 1)}
-                disabled={page >= pages || loading}
-                aria-label={t("pagination.next_aria")}
-                className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
-              >
-                <ArrowLeft size={18} weight="bold" aria-hidden="true" />
+                {t("show_more")}
+                <CaretDown size={16} aria-hidden="true" />
               </button>
             </div>
           )}
