@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1146 chunk B — editorial delivery: per-city rows (city · min order · day,
 // fix 4), an optional self-pickup line (fix 6), and a DEMOTED tertiary CTA.
@@ -13,6 +13,8 @@ vi.mock("next-intl", () => ({
     if (key === "delivery_day_group") return `ימי ${vars?.day ?? ""}`;
     // MEH-1255: nationwide-with-exclusions display.
     if (key === "nationwide_except") return `משלוחים לכל הארץ (למעט ${vars?.cities ?? ""})`;
+    // MEH-1435: compact city-list toggle copy.
+    if (key === "show_all") return `הצג עוד ${vars?.count ?? ""} ערים`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
@@ -20,6 +22,7 @@ vi.mock("next-intl", () => ({
       "arranged_group": "בתיאום מראש",
       "min_order": "מינימום",
       "pickup": "איסוף עצמי",
+      "show_less": "הצג פחות",
       // MEH-1305 C: Hebrew label passed to the tertiary WhatsAppButton instance.
       "order_cta": "שליחת הודעה בוואטסאפ",
       "whatsapp.button.default_message": "msg",
@@ -36,7 +39,7 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { Truck: Stub, Package: Stub, WhatsappLogo: Stub };
+  return { Truck: Stub, Package: Stub, WhatsappLogo: Stub, CaretDown: Stub, CaretUp: Stub };
 });
 
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -145,5 +148,53 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     const cta = screen.getByTestId("whatsapp-cta");
     expect(cta).toHaveTextContent("שליחת הודעה בוואטסאפ");
     expect(cta).not.toHaveTextContent("WhatsApp");
+  });
+
+  it("MEH-1435: city-only areas render as a compact Hebrew-sorted list, no editorial rows / no toggle ≤15", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "תל אביב" },
+          { id: 2, city: "אשדוד" },
+          { id: 3, city: "חיפה" },
+        ]}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    // All cities shown, no "מינימום" row, no toggle under the 15-city limit.
+    expect(screen.getByText("אשדוד")).toBeInTheDocument();
+    expect(screen.getByText("חיפה")).toBeInTheDocument();
+    expect(screen.getByText("תל אביב")).toBeInTheDocument();
+    expect(screen.queryByText("מינימום")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /הצג/ })).not.toBeInTheDocument();
+    // Hebrew a→ז order: אשדוד before חיפה before תל אביב.
+    const cities = ["אשדוד", "חיפה", "תל אביב"].map((c) => screen.getByText(c));
+    expect(cities[0].compareDocumentPosition(cities[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cities[1].compareDocumentPosition(cities[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("MEH-1435: >15 city-only areas preview 15 + a toggle that expands/collapses", () => {
+    const areas = Array.from({ length: 18 }, (_, i) => ({
+      id: i + 1,
+      // Zero-padded so Hebrew localeCompare keeps a stable order; "עיר 01".."עיר 18".
+      city: `עיר ${String(i + 1).padStart(2, "0")}`,
+    }));
+    render(
+      <DeliveryBlock nationwide={false} areas={areas} pickup={false} producer={producer} />,
+    );
+    // Preview: first 15, 16th hidden; toggle names the 3 hidden.
+    expect(screen.getByText("עיר 15")).toBeInTheDocument();
+    expect(screen.queryByText("עיר 16")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "הצג עוד 3 ערים" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    // Expanded: all 18 shown, toggle flips to "show less".
+    expect(screen.getByText("עיר 18")).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "הצג פחות" })).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.queryByText("עיר 16")).not.toBeInTheDocument();
   });
 });
