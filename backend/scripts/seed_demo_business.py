@@ -41,6 +41,7 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
     DeliveryArea,
     Producer,
     ProducerCategory,
+    ProducerLocation,
     Product,
     ProducerRecipe,
 )
@@ -210,6 +211,137 @@ ADMIN_NOTE = (
     "(swap for the best real profile after first-10, MEH-409)."
 )
 
+# MEH-1432 (MEH-1388 chunk 6): producer_locations for the demo business — a
+# 10-location set ALL in one city (זכרון יעקב) so the E2E multi-location
+# assertions have real data: (a) markers fan out per location, (b) a business
+# with 10 pins clusters as ONE unique business, (c) every location shares the
+# city so the same-city LABEL rule is exercised. 1 branch (primary, the
+# business's own coords) + 9 pickup points, scattered ~0.5-3 km around the
+# business so they collapse into a single cluster at the default /map zoom (8)
+# yet remain distinct rows. Coordinates are inside the זכרון יעקב / בנימינה band.
+DEMO_LOCATIONS = [
+    {
+        "kind": "branch",
+        "label": "המאפייה (הסניף המרכזי)",
+        "city": "זכרון יעקב",
+        "address": "רחוב המייסדים 12, זכרון יעקב",
+        "lat": 32.5732,
+        "lng": 34.9519,
+        "is_primary": True,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — מרכז זכרון",
+        "city": "זכרון יעקב",
+        "lat": 32.5748,
+        "lng": 34.9536,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — שוק האיכרים",
+        "city": "זכרון יעקב",
+        "lat": 32.5711,
+        "lng": 34.9502,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — רמת צבי",
+        "city": "זכרון יעקב",
+        "lat": 32.5769,
+        "lng": 34.9548,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — נחלת ז'בוטינסקי",
+        "city": "זכרון יעקב",
+        "lat": 32.5695,
+        "lng": 34.9560,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — גן שמואל",
+        "city": "זכרון יעקב",
+        "lat": 32.5801,
+        "lng": 34.9491,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — כיכר המושבה",
+        "city": "זכרון יעקב",
+        "lat": 32.5726,
+        "lng": 34.9575,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — בית הבד",
+        "city": "זכרון יעקב",
+        "lat": 32.5680,
+        "lng": 34.9524,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — הגן הבהאי",
+        "city": "זכרון יעקב",
+        "lat": 32.5758,
+        "lng": 34.9507,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — תחנת הרכבת",
+        "city": "זכרון יעקב",
+        "lat": 32.5703,
+        "lng": 34.9543,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+]
+
+# MEH-1432: a SECOND demo producer — delivery-only (has_physical_location=False)
+# WITH one pickup location. Proves the chunk-2 MEH-213 reversal: a delivery-only
+# business reappears on /map BECAUSE it owns a pickup point (a zero-location
+# delivery-only producer stays hidden — the existing behaviour, no seed needed).
+# STAGING ONLY, same as the primary demo. Minimal-but-approvable (>=1 image).
+DELIVERY_ONLY_SLUG = "demo-delivery-pickup"
+DELIVERY_ONLY_PRODUCER = {
+    "name": "משק החלב של דנה (משלוחים + איסוף)",
+    "contact_name": "דנה כהן",
+    "slug": DELIVERY_ONLY_SLUG,
+    "description": "משק חלב משפחתי — מוכר במשלוחים ובנקודת איסוף אחת בבנימינה. דמו לבדיקת ריבוי-מיקום (delivery-only + pickup).",
+    "short_description": "גבינות עזים טריות במשלוח ובאיסוף.",
+    "city": "בנימינה",
+    # Project-owned cloud (dfzpscjks), same staging-only demo bucket as the
+    # primary demo producer — resilient vs the public cloudinary/demo sample.
+    "images": [
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
+    ],
+}
+DELIVERY_ONLY_LOCATION = {
+    "kind": "pickup",
+    "label": "איסוף — מרכז בנימינה",
+    "city": "בנימינה",
+    "lat": 32.5190,
+    "lng": 34.9530,
+    "is_primary": True,
+    "location_precision": "exact",
+}
+
 
 def _assert_not_production() -> None:
     """Refuse to run against anything that is not localhost or Railway staging.
@@ -239,7 +371,23 @@ def _delete_existing(db) -> None:
     producer = db.query(Producer).filter(Producer.slug == DEMO_SLUG).first()
     if producer:
         db.query(Event).filter(Event.producer_id == producer.id).delete()
+        # MEH-1432: producer_locations rows carry ON DELETE CASCADE, so
+        # db.delete(producer) removes them too; the explicit ORM delete keeps the
+        # session identity map clean on re-seed (same reasoning as the Event
+        # delete above and the review deletes below).
+        db.query(ProducerLocation).filter(
+            ProducerLocation.producer_id == producer.id
+        ).delete()
         db.delete(producer)  # ORM cascade covers products/areas/reviews/recipes
+    # MEH-1432: the delivery-only demo producer (its 1 pickup cascades / cleared).
+    delivery_only = (
+        db.query(Producer).filter(Producer.slug == DELIVERY_ONLY_SLUG).first()
+    )
+    if delivery_only:
+        db.query(ProducerLocation).filter(
+            ProducerLocation.producer_id == delivery_only.id
+        ).delete()
+        db.delete(delivery_only)
     emails = [r["email"] for r in DEMO_REVIEWS] + [DEMO_OWNER_EMAIL]
     # ORM-level deletes (not bulk .delete()) keep the session's identity map
     # consistent — a bulk delete here leaves stale review objects that emit a
@@ -295,6 +443,13 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
 
     for area in DEMO_DELIVERY_AREAS:
         db.add(DeliveryArea(producer_id=producer.id, **area))
+    db.flush()
+
+    # MEH-1432 (MEH-1388 chunk 6): the 10-location set — activates the E2E
+    # multi-location assertions (per-location markers, cluster-counts-1-business,
+    # same-city label). Mirrors the DeliveryArea child pattern above.
+    for loc in DEMO_LOCATIONS:
+        db.add(ProducerLocation(producer_id=producer.id, **loc))
     db.flush()
 
     recipe = ProducerRecipe(
@@ -363,8 +518,31 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
             )
         )
 
+    # MEH-1432: the delivery-only-with-pickup demo producer. No own lat/lng — it
+    # reappears on /map SOLELY because it owns a pickup location (chunk-2 MEH-213
+    # reversal). A zero-location delivery-only producer stays hidden (unchanged).
+    delivery_only = Producer(
+        **DELIVERY_ONLY_PRODUCER,
+        status="approved",
+        admin_notes=ADMIN_NOTE,
+        has_physical_location=False,
+        offers_delivery=True,
+        delivery_nationwide=True,
+        has_delivery=True,
+        lat=None,
+        lng=None,
+    )
+    db.add(delivery_only)
+    db.flush()
+    db.add(ProducerCategory(producer_id=delivery_only.id, category_id=category.id))
+    db.add(ProducerLocation(producer_id=delivery_only.id, **DELIVERY_ONLY_LOCATION))
+
     db.commit()
     print(f"Demo business seeded: /{DEMO_SLUG} (producer {producer.id})")
+    print(
+        f"Delivery-only demo seeded: /{DELIVERY_ONLY_SLUG} "
+        f"(producer {delivery_only.id}, 1 pickup, no own lat/lng)"
+    )
     return producer
 
 
