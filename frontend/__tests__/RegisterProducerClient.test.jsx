@@ -321,6 +321,43 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
   });
 });
 
+// MEH-1422 (MEH-1388 chunk 4b): the informational multi-location intake toggle
+// on DETAILS. Renders the approved referral copy only on "yes", and — critically
+// — is UI-only: its value must never leak into the /auth/register/producer body
+// (no backend field). The next-intl mock returns key paths, so assertions key off
+// the locked-copy i18n KEYS, not the Hebrew strings.
+describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", () => {
+  it("shows the referral copy only when the toggle is on", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    const toggle = screen.getByTestId("register-multi-location-toggle");
+    expect(toggle).toBeInTheDocument();
+    expect(screen.getByText(`${K}.fields.multi_location_label`)).toBeInTheDocument();
+    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
+    fireEvent.click(toggle); // yes
+    expect(screen.getByTestId("register-multi-location-copy")).toHaveTextContent(
+      `${K}.fields.multi_location_yes_copy`,
+    );
+    fireEvent.click(toggle); // no
+    expect(screen.queryByTestId("register-multi-location-copy")).not.toBeInTheDocument();
+  });
+
+  it("is informational only — its value is NOT in the submit payload", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.click(screen.getByTestId("register-multi-location-toggle")); // yes
+    await fillDetailsToStory();
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(Object.keys(body).some((k) => k.toLowerCase().includes("multi"))).toBe(false);
+  });
+});
+
 // MEH-952: the producer-license required-error must surface next to the field on
 // CATEGORY (not only as the generic backend-422 line two frames later on STORY).
 // These tests use an OVERRIDING /categories mock with a license-required name
