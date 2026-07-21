@@ -76,6 +76,22 @@ export const ProducerSchema = z.object({
     min_order: z.number().nullable().optional(),
     delivery_day: z.string().nullable().optional(),
   })).optional().default([]),
+  // MEH-1412 (MEH-1388 chunk 3): physical presence points from chunk 2's
+  // serializer (backend ProducerLocationOut) — {kind, label, city, lat, lng,
+  // is_primary, precision}. Declared so z.object stops stripping it (same
+  // MEH-901/MEH-826/MEH-902 mechanism as delivery_areas above); permissive on
+  // every field so the all-or-nothing parse (useProducersFeed) never drops a
+  // producer with a partial row. MapComponent fans these into per-location
+  // markers (branch/primary = standard pin, pickup/market_stand = secondary).
+  locations: z.array(z.object({
+    kind: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    lat: z.number().finite().nullable().optional(),
+    lng: z.number().finite().nullable().optional(),
+    is_primary: z.boolean().nullable().optional(),
+    precision: z.string().nullable().optional(),
+  })).optional().default([]),
 });
 
 // MEH-779: response shape of GET /producers — an array of producers.
