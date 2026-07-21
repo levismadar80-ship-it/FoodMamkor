@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, LockSimple, Sparkle, WhatsappLogo, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Eye, LockSimple, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -20,7 +20,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPercent } from "@/lib/percent";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
-import { SITE_URL } from "@/lib/env";
+import { SITE_URL, env } from "@/lib/env";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -104,6 +104,56 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
   );
 }
 
+// MEH-1355: support contact surface migrated from the removed /settings
+// business tab (SupportModal). Reachable from the rejected + inactive status
+// banners below — wa.me + mailto, same two-channel layout as the original.
+function StatusSupportModal({ onClose }) {
+  const t = useTranslations("dashboard.producer.status.support");
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("section_aria")}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
+        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
+        <p className="text-sm text-fg-muted">{t("body")}</p>
+        <a
+          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+        >
+          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
+          <div>
+            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
+            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
+          </div>
+        </a>
+        <a
+          href="mailto:support@mehamakor.online"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+        >
+          <EnvelopeSimple size={22} className="text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-medium">{t("email_label")}</p>
+            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
+          </div>
+        </a>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+        >
+          {t("close_cta")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
@@ -128,6 +178,8 @@ export default function ProducerDashboardPage() {
   // rendered once the server already carried state === "on_vacation".
   const [vacationSelected, setVacationSelected] = useState(false);
   const [vacationDateError, setVacationDateError] = useState("");
+  // MEH-1355: support-contact modal, opened from the rejected + inactive banners.
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const AVAILABILITY_TOOLTIP = (
     <>
@@ -347,18 +399,62 @@ export default function ProducerDashboardPage() {
         </div>
       )}
 
+      {/* MEH-1355: rejected banner absorbs the deltas from the removed /settings
+          business tab — the admin rejection_reason (from /auth/me, rendered as-is
+          like ChangesRequestedBanner's requested_changes) plus the 3 fix-it tips,
+          and a support entry (wa.me + mailto) in place of the bare /contact link. */}
       {producer.status === "rejected" && (
-        <div className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm" role="alert">
-          <p className="font-semibold text-red-800 mb-1">{t("status.rejected.title")}</p>
-          <p className="text-red-700 mb-3">
-            {t("status.rejected.body")}
-          </p>
-          <Link
-            href="/contact"
-            className="inline-block bg-red-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-red-800 transition"
+        <div
+          className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+          role="alert"
+          data-testid="status-rejected-banner"
+        >
+          <p className="font-semibold text-red-800">{t("status.rejected.title")}</p>
+          {user.producer_rejection_reason && (
+            <p className="text-red-600" data-testid="status-rejected-reason">
+              {user.producer_rejection_reason}
+            </p>
+          )}
+          <p className="text-red-700">{t("status.rejected.body")}</p>
+          <ul className="space-y-1 text-red-700">
+            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_details")}</span></li>
+            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_photos")}</span></li>
+            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_address")}</span></li>
+          </ul>
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="text-primary hover:underline font-medium"
+            data-testid="status-rejected-support"
           >
-            {t("status.rejected.cta")}
-          </Link>
+            {t("status.rejected.support_cta")}
+          </button>
+        </div>
+      )}
+
+      {/* MEH-1355: inactive banner migrated from the removed /settings business
+          tab. Matches the literal "inactive" the admin toggle emits
+          (admin.py:332) — the old settings tab checked a status the backend
+          never emits, so its banner was dead code. */}
+      {producer.status === "inactive" && (
+        <div
+          className="bg-amber-50 border border-amber-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+          role="alert"
+          data-testid="status-inactive-banner"
+        >
+          <p className="font-semibold text-amber-800 flex items-center gap-2">
+            <Warning size={18} weight="fill" aria-hidden="true" />
+            {t("status.inactive.title")}
+          </p>
+          <p className="text-amber-700">{t("status.inactive.body")}</p>
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="text-primary hover:underline font-medium"
+            data-testid="status-inactive-support"
+          >
+            {t("status.inactive.support_cta")}
+          </button>
         </div>
       )}
 
@@ -632,6 +728,9 @@ export default function ProducerDashboardPage() {
           edit forms relocated to the edit tab (dashboard/edit). 1B swapped the
           Overview analytics for the lean KPI strip and moved the deep charts
           to the insights tab. */}
+
+      {/* MEH-1355: shared support modal for the rejected + inactive banners. */}
+      {supportOpen && <StatusSupportModal onClose={() => setSupportOpen(false)} />}
     </div>
   );
 }
