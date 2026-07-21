@@ -219,76 +219,87 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         )}
       </div>
 
-      <div className="divide-y divide-border/40">
-        {toggleRow("notify_new_event", t("row_new_event"), Confetti)}
-        {toggleRow("notify_new_product", t("row_new_product"), Handbag)}
-        {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
-        {toggleRow("notify_new_recipe", t("row_new_recipe"), CookingPot)}
-        {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
+      {/* MEH-1407: group A — WHAT to notify about (the alert-type toggles). */}
+      <div>
+        <p className="text-xs font-semibold text-fg-muted mb-1">{t("group_what")}</p>
+        <div className="divide-y divide-border/40">
+          {toggleRow("notify_new_event", t("row_new_event"), Confetti)}
+          {toggleRow("notify_new_product", t("row_new_product"), Handbag)}
+          {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
+          {toggleRow("notify_new_recipe", t("row_new_recipe"), CookingPot)}
+        </div>
       </div>
 
-      {showPhoneField && (
-        <div className="rounded-[8px] bg-primary/5 border border-primary/20 p-3 space-y-2">
-          <p className="text-xs text-text">{t("phone_required_prompt")}</p>
-          <input
-            type="tel"
-            value={phoneInput}
-            onChange={(e) => setPhoneInput(e.target.value)}
-            placeholder="050-1234567"
-            dir="ltr"
-            aria-label={t("phone_required_prompt")}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
-          />
-          {/* MEH-1359: the save button is disabled until the phone is valid — say
-              why, so the greyed-out state isn't an unexplained dead end. */}
-          {!phoneValid && !phoneSaving && (
-            <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
+      {/* MEH-1407: group B — HOW to receive (channels: WhatsApp opt-in + push). */}
+      <div>
+        <p className="text-xs font-semibold text-fg-muted mb-1">{t("group_how")}</p>
+        <div className="space-y-2">
+          {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
+
+          {showPhoneField && (
+            <div className="rounded-[8px] bg-primary/5 border border-primary/20 p-3 space-y-2">
+              <p className="text-xs text-text">{t("phone_required_prompt")}</p>
+              <input
+                type="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="050-1234567"
+                dir="ltr"
+                aria-label={t("phone_required_prompt")}
+                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+              />
+              {/* MEH-1359: the save button is disabled until the phone is valid — say
+                  why, so the greyed-out state isn't an unexplained dead end. */}
+              {!phoneValid && !phoneSaving && (
+                <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={savePhoneAndEnable}
+                  disabled={!phoneValid || phoneSaving}
+                  className="flex-1 bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+                >
+                  {phoneSaving ? t("saving") : t("phone_save_cta")}
+                </button>
+                <button
+                  onClick={cancelPhone}
+                  className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
+                  aria-label={t("close_aria")}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
           )}
-          <div className="flex items-center gap-2">
+
+          {(pushStatus === "prompt" || pushStatus === "denied") && (
             <button
-              onClick={savePhoneAndEnable}
-              disabled={!phoneValid || phoneSaving}
-              className="flex-1 bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+              onClick={enablePush}
+              disabled={pushStatus === "denied"}
+              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-[8px] hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
             >
-              {phoneSaving ? t("saving") : t("phone_save_cta")}
+              {pushStatus === "denied" ? (
+                <>
+                  <BellSlash size={14} aria-hidden="true" />
+                  {t("push_blocked")}
+                </>
+              ) : (
+                <>
+                  <Bell size={14} aria-hidden="true" />
+                  {t("push_enable")}
+                </>
+              )}
             </button>
-            <button
-              onClick={cancelPhone}
-              className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
-              aria-label={t("close_aria")}
-            >
-              ×
-            </button>
-          </div>
+          )}
+
+          {pushStatus === "granted" && (
+            <p className="text-xs text-primary flex items-center gap-1">
+              <Bell size={12} weight="fill" aria-hidden="true" />
+              {t("push_active")}
+            </p>
+          )}
         </div>
-      )}
-
-      {(pushStatus === "prompt" || pushStatus === "denied") && (
-        <button
-          onClick={enablePush}
-          disabled={pushStatus === "denied"}
-          className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-[8px] hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
-        >
-          {pushStatus === "denied" ? (
-            <>
-              <BellSlash size={14} aria-hidden="true" />
-              {t("push_blocked")}
-            </>
-          ) : (
-            <>
-              <Bell size={14} aria-hidden="true" />
-              {t("push_enable")}
-            </>
-          )}
-        </button>
-      )}
-
-      {pushStatus === "granted" && (
-        <p className="text-xs text-primary flex items-center gap-1">
-          <Bell size={12} weight="fill" aria-hidden="true" />
-          {t("push_active")}
-        </p>
-      )}
+      </div>
 
       <button
         onClick={() => save()}
