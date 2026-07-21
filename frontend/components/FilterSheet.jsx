@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
+import { chipIcon } from "@/lib/chip-icons";
+import { BADGE_CONFIG } from "@/lib/badges";
 
 /**
  * Module:   FilterSheet
@@ -30,6 +32,14 @@ import { TOGGLE_CHIPS } from "@/lib/map-chips";
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
 const GROUP_ORDER = ["diet", "quality", "service"];
+
+// MEH-1418: each toggle row gets a muted one-line explainer. Source is the
+// badge tooltips (SoT — no new copy strings); has_delivery's tooltip lives
+// under the `delivery` badge key.
+const SUBTEXT_BADGE_KEY = { has_delivery: "delivery" };
+function chipSubtext(key) {
+  return BADGE_CONFIG[SUBTEXT_BADGE_KEY[key] ?? key]?.tooltip ?? null;
+}
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
 const DRAG_CLOSE_PX = 80;
@@ -157,25 +167,37 @@ export default function FilterSheet({
             <h3 className="text-sm font-medium text-fg-muted mt-4 mb-2">
               {t(`filters.sheet.group_${group}`)}
             </h3>
-            <div className="flex flex-wrap gap-2">
+            {/* MEH-1418: rows stack vertically so each toggle carries a muted
+                explainer line beneath it (icon + label in the chip, subtext
+                below and outside the button — the label stays the accessible
+                name; the icon is aria-hidden). */}
+            <div className="flex flex-col gap-3">
               {TOGGLE_CHIPS.filter((chip) => chip.group === group).map((chip) => {
                 const active = !!chipState[chip.key];
+                const icon = chipIcon(chip.key);
+                const subtext = chipSubtext(chip.key);
                 return (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    onClick={() => onToggleChip(chip.key)}
-                    aria-pressed={active}
-                    // REUSES: frontend/components/ChipScrollRow.jsx:118-122 —
-                    // identical chip visuals so sheet chips match the quick row.
-                    className={`inline-flex items-center whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
-                      active
-                        ? "bg-state-selected text-white border-state-selected"
-                        : "bg-white text-text border-border hover:border-primary hover:text-primary"
-                    }`}
-                  >
-                    {chip.label}
-                  </button>
+                  <div key={chip.key} className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onToggleChip(chip.key)}
+                      aria-pressed={active}
+                      // REUSES: frontend/components/ChipScrollRow.jsx:118-122 —
+                      // identical chip visuals so sheet chips match the quick row.
+                      // self-start keeps the pill compact within the stacked row.
+                      className={`inline-flex items-center gap-1.5 self-start whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+                        active
+                          ? "bg-state-selected text-white border-state-selected"
+                          : "bg-white text-text border-border hover:border-primary hover:text-primary"
+                      }`}
+                    >
+                      {icon && <span aria-hidden="true">{icon}</span>}
+                      {chip.label}
+                    </button>
+                    {subtext && (
+                      <span className="text-xs text-fg-muted ps-1">{subtext}</span>
+                    )}
+                  </div>
                 );
               })}
             </div>

@@ -7,9 +7,11 @@ import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
+import { useMemo } from "react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
 /**
@@ -47,6 +49,8 @@ export function HomeProducersGrid({
   geoEmptyNotice,
 }) {
   const t = useTranslations();
+  // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
+  const chipsWithIcons = useMemo(() => withChipIcons(CHIPS_CONFIG), []);
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
   // is selected OR the id hasn't resolved against the loaded list yet, so
@@ -82,7 +86,7 @@ export function HomeProducersGrid({
       {/* Filter chips */}
       <ChipScrollRow
         variant="toggle"
-        chips={CHIPS_CONFIG}
+        chips={chipsWithIcons}
         activeKeys={chips}
         onChipClick={onToggleChip}
         fadeBg="#F5F0E8"

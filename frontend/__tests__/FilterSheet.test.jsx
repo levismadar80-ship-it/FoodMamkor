@@ -61,11 +61,29 @@ describe("FilterSheet (MEH-1075)", () => {
       "ללא לקטוז",
       "גראס פד",
       "משלוח",
-      "מאומתים",
+      // MEH-1418: "מאומתים" → "רישוי מאומת".
+      "רישוי מאומת",
     ]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
     expect(screen.queryByRole("button", { name: "אורגני" })).not.toBeInTheDocument();
+  });
+
+  // MEH-1418: each toggle row carries a muted one-line explainer sourced from the
+  // BADGE_CONFIG tooltips (no new copy). The subtext sits OUTSIDE the button so
+  // the chip label stays the accessible name (getByRole name assertions above).
+  it("renders a BADGE_CONFIG-sourced subtext under each toggle", () => {
+    renderSheet();
+    // verified → BADGE_CONFIG.verified.tooltip
+    expect(
+      screen.getByText("בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."),
+    ).toBeInTheDocument();
+    // has_delivery → BADGE_CONFIG.delivery.tooltip (key remap)
+    expect(screen.getByText("העסק מוסר או שולח לכתובת שלך.")).toBeInTheDocument();
+    // the subtext must NOT leak into the button's accessible name
+    expect(
+      screen.getByRole("button", { name: "רישוי מאומת" }),
+    ).toBeInTheDocument();
   });
 
   it("toggling a chip calls onToggleChip with the chip key; aria-pressed mirrors chipState", () => {
