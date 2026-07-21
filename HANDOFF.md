@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1410 — ChatWidget restored to desktop-only (≥768px)
+
+- **Shipped:** gated the whole ChatWidget on the existing `isDesktop` matchMedia state — `if (!isDesktop) return null;` (`ChatWidget.jsx`), after every hook and before any JSX. Mobile (< 768px) no longer mounts the FAB/panel (it competed for the bottom-end corner with BottomNav pill / cookie banner). Desktop behavior byte-identical — the sole non-comment diff is that one gate line.
+- **Files:** `frontend/components/ChatWidget.jsx` (gate + doc/comment updates; `MOBILE_LAUNCHER_BOTTOM` retained-but-unreachable per MEH-1410). NEW `__tests__/ChatWidgetDesktopOnly.test.jsx` (mobile→empty DOM, desktop→launcher present).
+- **Verify:** `npm run build` exit 0 · vitest 9/9 (`ChatWidgetDesktopOnly` 2 + `ChatWidgetLazy` 7). GREEN tier — auto-merge on CI green. Second of the 1409/1410/1411 UX-polish batch (MEH-1409 merged as PR #2010).
+- **Branch:** `feature/meh-1410-chatwidget-desktop-only` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
+
 ## 2026-07-21 — MEH-1409 — hero secondary links symmetry (Shuffle icon removed)
 
 - **Shipped:** removed the Phosphor `Shuffle` icon from the "הפתיעו אותי" hero text link (`HomeHero.jsx`) so it and "איך זה עובד" are identical-weight text links (same font/underline/spacing). Post-MEH-1369 the surprise link still carried the icon + `inline-flex gap` classes and read heavier. Style-only, one production file.
