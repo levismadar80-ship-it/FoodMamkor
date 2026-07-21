@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1396 — admin pre-approval review checklist (Phase 1, static config)
+
+- **Shipped:** a collapsible 7-item review checklist (RTL) on each pending-producer row in the admin producers table, moving `docs/VERIFICATION.md` §2 knowledge in front of the admin at approval time. Clicking "אשר" with unticked items → soft confirm dialog ("נשארו X סעיפים…" · אשרי בכל זאת / חזרה לבדיקה); all ticked → approve straight through. **Session-local React state only — no persistence, no schema, no API.**
+- **Files (5 new/changed + 2 docs):** new `frontend/lib/admin-review-checklist.js` (raw-Hebrew static config, `producer-status.js` idiom — no i18n twin), `AdminReviewChecklist.jsx` (presentational, native checkboxes, Phosphor), `use-review-checklist.js` (tick state + soft approve gate, resets on collapse). `AdminProducersTable.jsx` renders the sub-row; `page.js` composes the hook + `ApproveConfirmDialog`. The server-side photo/license **422 gates are untouched** (`use-admin-producers.js:122`).
+- **Phase-0 deviations (surfaced, Sapir-approved to proceed):** approve UI is the admin producers **table** at `app/[locale]/admin/producers/`, not a drawer under `components/Admin*` (orchestrator guessed the old flat path) — tripped the literal STOP condition; confirmed to proceed. No MEH number existed → opened **MEH-1396**; config placed in `frontend/lib/` (`config/` dir doesn't exist).
+- **Verify:** build exit 0 · vitest **1391 pass** (incl. +6 new: config + hook gate + component) · 0 physical RTL classes in new files · Playwright self-QA @375/@1440 (checklist + warning dialog) → `frontend/qa-artifacts/MEH-1396/` (WebP 143 KB).
+- **Left for Sapir:** mobile QA on the Vercel preview (admin login → pending producer → checklist + approve-confirm). Phase 2 (persistence / per-item timestamps / editing UI) is a separate ticket, explicitly out of scope.
+- **Branch:** `feature/meh-1396-admin-review-checklist` off `origin/staging` (merged `02216e40`); the harness `claude/*` branch is blocked by the branch-name gate (MEH-1141), so used the task-specified `feature/meh-*` name.
+
 ## 2026-07-21 — MEH-1167 — kashrut-request card (dashboard) + 2 backend endpoints
 
 - **Shipped:** producer can request a verified kashrut badge from `/producer/dashboard/edit` — pick badge type, upload a cert photo, submit, see pending/rejected status. Closes the MEH-1392 F0 supply gap (verified-only chain = MEH-986 + MEH-1087; this was the missing producer entry point).
