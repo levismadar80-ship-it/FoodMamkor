@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1385 addendum — contact_name field on owner-story card
+
+- **Shipped:** one `Input` "שם איש/אשת הקשר" at the top of the shipped owner-story card (`OwnerStoryCard`, `edit/cards.jsx`), saved on the same `PUT /producers/me` as the bio. `contact_name` was already in `_PRODUCER_WRITABLE_FIELDS` → **zero backend change**. Closes MEH-1392 F2 (public-read on OwnerCard, was admin-write only).
+- **Verify:** build exit 0 · vitest 8/8 (2 new contact cases + existing PUT-payload assertions updated for `{owner_bio, contact_name}`) · he/en parity · Playwright 375+1440 → `qa-artifacts/MEH-1385/`.
+- **Gate finding:** the owner-story card itself shipped via **PR #1990** (`6976f6b7`), NOT PR #1988. **PR #1988 is a stale open duplicate** (its content already on staging) — recommend closing it. So the contact_name follow-up went off staging (the effectively-merged path), PR body `Refs MEH-1385` (not `Closes` — a separate contact_name gate; if auto-close fired it's a MEH-1240 artifact).
+- **Branch:** `feature/meh-1385-contact-name` off staging.
 ## 2026-07-21 — MEH-1167 — kashrut-request card (dashboard) + 2 backend endpoints
 
 - **Shipped:** producer can request a verified kashrut badge from `/producer/dashboard/edit` — pick badge type, upload a cert photo, submit, see pending/rejected status. Closes the MEH-1392 F0 supply gap (verified-only chain = MEH-986 + MEH-1087; this was the missing producer entry point).
