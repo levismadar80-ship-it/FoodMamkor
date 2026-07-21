@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1409 — hero secondary links symmetry (Shuffle icon removed)
+
+- **Shipped:** removed the Phosphor `Shuffle` icon from the "הפתיעו אותי" hero text link (`HomeHero.jsx`) so it and "איך זה עובד" are identical-weight text links (same font/underline/spacing). Post-MEH-1369 the surprise link still carried the icon + `inline-flex gap` classes and read heavier. Style-only, one production file.
+- **Files:** `frontend/app/[locale]/home/HomeHero.jsx` (dropped `<Shuffle>` element + icon-layout classes + `Shuffle` import; className now byte-identical to how-it-works). Test: `__tests__/HomeHeroSurprise.test.jsx` render case flipped to assert the icon is **absent**.
+- **Verify:** `npm run build` exit 0 · vitest `HomeHeroSurprise` 3/3. GREEN tier — auto-merge on CI green. First of the 1409/1410/1411 UX-polish batch.
+- **Branch:** `feature/meh-1409-hero-links-symmetry` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
+
 ## 2026-07-21 — MEH-1396 — admin pre-approval review checklist (Phase 1, static config)
 
 - **Shipped:** a collapsible 7-item review checklist (RTL) on each pending-producer row in the admin producers table, moving `docs/VERIFICATION.md` §2 knowledge in front of the admin at approval time. Clicking "אשר" with unticked items → soft confirm dialog ("נשארו X סעיפים…" · אשרי בכל זאת / חזרה לבדיקה); all ticked → approve straight through. **Session-local React state only — no persistence, no schema, no API.**
