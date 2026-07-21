@@ -160,10 +160,14 @@ test.describe("Visual parity — MEH-991", () => {
   // anchor. This touch also re-fires vrt-update to refresh the stale baselines.
   // MEH-1411 (2026-07-21): producer-detail header polish — the orphan "שמירה"
   // actions row lost its full-width hairline and tightened its top margin
-  // (ProducerHeader.jsx), the "חדש" fallback became a green-50 pill, and the
+  // (ProducerHeader.jsx), the "חדש" fallback became a small neutral pill, and the
   // mobile StickyContactBar CTA gained the WhatsApp icon. The producer-detail
   // (mobile especially) baseline shifts by design; this touch re-fires
   // vrt-update.yml so producer-detail-{desktop,mobile}-linux regenerate on-runner.
+  // Review follow-up: the pill was recolored green→neutral (one-green-per-page);
+  // it only renders for reviews_count=0 so it does not change this baseline (the
+  // baseline producer has reviews), but this re-touch re-fires vrt-update on the
+  // neutral-pill commit so the fresh baseline comes from the final code.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");

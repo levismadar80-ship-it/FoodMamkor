@@ -102,12 +102,16 @@ export default function ProducerHeader({
         </a>
       ) : (
         // MEH-1411: "חדש" restyled from a bare 17px bold heading into a small
-        // green-50 pill (bg token + text-primary + rounded-full + compact
-        // padding) so it reads as a quiet badge in the rating's slot, not a
-        // second headline. Smaller than the old 17px line → mobile top block
-        // does not grow. data-testid preserved for the trust-strip test.
+        // NEUTRAL pill (bg-surface-card + border-border + text-fg-muted — the
+        // ProducerHeader/ProducerCard quiet-chip idiom, ProducerCard.jsx:271) so
+        // it reads as a quiet badge in the rating's slot, not a second headline.
+        // Deliberately NOT green: MEH-1334's "one green per page — open = primary"
+        // rule means the "פתוח להזמנות" status is the page's single green accent;
+        // a green pill here would double the green for a new+open producer.
+        // Smaller than the old 17px line → mobile top block does not grow.
+        // data-testid preserved for the trust-strip test.
         <span
-          className="mt-3 inline-block self-start bg-green-50 text-primary rounded-full px-2.5 py-0.5 text-xs font-bold"
+          className="mt-3 inline-block self-start rounded-full bg-surface-card border border-border text-fg-muted px-2.5 py-0.5 text-xs font-medium"
           data-testid="new-mark"
         >
           {t("producer.detail.header.new_mark")}
