@@ -85,9 +85,7 @@ def haversine_min_km(lat: float, lng: float):
     nearest_location_km = (
         select(
             func.min(
-                _haversine_expr(
-                    lat, lng, ProducerLocation.lat, ProducerLocation.lng
-                )
+                _haversine_expr(lat, lng, ProducerLocation.lat, ProducerLocation.lng)
             )
         )
         .where(

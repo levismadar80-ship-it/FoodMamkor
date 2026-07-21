@@ -20,10 +20,10 @@ from tests.conftest import make_producer
 
 # Tel Aviv origin + a spread of points at known-ish distances from it.
 ORIGIN = (32.0853, 34.7818)
-NEAR = (32.0860, 34.7825)      # ~0.1 km
-NEAR_2 = (32.0900, 34.7820)    # ~0.5 km
-MID = (33.0000, 35.0000)       # ~104 km
-FAR = (29.5500, 34.9500)       # ~281 km (Eilat)
+NEAR = (32.0860, 34.7825)  # ~0.1 km
+NEAR_2 = (32.0900, 34.7820)  # ~0.5 km
+MID = (33.0000, 35.0000)  # ~104 km
+FAR = (29.5500, 34.9500)  # ~281 km (Eilat)
 RADIUS_KM = 25.0
 
 
@@ -50,7 +50,7 @@ def _geo(db, *, require_physical=False):
 def _set_point(db, producer, coords):
     """Force the producer's own lat/lng mirror (make_producer defaults to TLV,
     which would mask the location-driven distance)."""
-    producer.lat, producer.lng = (coords if coords else (None, None))
+    producer.lat, producer.lng = coords if coords else (None, None)
     db.commit()
 
 
@@ -77,7 +77,7 @@ def test_distance_is_nearest_location_not_primary_or_own_point(db):
     p = make_producer(db)
     _set_point(db, p, FAR)
     _add_location(db, p, MID, is_primary=True)  # primary is far
-    _add_location(db, p, NEAR)                  # a non-primary point is nearest
+    _add_location(db, p, NEAR)  # a non-primary point is nearest
     db.commit()
 
     results, _ = _geo(db)
@@ -108,11 +108,7 @@ def test_location_with_lat_but_null_lng_is_excluded_no_crash(db):
     producer whose only geo signal is that broken row drops out cleanly."""
     p = make_producer(db)
     _set_point(db, p, None)  # no own point either
-    db.add(
-        ProducerLocation(
-            producer_id=p.id, kind="pickup", lat=NEAR[0], lng=None
-        )
-    )
+    db.add(ProducerLocation(producer_id=p.id, kind="pickup", lat=NEAR[0], lng=None))
     db.commit()
 
     results, total = _geo(db)  # must not raise
@@ -125,7 +121,7 @@ def test_radius_matches_if_any_location_in_range(db):
     """One far location + one near location → the producer matches (any-in-range)."""
     p = make_producer(db)
     _set_point(db, p, FAR)
-    _add_location(db, p, MID)   # out of the 25 km radius
+    _add_location(db, p, MID)  # out of the 25 km radius
     _add_location(db, p, NEAR_2)  # in range
     db.commit()
 

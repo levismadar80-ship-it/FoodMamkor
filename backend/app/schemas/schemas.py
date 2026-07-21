@@ -429,13 +429,12 @@ class ProducerLocationOut(BaseModel):
     lat: float | None = None
     lng: float | None = None
     is_primary: bool = False
-    precision: str = Field(
-        default="exact",
-        validation_alias="location_precision",
-        serialization_alias="precision",
-    )
+    # Field name matches the ORM attribute (from_attributes reads it directly);
+    # serialization_alias emits the epic's contract key `precision` on the wire
+    # (FastAPI dumps response models with by_alias=True).
+    location_precision: str = Field(default="exact", serialization_alias="precision")
 
-    model_config = {"from_attributes": True, "populate_by_name": True}
+    model_config = {"from_attributes": True}
 
 
 # --- Product ---
