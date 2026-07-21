@@ -13,6 +13,15 @@
 - **Gates:** build exit 0 · full vitest 1437 pass / 10 skip · RTL clean (the 2 scan hits are pre-existing `MapPane.jsx` map controls, untouched) · lucide 0 · no "יצרן" · en-parity green.
 - **VRT note:** home + /map chip rows change pixels (new label + icons); E2E/VRT is not a required gate (testing.md — E2E gate not wired to ruleset). Baseline regen for `/` + `/map` is a follow-up if the parity suite is run; not blocking merge.
 - **Next:** Sapir mobile-QA the preview, then merge. `Closes MEH-1418`.
+## 2026-07-21 — MEH-1417 — privacy: home-experience map pin leaked residence to strangers (YELLOW)
+
+- **Shipped:** closed a location-privacy leak MEH-1404 opened. The public experience-detail serializer nulled only the street `address` for strangers, not `lat`/`lng` — and MEH-1404's new MiniMap draws a precise pin from those coords, so a `location_type=="home"` experience exposed the host's residence despite the address being hidden. **Backend-only, single serializer.**
+- **Fix (`backend/app/routers/experiences.py`, `get_experience`):** inside the existing `if not (is_owner or is_admin):` block (`:188-194`), when `ex.location_type == "home"` also `payload["lat"] = None` / `payload["lng"] = None`, adjacent to the address null-out. `public` venues keep coords (pin desired). Owner/admin unchanged (full coords). `_serialize_detail:83-84` is the source of the coords; `_serialize_list` + list endpoint already coord-free (verified, untouched). Events untouched by design (no hiding-promise there).
+- **Frontend:** no logic change — `ExperienceDetailClient.jsx:184` gates the MiniMap purely on `ex.lat != null && ex.lng != null`, so server-side nulling removes the pin. Only corrected the stale MEH-1404 comment above that block.
+- **Tests:** NEW `TestExperiencePinPrivacy` in `tests/test_experiences.py` (stranger+home → lat/lng/address all None · stranger+public → coords present · owner+home → coords · admin+home → coords). pytest → CI (sandbox no backend deps, MEH-360).
+- **Verify:** py_compile ✓ · ruff clean · `npm run build` exit 0. Playwright self-QA @375 (`next start`, `/api/experiences/{id}` route-mocked): stranger+home → 0 `.leaflet-container` (no pin) · stranger+public → 1 (pin) → `qa-artifacts/MEH-1417/` (2 WebP, 56 KB).
+- **Left for Sapir:** post-deploy staging spot-check — a stranger opening a home experience sees no map; a public-venue experience still shows the pin.
+- **Branch:** `feature/meh-1417-experience-pin-privacy` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate). PR auto-merge on green (YELLOW).
 
 ## 2026-07-21 — MEH-1398 — RESUMED + FINISHED; DO-NOT-MERGE stripped; awaiting Sapir merge call.
 
