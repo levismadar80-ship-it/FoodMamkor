@@ -11,6 +11,7 @@ import { Leaf, Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
+import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
@@ -51,6 +52,10 @@ const EMPTY = {
   location_type: "home",
   city: "",
   address: "",
+  // MEH-1404: coords from AddressSearch pick (null when free-text only).
+  // Backend ExperienceCreate accepts lat/lng (schemas.py:1465).
+  lat: null,
+  lng: null,
   price_per_person: "",
   max_participants: "",
   requirements: "",
@@ -173,6 +178,9 @@ export default function NewExperienceClient() {
       location_type: form.location_type,
       city: form.city || null,
       address: form.address || null,
+      // MEH-1404: coords when a suggestion was picked; null for free-text.
+      lat: form.lat ?? null,
+      lng: form.lng ?? null,
       price_per_person: form.price_per_person
         ? Number(form.price_per_person)
         : null,
@@ -367,13 +375,26 @@ export default function NewExperienceClient() {
               placeholder={t("field_city_placeholder")}
             />
           </Field>
-          <Input
-            label={t("field_address")}
-            type="text"
-            value={form.address}
-            onChange={setField("address")}
-            placeholder={t("field_address_placeholder")}
-          />
+          <Field label={t("field_address")}>
+            {/* MEH-1404: AddressSearch fills address text (onChange) + lat/lng
+                (onSelect). Free-text still allowed — coords stay null unless a
+                suggestion is picked. REUSES: edit/cards.jsx LocationCard pattern. */}
+            <AddressSearch
+              id="new-experience-address"
+              label={t("field_address")}
+              value={form.address}
+              onChange={(val) => setForm((f) => ({ ...f, address: val }))}
+              onSelect={(picked) =>
+                setForm((f) => ({
+                  ...f,
+                  address: picked.street || picked.displayName || f.address,
+                  lat: picked.lat ?? null,
+                  lng: picked.lng ?? null,
+                }))
+              }
+              placeholder={t("field_address_placeholder")}
+            />
+          </Field>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

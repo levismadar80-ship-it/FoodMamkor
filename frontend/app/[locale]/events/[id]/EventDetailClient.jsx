@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
@@ -11,6 +12,10 @@ import { formatEventDate } from "@/lib/format-date";
 import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
+
+// MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
+// that carry coords. ssr:false — leaflet touches window at module eval.
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 const DETAIL_DATE_OPTIONS = {
   weekday: "long",
@@ -131,6 +136,14 @@ export default function EventDetailClient() {
             </p>
           )}
         </div>
+
+        {/* MEH-1404: map + navigation buttons when the event has coordinates.
+            Without coords the location line above stays text-only (unchanged). */}
+        {event.lat != null && event.lng != null && (
+          <div className="mb-6">
+            <MiniMap lat={event.lat} lng={event.lng} name={event.title} />
+          </div>
+        )}
 
         {event.description && (
           <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-text/90">
