@@ -898,13 +898,19 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.owner_story");
   const [bio, setBio] = useState(profile.owner_bio || "");
   const [savedBio, setSavedBio] = useState(profile.owner_bio || "");
+  // MEH-1385 addendum (MEH-1392 F2): contact_name was public-read on OwnerCard
+  // but admin-write only. Same OwnerCard surface → folded into this card. The
+  // field is already in _PRODUCER_WRITABLE_FIELDS (producer_me.py), so it rides
+  // the same explicit PUT as the bio.
+  const [contactName, setContactName] = useState(profile.contact_name || "");
+  const [savedContactName, setSavedContactName] = useState(profile.contact_name || "");
   const [photoUrl, setPhotoUrl] = useState(profile.owner_photo_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const dirty = bio !== savedBio;
+  const dirty = bio !== savedBio || contactName !== savedContactName;
   useEffect(() => {
     reportDirty("ownerStory", dirty);
     return () => reportDirty("ownerStory", false);
@@ -937,14 +943,17 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     setSaving(true);
     setError("");
     const owner_bio = bio.trim() || null;
+    const contact_name = contactName.trim() || null;
     try {
-      await api.put("/producers/me", { owner_bio });
-      onSave({ owner_bio });
+      await api.put("/producers/me", { owner_bio, contact_name });
+      onSave({ owner_bio, contact_name });
       // Track (and show) the normalized value that was actually persisted —
       // storing the raw textarea value would leave a phantom-dirty gap when
       // the input carried trailing whitespace (PR review nit).
       setBio(owner_bio ?? "");
       setSavedBio(owner_bio ?? "");
+      setContactName(contact_name ?? "");
+      setSavedContactName(contact_name ?? "");
       setSaved(true);
     } catch {
       setError(t("error_save"));
@@ -956,6 +965,21 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     <div className="space-y-4">
       {/* Card chrome + heading live in the EditAccordionCard header (MEH-1116). */}
       <p className="text-xs text-fg-muted">{t("intro")}</p>
+
+      {/* MEH-1385 addendum: contact person name — public on OwnerCard, was
+          admin-only until now (MEH-1392 F2). Saved with the bio on one PUT. */}
+      <Input
+        type="text"
+        label={t("contact_label")}
+        value={contactName}
+        maxLength={200}
+        onChange={(e) => {
+          setContactName(e.target.value);
+          setSaved(false);
+        }}
+        placeholder={t("contact_placeholder")}
+        data-testid="owner-contact-name-input"
+      />
 
       {/* Photo — locked spec label (photo_label). Square face-gravity crop is
           server-side; the round preview mirrors the public OwnerCard avatar. */}
