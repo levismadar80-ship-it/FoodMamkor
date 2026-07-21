@@ -1,6 +1,7 @@
 "use client";
 
-import { Truck, Package } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Truck, Package, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { formatPrice } from "@/lib/utils";
@@ -13,6 +14,9 @@ import { groupDeliveryAreas } from "@/lib/deliveryGroups";
  * States:
  *   nationwide=true         → "משלוחים לכל הארץ" badge; with an exclusion
  *                             list (MEH-1255) → "משלוחים לכל הארץ (למעט …)"
+ *   areas all city-only     → COMPACT list (MEH-1435): flex-wrap, Hebrew a→ז,
+ *                             middot-separated; >15 cities → preview 15 + a
+ *                             "show more/less" toggle. No min_order/day anywhere.
  *   areas.length > 0        → dispatch-day PIVOT (MEH-1305 A) via
  *                             groupDeliveryAreas: one shared day hoisted to a
  *                             subline, 2+ days grouped under day headers, and a
@@ -59,10 +63,59 @@ function AreaGroup({ label, rows, t }) {
   );
 }
 
+// MEH-1435: when every area carries a city name ONLY (no min_order, no
+// delivery_day) the editorial rows waste vertical space — replace them with a
+// compact flex-wrap list, sorted Hebrew a→ז, middot-separated. Over 15 cities
+// a preview of 15 + a "show more/less" toggle keeps the block short (progressive
+// disclosure — never hides cities behind search/accordion).
+const CITY_PREVIEW_LIMIT = 15;
+
+function CompactCities({ areas, t }) {
+  const [expanded, setExpanded] = useState(false);
+  const sorted = [...areas].sort((a, b) => a.city.localeCompare(b.city, "he"));
+  const overLimit = sorted.length > CITY_PREVIEW_LIMIT;
+  const visible = expanded || !overLimit ? sorted : sorted.slice(0, CITY_PREVIEW_LIMIT);
+  const hiddenCount = sorted.length - CITY_PREVIEW_LIMIT;
+  return (
+    <div className="mb-4">
+      <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text">
+        {visible.map((da, i) => (
+          <li key={da.id ?? da.city} className="flex items-center gap-x-2">
+            {i > 0 && (
+              <span aria-hidden="true" className="text-fg-muted">
+                ·
+              </span>
+            )}
+            <span>{da.city}</span>
+          </li>
+        ))}
+      </ul>
+      {overLimit && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
+        >
+          {expanded ? t("show_less") : t("show_all", { count: hiddenCount })}
+          {expanded ? (
+            <CaretUp size={16} aria-hidden="true" />
+          ) : (
+            <CaretDown size={16} aria-hidden="true" />
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function DeliveryBlock({ nationwide, excluded = [], areas = [], pickup = false, producer }) {
   const t = useTranslations("group_buys.delivery");
   const hasAreas = areas.length > 0;
-  const grouped = hasAreas ? groupDeliveryAreas(areas) : null;
+  // MEH-1435: city-only areas (no minimum, no dispatch day) render as a compact
+  // list; anything info-bearing keeps the MEH-1305 editorial rows unchanged.
+  const bare = hasAreas && areas.every((da) => !da.min_order && !da.delivery_day);
+  const grouped = hasAreas && !bare ? groupDeliveryAreas(areas) : null;
   // MEH-1255: nationwide delivery with an exclusion list.
   const hasExclusions = nationwide && excluded.length > 0;
   return (
@@ -79,6 +132,8 @@ export default function DeliveryBlock({ nationwide, excluded = [], areas = [], p
             ? t("nationwide_except", { cities: excluded.join(", ") })
             : t("nationwide")}
         </span>
+      ) : bare ? (
+        <CompactCities areas={areas} t={t} />
       ) : hasAreas ? (
         <div className="mb-4">
           {/* MEH-1305 A — dispatch-day pivot. hoist: one shared day stated once

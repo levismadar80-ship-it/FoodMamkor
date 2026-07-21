@@ -1017,7 +1017,9 @@
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "order_cta": "שליחת הודעה בוואטסאפ",
-      "pickup": "איסוף עצמי"
+      "pickup": "איסוף עצמי",
+      "show_all": "הצג עוד {count} ערים",
+      "show_less": "הצג פחות"
     },
     "friday_delivery": {
       "today": "היום",
