@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1423 — FilterSheet row+Switch layout; subtext narrowed to 3 terms (GREEN/LOW) — PR opened, awaiting Sapir merge
+
+- **Sequence flip (Sapir 21/07 eve):** MEH-1423 runs FIRST, MEH-1368 (map filter-bar consolidation) runs after and adapts. GATE re-verified: **no MEH-1368 code in git** (no commit/branch/PR). `FilterChipsBar.jsx` was off-limits and untouched.
+- **Shipped:** branch `feature/meh-1423-filtersheet-row-layout` off `origin/staging`. `FilterSheet.jsx` internal layout only: MEH-1418's 7 chip-button+paragraph stacks → 7 full-width `role="switch"` rows (icon+label at inline-start, Switch at inline-end, `min-h-[44px]` whole-row hit area, `divide-y` hairlines). Subtext kept for **only** כשרות מאומתת · גראס פד · רישוי מאומת (the 3 unfamiliar terms), dropped from the 4 everyday toggles — **zero copy edits**, still byte-identical `BADGE_CONFIG` tooltips (ADR-022 / MEH-1087). Switch reuses `AlertPrefsPanel.jsx:165-186` (knob `start-1`→`end-1`, RTL-safe, no new global primitive). chipState/apply/clear/focus-trap/Escape/drag-close/z-[1200]/portal unchanged.
+- **Scope call (Sapir-approved this session):** the new switch/aria-checked contract broke `FilterSheet.test.jsx` (asserted old button/aria-pressed/7-subtext). Updated the **colocated** test to the new contract — the only file touched beyond `FilterSheet.jsx` + append-only docs. FilterChipsBar / BADGE_CONFIG / MEH-1368 files all untouched.
+- **Gates:** `npm run build` exit 0 · vitest **49/49** (FilterSheet + mapChips + ChipScrollRow). Self-QA Playwright @375 (mobile sheet fits one viewport — 650px/812px, no scroll, 3 subtexts, 7 switches, active knob at inline-end) + @1280 (anchored panel) → `qa-artifacts/MEH-1423/` (2 WebP, 52 KB). No `he.json`/`en.json` change → no VRT baseline regen (the `map.png` VRT captures the closed /map; the sheet is interaction-only).
+- **Next:** Sapir mobile-QA the Vercel preview (iOS Safari + Chrome), then merge. **DO NOT merge (per dispatch).** `Closes MEH-1423`. Then MEH-1368 can start and adapt to the merged FilterSheet.
+
 ## 2026-07-21 — MEH-1419 — Experience.is_active reversible cancel (RED · Alembic, HARD STOP)
 
 - **Status: migration awaiting Sapir's manual apply.** PR #2019 (draft, off `origin/staging`). The Alembic revision `e4a1c7b9d2f5` (`down_revision = a9f4c2e7b1d3` — current single head, resolved past the `b7e2a4c9d1f6` merge node) was **generated and shown for review, NOT applied**. CC did not run `alembic upgrade` and did not edit `main.py` (MEH-267). **Next step for Sapir:** review the revision file → `alembic upgrade head` on the staging DB → then the endpoints querying the column go live.
