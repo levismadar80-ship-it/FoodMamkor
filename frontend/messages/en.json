@@ -4196,6 +4196,8 @@
       "loading": "Loading…",
       "heading": "Notify me when…",
       "close_aria": "Close",
+      "group_what": "When to notify you?",
+      "group_how": "How to receive?",
       "row_new_event": "New events",
       "row_new_product": "New products",
       "row_delivery_area": "New delivery areas",
