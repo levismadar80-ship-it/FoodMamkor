@@ -2290,7 +2290,8 @@
       "error_title_short": "Title is too short",
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
-      "error_generic": "Error submitting the experience. Please try again."
+      "error_generic": "Error submitting the experience. Please try again.",
+      "save_cta": "Save"
     }
   },
   "errors": {
@@ -3824,6 +3825,14 @@
         "reviews": {
           "title": "Reviews",
           "sub": "View reviews and reply to customers"
+        },
+        "manage_events": {
+          "title": "My events",
+          "sub": "View, edit and cancel events"
+        },
+        "manage_experiences": {
+          "title": "My experiences",
+          "sub": "View, edit and delete experiences"
         }
       },
       "pulse": {
@@ -4179,6 +4188,40 @@
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
         "empty": "No kosher badge yet. You can request one here."
+      },
+      "manage_events": {
+        "heading": "My events",
+        "create_cta": "New event",
+        "empty": "You haven't created any events yet. Tap \"New event\" to start.",
+        "loading": "Loading…",
+        "back": "← Back to my events",
+        "edit_heading": "Edit event",
+        "not_found": "Event not found.",
+        "badge_active": "Active",
+        "badge_inactive": "Canceled",
+        "action_edit": "Edit",
+        "action_cancel": "Cancel",
+        "action_activate": "Reactivate",
+        "action_delete": "Delete",
+        "action_error": "Action failed. Please try again.",
+        "delete_confirm": "Delete the event \"{title}\"? This cannot be undone."
+      },
+      "manage_experiences": {
+        "heading": "My experiences",
+        "create_cta": "New experience",
+        "empty": "You haven't created any experiences yet. Tap \"New experience\" to start.",
+        "loading": "Loading…",
+        "back": "← Back to my experiences",
+        "edit_heading": "Edit experience",
+        "not_found": "Experience not found.",
+        "action_edit": "Edit",
+        "action_delete": "Delete",
+        "action_error": "Action failed. Please try again.",
+        "delete_confirm": "Delete the experience \"{title}\"? This cannot be undone.",
+        "status_pending": "Under review",
+        "status_approved": "Approved",
+        "status_rejected": "Rejected",
+        "status_changes_requested": "Changes requested"
       }
     }
   },
@@ -4276,7 +4319,9 @@
       "field_city_placeholder": "Search a city…",
       "field_location_simple_placeholder": "At our farm / full address",
       "field_price_label_full": "Price (0 = free)",
-      "field_max_participants_label_full": "Max participants"
+      "field_max_participants_label_full": "Max participants",
+      "save": "Save",
+      "saving": "Saving…"
     }
   },
   "settings": {

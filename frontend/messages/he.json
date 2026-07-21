@@ -2311,7 +2311,8 @@
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
-      "error_generic": "שגיאה בשליחת החוויה. נסו שוב."
+      "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
+      "save_cta": "שמירה"
     }
   },
   "errors": {
@@ -3845,6 +3846,14 @@
         "reviews": {
           "title": "ביקורות",
           "sub": "צפייה בביקורות ומענה ללקוחות"
+        },
+        "manage_events": {
+          "title": "האירועים שלי",
+          "sub": "צפייה, עריכה וביטול אירועים"
+        },
+        "manage_experiences": {
+          "title": "החוויות שלי",
+          "sub": "צפייה, עריכה ומחיקה של חוויות"
         }
       },
       "pulse": {
@@ -4200,6 +4209,40 @@
         "status_pending": "ממתינה לאישור",
         "status_rejected": "נדחתה",
         "empty": "עוד אין תג כשרות לעסק. אפשר לבקש אחד כאן."
+      },
+      "manage_events": {
+        "heading": "האירועים שלי",
+        "create_cta": "אירוע חדש",
+        "empty": "עדיין לא יצרת אירועים. לחצי על \"אירוע חדש\" כדי להתחיל.",
+        "loading": "טוען…",
+        "back": "← חזרה לאירועים שלי",
+        "edit_heading": "עריכת אירוע",
+        "not_found": "האירוע לא נמצא.",
+        "badge_active": "פעיל",
+        "badge_inactive": "מבוטל",
+        "action_edit": "עריכה",
+        "action_cancel": "ביטול",
+        "action_activate": "הפעלה",
+        "action_delete": "מחיקה",
+        "action_error": "הפעולה נכשלה. נסי שוב.",
+        "delete_confirm": "למחוק את האירוע \"{title}\"? הפעולה בלתי הפיכה."
+      },
+      "manage_experiences": {
+        "heading": "החוויות שלי",
+        "create_cta": "חוויה חדשה",
+        "empty": "עדיין לא יצרת חוויות. לחצי על \"חוויה חדשה\" כדי להתחיל.",
+        "loading": "טוען…",
+        "back": "← חזרה לחוויות שלי",
+        "edit_heading": "עריכת חוויה",
+        "not_found": "החוויה לא נמצאה.",
+        "action_edit": "עריכה",
+        "action_delete": "מחיקה",
+        "action_error": "הפעולה נכשלה. נסי שוב.",
+        "delete_confirm": "למחוק את החוויה \"{title}\"? הפעולה בלתי הפיכה.",
+        "status_pending": "בבדיקה",
+        "status_approved": "מאושרת",
+        "status_rejected": "נדחתה",
+        "status_changes_requested": "נדרשים תיקונים"
       }
     }
   },
@@ -4297,7 +4340,9 @@
       "field_city_placeholder": "חפשו עיר...",
       "field_location_simple_placeholder": "בחווה שלנו / כתובת מלאה",
       "field_price_label_full": "מחיר (0 = חינם)",
-      "field_max_participants_label_full": "מקסימום משתתפים"
+      "field_max_participants_label_full": "מקסימום משתתפים",
+      "save": "שמירה",
+      "saving": "שומרת…"
     }
   },
   "settings": {
