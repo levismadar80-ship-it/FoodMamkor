@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-918 — soft-404 spike → unmatched-route portion landed; matched-route fix split to MEH-1398 (PR #1995, auto-merge)
+
+- **What:** enabled `experimental.globalNotFound` (one-key diff in `frontend/next.config.js`) + added `frontend/app/global-not-found.js` (Next 16 global 404 boundary; self-owned `<html>/<body>` + hardcoded copy like `global-error.js`, since next-intl can't be used at a boundary that replaces the root layout; branded + auto-noindex). Branch `feature/meh-918-real-404` off `origin/staging` (the harness `claude/*` branch would fail the MEH-1141 branch-name gate).
+- **Spike result (measured, `next build && next start`, `curl -I`, `/en/*` = clean signal, no locale redirect):** truly-unmatched routes (`/en/foo/bar/baz`, `/en/zzz/deep/unmatched`) → **404 ✓** via global-not-found; matched-route `notFound()` (`/en/__nope`, `/en/producer/<bad-uuid>`) → **still 200**. **Control experiment:** removed `[locale]/not-found.js` so global-not-found was the *sole* boundary, rebuilt → matched routes **still 200**. Proves the soft-404 is a **streaming artifact** (`[locale]/loading.js` + layout shell flush a 200 before `notFound()` throws mid-render), NOT a not-found-boundary problem → `globalNotFound` cannot fix the matched case. (Restored `[locale]/not-found.js` from git after the experiment; working tree clean.)
+- **Decision (Sapir, 21/07):** land Option 2 — the unmatched-route robustness + auto-noindex only. The matched-route hard-404 (pre-streaming `notFound()` in `generateMetadata`, extends MEH-1045; SEO trade-off vs MEH-476 hreflang-on-404, and those 200s already carry `robots: noindex`) is deferred to a fresh ticket.
+- **New ticket:** **MEH-1398** (YELLOW, central) carries the real matched-route fix — full measured evidence + draft CC prompt baked in. Sapir dispatches fresh after usage reset. Do NOT stack it on #1995.
+- **Verify:** `npm run build` green. DoD exception: no visual change → verification = status codes (`curl -I`), not mobile screenshots. `Refs MEH-918`.
+
 ## 2026-07-20 — MEH-1392 — producer write-surface gap audit (read-only, docs-only)
 
 - **What:** systematic map of "backend/data exists — producer has no write-UI" gaps. Output: `docs/audits/2026-07-producer-write-surface-gaps.md`. Zero code edits.
