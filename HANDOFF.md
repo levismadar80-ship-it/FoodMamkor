@@ -3,6 +3,38 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1404 — precise address for events + experiences (AddressSearch in forms, MiniMap+Waze in detail)
+
+- **Shipped:** wired the already-present backend `lat`/`lng` into the event + experience create forms and detail pages. **Frontend only, zero backend, zero new i18n keys** (reused `field_location_label`/`field_address` + MiniMap's `map.mini.*`).
+- **Chunk A (events):** `events/new/page.js` — location field swapped `Input` → `<AddressSearch>` (onChange = free text, onSelect = lat/lng); `lat/lng:null` added to state; payload already spreads `...form` so coords ride along. `EventDetailClient.jsx` — `dynamic(...MiniMap, {ssr:false})`, renders `<MiniMap>` when `event.lat && event.lng`, else text-only unchanged.
+- **Chunk B (experiences):** `NewExperienceClient.jsx` — address field → `<AddressSearch>` inside `<Field>`, `lat/lng` added to EMPTY + payload. `ExperienceDetailClient.jsx` — same MiniMap block.
+- **Privacy note (existing surface, not a change):** experiences return `lat/lng` publicly and gate only the street `address` to owner/admin (`experiences.py:189`) — strangers see the pin, not the exact address text. Consistent with the acceptance ("MiniMap when coords exist").
+- **Verify:** NEW `__tests__/EventExperienceAddress.test.jsx` (3/3 — event pick→lat/lng in POST · event free-text→null · experience pick→lat/lng in POST; AddressSearch mocked per `EditTabLocationCard.test.jsx`). build ✓, eslint 0 errors, 0 physical RTL. Playwright @375/@1440: event w/coords → MiniMap+Waze/Google · event no-coords → text-only (no map) · experience w/coords → MiniMap+Waze/Google → `qa-artifacts/MEH-1404/` (WebP 176 KB; OSM tiles gray in sandbox = network-blocked, load on real deploy).
+- **Left for Sapir:** mobile QA on the Vercel preview — create an event/experience with a picked address, confirm the pin + Waze/Google buttons on the detail page; free-text address stays map-less.
+- **Branch:** `feature/meh-1404-event-experience-address` off `origin/staging`. PR auto-merge on green (YELLOW).
+## 2026-07-21 — MEH-1410 — ChatWidget restored to desktop-only (≥768px)
+
+- **Shipped:** gated the whole ChatWidget on the existing `isDesktop` matchMedia state — `if (!isDesktop) return null;` (`ChatWidget.jsx`), after every hook and before any JSX. Mobile (< 768px) no longer mounts the FAB/panel (it competed for the bottom-end corner with BottomNav pill / cookie banner). Desktop behavior byte-identical — the sole non-comment diff is that one gate line.
+- **Files:** `frontend/components/ChatWidget.jsx` (gate + doc/comment updates; `MOBILE_LAUNCHER_BOTTOM` retained-but-unreachable per MEH-1410). NEW `__tests__/ChatWidgetDesktopOnly.test.jsx` (mobile→empty DOM, desktop→launcher present).
+- **Verify:** `npm run build` exit 0 · vitest 9/9 (`ChatWidgetDesktopOnly` 2 + `ChatWidgetLazy` 7). GREEN tier — auto-merge on CI green. Second of the 1409/1410/1411 UX-polish batch (MEH-1409 merged as PR #2010).
+- **Branch:** `feature/meh-1410-chatwidget-desktop-only` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
+
+## 2026-07-21 — MEH-1409 — hero secondary links symmetry (Shuffle icon removed)
+
+- **Shipped:** removed the Phosphor `Shuffle` icon from the "הפתיעו אותי" hero text link (`HomeHero.jsx`) so it and "איך זה עובד" are identical-weight text links (same font/underline/spacing). Post-MEH-1369 the surprise link still carried the icon + `inline-flex gap` classes and read heavier. Style-only, one production file.
+- **Files:** `frontend/app/[locale]/home/HomeHero.jsx` (dropped `<Shuffle>` element + icon-layout classes + `Shuffle` import; className now byte-identical to how-it-works). Test: `__tests__/HomeHeroSurprise.test.jsx` render case flipped to assert the icon is **absent**.
+- **Verify:** `npm run build` exit 0 · vitest `HomeHeroSurprise` 3/3. GREEN tier — auto-merge on CI green. First of the 1409/1410/1411 UX-polish batch.
+- **Branch:** `feature/meh-1409-hero-links-symmetry` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
+## 2026-07-21 — MEH-1406 — kill-switch home-products API (unmount router + remove admin moderation tabs)
+
+- **Shipped:** unmounted the dead-but-live "מהמטבח של השכן" API. `router_registry.py:54` include commented out (+ dropped from import tuple) → all public `/home-products*` (GET/POST/PUT/DELETE) now 404. The live write hole this closed: any verified-email user could `POST /home-products` an unlicensed home listing on a licensing-only platform (`home_products.py:199`). **Reversible unmount — zero Alembic, models/schemas/tables retained.**
+- **Admin surface:** removed the 6 `/admin/home-products/*` endpoints from `admin.py` (hidden/restore/delete/flagged/approve/remove, was 720-848) + the orphaned `RemoveListingBody` import. **`/admin/stats` (`admin.py:912`) still reads `HomeProduct` counts — kept: it's a stats endpoint, not a `/home-products` endpoint, and removing the count fields = scope creep + response-shape change.** `admin_extra.py:569-635` (stats-only HomeProduct counts) also left untouched, same reasoning.
+- **Frontend:** `admin/reports/page.js` reduced to reports-only — deleted the "בבדיקה" (flagged) + "מוסתרים" (hidden) tabs with all their state/effects/handlers/dialogs/imports (`CheckCircle/Warning/Lightbulb`, `formatPrice`). User-reports tab unchanged (suspend + dismiss-confirm), still hits only the 3 real routes.
+- **Tests (skip-with-reason, not deletion — matches the reversible-unmount intent):** `test_api.py` 4 endpoint tests `@pytest.mark.skip(reason="feature disabled MEH-1406")`; `test_expansion_admin_authz.py` dropped the 4 `/admin/home-products/*` rows (now 404 → no guard to regression-test). `test_analytics.py:298` (builds `HomeProduct` via `db.add`, hits the untouched `/producers/me/analytics`) + all schema/service tests unaffected — kept.
+- **Verify:** py_compile ✓ · ruff clean · `check_api_contract` 0 orphan-frontend / 0 method-mismatch · `npm run build` ✓ · eslint 0 errors · vitest `AdminNullGuards` 6/6. pytest → CI (sandbox has no backend deps, MEH-360). Playwright self-QA @375/@1440 of `/admin/reports` (auth + reports route-mocked) confirms reports-only render, no tab bar → `qa-artifacts/MEH-1406/` (WebP, 66 KB). `curl /home-products → 404` smoke deferred to Sapir (Railway egress blocked from sandbox).
+- **Left for Sapir:** post-deploy staging smoke — `curl -I https://staging.mehamakor.online/home-products` expect 404; admin `/reports` shows the user-reports tab only.
+- **Branch:** `feature/meh-1406-home-products-killswitch` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate). PR auto-merge on green (YELLOW).
+
 ## 2026-07-21 — MEH-1396 — admin pre-approval review checklist (Phase 1, static config)
 
 - **Shipped:** a collapsible 7-item review checklist (RTL) on each pending-producer row in the admin producers table, moving `docs/VERIFICATION.md` §2 knowledge in front of the admin at approval time. Clicking "אשר" with unticked items → soft confirm dialog ("נשארו X סעיפים…" · אשרי בכל זאת / חזרה לבדיקה); all ticked → approve straight through. **Session-local React state only — no persistence, no schema, no API.**

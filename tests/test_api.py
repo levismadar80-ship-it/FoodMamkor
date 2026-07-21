@@ -3374,6 +3374,7 @@ class TestSanitizationIntegration:
         assert "</script>" not in (row.description or "")
         assert "טקסט נקי" in (row.description or "")
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_home_product_description_sanitized(self, client, db, monkeypatch):
         from app.models.models import HomeProduct
         # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
@@ -3720,6 +3721,40 @@ class TestAppleTokenVerification:
 # MEH-386: BOLA regression tests
 # ---------------------------------------------------------------------------
 
+class TestHomeProductsKillSwitch:
+    """MEH-1406: the home-products feature is unmounted (router not included,
+    admin endpoints removed). These POSITIVE assertions prove the public +
+    admin surfaces 404 — they encode the ticket's core acceptance criterion
+    ("all /home-products* endpoints return 404") as a runnable guard, and will
+    fail loudly if the router is ever re-mounted WITHOUT also un-skipping the
+    BOLA / sanitization tests below (silent-guard-loss guard).
+    """
+
+    def test_public_home_products_list_is_404(self, client):
+        assert client.get("/home-products").status_code == 404
+
+    def test_public_home_product_create_is_404(self, client, db):
+        # A verified-email user previously could POST here (the write hole
+        # MEH-1406 closed). The route no longer exists → 404 regardless of auth.
+        user = make_user(db, email="killswitch@example.com")
+        resp = client.post(
+            "/home-products",
+            json={"title": "עוגה", "description": "טעימה", "price": "25"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 404
+
+    def test_admin_home_products_flagged_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin@example.com", role="admin")
+        resp = client.get("/admin/home-products/flagged", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+    def test_admin_home_products_hidden_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin2@example.com", role="admin")
+        resp = client.get("/admin/home-products/hidden", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+
 class TestBOLA:
     """Regression suite for MEH-386 — Broken Object Level Authorization.
 
@@ -3728,6 +3763,7 @@ class TestBOLA:
       2. POST /category-requests accepted spoofed producer_id from anonymous callers.
     """
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
         from app.models.models import HomeProduct
@@ -3753,6 +3789,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}")
         assert resp.status_code == 404
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
         """Owner of a hidden listing can still view it."""
         from app.models.models import HomeProduct
@@ -3777,6 +3814,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
         assert resp.status_code == 200
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A deactivated listing (is_active=False) must 404 for anonymous callers."""
         monkeypatch.setattr(
