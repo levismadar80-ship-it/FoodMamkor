@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  BADGE_CONFIG,
   BADGE_PRIORITY,
   allBadges,
   topBadges,
@@ -324,6 +325,32 @@ describe("topBadges", () => {
       "recommended",
       "license",
     ]);
+  });
+});
+
+// MEH-1439: dietary badges light on has_X_products (ANY marked product, MEH-479),
+// so the tooltip must not claim the WHOLE catalog. The old copy over-claimed
+// ("כל המוצרים טבעוניים", "המוצרים מתאימים...") — same over-claim risk family as
+// MEH-1259 organic. New copy = "לעסק יש מוצרים ... מסומנים בקטלוג".
+describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
+  it("vegan tooltip states any-product semantics, not 'all products'", () => {
+    expect(BADGE_CONFIG.vegan.tooltip).toBe(
+      "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+    );
+    expect(BADGE_CONFIG.vegan.tooltip).not.toMatch(/כל המוצרים/);
+  });
+
+  it("gluten_free tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.gluten_free.tooltip).toBe(
+      "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
+    );
+    expect(BADGE_CONFIG.gluten_free.tooltip).not.toMatch(/צליאק/);
+  });
+
+  it("lactose_free tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.lactose_free.tooltip).toBe(
+      "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
+    );
   });
 });
 

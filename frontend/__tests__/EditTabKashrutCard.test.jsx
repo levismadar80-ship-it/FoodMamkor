@@ -119,4 +119,26 @@ describe("Edit-tab KashrutCard (isolation)", () => {
     });
     expect(screen.getByRole("button", { name: K.submit_cta })).toBeEnabled();
   });
+
+  // MEH-1439: free-text kosher that isn't verified earns no public "כשר" filter
+  // appearance (MEH-986). The hint explains why + points at the cert upload.
+  describe("filter hint (MEH-1439)", () => {
+    it("shows the hint when free-text kosher is set AND not verified", async () => {
+      renderCard({ kosher: "חלבי", kashrut_verified_at: null });
+      const hint = await screen.findByTestId("kashrut-filter-hint");
+      expect(hint).toHaveTextContent(K.filter_hint);
+    });
+
+    it("hides the hint once kashrut is verified", async () => {
+      renderCard({ kosher: "חלבי", kashrut_verified_at: "2026-01-01T00:00:00Z" });
+      await waitFor(() => expect(api.get).toHaveBeenCalled());
+      expect(screen.queryByTestId("kashrut-filter-hint")).not.toBeInTheDocument();
+    });
+
+    it("hides the hint when there is no free-text kosher", async () => {
+      renderCard({ kosher: "", kashrut_verified_at: null });
+      await waitFor(() => expect(api.get).toHaveBeenCalled());
+      expect(screen.queryByTestId("kashrut-filter-hint")).not.toBeInTheDocument();
+    });
+  });
 });

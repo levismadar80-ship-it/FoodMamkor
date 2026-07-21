@@ -380,6 +380,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                     <DietChip label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
                     <DietChip label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                   </div>
+                  {/* MEH-1439: tell the owner what marking a diet flag does — it
+                      surfaces the business in the matching public filter. */}
+                  <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
                 </div>
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
@@ -516,6 +519,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <DietChip label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
                 <DietChip label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
               </div>
+              {/* MEH-1439: tell the owner what marking a diet flag does — it
+                  surfaces the business in the matching public filter. */}
+              <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
             </div>
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its

@@ -4194,7 +4194,8 @@
         "error_submit": "Failed to send request — please try again.",
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
-        "empty": "No kosher badge yet. You can request one here."
+        "empty": "No kosher badge yet. You can request one here.",
+        "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification."
       },
       "manage_events": {
         "heading": "My events",
@@ -4411,6 +4412,7 @@
         "diet_gluten_free": "🌾 Gluten-free",
         "diet_vegan": "🥦 Vegan",
         "diet_lactose_free": "🥛 Lactose-free",
+        "diet_helper": "Tagging a product lists your business under the matching filter on the search and map pages.",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",

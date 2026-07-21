@@ -72,22 +72,26 @@ export const BADGE_CONFIG = {
     tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
     color: "muted",
   },
+  // MEH-1439: tooltips state any-product semantics, not an all-products claim.
+  // The badge lights on has_X_products (ANY marked product, MEH-479) — the old
+  // copy ("כל המוצרים", "המוצרים מתאימים") over-claimed the whole catalog (same
+  // over-claim risk family as MEH-1259 organic).
   gluten_free: {
     key: "gluten_free",
     label: "ללא גלוטן",
-    tooltip: "המוצרים מתאימים לאנשים עם צליאק או רגישות לגלוטן.",
+    tooltip: "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
     color: "muted",
   },
   vegan: {
     key: "vegan",
     label: "טבעוני",
-    tooltip: "כל המוצרים טבעוניים — ללא כל מרכיב מן החי.",
+    tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
     color: "muted",
   },
   lactose_free: {
     key: "lactose_free",
     label: "ללא לקטוז",
-    tooltip: "המוצרים מתאימים לאנשים עם אי-סבילות ללקטוז.",
+    tooltip: "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     color: "muted",
   },
   kosher: {
