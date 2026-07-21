@@ -24,32 +24,29 @@ async function getProducerBySlug(slug) {
 
 // MEH-476 PR 3b2: per-page hreflang for producer alias route. D1 title
 // format ({name} | brand) applied per-locale; canonical + languages from
-// buildAlternates. 404 returns notFound metadata with self-canonical so
-// crawlers don't ingest a partial signal.
+// buildAlternates. MEH-1398: a missing producer hard-404s via notFound()
+// (real HTTP 404, no metadata) instead of returning noindex+hreflang.
 export async function generateMetadata(props) {
   const params = await props.params;
   const { slug, locale } = params;
   // MEH-1045: notFound() here (pre-streaming) returns a REAL 404 status.
   // A page-level notFound() alone streams a 200 + 404 UI because the
   // [locale] loading.js boundary flushes the shell first — bots would keep
-  // crawling a soft-404. Only scanner-shaped paths get the hard 404;
-  // slug-shaped misses keep the MEH-476 hreflang-carrying 404 metadata.
+  // crawling a soft-404. This scanner-shape guard fast-404s before any fetch.
   if (!isSlugShaped(slug)) notFound();
   const producer = await getProducerBySlug(slug);
   const path = `/${slug}`;
   const alternates = buildAlternates(path, locale);
 
-  if (!producer) {
-    // MEH-641: titleless entity treated as 404; SEO-worthless by design — see ticket for rationale.
-    return {
-      // title.absolute prevents layout's `%s | brand` template double-suffix.
-      title: { absolute: buildEntityTitle(null, locale) },
-      // MEH-476 followup: 404 paths should not be indexed even though
-      // they still emit valid hreflang (so cross-locale 404s are linked).
-      robots: { index: false, follow: false },
-      alternates,
-    };
-  }
+  // MEH-1398: hard-404 for matched-route misses. A slug-shaped-but-missing
+  // producer now throws notFound() from generateMetadata (pre-streaming, same
+  // mechanism as the scanner guard above) → a REAL HTTP 404, closing the
+  // soft-404 (200) measured in the MEH-918 spike (PR #1995). This intentionally
+  // drops the former MEH-476 hreflang-on-404 metadata for the miss — the
+  // approved trade-off (Sapir, 21/07): hreflang belongs on indexed content
+  // pages, not on 404s, and these misses already carried robots:noindex so were
+  // never indexed. hreflang on VALID pages (below) is unchanged.
+  if (!producer) notFound();
 
   const base = buildProducerMetadata(producer);
   return {

@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, serializeJsonLd, buildPageUrl, SITE_URL } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
@@ -21,24 +22,23 @@ async function getProducer(id) {
 // sitemap entry, so the three SEO signals agree instead of self-canonicaling
 // to /producer/{id}. buildPageUrl is the single owner of the slug-vs-id
 // preference; strip SITE_URL to get the relative path buildAlternates expects.
-// 404 (no producer) keeps the /producer/{id} path.
+// MEH-1398: a missing producer hard-404s via notFound() (real HTTP 404, no
+// metadata) instead of returning noindex+hreflang for the /producer/{id} path.
 export async function generateMetadata(props) {
   const params = await props.params;
   const { id, locale } = params;
   const producer = await getProducer(id);
-  const path = producer ? buildPageUrl(producer).replace(SITE_URL, "") : `/producer/${id}`;
-  const alternates = buildAlternates(path, locale);
 
-  if (!producer) {
-    return {
-      // title.absolute prevents layout's `%s | brand` template double-suffix.
-      title: { absolute: buildEntityTitle(null, locale) },
-      // MEH-476 followup: 404 paths should not be indexed even though
-      // they still emit valid hreflang (so cross-locale 404s are linked).
-      robots: { index: false, follow: false },
-      alternates,
-    };
-  }
+  // MEH-1398: hard-404 for matched-route misses. A missing producer now throws
+  // notFound() from generateMetadata (pre-streaming) → a REAL HTTP 404, closing
+  // the soft-404 (200) measured in the MEH-918 spike (PR #1995). Drops the
+  // former MEH-476 hreflang-on-404 metadata — the approved trade-off (Sapir,
+  // 21/07): hreflang belongs on indexed pages, not 404s; these misses already
+  // carried robots:noindex. hreflang on VALID pages (below) is unchanged.
+  if (!producer) notFound();
+
+  const path = buildPageUrl(producer).replace(SITE_URL, "");
+  const alternates = buildAlternates(path, locale);
 
   const base = buildProducerMetadata(producer);
   return {
