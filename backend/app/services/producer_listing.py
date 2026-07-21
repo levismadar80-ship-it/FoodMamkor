@@ -31,13 +31,14 @@ from app.models import (
     DeliveryArea,
     Producer,
     ProducerCategory,
+    ProducerLocation,
     Product,
     SearchQuery,
 )
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
-    haversine_km,
+    haversine_min_km,
 )
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -111,7 +112,12 @@ def _build_base_queries(
     """
     if geo is not None:
         lat, lng, radius_km = geo
-        distance_expr = haversine_km(lat, lng).label("distance_km")
+        # MEH-1402: distance = the NEAREST of the producer's producer_locations
+        # rows (COALESCE fallback to Producer.lat/lng during the Expand
+        # overlap). It's a correlated scalar subquery — NOT a JOIN — so a
+        # 10-location producer stays ONE row and the DISTINCT count below is
+        # one-per-business (the _build_base_queries double-count trap).
+        distance_expr = haversine_min_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
             .options(
@@ -119,6 +125,8 @@ def _build_base_queries(
                 # MEH-18 — batch-load the two collections the badge system counts.
                 selectinload(Producer.products),
                 selectinload(Producer.delivery_areas),
+                # MEH-1402 — serialize locations[] on ProducerListOut w/o N+1.
+                selectinload(Producer.locations),
             )
             .filter(Producer.status == "approved")
         )
@@ -128,22 +136,28 @@ def _build_base_queries(
             .filter(Producer.status == "approved")
         )
         if require_physical:
-            # MEH-213 map-pin semantics: only producers with a physical
-            # location. MEH-1282 makes this opt-in (default OFF) so the home
-            # "קרוב אליי" flow can surface delivery-only producers too. Apply
-            # to BOTH q and count_q — see the 500-bug warning above.
-            q = q.filter(Producer.has_physical_location.is_(True))
-            count_q = count_q.filter(Producer.has_physical_location.is_(True))
-        # Haversine is undefined for NULL coords — exclude them before
-        # applying the distance filter.
-        q = (
-            q.filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
-            .filter(distance_expr <= radius_km)
-            .order_by(distance_expr.asc())
-        )
-        count_q = count_q.filter(
-            Producer.lat.isnot(None), Producer.lng.isnot(None)
-        ).filter(haversine_km(lat, lng) <= radius_km)
+            # MEH-213 map-pin semantics: pinnable producers only. MEH-1282
+            # made this opt-in (default OFF) so the home "קרוב אליי" flow can
+            # surface delivery-only producers too. MEH-1402 scoped reversal: a
+            # delivery-only producer (has_physical_location=false) that owns a
+            # pickup/market_stand location row IS now pinnable (at that point),
+            # while a producer with no such row stays hidden — no blanket
+            # unhide. Applied to BOTH q and count_q (the 500-bug warning above).
+            pinnable = or_(
+                Producer.has_physical_location.is_(True),
+                Producer.locations.any(
+                    ProducerLocation.kind.in_(("pickup", "market_stand"))
+                ),
+            )
+            q = q.filter(pinnable)
+            count_q = count_q.filter(pinnable)
+        # MEH-1402: the coalesced distance is NULL exactly when a producer has
+        # neither a usable location row NOR a Producer.lat/lng point, and
+        # `NULL <= radius` is false — so those drop out without an explicit
+        # coord-IS-NOT-NULL guard (which would wrongly exclude a producer that
+        # has a valid pickup location but no own Producer point).
+        q = q.filter(distance_expr <= radius_km).order_by(distance_expr.asc())
+        count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
 
     order = (
@@ -157,6 +171,8 @@ def _build_base_queries(
             joinedload(Producer.categories),
             selectinload(Producer.products),
             selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] on ProducerListOut (LIST/DETAIL shape parity).
+            selectinload(Producer.locations),
         )
         .filter(Producer.status == "approved")
         .order_by(*order)
