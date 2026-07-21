@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1439 — dietary badge over-claim fix + owner filter-awareness hints (LOW-RISK) — PR open, auto-merge on green
+
+- **Shipped (branch `feature/meh-1439-dietary-semantics` off `origin/staging`):** frontend-only, part 2 of the dietary-filters batch (MEH-1437 → MEH-1439 → MEH-1438). (1) `badges.js` vegan/gluten_free/lactose_free tooltips rewritten from all-catalog claims to any-product semantics ("לעסק יש מוצרים … מסומנים בקטלוג"); badge logic untouched. (2) `ProductsSection.jsx` — muted helper line under the diet-chip group in both add + edit forms (`diet_helper` i18n). (3) `KashrutCard` (`edit/cards.jsx`, the trust-group surface — Phase 0 confirmed the dashboard `page.js` has NO kashrut card) — hint when `profile.kosher?.trim() && !profile.kashrut_verified_at`, `filter_hint` i18n.
+- **Verify:** `npm run build` exit 0 · affected vitest 54 pass (`badges.test.js` +3 exact-copy, `EditTabKashrutCard.test.jsx` +3 hint gate) · en-parity green · RTL logical-only. Self-QA @390 → `qa-artifacts/MEH-1439/` (2 WebP, 135 KB: DietChip helper + kosher hint). Badge-tooltip live shot deferred (producer detail is server-fetched, no sandbox backend — copy is unit-asserted).
+- **Left for Sapir:** mobile QA on the Vercel preview, then it auto-merges on green (LOW-RISK authority). `Closes MEH-1439`.
+- **Batch status:** **MEH-1437 (Phase 1 data-density check) is BLOCKED in the CC sandbox** — no staging DATABASE_URL, no local Postgres, Railway egress blocked (MEH-360). The 3 SQL queries must be run by Sapir. **MEH-1438 (vegetarian flag, HIGH-RISK schema) is GATED on that count** (`vegan+lf+gf products > 0`) — NOT started; awaiting Sapir's numbers + "go".
+
 ## 2026-07-21 — MEH-1419 — Experience.is_active reversible cancel (RED · Alembic, HARD STOP)
 
 - **Status: migration awaiting Sapir's manual apply.** PR #2019 (draft, off `origin/staging`). The Alembic revision `e4a1c7b9d2f5` (`down_revision = a9f4c2e7b1d3` — current single head, resolved past the `b7e2a4c9d1f6` merge node) was **generated and shown for review, NOT applied**. CC did not run `alembic upgrade` and did not edit `main.py` (MEH-267). **Next step for Sapir:** review the revision file → `alembic upgrade head` on the staging DB → then the endpoints querying the column go live.
