@@ -255,6 +255,15 @@ class Producer(Base):
     producer_recipes = relationship(
         "ProducerRecipe", back_populates="producer", cascade="all, delete-orphan"
     )
+    # MEH-1395 (MEH-1388 chunk 1): physical presence points (branches / pickup
+    # points / market stands). Expand-phase data layer only — no serialization
+    # or UI in this chunk. Default (lazy="select") loading is deliberate: an
+    # eager joinedload would fan a producer row out per location and regress
+    # the list/count queries (producer_queries.py Haversine + producer_listing
+    # counts). back_populates + delete-orphan mirrors delivery_areas.
+    locations = relationship(
+        "ProducerLocation", back_populates="producer", cascade="all, delete-orphan"
+    )
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
     __table_args__ = (
@@ -522,6 +531,89 @@ class DeliveryArea(Base):
     delivery_day = Column(String(50))
 
     producer = relationship("Producer", back_populates="delivery_areas")
+
+
+class ProducerLocation(Base):
+    """MEH-1395 (MEH-1388 chunk 1): a physical presence point of a producer —
+    a branch, a self-pickup point, or a market stand. One producer can have
+    many (evidence: "הלחם של גל" self-pickup from 10 points, MEH-1382). This
+    chunk lays the Expand-phase data layer ONLY: no serialization (schemas),
+    no routers, no map/geo query wiring — those are MEH-1388 chunks 2-4.
+
+    Conventions mirrored from the recent child models:
+      - id / producer_id FK CASCADE / created_at / updated_at follow
+        ProducerRecipe (models.py:1328-1365) and DeliveryArea (models.py:511).
+      - `opening_hours` is the SAME unbounded free-text String as
+        Producer.opening_hours (models.py:166, MEH-102) — the ticket asks for
+        parity; not a bounded column.
+      - `kind` / `location_precision` CHECK constraints are declared BOTH here
+        (so a fresh create_all test DB has them) AND mirrored in the paired
+        Alembic revision, matching the Producer MEH-272 precedent
+        (models.py:292-306). Alembic autogenerate does not diff CHECK
+        conditions, so no canonical-form worry (unlike the MEH-291 index
+        predicate at models.py:269-272).
+
+    Delivery *areas* stay in the separate `delivery_areas` table — a delivery
+    zone is not a physical location (MEH-1382 constraint). Paired migration:
+    drafted in the MEH-1395 PR body, committed by Sapir (alembic/versions is
+    CC-deny).
+
+    History: MEH-1395 (creation, chunk 1/5 of the producer_locations epic
+    MEH-1388).
+    """
+
+    __tablename__ = "producer_locations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # branch | pickup | market_stand — CHECK mirrored in the revision.
+    kind = Column(String(20), nullable=False)
+    label = Column(String(200), nullable=True)
+    city = Column(String(100), nullable=True, index=True)
+    address = Column(String(255), nullable=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+    # Same unbounded free-text type as Producer.opening_hours (MEH-102).
+    opening_hours = Column(String, nullable=True)
+    phone = Column(String(20), nullable=True)
+    is_primary = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # exact | approximate — CHECK mirrored in the revision.
+    location_precision = Column(
+        String(20),
+        nullable=False,
+        default="exact",
+        server_default=text("'exact'"),
+    )
+    created_at = Column(
+        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        server_default=text("now()"),
+    )
+
+    producer = relationship("Producer", back_populates="locations")
+
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('branch', 'pickup', 'market_stand')",
+            name="producer_location_kind",
+        ),
+        CheckConstraint(
+            "location_precision IN ('exact', 'approximate')",
+            name="producer_location_precision",
+        ),
+    )
 
 
 class Favorite(Base):
