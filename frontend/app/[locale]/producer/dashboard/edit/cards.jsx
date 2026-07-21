@@ -19,11 +19,14 @@
  *           structured 3-question assist replaces the Instagram scrape.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 // MEH-1306: locale-aware link for the "view on page" back-link below.
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Warning, X, Sparkle, CheckCircle, Eye } from "@phosphor-icons/react";
+// MEH-1167: reuse the public badge strip (+ its CODE_TO_KEY + MEH-1260 expiry
+// gate) for the KashrutCard's "approved" zone — one owner of that render.
+import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -898,13 +901,19 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.owner_story");
   const [bio, setBio] = useState(profile.owner_bio || "");
   const [savedBio, setSavedBio] = useState(profile.owner_bio || "");
+  // MEH-1385 addendum (MEH-1392 F2): contact_name was public-read on OwnerCard
+  // but admin-write only. Same OwnerCard surface → folded into this card. The
+  // field is already in _PRODUCER_WRITABLE_FIELDS (producer_me.py), so it rides
+  // the same explicit PUT as the bio.
+  const [contactName, setContactName] = useState(profile.contact_name || "");
+  const [savedContactName, setSavedContactName] = useState(profile.contact_name || "");
   const [photoUrl, setPhotoUrl] = useState(profile.owner_photo_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const dirty = bio !== savedBio;
+  const dirty = bio !== savedBio || contactName !== savedContactName;
   useEffect(() => {
     reportDirty("ownerStory", dirty);
     return () => reportDirty("ownerStory", false);
@@ -937,14 +946,17 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     setSaving(true);
     setError("");
     const owner_bio = bio.trim() || null;
+    const contact_name = contactName.trim() || null;
     try {
-      await api.put("/producers/me", { owner_bio });
-      onSave({ owner_bio });
+      await api.put("/producers/me", { owner_bio, contact_name });
+      onSave({ owner_bio, contact_name });
       // Track (and show) the normalized value that was actually persisted —
       // storing the raw textarea value would leave a phantom-dirty gap when
       // the input carried trailing whitespace (PR review nit).
       setBio(owner_bio ?? "");
       setSavedBio(owner_bio ?? "");
+      setContactName(contact_name ?? "");
+      setSavedContactName(contact_name ?? "");
       setSaved(true);
     } catch {
       setError(t("error_save"));
@@ -956,6 +968,21 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     <div className="space-y-4">
       {/* Card chrome + heading live in the EditAccordionCard header (MEH-1116). */}
       <p className="text-xs text-fg-muted">{t("intro")}</p>
+
+      {/* MEH-1385 addendum: contact person name — public on OwnerCard, was
+          admin-only until now (MEH-1392 F2). Saved with the bio on one PUT. */}
+      <Input
+        type="text"
+        label={t("contact_label")}
+        value={contactName}
+        maxLength={200}
+        onChange={(e) => {
+          setContactName(e.target.value);
+          setSaved(false);
+        }}
+        placeholder={t("contact_placeholder")}
+        data-testid="owner-contact-name-input"
+      />
 
       {/* Photo — locked spec label (photo_label). Square face-gravity crop is
           server-side; the round preview mirrors the public OwnerCard avatar. */}
@@ -1253,6 +1280,243 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
           {t("save_success")}
         </p>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1167: producer-facing kashrut-request card — closes the verified-only
+// supply gap (MEH-986 removed free-text kosher from every consumer surface, so
+// this request flow is the ONLY way a business appears as kosher). Backend POST
+// lived since MEH-51 with zero callers (MEH-1392 audit F0); this card + the new
+// GET /producers/me/kashrut-requests + POST /upload/kashrut-cert wire it up.
+// Three zones: approved badges (reuse KashrutBadgeStrip), own pending/rejected
+// requests with status chips, and the request form. Self-fetches its request
+// list (not on the /producers/me profile). v1 is image-only (PDF = non-goal).
+// REUSES: edit/cards.jsx OwnerStoryCard (upload + persistent-success contract),
+// LicenseCard (MEH-1270 role="status" success), components/KashrutBadgeStrip.
+// ============================================================
+
+// code → he.json kashrut.badges.* key. The API `code` axis snake-cases in
+// messages (organic-kosher → organic_kosher). Same 8-entry contract as
+// KashrutBadgeStrip.CODE_TO_KEY — module-private there, and scope forbids
+// editing that file, so the map is restated (one small axis, not logic).
+const KASHRUT_CODE_TO_KEY = {
+  rabanut: "rabanut",
+  badatz: "badatz",
+  chalak: "chalak",
+  mehadrin: "mehadrin",
+  "organic-kosher": "organic_kosher",
+  shmitta: "shmitta",
+  kilayim: "kilayim",
+  "artisan-dairy": "artisan_dairy",
+};
+const KASHRUT_CODES = Object.keys(KASHRUT_CODE_TO_KEY);
+
+// Exported for isolation tests (EditTabKashrutCard.test.jsx) — see CategoriesCard.
+export function KashrutCard({ profile, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.kashrut");
+  const tBadges = useTranslations("kashrut.badges");
+  const [requests, setRequests] = useState([]);
+  const [badgeCode, setBadgeCode] = useState("");
+  const [certUrl, setCertUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+
+  // A half-filled request form counts as unsaved work (page-level aggregate).
+  const dirty = Boolean(badgeCode || certUrl);
+  useEffect(() => {
+    reportDirty("kashrut", dirty);
+    return () => reportDirty("kashrut", false);
+  }, [dirty, reportDirty]);
+
+  const loadRequests = useCallback(async () => {
+    try {
+      const r = await api.get("/producers/me/kashrut-requests");
+      setRequests(Array.isArray(r.data) ? r.data : []);
+    } catch {
+      // Non-blocking: the request form still works if the list read fails.
+    }
+  }, []);
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const uploadCert = async (e) => {
+    const file = (e.target.files || [])[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await api.post("/upload/kashrut-cert", fd);
+      setCertUrl(r.data.url);
+    } catch (err) {
+      setError(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!badgeCode) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.post("/producers/me/kashrut-request", {
+        badge_code: badgeCode,
+        cert_url: certUrl || null,
+      });
+      setSubmitted(true);
+      setBadgeCode("");
+      setCertUrl("");
+      loadRequests();
+    } catch (err) {
+      // 409 duplicate-pending surfaces the backend Hebrew detail inline.
+      setError(detailToMessage(err?.response?.data?.detail) || t("error_submit"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const approvedBadges = profile?.kashrut_badges || [];
+  const openRequests = requests.filter(
+    (r) => r.status === "pending" || r.status === "rejected",
+  );
+  const isEmpty = approvedBadges.length === 0 && openRequests.length === 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Chrome + heading live in the EditAccordionCard header (MEH-1116). */}
+      <p className="text-xs text-fg-muted">{t("intro")}</p>
+
+      {/* Zone 1 — approved badges (reuse the public strip + its expiry gate). */}
+      {approvedBadges.length > 0 && (
+        <div className="space-y-1.5">
+          <span className="text-sm font-medium block">{t("approved_heading")}</span>
+          <KashrutBadgeStrip
+            badges={approvedBadges}
+            verified_at={profile?.kashrut_verified_at}
+            expires_at={profile?.kashrut_expires_at}
+          />
+        </div>
+      )}
+
+      {/* Zone 2 — own requests with status chips. */}
+      {openRequests.length > 0 && (
+        <ul className="space-y-1.5" data-testid="kashrut-requests">
+          {openRequests.map((r) => {
+            const key = KASHRUT_CODE_TO_KEY[r.badge_code];
+            const label = key ? tBadges(`${key}.label`) : r.badge_code;
+            const rejected = r.status === "rejected";
+            return (
+              <li key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-medium">{label}</span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    rejected ? "bg-error/10 text-error" : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {rejected ? t("status_rejected") : t("status_pending")}
+                </span>
+                {rejected && r.notes && (
+                  <span className="text-xs text-fg-muted">{r.notes}</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {isEmpty && <p className="text-xs text-fg-muted">{t("empty")}</p>}
+
+      {/* Zone 3 — request form. */}
+      <div className="space-y-3 border-t border-border pt-4">
+        <div className="space-y-1.5">
+          <label htmlFor="kashrut-badge-select" className="text-sm font-medium block">
+            {t("select_label")}
+          </label>
+          <select
+            id="kashrut-badge-select"
+            value={badgeCode}
+            onChange={(e) => {
+              setBadgeCode(e.target.value);
+              setSubmitted(false);
+            }}
+            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm"
+            data-testid="kashrut-badge-select"
+          >
+            <option value="">{t("select_placeholder")}</option>
+            {KASHRUT_CODES.map((code) => (
+              <option key={code} value={code}>
+                {tBadges(`${KASHRUT_CODE_TO_KEY[code]}.label`)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="text-sm font-medium block">{t("upload_label")}</span>
+          <div className="flex items-center gap-3">
+            {certUrl && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={certUrl}
+                alt={t("upload_label")}
+                className="w-16 h-16 rounded-[8px] object-cover border border-border"
+              />
+            )}
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-dark cursor-pointer transition">
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={uploadCert}
+                disabled={uploading}
+                data-testid="kashrut-cert-input"
+              />
+              <span aria-live="polite">
+                {uploading
+                  ? t("uploading")
+                  : certUrl
+                    ? t("upload_replace_cta")
+                    : t("upload_cta")}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <button
+          onClick={submit}
+          disabled={submitting || !badgeCode}
+          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+        >
+          <span aria-live="polite" aria-atomic="true">
+            {submitting ? t("submitting") : t("submit_cta")}
+          </span>
+        </button>
+
+        {error && (
+          <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+            <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+            {error}
+          </p>
+        )}
+        {submitted && !error && (
+          <p
+            className="flex items-center gap-1.5 text-xs text-primary"
+            role="status"
+            data-testid="kashrut-submit-success"
+          >
+            <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+            {t("success")}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

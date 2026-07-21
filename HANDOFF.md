@@ -11,6 +11,21 @@
 - **New ticket:** **MEH-1398** (YELLOW, central) carries the real matched-route fix — full measured evidence + draft CC prompt baked in. Sapir dispatches fresh after usage reset. Do NOT stack it on #1995.
 - **Verify:** `npm run build` green. DoD exception: no visual change → verification = status codes (`curl -I`), not mobile screenshots. `Refs MEH-918`.
 
+## 2026-07-21 — MEH-1385 addendum — contact_name field on owner-story card
+
+- **Shipped:** one `Input` "שם איש/אשת הקשר" at the top of the shipped owner-story card (`OwnerStoryCard`, `edit/cards.jsx`), saved on the same `PUT /producers/me` as the bio. `contact_name` was already in `_PRODUCER_WRITABLE_FIELDS` → **zero backend change**. Closes MEH-1392 F2 (public-read on OwnerCard, was admin-write only).
+- **Verify:** build exit 0 · vitest 8/8 (2 new contact cases + existing PUT-payload assertions updated for `{owner_bio, contact_name}`) · he/en parity · Playwright 375+1440 → `qa-artifacts/MEH-1385/`.
+- **Gate finding:** the owner-story card itself shipped via **PR #1990** (`6976f6b7`), NOT PR #1988. **PR #1988 is a stale open duplicate** (its content already on staging) — recommend closing it. So the contact_name follow-up went off staging (the effectively-merged path), PR body `Refs MEH-1385` (not `Closes` — a separate contact_name gate; if auto-close fired it's a MEH-1240 artifact).
+- **Branch:** `feature/meh-1385-contact-name` off staging.
+## 2026-07-21 — MEH-1167 — kashrut-request card (dashboard) + 2 backend endpoints
+
+- **Shipped:** producer can request a verified kashrut badge from `/producer/dashboard/edit` — pick badge type, upload a cert photo, submit, see pending/rejected status. Closes the MEH-1392 F0 supply gap (verified-only chain = MEH-986 + MEH-1087; this was the missing producer entry point).
+- **Backend (2 new, existing patterns):** `GET /producers/me/kashrut-requests` (`producer_me.py`, require_producer, 30/min, owner-isolated, newest-first, no schema change) + `POST /upload/kashrut-cert` (`upload.py`, mirrors `/owner-photo` — sniff + 5MB cap, NO freemium gate, uuid public_id, `mehamakor/kashrut`, width-1200 limit crop, does not persist to a column).
+- **Frontend:** `KashrutCard` in `edit/cards.jsx` (anchor `#kashrut`, after LicenseCard) — 3 zones (approved via `<KashrutBadgeStrip>` reuse / pending+rejected chips + notes / request form). Self-fetches its request list. 409 duplicate → inline Hebrew detail; success persistent (MEH-1270); form resets + list refresh. Registered `kashrut` in ANCHOR_TO_KEY + KEY_TO_ANCHOR. i18n `dashboard.producer.kashrut` + `edit_accordion.kashrut_*` (he+en parity).
+- **Verify:** build exit 0 · vitest `EditTabKashrutCard.test.jsx` 7/7 + full card suite 63/63 (no regression) · eslint 0 errors · `check_api_contract` orphan resolved · Playwright self-QA 375+1440 (rich+empty) → `qa-artifacts/MEH-1167/` (WebP 152 KB). pytest deferred to CI (sandbox has no backend deps — MEH-360); py_compile clean on all 3 backend files.
+- **Left for Sapir:** staging QA of the full loop — request from dashboard → approve at `/admin/kashrut` → badge appears on the producer page + in the `/map` "כשרות מאומתת" filter. Mobile QA on the Vercel preview.
+- **Branch:** `feature/meh-1167-kashrut-request-card` off staging `6976f6b7`. ⚠️ Soft collision with the owner-story edit files — but the owner-story card shipped via **PR #1990** (`6976f6b7`), so **PR #1988 is a stale/superseded duplicate** (open+dirty; its content already on staging). Flag for closure; Task 2 (contact_name) proceeds as the effectively-merged path.
+
 ## 2026-07-20 — MEH-1392 — producer write-surface gap audit (read-only, docs-only)
 
 - **What:** systematic map of "backend/data exists — producer has no write-UI" gaps. Output: `docs/audits/2026-07-producer-write-surface-gaps.md`. Zero code edits.
