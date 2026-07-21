@@ -421,6 +421,12 @@ class ProducerLocationOut(BaseModel):
     column (serialization_alias) to match the epic's map contract shape.
     Street `address` is intentionally NOT exposed here — MEH-829 keeps the
     exact address admin/owner-only; the map pins on lat/lng + city.
+
+    Field set is exactly the epic's locked `locations[]` contract (kind, label,
+    city, lat, lng, is_primary, precision). The ORM `ProducerLocation` also has
+    `opening_hours` + `phone` (chunk 1) — deliberately NOT serialized here to
+    keep chunk 2 to the locked shape; chunk 3 (map popup / click-to-call) adds
+    them if the pin UI needs them.
     """
 
     kind: str
