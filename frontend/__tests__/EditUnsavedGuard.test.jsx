@@ -23,13 +23,23 @@ const authStub = { user: { id: 1, role: "producer" }, loading: false };
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => authStub,
 }));
-const routerStub = { push: vi.fn() };
+const routerStub = { push: vi.fn(), replace: vi.fn() };
 // MEH-1157: the page's login redirect moved to the locale-aware router.
 // MEH-1306: cards.jsx now renders LocaleLink (the view-on-page back-link),
 // so the mock factory must also provide Link.
+// MEH-1408: the hub-and-spoke page also reads usePathname (for the group
+// router.push) here.
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => routerStub,
+  usePathname: () => "/producer/dashboard/edit",
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+// MEH-1408: the active group comes from ?group via next/navigation's
+// useSearchParams — drive it with a mutable `params` (EventsUrlSync pattern) so
+// each test can mount straight into the group whose card it exercises.
+let params = {};
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
 }));
 // ProductsSection is self-fetching CRUD, irrelevant to the guard.
 vi.mock("@/components/ProductsSection", () => ({ default: () => null }));
@@ -52,6 +62,7 @@ const PROFILE = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  params = {};
   api.get.mockImplementation((url) => {
     if (url === "/producers/me") return Promise.resolve({ data: PROFILE });
     return Promise.resolve({ data: [] });
@@ -61,6 +72,9 @@ beforeEach(() => {
 
 describe("Edit page unsaved-changes guard (MEH-1100)", () => {
   it("shows the banner while a card is dirty and clears it after save", async () => {
+    // MEH-1408: mount into the contact group so the questions card's save
+    // button is visible (getByRole excludes hidden group wrappers).
+    params.group = "contact";
     render(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
         <EditPage />
@@ -104,6 +118,12 @@ describe("Edit page unsaved-changes guard (MEH-1100)", () => {
     window.HTMLElement.prototype.scrollIntoView = scrollSpy;
     window.requestAnimationFrame = (cb) => cb();
 
+    // MEH-1408: mount into the profile group so the bio jump-target is in the
+    // active group and jumpToCard scrolls synchronously (a cross-group jump
+    // defers the scroll to the post-router.push re-render, which the stubbed
+    // router doesn't trigger). Both cards stay mounted regardless, so the
+    // questions edit still lifts its dirty flag from the hidden contact group.
+    params.group = "profile";
     render(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
         <EditPage />
