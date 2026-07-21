@@ -3699,7 +3699,8 @@
         "overview": "Overview",
         "edit": "Edit",
         "insights": "Insights",
-        "tools": "Tools"
+        "tools": "Tools",
+        "view_page": "View page"
       },
       "load_error": {
         "title": "We couldn't load your dashboard",
@@ -3813,10 +3814,6 @@
         "add_event": {
           "title": "Add an event",
           "sub": "Workshop, tour, open days, etc."
-        },
-        "view_business": {
-          "title": "View your business on the site",
-          "sub": "This is how customers see it"
         },
         "group_buys": {
           "title": "Manage group buys",
