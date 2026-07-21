@@ -983,6 +983,15 @@ class Experience(Base):
     admin_feedback = Column(Text, nullable=True)  # populated on "request changes"
     rejection_reason = Column(Text, nullable=True)  # populated on "reject"
 
+    # MEH-1419: reversible host cancel — mirrors Event.is_active (models.py:903).
+    # Non-null + server_default true to match the MEH-1419 Alembic migration
+    # (keeps `alembic check` drift-free; existing rows backfill to active). The
+    # public list filters is_active IS TRUE; /mine returns inactive too so the
+    # dashboard can show + reactivate a cancelled experience.
+    is_active = Column(
+        Boolean, nullable=False, server_default=text("true"), default=True
+    )
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
