@@ -1,4 +1,8 @@
 """
+⚠️ DEAD CODE since MEH-1406: home_products router unmounted; this dispatcher
+was never scheduled (no caller — see startup.py). Do NOT wire, fix, or extend.
+Retained only for MEH-1406 reversibility. See MEH-1429.
+
 Rating request dispatcher for "מהמטבח של השכן" listings.
 
 24 hours after a buyer clicks the WhatsApp button on a home product, we send

@@ -2880,17 +2880,6 @@
       "login_prompt_message": "To save businesses you love — sign in"
     }
   },
-  "rate": {
-    "invalid_link": "Invalid link",
-    "error_generic": "Submission error",
-    "loading": "Loading...",
-    "thanks_title": "Thanks!",
-    "thanks_message": "Your rating has been saved. It helps the community.",
-    "heading": "How was it?",
-    "bought_from": "You bought from <seller>{name}</seller>",
-    "comment_placeholder": "Short comment (optional)",
-    "submit": "Send rating"
-  },
   "report": {
     "trigger": "Report business",
     "form_heading": "Report business",
