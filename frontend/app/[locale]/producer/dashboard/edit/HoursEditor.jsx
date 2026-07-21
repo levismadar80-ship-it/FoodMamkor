@@ -14,7 +14,9 @@
  *           frontend/lib/hours.js (parseHours + DAY_KEYS, read-only here),
  *           edit/cards.jsx HoursCard (thin wrapper), edit/cards.jsx LicenseCard
  *           (MEH-1270 persistent-✓ save pattern this mirrors).
- * History:  MEH-1276 — Google-Business-Profile-style structured editor.
+ * History:  MEH-1276 — Google-Business-Profile-style structured editor;
+ *           MEH-1344 — revert-to-saved affordance; MEH-1403 — preset became
+ *           a labeled two-way toggle (apply ⇄ clear all 7 days).
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -60,6 +62,13 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
 
   const current = serializeHours(days);
   const dirty = current !== seedStr;
+
+  // MEH-1403: preset is now a labeled two-way toggle (mirrors the
+  // CitiesAutocomplete region-chip pattern, CitiesAutocomplete.jsx:104-116).
+  // presetApplied is a pure string compare — when the current model already
+  // serializes to the preset, the button flips to a "clear the hours" action.
+  const presetStr = useMemo(() => serializeHours(presetDays()), []);
+  const presetApplied = current === presetStr;
   useEffect(() => {
     reportDirty("hours", dirty);
     return () => reportDirty("hours", false);
@@ -79,6 +88,16 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
 
   const applyPreset = () => {
     setDays(presetDays());
+    setSaved(false);
+    setErrorMsg(null);
+  };
+
+  // MEH-1403: the "applied" half of the preset toggle — closes all 7 days
+  // ({ open: false }) while leaving each row's from/to untouched, so a
+  // re-toggle restores the same times. All-closed serializes to "" (≠ the
+  // preset string), so the button label flips straight back to the preset CTA.
+  const clearHours = () => {
+    setDays((prev) => prev.map((d) => ({ ...d, open: false })));
     setSaved(false);
     setErrorMsg(null);
   };
@@ -131,10 +150,12 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
 
       <button
         type="button"
-        onClick={applyPreset}
+        onClick={presetApplied ? clearHours : applyPreset}
+        aria-pressed={presetApplied}
+        data-testid="hours-preset-toggle"
         className="mb-4 text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition"
       >
-        {t("preset")}
+        {presetApplied ? t("clear_cta") : t("preset")}
       </button>
 
       <div className="space-y-2.5">
