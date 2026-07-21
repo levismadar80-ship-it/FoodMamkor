@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Crosshair, Shuffle } from "@phosphor-icons/react";
+import { Crosshair } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -176,17 +176,18 @@ export function HomeHero({
         </button>
 
         {/* MEH-1369: secondary text-link group — RTL order הפתיעו אותי · איך זה עובד.
-            surprise-me (MEH-1288, render-gated on hasProducers) is demoted from an
-            outline button to a text link beside "how it works": same onSurprise
-            handler + Shuffle icon, new visual weight only. */}
+            surprise-me (MEH-1288, render-gated on hasProducers) is a text link beside
+            "how it works": same onSurprise handler, new visual weight only.
+            MEH-1409: dropped the Shuffle icon so surprise-me and how-it-works are
+            identical-weight text links (same font/underline/spacing) — the icon made
+            surprise-me read as the heavier of the two. */}
         <div className="inline-flex items-center gap-4">
           {hasProducers && (
             <button
               type="button"
               onClick={onSurprise}
-              className="inline-flex items-center gap-1.5 text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
+              className="text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
             >
-              <Shuffle size={18} weight="bold" aria-hidden="true" />
               {t("home.hero.surprise_me")}
             </button>
           )}

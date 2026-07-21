@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1409 — hero secondary links symmetry (Shuffle icon removed)
+
+- **Shipped:** removed the Phosphor `Shuffle` icon from the "הפתיעו אותי" hero text link (`HomeHero.jsx`) so it and "איך זה עובד" are identical-weight text links (same font/underline/spacing). Post-MEH-1369 the surprise link still carried the icon + `inline-flex gap` classes and read heavier. Style-only, one production file.
+- **Files:** `frontend/app/[locale]/home/HomeHero.jsx` (dropped `<Shuffle>` element + icon-layout classes + `Shuffle` import; className now byte-identical to how-it-works). Test: `__tests__/HomeHeroSurprise.test.jsx` render case flipped to assert the icon is **absent**.
+- **Verify:** `npm run build` exit 0 · vitest `HomeHeroSurprise` 3/3. GREEN tier — auto-merge on CI green. First of the 1409/1410/1411 UX-polish batch.
+- **Branch:** `feature/meh-1409-hero-links-symmetry` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
 ## 2026-07-21 — MEH-1406 — kill-switch home-products API (unmount router + remove admin moderation tabs)
 
 - **Shipped:** unmounted the dead-but-live "מהמטבח של השכן" API. `router_registry.py:54` include commented out (+ dropped from import tuple) → all public `/home-products*` (GET/POST/PUT/DELETE) now 404. The live write hole this closed: any verified-email user could `POST /home-products` an unlicensed home listing on a licensing-only platform (`home_products.py:199`). **Reversible unmount — zero Alembic, models/schemas/tables retained.**
