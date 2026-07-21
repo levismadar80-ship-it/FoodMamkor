@@ -158,6 +158,12 @@ test.describe("Visual parity — MEH-991", () => {
   // can also place the wrapper's geometric center in non-anchor padding — the
   // "/producer nav flake" noted above (MEH-1295). Fixed by clicking the inner
   // anchor. This touch also re-fires vrt-update to refresh the stale baselines.
+  // MEH-1411 (2026-07-21): producer-detail header polish — the orphan "שמירה"
+  // actions row lost its full-width hairline and tightened its top margin
+  // (ProducerHeader.jsx), the "חדש" fallback became a green-50 pill, and the
+  // mobile StickyContactBar CTA gained the WhatsApp icon. The producer-detail
+  // (mobile especially) baseline shifts by design; this touch re-fires
+  // vrt-update.yml so producer-detail-{desktop,mobile}-linux regenerate on-runner.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");

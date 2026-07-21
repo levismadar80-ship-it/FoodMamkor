@@ -101,8 +101,13 @@ export default function ProducerHeader({
           <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
         </a>
       ) : (
+        // MEH-1411: "חדש" restyled from a bare 17px bold heading into a small
+        // green-50 pill (bg token + text-primary + rounded-full + compact
+        // padding) so it reads as a quiet badge in the rating's slot, not a
+        // second headline. Smaller than the old 17px line → mobile top block
+        // does not grow. data-testid preserved for the trust-strip test.
         <span
-          className="mt-3 inline-block self-start font-headline-md text-[17px] font-bold text-text"
+          className="mt-3 inline-block self-start bg-green-50 text-primary rounded-full px-2.5 py-0.5 text-xs font-bold"
           data-testid="new-mark"
         >
           {t("producer.detail.header.new_mark")}
@@ -163,13 +168,19 @@ export default function ProducerHeader({
       )}
 
       {/* Quiet actions row (MEH-1334): שמירה · שיתוף-on-desktop.
-          Mobile/tablet: hairline-topped row under the meta block; desktop:
-          absolutely pinned to the title row's inline-end. MEH-1363 (decision
-          A, MEH-1362): FollowButton removed — the heart is the single
+          Desktop: absolutely pinned to the title row's inline-end. MEH-1363
+          (decision A, MEH-1362): FollowButton removed — the heart is the single
           interest control; its toast promised updates that were never wired.
           Mobile share lives in the hero overlay only (decision 6), hence
-          hidden lg:inline-flex. */}
-      <div className="flex items-center gap-5 border-t border-border mt-3 lg:absolute lg:top-0 lg:end-0 lg:border-t-0 lg:mt-0">
+          hidden lg:inline-flex.
+          MEH-1411: after the FollowButton removal the mobile row was a lone
+          heart under a full-width hairline — a framed orphan. Collapsed the
+          hairline (border-t + lg:border-t-0 dropped) and tightened the top
+          margin (mt-3 → mt-2) so the שמירה heart folds quietly into the end of
+          the meta cluster instead of reading as a separate toolbar strip. The
+          44px tap target + aria-pressed live in FavoriteButton (variant="quiet")
+          and are unchanged; desktop still absolute-pins to the title row. */}
+      <div className="flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0">
         <FavoriteButton producerId={producer.id} producerName={producer.name} variant="quiet" />
         <span className="hidden lg:inline-flex">
           <ShareButton
