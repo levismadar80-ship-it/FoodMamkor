@@ -443,6 +443,97 @@ class ProducerLocationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# MEH-1421 (MEH-1388 chunk 4a): shared enums — same value sets as the ORM CHECK
+# constraints (models.py:536) so an invalid kind/precision is a clean 422 at the
+# write boundary, not an IntegrityError at commit.
+_LOCATION_KIND = Literal["branch", "pickup", "market_stand"]
+_LOCATION_PRECISION = Literal["exact", "approximate"]
+
+
+def _optional_label_letters(value: str | None) -> str | None:
+    # MEH-1421: label is optional, but a supplied label is shown in the map
+    # tooltip + drives the same-city disambiguation rule, so a punctuation-only
+    # or 1-2 char label is meaningless. Empty/whitespace → None (treated as "no
+    # label"); a real value must clear the ≥3-letter floor.
+    # REUSES: backend/app/schemas/schemas.py:17 (_min_letters_validator)
+    if value is None or value.strip() == "":
+        return None
+    return _min_letters_validator(value)
+
+
+class ProducerLocationCreate(BaseModel):
+    """MEH-1421 (MEH-1388 chunk 4a): owner-supplied physical presence point —
+    the write side of ProducerLocationOut (schemas.py:414). `kind`/`precision`
+    are the same CHECK-constrained enums as the ORM (models.py:536). Coordinates
+    are optional (an owner may add a point before she has exact lat/lng — manual
+    entry, no geocoding this chunk) but bounded when supplied. `label` reuses the
+    MEH-555 letters floor. The single-primary invariant + same-city-label rule
+    are enforced in the service layer (producer_me.py), not here — they are
+    cross-row and need the DB session.
+    """
+
+    kind: _LOCATION_KIND
+    label: str | None = None
+    city: str | None = Field(None, max_length=100)
+    address: str | None = Field(None, max_length=255)
+    lat: float | None = Field(None, ge=-90, le=90)
+    lng: float | None = Field(None, ge=-180, le=180)
+    opening_hours: str | None = None
+    phone: str | None = Field(None, max_length=20)
+    is_primary: bool = False
+    location_precision: _LOCATION_PRECISION = "exact"
+
+    @field_validator("label")
+    @classmethod
+    def _validate_label(cls, v):
+        return _optional_label_letters(v)
+
+
+class ProducerLocationUpdate(BaseModel):
+    """MEH-1421: partial update — every field optional; the endpoint applies with
+    `exclude_unset=True` so an unsupplied field is left untouched (products
+    precedent, producer_me.py:1109). Sending `label: ""` clears the label."""
+
+    kind: _LOCATION_KIND | None = None
+    label: str | None = None
+    city: str | None = Field(None, max_length=100)
+    address: str | None = Field(None, max_length=255)
+    lat: float | None = Field(None, ge=-90, le=90)
+    lng: float | None = Field(None, ge=-180, le=180)
+    opening_hours: str | None = None
+    phone: str | None = Field(None, max_length=20)
+    is_primary: bool | None = None
+    location_precision: _LOCATION_PRECISION | None = None
+
+    @field_validator("label")
+    @classmethod
+    def _validate_label(cls, v):
+        return _optional_label_letters(v)
+
+
+class ProducerLocationOwnerOut(BaseModel):
+    """MEH-1421: owner-facing read of her OWN location rows. Unlike the public
+    ProducerLocationOut (schemas.py:414, which withholds street `address` per
+    MEH-829 and trims to the map contract), the owner sees the full editable row
+    (address / opening_hours / phone) in the dashboard editor. Emits the raw
+    `location_precision` key (no `precision` alias) so the editor round-trips the
+    same field name it POSTs. Returned by the /producers/me/locations CRUD."""
+
+    id: UUID
+    kind: str
+    label: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    opening_hours: str | None = None
+    phone: str | None = None
+    is_primary: bool = False
+    location_precision: str = "exact"
+
+    model_config = {"from_attributes": True}
+
+
 # --- Product ---
 # MEH-295: price_min/price_max are the canonical pricing fields.
 # price_range is kept Optional for legacy back-compat — drop tracked as

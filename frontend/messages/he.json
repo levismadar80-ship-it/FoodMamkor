@@ -1017,7 +1017,9 @@
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "order_cta": "שליחת הודעה בוואטסאפ",
-      "pickup": "איסוף עצמי"
+      "pickup": "איסוף עצמי",
+      "show_all": "הצג עוד {count} ערים",
+      "show_less": "הצג פחות"
     },
     "friday_delivery": {
       "today": "היום",
@@ -1323,7 +1325,11 @@
           "delivery": "משלוחים",
           "pickup_points": "נקודות איסוף",
           "license_pending": "רישיון ממתין",
-          "license_pending_title": "בקטגוריה הדורשת רישיון, ללא מספר רישיון — יש לאמת לפני אישור."
+          "license_pending_title": "בקטגוריה הדורשת רישיון, ללא מספר רישיון — יש לאמת לפני אישור.",
+          "dedup": "כפילות?",
+          "dedup_name_title": "שם זהה לעסק אחר — בדקי אם מדובר בכפילות.",
+          "dedup_city_title": "עיר זהה לעסק אחר — בדקי אם מדובר בכפילות.",
+          "dedup_both_title": "שם ועיר זהים לעסק אחר — בדקי אם מדובר בכפילות."
         },
         "actions": {
           "approve_short": "✓ אשר",
@@ -4441,6 +4447,46 @@
       "card": {
         "edit_aria_template": "ערכו {name}",
         "delete_aria_template": "מחקו {name}"
+      }
+    },
+    "locations": {
+      "section_heading": "מיקומים",
+      "add_cta": "הוסיפו מיקום",
+      "add_heading": "מיקום חדש",
+      "edit_heading": "עריכת מיקום",
+      "empty_title": "אין עדיין מיקומים",
+      "empty_cta": "+ הוסיפו מיקום ראשון",
+      "load_failed": "לא הצלחנו לטעון את המיקומים",
+      "load_retry_cta": "נסו שוב",
+      "primary_badge": "ראשי",
+      "set_primary_cta": "קבעו כראשי",
+      "kind": {
+        "branch": "סניף",
+        "pickup": "נקודת איסוף",
+        "market_stand": "דוכן שוק"
+      },
+      "form": {
+        "kind_label": "סוג",
+        "label_label": "תווית",
+        "city_label": "עיר",
+        "address_label": "כתובת",
+        "lat_label": "קו רוחב",
+        "lng_label": "קו אורך",
+        "hours_label": "שעות",
+        "phone_label": "טלפון",
+        "precision_label": "דיוק",
+        "precision_exact": "מדויק",
+        "precision_approximate": "משוער",
+        "primary_label": "מיקום ראשי"
+      },
+      "save_cta": "שמרו",
+      "saving": "בשמירה...",
+      "cancel_cta": "בטלו",
+      "delete_aria": "מחקו מיקום",
+      "edit_aria": "ערכו מיקום",
+      "errors": {
+        "save_failed": "שגיאה בשמירת המיקום",
+        "delete_failed": "שגיאה במחיקת המיקום"
       }
     },
     "security": {
