@@ -11,6 +11,26 @@
 - **Skeptic-Mode flags:** (1) the dispatch precondition "MEH-1417 must be merged" is **false** — MEH-1417 is in Backlog, zero staging commits (non-blocking per MEH-1419 §7; `is_active` list-filter is independent of MEH-1417's lat/lng gating; both touch `experiences.py` in different functions → trivial later merge). (2) EXPECTED_TABLES unchanged (column, not a table). (3) Adversarial-review + mobile QA pending before merge.
 - **Branch:** `feature/meh-1419-experience-is-active` off `origin/staging` (harness `claude/*` blocked by MEH-1141 gate).
 
+## 2026-07-21 — MEH-1398 — RESUMED + FINISHED; DO-NOT-MERGE stripped; awaiting Sapir merge call.
+
+**State:** PR #2001 open, branch `feature/meh-1398-hard-404-matched-route`. The resume steps from the earlier stand-down note are **done**: the middleware.js unlock reached this session, the clean guarded-registry `middleware.js` is written, both guards are wired, the superseded patch doc is deleted, and the measurement is green. **DO-NOT-MERGE removed — Sapir makes the final merge call on the raw `curl -I` output** (in the PR body + the session report).
+
+**Landed this session (on top of the earlier branch work):**
+- `frontend/middleware.js` — replaced the SPIKE with the **clean hardened version** (imports `lib/static-routes.json`, no inline list, no SPIKE comments; file-header contract). Behaviour byte-identical to the measured spike (same 30 route segments, now sourced from the guarded JSON).
+- `frontend/__tests__/RouteManifestSync.test.js` — **new**; bidirectional filesystem↔manifest sync guard (`static-routes.json.routes` set === `app/[locale]/*/` dirs minus dynamic/private/group dirs), CI-gated via `frontend-vitest`. 4/4 green.
+- `scripts/validate-registry-paths.py` — registered `frontend/lib/static-routes.json` as a 3rd guarded registry (custom parser maps each segment → `app/[locale]/<seg>/`, asserts the dir exists). `.pre-commit-config.yaml` `files:` regex extended to re-fire on manifest edits.
+- `docs/ci/meh-1398-middleware.patch.md` — **deleted** (its JS now == the shipped `middleware.js`; keeping it = "two docs own one fact" smell; provenance lives in git + the file-header History line).
+- Page-level `generateMetadata` reverts were already complete on the branch (both page files `git diff`-empty vs staging) — nothing to redo.
+
+**Measured (clean middleware, `next build` ✓ + `next start`, GET+HEAD, logging stub):** `/__nope`, `/en/__nope`, `/producer/<bad-uuid>`, `/en/producer/<bad-uuid>` → **404** ✓ (via `x-middleware-rewrite: /__mm_not_found__` → `globalNotFound`); `/`, `/en`, `/about`, `/en/about`, `/real-biz`, `/en/real-biz`, `/producer/<good-uuid>` → **200** ✓ with the next-intl hreflang `Link` header intact (he/en/x-default). hreflang is byte-identical by construction — it comes from next-intl's `intlResponse`, which the middleware returns untouched on valid pages, and the hreflang-emitting page files are unchanged vs staging. (Hebrew is the unprefixed default locale under `localePrefix: as-needed`, so `/he/*` 307-redirects to the canonical unprefixed path — the `/he/*` DoD paths measure the same via the canonical URLs above.)
+
+**Known limitation surfaced (out of scope — do NOT expand here):** scanner-shaped probes (`/wp-admin`, dotted paths) still return **200** soft-404 — `isSlugShaped()` rejects them so the middleware skips the existence check by design; this is the exact MEH-1045 soft-404 gap PR #2001 flagged as "worth a follow-up", separate from MEH-1398's producer-miss scope.
+
+**Two pre-existing issues to report (neither caused by this branch):**
+- `.claude/hooks/rtl-allowlist.txt:10` lists `frontend/app/[locale]/map/components/DesktopMiniPopup.jsx`, which does not exist on `origin/staging` either — the registry validator reds on it (unrelated to MEH-1398; own fix/ticket).
+- PR #2001's *body* was stale (described the abandoned generateMetadata dead-end); updated this session to the middleware solution + measurement.
+
+**After merge:** re-add `"Edit(frontend/middleware.js)"` to `permissions.deny` in `.claude/settings.json`.
 ## 2026-07-21 — MEH-1355 — producer status surface → dashboard; /settings business tab removed (Route B)
 
 - **Shipped:** consolidated the producer status/support surface into `producer/dashboard/page.js` and **deleted** the redundant `/settings` "העסק שלי" tab (duplicated the MEH-963 dashboard + hosted a dead `"suspended"` branch — backend emits `"inactive"`). **Route A (PR #2006, CTA atop the doomed tab) was superseded → closed without merge.**
