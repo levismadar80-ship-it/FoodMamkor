@@ -4308,7 +4308,7 @@
       "stat_products": "Products",
       "stat_orders": "Orders",
       "stats_unavailable": "Data not available right now.",
-      "edit_profile_link": "Edit business profile →"
+      "edit_business_cta": "Edit business page"
     },
     "products": {
       "section_heading": "Products",
