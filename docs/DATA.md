@@ -461,6 +461,17 @@ POST   /producers/me/availability-state            producer  — MEH-291 unified
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
                                                               dual-writes to is_available_today + availability_status during 7-day overlap
                                                               GET /producers supports ?availability_state= filter (opt-in; default listing unchanged in Phase 2)
+GET    /producers/me/locations                    producer  — MEH-1421 (MEH-1388 chunk 4a): owner's producer_locations
+                                                              rows (ProducerLocationOwnerOut — full, incl. address/hours/phone),
+                                                              ordered primary-first then created_at
+POST   /producers/me/locations                    producer  — create a location (60/hr). ProducerLocationCreate.
+                                                              First location forced is_primary; is_primary=true clears others.
+                                                              same-city label rule → 422 "כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה"
+PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
+                                                              (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
+                                                              same-city check only when city/label in the patch.
+DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the primary promotes
+                                                              the oldest survivor so exactly one primary remains.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
