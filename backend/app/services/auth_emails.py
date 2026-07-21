@@ -137,20 +137,26 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
             "[EMAIL] welcome email SKIPPED for '%s' — missing: RESEND_API_KEY", email
         )
         return False
+    # MEH-1401: greet by FIRST NAME only (name is usually the full registered
+    # name, often English) + escape it in the HTML body (plain text keeps raw,
+    # per the :31 reset-email precedent). Guarded for an empty/whitespace name.
+    first_name = ((name or "").split() or [""])[0]
+    first_name_html = html_escape(first_name)
+
+    # MEH-1401: consumer copy is LOCKED (Linear MEH-1401) — do not paraphrase.
     consumer_body = (
-        f"שלום {name},\n\n"
+        f"שלום {first_name},\n\n"
         f"ברוכה הבאה למהמקור! 🌿\n\n"
-        f"עכשיו את יכולה לגלות בתי עסק מקומיים, כולם במקום אחד —\n"
-        f"כל האוכל האמיתי, במקום אחד.\n\n"
-        f"מה הלאה?\n"
-        f"  • גלי בתי עסק לפי עיר או קטגוריה: {settings.frontend_url}\n"
-        f"  • פתחי את המפה: {settings.frontend_url}/map\n"
-        f"  • שמרי עסקים מועדפים\n\n"
-        f"אם יש שאלות — פשוט תגיבי למייל הזה.\n\n"
+        f"מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.\n\n"
+        f"מה עכשיו?\n"
+        f"• גלי בתי עסק לפי עיר או קטגוריה\n"
+        f"• פתחי את המפה וראי מי קרוב אלייך: {settings.frontend_url}/map\n"
+        f"• שמרי מועדפים כדי לא לאבד אותם\n\n"
+        f"יש שאלה? פשוט השיבי למייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
     producer_body = (
-        f"שלום {name},\n\n"
+        f"שלום {first_name},\n\n"
         f"ברוכה הבאה למהמקור! 🌿\n\n"
         f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
         f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
@@ -159,8 +165,85 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
         f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    body = producer_body if role == "producer" else consumer_body
-    send_email(email, "ברוכה הבאה למהמקור 🌿", body)
+
+    # MEH-1401: HTML bodies mirror the reset-password RTL template (:41-73)
+    # so Gmail renders Hebrew with correct BiDi. Inlined per the two existing
+    # templates — no shared helper (over-engineering guard).
+    consumer_html = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
+              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכה הבאה למהמקור! 🌿</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 20px;">מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.</p>
+              <p style="color:#1C1A17;font-size:15px;font-weight:bold;margin:0 0 8px;">מה עכשיו?</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.9;margin:0 0 24px;">
+                • גלי בתי עסק לפי עיר או קטגוריה<br>
+                • פתחי את המפה וראי מי קרוב אלייך: <a href="{settings.frontend_url}/map" style="color:#2e6853;">{settings.frontend_url}/map</a><br>
+                • שמרי מועדפים כדי לא לאבד אותם
+              </p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{settings.frontend_url}"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  גלו בתי עסק
+                </a>
+              </div>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 16px;">יש שאלה? פשוט השיבי למייל הזה.</p>
+              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
+              <p style="color:#999;font-size:13px;line-height:1.6;margin:0;">בברכה,<br>צוות מהמקור 🌱</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    producer_html = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
+              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכה הבאה למהמקור! 🌿</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור תקבלי מייל עם הקישור לעסק שלך, ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{settings.frontend_url}/producer/dashboard"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  ללוח הבקרה
+                </a>
+              </div>
+              <p style="color:#999;font-size:13px;line-height:1.6;margin:0;">בברכה,<br>צוות מהמקור 🌱</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+    if role == "producer":
+        body, html_body = producer_body, producer_html
+    else:
+        body, html_body = consumer_body, consumer_html
+    send_email(email, "ברוכה הבאה למהמקור 🌿", body, html=html_body)
     return True
 
 
