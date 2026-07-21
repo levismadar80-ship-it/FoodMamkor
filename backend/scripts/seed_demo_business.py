@@ -220,16 +220,97 @@ ADMIN_NOTE = (
 # business so they collapse into a single cluster at the default /map zoom (8)
 # yet remain distinct rows. Coordinates are inside the זכרון יעקב / בנימינה band.
 DEMO_LOCATIONS = [
-    {"kind": "branch", "label": "המאפייה (הסניף המרכזי)", "city": "זכרון יעקב", "address": "רחוב המייסדים 12, זכרון יעקב", "lat": 32.5732, "lng": 34.9519, "is_primary": True, "location_precision": "exact"},
-    {"kind": "pickup", "label": "איסוף — מרכז זכרון", "city": "זכרון יעקב", "lat": 32.5748, "lng": 34.9536, "is_primary": False, "location_precision": "exact"},
-    {"kind": "pickup", "label": "איסוף — שוק האיכרים", "city": "זכרון יעקב", "lat": 32.5711, "lng": 34.9502, "is_primary": False, "location_precision": "approximate"},
-    {"kind": "pickup", "label": "איסוף — רמת צבי", "city": "זכרון יעקב", "lat": 32.5769, "lng": 34.9548, "is_primary": False, "location_precision": "exact"},
-    {"kind": "pickup", "label": "איסוף — נחלת ז'בוטינסקי", "city": "זכרון יעקב", "lat": 32.5695, "lng": 34.9560, "is_primary": False, "location_precision": "approximate"},
-    {"kind": "pickup", "label": "איסוף — גן שמואל", "city": "זכרון יעקב", "lat": 32.5801, "lng": 34.9491, "is_primary": False, "location_precision": "exact"},
-    {"kind": "pickup", "label": "איסוף — כיכר המושבה", "city": "זכרון יעקב", "lat": 32.5726, "lng": 34.9575, "is_primary": False, "location_precision": "exact"},
-    {"kind": "pickup", "label": "איסוף — בית הבד", "city": "זכרון יעקב", "lat": 32.5680, "lng": 34.9524, "is_primary": False, "location_precision": "approximate"},
-    {"kind": "pickup", "label": "איסוף — הגן הבהאי", "city": "זכרון יעקב", "lat": 32.5758, "lng": 34.9507, "is_primary": False, "location_precision": "exact"},
-    {"kind": "pickup", "label": "איסוף — תחנת הרכבת", "city": "זכרון יעקב", "lat": 32.5703, "lng": 34.9543, "is_primary": False, "location_precision": "exact"},
+    {
+        "kind": "branch",
+        "label": "המאפייה (הסניף המרכזי)",
+        "city": "זכרון יעקב",
+        "address": "רחוב המייסדים 12, זכרון יעקב",
+        "lat": 32.5732,
+        "lng": 34.9519,
+        "is_primary": True,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — מרכז זכרון",
+        "city": "זכרון יעקב",
+        "lat": 32.5748,
+        "lng": 34.9536,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — שוק האיכרים",
+        "city": "זכרון יעקב",
+        "lat": 32.5711,
+        "lng": 34.9502,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — רמת צבי",
+        "city": "זכרון יעקב",
+        "lat": 32.5769,
+        "lng": 34.9548,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — נחלת ז'בוטינסקי",
+        "city": "זכרון יעקב",
+        "lat": 32.5695,
+        "lng": 34.9560,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — גן שמואל",
+        "city": "זכרון יעקב",
+        "lat": 32.5801,
+        "lng": 34.9491,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — כיכר המושבה",
+        "city": "זכרון יעקב",
+        "lat": 32.5726,
+        "lng": 34.9575,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — בית הבד",
+        "city": "זכרון יעקב",
+        "lat": 32.5680,
+        "lng": 34.9524,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — הגן הבהאי",
+        "city": "זכרון יעקב",
+        "lat": 32.5758,
+        "lng": 34.9507,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — תחנת הרכבת",
+        "city": "זכרון יעקב",
+        "lat": 32.5703,
+        "lng": 34.9543,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
 ]
 
 # MEH-1432: a SECOND demo producer — delivery-only (has_physical_location=False)
@@ -245,7 +326,11 @@ DELIVERY_ONLY_PRODUCER = {
     "description": "משק חלב משפחתי — מוכר במשלוחים ובנקודת איסוף אחת בבנימינה. דמו לבדיקת ריבוי-מיקום (delivery-only + pickup).",
     "short_description": "גבינות עזים טריות במשלוח ובאיסוף.",
     "city": "בנימינה",
-    "images": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
+    # Project-owned cloud (dfzpscjks), same staging-only demo bucket as the
+    # primary demo producer — resilient vs the public cloudinary/demo sample.
+    "images": [
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
+    ],
 }
 DELIVERY_ONLY_LOCATION = {
     "kind": "pickup",

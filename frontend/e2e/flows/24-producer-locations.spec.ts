@@ -176,7 +176,15 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
       test.skip(true, "no delivery-only-with-pickup producer seeded (run seed_demo_business.py --refresh)");
       return;
     }
-    // Present in the public feed == visible on the map (MEH-213 reversal).
-    expect(deliveryOnlyWithPickup.id).toBeTruthy();
+    // Its map-visibility mechanism is the usable pickup coord itself (the feed
+    // carries it → it pins on /map). Assert that, not the tautological presence
+    // of an id on an object find() already returned.
+    const usablePickups = (deliveryOnlyWithPickup.locations || [])
+      .filter(usableCoords)
+      .filter((l) => l.kind === "pickup" || l.kind === "market_stand");
+    expect(
+      usablePickups.length,
+      "delivery-only producer is on the map via >=1 usable pickup/market_stand pin",
+    ).toBeGreaterThan(0);
   });
 });
