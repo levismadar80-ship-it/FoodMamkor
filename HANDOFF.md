@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1385 — dashboard "מאחורי העסק" card (owner story chunk 3)
+
+- **Branch:** `feature/meh-1385-owner-story-card` off current `staging` tip. Sibling ticket to MEH-1335 (Done) — NOT a reopen; chunks 1+2 (schema+API+upload) already live on staging from #1969.
+- **Shipped (frontend + i18n only, YELLOW):** new `OwnerStoryCard` in `edit/cards.jsx` after DescriptionCard — bio textarea (live counter, hard 300 cap = server sanitize) + photo upload → `POST /upload/owner-photo`. Mirrors `ImagesCard.uploadFiles` (photo auto-persists on upload) + `DescriptionCard` save/dirty contract (bio via `PUT /producers/me`). Assembly in `edit/page.js`; `owner_story` he/en twins + 2 `edit_accordion` keys.
+- **Verified:** `npm run build` exit 0 · ICU + en-parity gates green · ESLint 0 errors · `/upload/owner-photo` cleared from `check_api_contract` orphan-backend · Playwright self-QA 375+1440 filled+empty (`qa-artifacts/MEH-1385/`, WebP 81 KB). QA done via a throwaway `[locale]` harness route (deleted before commit — never staged).
+- **Tier:** YELLOW — auto-merge permitted after self-QA per Smadar's instruction (diff touches NO `alembic/versions/**`, so the standing schema-gate rule doesn't apply). Pending: ready PR + Smadar mobile QA.
+- **Cross-ref:** the public OwnerCard (MEH-1334 / PR #1936) is still Draft — once it lands, the bio/photo variants wake on the data this form produces.
+
 ## 2026-07-20 — MEH-1392 — producer write-surface gap audit (read-only, docs-only)
 
 - **What:** systematic map of "backend/data exists — producer has no write-UI" gaps. Output: `docs/audits/2026-07-producer-write-surface-gaps.md`. Zero code edits.
