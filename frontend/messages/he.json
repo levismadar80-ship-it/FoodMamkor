@@ -3765,11 +3765,28 @@
         "rejected": {
           "title": "⚠️ הבקשה לא אושרה",
           "body": "צרו קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
-          "cta": "צרו קשר ←"
+          "tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
+          "tip_photos": "הוסיפו תמונות ברורות של המוצרים",
+          "tip_address": "בדקו שכתובת העסק נכונה",
+          "support_cta": "דברו איתנו ←"
         },
         "pending_whatsapp": {
           "title": "ברוכים הבאים! כמעט שם.",
           "body": "כדי להעביר את העסק לאישור הצוות, אמתו את מספר הטלפון של העסק דרך וואטסאפ."
+        },
+        "inactive": {
+          "title": "החשבון שלך אינו פעיל כרגע",
+          "body": "העסק מוסתר מהאתר כרגע. צרו קשר איתנו כדי להחזיר אותו לפעילות.",
+          "support_cta": "דברו איתנו ←"
+        },
+        "support": {
+          "section_aria": "צרו קשר עם התמיכה",
+          "heading": "צרו קשר",
+          "body": "נשמח לעזור. בחרו את הדרך הנוחה לך:",
+          "whatsapp_label": "וואטסאפ",
+          "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
+          "email_label": "אימייל",
+          "close_cta": "סגרו"
         }
       },
       "phone_verify": {
@@ -4335,7 +4352,6 @@
       "tabs_aria": "טאבים",
       "tab_profile": "פרופיל",
       "tab_security": "אבטחה",
-      "tab_business": "העסק שלי",
       "saving": "בשמירה...",
       "save_cta": "שמרו",
       "optional_suffix": "(אופציונלי)"
@@ -4362,27 +4378,6 @@
       "field_phone_label": "טלפון",
       "field_phone_hint": "לעדכונים בוואטסאפ מבתי עסק שאתם עוקבים אחריהם",
       "field_phone_error": "מספר טלפון לא תקין"
-    },
-    "business": {
-      "tabpanel_aria": "העסק שלי",
-      "status_pending": "הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.",
-      "status_rejected_title": "הבקשה לא אושרה",
-      "rejected_tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
-      "rejected_tip_photos": "הוסיפו תמונות ברורות של המוצרים",
-      "rejected_tip_address": "בדקו שכתובת העסק נכונה",
-      "support_cta": "דברו איתנו ←",
-      "status_suspended": "החשבון מושעה זמנית.",
-      "support_cta_short": "צרו קשר",
-      "stats_heading": "סטטיסטיקות",
-      "stats_loading": "בטעינה...",
-      "stat_views": "צפיות",
-      "stat_favorites": "מועדפים",
-      "stat_reviews": "ביקורות",
-      "stat_avg_rating": "דירוג ממוצע",
-      "stat_products": "מוצרים",
-      "stat_orders": "הזמנות",
-      "stats_unavailable": "הנתונים אינם זמינים כרגע.",
-      "edit_business_cta": "עריכת דף העסק"
     },
     "products": {
       "section_heading": "מוצרים",
@@ -4485,15 +4480,6 @@
         "grace_body": "החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.",
         "back_to_login": "חזרו לדף הכניסה"
       }
-    },
-    "support_modal": {
-      "section_aria": "צרו קשר עם התמיכה",
-      "heading": "צרו קשר",
-      "body": "נשמח לעזור. בחרו את הדרך הנוחה לך:",
-      "whatsapp_label": "וואטסאפ",
-      "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
-      "email_label": "אימייל",
-      "close_cta": "סגרו"
     }
   },
   "process": {

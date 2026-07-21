@@ -1,20 +1,15 @@
 "use client";
 
-import { forwardRef, Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
   UserCircle,
   Lock,
-  Storefront,
-  ArrowRight,
   Eye,
   EyeSlash,
-  WhatsappLogo,
-  EnvelopeSimple,
   Camera,
-  Warning,
   CheckCircle,
   HourglassSimple,
 } from "@phosphor-icons/react";
@@ -27,7 +22,6 @@ import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
-import { env } from "@/lib/env";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -53,30 +47,18 @@ function SettingsPageBody() {
   const params = useSearchParams();
 
   const urlTab = params.get("tab");
-  const validTabs = ["profile", "security", "business"];
+  // MEH-1355: the "business" tab was removed — its status/support surface is
+  // now the canonical /producer/dashboard (per MEH-963). ?tab=business falls
+  // back to profile.
+  const validTabs = ["profile", "security"];
   const initialTab = validTabs.includes(urlTab) ? urlTab : "profile";
   const [tab, setTab] = useState(initialTab);
-
-  const businessTabRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
   }, [authLoading, user, router]);
 
-  // Scroll business tab into view at 375px where 3 tabs may overflow
-  useEffect(() => {
-    if (tab === "business" && businessTabRef.current) {
-      businessTabRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "nearest",
-      });
-    }
-  }, [tab]);
-
   if (authLoading || !user) return null;
-
-  const isProducer = user.is_producer || user.role === "producer";
 
   const selectTab = (next) => {
     setTab(next);
@@ -98,7 +80,7 @@ function SettingsPageBody() {
         {tCommon("page_heading")}
       </h1>
 
-      {/* Tab bar — overflow-x-auto so business tab stays reachable at 375px */}
+      {/* Tab bar */}
       <div
         role="tablist"
         aria-label={tCommon("tabs_aria")}
@@ -125,38 +107,17 @@ function SettingsPageBody() {
         >
           {tCommon("tab_security")}
         </TabButton>
-        {isProducer && (
-          <TabButton
-            ref={businessTabRef}
-            active={tab === "business"}
-            onClick={() => selectTab("business")}
-            icon={
-              <Storefront
-                size={16}
-                weight={tab === "business" ? "fill" : "regular"}
-              />
-            }
-          >
-            {tCommon("tab_business")}
-          </TabButton>
-        )}
       </div>
 
       {tab === "profile" && <ProfileTab />}
       {tab === "security" && <SecurityTab />}
-      {tab === "business" && isProducer && <BusinessTab />}
     </div>
   );
 }
 
-// TabButton forwards ref so SettingsPageBody can scrollIntoView the business tab
-const TabButton = forwardRef(function TabButton(
-  { active, onClick, icon, children },
-  ref
-) {
+function TabButton({ active, onClick, icon, children }) {
   return (
     <button
-      ref={ref}
       type="button"
       role="tab"
       aria-selected={active}
@@ -171,7 +132,7 @@ const TabButton = forwardRef(function TabButton(
       {children}
     </button>
   );
-});
+}
 
 // ---------------------------------------------------------------------------
 // פרופיל
@@ -765,129 +726,5 @@ function DangerZoneCard() {
         </form>
       )}
     </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// העסק שלי
-// ---------------------------------------------------------------------------
-
-function BusinessTab() {
-  const { user } = useAuth();
-  const t = useTranslations("settings.business");
-  const [supportOpen, setSupportOpen] = useState(false);
-
-  const status = user.producer_status || "pending";
-  const rejectionReason = user.producer_rejection_reason;
-
-  return (
-    <div className="space-y-6">
-      {/* MEH-1355: primary navigation CTA at the top of the business status
-          tab — jumps straight to the edit surface. Kept ABOVE the status
-          banners (deliberately NOT a redirect) so a rejected/suspended owner
-          still sees her banner below. Mirrors the ProfileCompletenessCard edit
-          CTA: bg-action-primary + ArrowRight rtl:rotate-180 forward indicator
-          (MEH-1348/MEH-938 convention). */}
-      <Link
-        href="/producer/dashboard/edit"
-        className="flex w-full items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-[12px] font-semibold bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
-      >
-        {t("edit_business_cta")}
-        <ArrowRight size={18} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-      </Link>
-
-      {/* Status banner */}
-      {status === "pending" && (
-        <div className="rounded-[12px] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
-          {t("status_pending")}
-        </div>
-      )}
-      {status === "rejected" && (
-        <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-4 space-y-3">
-          <p className="text-sm font-semibold text-red-700">{t("status_rejected_title")}</p>
-          {rejectionReason && (
-            <p className="text-sm text-red-600">{rejectionReason}</p>
-          )}
-          <ul className="space-y-1 text-sm text-red-700">
-            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_details")}</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_photos")}</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_address")}</span></li>
-          </ul>
-          <button
-            type="button"
-            onClick={() => setSupportOpen(true)}
-            className="text-sm text-primary hover:underline"
-          >
-            {t("support_cta")}
-          </button>
-        </div>
-      )}
-      {status === "suspended" && (
-        <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
-          <Warning size={18} weight="fill" aria-hidden="true" />
-          <span className="font-medium">{t("status_suspended")}</span>
-          <button
-            type="button"
-            onClick={() => setSupportOpen(true)}
-            className="ms-auto text-primary hover:underline text-xs"
-          >
-            {t("support_cta_short")}
-          </button>
-        </div>
-      )}
-
-      {/* MEH-1355: the old bottom "ערכו פרופיל עסק ←" text link (the MEH-963 /
-          MEH-1209 pointer to /edit) was absorbed into the primary CTA at the
-          top of the tab — one clear navigation path, no duplicate link. */}
-      {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
-    </div>
-  );
-}
-
-function SupportModal({ onClose }) {
-  // MEH-652: SupportModal i18n — final settings/page.jsx residual.
-  const t = useTranslations("settings.support_modal");
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("section_aria")}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
-        <p className="text-sm text-fg-muted">{t("body")}</p>
-        <a
-          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
-            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
-          </div>
-        </a>
-        <a
-          href="mailto:support@mehamakor.online"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <EnvelopeSimple size={22} className="text-primary shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
-          </div>
-        </a>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
-        >
-          {t("close_cta")}
-        </button>
-      </div>
-    </div>
   );
 }

@@ -1,106 +1,161 @@
 /**
- * MEH-157 — producer status banners in dashboard
- * Tests that pending / rejected / approved states render the correct banner.
+ * MEH-157 / MEH-1355 — producer status banners on the dashboard Overview.
+ *
+ * Whole-page render (Dashboard1025Banner convention: key-echo next-intl mock,
+ * mocked api/auth/icons) driving producer.status + user.producer_rejection_reason.
+ * MEH-1355 migrated the /settings business-tab deltas here, so this suite now
+ * also covers the rejected-reason display, the migrated fix-it tips, the NEW
+ * inactive banner, and the shared support modal.
+ *
+ * Un-skipped from the pre-i18n MEH-729 version — the old suite asserted raw
+ * Hebrew literals against a page that now requires next-intl context; the
+ * key-echo mock makes those assertions stable again.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
 
-// --- mock next/navigation ---
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-// --- mock next/link ---
-vi.mock("next/link", () => ({
-  default: ({ href, children, className }) => (
-    <a href={href} className={className}>{children}</a>
-  ),
+const { userRef, producerRef } = vi.hoisted(() => ({
+  userRef: { current: { id: 1, name: "שרה", role: "producer" } },
+  producerRef: { current: {} },
 }));
 
-// --- mock holidays (return null so no holiday banner interferes) ---
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => ({ user: userRef.current, loading: false }),
+}));
+vi.mock("next-intl", () => {
+  const t = (key) => key;
+  t.rich = (key) => key;
+  return { useLocale: () => "he", useTranslations: () => t };
+});
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+vi.mock("@phosphor-icons/react", () => ({
+  EnvelopeSimple: (p) => <span {...p} />,
+  Eye: (p) => <span {...p} />,
+  LockSimple: (p) => <span {...p} />,
+  Sparkle: (p) => <span {...p} />,
+  Warning: (p) => <span {...p} />,
+  WhatsappLogo: (p) => <span {...p} />,
+  X: (p) => <span {...p} />,
+}));
+vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
+vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
+vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
-
-// --- shared api response ref so each test can control data ---
-const apiRef = { current: {} };
+vi.mock("@/lib/producer-completeness", () => ({
+  producerCompleteness: () => ({ missing: [], priority: "green" }),
+}));
 
 vi.mock("@/lib/api", () => ({
   default: {
     get: vi.fn((url) => {
-      if (url === "/producers/me/dashboard") return Promise.resolve({ data: apiRef.current.dashboard });
-      if (url === "/producers/me/analytics") return Promise.resolve({ data: null });
-      if (url === "/producers/me") return Promise.resolve({ data: null });
-      return Promise.resolve({ data: null });
+      if (url === "/producers/me/dashboard") {
+        return Promise.resolve({ data: { producer: producerRef.current } });
+      }
+      if (url === "/producers/me/analytics") {
+        return Promise.resolve({
+          data: {
+            profile_views: { last_7d: 0, total: 0 },
+            whatsapp_clicks: { last_7d: 0, total: 0 },
+            contact_clicks: { last_7d: 0, total: 0 },
+            average_rating: 0, total_reviews: 0, conversion_rate: 0,
+          },
+        });
+      }
+      return Promise.resolve({ data: null }); // /producers/me
     }),
+    post: vi.fn(() => Promise.resolve({})),
   },
 }));
 
-// --- mock auth so user is always a producer ---
-vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    user: { id: "u1", name: "שרה", role: "producer" },
-    loading: false,
-  }),
-}));
-
-function makeDashboard(status) {
-  return {
-    producer: {
-      id: "p1",
-      name: "חוות הבוקר",
-      status,
-      slug: "chavat-haboker",
-      // MEH-291 Phase 3 — new field; legacy kept during 7-day overlap.
-      availability_state: "available_today",
-      is_available_today: true,
-      availability_status: "available",
-      plan: "free",
-    },
-    favorites_count: 0,
-    whatsapp_clicks_week: 0,
+function setup(status, { rejection_reason = null } = {}) {
+  producerRef.current = {
+    id: 1,
+    name: "חוות הבוקר",
+    slug: "chavat-haboker",
+    status,
+    availability_state: "accepting_orders",
+  };
+  userRef.current = {
+    id: 1,
+    name: "שרה",
+    role: "producer",
+    producer_rejection_reason: rejection_reason,
   };
 }
 
-// MEH-729: the producer dashboard page was migrated to next-intl (MEH-475)
-// and now requires a NextIntlClientProvider context; these tests import the
-// real page and assert pre-i18n Hebrew banner literals. Restoring green needs
-// an i18n-aware render harness (provider + key map) — tracked as a follow-up.
-// Skipped with explanation rather than deleted (never delete silently).
-describe.skip("producer dashboard status banners", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe("producer dashboard status banners (MEH-1355)", () => {
+  beforeEach(() => setup("approved"));
+
+  it("rejected: renders reason + migrated tips + support trigger", async () => {
+    setup("rejected", { rejection_reason: "התמונות לא ברורות מספיק" });
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
+
+    const banner = screen.getByTestId("status-rejected-banner");
+    expect(banner).toBeInTheDocument();
+    // admin reason rendered as-is (like ChangesRequestedBanner's DB text)
+    expect(screen.getByTestId("status-rejected-reason")).toHaveTextContent(
+      "התמונות לא ברורות מספיק",
+    );
+    // 3 fix-it tips migrated from the removed /settings business tab (key-echo)
+    expect(screen.getByText("status.rejected.tip_details")).toBeInTheDocument();
+    expect(screen.getByText("status.rejected.tip_photos")).toBeInTheDocument();
+    expect(screen.getByText("status.rejected.tip_address")).toBeInTheDocument();
+    expect(screen.getByTestId("status-rejected-support")).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    vi.resetModules();
+  it("rejected: omits the reason paragraph when no rejection_reason is set", async () => {
+    setup("rejected", { rejection_reason: null });
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
+
+    expect(screen.getByTestId("status-rejected-banner")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-rejected-reason")).not.toBeInTheDocument();
+    // tips still render even without a reason
+    expect(screen.getByText("status.rejected.tip_photos")).toBeInTheDocument();
   });
 
-  it("shows pending banner when status is pending", async () => {
-    apiRef.current.dashboard = makeDashboard("pending");
-    const { default: Page } = await import("../app/[locale]/producer/dashboard/page.js");
-    const { findByText } = render(<Page />);
+  it("inactive: renders the amber banner + support trigger (literal 'inactive')", async () => {
+    setup("inactive");
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
 
-    expect(await findByText(/הפרופיל שלך בסקירה/)).toBeTruthy();
-    expect(await findByText(/3 ימי עסקים/)).toBeTruthy();
-    const cta = await findByText("השלימי פרופיל ←");
-    expect(cta.getAttribute("href")).toBe("/settings");
+    const banner = screen.getByTestId("status-inactive-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner.className).toContain("amber");
+    expect(screen.getByText("status.inactive.title")).toBeInTheDocument();
+    expect(screen.getByTestId("status-inactive-support")).toBeInTheDocument();
+    // NOT the rejected banner
+    expect(screen.queryByTestId("status-rejected-banner")).not.toBeInTheDocument();
   });
 
-  it("shows rejected banner when status is rejected", async () => {
-    apiRef.current.dashboard = makeDashboard("rejected");
-    const { default: Page } = await import("../app/[locale]/producer/dashboard/page.js");
-    const { findByText } = render(<Page />);
+  it("support modal opens from a banner with wa.me + mailto entries", async () => {
+    setup("inactive");
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
 
-    expect(await findByText(/הבקשה לא אושרה/)).toBeTruthy();
-    const cta = await findByText("צרי קשר ←");
-    expect(cta.getAttribute("href")).toBe("/contact");
+    fireEvent.click(screen.getByTestId("status-inactive-support"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const wa = document.querySelector('a[href^="https://wa.me/"]');
+    const mail = document.querySelector('a[href^="mailto:support@mehamakor.online"]');
+    expect(wa).not.toBeNull();
+    expect(mail).not.toBeNull();
   });
 
-  it("shows no status banner when status is approved", async () => {
-    apiRef.current.dashboard = makeDashboard("approved");
-    const { default: Page } = await import("../app/[locale]/producer/dashboard/page.js");
-    render(<Page />);
+  it("approved: renders no rejected/inactive banner", async () => {
+    setup("approved");
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
 
-    // Wait for data to load then verify no status banners
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByText(/הפרופיל שלך בסקירה/)).toBeNull();
-    expect(screen.queryByText(/הבקשה לא אושרה/)).toBeNull();
+    expect(screen.queryByTestId("status-rejected-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("status-inactive-banner")).not.toBeInTheDocument();
   });
 });
