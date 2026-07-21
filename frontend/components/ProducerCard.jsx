@@ -243,14 +243,16 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                 onError={() => setImgError(true)}
               />
             ) : (
-              // MEH-643: canonical no-photo state — cream surface + leaf glyph + brand name.
+              // MEH-643: canonical no-photo state — green-50 tile + leaf glyph + brand name.
+              // MEH-1400: bg-background (cream) read as an empty hole on the cream page;
+              // aligned to the MEH-1243 locked #EAF3DE (green-50) tile + 70% glyph precedent.
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 gap-2"
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
-                <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
-                <span className="font-headline-md text-base font-bold text-primary/50">
+                <Leaf size={60} weight="light" className="text-primary/70" data-testid="leaf-icon" aria-hidden="true" />
+                <span className="font-headline-md text-base font-bold text-primary/80">
                   {BRAND_NAME}
                 </span>
               </div>

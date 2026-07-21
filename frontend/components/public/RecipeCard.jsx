@@ -51,10 +51,11 @@ export default function RecipeCard({ slug, recipe }) {
             className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
           />
         ) : (
-          // MEH-911: canonical no-photo state — cream surface + Leaf glyph +
-          // brand name (replaces the 🍞 emoji). Mirrors ProducerCard:250-259.
+          // MEH-911: canonical no-photo state — green-50 tile + Leaf glyph +
+          // brand name (replaces the 🍞 emoji). Mirrors ProducerCard.
+          // MEH-1400: bg-background → bg-green-50 (green-50 = #EAF3DE, MEH-1243 tile).
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 gap-2"
             data-testid="recipe-image-missing"
           >
             <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />

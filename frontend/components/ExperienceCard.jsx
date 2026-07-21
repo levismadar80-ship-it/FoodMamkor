@@ -77,12 +77,13 @@ export default function ExperienceCard({ experience: ex }) {
         </div>
       ) : (
         <div
-          className="h-44 flex flex-col items-center justify-center bg-background gap-2"
+          className="h-44 flex flex-col items-center justify-center bg-green-50 gap-2"
           data-testid="experience-image-missing"
         >
-          {/* MEH-1143: canonical no-photo state — cream surface + Leaf glyph +
+          {/* MEH-1143: canonical no-photo state — green-50 tile + Leaf glyph +
               brand name (replaces the MEH-862 CookingPot; default per issue note,
-              cross-surface consistency with ProducerCard/RecipeCard). */}
+              cross-surface consistency with ProducerCard/RecipeCard).
+              MEH-1400: bg-background → bg-green-50 (green-50 = #EAF3DE, MEH-1243 tile). */}
           <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
           <span className="font-headline-md text-sm font-bold text-primary/80">
             {BRAND_NAME}

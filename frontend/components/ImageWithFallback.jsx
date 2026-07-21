@@ -41,7 +41,8 @@ export default function ImageWithFallback({
         role="img"
         className={`flex items-center justify-center ${className}`}
         style={{
-          background: "#F5F0E8",
+          // MEH-1400: cream #F5F0E8 → green-50 #EAF3DE (MEH-1243 locked no-photo tile).
+          background: "#EAF3DE",
           width: fill ? "100%" : width,
           height: fill ? "100%" : height,
           position: fill ? "absolute" : "relative",
