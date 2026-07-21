@@ -3743,11 +3743,28 @@
         "rejected": {
           "title": "⚠️ Application not approved",
           "body": "Contact us for more details and a re-review.",
-          "cta": "Contact us →"
+          "tip_details": "Make sure all business details are complete and accurate",
+          "tip_photos": "Add clear product photos",
+          "tip_address": "Check that the business address is correct",
+          "support_cta": "Talk to us →"
         },
         "pending_whatsapp": {
           "title": "Welcome! Almost there.",
           "body": "To send your business for team review, verify your business phone number via WhatsApp."
+        },
+        "inactive": {
+          "title": "Your account is currently inactive",
+          "body": "Your business is hidden from the site. Contact us to reactivate it.",
+          "support_cta": "Talk to us →"
+        },
+        "support": {
+          "section_aria": "Contact support",
+          "heading": "Contact us",
+          "body": "We're happy to help. Pick the channel that suits you:",
+          "whatsapp_label": "WhatsApp",
+          "whatsapp_hours": "Available Sun–Thu 9:00–17:00",
+          "email_label": "Email",
+          "close_cta": "Close"
         }
       },
       "phone_verify": {
@@ -4259,7 +4276,6 @@
       "tabs_aria": "Tabs",
       "tab_profile": "Profile",
       "tab_security": "Security",
-      "tab_business": "My business",
       "saving": "Saving…",
       "save_cta": "Save",
       "optional_suffix": "(optional)"
@@ -4286,27 +4302,6 @@
       "field_phone_label": "Phone",
       "field_phone_hint": "For WhatsApp updates from businesses you follow",
       "field_phone_error": "Invalid phone number"
-    },
-    "business": {
-      "tabpanel_aria": "My business",
-      "status_pending": "Your application is under review — we'll get back to you shortly.",
-      "status_rejected_title": "Application not approved",
-      "rejected_tip_details": "Make sure all business details are complete and accurate",
-      "rejected_tip_photos": "Add clear product photos",
-      "rejected_tip_address": "Check that the business address is correct",
-      "support_cta": "Talk to us →",
-      "status_suspended": "Account temporarily suspended.",
-      "support_cta_short": "Contact us",
-      "stats_heading": "Statistics",
-      "stats_loading": "Loading…",
-      "stat_views": "Views",
-      "stat_favorites": "Favorites",
-      "stat_reviews": "Reviews",
-      "stat_avg_rating": "Average rating",
-      "stat_products": "Products",
-      "stat_orders": "Orders",
-      "stats_unavailable": "Data not available right now.",
-      "edit_profile_link": "Edit business profile →"
     },
     "products": {
       "section_heading": "Products",
@@ -4409,15 +4404,6 @@
         "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
         "back_to_login": "Back to login"
       }
-    },
-    "support_modal": {
-      "section_aria": "Contact support",
-      "heading": "Contact us",
-      "body": "We're happy to help. Pick the channel that suits you:",
-      "whatsapp_label": "WhatsApp",
-      "whatsapp_hours": "Available Sun–Thu 9:00–17:00",
-      "email_label": "Email",
-      "close_cta": "Close"
     }
   },
   "process": {

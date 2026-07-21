@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1355 — producer status surface → dashboard; /settings business tab removed (Route B)
+
+- **Shipped:** consolidated the producer status/support surface into `producer/dashboard/page.js` and **deleted** the redundant `/settings` "העסק שלי" tab (duplicated the MEH-963 dashboard + hosted a dead `"suspended"` branch — backend emits `"inactive"`). **Route A (PR #2006, CTA atop the doomed tab) was superseded → closed without merge.**
+- **Dashboard deltas:** rejected banner now renders `user.producer_rejection_reason` (from `/auth/me`, `auth.py:1006-1007` — **no backend change**, dashboard already reads `user` via useAuth) + generic body + 3 migrated tips + support entry; **NEW inactive banner** (`status === "inactive"`, amber + Warning icon + support); `StatusSupportModal` (wa.me + mailto, migrated from settings `SupportModal`) reachable from both banners. `?tab=business` → falls back to profile clean.
+- **i18n:** removed `settings.business.*` (incl. 9 orphaned stat keys) + `settings.support_modal.*` + `settings.common.tab_business` from he+en; added `dashboard.producer.status.{rejected.tip_*, rejected.support_cta, inactive.*, support.*}` he+en (MEH-978 parity); dropped orphaned `status.rejected.cta`.
+- **Verify:** build exit 0 · full vitest **1408 pass / 10 skipped** (`ProducerStatusBanners.test.jsx` un-skipped + rebuilt on the Dashboard1025Banner key-echo harness: rejected reason+tips+support, reason-omitted, inactive amber, support wa/mailto, approved-no-banner; `SettingsPage.test.jsx` business test removed + "3 tabs"→"exactly 2") · eslint 0 errors · grep `suspended`/`settings.business`/`tab=business` → 0 live. Playwright self-QA @375+@1440 (live `next start`, mocked auth/API) → `qa-artifacts/MEH-1355/` (8 WebP, 524 KB).
+- **Left for Sapir:** mobile QA on the Vercel preview (rejected/inactive producer banners + support modal; /settings 2 tabs). ⚠️ superseded remote branch `feature/meh-1355-settings-business-tab-cta` couldn't be auto-deleted from the CC sandbox (proxy reset on delete-push) — PR #2006 is closed, so it's harmless; delete from the GitHub UI if desired.
+- **Branch:** `feature/meh-1355-business-surface-consolidation` off `origin/staging` (the harness `claude/*` branch is blocked by the MEH-1141 branch-name gate).
+
 ## 2026-07-21 — MEH-1396 — admin pre-approval review checklist (Phase 1, static config)
 
 - **Shipped:** a collapsible 7-item review checklist (RTL) on each pending-producer row in the admin producers table, moving `docs/VERIFICATION.md` §2 knowledge in front of the admin at approval time. Clicking "אשר" with unticked items → soft confirm dialog ("נשארו X סעיפים…" · אשרי בכל זאת / חזרה לבדיקה); all ticked → approve straight through. **Session-local React state only — no persistence, no schema, no API.**
