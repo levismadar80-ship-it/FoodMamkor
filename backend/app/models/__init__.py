@@ -20,6 +20,7 @@ from app.models.models import (
     Producer,
     ProducerCategory,
     ProducerFollower,
+    ProducerLocation,
     ProducerPageView,
     ProducerRecipe,
     ProducerReview,
@@ -67,4 +68,6 @@ __all__ = [
     "InboundMessage",
     # MEH-1338 — favorite-alert frequency-cap ledger
     "AlertLog",
+    # MEH-1395 (MEH-1388 chunk 1) — physical presence points (Expand-phase)
+    "ProducerLocation",
 ]
