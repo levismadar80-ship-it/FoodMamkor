@@ -110,7 +110,7 @@ describe("MEH-1404 — experience create form sends lat/lng", () => {
       target: { value: "תיאור מפורט של הסדנה שלנו שנמשך יותר מעשרים תווים בדיוק" },
     });
     fireEvent.change(screen.getByLabelText(N.field_date), { target: { value: "2026-09-01" } });
-    fireEvent.click(screen.getByTestId("pick-new-experience-address"));
+    fireEvent.click(screen.getByTestId("pick-experience-address"));
     fireEvent.click(screen.getByRole("button", { name: N.submit_cta }));
 
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/experiences", expect.anything()));
