@@ -735,8 +735,8 @@ the toast (right side in he/RTL), inheriting the white text color.
 - [ ] **Follow** — מעקב אחרי עסק — toast פעמון (Bell) + "מעכשיו תקבלי עדכונים…", בלי 🔔
 - [ ] **Share / copy link** — העתקת קישור (ShareButton) — toast אייקון Check + "הקישור הועתק"
 - [ ] **Review saved** — שליחת ביקורת — toast כוכב (Star) + "הביקורת שלך נשמרה", בלי ⭐
-- [ ] **Publish neighbor product** — פרסום מוצר שכן — toast עלה (Leaf) + "המוצר פורסם!", בלי 🌿
-- [ ] **Under review** — מוצר שסומן בבדיקה — toast זכוכית מגדלת (MagnifyingGlass) + "…בבדיקה", בלי 🔍
+- [ ] ~~**Publish neighbor product** — פרסום מוצר שכן — toast עלה (Leaf) + "המוצר פורסם!", בלי 🌿~~ — **N/A (MEH-1406)**: ה-home-products API כובה (unmount), אין עוד מסלול פרסום מוצר ביתי.
+- [ ] ~~**Under review** — מוצר שסומן בבדיקה — toast זכוכית מגדלת (MagnifyingGlass) + "…בבדיקה", בלי 🔍~~ — **N/A (MEH-1406)**: toast המודרציה של מוצר ביתי — מסלול מת עם כיבוי ה-API.
 - [ ] **Error toast** — כשל רשת/פעולה — toast אדום + אייקון WarningCircle
 - [ ] **Info + action (session expiry)** — אחרי פג תוקף JWT — toast info + אייקון Info +
   לינק "התחברי" שעובד
