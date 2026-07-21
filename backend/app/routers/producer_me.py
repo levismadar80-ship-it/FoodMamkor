@@ -945,6 +945,27 @@ def request_kashrut_badge(
     return out
 
 
+@router.get("/kashrut-requests", response_model=list[KashrutRequestOut])
+@limiter.limit("30/minute")
+def list_kashrut_requests(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """MEH-1167: the logged-in producer's own kashrut badge requests,
+    newest first — feeds the dashboard KashrutCard status zone so a
+    pending/rejected request is visible after submit. Owner-isolated by
+    producer_id (require_producer guarantees one); no schema change —
+    KashrutRequestOut already exists (MEH-51)."""
+    rows = (
+        db.query(KashrutBadgeRequest)
+        .filter(KashrutBadgeRequest.producer_id == user.producer_id)
+        .order_by(KashrutBadgeRequest.created_at.desc())
+        .all()
+    )
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # MEH-1236: resubmit-for-review — the owner signals she finished completing
 # the details an admin requested, so the admin knows to look again.
