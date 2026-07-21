@@ -65,6 +65,8 @@ vi.mock("@phosphor-icons/react", () => {
 });
 
 import ContactCard from "@/app/[locale]/producer/[id]/components/ContactCard";
+// MEH-1426: the mocked helpers, imported to assert the primary-CTA gating.
+import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 const base = {
   id: 7,
@@ -166,5 +168,27 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
     } finally {
       window.matchMedia = prev;
     }
+  });
+
+  // MEH-1426: the WhatsApp-gate invariant — a WhatsApp primary CTA attributes
+  // AND unlocks; a non-WhatsApp primary does neither (previously it unlocked
+  // unconditionally, letting a phone/website primary open the review form on a
+  // click that never created an attributed WA row).
+  it("WhatsApp primary CTA fires attribution + unlock", () => {
+    markWhatsAppClickedLocal.mockClear();
+    pingWhatsAppBeacon.mockClear();
+    render1(); // base = whatsapp primary
+    fireEvent.click(screen.getByTestId("primary-contact-button"));
+    expect(pingWhatsAppBeacon).toHaveBeenCalledWith(base.id);
+    expect(markWhatsAppClickedLocal).toHaveBeenCalledWith(base.id);
+  });
+
+  it("non-WhatsApp primary CTA fires NEITHER attribution nor unlock", () => {
+    markWhatsAppClickedLocal.mockClear();
+    pingWhatsAppBeacon.mockClear();
+    render1({ primary_contact_method: "website" });
+    fireEvent.click(screen.getByTestId("primary-contact-button"));
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+    expect(markWhatsAppClickedLocal).not.toHaveBeenCalled();
   });
 });

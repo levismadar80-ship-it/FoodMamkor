@@ -12,7 +12,7 @@ import {
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 
-import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
 // MEH-1411: the sticky CTA carried a label with no icon while the inline CTA
 // showed one. Mirror PrimaryContactButton.jsx's per-method icon so the sticky
@@ -108,14 +108,15 @@ export default function StickyContactBar({
             {...(isPrimaryExternal(producer)
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
-            // TODO(MEH-XXX): sticky bar intentionally omits markWhatsAppClickedLocal —
-            // review-form unlock does not trigger from this path. Verify if intentional.
-            // The ContactCard CTA (inline + sidebar) writes localStorage.wa_clicked_<id>;
-            // this site does not. Source pattern preserved from ProducerDetail.jsx:870-879
-            // by Q1 resolution C in PR2 plan.
+            // MEH-1426: TODO resolved — the sticky bar now matches the ContactCard
+            // CTA. A WhatsApp primary click both attributes (pingWhatsAppBeacon) and
+            // unlocks the review form (markWhatsAppClickedLocal, localStorage
+            // wa_clicked_<id>). Invariant: every WhatsApp click = attribution +
+            // unlock; a non-WhatsApp primary fires neither.
             onClick={() => {
               if (getPrimaryMethod(producer) === "whatsapp") {
                 pingWhatsAppBeacon(producer.id);
+                markWhatsAppClickedLocal(producer.id);
               }
             }}
             // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
