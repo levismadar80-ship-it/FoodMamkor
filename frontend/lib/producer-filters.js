@@ -1,10 +1,14 @@
-// MEH-657: dietary/trust chips are text-only (Emoji LOCK v2 / a11y) — no icon glyphs.
+// MEH-1418: attribute chips now carry Phosphor LEADING ICONS (lib/chip-icons.js,
+// threaded at the render call site via withChipIcons). Labels stay text-only —
+// Emoji LOCK v2 forbids emoji literals; aria-hidden Phosphor glyphs are the
+// approved substitute (MEH-990 precedent).
 // MEH-1082: shared attribute labels come from ATTRIBUTE_LABELS (unified with the
-// /map TOGGLE_CHIPS); `kosher` is /producers-only so its label stays local.
+// /map TOGGLE_CHIPS). MEH-1418: `kosher` joined the shared map ("כשרות מאומתת",
+// MEH-1087) — the /producers "כשר" label is retired.
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 
 export const CHIPS_CONFIG = [
-  { key: "kosher",        label: "כשר" },
+  { key: "kosher",        label: ATTRIBUTE_LABELS.kosher },
   // MEH-1259: organic chip removed — self-declared organic is no longer a
   // public filter/badge (חוק תוצרת אורגנית 2005). Field + owner toggle kept.
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free },

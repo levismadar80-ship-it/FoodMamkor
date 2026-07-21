@@ -16,6 +16,7 @@
 
 // MEH-1082: shared attribute labels come from ATTRIBUTE_LABELS (unified with the
 // /producers CHIPS_CONFIG); `grass_fed` is /map-only so its label stays local.
+// MEH-1418: `kosher` moved into the shared ATTRIBUTE_LABELS map ("כשרות מאומתת").
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
@@ -35,7 +36,10 @@ export const CATEGORY_CHIPS = [
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
 // independent; category is radio-group. NO "פתוחים השבוע" chip
 // (is_available_today field does not exist on producers).
-// MEH-657: map filter chips are text-only (Emoji LOCK v2 / a11y) — no glyph prefix.
+// MEH-1418: toggle chips carry Phosphor LEADING ICONS (lib/chip-icons.js,
+// threaded via withChipIcons at the render call site); category chips stay
+// text-only (MEH-683 D4). Labels stay text-only — Emoji LOCK v2 forbids emoji
+// literals, aria-hidden Phosphor glyphs are the approved substitute (MEH-990).
 // MEH-1075: `group` drives the FilterSheet sections (diet | quality | service).
 // Within-group render order = array order (diet order per spec: טבעוני ·
 // ללא גלוטן · ללא לקטוז).
@@ -43,13 +47,14 @@ export const CATEGORY_CHIPS = [
 // filters ?kosher=true, which the backend maps to kashrut_verified_at ONLY
 // (producer_listing.py:153 _kosher_condition, MEH-986 ch3b + MEH-1260 expiry),
 // never the free-text Producer.kosher. A FREE-TEXT kosher chip stays forbidden
-// (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — do not paraphrase.
+// (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — MEH-1418 sourced it
+// from the shared ATTRIBUTE_LABELS.kosher so /producers + /map read identically.
 export const TOGGLE_CHIPS = [
   { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
   { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
   // MEH-1259: organic chip removed — self-declared organic is no longer a
   // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
-  { key: "kosher",        label: "כשרות מאומתת",                 group: "quality" },
+  { key: "kosher",        label: ATTRIBUTE_LABELS.kosher,        group: "quality" },
   { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
   { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },

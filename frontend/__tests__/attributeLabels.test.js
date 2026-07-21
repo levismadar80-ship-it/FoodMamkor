@@ -34,10 +34,21 @@ describe("unified attribute labels (MEH-1082)", () => {
     }
   });
 
-  it("surface-specific keys stay local (kosher on /producers, grass_fed on /map)", () => {
-    expect(ATTRIBUTE_LABELS.kosher).toBeUndefined();
+  it("MEH-1418: verified label names WHAT was verified (was the vague 'מאומתים')", () => {
+    expect(ATTRIBUTE_LABELS.verified).toBe("רישוי מאומת");
+    expect(CHIPS_CONFIG.find((c) => c.key === "verified")?.label).toBe("רישוי מאומת");
+    expect(TOGGLE_CHIPS.find((c) => c.key === "verified")?.label).toBe("רישוי מאומת");
+  });
+
+  it("MEH-1418: kosher label unified across surfaces (Sapir-LOCKED, MEH-1087)", () => {
+    // kosher joined the shared map — /producers + /map now read identically.
+    expect(ATTRIBUTE_LABELS.kosher).toBe("כשרות מאומתת");
+    expect(CHIPS_CONFIG.find((c) => c.key === "kosher")?.label).toBe("כשרות מאומתת");
+    expect(TOGGLE_CHIPS.find((c) => c.key === "kosher")?.label).toBe("כשרות מאומתת");
+  });
+
+  it("grass_fed stays /map-local (not in the shared map)", () => {
     expect(ATTRIBUTE_LABELS.grass_fed).toBeUndefined();
-    expect(CHIPS_CONFIG.find((c) => c.key === "kosher")?.label).toBe("כשר");
     expect(TOGGLE_CHIPS.find((c) => c.key === "grass_fed")?.label).toBe("גראס פד");
   });
 
