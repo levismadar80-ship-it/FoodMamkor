@@ -3,6 +3,16 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-683 — Category icons: unified geometric set — MERGED (PR #2026, squash 22bb5fe3)
+
+- **Status: merged to `staging`.** PR #2026 squash-merged on a verified-green signal (CI gate + Deploy gate ran the real Frontend build + vitest on the head, both success). Branch `feature/meh-683-category-glyphs` off `staging`. Frontend-only; zero backend.
+- **Shipped:** `components/CategoryIcons.jsx` rewritten — 18 glyphs keyed by canonical DB name (11 Phosphor + 5 Tabler MIT + Material `hive` Apache-2.0 + SVG Repo `olive-oil` #201507 CC0). New `frontend/lib/icons/LICENSES.md`. `lib/map-categories.js` glyph swap (colours unchanged, honey `#C8821E`). `home-categories.js`/`HomeCategoryGrid.jsx` fallback re-keyed to name (photos kept, MEH-1183). **Directive #4:** `CategorySelector.jsx` — all 18 register cards get a dedicated glyph (Leaf only for unknown admin categories); single canonical-name key contract (no slug alias — MEH-271 smell avoided); no data-contract change.
+- **#201507 (CC0):** svgrepo unreachable from the CC sandbox (MEH-397 + proxy 403); the real markup never transferred (raster only), so the CC0 design was reproduced as line paths (CC0 permits) — provenance in LICENSES.md. If the vector text is pasted later, swap verbatim.
+- **`hive`** is the one filled glyph (Material) — slightly heavier at 44px; kept per lock.
+- **Evidence:** lineup 44px+16px + register step-2 (all-18) screenshots produced in-session.
+- **This PR (#2026) intentionally shipped code-only** — CHANGELOG/HANDOFF/MANUAL_TESTING were dropped mid-flight to clear the append-only merge-storm (rule 25b) and re-added here in the docs follow-up.
+- **Left for Sapir:** mobile QA (map pins בשר/שמנים/דבש + register selector). **Follow-up:** category *chips* via MEH-1418's `icon` prop (V6, separate tiny PR).
+
 ## 2026-07-21 — MEH-1439 — dietary badge over-claim fix + owner filter-awareness hints (LOW-RISK) — PR open, auto-merge on green
 
 - **Shipped (branch `feature/meh-1439-dietary-semantics` off `origin/staging`):** frontend-only, part 2 of the dietary-filters batch (MEH-1437 → MEH-1439 → MEH-1438). (1) `badges.js` vegan/gluten_free/lactose_free tooltips rewritten from all-catalog claims to any-product semantics ("לעסק יש מוצרים … מסומנים בקטלוג"); badge logic untouched. (2) `ProductsSection.jsx` — muted helper line under the diet-chip group in both add + edit forms (`diet_helper` i18n). (3) `KashrutCard` (`edit/cards.jsx`, the trust-group surface — Phase 0 confirmed the dashboard `page.js` has NO kashrut card) — hint when `profile.kosher?.trim() && !profile.kashrut_verified_at`, `filter_hint` i18n.
