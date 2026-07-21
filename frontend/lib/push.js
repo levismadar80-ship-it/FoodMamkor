@@ -3,8 +3,6 @@
  * Handles the browser-side push subscription flow.
  */
 
-import { API_URL } from "./env";
-
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -14,7 +12,9 @@ function urlBase64ToUint8Array(base64String) {
 
 export async function getVapidPublicKey() {
   try {
-    const r = await fetch(`${API_URL}/push-vapid-key`);
+    // MEH-1431: relative path through the Next.js /api/* rewrite proxy —
+    // the browser must not hit the absolute Railway backend URL directly.
+    const r = await fetch(`/api/push-vapid-key`);
     const { public_key } = await r.json();
     return public_key || "";
   } catch {
