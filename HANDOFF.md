@@ -12,6 +12,19 @@
 - **Verify:** NEW `__tests__/EventExperienceAddress.test.jsx` (3/3 — event pick→lat/lng in POST · event free-text→null · experience pick→lat/lng in POST; AddressSearch mocked per `EditTabLocationCard.test.jsx`). build ✓, eslint 0 errors, 0 physical RTL. Playwright @375/@1440: event w/coords → MiniMap+Waze/Google · event no-coords → text-only (no map) · experience w/coords → MiniMap+Waze/Google → `qa-artifacts/MEH-1404/` (WebP 176 KB; OSM tiles gray in sandbox = network-blocked, load on real deploy).
 - **Left for Sapir:** mobile QA on the Vercel preview — create an event/experience with a picked address, confirm the pin + Waze/Google buttons on the detail page; free-text address stays map-less.
 - **Branch:** `feature/meh-1404-event-experience-address` off `origin/staging`. PR auto-merge on green (YELLOW).
+## 2026-07-21 — MEH-1410 — ChatWidget restored to desktop-only (≥768px)
+
+- **Shipped:** gated the whole ChatWidget on the existing `isDesktop` matchMedia state — `if (!isDesktop) return null;` (`ChatWidget.jsx`), after every hook and before any JSX. Mobile (< 768px) no longer mounts the FAB/panel (it competed for the bottom-end corner with BottomNav pill / cookie banner). Desktop behavior byte-identical — the sole non-comment diff is that one gate line.
+- **Files:** `frontend/components/ChatWidget.jsx` (gate + doc/comment updates; `MOBILE_LAUNCHER_BOTTOM` retained-but-unreachable per MEH-1410). NEW `__tests__/ChatWidgetDesktopOnly.test.jsx` (mobile→empty DOM, desktop→launcher present).
+- **Verify:** `npm run build` exit 0 · vitest 9/9 (`ChatWidgetDesktopOnly` 2 + `ChatWidgetLazy` 7). GREEN tier — auto-merge on CI green. Second of the 1409/1410/1411 UX-polish batch (MEH-1409 merged as PR #2010).
+- **Branch:** `feature/meh-1410-chatwidget-desktop-only` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
+
+## 2026-07-21 — MEH-1409 — hero secondary links symmetry (Shuffle icon removed)
+
+- **Shipped:** removed the Phosphor `Shuffle` icon from the "הפתיעו אותי" hero text link (`HomeHero.jsx`) so it and "איך זה עובד" are identical-weight text links (same font/underline/spacing). Post-MEH-1369 the surprise link still carried the icon + `inline-flex gap` classes and read heavier. Style-only, one production file.
+- **Files:** `frontend/app/[locale]/home/HomeHero.jsx` (dropped `<Shuffle>` element + icon-layout classes + `Shuffle` import; className now byte-identical to how-it-works). Test: `__tests__/HomeHeroSurprise.test.jsx` render case flipped to assert the icon is **absent**.
+- **Verify:** `npm run build` exit 0 · vitest `HomeHeroSurprise` 3/3. GREEN tier — auto-merge on CI green. First of the 1409/1410/1411 UX-polish batch.
+- **Branch:** `feature/meh-1409-hero-links-symmetry` off `origin/staging` (harness `claude/*` branch blocked by the MEH-1141 branch-name gate).
 ## 2026-07-21 — MEH-1406 — kill-switch home-products API (unmount router + remove admin moderation tabs)
 
 - **Shipped:** unmounted the dead-but-live "מהמטבח של השכן" API. `router_registry.py:54` include commented out (+ dropped from import tuple) → all public `/home-products*` (GET/POST/PUT/DELETE) now 404. The live write hole this closed: any verified-email user could `POST /home-products` an unlicensed home listing on a licensing-only platform (`home_products.py:199`). **Reversible unmount — zero Alembic, models/schemas/tables retained.**
