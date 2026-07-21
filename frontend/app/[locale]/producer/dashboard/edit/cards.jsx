@@ -1394,6 +1394,15 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
       {/* Chrome + heading live in the EditAccordionCard header (MEH-1116). */}
       <p className="text-xs text-fg-muted">{t("intro")}</p>
 
+      {/* MEH-1439: the owner filled the free-text kosher field but has no
+          verified certificate — free-text drives NO public "כשר" filter
+          appearance (MEH-986, verified-only). Explain why + point at the cert. */}
+      {profile?.kosher?.trim() && !profile?.kashrut_verified_at && (
+        <p data-testid="kashrut-filter-hint" className="text-xs text-fg-muted">
+          {t("filter_hint")}
+        </p>
+      )}
+
       {/* Zone 1 — approved badges (reuse the public strip + its expiry gate). */}
       {approvedBadges.length > 0 && (
         <div className="space-y-1.5">
