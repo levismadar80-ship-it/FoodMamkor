@@ -4065,6 +4065,7 @@
         "from_label": "opening time",
         "to_label": "closing time",
         "preset": "Sun–Thu 9:00–18:00, Fri until 14:00",
+        "clear_cta": "Clear hours",
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
         "invalid_range": "Closing time must be after opening time"
       },
