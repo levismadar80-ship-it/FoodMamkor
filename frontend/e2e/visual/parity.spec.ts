@@ -148,6 +148,16 @@ test.describe("Visual parity — MEH-991", () => {
   // MEH-1336 follow-up (2026-07-20, same day): SHOW_VERIFICATION flipped on in
   // #1982 and exposed the new /about verification section — about-{desktop,mobile}
   // baselines stale (rule 2b miss: should have shipped in #1982). Re-trigger.
+  // MEH-1369 (2026-07-21): the producer-detail regen kept red-lining on the nav
+  // step, not on a stale pixel diff. Root cause is a stale TEST, not a product
+  // regression — #1936 (Quiet Direction v3) redesigned /producer/[id] but left
+  // ProducerCard.jsx / ProducersClient.jsx / the /producers route untouched, and
+  // the card still exposes real <a href> image + name links. The step clicked the
+  // <article> WRAPPER, whose navigation routes through a React onClick
+  // (handleRootClick → router.push) that needs hydration; `h-full` grid stretch
+  // can also place the wrapper's geometric center in non-anchor padding — the
+  // "/producer nav flake" noted above (MEH-1295). Fixed by clicking the inner
+  // anchor. This touch also re-fires vrt-update to refresh the stale baselines.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");
@@ -160,7 +170,10 @@ test.describe("Visual parity — MEH-991", () => {
       return;
     }
     await expect(firstCard).toBeVisible({ timeout: 20_000 });
-    await firstCard.click();
+    // MEH-1369: click the card's inner navigation anchor (image/name Link — a
+    // real <a href> that navigates natively regardless of hydration), not the
+    // <article> wrapper. See the describe-level note above for the root cause.
+    await firstCard.locator('a[href^="/"]').first().click();
     await page.waitForURL((url) => !url.pathname.startsWith("/producers"), {
       timeout: 20_000,
     });
