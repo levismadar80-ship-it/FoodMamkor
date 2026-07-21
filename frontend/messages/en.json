@@ -2736,9 +2736,9 @@
     "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
-    "owner_empty_title": "First reviews come after a few customers",
-    "owner_empty_description": "Reviews are created automatically after customers send you a WhatsApp message. 24 hours after the click they get a link to rate you. No reviews yet because no one has clicked yet.",
-    "owner_empty_cta": "Share your profile on WhatsApp",
+    "owner_empty_title": "First reviews come from happy customers",
+    "owner_empty_description": "Customers who reached out to you on WhatsApp can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
+    "owner_empty_cta": "Share your profile",
     "empty_message": "No reviews here yet.",
     "empty_gate_hint": "Ordered something? We'd love to hear — writing a review opens after you reach out on WhatsApp.",
     "pagination": {
