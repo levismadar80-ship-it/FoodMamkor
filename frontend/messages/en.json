@@ -3942,7 +3942,9 @@
         "more_group": "More options",
         "next_step_aria": "Next step to complete",
         "owner_present": "Owner story added",
-        "owner_missing": "No photo and story yet"
+        "owner_missing": "No photo and story yet",
+        "kashrut_has": "Kosher badge active",
+        "kashrut_none": "No kosher badge yet"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4132,6 +4134,25 @@
         "saving": "Saving…",
         "saved": "Saved",
         "error_save": "Save failed — check your connection and try again."
+      },
+      "kashrut": {
+        "heading": "Kosher certificate",
+        "intro": "Have a valid kosher certificate? Send a request with a photo of it — after review, the kosher badge appears on your business page.",
+        "approved_heading": "Your kosher badges",
+        "select_label": "Kosher type",
+        "select_placeholder": "Choose a kosher type",
+        "upload_label": "Certificate photo (JPG/PNG, up to 5MB)",
+        "upload_cta": "Upload photo",
+        "upload_replace_cta": "Replace photo",
+        "uploading": "Uploading…",
+        "upload_error": "Photo upload failed — please try again.",
+        "submit_cta": "Send request for approval",
+        "submitting": "Sending…",
+        "success": "Request sent — we'll update after review",
+        "error_submit": "Failed to send request — please try again.",
+        "status_pending": "Pending approval",
+        "status_rejected": "Rejected",
+        "empty": "No kosher badge yet. You can request one here."
       }
     }
   },
