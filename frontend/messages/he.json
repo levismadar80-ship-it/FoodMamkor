@@ -3965,7 +3965,15 @@
         "owner_present": "יש סיפור מאחורי העסק",
         "owner_missing": "עוד אין תמונה וסיפור",
         "kashrut_has": "יש תג כשרות",
-        "kashrut_none": "עוד אין תג כשרות"
+        "kashrut_none": "עוד אין תג כשרות",
+        "hub_title": "עריכת העסק",
+        "hub_back": "חזרה לכל הסעיפים",
+        "hub_group_profile": "הפרופיל שלך",
+        "hub_group_trust": "אמינות ואישורים",
+        "hub_group_location": "מיקום, משלוחים ושעות",
+        "hub_group_contact": "קשר ושאלות",
+        "hub_trust_card": "אישורים ותעודות",
+        "hub_progress": "{done} מתוך {total} הושלמו"
       },
       "contact_channels": {
         "heading": "ערוצי קשר",
@@ -4329,7 +4337,7 @@
       "stat_products": "מוצרים",
       "stat_orders": "הזמנות",
       "stats_unavailable": "הנתונים אינם זמינים כרגע.",
-      "edit_profile_link": "ערכו פרופיל עסק ←"
+      "edit_business_cta": "עריכת דף העסק"
     },
     "products": {
       "section_heading": "מוצרים",

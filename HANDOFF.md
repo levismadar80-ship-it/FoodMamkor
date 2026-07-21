@@ -11,6 +11,15 @@
 - **VRT:** producer-detail baselines shift by design → this PR touches `e2e/visual/parity.spec.ts` to re-fire `vrt-update.yml`; the bot regenerates `producer-detail-{desktop,mobile}-linux` on-runner and commits to the branch (MEH-991 flow). **Merge manually after fresh baselines land + VRT green** (auto-merge on the 2 required gates would ship stale baselines — E2E/VRT is not a required gate).
 - **Branch:** `feature/meh-1411-producer-detail-polish` off `origin/staging`. Third of the 1409/1410/1411 UX-polish batch (1409=#2010, 1410=#2012 both merged).
 
+## 2026-07-21 — MEH-1404 — precise address for events + experiences (AddressSearch in forms, MiniMap+Waze in detail)
+
+- **Shipped:** wired the already-present backend `lat`/`lng` into the event + experience create forms and detail pages. **Frontend only, zero backend, zero new i18n keys** (reused `field_location_label`/`field_address` + MiniMap's `map.mini.*`).
+- **Chunk A (events):** `events/new/page.js` — location field swapped `Input` → `<AddressSearch>` (onChange = free text, onSelect = lat/lng); `lat/lng:null` added to state; payload already spreads `...form` so coords ride along. `EventDetailClient.jsx` — `dynamic(...MiniMap, {ssr:false})`, renders `<MiniMap>` when `event.lat && event.lng`, else text-only unchanged.
+- **Chunk B (experiences):** `NewExperienceClient.jsx` — address field → `<AddressSearch>` inside `<Field>`, `lat/lng` added to EMPTY + payload. `ExperienceDetailClient.jsx` — same MiniMap block.
+- **Privacy note (existing surface, not a change):** experiences return `lat/lng` publicly and gate only the street `address` to owner/admin (`experiences.py:189`) — strangers see the pin, not the exact address text. Consistent with the acceptance ("MiniMap when coords exist").
+- **Verify:** NEW `__tests__/EventExperienceAddress.test.jsx` (3/3 — event pick→lat/lng in POST · event free-text→null · experience pick→lat/lng in POST; AddressSearch mocked per `EditTabLocationCard.test.jsx`). build ✓, eslint 0 errors, 0 physical RTL. Playwright @375/@1440: event w/coords → MiniMap+Waze/Google · event no-coords → text-only (no map) · experience w/coords → MiniMap+Waze/Google → `qa-artifacts/MEH-1404/` (WebP 176 KB; OSM tiles gray in sandbox = network-blocked, load on real deploy).
+- **Left for Sapir:** mobile QA on the Vercel preview — create an event/experience with a picked address, confirm the pin + Waze/Google buttons on the detail page; free-text address stays map-less.
+- **Branch:** `feature/meh-1404-event-experience-address` off `origin/staging`. PR auto-merge on green (YELLOW).
 ## 2026-07-21 — MEH-1410 — ChatWidget restored to desktop-only (≥768px)
 
 - **Shipped:** gated the whole ChatWidget on the existing `isDesktop` matchMedia state — `if (!isDesktop) return null;` (`ChatWidget.jsx`), after every hook and before any JSX. Mobile (< 768px) no longer mounts the FAB/panel (it competed for the bottom-end corner with BottomNav pill / cookie banner). Desktop behavior byte-identical — the sole non-comment diff is that one gate line.
