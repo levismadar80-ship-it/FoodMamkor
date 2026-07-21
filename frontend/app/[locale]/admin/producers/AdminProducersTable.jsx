@@ -8,6 +8,7 @@ import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import AdminReviewChecklist from "./AdminReviewChecklist";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
@@ -304,12 +305,16 @@ function PendingPhotoStrip({ producer }) {
   );
 }
 
-function AdminProducersRow({ producer, isStoryOpen, handlers }) {
+function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
   const p = producer;
   const { missing, priority } = p._completeness;
   // MEH-1232: pending rows carry a photo-preview sub-row iff they have images.
   const showPhotoPreview =
     PENDING_PHOTO_STATUSES.includes(p.status) && (p.images?.length || 0) > 0;
+  // MEH-1396: the same pending statuses carry the pre-approval review checklist
+  // (soft aid before "אשר"), independent of whether images exist.
+  const showReviewChecklist =
+    !!checklist && PENDING_PHOTO_STATUSES.includes(p.status);
   return (
     <React.Fragment>
       <tr className="border-t hover:bg-background/50">
@@ -337,6 +342,18 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
         <tr>
           <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pt-0 pb-4 bg-background/30">
             <PendingPhotoStrip producer={p} />
+          </td>
+        </tr>
+      )}
+      {showReviewChecklist && (
+        <tr>
+          <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pt-0 pb-4 bg-background/30">
+            <AdminReviewChecklist
+              open={checklist.openId === p.id}
+              onToggleOpen={() => checklist.toggleOpen(p.id)}
+              checkedIds={checklist.checked[p.id]}
+              onToggleItem={(itemId) => checklist.toggleItem(p.id, itemId)}
+            />
           </td>
         </tr>
       )}
@@ -400,7 +417,7 @@ function EmptyRow({ incompleteOnly }) {
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
   onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
-  onUploadStoryCard, isBusy,
+  onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
@@ -422,6 +439,7 @@ export default function AdminProducersTable({
                 producer={p}
                 isStoryOpen={storyCardOpenId === p.id}
                 handlers={handlers}
+                checklist={checklist}
               />
             ))}
           </tbody>
