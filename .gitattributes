@@ -10,6 +10,15 @@
 # acceptable trade for an append-only changelog (never edit old entries
 # in-place expecting a clean 3-way merge).
 docs/CHANGELOG.md merge=union
+# MEH-1385: HANDOFF.md + MANUAL_TESTING.md are the same append-only class as
+# CHANGELOG (new dated sections prepended each session) but lacked the union
+# driver — so concurrent PRs conflicted on them while CHANGELOG auto-merged.
+# During a staging-churn storm this re-dirtied every feature PR on HANDOFF each
+# CI cycle and forced a manual Accept-Both resync (root cause found while
+# landing #1988). Same built-in `union` driver + same caveat: append only,
+# never edit old entries in-place expecting a clean 3-way merge.
+HANDOFF.md merge=union
+docs/MANUAL_TESTING.md merge=union
 
 # MEH-991: Claude Design export is vendored reference material, not project
 # code — keep it out of GitHub language stats and collapse it in diffs.
