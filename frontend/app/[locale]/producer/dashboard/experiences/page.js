@@ -1,20 +1,22 @@
 "use client";
 
 /**
- * Producer "my experiences" manage list — MEH-1405.
+ * Producer "my experiences" manage list — MEH-1405 / MEH-1419.
  *
- * Lists the producer's own experiences (GET /experiences/mine — all statuses),
- * with edit / delete (confirm) actions. Experiences have no is_active column
- * (status is admin-controlled), so there is no producer cancel-toggle here —
- * delete is the producer's removal path. See PR: a reversible is_active cancel
- * for experiences needs an Alembic column (Sapir-only) and is out of scope.
+ * Lists the producer's own experiences (GET /experiences/mine — all statuses,
+ * includes cancelled), with edit / cancel-toggle (is_active via PUT) / delete
+ * (confirm) actions. The cancel/reactivate toggle mirrors the events manage
+ * list (dashboard/events/page.js) and is offered only on APPROVED experiences —
+ * is_active only has a public effect there (a cancelled experience drops from
+ * the public feed but stays here to reactivate). A pure toggle does not
+ * re-trigger moderation (experiences.py update guard).
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Sparkle, PencilSimple, Trash } from "@phosphor-icons/react";
+import { Sparkle, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -54,6 +56,23 @@ export default function ManageExperiencesPage() {
 
   if (authLoading || !user || user.role !== "producer") return null;
 
+  // MEH-1419: cancel/reactivate — optimistic is_active flip, revert on error.
+  // Mirrors dashboard/events/page.js toggleActive. A pure is_active PUT does
+  // not re-run moderation server-side, so an approved experience stays approved.
+  const toggleActive = async (ex) => {
+    const next = !ex.is_active;
+    setBusyId(ex.id);
+    setItems((list) => list.map((e) => (e.id === ex.id ? { ...e, is_active: next } : e)));
+    try {
+      await api.put(`/experiences/${ex.id}`, { is_active: next });
+    } catch (err) {
+      setItems((list) => list.map((e) => (e.id === ex.id ? { ...e, is_active: ex.is_active } : e)));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("action_error"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const remove = async (ex) => {
     if (!window.confirm(t("delete_confirm", { title: ex.title }))) return;
     setBusyId(ex.id);
@@ -90,8 +109,14 @@ export default function ManageExperiencesPage() {
         </p>
       ) : (
         <ul className="space-y-3">
-          {items.map((ex) => (
-            <li key={ex.id} className="bg-white border border-border rounded-[12px] p-4">
+          {items.map((ex) => {
+            // MEH-1419: cancelled = an approved experience the host toggled off.
+            const cancelled = ex.status === "approved" && !ex.is_active;
+            return (
+            <li
+              key={ex.id}
+              className={`bg-white border rounded-[12px] p-4 ${cancelled ? "border-yellow-300 bg-yellow-50/40" : "border-border"}`}
+            >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -99,6 +124,11 @@ export default function ManageExperiencesPage() {
                     <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[ex.status] || "bg-gray-100 text-gray-700"}`}>
                       {statusLabel(ex.status)}
                     </span>
+                    {cancelled && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                        {t("badge_inactive")}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-fg-muted mt-1">
                     {formatEventDate(ex.event_date, locale, { day: "numeric", month: "long", year: "numeric" })}
@@ -114,6 +144,26 @@ export default function ManageExperiencesPage() {
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
                   </Link>
+                  {ex.status === "approved" && (
+                    <button
+                      type="button"
+                      onClick={() => toggleActive(ex)}
+                      disabled={busyId === ex.id}
+                      className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition disabled:opacity-50"
+                    >
+                      {ex.is_active ? (
+                        <>
+                          <Prohibit size={16} aria-hidden="true" />
+                          {t("action_cancel")}
+                        </>
+                      ) : (
+                        <>
+                          <ArrowCounterClockwise size={16} aria-hidden="true" />
+                          {t("action_activate")}
+                        </>
+                      )}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => remove(ex)}
@@ -127,7 +177,8 @@ export default function ManageExperiencesPage() {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
