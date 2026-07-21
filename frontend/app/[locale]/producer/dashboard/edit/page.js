@@ -75,6 +75,7 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
+import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
@@ -218,6 +219,7 @@ function EditPageInner() {
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
   const tProducts = useTranslations("settings.products");
+  const tLoc = useTranslations("settings.locations");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
 
@@ -902,6 +904,25 @@ function EditPageInner() {
             />
           </EditAccordionCard>
         )}
+
+        {/* MEH-1421 (MEH-1388 chunk 4a): multi-location editor (branch / pickup /
+            market_stand). NOT gated on has_physical_location — a delivery-only
+            producer may still run pickup points (chunk 2 reversed MEH-213 so
+            those appear on the map). Owner CRUD against /producers/me/locations;
+            the single-primary + same-city-label invariants live server-side. */}
+        <EditAccordionCard
+          anchorId="locations"
+          title={tLoc("section_heading")}
+          summary={
+            profile.locations?.length
+              ? String(profile.locations.length)
+              : tLoc("empty_title")
+          }
+          open={openKey === "locations"}
+          onToggle={() => toggleKey("locations")}
+        >
+          <LocationsEditor />
+        </EditAccordionCard>
 
         {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
             has_physical_location / offers_delivery / delivery_nationwide + cities). */}

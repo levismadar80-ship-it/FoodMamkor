@@ -139,6 +139,24 @@ function ProducerTags({ producer }) {
           {t("producers.table.tags.license_pending")}
         </span>
       )}
+      {/* MEH-1421 (MEH-1388 chunk 4a): read-only dedup signal — likely-duplicate
+          producer (shared name/city). Signal only; approval is never blocked. */}
+      {(producer._dup?.name || producer._dup?.city) && (
+        <span
+          title={t(
+            producer._dup.name && producer._dup.city
+              ? "producers.table.tags.dedup_both_title"
+              : producer._dup.name
+                ? "producers.table.tags.dedup_name_title"
+                : "producers.table.tags.dedup_city_title",
+          )}
+          aria-label={t("producers.table.tags.dedup")}
+          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-[10px] font-medium"
+        >
+          <Warning size={ICON_SIZE_SM} weight="fill" aria-hidden="true" />
+          {t("producers.table.tags.dedup")}
+        </span>
+      )}
     </div>
   );
 }

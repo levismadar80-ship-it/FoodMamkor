@@ -122,3 +122,34 @@ export const CoordSchema = z.object({
   lat: z.number().finite(),
   lng: z.number().finite(),
 });
+
+// MEH-1421 (MEH-1388 chunk 4a): owner location-editor payload. safeParse'd in
+// LocationsEditor before every POST/PUT to /producers/me/locations (Rule 19).
+// Bounds mirror the backend ProducerLocationCreate (schemas.py); the
+// single-primary + same-city-label rules are cross-row and stay server-side
+// (surfaced as a 422 toast). lat/lng are nullable — the owner may save a point
+// before she has exact coordinates (manual entry, no geocoding this chunk).
+export const LocationInputSchema = z.object({
+  kind: z.enum(["branch", "pickup", "market_stand"], {
+    error: "בחרי סוג מיקום",
+  }),
+  label: z.string().trim().max(200).nullable().optional(),
+  city: z.string().trim().max(100).nullable().optional(),
+  address: z.string().trim().max(255).nullable().optional(),
+  lat: z
+    .number({ error: "קו רוחב לא תקין" })
+    .min(-90, "קו רוחב לא תקין")
+    .max(90, "קו רוחב לא תקין")
+    .nullable()
+    .optional(),
+  lng: z
+    .number({ error: "קו אורך לא תקין" })
+    .min(-180, "קו אורך לא תקין")
+    .max(180, "קו אורך לא תקין")
+    .nullable()
+    .optional(),
+  opening_hours: z.string().trim().max(2000).nullable().optional(),
+  phone: z.string().trim().max(20).nullable().optional(),
+  is_primary: z.boolean().optional(),
+  location_precision: z.enum(["exact", "approximate"]).optional(),
+});
