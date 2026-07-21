@@ -3,11 +3,13 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import FilterSheet from "@/components/FilterSheet";
 import { countActiveSheetOnlyFilters } from "@/lib/map-chips";
 
-// MEH-1075: FilterSheet — grouped /map filter surface. Covers: closed/open
-// render (3 group headers + all 7 chips), shared-state chip toggle +
-// aria-pressed, the sheet-only badge count helper, the live apply label
-// (incl. zero state with clear link + apply still enabled), and the
-// close paths (Escape / backdrop) + focus-into-sheet on open.
+// MEH-1075 / MEH-1423: FilterSheet — grouped /map filter surface. Covers:
+// closed/open render (3 group headers + all 7 toggle rows), shared-state toggle
+// via role="switch" + aria-checked, the MEH-1423 subtext narrowing (explainer
+// under ONLY kosher / verified / grass_fed — not the other 4), the sheet-only
+// badge count helper, the live apply label (incl. zero state with clear link +
+// apply still enabled), and the close paths (Escape / backdrop) + focus-into-
+// sheet on open.
 
 // Namespace-less t() that returns the key; interpolated values are appended
 // as `key#value` so the apply-count assertions can target them.
@@ -21,6 +23,7 @@ const ALL_OFF = {
   // MEH-1259: organic removed from the /map FilterSheet toggle set.
   has_delivery: false,
   verified: false,
+  kosher: false,
   grass_fed: false,
   vegan: false,
   gluten_free: false,
@@ -47,8 +50,9 @@ describe("FilterSheet (MEH-1075)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders title, the 3 group headers, and all 6 toggle chips when open", () => {
-    // MEH-1259: "אורגני" toggle removed — 6 chips now.
+  it("renders title, the 3 group headers, and all 7 toggle rows as switches when open", () => {
+    // MEH-1259: "אורגני" toggle removed. MEH-1423: each toggle is now a full-
+    // width row exposing role="switch" (was a plain chip button).
     renderSheet();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("filters.sheet.title")).toBeInTheDocument();
@@ -59,45 +63,60 @@ describe("FilterSheet (MEH-1075)", () => {
       "טבעוני",
       "ללא גלוטן",
       "ללא לקטוז",
+      "כשרות מאומתת",
       "גראס פד",
       "משלוח",
       // MEH-1418: "מאומתים" → "רישוי מאומת".
       "רישוי מאומת",
     ]) {
-      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: label })).toBeInTheDocument();
     }
-    expect(screen.queryByRole("button", { name: "אורגני" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "אורגני" })).not.toBeInTheDocument();
   });
 
-  // MEH-1418: each toggle row carries a muted one-line explainer sourced from the
-  // BADGE_CONFIG tooltips (no new copy). The subtext sits OUTSIDE the button so
-  // the chip label stays the accessible name (getByRole name assertions above).
-  it("renders a BADGE_CONFIG-sourced subtext under each toggle", () => {
+  // MEH-1423: the muted explainer is kept for ONLY the 3 unfamiliar terms
+  // (kosher · verified · grass_fed) — sourced byte-identically from the
+  // BADGE_CONFIG tooltips (no new copy). It sits OUTSIDE the switch so the row
+  // label stays the accessible name (getByRole name assertions above).
+  it("renders a BADGE_CONFIG subtext under ONLY kosher / verified / grass_fed", () => {
     renderSheet();
+    // Present — the 3 trust-loaded / loanword terms:
     // verified → BADGE_CONFIG.verified.tooltip
     expect(
       screen.getByText("בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."),
     ).toBeInTheDocument();
-    // has_delivery → BADGE_CONFIG.delivery.tooltip (key remap)
-    expect(screen.getByText("העסק מוסר או שולח לכתובת שלך.")).toBeInTheDocument();
-    // the subtext must NOT leak into the button's accessible name
+    // kosher → BADGE_CONFIG.kosher.tooltip
+    expect(screen.getByText("המוצרים תחת השגחת כשרות.")).toBeInTheDocument();
+    // grass_fed → BADGE_CONFIG.grass_fed.tooltip
     expect(
-      screen.getByRole("button", { name: "רישוי מאומת" }),
+      screen.getByText("בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית."),
+    ).toBeInTheDocument();
+    // Absent — the 4 everyday-vocabulary toggles no longer carry a subtext:
+    // has_delivery → BADGE_CONFIG.delivery.tooltip
+    expect(screen.queryByText("העסק מוסר או שולח לכתובת שלך.")).not.toBeInTheDocument();
+    // vegan → BADGE_CONFIG.vegan.tooltip
+    expect(
+      screen.queryByText("כל המוצרים טבעוניים — ללא כל מרכיב מן החי."),
+    ).not.toBeInTheDocument();
+    // the subtext must NOT leak into the switch's accessible name
+    expect(
+      screen.getByRole("switch", { name: "רישוי מאומת" }),
     ).toBeInTheDocument();
   });
 
-  it("toggling a chip calls onToggleChip with the chip key; aria-pressed mirrors chipState", () => {
+  it("toggling a row calls onToggleChip with the chip key; aria-checked mirrors chipState", () => {
     const { props } = renderSheet({
       chipState: { ...ALL_OFF, vegan: true },
     });
-    const veganChip = screen.getByRole("button", { name: "טבעוני" });
-    expect(veganChip).toHaveAttribute("aria-pressed", "true");
+    // MEH-1423: rows are role="switch" with aria-checked (was button/aria-pressed).
+    const veganRow = screen.getByRole("switch", { name: "טבעוני" });
+    expect(veganRow).toHaveAttribute("aria-checked", "true");
     // MEH-1259: was the organic chip (removed) — grass_fed is the other quality toggle.
-    expect(screen.getByRole("button", { name: "גראס פד" })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("switch", { name: "גראס פד" })).toHaveAttribute(
+      "aria-checked",
       "false",
     );
-    fireEvent.click(screen.getByRole("button", { name: "ללא גלוטן" }));
+    fireEvent.click(screen.getByRole("switch", { name: "ללא גלוטן" }));
     expect(props.onToggleChip).toHaveBeenCalledWith("gluten_free");
   });
 
@@ -159,7 +178,7 @@ describe("FilterSheet (MEH-1075)", () => {
   // interaction. Focus capture now keys on [open] only.
   it("keeps focus in place when the caller re-renders with a new onClose ref", () => {
     const { rerender, props } = renderSheet();
-    const glutenFree = screen.getByRole("button", { name: "ללא גלוטן" });
+    const glutenFree = screen.getByRole("switch", { name: "ללא גלוטן" });
     glutenFree.focus();
     rerender(
       <FilterSheet

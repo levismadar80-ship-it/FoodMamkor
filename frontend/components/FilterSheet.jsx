@@ -27,18 +27,25 @@ import { BADGE_CONFIG } from "@/lib/badges";
  *           shared toggle handler), frontend/lib/map-chips.js (TOGGLE_CHIPS
  *           group metadata), frontend/components/AccountSheet.jsx:40-68
  *           (focus-trap pattern source).
- * History:  MEH-1075 (creation).
+ * History:  MEH-1075 (creation); MEH-1418 (per-toggle Phosphor icon + muted
+ *           explainer line); MEH-1423 (chip+paragraph → full-width row+Switch;
+ *           subtext narrowed from all 7 toggles to the 3 unfamiliar terms —
+ *           kosher · verified · grass_fed — so the sheet fits one 375px screen).
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
 const GROUP_ORDER = ["diet", "quality", "service"];
 
-// MEH-1418: each toggle row gets a muted one-line explainer. Source is the
-// badge tooltips (SoT — no new copy strings); has_delivery's tooltip lives
-// under the `delivery` badge key.
-const SUBTEXT_BADGE_KEY = { has_delivery: "delivery" };
+// MEH-1423: keep the muted explainer for ONLY the 3 trust-loaded / loanword
+// terms (kosher · verified · grass_fed). The other 4 toggles (vegan ·
+// gluten_free · lactose_free · has_delivery) are everyday vocabulary where a
+// dictionary line is noise (Baymard "Always Explain Industry-Specific Filters",
+// research 21/07). Copy is UNCHANGED — still the BADGE_CONFIG tooltips MEH-1418
+// wired (SoT, no new strings, ADR-022 / MEH-1087 locks); this only narrows
+// WHICH rows render it. All 3 keys own a BADGE_CONFIG entry, so no key remap.
+const SUBTEXT_KEYS = new Set(["kosher", "verified", "grass_fed"]);
 function chipSubtext(key) {
-  return BADGE_CONFIG[SUBTEXT_BADGE_KEY[key] ?? key]?.tooltip ?? null;
+  return SUBTEXT_KEYS.has(key) ? BADGE_CONFIG[key]?.tooltip ?? null : null;
 }
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
@@ -164,38 +171,53 @@ export default function FilterSheet({
 
         {GROUP_ORDER.map((group) => (
           <div key={group}>
-            <h3 className="text-sm font-medium text-fg-muted mt-4 mb-2">
+            <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1">
               {t(`filters.sheet.group_${group}`)}
             </h3>
-            {/* MEH-1418: rows stack vertically so each toggle carries a muted
-                explainer line beneath it (icon + label in the chip, subtext
-                below and outside the button — the label stays the accessible
-                name; the icon is aria-hidden). */}
-            <div className="flex flex-col gap-3">
+            {/* MEH-1423: each toggle is a full-width ROW — leading icon + label
+                at the inline-start, a Switch at the inline-end — with a hairline
+                divider between rows (divide-y). The whole row is ONE
+                role="switch" button (min-h 44px tap target), so the entire row
+                is the hit area; the visual track/knob is aria-hidden and the
+                label stays the accessible name. Subtext (3 rows only) sits BELOW
+                the button, outside its accessible name. Replaces the MEH-1418
+                chip+paragraph stack that pushed the sheet to ~2.5 screens. */}
+            <div className="divide-y divide-border">
               {TOGGLE_CHIPS.filter((chip) => chip.group === group).map((chip) => {
                 const active = !!chipState[chip.key];
                 const icon = chipIcon(chip.key);
                 const subtext = chipSubtext(chip.key);
                 return (
-                  <div key={chip.key} className="flex flex-col gap-1">
+                  <div key={chip.key} className="py-1">
+                    {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
+                        label+icon at start, role="switch" pill at end, knob
+                        start-1(off)→end-1(on) via logical insets (RTL-safe). */}
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={active}
                       onClick={() => onToggleChip(chip.key)}
-                      aria-pressed={active}
-                      // REUSES: frontend/components/ChipScrollRow.jsx:118-122 —
-                      // identical chip visuals so sheet chips match the quick row.
-                      // self-start keeps the pill compact within the stacked row.
-                      className={`inline-flex items-center gap-1.5 self-start whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
-                        active
-                          ? "bg-state-selected text-white border-state-selected"
-                          : "bg-white text-text border-border hover:border-primary hover:text-primary"
-                      }`}
+                      className="flex w-full items-center justify-between gap-3 min-h-[44px] py-1.5 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
-                      {icon && <span aria-hidden="true">{icon}</span>}
-                      {chip.label}
+                      <span className="flex items-center gap-2 text-sm font-medium text-text">
+                        {icon && <span aria-hidden="true">{icon}</span>}
+                        {chip.label}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
+                          active ? "bg-primary" : "bg-border"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                            active ? "end-1" : "start-1"
+                          }`}
+                        />
+                      </span>
                     </button>
                     {subtext && (
-                      <span className="text-xs text-fg-muted ps-1">{subtext}</span>
+                      <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
                     )}
                   </div>
                 );
