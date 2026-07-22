@@ -2011,6 +2011,7 @@ class GroupBuyOut(BaseModel):
     max_participants: int | None = None
     deadline: datetime
     city: str | None = None
+    fulfillment_note: str | None = None
     status: str
     commits_count: int = 0
     created_at: datetime
@@ -2036,6 +2037,8 @@ class GroupBuyCreate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     deadline: datetime
     city: str | None = Field(None, max_length=100)
+    # MEH-1457: optional free-text "מתי ואיך מקבלים" (OFN "Ready for").
+    fulfillment_note: str | None = Field(None, max_length=1000)
 
     @field_validator("deadline")
     @classmethod
