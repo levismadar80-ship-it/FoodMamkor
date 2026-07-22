@@ -14,6 +14,15 @@
 - **Verify:** group-buys pytest 26/26 · ruff clean · en-parity+form-render vitest 5/5 · `npm run build` exit 0 · `/adversarial-review-types` PASS (0 BLOCK). CI drift gate is the authoritative `alembic upgrade head` check on the PR.
 
 ## 2026-07-22 — MEH-1455 — טופס קבוצת רכש · שדה עיר → CitySearch — MERGED PR #2061 (group-buy batch, MEH-1454 MERGED PR #2059)
+## 2026-07-22 — MEH-1462 — "יש לי רעיון למתכון" WhatsApp question chip — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+
+- **Shipped (branch `feature/meh-1462-recipe-idea-chip` off `origin/staging` incl. merged MEH-1463 #2060):** new chip in `WhatsAppQuestionChips.jsx`, rendered **last** in the row + **always visible** (not capped by the "עוד שאלות" expander), gated on a WhatsApp channel (`digits`). No in-page disclosure — always opens WhatsApp with the Sapir-locked prefill "היי! הגעתי מהעמוד שלכם במהמקור — יש לי רעיון למתכון עם המוצרים שלכם:" via a **direct** `getWhatsAppHref` (not `greeting_template`).
+- **Why (research 22/07):** don't build a structured suggestion box (My Starbucks Idea → dead feature + moderation load); route the recipe-idea intent to the existing zero-moderation channel; a business that likes an idea publishes via recipes (MEH-591).
+- **Scope:** `WhatsAppQuestionChips.jsx` + `he.json`/`en.json` only (no `quickAnswers.js` descriptor — always WhatsApp). New keys `whatsapp.question_chips.recipe_idea` + `recipe_idea_message`. ADR-024 ungendered; RTL start-/end- only; no emoji (Phosphor `ChatCircle`).
+- **Gates:** `npm run build` exit 0 · full vitest **1502 pass / 10 skip** (`quickAnswers.test.js` +4). Mobile-375 screenshot `qa-artifacts/MEH-1462/` (row-structure harness — sandbox can't SSR `/producer/[id]`; live mobile QA = Sapir on preview). `Closes MEH-1462`.
+
+## 2026-07-22 — MEH-1463 — signature card clarity (eyebrow + fallback description/price) — MERGED (PR #2060, squash, batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+## 2026-07-22 — MEH-1455 — טופס קבוצת רכש · שדה עיר → CitySearch — PR open (group-buy batch, MEH-1454 already MERGED PR #2059)
 
 - **Batch context:** 2nd of the 22/07 group-buy series. MEH-1454 (create-500 fix) merged as **PR #2059** (squash `bb094e26`). Branch `feature/meh-1455-group-buy-city-search` off fresh `origin/staging`.
 - **Change (frontend-only):** `NewGroupBuyForm` (`frontend/app/[locale]/producer/dashboard/group-buys/page.js`) — the last form with a free-text city `<Input>` → swapped to shared `<CitySearch>` (autocomplete over `ISRAEL_CITIES` + `/cities`), same pattern as `EventForm.jsx:205`. `onChange` adapts to CitySearch's value-arg signature (`(val) => setForm({...form, city: val})`); `labelVisible` keeps the visible label using the existing `city_label` key (no new i18n key); prefill from `producerCity` preserved; free typing still allowed. RTL handled inside CitySearch.
