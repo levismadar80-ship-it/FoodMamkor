@@ -3,6 +3,10 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1480 — recipes dashboard render-guard role check (defense-in-depth, LOW-RISK) — PR open, merge on CI green
+
+- MEH-1480 — console noise (producer-endpoint 401/403/404 in a non-producer session) was **cross-nav accumulation, not a live bug**; closed the one real inconsistency, `recipes/page.js:66` render guard (added `|| user.role !== "producer"` to match all 7 sibling dashboard render guards), defense-in-depth. Branch `feature/meh-1480-recipes-role-guard` off staging. Scope: single line, `recipes/page.js` only — no layout/middleware (out of scope per diagnosis). `npm run build` exit 0 · full vitest **1540 pass / 10 skip** (render-guard only, no new test/UI). "נבדק בנייד" DoD exception applies (no network/UI change).
+
 ## 2026-07-22 — MEH-1479 — favorites error-state retry button (LOW-RISK, GREEN tier) — MERGED PR #2083 (squash `d0fe12c9`)
 
 - **Merged on CI green** (`CI gate (required)` + `Deploy gate (required)` both success). Two staging-syncs needed mid-flight (Rule 25 concurrent-merge storm — MEH-1476/1481/1477/1478 landed in the window). Playwright E2E's run had 4 pre-existing VRT baseline failures (`map`/`producer-detail`, desktop+mobile) — unrelated to `/favorites`, not a required gate per MEH-716; 127 other specs passed.

@@ -63,7 +63,7 @@ export default function ProducerRecipesPage() {
     }
   };
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user || user.role !== "producer") return null;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
