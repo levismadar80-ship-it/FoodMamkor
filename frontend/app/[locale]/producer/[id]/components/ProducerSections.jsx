@@ -22,6 +22,9 @@ import OwnerCard from "./OwnerCard";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
+// MEH-1460: the "טעות בפרטים?" correction link relocated here from
+// ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
+import ReportInfoModal from "@/components/ReportInfoModal";
 import ReviewsSection from "@/components/ReviewsSection";
 
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
@@ -68,6 +71,9 @@ export default function ProducerSections({
   const format = useFormatter();
   const locale = useLocale();
   const [showAllEvents, setShowAllEvents] = useState(false);
+  // MEH-1460: "report wrong info" modal — moved from ContactCard so the
+  // correction link lives in the page-end meta block, not the CTA card.
+  const [reportOpen, setReportOpen] = useState(false);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -507,7 +513,23 @@ export default function ProducerSections({
       {/* Report — stays at the page end, below the discovery loop. */}
       <div className="mt-6 pt-6 border-t border-border">
         <ReportButton producerId={producer.id} />
+        {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
+            directly below ReportButton (opens the MEH-1443 email-only modal).
+            Relocated here from ContactCard — same quiet-link styling. */}
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
+        >
+          {t("producer.detail.contact_card.report_info_link")}
+        </button>
       </div>
+
+      <ReportInfoModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        producerSlug={producer.slug || producer.id}
+      />
 
       {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
           edit has stamped producer.updated_at (nullable, no backfill — Chunk A
