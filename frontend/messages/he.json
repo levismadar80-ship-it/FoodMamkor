@@ -953,7 +953,8 @@
       "share_default_region": "ישראל",
       "errors": {
         "cancel_failed": "לא הצלחנו לבטל"
-      }
+      },
+      "toast_cancelled": "ההצטרפות בוטלה"
     },
     "dashboard": {
       "status": {
@@ -993,7 +994,8 @@
         "city_label": "עיר",
         "required_marker": " *",
         "submitting": "ביצירה...",
-        "submit": "צרו קבוצת רכש"
+        "submit": "צרו קבוצת רכש",
+        "toast_created": "קבוצת הרכש נוצרה ופתוחה להצטרפות"
       }
     },
     "availability": {
@@ -1498,7 +1500,9 @@
           "avail_vacation": "בהפסקה ⏸",
           "vacation_until": "תאריך חזרה (אופציונלי)"
         }
-      }
+      },
+      "toast_approved": "העסק אושר",
+      "toast_status_updated": "הסטטוס עודכן"
     },
     "users": {
       "title": "משתמשים",
@@ -4455,7 +4459,10 @@
       "card": {
         "edit_aria_template": "ערכו {name}",
         "delete_aria_template": "מחקו {name}"
-      }
+      },
+      "toast_added": "המוצר נוסף",
+      "toast_updated": "המוצר עודכן",
+      "toast_deleted": "המוצר נמחק"
     },
     "locations": {
       "section_heading": "מיקומים",

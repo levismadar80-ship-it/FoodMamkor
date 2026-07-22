@@ -8,6 +8,7 @@ import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -69,6 +70,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
         deadline: new Date(form.deadline).toISOString(),
       });
+      showToast.success(t("toast_created")); // MEH-1446
       onCreated();
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
