@@ -158,6 +158,7 @@ export function useHomePage() {
       // MEH-1259: organic no longer hydrated — chip + filter removed.
       gluten_free: p.get("gluten_free") === "1",
       vegan: p.get("vegan") === "1",
+      vegetarian: p.get("vegetarian") === "1",  // MEH-1438
       lactose_free: p.get("lactose_free") === "1",
       has_delivery: p.get("delivery") === "1",
       verified: p.get("verified") === "1",
@@ -275,6 +276,7 @@ export function useHomePage() {
     // match the chip keys (delivery stays the legacy short name).
     if (c.gluten_free) p.set("gluten_free", "1");
     if (c.vegan) p.set("vegan", "1");
+    if (c.vegetarian) p.set("vegetarian", "1");  // MEH-1438
     if (c.lactose_free) p.set("lactose_free", "1");
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
