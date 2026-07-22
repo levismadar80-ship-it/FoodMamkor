@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1483 — /producers backend-driven sort (?sort= newest|rating) — PR OPEN, Sapir merges (feature)
+
+- Branch `feature/meh-1483-producers-sort` off fresh `origin/staging`. Files: `producers.py` · `producer_listing.py` · `ProducersClient.jsx` · `he.json`/`en.json` · backend+frontend tests (+ DATA.md / api-routes diagram / MANUAL_TESTING per rules 10-12).
+- **Phase 0 discovery (STOP-(f), reported):** `GET /producers` ALREADY had an unused `?sort=` (newest|rating). The dispatch asked for a new `?order=` param — building that beside `sort` = MEH-271 two-mechanism smell. Surfaced the conflict; the AskUserQuestion was interrupted with "continue", so I took the sound call: **reuse+harden `?sort=`** (URL stays `?sort=`, not `?order=`; the dispatch's `producers.sort.*` i18n names already matched "sort"). Flagged in the PR.
+- **Backend:** validate `sort ∈ {newest,rating}` → 422 on unknown ("ערך מיון לא חוקי", the manual-422 pattern). `rating` = avg_rating DESC **NULLs last** (`avg_rating.is_(None)` boolean order key, search.py idiom) → reviews_count DESC → created_at DESC. Default = created_at DESC, byte-identical. Non-geo only.
+- **Frontend:** `sortOrder` + `sortOrderRef` (keeps the `useCallback([])` fetchers stable); sort threaded into `fetchFiltered` (after the no-filters guard) AND `loadNextPage` (every infinite-scroll page); a `[sortOrder]` effect re-establishes the unfiltered base (SSR ↔ sorted page 1) so sort holds across scroll + survives filter transitions, swapping in place (no skeleton). URL `?sort=` (omitted at default). Select by the results counter, RTL logical props only.
+- **Verify:** `npm run build` 0 · full vitest **1543/10** (incl. new `ProducersClientSort.test.jsx`) · `pytest test_api.py`+`test_producers_sort.py` **243/4** (rating order, tiebreaks, service-layer NULLs-last, default==newest, 422) · ruff clean · eslint 0. Mobile 375px shot deferred to Vercel preview (sandbox can't SSR `/producers`, MEH-360/1088).
+- **Scope note:** MEH-1088 `visibleCategories` untouched (only its source list switched initialItems→baseItems for render-consistency). No schema/Alembic, no new deps. `Closes MEH-1483` — **PR open, Sapir reviews/merges.**
+
 ## 2026-07-22 — MEH-1481 — FilterSheet desktop density + sticky footer — PR open (frontend-only, LOW-RISK, auto-merge on green)
 
 - **Branch** `feature/meh-1481-filtersheet-desktop-density` off fresh `origin/staging` (which already had MEH-1478 `#2080` merged as `3e7f36e2`). **Single file: `frontend/components/FilterSheet.jsx`.**

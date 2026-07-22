@@ -160,11 +160,20 @@ def _build_base_queries(
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
 
-    order = (
-        (Producer.avg_rating.desc(), Producer.reviews_count.desc())
-        if sort == "rating"
-        else (Producer.created_at.desc(),)
-    )
+    if sort == "rating":
+        # MEH-1483: avg_rating DESC, NULLs last, tiebreak reviews_count DESC,
+        # then created_at DESC. `avg_rating.is_(None)` is a boolean order key
+        # (FALSE < TRUE → non-null first, null last) — the portable nulls-last
+        # idiom this codebase already uses instead of .nullslast() (see
+        # search.py:85-87, which orders on `(Producer.name != q_clean)`).
+        order = (
+            Producer.avg_rating.is_(None),
+            Producer.avg_rating.desc(),
+            Producer.reviews_count.desc(),
+            Producer.created_at.desc(),
+        )
+    else:
+        order = (Producer.created_at.desc(),)
     q = (
         db.query(Producer)
         .options(
