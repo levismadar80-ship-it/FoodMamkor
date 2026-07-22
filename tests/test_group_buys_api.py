@@ -386,3 +386,94 @@ class TestCommitLifecycle:
             f"/group-buys/{gb_id}/commit", headers=auth_header(buyer)
         )
         assert cancel.status_code == 200, cancel.text
+
+
+# ---------- full lifecycle (MEH-1458) ----------
+class TestFullLifecycle:
+    """MEH-1458 — one integration test covering the whole group-buy lifecycle:
+    create (approved producer) → appears open in the public list + under its
+    city filter → two distinct consumers commit → auto-fund at min_participants
+    → a consumer cancels → drops below min → reverts to open.
+
+    Chosen (Sapir, 22/07) over a Playwright E2E because the CI E2E job has no
+    authentication wired (localhost target → global-setup skips storageState;
+    DEMO_*/SMOKE_ADMIN secrets absent; only one seeded consumer; no-mocks rule)
+    — so a browser lifecycle spec cannot run green in CI without out-of-scope
+    `.github/workflows` + secret changes (CC-deny, MEH-671). This backend test
+    gives the same regression coverage — the MEH-1454 bug was a create-500 —
+    and runs in the required CI pytest gate today.
+    """
+
+    def _future_aware_iso(self, days=7):
+        # Mirror the dashboard's `new Date(...).toISOString()` (aware, 'Z').
+        return (
+            (datetime.now(timezone.utc) + timedelta(days=days))
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+
+    def test_create_join_fund_cancel_reopen(self, client, db):
+        _, producer_user = _producer_user(db)
+
+        # 1. Producer creates a group buy (min=2, canonical city, fulfillment).
+        note = "איסוף מהמשק ביום שישי אחרי סגירת הקבוצה"
+        created = client.post(
+            "/group-buys",
+            json=_valid_create_payload(
+                deadline=self._future_aware_iso(),
+                min_participants=2,
+                city="חיפה",
+                fulfillment_note=note,
+            ),
+            headers=auth_header(producer_user),
+        )
+        assert created.status_code == 201, created.text
+        gb_id = created.json()["id"]
+
+        # 2. It appears in the public open list, status "open".
+        open_list = client.get("/group-buys", params={"status": "open"}).json()
+        listed = next((g for g in open_list if g["id"] == gb_id), None)
+        assert listed is not None
+        assert listed["status"] == "open"
+
+        # 3. It appears under its city filter (MEH-1455 — canonical city).
+        city_list = client.get("/group-buys", params={"city": "חיפה"}).json()
+        assert any(g["id"] == gb_id for g in city_list)
+
+        # 3b. The detail carries the fulfillment note (MEH-1457).
+        detail = client.get(f"/group-buys/{gb_id}").json()
+        assert detail["fulfillment_note"] == note
+
+        # 4. Consumer #1 joins → still open (1 < min 2), count 1.
+        c1 = make_user(db, email="lifecycle_c1@test.com")
+        r1 = client.post(
+            f"/group-buys/{gb_id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(c1),
+        )
+        assert r1.status_code == 201, r1.text
+        assert r1.json()["status"] == "open"
+        assert r1.json()["commits_count"] == 1
+
+        # 5. Consumer #2 joins → reaches min → auto-funded, count 2.
+        c2 = make_user(db, email="lifecycle_c2@test.com")
+        r2 = client.post(
+            f"/group-buys/{gb_id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(c2),
+        )
+        assert r2.status_code == 201, r2.text
+        assert r2.json()["status"] == "funded"
+        assert r2.json()["commits_count"] == 2
+        funded = client.get(f"/group-buys/{gb_id}").json()
+        assert funded["status"] == "funded"
+        assert funded["commits_count"] == 2
+
+        # 6. Consumer #2 cancels → drops below min → reverts to open, count 1.
+        cancel = client.delete(
+            f"/group-buys/{gb_id}/commit", headers=auth_header(c2)
+        )
+        assert cancel.status_code == 200, cancel.text
+        reopened = client.get(f"/group-buys/{gb_id}").json()
+        assert reopened["status"] == "open"
+        assert reopened["commits_count"] == 1
