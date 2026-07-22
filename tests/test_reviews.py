@@ -97,6 +97,47 @@ def test_post_review_success(client, db):
 
 
 # ---------------------------------------------------------------------------
+# MEH-1426: an UNATTRIBUTED click (user_id=NULL — exactly what the pre-fix
+# sendBeacon produced, since it can't carry the Bearer header) does NOT satisfy
+# the gate. guard 3 matches on user_id == user.id, so a NULL-user row is
+# invisible to it. This is the regression that would have caught the bug: the
+# frontend fix (authenticated fetch) is what makes the row attributable.
+# ---------------------------------------------------------------------------
+
+def test_post_review_unattributed_wa_click_still_403(client, db):
+    user = make_user(db)
+    producer = make_producer(db)
+    db.add(ProducerWhatsAppClick(producer_id=producer.id, user_id=None))
+    db.commit()
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 403, r.text
+    assert "WhatsApp" in r.json().get("detail", "")
+
+
+# ---------------------------------------------------------------------------
+# MEH-1426: an attributed click by a DIFFERENT user doesn't count — the gate is
+# per-(producer, user), so one user's click can't unlock another's review.
+# ---------------------------------------------------------------------------
+
+def test_post_review_other_users_wa_click_does_not_count(client, db):
+    reviewer = make_user(db)
+    other = make_user(db)
+    producer = make_producer(db)
+    _wa_click(db, producer, other)  # attributed to `other`, not `reviewer`
+    r = client.post(
+        f"/producers/{producer.id}/reviews",
+        json={"stars": 5, "body": VALID_BODY},
+        headers=auth_header(reviewer),
+    )
+    assert r.status_code == 403, r.text
+    assert "WhatsApp" in r.json().get("detail", "")
+
+
+# ---------------------------------------------------------------------------
 # POST validation: body too short → 422
 # ---------------------------------------------------------------------------
 

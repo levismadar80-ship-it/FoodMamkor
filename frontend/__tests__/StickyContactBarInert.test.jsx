@@ -8,9 +8,11 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
 }));
 
-// pingWhatsAppBeacon is a click-time network side effect; stub so render stays pure.
+// pingWhatsAppBeacon + markWhatsAppClickedLocal are click-time side effects
+// (MEH-1426: attribution + review-form unlock); stub both so render stays pure.
 vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: vi.fn(),
+  markWhatsAppClickedLocal: vi.fn(),
 }));
 
 // A whatsapp producer with a valid IL mobile so getPrimaryContactHref yields a
