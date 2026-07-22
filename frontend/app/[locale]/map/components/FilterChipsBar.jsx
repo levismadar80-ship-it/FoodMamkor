@@ -65,7 +65,9 @@ export default function FilterChipsBar({
         <ChipScrollRow
           variant="category"
           chips={categoryChipsWithIcons}
-          activeKey={chipState.categoryKey}
+          // MEH-1465: multi-select — pass the selected keys as a Set (ChipScrollRow
+          // renders a Direction A ring per selected chip; "כל" ghosts when ≥1 active).
+          activeKeys={new Set(chipState.categoryKeys)}
           onChipClick={onCategoryChipClick}
           className="flex-1"
           // MEH-1108: ChipScrollRow's default fadeBg is #ffffff, which smears

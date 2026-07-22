@@ -17,7 +17,18 @@ let params = {}; // drives useSearchParams().get(key)
 
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  useSearchParams: () => ({
+    get: (k) => {
+      const v = params[k];
+      return v == null ? null : Array.isArray(v) ? v[0] : v;
+    },
+    // MEH-1465: category is read via getAll (repeated ?category=). A test may
+    // seed params.category as a string (legacy single) or an array (multi).
+    getAll: (k) => {
+      const v = params[k];
+      return v == null ? [] : Array.isArray(v) ? v : [v];
+    },
+  }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
@@ -67,7 +78,15 @@ vi.mock("@/components/ChipScrollRow", () => ({
       {chips.map((c) => (
         <button
           key={c.key}
-          data-active={variant === "category" ? String(c.key === activeKey) : String(!!activeKeys[c.key])}
+          // MEH-1465: category now passes an activeKeys Set (multi-select); the
+          // toggle row still passes an object. Read whichever applies.
+          data-active={String(
+            variant === "category"
+              ? activeKeys instanceof Set
+                ? activeKeys.has(c.key)
+                : c.key === activeKey
+              : !!activeKeys[c.key],
+          )}
           onClick={() => onChipClick(c.key)}
         >
           {c.label}
@@ -163,8 +182,8 @@ describe("/producers category axis (MEH-1081)", () => {
   it("deep-link ?category=18 hydrates: chip active + mount fetch carries the id", async () => {
     params = { category: "18" };
     render(<ProducersClient {...PROPS} />);
-    // the active category renders twice by design (radio row + removable
-    // strip chip) — scope to the radio row for the active-state assertion.
+    // MEH-1465: the category renders ONLY in the chip row now (the removable
+    // strip tag was removed) — scope to the row for the active-state assertion.
     const row = await screen.findByTestId("chip-row-category");
     const chip = within(row).getByText("דבש");
     expect(chip.dataset.active).toBe("true");
@@ -202,6 +221,63 @@ describe("/producers category axis (MEH-1081)", () => {
     // clear everything via the active-strip clear-all → replace, category gone.
     fireEvent.click(screen.getByText("producers.filters.clear_all"));
     expect(lastReplaceUrl()).not.toContain("category=");
+  });
+});
+
+describe("/producers category multi-select OR (MEH-1465)", () => {
+  // Parse category values from a mirrored URL — using getAll so "category=1"
+  // is NOT mistaken for "category=18" via a substring toContain match.
+  const catParams = (url) => new URLSearchParams(url.split("?")[1] || "").getAll("category");
+  const lastFetchCategory = () => producersCalls().at(-1)?.category;
+
+  it("selecting two categories unions them: both active, both in URL, both fetched", async () => {
+    render(<ProducersClient {...PROPS} />);
+    const row = await screen.findByTestId("chip-row-category");
+    fireEvent.click(within(row).getByText("בשר")); // id 1
+    fireEvent.click(within(row).getByText("דבש")); // id 18
+    // adding grows the set → push; URL carries repeated ?category=.
+    expect(catParams(lastPushUrl())).toEqual(["1", "18"]);
+    expect(within(row).getByText("בשר").dataset.active).toBe("true");
+    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    await waitFor(() => {
+      const c = lastFetchCategory();
+      expect(Array.isArray(c) && c.includes("1") && c.includes("18")).toBe(true);
+    });
+  });
+
+  it("re-tapping a selected category removes just that one (replace, union shrinks)", async () => {
+    render(<ProducersClient {...PROPS} />);
+    const row = await screen.findByTestId("chip-row-category");
+    fireEvent.click(within(row).getByText("בשר"));
+    fireEvent.click(within(row).getByText("דבש"));
+    // re-tap בשר → removed; only דבש remains. Shrinking → replace, not push.
+    fireEvent.click(within(row).getByText("בשר"));
+    expect(catParams(lastReplaceUrl())).toEqual(["18"]);
+    expect(within(row).getByText("בשר").dataset.active).toBe("false");
+    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    await waitFor(() => expect(lastFetchCategory()).toEqual(["18"]));
+  });
+
+  it("multi-value deep-link ?category=1&category=18 hydrates both chips active + fetches both", async () => {
+    params = { category: ["1", "18"] };
+    render(<ProducersClient {...PROPS} />);
+    const row = await screen.findByTestId("chip-row-category");
+    expect(within(row).getByText("בשר").dataset.active).toBe("true");
+    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    await waitFor(() => {
+      const c = lastFetchCategory();
+      expect(Array.isArray(c) && c.includes("1") && c.includes("18")).toBe(true);
+    });
+  });
+
+  it('"הכל" clears the whole union in one tap', async () => {
+    params = { category: ["1", "18"] };
+    render(<ProducersClient {...PROPS} />);
+    const row = await screen.findByTestId("chip-row-category");
+    fireEvent.click(within(row).getByText("producers.filters.category_all"));
+    expect(catParams(lastReplaceUrl())).toEqual([]);
+    expect(within(row).getByText("בשר").dataset.active).toBe("false");
+    expect(within(row).getByText("דבש").dataset.active).toBe("false");
   });
 });
 
