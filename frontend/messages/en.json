@@ -683,6 +683,10 @@
       "loading_fresh": "Loading fresh businesses...",
       "not_found": "We couldn't find this business — yet",
       "breadcrumb_home": "Home",
+      "google_rating": {
+        "summary": "{rating} · {count} reviews on Google Maps",
+        "link_label": "View the profile on Google Maps (opens in a new tab)"
+      },
       "aria": {
         "back": "Back to previous page",
         "tab_nav": "Quick profile navigation"
@@ -1464,6 +1468,9 @@
           "city": "City / region",
           "slug": "Slug (URL)",
           "slug_placeholder": "auto-generated",
+          "google_place_id": "Google Place ID",
+          "google_place_id_placeholder": "ChIJ… (place_id only)",
+          "google_place_id_hint": "The Google Maps Place ID. The rating line shows only if the business has ≥20 Google reviews. Paste the place_id only — not a URL.",
           "lat": "Latitude",
           "lng": "Longitude",
           "organic_certified": "Certified organic",
