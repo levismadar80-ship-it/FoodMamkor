@@ -219,6 +219,50 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
   });
 });
 
+describe("ChipScrollRow — category glyph tint (inactive only)", () => {
+  // Chips carry a leading glyph (icon) + an iconColor. The INACTIVE chip's glyph
+  // span is tinted with iconColor; the ACTIVE chip's glyph inherits the button's
+  // white text (no inline color); a chip without iconColor is never tinted.
+  const TINT_CHIPS = [
+    { key: "meat", label: "בשר", icon: <span data-testid="glyph-meat" />, iconColor: "#c04040" },
+    { key: "dairy", label: "חלב", icon: <span data-testid="glyph-dairy" />, iconColor: "#3b72ad" },
+    { key: "all", label: "כל", icon: <span data-testid="glyph-all" /> }, // no iconColor
+  ];
+
+  function glyphWrapper(testid) {
+    return screen.getByTestId(testid).parentElement;
+  }
+
+  it("inactive chip → glyph span is tinted with iconColor", () => {
+    render(
+      <ChipScrollRow variant="category" activeKey="all" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    expect(glyphWrapper("glyph-meat")).toHaveStyle({ color: "#c04040" });
+    expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
+  });
+
+  it("active chip → glyph is NOT tinted (inherits white currentColor)", () => {
+    render(
+      <ChipScrollRow variant="category" activeKey="meat" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    // Active chip: no inline color style at all.
+    expect(glyphWrapper("glyph-meat").getAttribute("style")).toBeNull();
+    // A different, inactive chip in the same row stays tinted.
+    expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
+  });
+
+  it("chip without iconColor → glyph never tinted, active or not", () => {
+    const { rerender } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    expect(glyphWrapper("glyph-all").getAttribute("style")).toBeNull();
+    rerender(
+      <ChipScrollRow variant="category" activeKey="meat" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    expect(glyphWrapper("glyph-all").getAttribute("style")).toBeNull();
+  });
+});
+
 describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383/MEH-1391)", () => {
   // The arrows are gated on (hover: hover) and (pointer: fine); each
   // matchMedia mock records its change listeners so a test can flip the

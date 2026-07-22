@@ -46,7 +46,12 @@ export const CATEGORY_STYLES = {
   // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
   // dedicated identity — brand honey #C8821E + honeycomb glyph — distinct
   // from oils (#e8a020). MEH-683: Hexagon→Hive (Material), JarLabel→OliveOil.
-  "שמנים":               { color: "#e8a020", icon: OliveOil,    iconName: "OliveOil" },
+  // textColor: the map pin keeps the vivid #e8a020, but that fails WCAG 1.4.11
+  // as a chip glyph tint on white (2.22:1). A same-hue (H≈38°) darkened
+  // #bd8013 (3.35:1 on #fff) is used wherever the colour tints UI text/glyphs,
+  // following the חלב וגבינות precedent (#4a90d9 pin → #3b72ad textColor).
+  "שמנים":               { color: "#e8a020", textColor: "#bd8013", icon: OliveOil,    iconName: "OliveOil" },
+  // דבש #C8821E clears 3:1 on white (3.15:1) as-is — no textColor needed.
   "דבש":                 { color: "#C8821E", icon: Hive,        iconName: "Hive" },
   "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
 };

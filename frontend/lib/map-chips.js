@@ -30,14 +30,24 @@ import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 // stays React-free — the JSX element is built by the render site, mirroring how
 // MEH-1418 threads toggle-chip icons via withChipIcons). The "כל" reset chip has
 // no iconName → it renders text-only (the reset differentiator).
+// Category-tint: `iconColor` tints the INACTIVE chip's glyph with the category
+// colour (ChipScrollRow applies it only when !active; the active chip stays
+// white). Declared explicitly for the same reason as iconName — an aggregate
+// chip has no single CATEGORY_STYLES key — and kept a plain STRING (React-free).
+// Values mirror lib/map-categories.js CATEGORY_STYLES (.textColor ?? .color):
+//   meat "בשר"/"דגים" #c04040 · dairy "חלב וגבינות" textColor #3b72ad ·
+//   bread "לחמים ואפייה" #896714 · produce = produce-green #2e6853 (the
+//   "ירקות, פירות ומשקים" style / DEFAULT / primary — same as the map's DEFAULT
+//   pin for the aggregate produce chip). All values ≥3:1 on white (WCAG 1.4.11);
+//   no new palette colour is introduced. "כל" has no iconColor (iconless reset).
 export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר" },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות" },
-  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות" },
-  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה" },
+  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
+  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות", iconColor: "#2e6853" },
+  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
+  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
