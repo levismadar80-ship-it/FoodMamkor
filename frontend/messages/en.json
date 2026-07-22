@@ -784,7 +784,8 @@
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
-        "reveal_phone": "Show phone number"
+        "reveal_phone": "Show phone number",
+        "report_info_link": "Found wrong info? Let us know"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
@@ -2482,6 +2483,18 @@
       "toasts": {
         "success": "Thanks! Request received. In the meantime, pick the closest category.",
         "error": "Error submitting the request — please try again"
+      }
+    },
+    "report_info": {
+      "title": "Update details",
+      "placeholder": "What's inaccurate? Hours, phone, address — every detail helps",
+      "email_label": "Email for a reply (optional)",
+      "submit": "Send",
+      "submit_loading": "Sending...",
+      "close": "Close",
+      "toasts": {
+        "success": "Thanks! We'll check and update soon",
+        "error": "Error sending — please try again"
       }
     },
     "install_prompt": {

@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
+import ReportInfoModal from "@/components/ReportInfoModal";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -136,6 +137,10 @@ export default function ContactCard({ producer, isVacation }) {
   // render-time guess is needed.
   const [phoneRevealed, setPhoneRevealed] = useState(false);
 
+  // MEH-1443: "report wrong info" modal — additive; the contact block above
+  // is untouched.
+  const [reportOpen, setReportOpen] = useState(false);
+
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
   const channels = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
@@ -226,7 +231,23 @@ export default function ContactCard({ producer, isVacation }) {
 
         {/* MEH-1334: the tertiary follow + share row moved to the header's
             quiet actions row (שמירה · מעקב · שיתוף) — one home per action. */}
+
+        {/* MEH-1443: discreet "found wrong info?" report link (opens a modal;
+            v1 emails the admin). */}
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="mt-4 text-xs text-fg-muted underline hover:text-text transition"
+        >
+          {t("producer.detail.contact_card.report_info_link")}
+        </button>
       </div>
+
+      <ReportInfoModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        producerSlug={producer.slug || producer.id}
+      />
     </div>
   );
 }
