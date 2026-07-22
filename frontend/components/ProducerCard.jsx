@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
-import { HeartStraight, Leaf, Star } from "@phosphor-icons/react";
+import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -284,7 +284,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             <TrustBadge tier={producer.trust_tier} compact />
           )}
           {producer.has_physical_location === false && producer.offers_delivery && (
-            <span className="inline-flex items-center rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+            // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string
+            // is replaced by the MEH-1418 delivery glyph (Phosphor Truck, currentColor via the
+            // pill's text-text) so it matches the delivery toggle chip. size 14
+            // keeps the pill height in line with the sibling text badges.
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+              <Truck size={14} className="shrink-0" aria-hidden="true" />
               {t("producer.card.badges.delivery_only")}
             </span>
           )}
