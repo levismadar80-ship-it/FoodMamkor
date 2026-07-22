@@ -30,7 +30,9 @@ import { BADGE_CONFIG } from "@/lib/badges";
  * History:  MEH-1075 (creation); MEH-1418 (per-toggle Phosphor icon + muted
  *           explainer line); MEH-1423 (chip+paragraph → full-width row+Switch;
  *           subtext narrowed from all 7 toggles to the 3 unfamiliar terms —
- *           kosher · verified · grass_fed — so the sheet fits one 375px screen).
+ *           kosher · verified · grass_fed — so the sheet fits one 375px screen);
+ *           MEH-1478 (diet group → 2-col pill grid; service group reordered
+ *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched).
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
@@ -46,6 +48,21 @@ const GROUP_ORDER = ["diet", "quality", "service"];
 const SUBTEXT_KEYS = new Set(["kosher", "verified", "grass_fed"]);
 function chipSubtext(key) {
   return SUBTEXT_KEYS.has(key) ? BADGE_CONFIG[key]?.tooltip ?? null : null;
+}
+
+// MEH-1478: within-group render order. Default = TOGGLE_CHIPS array order; the
+// service group leads with "רישוי מאומת" (verified) and trails with "משלוח"
+// (has_delivery) per spec — a FilterSheet-LOCAL presentation reorder that leaves
+// lib/map-chips.js TOGGLE_CHIPS untouched (scope lock: the array order there
+// still drives /producers + every other consumer).
+const GROUP_CHIP_ORDER = {
+  service: ["verified", "has_delivery"],
+};
+function chipsForGroup(group) {
+  const chips = TOGGLE_CHIPS.filter((chip) => chip.group === group);
+  const order = GROUP_CHIP_ORDER[group];
+  if (!order) return chips;
+  return [...chips].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 }
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
@@ -174,55 +191,91 @@ export default function FilterSheet({
             <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1">
               {t(`filters.sheet.group_${group}`)}
             </h3>
-            {/* MEH-1423: each toggle is a full-width ROW — leading icon + label
-                at the inline-start, a Switch at the inline-end — with a hairline
-                divider between rows (divide-y). The whole row is ONE
-                role="switch" button (min-h 44px tap target), so the entire row
-                is the hit area; the visual track/knob is aria-hidden and the
-                label stays the accessible name. Subtext (3 rows only) sits BELOW
-                the button, outside its accessible name. Replaces the MEH-1418
-                chip+paragraph stack that pushed the sheet to ~2.5 screens. */}
-            <div className="divide-y divide-border">
-              {TOGGLE_CHIPS.filter((chip) => chip.group === group).map((chip) => {
-                const active = !!chipState[chip.key];
-                const icon = chipIcon(chip.key);
-                const subtext = chipSubtext(chip.key);
-                return (
-                  <div key={chip.key} className="py-1">
-                    {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
-                        label+icon at start, role="switch" pill at end, knob
-                        start-1(off)→end-1(on) via logical insets (RTL-safe). */}
+            {group === "diet" ? (
+              /* MEH-1478: the 4 diet toggles render as a 2-column pill GRID
+                 (grid-template-columns: repeat(2, minmax(0,1fr)), gap 8px)
+                 instead of full-width rows — they are everyday, self-evident
+                 vocabulary (no subtext, MEH-1423) so a compact multi-select grid
+                 keeps the whole sheet on one 375px screen. Each pill is a toggle
+                 BUTTON with aria-pressed that writes the SHARED chipState
+                 immediately via onToggleChip (no draft), exactly like the rows;
+                 multi-select is unchanged. Selected = solid primary fill (matches
+                 the sibling rows' Switch-on colour at :bg-primary), default =
+                 white surface + hairline border. Icon (aria-hidden) + label
+                 centred; label stays the accessible name. */
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {chipsForGroup(group).map((chip) => {
+                  const active = !!chipState[chip.key];
+                  const icon = chipIcon(chip.key);
+                  return (
                     <button
+                      key={chip.key}
                       type="button"
-                      role="switch"
-                      aria-checked={active}
+                      aria-pressed={active}
                       onClick={() => onToggleChip(chip.key)}
-                      className="flex w-full items-center justify-between gap-3 min-h-[44px] py-1.5 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      className={`flex items-center justify-center gap-2 min-h-[44px] rounded-full border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                        active
+                          ? "bg-primary text-white border-primary"
+                          : "bg-surface text-text border-border hover:border-primary"
+                      }`}
                     >
-                      <span className="flex items-center gap-2 text-sm font-medium text-text">
-                        {icon && <span aria-hidden="true">{icon}</span>}
-                        {chip.label}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
-                          active ? "bg-primary" : "bg-border"
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                            active ? "end-1" : "start-1"
-                          }`}
-                        />
-                      </span>
+                      {icon && <span aria-hidden="true">{icon}</span>}
+                      {chip.label}
                     </button>
-                    {subtext && (
-                      <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* MEH-1423: each toggle is a full-width ROW — leading icon + label
+                 at the inline-start, a Switch at the inline-end — with a hairline
+                 divider between rows (divide-y). The whole row is ONE
+                 role="switch" button (min-h 44px tap target), so the entire row
+                 is the hit area; the visual track/knob is aria-hidden and the
+                 label stays the accessible name. Subtext (3 rows only) sits BELOW
+                 the button, outside its accessible name. MEH-1478: service group
+                 reordered רישוי מאומת → משלוח via chipsForGroup. */
+              <div className="divide-y divide-border">
+                {chipsForGroup(group).map((chip) => {
+                  const active = !!chipState[chip.key];
+                  const icon = chipIcon(chip.key);
+                  const subtext = chipSubtext(chip.key);
+                  return (
+                    <div key={chip.key} className="py-1">
+                      {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
+                          label+icon at start, role="switch" pill at end, knob
+                          start-1(off)→end-1(on) via logical insets (RTL-safe). */}
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={active}
+                        onClick={() => onToggleChip(chip.key)}
+                        className="flex w-full items-center justify-between gap-3 min-h-[44px] py-1.5 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      >
+                        <span className="flex items-center gap-2 text-sm font-medium text-text">
+                          {icon && <span aria-hidden="true">{icon}</span>}
+                          {chip.label}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
+                            active ? "bg-primary" : "bg-border"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                              active ? "end-1" : "start-1"
+                            }`}
+                          />
+                        </span>
+                      </button>
+                      {subtext && (
+                        <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
 
