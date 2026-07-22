@@ -11,8 +11,21 @@
 - **שירות ואמון reordered:** new FilterSheet-local `chipsForGroup` order map puts **רישוי מאומת first (+subtext) → משלוח last (no subtext)** — `lib/map-chips.js` TOGGLE_CHIPS **untouched** (array order still drives /producers). מקור ואיכות rows (כשרות מאומתת · גראס פד) unchanged. 3 headers, 3 subtexts (byte-identical to BADGE_CONFIG), zero new strings, one 375px viewport, no scroll.
 - **Verify:** `npm run build` exit 0 · full vitest **1536 pass / 10 skip** (updated `FilterSheet.test.jsx`: diet = aria-pressed buttons, trust = switches) · eslint 0 errors · RTL hook clean. Screenshots @375px + lg+ panel in `qa-artifacts/MEH-1478/` (compressed WebP, 58 KB).
 - **Left for Sapir:** mobile QA optional (LOW-RISK, auto-merge on green per MEH-450/ADR-016). `Closes MEH-1478`.
+## 2026-07-22 — MEH-1473 — recipe chip → question form (i18n-only, LOW-RISK) — PR open, auto-merge on green
+
+- Branch `feature/meh-1473-recipe-chip-rephrase` off staging. i18n-only rephrase of the MEH-1462 recipe chip.
+- `he.json` / `en.json`: `whatsapp.question_chips.recipe_idea` "יש לי רעיון למתכון" → **"אפשר לשתף מתכון שהכנתי?"** + `recipe_idea_message` prefill updated (EN retranslated to match). `WhatsAppQuestionChips.jsx` **not touched** (label + prefill flow from i18n; only a stale MEH-1462 comment quotes the old string — left per scope lock).
+- Updated exact-prefill href assertion in `quickAnswers.test.js`.
+- **Verify:** `build` 0 · `quickAnswers.test.js` 27/27. Chip-row harness @375px in `qa-artifacts/MEH-1473/`.
+- ADR-024 ungendered, no emoji. LOW-RISK → auto-merge on green gates.
 
 ## 2026-07-22 — MEH-1465 — category multi-select OR (chip rows) — PR OPEN, no auto-merge (Sapir merges after mobile QA)
+## 2026-07-22 — MEH-1470 — preserve category selection when removing the city/search chip (/producers) — PR OPEN, auto-merge on green (LOW-RISK)
+
+- Follow-up from MEH-1465's adversarial review. The two removable chips on `/producers` (city-× `ProducersClient.jsx:488`, search-× `:503`) called `syncUrl`/`fetchFiltered` **omitting** the category arg, so removing city/search silently dropped the active category selection from the URL + refetch (pre-existing — they omitted the single-string arg pre-1465 too). Fix: thread the current `categoryFilter` array through both call-sites. Grep confirmed these were the only two omitting call-sites; every other `syncUrl`/`fetchFiltered` already passes category (or the intentional `[]` in `clearAll`).
+- Test: `ProducersClientCategoryAxis.test.jsx` +2 (remove city keeps 2 categories in URL+fetch; remove search keeps the category). Includes the MEH-1465 HANDOFF "PR OPEN → MERGED #2075" correction below.
+
+## 2026-07-22 — MEH-1465 — category multi-select OR (chip rows) — MERGED PR #2075 (squash `2a38aa38`, on green; VRT baselines drifted red pre-existing — not from this diff, `vrt-update` on Sapir)
 
 - **HIGH-RISK, shipped chunk-by-chunk with Sapir "go" between each.** Branch `feature/meh-1465-category-multiselect` off staging (gates verified first: MEH-1368 merged, MEH-1181-A delta at `DESIGN.md:471`/478-506, Chunk A backend/serializer OR ready).
 - **Chunk 1 — `ChipScrollRow`** (`7ee6058d`): `variant="category"` accepts an `activeKeys` **Set** (legacy `activeKey` string still works); role `radiogroup→toolbar`; `scrollIntoView`→last-activated (Set diff). Direction A selected style (ring + 12% wash + neutral bold label, glyph keeps colour; `--cat-ring = chip.iconColor`); "כל" solid baseline / ghost when ≥1 active. `DEFAULT_CAT_RING = #2e6853` = registry DEFAULT/`primary` (no new green).
