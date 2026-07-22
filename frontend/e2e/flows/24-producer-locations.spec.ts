@@ -45,6 +45,61 @@ const usableCoords = (l: Loc) =>
 const multiLoc = (producers: Producer[]) =>
   producers.find((p) => (p.locations || []).filter(usableCoords).length >= 2);
 
+// MEH-1451: recenter the map onto the seeded multi-location producer via the
+// app's OWN near-me flow — mock geolocation at one of its pins, then click the
+// near-me control so goToMyLocation flies there (MapComponent.jsx:355). Shared
+// by :96 (asserts the per-location secondary markers at that zoom) and :66
+// (which then zooms out to a clustering level). markercluster only materialises
+// in-view markers, so both tests must bring the seeded pins into view first.
+// Returns the seeded producer. Do NOT touch app code — this is spec-side setup.
+async function recenterOnSeededProducer(
+  page: import("@playwright/test").Page,
+  context: import("@playwright/test").BrowserContext,
+  producers: Producer[],
+): Promise<Producer> {
+  const multi = multiLoc(producers);
+  expect(
+    multi,
+    "a multi-location producer must be seeded (seed_demo_business.py --refresh)",
+  ).toBeTruthy();
+
+  const coords = (multi!.locations || []).filter(usableCoords);
+  const secondaryLoc =
+    coords.find((l) => l.kind === "pickup" || l.kind === "market_stand") || coords[0];
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({
+    latitude: secondaryLoc.lat!,
+    longitude: secondaryLoc.lng!,
+  });
+
+  await page.goto("/map");
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForFunction(MAP_MOUNT, { timeout: 45_000 });
+
+  // LocationModal can mask the map controls when no userCity is saved —
+  // dismiss it if present (07-gps-button precedent, MEH-262/263).
+  const skipBtn = page.getByRole("button", { name: "דלגו לעכשיו" });
+  try {
+    await skipBtn.waitFor({ state: "visible", timeout: 2500 });
+    await skipBtn.click();
+    await skipBtn.waitFor({ state: "hidden", timeout: 2000 });
+  } catch {
+    // modal did not appear — proceed
+  }
+
+  // Per-project near-me control: desktop GPS circle (MapPane, hidden lg:flex)
+  // or the mobile NearMePill — both route to the same goToMyLocation flyTo.
+  // :visible scopes to the active shell (MapClient renders twice — 07 precedent).
+  const nearMe = page
+    .locator(
+      '[aria-label="מרכזו את המפה על המיקום שלי"]:visible, [aria-label="הצגת בתי עסק קרובים למיקום שלי"]:visible',
+    )
+    .first();
+  await expect(nearMe).toBeVisible({ timeout: 15_000 });
+  await nearMe.click();
+  return multi!;
+}
+
 test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
   test.describe.configure({ retries: 1 });
 
@@ -63,25 +118,48 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
   // non-negotiable invariant, asserted at E2E level: a cluster's badge can never
   // exceed the number of producers in the feed — a marker-counting badge would,
   // once any business owns >1 pin (the 10-location demo producer clusters as 1).
-  test("cluster badges never exceed the unique-producer count", async ({ page }) => {
-    test.setTimeout(90_000);
+  test("cluster badges never exceed the unique-producer count", async ({ page, context }) => {
+    test.setTimeout(120_000);
     const producers = await fetchProducers(page);
-    await page.goto("/map");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForFunction(MAP_MOUNT, { timeout: 45_000 });
-    // MEH-1440: the cluster icon carries the app's custom class
-    // `mehamakor-cluster` (MapComponent.jsx:454 iconCreateFunction), NOT
-    // leaflet.markercluster's default `.marker-cluster` — the default class is
-    // only applied by the library's own iconCreateFunction, which the app
-    // overrides. The old selector could never match (built-in failure).
-    await page.waitForFunction(
-      () => document.querySelectorAll(".mehamakor-cluster, .mehamakor-marker-wrap").length > 0,
-      { timeout: 20_000 },
-    );
+    // MEH-1451: :66 previously counted `.mehamakor-cluster` at the FIXED initial
+    // viewport (center [32.4,34.95] zoom 8, MapComponent.jsx:411), where the
+    // seeded זכרון יעקב pins aren't guaranteed materialised → clusterCount=0.
+    // Bring them into view with the SAME near-me flow :96 uses, then zoom back
+    // out below disableClusteringAtZoom:11 (MapComponent.jsx:434) so the
+    // co-located per-location pins collapse into one unique-business cluster.
+    // near-me lands at zoom 13 (MapComponent.jsx:355) where clustering is OFF —
+    // so :66, unlike :96, must zoom out to a clustering level.
+    // REUSES: recenterOnSeededProducer (this file) — same viewport setup as :96.
+    await recenterOnSeededProducer(page, context, producers);
 
+    // Confirm the recenter landed (per-location markers materialised at zoom 13)
+    // before zooming out — the same signal :96 asserts, and it lets near-me's
+    // flyTo settle without a fixed wait.
+    await expect(
+      page.locator(".mehamakor-marker-secondary").first(),
+      "recenter must bring the seeded per-location pins into view",
+    ).toBeVisible({ timeout: 20_000 });
+
+    // Zoom out from near-me's zoom 13 to a clustering level using the app's own
+    // Leaflet zoom-out control (zoomControl:true, MapComponent.jsx:401). Click
+    // until a cluster materialises — condition-based + bounded (robust to a
+    // dropped click), NOT a fixed waitForTimeout. :visible scopes to the active
+    // shell (MapClient renders twice — 07 precedent).
+    const zoomOut = page.locator(".leaflet-control-zoom-out:visible").first();
     const clusters = page.locator(".mehamakor-cluster");
+    for (let i = 0; i < 6 && (await clusters.count()) === 0; i++) {
+      await zoomOut.click();
+      await clusters.first().waitFor({ state: "visible", timeout: 2500 }).catch(() => {});
+    }
+    await expect(
+      clusters.first(),
+      "the seeded multi-location producer must render a cluster at a clustering zoom",
+    ).toBeVisible({ timeout: 15_000 });
+
+    // The non-negotiable invariant (unchanged): a unique-business cluster badge
+    // can never exceed the number of producers in the feed.
     const clusterCount = await clusters.count();
-    expect(clusterCount, "the seeded multi-location producer must render a cluster").toBeGreaterThan(0);
+    expect(clusterCount, "at least one cluster must be present after zoom-out").toBeGreaterThan(0);
     const producerCount = producers.length;
     for (let i = 0; i < clusterCount; i++) {
       const badge = parseInt((await clusters.nth(i).innerText()).trim(), 10);
@@ -107,46 +185,11 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
   test("a multi-location producer's markers all open the same business card", async ({ page, context }) => {
     test.setTimeout(120_000);
     const producers = await fetchProducers(page);
-    const multi = multiLoc(producers);
-    expect(
-      multi,
-      "a multi-location producer must be seeded (seed_demo_business.py --refresh)",
-    ).toBeTruthy();
-
-    const coords = (multi!.locations || []).filter(usableCoords);
-    const secondaryLoc =
-      coords.find((l) => l.kind === "pickup" || l.kind === "market_stand") || coords[0];
-    await context.grantPermissions(["geolocation"]);
-    await context.setGeolocation({
-      latitude: secondaryLoc.lat!,
-      longitude: secondaryLoc.lng!,
-    });
-
-    await page.goto("/map");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForFunction(MAP_MOUNT, { timeout: 45_000 });
-
-    // LocationModal can mask the map controls when no userCity is saved —
-    // dismiss it if present (07-gps-button precedent, MEH-262/263).
-    const skipBtn = page.getByRole("button", { name: "דלגו לעכשיו" });
-    try {
-      await skipBtn.waitFor({ state: "visible", timeout: 2500 });
-      await skipBtn.click();
-      await skipBtn.waitFor({ state: "hidden", timeout: 2000 });
-    } catch {
-      // modal did not appear — proceed
-    }
-
-    // Per-project near-me control: desktop GPS circle (MapPane, hidden lg:flex)
-    // or the mobile NearMePill — both route to the same goToMyLocation flyTo.
-    // :visible scopes to the active shell (MapClient renders twice — 07 precedent).
-    const nearMe = page
-      .locator(
-        '[aria-label="מרכזו את המפה על המיקום שלי"]:visible, [aria-label="הצגת בתי עסק קרובים למיקום שלי"]:visible',
-      )
-      .first();
-    await expect(nearMe).toBeVisible({ timeout: 15_000 });
-    await nearMe.click();
+    // MEH-1451: the geolocation + near-me viewport setup moved into the shared
+    // recenterOnSeededProducer helper (now also used by :66). Behaviour is
+    // unchanged — near-me flies to zoom 13 where the per-location markers render
+    // individually, exactly where this test asserts.
+    await recenterOnSeededProducer(page, context, producers);
 
     const secondary = page.locator(".mehamakor-marker-secondary");
     await expect(
