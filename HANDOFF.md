@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1481 — FilterSheet desktop density + sticky footer — PR open (frontend-only, LOW-RISK, auto-merge on green)
+
+- **Branch** `feature/meh-1481-filtersheet-desktop-density` off fresh `origin/staging` (which already had MEH-1478 `#2080` merged as `3e7f36e2`). **Single file: `frontend/components/FilterSheet.jsx`.**
+- **Desktop-only (all `lg:`-gated):** rows + diet pills `min-h 44→36` (≥24px WCAG 2.5.8), labels `text-sm→text-[13px]`, tighter padding + section gaps; footer `lg:mt-4`.
+- **Safety net:** panel `lg:max-h-[70vh]→lg:max-h-[min(600px,calc(100vh-220px))]` + existing `overflow-y-auto` + footer `lg:sticky lg:bottom-0` (opaque bg + top hairline, `lg:-mx-4 lg:px-4` full-bleed) → apply + ניקוי הכל always visible. No structural change (panel was already the scroll container).
+- **Mobile byte-identical — proven:** the 375px Playwright capture hashes **identically** (MD5 `e6fb2b3d…`) before vs after. Overflow probe `hOverflow:false` at 1280×800 / 1440×900 / 375px.
+- **Verify:** `npm run build` exit 0 · vitest **1536/10** (FilterSheet + mapChips green) · eslint 0 · `check-rtl.sh` clean. Screenshots in `qa-artifacts/MEH-1481/` (1280×800 apply-visible · 1440×900 · 375px unchanged).
+- **Left for Sapir:** auto-merge on green (LOW-RISK per MEH-450/ADR-016). `Closes MEH-1481`.
+
 ## 2026-07-22 — MEH-1478 — FilterSheet hybrid (diet 2×2 pill grid + trust reorder) — PR open (frontend-only, LOW-RISK, auto-merge on green)
 
 - **Two-step dispatch.** Step 1 (close MEH-1368 / PR #2073) was a **no-op**: PR #2073 was **already merged** by Sapir at 18:11:29Z (staging tip `714168af`), and follow-ups #2074 (MEH-1468) / #2075 (MEH-1465) / #2076 (MEH-1472) already built on top — terminal state reached, nothing to merge. Proceeded to Step 2.
