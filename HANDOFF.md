@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1479 — favorites error-state retry button (LOW-RISK, GREEN tier) — MERGED PR #2083 (squash `d0fe12c9`)
+
+- **Merged on CI green** (`CI gate (required)` + `Deploy gate (required)` both success). Two staging-syncs needed mid-flight (Rule 25 concurrent-merge storm — MEH-1476/1481/1477/1478 landed in the window). Playwright E2E's run had 4 pre-existing VRT baseline failures (`map`/`producer-detail`, desktop+mobile) — unrelated to `/favorites`, not a required gate per MEH-716; 127 other specs passed.
+- **Post-merge verification:** the adversarial-review bot's first-run "Must Fix" flagged apparent scope creep (removal of MEH-1478's diet-pill `FilterSheet` grid + MEH-1477's `edit/page.js` placeholders) — this was a stale-base artifact from before the second staging sync caught up. Confirmed directly against `origin/staging` HEAD post-merge: `GROUP_CHIP_ORDER`/`chipsForGroup`/diet grid (MEH-1478) intact, `placeholder_1`–`placeholder_5` + guidance `<p>` (MEH-1477) intact, `qa-artifacts/MEH-1477/README.md` present. No regression landed.
+- **Left for later (bot's minor findings, non-blocking):** `error.generic` ("משהו השתבש, נסו שוב") + the new retry button both say "נסו שוב" — could trim `generic` to "משהו השתבש" now the button carries the CTA. Test fixture uses `"טסט"` instead of `"test"` for a mock name (Hebrew belongs in i18n, not source) — cosmetic.
+
 ## 2026-07-22 — MEH-1479 — favorites error-state retry button (LOW-RISK, GREEN tier) — PR open, merge on CI green
 
 - Branch `feature/meh-1479-favorites-retry` off `origin/staging`. One PR.
