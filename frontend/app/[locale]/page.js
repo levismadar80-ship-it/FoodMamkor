@@ -79,8 +79,6 @@ export default function HomePage() {
         fridayMode={fridayMode}
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
-        onSurprise={handleSurprise}
-        hasProducers={statsProducersCount > 0}
         onScrollDown={scrollToProducers}
       />
 
@@ -193,6 +191,8 @@ export default function HomePage() {
         onClearCategory={handleClearCategory}
         onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}
+        onSurprise={handleSurprise}
+        hasProducers={statsProducersCount > 0}
         geoActive={geoActive}
         cityActive={cityActive}
         geoEmptyNotice={geoEmptyNotice}

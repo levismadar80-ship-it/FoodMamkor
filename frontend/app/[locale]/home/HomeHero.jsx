@@ -42,19 +42,18 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * kenburns-left dividers below; honors prefers-reduced-motion (animation:none).
  *
  * Does NOT: own search routing (HeroSearch), own the near-me handler
- * (onNearMe from use-home-page), the surprise handler (onSurprise), or
- * restyle the navbar (parallel track).
+ * (onNearMe from use-home-page), or restyle the navbar (parallel track).
  *
  * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2),
  * MEH-788 (#1055 Cloudinary+KB · #1063 scrim token · S14 capped-hero + cream
- * search/CTAs), MEH-1288 (surprise-me button beside near-me).
+ * search/CTAs), MEH-1288 (surprise-me button beside near-me),
+ * MEH-1476 (surprise-me relocated to the producers-grid end — hero now
+ * carries only the filled primary + near-me ghost + "how it works" link).
  */
 export function HomeHero({
   fridayMode,
   geoLoading,
   onNearMe,
-  onSurprise,
-  hasProducers,
   onScrollDown,
 }) {
   const t = useTranslations();
@@ -147,8 +146,9 @@ export function HomeHero({
           is centered at every breakpoint — supersedes HOME-06 alignment per
           Sapir 09/07 (the md:justify-start + md:px-12 start-geometry from #1476
           is dropped; centered content needs neither). MEH-1369: exactly ONE filled
-          primary — near-me is the single .action-ghost secondary; surprise-me +
-          how-it-works are text links. */}
+          primary — near-me is the single .action-ghost secondary; how-it-works is
+          a text link. MEH-1476: surprise-me left the hero — it now lives at the
+          producers-grid end beside "load more". */}
       <motion.div
         initial={{ y: 12 }}
         animate={{ y: 0 }}
@@ -175,31 +175,16 @@ export function HomeHero({
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
         </button>
 
-        {/* MEH-1369: secondary text-link group — RTL order הפתיעו אותי · איך זה עובד.
-            surprise-me (MEH-1288, render-gated on hasProducers) is a text link beside
-            "how it works": same onSurprise handler, new visual weight only.
-            MEH-1409: dropped the Shuffle icon so surprise-me and how-it-works are
-            identical-weight text links (same font/underline/spacing) — the icon made
-            surprise-me read as the heavier of the two. */}
-        <div className="inline-flex items-center gap-4">
-          {hasProducers && (
-            <button
-              type="button"
-              onClick={onSurprise}
-              className="text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
-            >
-              {t("home.hero.surprise_me")}
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={scrollToHowItWorks}
-            className="text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
-          >
-            {t("home.hero.how_it_works")}
-          </button>
-        </div>
+        {/* MEH-1476: "how it works" is now the sole secondary text link — the
+            surprise-me link that used to sit beside it (MEH-1369/MEH-1409) moved
+            to the producers-grid end. Same text-link weight, unchanged handler. */}
+        <button
+          type="button"
+          onClick={scrollToHowItWorks}
+          className="text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
+        >
+          {t("home.hero.how_it_works")}
+        </button>
       </motion.div>
     </>
   );
