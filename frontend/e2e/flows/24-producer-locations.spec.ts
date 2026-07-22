@@ -69,12 +69,17 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForFunction(MAP_MOUNT, { timeout: 45_000 });
+    // MEH-1440: the cluster icon carries the app's custom class
+    // `mehamakor-cluster` (MapComponent.jsx:454 iconCreateFunction), NOT
+    // leaflet.markercluster's default `.marker-cluster` — the default class is
+    // only applied by the library's own iconCreateFunction, which the app
+    // overrides. The old selector could never match (built-in failure).
     await page.waitForFunction(
-      () => document.querySelectorAll(".marker-cluster, .mehamakor-marker-wrap").length > 0,
+      () => document.querySelectorAll(".mehamakor-cluster, .mehamakor-marker-wrap").length > 0,
       { timeout: 20_000 },
     );
 
-    const clusters = page.locator(".marker-cluster");
+    const clusters = page.locator(".mehamakor-cluster");
     const clusterCount = await clusters.count();
     expect(clusterCount, "the seeded multi-location producer must render a cluster").toBeGreaterThan(0);
     const producerCount = producers.length;
@@ -109,7 +114,8 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     // Drill into clusters until the per-location secondary markers appear.
     const secondary = page.locator(".mehamakor-marker-secondary");
     for (let attempt = 0; attempt < 5 && (await secondary.count()) === 0; attempt++) {
-      const cluster = page.locator(".marker-cluster").first();
+      // MEH-1440: `.mehamakor-cluster`, not the leaflet default (see test 2).
+      const cluster = page.locator(".mehamakor-cluster").first();
       if ((await cluster.count()) === 0) break;
       await cluster.click().catch(() => {});
       await page.waitForTimeout(1500);
