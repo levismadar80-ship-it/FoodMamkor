@@ -32,7 +32,10 @@ import { BADGE_CONFIG } from "@/lib/badges";
  *           subtext narrowed from all 7 toggles to the 3 unfamiliar terms —
  *           kosher · verified · grass_fed — so the sheet fits one 375px screen);
  *           MEH-1478 (diet group → 2-col pill grid; service group reordered
- *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched).
+ *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched);
+ *           MEH-1481 (desktop-only density: rows+pills min-h 36px, 13px labels,
+ *           tighter gaps + capped scroll body + sticky footer — all lg:-gated,
+ *           mobile byte-identical).
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
@@ -170,7 +173,7 @@ export default function FilterSheet({
         aria-modal="true"
         aria-labelledby="filter-sheet-title"
         dir="rtl"
-        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[70vh]"
+        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))]"
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -188,7 +191,9 @@ export default function FilterSheet({
 
         {GROUP_ORDER.map((group) => (
           <div key={group}>
-            <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1">
+            {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
+                (mobile mt-4/mb-1 byte-identical). */}
+            <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1 lg:mt-3 lg:mb-0.5">
               {t(`filters.sheet.group_${group}`)}
             </h3>
             {group === "diet" ? (
@@ -203,7 +208,7 @@ export default function FilterSheet({
                  the sibling rows' Switch-on colour at :bg-primary), default =
                  white surface + hairline border. Icon (aria-hidden) + label
                  centred; label stays the accessible name. */
-              <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="grid grid-cols-2 gap-2 mt-1 lg:mt-0.5">
                 {chipsForGroup(group).map((chip) => {
                   const active = !!chipState[chip.key];
                   const icon = chipIcon(chip.key);
@@ -213,7 +218,9 @@ export default function FilterSheet({
                       type="button"
                       aria-pressed={active}
                       onClick={() => onToggleChip(chip.key)}
-                      className={`flex items-center justify-center gap-2 min-h-[44px] rounded-full border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                      /* MEH-1481: desktop density — min-h 44→36 (≥24px WCAG
+                         2.5.8), label 14→13px, tighter padding on lg+ only. */
+                      className={`flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-full border px-3 py-2 lg:py-1 text-sm lg:text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                         active
                           ? "bg-primary text-white border-primary"
                           : "bg-surface text-text border-border hover:border-primary"
@@ -240,18 +247,20 @@ export default function FilterSheet({
                   const icon = chipIcon(chip.key);
                   const subtext = chipSubtext(chip.key);
                   return (
-                    <div key={chip.key} className="py-1">
+                    <div key={chip.key} className="py-1 lg:py-0.5">
                       {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
                           label+icon at start, role="switch" pill at end, knob
-                          start-1(off)→end-1(on) via logical insets (RTL-safe). */}
+                          start-1(off)→end-1(on) via logical insets (RTL-safe).
+                          MEH-1481: desktop density — min-h 44→36, tighter
+                          padding + 13px label on lg+ only. */}
                       <button
                         type="button"
                         role="switch"
                         aria-checked={active}
                         onClick={() => onToggleChip(chip.key)}
-                        className="flex w-full items-center justify-between gap-3 min-h-[44px] py-1.5 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                        className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                       >
-                        <span className="flex items-center gap-2 text-sm font-medium text-text">
+                        <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
                           {icon && <span aria-hidden="true">{icon}</span>}
                           {chip.label}
                         </span>
@@ -281,19 +290,24 @@ export default function FilterSheet({
 
         {/* Apply = close (state is shared + already applied live); count is the
             live client-side visibleProducers.length passed by the caller.
-            Zero state keeps apply enabled — the clear link sits beside it. */}
-        <div className="mt-6 flex items-center gap-3">
+            Zero state keeps apply enabled — the clear link sits beside it.
+            MEH-1481: on lg+ the footer is STICKY to the bottom of this
+            overflow-y-auto panel so apply + ניקוי הכל stay visible when the
+            (capped) body scrolls — an opaque bg + top hairline hide the content
+            scrolling under it. No structural change: the panel div is already
+            the scroll container. Mobile footer (mt-6, non-sticky) unchanged. */}
+        <div className="mt-6 flex items-center gap-3 lg:sticky lg:bottom-0 lg:mt-4 lg:-mx-4 lg:px-4 lg:pt-3 lg:pb-1 lg:bg-background lg:border-t lg:border-border">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 min-h-[44px] rounded-md bg-primary text-white text-sm font-medium px-4 py-2.5 hover:opacity-90 transition"
+            className="flex-1 min-h-[44px] lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-[13px] font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
           >
             {t("filters.sheet.apply", { count: resultCount })}
           </button>
           <button
             type="button"
             onClick={onClearAll}
-            className="min-h-[44px] text-primary text-sm font-medium hover:opacity-80 transition"
+            className="min-h-[44px] lg:min-h-[36px] text-primary text-sm lg:text-[13px] font-medium hover:opacity-80 transition"
           >
             {t("filters.sheet.clear")}
           </button>
