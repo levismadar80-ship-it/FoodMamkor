@@ -453,14 +453,17 @@ export default function ProducersClient({
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
-    !hasActiveChips && initialItems.length === 0 && liveTotal > 0;
+    !hasActiveChips && baseItems.length === 0 && liveTotal > 0;
   const showCatalogEmpty = !hasActiveChips && liveTotal === 0;
   const showGrid = !loading && !showFilterEmpty && !showPageOverflow && !showCatalogEmpty;
 
   const counterText = (() => {
     if (!showGrid) return null;
     if (hasActiveChips) return t("discovery.found_count", { count: filteredItems?.length ?? 0 });
-    const loaded = initialItems.length + appendItems.length;
+    // MEH-1483: baseItems (SSR page, or sorted page 1 when a non-default sort
+    // is active) is the effective unfiltered base — matches displayItems. In
+    // the default flow baseItems === initialItems (byte-identical).
+    const loaded = baseItems.length + appendItems.length;
     // MEH-159: use liveTotal (refreshed on scroll + tab focus) so the counter
     // stays correct after admin deletes producers mid-session.
     return loaded >= liveTotal
