@@ -330,10 +330,14 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
 def _apply_search_filter(
     db: Session, q, count_q, search_q: str | None, *, geo_search: bool
 ):
-    """MEH-99 cross-field search: name · description · city · category names · product names.
+    """MEH-99 cross-field search: name · description · city · category names · product names · delivery cities.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
     prefix, then rating, then created_at) — geo mode keeps distance ASC.
+
+    MEH-1488: the search also matches a business's delivery_areas.city, so
+    `q=<city>` surfaces a producer that DELIVERS to that city even when its
+    own Producer.city differs (the city the owner typed under "אזורי משלוח").
     """
     if not (search_q and search_q.strip()):
         return q, count_q
@@ -358,12 +362,25 @@ def _apply_search_filter(
         )
         .exists()
     )
+    # MEH-1488: EXISTS on delivery_areas.city — same pattern as has_category /
+    # has_product. Matches a producer that delivers to the searched city even
+    # when its own Producer.city differs (the exact-match delivery_city filter
+    # in _apply_scalar_filters is a separate, stricter path).
+    has_delivery_city = (
+        db.query(DeliveryArea)
+        .filter(
+            DeliveryArea.producer_id == Producer.id,
+            DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE),
+        )
+        .exists()
+    )
     search_filter = (
         Producer.name.ilike(like, escape=LIKE_ESCAPE)
         | Producer.description.ilike(like, escape=LIKE_ESCAPE)
         | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         | has_category
         | has_product
+        | has_delivery_city
     )
     q = q.filter(search_filter)
     count_q = count_q.filter(search_filter)
