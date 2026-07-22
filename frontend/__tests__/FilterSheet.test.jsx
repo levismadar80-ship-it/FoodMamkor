@@ -20,7 +20,7 @@ vi.mock("next-intl", () => ({
 }));
 
 const ALL_OFF = {
-  categoryKey: "all",
+  categoryKeys: [], // MEH-1465: /map category state is a multi-select array now.
   // MEH-1259: organic removed from the /map FilterSheet toggle set.
   has_delivery: false,
   verified: false,

@@ -3,6 +3,21 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1470 — preserve category selection when removing the city/search chip (/producers) — PR OPEN, auto-merge on green (LOW-RISK)
+
+- Follow-up from MEH-1465's adversarial review. The two removable chips on `/producers` (city-× `ProducersClient.jsx:488`, search-× `:503`) called `syncUrl`/`fetchFiltered` **omitting** the category arg, so removing city/search silently dropped the active category selection from the URL + refetch (pre-existing — they omitted the single-string arg pre-1465 too). Fix: thread the current `categoryFilter` array through both call-sites. Grep confirmed these were the only two omitting call-sites; every other `syncUrl`/`fetchFiltered` already passes category (or the intentional `[]` in `clearAll`).
+- Test: `ProducersClientCategoryAxis.test.jsx` +2 (remove city keeps 2 categories in URL+fetch; remove search keeps the category). Includes the MEH-1465 HANDOFF "PR OPEN → MERGED #2075" correction below.
+
+## 2026-07-22 — MEH-1465 — category multi-select OR (chip rows) — MERGED PR #2075 (squash `2a38aa38`, on green; VRT baselines drifted red pre-existing — not from this diff, `vrt-update` on Sapir)
+
+- **HIGH-RISK, shipped chunk-by-chunk with Sapir "go" between each.** Branch `feature/meh-1465-category-multiselect` off staging (gates verified first: MEH-1368 merged, MEH-1181-A delta at `DESIGN.md:471`/478-506, Chunk A backend/serializer OR ready).
+- **Chunk 1 — `ChipScrollRow`** (`7ee6058d`): `variant="category"` accepts an `activeKeys` **Set** (legacy `activeKey` string still works); role `radiogroup→toolbar`; `scrollIntoView`→last-activated (Set diff). Direction A selected style (ring + 12% wash + neutral bold label, glyph keeps colour; `--cat-ring = chip.iconColor`); "כל" solid baseline / ghost when ≥1 active. `DEFAULT_CAT_RING = #2e6853` = registry DEFAULT/`primary` (no new green).
+- **Chunk 2 — `/producers`** (`f66d056a`): `categoryFilter` string→array; toggle in/out ("הכל" clears, re-tap removes); `syncUrl` repeated `?category=` (`getAll` init; legacy single-param identical); category **never a removable tag** (removed `active-category-chip`); MEH-1088 `visibleCategories` untouched.
+- **Chunk 3 — `/map`** (`2dbe229b`): `chipState.categoryKey`→`categoryKeys` array; `chipStateToParams` deduped **union** of every selected chip's `resolveCategoryIds`; both reset sites updated (`resetAllFilters` + `MapClient.onResetAll`); `FilterChipsBar` passes `activeKeys={new Set(...)}`; "סינון · N" + `activeFilterTags` stay attributes-only (category branch already gone in MEH-1368 — verified); legend untouched.
+- **Verify:** `build` 0 · full vitest **1525/10** (+11 new). Screenshots @375px (all 3 chunks) in `qa-artifacts/MEH-1465/`.
+- **Follow-up MEH-1470** (gated on this PR merge): removable city-×/search-× chips on `/producers` drop active categories from refetch/URL — pre-existing (omitted the category arg pre-1465 too); left untouched to avoid bundling a fix with the feature.
+- **Left for Sapir:** mobile QA (iOS Safari + Chrome) → merge (no auto-merge). Unsigned commits (empty harness signing key) — noted, Sapir's call on the key.
+
 ## 2026-07-22 — MEH-1368 — /map filter-bar consolidation (two rows → one) — PR #2073 OPEN, no auto-merge (Sapir merges after mobile QA)
 
 - **HIGH-RISK, shipped chunk-by-chunk with Sapir "go" between each.** Branch `feature/meh-1368-map-filter-bar-consolidation` off staging (gates verified merged first: MEH-1423, MEH-1465 Chunk A `f9c31d2`, MEH-1181-A `#2070`).

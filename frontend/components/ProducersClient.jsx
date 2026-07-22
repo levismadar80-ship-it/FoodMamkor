@@ -78,11 +78,13 @@ export default function ProducersClient({
 
   const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
 
-  // MEH-1081 (MEH-1077 DISC-04): canonical category axis — radio chip row
-  // backed by ?category=<id>, the same param + type the homepage grid already
-  // sends (backend: producers.py `category: int` → ProducerCategory join).
+  // MEH-1081 (MEH-1077 DISC-04): canonical category axis — chip row backed by
+  // ?category=<id>. MEH-1465: multi-select — categoryFilter is now an ARRAY of
+  // selected category-id strings, serialized as repeated ?category=<id> (the
+  // backend + api paramsSerializer `{ indexes: null }` OR over the list). A
+  // legacy single ?category=X deep-link hydrates identically (getAll → ["X"]).
   const [categoryFilter, setCategoryFilter] = useState(
-    () => searchParams.get("category") || null,
+    () => searchParams.getAll("category"),
   );
   const [categories, setCategories] = useState([]);
 
@@ -102,7 +104,7 @@ export default function ProducersClient({
   }, [searchQ]);
 
   const hasActiveChips =
-    Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || !!categoryFilter;
+    Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || categoryFilter.length > 0;
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
     : [...initialItems, ...appendItems];
@@ -118,7 +120,10 @@ export default function ProducersClient({
     // for both verbs, so the MEH-1081/1083 serializer is untouched.
     (chipState, city, q, category, method = "replace") => {
       const params = new URLSearchParams();
-      if (category) params.set("category", category);
+      // MEH-1465: category is an array → repeated ?category=<id> (OR union),
+      // matching the api paramsSerializer. The `?? []` guards the legacy
+      // call-sites (city-× / search-×) that omit the arg (→ no category params).
+      for (const id of category ?? []) params.append("category", id);
       for (const chip of CHIPS_CONFIG) {
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
@@ -149,7 +154,8 @@ export default function ProducersClient({
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
     if (q) params.q = q;
-    if (category) params.category = category;
+    // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
+    if (category?.length) params.category = category;
     if (Object.keys(params).length === 0) {
       setFilteredItems(null);
       return;
@@ -203,7 +209,7 @@ export default function ProducersClient({
     if (mountFetched.current) return;
     mountFetched.current = true;
     const anyActive =
-      Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || !!categoryFilter;
+      Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || categoryFilter.length > 0;
     if (anyActive) fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -241,15 +247,20 @@ export default function ProducersClient({
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
-  // MEH-1081: radio select — "all" is ChipScrollRow's reset sentinel
-  // (same bridge as /events, EventsClient.jsx chips comment).
+  // MEH-1465: multi-select OR. "הכל" ("all") is ChipScrollRow's reset sentinel →
+  // clears the whole set; re-tapping a selected category removes it; any other
+  // category is added to the union.
   const handleCategorySelect = (key) => {
-    const next = key === "all" ? null : key;
+    let next;
+    if (key === "all") next = [];
+    else if (categoryFilter.includes(key)) next = categoryFilter.filter((k) => k !== key);
+    else next = [...categoryFilter, key];
     setCategoryFilter(next);
-    // MEH-1084: selecting a real category pushes a history entry so Back
-    // cancels it and returns to the prior view; "all"/clear returns to the
-    // baseline via replace (a push there would need a double-Back to escape).
-    syncUrl(chips, cityFilter, searchQ, next, next ? "push" : "replace");
+    // MEH-1084: ADDING a category is a new view → push (Back removes it);
+    // removing one or clearing to baseline is refinement → replace (a push there
+    // would need a double-Back to escape).
+    const method = next.length > categoryFilter.length ? "push" : "replace";
+    syncUrl(chips, cityFilter, searchQ, next, method);
     fetchFiltered(chips, cityFilter, searchQ, next);
     trackEvent("producers_category_filter", { category: next });
   };
@@ -291,9 +302,9 @@ export default function ProducersClient({
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
     setSearchQ("");
-    setCategoryFilter(null);
+    setCategoryFilter([]);
     setFilteredItems(null);
-    syncUrl(CHIPS_DEFAULT, null, "", null);
+    syncUrl(CHIPS_DEFAULT, null, "", []);
     trackEvent("producers_clear_all");
   };
 
@@ -319,7 +330,7 @@ export default function ProducersClient({
     (c) =>
       !catalogFullyLoaded ||
       loadedCategoryIds.has(String(c.id)) ||
-      String(c.id) === categoryFilter,
+      categoryFilter.includes(String(c.id)),
   );
   // MEH-1081: radio row data — "all" sentinel first, then the DB categories.
   // MEH-1441: each DB category gets a 16px leading glyph from CATEGORY_ICONS
@@ -345,8 +356,6 @@ export default function ProducersClient({
       };
     }),
   ];
-  const activeCategory = categories.find((c) => String(c.id) === categoryFilter);
-
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
@@ -427,7 +436,7 @@ export default function ProducersClient({
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
-            activeKey={categoryFilter ?? "all"}
+            activeKeys={new Set(categoryFilter)}
             onChipClick={handleCategorySelect}
             fadeBg="#F5F0E8"
           />
@@ -457,18 +466,11 @@ export default function ProducersClient({
           {counterText && hasActiveChips && (
             <span aria-hidden="true" className="text-border">·</span>
           )}
-          {/* MEH-1081: removable category chip — mirrors the city/search chips. */}
-          {activeCategory && (
-            <button
-              type="button"
-              data-testid="active-category-chip"
-              onClick={() => handleCategorySelect("all")}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
-            >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
-              {activeCategory.name}
-            </button>
-          )}
+          {/* MEH-1465 / MEH-1181-A tag-strip rule: a category SELECTION is never
+              mirrored as a removable tag on /producers — its exit affordance is
+              the "הכל" chip or re-tapping the coloured category chip. Only
+              attribute/city/search chips remain removable here; "נקו הכל" still
+              clears both dimensions. */}
           {activeChipDefs.map((chip) => (
             <button
               key={chip.key}
@@ -484,9 +486,11 @@ export default function ProducersClient({
             <button
               type="button"
               onClick={() => {
+                // MEH-1470: thread categoryFilter through so removing the city
+                // chip doesn't silently drop the active category selection.
                 setCityFilter(null);
-                syncUrl(chips, null, searchQ);
-                fetchFiltered(chips, null, searchQ);
+                syncUrl(chips, null, searchQ, categoryFilter);
+                fetchFiltered(chips, null, searchQ, categoryFilter);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
@@ -499,9 +503,11 @@ export default function ProducersClient({
               type="button"
               data-testid="active-search-chip"
               onClick={() => {
+                // MEH-1470: thread categoryFilter through so removing the search
+                // chip doesn't silently drop the active category selection.
                 setSearchQ("");
-                syncUrl(chips, cityFilter, "");
-                fetchFiltered(chips, cityFilter, "");
+                syncUrl(chips, cityFilter, "", categoryFilter);
+                fetchFiltered(chips, cityFilter, "", categoryFilter);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >

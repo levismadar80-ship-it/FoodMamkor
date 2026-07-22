@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
@@ -9,11 +9,21 @@ import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 // the conventional equivalence.
 const WHEEL_LINE_PX = 16;
 
+// MEH-1465: fallback --cat-ring for a SELECTED category chip whose descriptor
+// carries no iconColor (an admin category with no CATEGORY_STYLES entry). The
+// DEFAULT category green (= primary / DEFAULT_CATEGORY_STYLE.color) — never a
+// new palette colour (MEH-763 lock).
+const DEFAULT_CAT_RING = "#2e6853";
+
 /**
  * Scrollable chip row for filter bars.
  *
- * variant="category" — radio semantics; one chip active at a time.
- *   activeKey: string key of the selected chip.
+ * variant="category" — MULTI-select (MEH-1465). Callers pass EITHER the
+ *   legacy single-key `activeKey` string (length-1 selection — /events + the
+ *   pre-1465 rows) OR an `activeKeys` Set of the selected category keys. Both
+ *   normalise to one Set internally, so a selection of any size renders the
+ *   MEH-1181-A "Direction A" language (category-colour ring + faint wash +
+ *   neutral label) on each selected chip. "כל" is the reset sentinel.
  *
  * variant="toggle" — boolean; any combination can be active.
  *   activeKeys: object { chipKey: boolean }.
@@ -69,8 +79,24 @@ export default function ChipScrollRow({
   const [showStartFade, setShowStartFade] = useState(false);
   const [showEndFade, setShowEndFade] = useState(false);
 
+  // MEH-1465: normalise the category selection to one Set regardless of which
+  // prop the caller passed — an `activeKeys` Set (multi-select) or the legacy
+  // `activeKey` string (length-1). "all" is never a member: it is the reset
+  // sentinel, styled separately (solid primary baseline / ghost when ≥1 active).
+  const categorySet = useMemo(() => {
+    if (variant !== "category") return null;
+    if (activeKeys instanceof Set) return activeKeys;
+    return new Set(activeKey && activeKey !== "all" ? [activeKey] : []);
+  }, [variant, activeKeys, activeKey]);
+
+  // A chip reads as "pressed" when it is the current active affordance:
+  //   - toggle variant: its key is on in activeKeys
+  //   - category chip:  its key is in the selected Set
+  //   - "כל" reset:     nothing is selected (the baseline active state)
   function isActive(chip) {
-    return variant === "category" ? chip.key === activeKey : !!activeKeys[chip.key];
+    if (variant !== "category") return !!activeKeys[chip.key];
+    if (chip.key === "all") return categorySet.size === 0;
+    return categorySet.has(chip.key);
   }
 
   function scrollChipIntoView(key) {
@@ -88,20 +114,26 @@ export default function ChipScrollRow({
   useEffect(() => {
     const hasActiveFilter =
       variant === "category"
-        ? activeKey && activeKey !== "all"
+        ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
     if (!hasActiveFilter) {
       scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
     }
   }, []);
 
-  // Category: scroll the active chip into view when it changes. On mount
-  // the useEffect above already pins to scrollLeft:0; only pull a
-  // non-first chip into view on later changes.
+  // Category: scroll the LAST-ACTIVATED chip into view (MEH-1465 — mirrors the
+  // toggle-variant diff below now that categories are multi-select). On mount,
+  // pull the first already-selected chip in (URL-seeded state); on later changes
+  // pull whichever key was just added to the Set.
+  const prevCategorySetRef = useRef(null);
   useEffect(() => {
-    if (variant !== "category" || !activeKey) return;
-    scrollChipIntoView(activeKey);
-  }, [variant, activeKey]);
+    if (variant !== "category") return;
+    const prev = prevCategorySetRef.current;
+    const keys = [...categorySet];
+    const keyToScroll = prev === null ? keys[0] : keys.find((k) => !prev.has(k));
+    if (keyToScroll) scrollChipIntoView(keyToScroll);
+    prevCategorySetRef.current = categorySet;
+  }, [variant, categorySet]);
 
   // Toggle: scroll the newly activated chip into view. On mount, scroll to
   // the first already-active chip (e.g. pre-set from URL state).
@@ -207,7 +239,10 @@ export default function ChipScrollRow({
         // MEH-1340: scroll-pe-12 matches the end fade width so scrollIntoView
         // on an active chip stops clear of the fade zone (no JS offset math).
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-4 snap-x snap-proximity scroll-ps-4 scroll-pe-12"
-        role={variant === "category" ? "radiogroup" : "toolbar"}
+        // MEH-1465: category is now MULTI-select (a toolbar of toggle buttons),
+        // not a single-choice radiogroup — both variants use role="toolbar";
+        // aria-pressed on each button carries the on/off state.
+        role="toolbar"
         aria-label={variant === "category" ? t("category_aria") : t("attribute_aria")}
       >
         {/* MEH-1340: inline-start sentinel — visible ⇒ at the start edge ⇒
@@ -215,6 +250,44 @@ export default function ChipScrollRow({
         <div ref={startSentinelRef} className="shrink-0 w-px" aria-hidden="true" />
         {chips.map((chip) => {
           const active = isActive(chip);
+          // MEH-1465 + MEH-1181-A "Direction A": a SELECTED category chip carries
+          // its category colour as a ring + 12% wash with a neutral dark label
+          // (the ring/glyph carry the colour, the label stays ≥4.5:1) — NOT the
+          // solid state-selected fill. The solid fill is kept for toggle chips
+          // and the "כל" reset baseline; "כל" drops to a ghost once ≥1 category
+          // is selected, so the coloured selection reads as the active state and
+          // "כל" reads as the escape. Spec: docs/DESIGN.md:478-506.
+          const isReset = variant === "category" && chip.key === "all";
+          const isCategorySelected = variant === "category" && !isReset && active;
+          // --cat-ring = the category's registry tint (textColor ?? color) — the
+          // exact value declared as the chip's `iconColor` (map-chips.js /
+          // ProducersClient). Fallback to the DEFAULT category green for an admin
+          // category with no registry style.
+          const catRing = chip.iconColor || DEFAULT_CAT_RING;
+          let stateClass;
+          let stateStyle;
+          if (isCategorySelected) {
+            stateClass = "text-text"; // neutral dark label (token = #1c1a17)
+            stateStyle = {
+              background: `color-mix(in srgb, ${catRing} 12%, #fff)`,
+              border: `1.5px solid ${catRing}`,
+              fontWeight: 600,
+            };
+          } else if (isReset && !active) {
+            // "כל" ghost — ≥1 category selected → it is the escape, not the state.
+            stateClass = "bg-white text-muted border-border";
+          } else if (active) {
+            // solid fill: toggle-active chips + the "כל" baseline.
+            stateClass = "bg-state-selected text-white border-state-selected";
+          } else {
+            stateClass =
+              "bg-white text-text border-border hover:border-primary hover:text-primary";
+          }
+          // Glyph tint: keep the category colour on the glyph UNLESS the chip is a
+          // solid white-fill state (toggle-active / "כל" baseline), where the
+          // glyph inherits the button's white currentColor. A SELECTED category
+          // chip (Direction A) KEEPS the tint — the glyph carries the colour.
+          const glyphSolidWhite = active && !isCategorySelected;
           return (
             <button
               key={chip.key}
@@ -225,24 +298,15 @@ export default function ChipScrollRow({
               type="button"
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
-              // MEH-764: chips are rounded-md + state-selected on ALL surfaces
-              // (/home, /producers, /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${
-                active
-                  ? "bg-state-selected text-white border-state-selected"
-                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
-              }`}
+              // MEH-764: chips are rounded-md on ALL surfaces (/home, /producers,
+              // /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
+              style={stateStyle}
             >
-              {/* MEH category-tint: an INACTIVE chip tints its leading glyph
-                  with chip.iconColor (category colour, set on the span so the
-                  glyph's currentColor fill/stroke inherits it). An ACTIVE chip
-                  omits the style so the glyph inherits the button's white text
-                  (currentColor). Chips with no iconColor stay currentColor in
-                  both states (unchanged). */}
               {chip.icon && (
                 <span
                   aria-hidden="true"
-                  style={!active && chip.iconColor ? { color: chip.iconColor } : undefined}
+                  style={!glyphSolidWhite && chip.iconColor ? { color: chip.iconColor } : undefined}
                 >
                   {chip.icon}
                 </span>
