@@ -11,6 +11,11 @@
 - **Chunk C** (`login/LoginClient.jsx` + `register/RegisterClient.jsx`): `!authLoading && user` → `router.replace(safeInternalRedirect(?redirect))`; form gated on `authLoading||user`. Preserved post-login/OAuth push, MEH-328 inbox screen (user stays null), `?reset=1` toast, MEH-810 clamp.
 - **Verify (CC sandbox):** `npm run build` exit 0 · **full vitest 1556 pass / 10 skip** (+14 new: 3 gate / 5 BusinessCtaLink / 6 redirect) · eslint 0 errors (warn-mode idioms only) · `scripts/check_api_contract.py` 0 mismatch / 0 orphan · RTL logical props only · **0 backend files touched** (backend pytest not run — sandbox `pip install` blocked + no backend diff; regression risk = none).
 - **Left for Sapir:** mobile QA on the Vercel preview / staging (auth-adjacent UI — the ticket's own DoD §1 routes the human check to staging). QA matrix in `docs/MANUAL_TESTING.md` → MEH-1489. `Closes MEH-1489`. **Do NOT push to main** (MEH-1105 release cut — these land post-cut on staging).
+## 2026-07-22 (night run, MEH-1074) — MEH-1413 — WhatsApp-promise → method-agnostic copy sweep (GREEN) — PR open
+
+- Branch `feature/meh-1413-whatsapp-promise-copy` off `origin/staging` (tip `4def6d4c`). Copy-only sweep of the "every business has a WhatsApp button" promise → locked method-agnostic wording (verbatim from ticket). 4 files: `frontend/messages/he.json` + `en.json` (comms-page `intro`), `frontend/components/ChatWidget.jsx` (HARDCODED_ANSWERS), `backend/app/routers/chat.py` (SYSTEM_PROMPT ×3 phrases). Canonical chatbot line byte-identical between chat.py + ChatWidget (verified). No logic change — `PrimaryContactButton` already handles the fallback.
+- **Deferred (no locked copy, flagged not fixed):** `messages.meta_description` ("התקשורת…בוואטסאפ") + `for_businesses` step4_text are WhatsApp-assuming; review-gate (`wa_gate_message`/`reviews.py`) + phone-verify OTP + producer sales call-script are out of scope (not universality promises).
+- Gates: `npm run build` exit 0 · backend `pytest tests/test_api.py` 238 pass/4 skip · ICU parity clean. Merge posture: see night-run SYNC on MEH-1074.
 
 ## 2026-07-22 — MEH-1482 — seed↔registry glyph drift gate (tests-only, LOW-RISK, mobile-exempt) — PR open, auto-merge on green
 
