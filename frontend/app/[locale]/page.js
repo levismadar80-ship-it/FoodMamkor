@@ -48,7 +48,7 @@ export default function HomePage() {
   const locale = useLocale();
   const {
     user,
-    producers, categories, filters, chips,
+    producers, regionFallback, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
     fridayMode, step0Visible, userCity,
@@ -196,6 +196,7 @@ export default function HomePage() {
         geoActive={geoActive}
         cityActive={cityActive}
         geoEmptyNotice={geoEmptyNotice}
+        regionFallback={regionFallback}
       />
 
       {/* =========================

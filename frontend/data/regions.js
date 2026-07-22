@@ -19,6 +19,20 @@
  * MEH-974 (consumer region chips on /map — candidate to share this file),
  * MEH-1204 (programmatic SEO category×region — same mapping).
  */
+/**
+ * MEH-1487: the region whose cities include `city` (exact, trimmed), or
+ * null. Powers the home empty-result region fallback — reuses REGIONS, no
+ * duplicated mapping. City names in REGIONS are canonical ISRAEL_CITIES
+ * members and the delivery_city value comes from the canonical CitySearch,
+ * so an exact match is correct.
+ */
+export function findRegionForCity(city) {
+  if (!city) return null;
+  const needle = String(city).trim();
+  if (!needle) return null;
+  return REGIONS.find((r) => r.cities.includes(needle)) || null;
+}
+
 export const REGIONS = [
   {
     key: "north",

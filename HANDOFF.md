@@ -11,6 +11,11 @@
 - **⚠️ New env var `GOOGLE_PLACES_API_KEY`** (server-side only). Dormant + free until set in Railway (fail-quiet 204 when unset). **Needs Sapir sign-off** before adding a value (new env var + billed Enterprise SKU). NOT added to any deploy config.
 - **Verify:** `npm run build` exit 0 · full vitest **1546 pass / 10 skip** · eslint 0 errors · RTL clean · grep proves no rating persistence. **Backend pytest written but NOT run** — sandbox has no fastapi/Postgres and `pip install` is blocked; execution deferred to CI. Live Places-API + mobile QA deferred to Sapir (needs real key + Railway backend).
 - **Next step:** Sapir decides go/no-go on the post-launch gate; if go → confirm branch name, set `GOOGLE_PLACES_API_KEY`, map a place_id on a producer with ≥20 Google reviews, verify the line on mobile.
+## 2026-07-22 (night run, MEH-1074) — MEH-1413 — WhatsApp-promise → method-agnostic copy sweep (GREEN) — PR open
+
+- Branch `feature/meh-1413-whatsapp-promise-copy` off `origin/staging` (tip `4def6d4c`). Copy-only sweep of the "every business has a WhatsApp button" promise → locked method-agnostic wording (verbatim from ticket). 4 files: `frontend/messages/he.json` + `en.json` (comms-page `intro`), `frontend/components/ChatWidget.jsx` (HARDCODED_ANSWERS), `backend/app/routers/chat.py` (SYSTEM_PROMPT ×3 phrases). Canonical chatbot line byte-identical between chat.py + ChatWidget (verified). No logic change — `PrimaryContactButton` already handles the fallback.
+- **Deferred (no locked copy, flagged not fixed):** `messages.meta_description` ("התקשורת…בוואטסאפ") + `for_businesses` step4_text are WhatsApp-assuming; review-gate (`wa_gate_message`/`reviews.py`) + phone-verify OTP + producer sales call-script are out of scope (not universality promises).
+- Gates: `npm run build` exit 0 · backend `pytest tests/test_api.py` 238 pass/4 skip · ICU parity clean. Merge posture: see night-run SYNC on MEH-1074.
 
 ## 2026-07-22 — MEH-1482 — seed↔registry glyph drift gate (tests-only, LOW-RISK, mobile-exempt) — PR open, auto-merge on green
 
