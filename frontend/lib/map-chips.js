@@ -86,11 +86,20 @@ export const TOGGLE_CHIPS = [
 // "סינון" button counts those sheet-only actives.
 // 🔒 Sapir-LOCK 22/07: quick row is capped at 2 chips. Any new filter is born
 // inside FilterSheet — never on the row.
+// MEH-1368: superseded — the inline quick-chip row was removed (every attribute
+// filter now lives only in FilterSheet), so this constant no longer governs a
+// live row. Still referenced by countActiveSheetOnlyFilters below (also
+// superseded). Deletion + LOCK retirement tracked in MEH-1468.
 export const QUICK_CHIP_KEYS = ["verified", "has_delivery"];
 
 /**
  * Count active toggles that are NOT exposed as quick chips — the number
  * shown on the "סינון" button badge (hidden at 0).
+ *
+ * MEH-1368: superseded — the "סינון" button now renders an inline "· N" count
+ * of ALL active attribute toggles (useMapFilters.activeAttributeCount), not
+ * just the sheet-only ones, since the inline quick-chip row is gone. No
+ * production consumer remains. Deletion tracked in MEH-1468.
  */
 export function countActiveSheetOnlyFilters(state) {
   return TOGGLE_CHIPS.filter(

@@ -5,7 +5,6 @@ import { Faders } from "@phosphor-icons/react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { CATEGORY_ICONS } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
-import { countActiveSheetOnlyFilters } from "@/lib/map-chips";
 
 /**
  * The /map filter bar: one category chip row + a "סינון" button + a
@@ -32,6 +31,7 @@ export default function FilterChipsBar({
   resultCount,
   activeFilterTags,
   resetAllFilters,
+  activeAttributeCount,
 }) {
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -55,7 +55,6 @@ export default function FilterChipsBar({
   // Stable ref (PR #1565 review): an inline arrow would retrigger the sheet's
   // [open, onClose] keydown effect on every chipState re-render.
   const closeSheet = useCallback(() => setSheetOpen(false), []);
-  const badgeCount = countActiveSheetOnlyFilters(chipState);
   return (
     <div dir="rtl" className="min-w-0">
       {/* MEH-1368: consolidated to ONE row — the scrollable category chips
@@ -87,10 +86,12 @@ export default function FilterChipsBar({
           >
             <Faders size={16} aria-hidden="true" />
             {t("filters.button")}
-            {badgeCount > 0 && (
-              <span className="numeric inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-white text-[11px] px-1">
-                {badgeCount}
-              </span>
+            {/* MEH-1368: inline "· N" count of active attribute filters, replacing
+                the old corner badge. N now counts ALL active toggles (the inline
+                quick-chip row is gone). `.numeric` = tabular/LTR digit in the RTL
+                button, matching the corner badge's prior digit treatment. */}
+            {activeAttributeCount > 0 && (
+              <span className="numeric">{` · ${activeAttributeCount}`}</span>
             )}
           </button>
           <FilterSheet
