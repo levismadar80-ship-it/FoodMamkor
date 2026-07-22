@@ -784,7 +784,7 @@
         "report_info_link": "טעות בפרטים? עדכנו אותנו"
       },
       "sticky_bar": {
-        "vacation_msg": "שלחו הודעה"
+        "vacation_msg": "שליחת הודעה"
       }
     },
     "card": {
@@ -1030,7 +1030,6 @@
       "dispatch_days": "יוצאים בימי {day}",
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
-      "order_cta": "שליחת הודעה בוואטסאפ",
       "pickup": "איסוף עצמי",
       "show_all": "הצג עוד {count} ערים",
       "show_less": "הצג פחות"
