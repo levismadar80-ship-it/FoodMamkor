@@ -4441,7 +4441,13 @@
       },
       "toast_added": "Product added",
       "toast_updated": "Product updated",
-      "toast_deleted": "Product deleted"
+      "toast_deleted": "Product deleted",
+      "delete_confirm": {
+        "title": "Delete \"{name}\"?",
+        "body": "This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel"
+      }
     },
     "locations": {
       "section_heading": "Locations",

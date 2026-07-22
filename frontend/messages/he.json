@@ -4462,7 +4462,13 @@
       },
       "toast_added": "המוצר נוסף",
       "toast_updated": "המוצר עודכן",
-      "toast_deleted": "המוצר נמחק"
+      "toast_deleted": "המוצר נמחק",
+      "delete_confirm": {
+        "title": "למחוק את \"{name}\"?",
+        "body": "הפעולה לא ניתנת לביטול.",
+        "confirm": "מחיקה",
+        "cancel": "ביטול"
+      }
     },
     "locations": {
       "section_heading": "מיקומים",
