@@ -95,35 +95,64 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
 
   // (3) A multi-location producer fans out into per-location markers, and a
   // secondary (pickup / market_stand) marker opens the SAME business card
-  // (chunk 3). The seeded pins share a city, so at the default zoom they collapse
-  // into a cluster — expand it (leaflet.markercluster zooms to bounds on click)
-  // until the secondary markers separate out, then click one.
-  test("a multi-location producer's markers all open the same business card", async ({ page }) => {
+  // (chunk 3). MEH-1440: blind cluster-clicking (`.first()` + zoomToBounds x5)
+  // was non-deterministic — the first cluster in DOM can belong to a different
+  // region, and zooming into it strands the loop away from the seeded pins
+  // (markercluster only materialises in-view markers), so the secondary
+  // markers never appeared on CI. Deterministic form: mock geolocation at one
+  // of the producer's secondary pins and ride the app's own near-me flow —
+  // goToMyLocation flies to zoom 13 (MapComponent.jsx:355), past
+  // disableClusteringAtZoom:11, so the per-location markers render
+  // individually right where the fix is.
+  test("a multi-location producer's markers all open the same business card", async ({ page, context }) => {
     test.setTimeout(120_000);
     const producers = await fetchProducers(page);
+    const multi = multiLoc(producers);
     expect(
-      multiLoc(producers),
+      multi,
       "a multi-location producer must be seeded (seed_demo_business.py --refresh)",
     ).toBeTruthy();
+
+    const coords = (multi!.locations || []).filter(usableCoords);
+    const secondaryLoc =
+      coords.find((l) => l.kind === "pickup" || l.kind === "market_stand") || coords[0];
+    await context.grantPermissions(["geolocation"]);
+    await context.setGeolocation({
+      latitude: secondaryLoc.lat!,
+      longitude: secondaryLoc.lng!,
+    });
 
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForFunction(MAP_MOUNT, { timeout: 45_000 });
-    await page.waitForTimeout(2500);
 
-    // Drill into clusters until the per-location secondary markers appear.
-    const secondary = page.locator(".mehamakor-marker-secondary");
-    for (let attempt = 0; attempt < 5 && (await secondary.count()) === 0; attempt++) {
-      // MEH-1440: `.mehamakor-cluster`, not the leaflet default (see test 2).
-      const cluster = page.locator(".mehamakor-cluster").first();
-      if ((await cluster.count()) === 0) break;
-      await cluster.click().catch(() => {});
-      await page.waitForTimeout(1500);
+    // LocationModal can mask the map controls when no userCity is saved —
+    // dismiss it if present (07-gps-button precedent, MEH-262/263).
+    const skipBtn = page.getByRole("button", { name: "דלגו לעכשיו" });
+    try {
+      await skipBtn.waitFor({ state: "visible", timeout: 2500 });
+      await skipBtn.click();
+      await skipBtn.waitFor({ state: "hidden", timeout: 2000 });
+    } catch {
+      // modal did not appear — proceed
     }
+
+    // Per-project near-me control: desktop GPS circle (MapPane, hidden lg:flex)
+    // or the mobile NearMePill — both route to the same goToMyLocation flyTo.
+    // :visible scopes to the active shell (MapClient renders twice — 07 precedent).
+    const nearMe = page
+      .locator(
+        '[aria-label="מרכזו את המפה על המיקום שלי"]:visible, [aria-label="הצגת בתי עסק קרובים למיקום שלי"]:visible',
+      )
+      .first();
+    await expect(nearMe).toBeVisible({ timeout: 15_000 });
+    await nearMe.click();
+
+    const secondary = page.locator(".mehamakor-marker-secondary");
     await expect(
       secondary.first(),
       "pickup/market_stand markers fan out per location",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 20_000 });
 
     await secondary.first().click();
     // The shared compact MapProducerCard (data-testid="map-card") renders in the
