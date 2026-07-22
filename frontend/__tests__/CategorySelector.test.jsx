@@ -27,7 +27,9 @@ vi.mock("@phosphor-icons/react", () => {
 // and EVERY card resolves its glyph (not just popular-6). Mock every real
 // category name below; "תבלינים" (a truncated test fixture, not a canonical
 // seed name) is intentionally absent → it exercises the Leaf fallback path.
-vi.mock("@/components/CategoryIcons", () => {
+// MEH-1453: CategorySelector now imports CATEGORY_ICONS from the category
+// registry, so mock the registry directly (was @/components/CategoryIcons).
+vi.mock("@/lib/category-registry", () => {
   const Glyph = (props) => <span data-testid="glyph" {...props} />;
   return {
     CATEGORY_ICONS: {

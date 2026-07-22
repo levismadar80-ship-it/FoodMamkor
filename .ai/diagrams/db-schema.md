@@ -90,6 +90,7 @@ erDiagram
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
+        boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
     }
 

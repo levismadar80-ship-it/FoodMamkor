@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CATEGORY_LEGEND } from "@/lib/map-categories";
+import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,

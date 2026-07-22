@@ -13,7 +13,7 @@ import {
   SquaresFour,
 } from "@phosphor-icons/react";
 
-import { CATEGORY_LEGEND } from "@/lib/map-categories";
+import { CATEGORY_LEGEND } from "@/lib/category-registry";
 
 // MEH-473: extracted to a real component so useTranslations() works.
 // next/dynamic's loading callback runs outside any component's render
