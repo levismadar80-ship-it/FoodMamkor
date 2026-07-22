@@ -445,7 +445,8 @@
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
       "clear_location_filter": "Remove location filter",
-      "geo_empty": "No businesses found nearby — showing all businesses"
+      "geo_empty": "No businesses found nearby — showing all businesses",
+      "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
     },
     "founder_quote": {
       "text": "Real food, from real people, right next door.",
