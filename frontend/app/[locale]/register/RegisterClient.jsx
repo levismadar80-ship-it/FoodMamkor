@@ -61,7 +61,7 @@ function RegisterPageBody() {
   const t = useTranslations();
   // MEH-628: scoped translator for password-policy failure copy.
   const tValidation = useTranslations("auth.passwordValidation");
-  const { register } = useAuth();
+  const { user, loading: authLoading, register } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   // MEH-837: honor a post-signup ?redirect= the same way /login does, clamped
@@ -86,6 +86,15 @@ function RegisterPageBody() {
       // private browsing — ignore
     }
   }, []);
+
+  // MEH-1489 chunk C: an already-authenticated visitor doesn't need the signup
+  // form — bounce to the clamped ?redirect= target (MEH-810 helper -> "/"
+  // fallback). The MEH-328 flow leaves user null after register() (no token, no
+  // auto-login), so the emailSent inbox screen never triggers this. OAuth
+  // success sets user and also push()es redirectTo — same target, idempotent.
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectTo);
+  }, [authLoading, user, router, redirectTo]);
   // Per-field touched state for
   // onBlur inline validation. Password eye toggle + live policy
   // feedback now lives in <PasswordInput> (MEH-306 sub-B).
@@ -194,6 +203,18 @@ function RegisterPageBody() {
   const heroSrc = optimizeCloudinary(
     "https://res.cloudinary.com/dfzpscjks/image/upload/register/hero-box-produce.jpg"
   );
+
+  // MEH-1489 chunk C: gate the form while auth resolves / redirect is in flight
+  // so the signup form never flashes for an authenticated visitor. Placed above
+  // the emailSent branch: the register flow keeps user null, so a post-signup
+  // inbox screen is never gated by this.
+  if (authLoading || user) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+        <ButtonSpinner />
+      </div>
+    );
+  }
 
   if (emailSent) {
     // MEH-328 Chunk D: unconditional inbox-check screen. Backend returns
