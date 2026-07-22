@@ -41,8 +41,8 @@ export const CATEGORY_CHIPS = [
 // text-only (MEH-683 D4). Labels stay text-only — Emoji LOCK v2 forbids emoji
 // literals, aria-hidden Phosphor glyphs are the approved substitute (MEH-990).
 // MEH-1075: `group` drives the FilterSheet sections (diet | quality | service).
-// Within-group render order = array order (diet order per spec: טבעוני ·
-// ללא גלוטן · ללא לקטוז).
+// Within-group render order = array order (diet order per spec, MEH-1438:
+// טבעוני · צמחוני · ללא גלוטן · ללא לקטוז).
 // MEH-1087: a VERIFIED-ONLY kosher chip ("כשרות מאומתת") IS now allowed — it
 // filters ?kosher=true, which the backend maps to kashrut_verified_at ONLY
 // (producer_listing.py:153 _kosher_condition, MEH-986 ch3b + MEH-1260 expiry),
@@ -57,6 +57,7 @@ export const TOGGLE_CHIPS = [
   { key: "kosher",        label: ATTRIBUTE_LABELS.kosher,        group: "quality" },
   { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
   { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
+  { key: "vegetarian",    label: ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
   { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
 ];
@@ -110,6 +111,7 @@ export function chipStateToParams(state, dbCategories) {
   if (state.grass_fed) params.grass_fed = true;
   if (state.gluten_free) params.gluten_free = true;
   if (state.vegan) params.vegan = true;
+  if (state.vegetarian) params.vegetarian = true;  // MEH-1438
   if (state.lactose_free) params.lactose_free = true;
   return params;
 }
