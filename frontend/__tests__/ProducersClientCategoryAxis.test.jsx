@@ -35,6 +35,14 @@ vi.mock("@phosphor-icons/react", () => ({
   DropSlash: (p) => <span {...p} />,
 }));
 
+// MEH-1441: category chips get a 16px CATEGORY_ICONS glyph. Stub the icon module
+// (like CategorySelector.test.jsx) so the real Phosphor imports it pulls don't
+// need to be added to the partial mock above.
+vi.mock("@/components/CategoryIcons", () => {
+  const Glyph = (p) => <span data-testid="cat-glyph" {...p} />;
+  return { CATEGORY_ICONS: { "בשר": Glyph, "דבש": Glyph } };
+});
+
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div data-testid="card" /> }));
 // Interactive stand-in: renders one button per chip so tests can click chips
