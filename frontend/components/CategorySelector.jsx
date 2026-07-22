@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
