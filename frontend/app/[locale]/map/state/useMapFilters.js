@@ -342,12 +342,12 @@ export function useMapFilters({
   );
 
   // Active filters — each tag carries the key needed to remove it.
+  // MEH-1368 / MEH-1181-A tag-strip rule: removable tags represent ATTRIBUTES
+  // ONLY. A category selection is shown by its chip ring in the category row,
+  // never mirrored as a removable tag — its exit affordance is the "כל" chip.
+  // ("נקו הכל" → resetAllFilters still clears BOTH categories and attributes.)
   const activeFilterTags = useMemo(() => {
     const tags = [];
-    if (chipState.categoryKey && chipState.categoryKey !== "all") {
-      const cat = CATEGORY_CHIPS.find((c) => c.key === chipState.categoryKey);
-      if (cat) tags.push({ kind: "category", key: cat.key, label: cat.label });
-    }
     TOGGLE_CHIPS.forEach((c) => {
       if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
     });

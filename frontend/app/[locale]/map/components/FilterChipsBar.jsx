@@ -117,11 +117,10 @@ export default function FilterChipsBar({
             <button
               key={`${tag.kind}:${tag.key}`}
               type="button"
-              onClick={() =>
-                tag.kind === "category"
-                  ? onCategoryChipClick("all")
-                  : onToggleChipClick(tag.key)
-              }
+              // MEH-1368: the tag strip is attributes-only now (a category
+              // selection is exited via the "כל" chip, never shown as a tag),
+              // so every removable tag is a toggle-off.
+              onClick={() => onToggleChipClick(tag.key)}
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
               className="group inline-flex items-center min-h-[44px] -my-2.5"
             >
