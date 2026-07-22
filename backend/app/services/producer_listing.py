@@ -212,7 +212,7 @@ def _kosher_condition(kosher: bool):
     )
 
 
-def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
+def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, PLR0915  # 15 boolean filter pairs by design (MEH-1438 added the vegetarian OR-branch) — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (vegetarian / kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
     # boolean column needs only an extra row, not a new branch.
@@ -238,6 +238,19 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
         cond = Producer.products.any(prod_col.is_(True))
         q = q.filter(cond if val else ~cond)
         count_q = count_q.filter(cond if val else ~cond)
+
+    # MEH-1438 — vegetarian axis. A vegan product is vegetarian by definition,
+    # so ?vegetarian=true matches a producer with at least one product that is
+    # is_vegetarian OR is_vegan (the owner needn't mark both); ?vegetarian=false
+    # is the complement (no such product). Kept out of _DIETARY_FILTERS because
+    # that table maps a single column — this is a two-column OR condition.
+    vegetarian = filters.get("vegetarian")
+    if vegetarian is not None:
+        veg_cond = Producer.products.any(
+            or_(Product.is_vegetarian.is_(True), Product.is_vegan.is_(True))
+        )
+        q = q.filter(veg_cond if vegetarian else ~veg_cond)
+        count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)
 
     # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
     # explicitly filter by availability_state, exclude vacation producers from

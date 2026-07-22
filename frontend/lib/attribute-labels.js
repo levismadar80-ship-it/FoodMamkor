@@ -30,6 +30,9 @@ export const ATTRIBUTE_LABELS = {
   // gone (self-declared organic, חוק תוצרת אורגנית 2005). Removed from the SoT so
   // it can't be re-surfaced accidentally before an admin-verified flow exists.
   vegan:         "טבעוני",
+  // MEH-1438: vegetarian axis. A vegan product counts as vegetarian (the
+  // ?vegetarian filter matches is_vegetarian OR is_vegan) — see badges.js.
+  vegetarian:    "צמחוני",
   gluten_free:   "ללא גלוטן",
   lactose_free:  "ללא לקטוז",
 };

@@ -76,6 +76,7 @@ def list_producers(
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
     vegan: bool | None = None,
+    vegetarian: bool | None = None,  # MEH-1438 — matches is_vegetarian OR is_vegan
     lactose_free: bool | None = None,
     # Sort for non-geo results. "newest" (default) or "rating".
     sort: str | None = None,
@@ -116,6 +117,7 @@ def list_producers(
         grass_fed=grass_fed,
         gluten_free=gluten_free,
         vegan=vegan,
+        vegetarian=vegetarian,  # MEH-1438
         lactose_free=lactose_free,
         sort=sort,
         search_q=search_q,

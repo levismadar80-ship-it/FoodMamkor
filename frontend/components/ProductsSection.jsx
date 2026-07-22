@@ -37,7 +37,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -121,11 +121,12 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         price_max: maxNum,
         is_gluten_free: form.is_gluten_free,
         is_vegan: form.is_vegan,
+        is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch {
@@ -145,6 +146,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       price_max: product.price_max != null ? String(Number(product.price_max)) : "",
       is_gluten_free: !!product.is_gluten_free,
       is_vegan: !!product.is_vegan,
+      is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
     });
     setError("");
@@ -220,6 +222,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         price_max: maxNum,
         is_gluten_free: !!editForm.is_gluten_free,
         is_vegan: !!editForm.is_vegan,
+        is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
@@ -395,6 +398,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   <div role="group" aria-labelledby={`edit-diet-heading-${product.id}`} className="flex flex-wrap gap-2">
                     <DietChip label={tForm("diet_gluten_free")} pressed={!!editForm.is_gluten_free} onToggle={() => setEditForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
                     <DietChip label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                    <DietChip label={tForm("diet_vegetarian")} pressed={!!editForm.is_vegetarian} onToggle={() => setEditForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
                     <DietChip label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                   </div>
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
@@ -534,6 +538,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               <div role="group" aria-labelledby="add-diet-heading" className="flex flex-wrap gap-2">
                 <DietChip label={tForm("diet_gluten_free")} pressed={form.is_gluten_free} onToggle={() => setForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
                 <DietChip label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                <DietChip label={tForm("diet_vegetarian")} pressed={form.is_vegetarian} onToggle={() => setForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
                 <DietChip label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
               </div>
               {/* MEH-1439: tell the owner what marking a diet flag does — it

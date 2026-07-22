@@ -147,6 +147,12 @@ def attach_badge_fields(producer):
         getattr(p, "is_gluten_free", False) for p in products
     )
     producer.has_vegan_products = any(getattr(p, "is_vegan", False) for p in products)
+    # MEH-1438: a vegan product is vegetarian by definition, so count is_vegan
+    # too — mirrors the ?vegetarian filter's `is_vegetarian OR is_vegan`.
+    producer.has_vegetarian_products = any(
+        getattr(p, "is_vegetarian", False) or getattr(p, "is_vegan", False)
+        for p in products
+    )
     producer.has_lactose_free_products = any(
         getattr(p, "is_lactose_free", False) for p in products
     )

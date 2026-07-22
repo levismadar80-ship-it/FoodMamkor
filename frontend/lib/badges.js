@@ -10,6 +10,7 @@
  *   (organic REMOVED — MEH-1259: self-declared organic_certified presented an
  *    unverified claim as a certificate; hidden until an admin-verified flow.)
  *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
+ *   vegetarian   (manual)  — has_vegetarian_products   (any product is_vegetarian OR is_vegan, MEH-1438)
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
@@ -17,7 +18,7 @@
  *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > license > new > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
+ *   verified > recommended > license > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery > products
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -82,6 +83,15 @@ export const BADGE_CONFIG = {
     tooltip: "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
     color: "muted",
   },
+  // MEH-1438: vegetarian badge — lights on has_vegetarian_products (aggregation
+  // counts is_vegan too, since a vegan product is vegetarian). Priority sits
+  // after gluten_free, before vegan.
+  vegetarian: {
+    key: "vegetarian",
+    label: "צמחוני",
+    tooltip: "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
+    color: "muted",
+  },
   vegan: {
     key: "vegan",
     label: "טבעוני",
@@ -123,6 +133,7 @@ export const BADGE_PRIORITY = [
   // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
   "grass_fed",
   "gluten_free",
+  "vegetarian",
   "vegan",
   "lactose_free",
   "kosher",
@@ -171,6 +182,9 @@ function earnsBadge(producer, key) {
     case "gluten_free":
       // MEH-293/MEH-479: aggregated from products.is_gluten_free.
       return !!producer.has_gluten_free_products;
+    case "vegetarian":
+      // MEH-1438: aggregated has_vegetarian_products (is_vegetarian OR is_vegan).
+      return !!producer.has_vegetarian_products;
     case "vegan":
       return !!producer.has_vegan_products;
     case "lactose_free":
