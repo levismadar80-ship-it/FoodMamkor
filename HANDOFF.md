@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1482 — seed↔registry glyph drift gate (tests-only, LOW-RISK, mobile-exempt) — PR open, auto-merge on green
+
+- Branch `feature/meh-1482-seed-registry-drift-gate` off fresh `origin/staging` (tip `3e7f36e2`, MEH-1478). **Single new test file, nothing else.**
+- `frontend/__tests__/SeedCategoryRegistryDrift.test.js`: asserts every `backend/seed_data.py` `CATEGORIES` name has a key in the 18-glyph `CATEGORY_ICONS` map (surfaced via `lib/category-registry.js`). seed read as **text** (node:fs, no Python exec); Hebrew names regex-extracted from the `CATEGORIES = […]` block (tuple shape, comment-quotes excluded). **Direction: seed ⊆ glyph keys ONLY** — registry-only keys (incl. the 2 stale `CATEGORY_STYLES` legend keys, absent from `CATEGORY_ICONS`) allowed; reverse orphan check = Phase B MEH-1456. Non-empty-parse guard prevents a no-op. Failure message: missing category + "add entry in category-registry.js".
+- **Verify:** green today (18/18 seed names covered); delete-one-glyph-key → red with exact message → restore → green (both pasted in session). `npm run build` unaffected; full vitest green.
+- LOW-RISK tests-only → auto-merge on green gates. `Closes MEH-1482`.
 ## 2026-07-22 — MEH-1480 — recipes dashboard render-guard role check (defense-in-depth, LOW-RISK) — PR open, merge on CI green
 
 - MEH-1480 — console noise (producer-endpoint 401/403/404 in a non-producer session) was **cross-nav accumulation, not a live bug**; closed the one real inconsistency, `recipes/page.js:66` render guard (added `|| user.role !== "producer"` to match all 7 sibling dashboard render guards), defense-in-depth. Branch `feature/meh-1480-recipes-role-guard` off staging. Scope: single line, `recipes/page.js` only — no layout/middleware (out of scope per diagnosis). `npm run build` exit 0 · full vitest **1540 pass / 10 skip** (render-guard only, no new test/UI). "נבדק בנייד" DoD exception applies (no network/UI change).
