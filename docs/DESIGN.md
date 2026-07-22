@@ -474,6 +474,40 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   — selection reuses the existing palette dark per ADR-019, same precedent as
   `action-primary-hover`. Components bind to this role name so a future tweak to
   the selected colour is one token edit, not a grep across `/map`.
+
+  > **🔓 LOCK-deviation — MEH-1181-A (Sapir 22/07): the MEH-764 `state-selected`
+  > solid-fill is amended for CATEGORY chips only.** "Direction A" — a selected
+  > category chip carries its category's colour as a *ring + faint wash*, not a
+  > solid fill, so the chip↔pin colour link (MEH-1452 glyph tint) stays legible
+  > when the chip is active. Precise selected-state per surface:
+  >
+  > - **CATEGORY chips** (the `/map` category row + the `/producers` category
+  >   row), selected:
+  >   - `background: color-mix(in srgb, var(--cat-ring) 12%, #fff);`
+  >   - `border: 1.5px solid var(--cat-ring);`
+  >   - `color: var(--text)` (`#1a1a1a`) — **never** the category colour as text
+  >     (keeps the label at ≥4.5:1; the ring/glyph carry the colour, the label
+  >     stays neutral).
+  >   - `font-weight: 600;`
+  >   - `--cat-ring:` the category's registry tint = `textColor ?? color`
+  >     (`lib/category-registry.js` `CATEGORY_STYLES`). Every value clears WCAG
+  >     1.4.11 ≥3:1 on **both** white and cream `#F5F0E8` (MEH-1181 audit).
+  > - **ATTRIBUTE / toggle chips, `FilterSheet`, `CategoryTag`, and every OTHER
+  >   chip surface:** UNCHANGED — solid `state-selected`/primary fill, white
+  >   text. The deviation is scoped to category chips; nothing else moves.
+  > - **"כל" reset chip:** when nothing is selected (baseline) it is the solid
+  >   primary fill (the current active-"all" look); when ≥1 category is selected
+  >   it drops to a **ghost** — `background: #fff`, `border: 1px solid
+  >   var(--line)`, `color: var(--muted)` — so the coloured selection reads as
+  >   the active state and "כל" reads as the escape.
+  > - **Tag-strip rule:** removable tags represent **attributes only**. A
+  >   category *selection* is shown by its chip ring, never mirrored as a
+  >   removable tag; the category's exit affordance is the "כל" chip.
+  >   `clearAll()` / "נקו הכל" clears **both** categories and attributes.
+  >
+  > Scope note: this is the DESIGN SoT delta only. The component wiring (radio →
+  > multi-select ring rendering) lands with the MEH-1465 multi-select chunks; a
+  > single-select ring is the interim shape until then.
 - Spacing `5xl` (96px) / `6xl` (128px) — editorial section rhythm above `4xl`.
 - Headline fallback: every Frank Ruhl Libre stack
   (`headline-display`/`-lg`/`-md`) degrades to `"David Libre", Georgia, serif`.
