@@ -250,14 +250,18 @@ export function HomeProducersGrid({
           {/* MEH-1476: surprise-me relocated here from the hero (was
               MEH-1288/MEH-1369). Full-catalog random producer via onSurprise
               (use-home-page handleSurprise → GET /producers/random); gated on
-              hasProducers. Secondary weight — matches the "load more" outline
-              pill above, NOT a filled primary. Reuses t("home.hero.surprise_me"). */}
+              hasProducers. Rendered as a TEXT LINK (same weight/classes as the
+              hero "how it works" link) — deliberately LIGHTER than the
+              "עוד בתי עסק" pill above so the two never read as equal-weight twin
+              actions (the MEH-1369 anti-pattern Sapir caught 22/07). `inline-block
+              px-4 py-3` keeps the tap target ≥44px via padding, not font size.
+              Reuses t("home.hero.surprise_me"). */}
           {hasProducers && (
-            <div className="text-center mt-4">
+            <div className="text-center mt-3">
               <button
                 type="button"
                 onClick={onSurprise}
-                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                className="inline-block px-4 py-3 text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
               >
                 {t("home.hero.surprise_me")}
               </button>
