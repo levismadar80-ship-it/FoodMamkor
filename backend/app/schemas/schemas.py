@@ -552,6 +552,9 @@ class ProductCreate(BaseModel):
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
+    # MEH-1438: vegetarian axis. Owner marks it independently; the public
+    # ?vegetarian filter also matches vegan products (is_vegetarian OR is_vegan).
+    is_vegetarian: bool = False
     is_lactose_free: bool = False
 
     @field_validator("image_url", mode="before")
@@ -583,6 +586,7 @@ class ProductUpdate(BaseModel):
     # in producer_me.update_my_product means an unsupplied field stays put.
     is_gluten_free: bool | None = None
     is_vegan: bool | None = None
+    is_vegetarian: bool | None = None  # MEH-1438
     is_lactose_free: bool | None = None
 
     @field_validator("image_url", mode="before")
@@ -618,6 +622,7 @@ class ProductOut(BaseModel):
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
+    is_vegetarian: bool = False  # MEH-1438
     is_lactose_free: bool = False
 
     model_config = {"from_attributes": True}
@@ -1016,6 +1021,9 @@ class ProducerListOut(BaseModel):
     # reads these fields directly (no legacy fallback post MEH-479).
     has_gluten_free_products: bool = False
     has_vegan_products: bool = False
+    # MEH-1438: True when at least one product is is_vegetarian OR is_vegan
+    # (a vegan product is vegetarian by definition). Frontend badges.js reads it.
+    has_vegetarian_products: bool = False
     has_lactose_free_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
