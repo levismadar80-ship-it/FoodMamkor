@@ -786,7 +786,7 @@
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
         "reveal_phone": "Show phone number",
-        "report_info_link": "Found wrong info? Let us know"
+        "report_info_link": "Wrong info? Let us know"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
