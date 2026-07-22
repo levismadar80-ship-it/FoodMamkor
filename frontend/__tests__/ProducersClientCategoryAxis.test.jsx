@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import ProducersClient from "@/components/ProducersClient";
 
@@ -88,7 +88,20 @@ vi.mock("@/lib/api", () => ({
 
 import api from "@/lib/api";
 
-const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1, perPage: 12 };
+// MEH-1088 Part A: category chips with 0 approved producers are hidden once the
+// catalog is fully loaded. These tests exercise the chips, so the fixture seeds
+// one producer per category (בשר, דבש) — otherwise the empty catalog would
+// (correctly) hide both chips. totalPages:1 → catalog fully loaded at mount.
+const PROPS = {
+  initialItems: [
+    { id: "11111111-1111-1111-1111-111111111111", name: "עסק בשר", categories: [{ id: 1, name: "בשר" }] },
+    { id: "22222222-2222-2222-2222-222222222222", name: "עסק דבש", categories: [{ id: 18, name: "דבש" }] },
+  ],
+  initialTotal: 2,
+  initialPage: 1,
+  totalPages: 1,
+  perPage: 12,
+};
 
 // MEH-1294: syncUrl now mirrors via the shallow History API. Spy on
 // pushState/replaceState — the MEH-1084 verb distinction is preserved
@@ -100,6 +113,16 @@ const lastReplaceUrl = () => replaceSpy.mock.calls.at(-1)?.[2] ?? "";
 const lastPushUrl = () => pushSpy.mock.calls.at(-1)?.[2] ?? "";
 const producersCalls = () =>
   api.get.mock.calls.filter(([path]) => path === "/producers").map(([, opts]) => opts?.params ?? {});
+
+// jsdom doesn't implement IntersectionObserver — stub it (the infinite-scroll
+// effect mounts one when hasMore is true, e.g. the totalPages>1 case below).
+beforeAll(() => {
+  global.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+});
 
 beforeEach(() => {
   // reset the jsdom URL so the same-URL guard starts from a clean slate.
@@ -165,5 +188,37 @@ describe("/producers category axis (MEH-1081)", () => {
     // clear everything via the active-strip clear-all → replace, category gone.
     fireEvent.click(screen.getByText("producers.filters.clear_all"));
     expect(lastReplaceUrl()).not.toContain("category=");
+  });
+});
+
+describe("MEH-1088 Part A — hide zero-producer category chips", () => {
+  // Catalog fully loaded (totalPages 1) with ONLY a בשר producer → the דבש
+  // category (0 approved producers) must not render as a dead-end chip.
+  const ONLY_MEAT = [
+    { id: "11111111-1111-1111-1111-111111111111", name: "עסק בשר", categories: [{ id: 1, name: "בשר" }] },
+  ];
+
+  it("hides a category with 0 approved producers; keeps 'הכל' and non-empty ones", async () => {
+    render(<ProducersClient {...PROPS} initialItems={ONLY_MEAT} initialTotal={1} />);
+    const row = await screen.findByTestId("chip-row-category");
+    expect(within(row).getByText("producers.filters.category_all")).toBeInTheDocument();
+    expect(within(row).getByText("בשר")).toBeInTheDocument();
+    expect(within(row).queryByText("דבש")).toBeNull();
+  });
+
+  it("keeps a URL-active category visible even at 0 producers (clear flow intact)", async () => {
+    params = { category: "18" }; // דבש active via URL, but no דבש producer loaded
+    render(<ProducersClient {...PROPS} initialItems={ONLY_MEAT} initialTotal={1} />);
+    const row = await screen.findByTestId("chip-row-category");
+    expect(within(row).getByText("דבש")).toBeInTheDocument();
+    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+  });
+
+  it("does NOT hide any category while the catalog is not fully loaded (more pages)", async () => {
+    // totalPages 2 → hasMore true → nothing filtered (a later page may hold דבש).
+    render(<ProducersClient {...PROPS} initialItems={ONLY_MEAT} initialTotal={20} totalPages={2} />);
+    const row = await screen.findByTestId("chip-row-category");
+    expect(within(row).getByText("בשר")).toBeInTheDocument();
+    expect(within(row).getByText("דבש")).toBeInTheDocument();
   });
 });
