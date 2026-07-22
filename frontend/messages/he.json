@@ -3839,7 +3839,9 @@
         "vacation_return_label": "חזרה ב:",
         "remove_vacation_date_aria": "הסירו תאריך חזרה",
         "vacation_confirm": "שמרו",
-        "vacation_date_required": "בחרו תאריך חזרה כדי לעבור להפסקה"
+        "vacation_date_required": "בחרו תאריך חזרה כדי לעבור להפסקה",
+        "saved": "מצב הזמינות עודכן",
+        "saved_vacation": "נשמר — בהפסקה עד {date}"
       },
       "quick_links": {
         "add_event": {
