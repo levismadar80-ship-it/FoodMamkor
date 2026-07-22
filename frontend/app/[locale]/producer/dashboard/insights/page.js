@@ -206,9 +206,10 @@ function DeepAnalyticsSection({ analytics, profile }) {
 // at fixed 4xl/2xl/xl sizes — in RTL the leading digit clipped on the start
 // side. Compact notation caps every magnitude at a bounded width ("2.5K"),
 // paired with min-w-0 on the flex row + tabular-nums so the trio always fits.
-// he-IL renders the "K" suffix (with a trailing RLM) — kept functional-first
-// per the ticket; Sapir reviews the suffix in the PR screenshot.
-function formatCompact(n, locale) {
+// he-IL renders the "K" suffix with a trailing RLM (U+200F) — a known,
+// acceptable ICU behavior (the mark keeps the Latin suffix ordered correctly
+// in RTL). Unit-pinned in __tests__/formatCompact.test.js (MEH-1433 follow-up).
+export function formatCompact(n, locale) {
   return new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 1,
