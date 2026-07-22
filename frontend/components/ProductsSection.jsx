@@ -18,6 +18,11 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+// MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
+// currentColor, aria-hidden) instead of a baked-in emoji — same source the
+// FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
+// exactly as it renders in FilterSheet.
+import { chipIcon } from "@/lib/chip-icons";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
@@ -396,10 +401,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <div>
                   <p id={`edit-diet-heading-${product.id}`} className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
                   <div role="group" aria-labelledby={`edit-diet-heading-${product.id}`} className="flex flex-wrap gap-2">
-                    <DietChip label={tForm("diet_gluten_free")} pressed={!!editForm.is_gluten_free} onToggle={() => setEditForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
-                    <DietChip label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
-                    <DietChip label={tForm("diet_vegetarian")} pressed={!!editForm.is_vegetarian} onToggle={() => setEditForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
-                    <DietChip label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                    <DietChip iconKey="gluten_free" label={tForm("diet_gluten_free")} pressed={!!editForm.is_gluten_free} onToggle={() => setEditForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
+                    <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                    <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={!!editForm.is_vegetarian} onToggle={() => setEditForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
+                    <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                   </div>
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
                       surfaces the business in the matching public filter. */}
@@ -536,10 +541,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             <div>
               <p id="add-diet-heading" className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
               <div role="group" aria-labelledby="add-diet-heading" className="flex flex-wrap gap-2">
-                <DietChip label={tForm("diet_gluten_free")} pressed={form.is_gluten_free} onToggle={() => setForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
-                <DietChip label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
-                <DietChip label={tForm("diet_vegetarian")} pressed={form.is_vegetarian} onToggle={() => setForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
-                <DietChip label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                <DietChip iconKey="gluten_free" label={tForm("diet_gluten_free")} pressed={form.is_gluten_free} onToggle={() => setForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
+                <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={form.is_vegetarian} onToggle={() => setForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
+                <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
               </div>
               {/* MEH-1439: tell the owner what marking a diet flag does — it
                   surfaces the business in the matching public filter. */}
@@ -654,19 +659,24 @@ function PriceField({ id, label, optionalSuffix, value, onChange, required = fal
 // REUSES: components/CategorySelector.jsx:163-200 selected idiom
 // (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
 // states via the primary/cream family, no new state token.
-function DietChip({ label, pressed, onToggle }) {
+function DietChip({ label, pressed, onToggle, iconKey }) {
+  // MEH-1472: leading Phosphor glyph from the canonical chip-icon map. null for
+  // keys without an icon (e.g. vegetarian) → the chip stays text-only, matching
+  // FilterSheet. Wrapped aria-hidden so the label remains the accessible name.
+  const icon = iconKey ? chipIcon(iconKey) : null;
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={pressed}
       className={[
-        "min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        "inline-flex items-center gap-1.5 min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
           : "border-border bg-white text-text hover:border-primary",
       ].join(" ")}
     >
+      {icon && <span aria-hidden="true">{icon}</span>}
       {label}
     </button>
   );
