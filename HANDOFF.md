@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1473 — recipe chip → question form (i18n-only, LOW-RISK) — PR open, auto-merge on green
+
+- Branch `feature/meh-1473-recipe-chip-rephrase` off staging. i18n-only rephrase of the MEH-1462 recipe chip.
+- `he.json` / `en.json`: `whatsapp.question_chips.recipe_idea` "יש לי רעיון למתכון" → **"אפשר לשתף מתכון שהכנתי?"** + `recipe_idea_message` prefill updated (EN retranslated to match). `WhatsAppQuestionChips.jsx` **not touched** (label + prefill flow from i18n; only a stale MEH-1462 comment quotes the old string — left per scope lock).
+- Updated exact-prefill href assertion in `quickAnswers.test.js`.
+- **Verify:** `build` 0 · `quickAnswers.test.js` 27/27. Chip-row harness @375px in `qa-artifacts/MEH-1473/`.
+- ADR-024 ungendered, no emoji. LOW-RISK → auto-merge on green gates.
+
 ## 2026-07-22 — MEH-1465 — category multi-select OR (chip rows) — PR OPEN, no auto-merge (Sapir merges after mobile QA)
 
 - **HIGH-RISK, shipped chunk-by-chunk with Sapir "go" between each.** Branch `feature/meh-1465-category-multiselect` off staging (gates verified first: MEH-1368 merged, MEH-1181-A delta at `DESIGN.md:471`/478-506, Chunk A backend/serializer OR ready).
