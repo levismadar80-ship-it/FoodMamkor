@@ -31,6 +31,18 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(labels).toContain("לחמים ואפייה");
   });
 
+  it("MEH-1441: each category chip declares a CATEGORY_ICONS glyph key; 'all' stays iconless", () => {
+    const byKey = Object.fromEntries(CATEGORY_CHIPS.map((c) => [c.key, c]));
+    // Reset chip is the differentiator — never gets a leading glyph.
+    expect(byKey.all.iconName).toBeUndefined();
+    // Aggregate chips point at a canonical CATEGORY_ICONS key (built into a 16px
+    // element at the render site, keeping this module React-free).
+    expect(byKey.meat.iconName).toBe("בשר");
+    expect(byKey.produce.iconName).toBe("ירקות");
+    expect(byKey.dairy.iconName).toBe("חלב וגבינות");
+    expect(byKey.bread.iconName).toBe("לחמים ואפייה");
+  });
+
   it("includes all expected toggle chip keys", () => {
     const keys = TOGGLE_CHIPS.map((c) => c.key);
     expect(keys).toContain("has_delivery");

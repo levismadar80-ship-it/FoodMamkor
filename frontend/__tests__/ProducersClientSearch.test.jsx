@@ -32,6 +32,11 @@ vi.mock("@phosphor-icons/react", () => ({
   DropSlash: (p) => <span {...p} />,
 }));
 
+// MEH-1441: ProducersClient now imports CATEGORY_ICONS for the category-chip
+// glyphs. Stub the icon module so its real Phosphor imports don't need adding
+// to the partial mock above (search wiring here doesn't render category glyphs).
+vi.mock("@/components/CategoryIcons", () => ({ CATEGORY_ICONS: {} }));
+
 // Child components — render nothing meaningful; we only test the search wiring.
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div data-testid="card" /> }));

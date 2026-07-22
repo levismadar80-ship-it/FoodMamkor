@@ -23,22 +23,31 @@ import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
 // older admin-created rows — covering all known variants means the chip shows
 // whenever any of them exists, instead of silently disappearing.
+// MEH-1441: `iconName` is the canonical CATEGORY_ICONS key (components/
+// CategoryIcons.jsx) a chip's 16px leading glyph resolves to at the render site.
+// These aggregate map chips ("בשר ודגים" etc.) don't equal a single DB name, so
+// the glyph key is declared explicitly here (kept a plain STRING so this module
+// stays React-free — the JSX element is built by the render site, mirroring how
+// MEH-1418 threads toggle-chip icons via withChipIcons). The "כל" reset chip has
+// no iconName → it renders text-only (the reset differentiator).
 export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"] },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"] },
-  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"] },
-  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"] },
+  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר" },
+  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות" },
+  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות" },
+  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
 // independent; category is radio-group. NO "פתוחים השבוע" chip
 // (is_available_today field does not exist on producers).
 // MEH-1418: toggle chips carry Phosphor LEADING ICONS (lib/chip-icons.js,
-// threaded via withChipIcons at the render call site); category chips stay
-// text-only (MEH-683 D4). Labels stay text-only — Emoji LOCK v2 forbids emoji
+// threaded via withChipIcons at the render call site).
+// MEH-1441: category chips now also carry a 16px LEADING GLYPH — from
+// CATEGORY_ICONS via the `iconName` key above (built at the render site;
+// "כל" stays iconless). Labels stay text-only — Emoji LOCK v2 forbids emoji
 // literals, aria-hidden Phosphor glyphs are the approved substitute (MEH-990).
 // MEH-1075: `group` drives the FilterSheet sections (diet | quality | service).
 // Within-group render order = array order (diet order per spec: טבעוני ·
