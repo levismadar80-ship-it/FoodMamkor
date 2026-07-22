@@ -11,6 +11,14 @@
 - **Verify:** `build` 0 · full vitest green. `EditUnsavedGuard.test.jsx` reads placeholders from `he.json` dynamically → transparent to the change. Card harness @375px in `qa-artifacts/MEH-1477/`.
 - No new component, no hardcoded Hebrew in JSX, RTL `mb-*` only, ADR-024 ungendered. LOW-RISK → auto-merge on green.
 
+## 2026-07-22 — MEH-1478 — FilterSheet hybrid (diet 2×2 pill grid + trust reorder) — PR open (frontend-only, LOW-RISK, auto-merge on green)
+
+- **Two-step dispatch.** Step 1 (close MEH-1368 / PR #2073) was a **no-op**: PR #2073 was **already merged** by Sapir at 18:11:29Z (staging tip `714168af`), and follow-ups #2074 (MEH-1468) / #2075 (MEH-1465) / #2076 (MEH-1472) already built on top — terminal state reached, nothing to merge. Proceeded to Step 2.
+- **Branch** `feature/meh-1478-filtersheet-hybrid-grid` off fresh `origin/staging`. **Touched `frontend/components/FilterSheet.jsx` only** (+ its co-located test).
+- **תזונה → 2×2 pill grid:** vegan · vegetarian · gluten_free · lactose_free render as `grid grid-cols-2 gap-2` pill **buttons** (`aria-pressed`, `min-h-[44px]`, `rounded-full`, icon+label centred; selected = `bg-primary`/white, default = `bg-surface`+`border`). Write shared chipState via `onToggleChip` (no draft), multi-select unchanged.
+- **שירות ואמון reordered:** new FilterSheet-local `chipsForGroup` order map puts **רישוי מאומת first (+subtext) → משלוח last (no subtext)** — `lib/map-chips.js` TOGGLE_CHIPS **untouched** (array order still drives /producers). מקור ואיכות rows (כשרות מאומתת · גראס פד) unchanged. 3 headers, 3 subtexts (byte-identical to BADGE_CONFIG), zero new strings, one 375px viewport, no scroll.
+- **Verify:** `npm run build` exit 0 · full vitest **1536 pass / 10 skip** (updated `FilterSheet.test.jsx`: diet = aria-pressed buttons, trust = switches) · eslint 0 errors · RTL hook clean. Screenshots @375px + lg+ panel in `qa-artifacts/MEH-1478/` (compressed WebP, 58 KB).
+- **Left for Sapir:** mobile QA optional (LOW-RISK, auto-merge on green per MEH-450/ADR-016). `Closes MEH-1478`.
 ## 2026-07-22 — MEH-1473 — recipe chip → question form (i18n-only, LOW-RISK) — PR open, auto-merge on green
 
 - Branch `feature/meh-1473-recipe-chip-rephrase` off staging. i18n-only rephrase of the MEH-1462 recipe chip.
