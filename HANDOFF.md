@@ -12,6 +12,12 @@
 - ADR-024 ungendered, no emoji. LOW-RISK → auto-merge on green gates.
 
 ## 2026-07-22 — MEH-1465 — category multi-select OR (chip rows) — PR OPEN, no auto-merge (Sapir merges after mobile QA)
+## 2026-07-22 — MEH-1470 — preserve category selection when removing the city/search chip (/producers) — PR OPEN, auto-merge on green (LOW-RISK)
+
+- Follow-up from MEH-1465's adversarial review. The two removable chips on `/producers` (city-× `ProducersClient.jsx:488`, search-× `:503`) called `syncUrl`/`fetchFiltered` **omitting** the category arg, so removing city/search silently dropped the active category selection from the URL + refetch (pre-existing — they omitted the single-string arg pre-1465 too). Fix: thread the current `categoryFilter` array through both call-sites. Grep confirmed these were the only two omitting call-sites; every other `syncUrl`/`fetchFiltered` already passes category (or the intentional `[]` in `clearAll`).
+- Test: `ProducersClientCategoryAxis.test.jsx` +2 (remove city keeps 2 categories in URL+fetch; remove search keeps the category). Includes the MEH-1465 HANDOFF "PR OPEN → MERGED #2075" correction below.
+
+## 2026-07-22 — MEH-1465 — category multi-select OR (chip rows) — MERGED PR #2075 (squash `2a38aa38`, on green; VRT baselines drifted red pre-existing — not from this diff, `vrt-update` on Sapir)
 
 - **HIGH-RISK, shipped chunk-by-chunk with Sapir "go" between each.** Branch `feature/meh-1465-category-multiselect` off staging (gates verified first: MEH-1368 merged, MEH-1181-A delta at `DESIGN.md:471`/478-506, Chunk A backend/serializer OR ready).
 - **Chunk 1 — `ChipScrollRow`** (`7ee6058d`): `variant="category"` accepts an `activeKeys` **Set** (legacy `activeKey` string still works); role `radiogroup→toolbar`; `scrollIntoView`→last-activated (Set diff). Direction A selected style (ring + 12% wash + neutral bold label, glyph keeps colour; `--cat-ring = chip.iconColor`); "כל" solid baseline / ghost when ≥1 active. `DEFAULT_CAT_RING = #2e6853` = registry DEFAULT/`primary` (no new green).
