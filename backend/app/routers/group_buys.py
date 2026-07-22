@@ -42,6 +42,7 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
         "max_participants": gb.max_participants,
         "deadline": gb.deadline,
         "city": gb.city,
+        "fulfillment_note": gb.fulfillment_note,
         "status": gb.status,
         "commits_count": commits_count,
         "created_at": gb.created_at,
@@ -208,6 +209,7 @@ def create_group_buy(
         max_participants=data.max_participants,
         deadline=data.deadline,
         city=data.city or producer.city,
+        fulfillment_note=data.fulfillment_note,
         status="open",
     )
     db.add(gb)

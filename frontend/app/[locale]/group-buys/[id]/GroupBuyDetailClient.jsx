@@ -315,6 +315,13 @@ export default function GroupBuyDetailClient({ id }) {
             <p className="text-xs text-fg-muted mt-1">
               {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
+            {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
+            {gb.fulfillment_note && (
+              <p className="text-xs text-text mt-1 whitespace-pre-line">
+                <span className="font-medium">{t("fulfillment_prefix")}</span>
+                {gb.fulfillment_note}
+              </p>
+            )}
           </div>
 
           {/* Commit form */}

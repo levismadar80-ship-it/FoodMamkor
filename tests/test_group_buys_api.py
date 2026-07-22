@@ -199,6 +199,34 @@ class TestCreate:
         )
         assert resp.status_code == 201, resp.text
 
+    # ---- MEH-1457: fulfillment_note ----
+    def test_create_with_fulfillment_note_returned_in_get(self, client, db):
+        _, user = _producer_user(db)
+        note = "איסוף מהמשק ביום שישי אחרי סגירת הקבוצה"
+        resp = client.post(
+            "/group-buys",
+            json=_valid_create_payload(fulfillment_note=note),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
+        gb_id = resp.json()["id"]
+        detail = client.get(f"/group-buys/{gb_id}")
+        assert detail.status_code == 200
+        assert detail.json()["fulfillment_note"] == note
+
+    def test_create_without_fulfillment_note_is_null(self, client, db):
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys",
+            json=_valid_create_payload(),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
+        gb_id = resp.json()["id"]
+        detail = client.get(f"/group-buys/{gb_id}")
+        assert detail.status_code == 200
+        assert detail.json()["fulfillment_note"] is None
+
     def test_create_past_aware_deadline_is_400_not_500(self, client, db):
         """A past aware deadline → Hebrew 400, never a 500."""
         _, user = _producer_user(db)
