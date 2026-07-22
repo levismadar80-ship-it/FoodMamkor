@@ -159,7 +159,7 @@ describe("chipStateToParams", () => {
   it("returns {} for the default 'all' state", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "all", organic: false, has_delivery: false },
+        { categoryKeys: [], organic: false, has_delivery: false },
         dbCategories,
       ),
     ).toEqual({});
@@ -168,7 +168,7 @@ describe("chipStateToParams", () => {
   it("maps a category chip to {category: [<ids>]} — always a list (MEH-1465)", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "dairy", organic: false, has_delivery: false },
+        { categoryKeys: ["dairy"], organic: false, has_delivery: false },
         dbCategories,
       ),
     ).toEqual({ category: [3] });
@@ -182,7 +182,7 @@ describe("chipStateToParams", () => {
     ];
     expect(
       chipStateToParams(
-        { categoryKey: "meat", organic: false, has_delivery: false },
+        { categoryKeys: ["meat"], organic: false, has_delivery: false },
         db,
       ),
     ).toEqual({ category: [1, 5] });
@@ -191,17 +191,46 @@ describe("chipStateToParams", () => {
   it("ignores a category chip whose match isn't in the DB", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "meat", organic: false, has_delivery: false },
+        { categoryKeys: ["meat"], organic: false, has_delivery: false },
         [], // empty DB → no match
       ),
     ).toEqual({});
+  });
+
+  it("MEH-1465: multi-select unions the ids of ALL selected chips", () => {
+    // dairy → [3], bread → [4]; the OR union is [3, 4] (chip-array order).
+    expect(
+      chipStateToParams(
+        { categoryKeys: ["dairy", "bread"], organic: false, has_delivery: false },
+        dbCategories,
+      ),
+    ).toEqual({ category: [3, 4] });
+  });
+
+  it("MEH-1465: unions an aggregate chip's ids with a single-id chip", () => {
+    const db = [
+      { id: 1, name: "בשר ועוף", emoji: "🥩" },
+      { id: 5, name: "דגים", emoji: "🐟" },
+      { id: 3, name: "חלב וגבינות", emoji: "🥛" },
+    ];
+    // meat → [1, 5], dairy → [3]; union preserves insertion order → [1, 5, 3].
+    expect(
+      chipStateToParams({ categoryKeys: ["meat", "dairy"] }, db),
+    ).toEqual({ category: [1, 5, 3] });
+  });
+
+  it("MEH-1465: dedups ids across the selection (Set union — defensive)", () => {
+    // A duplicated key must not double-emit its id.
+    expect(
+      chipStateToParams({ categoryKeys: ["dairy", "dairy"] }, dbCategories),
+    ).toEqual({ category: [3] });
   });
 
   it("composes category + grass_fed + delivery into one param object", () => {
     // MEH-1259: organic removed — grass_fed stands in as the quality toggle.
     expect(
       chipStateToParams(
-        { categoryKey: "produce", grass_fed: true, has_delivery: true },
+        { categoryKeys: ["produce"], grass_fed: true, has_delivery: true },
         dbCategories,
       ),
     ).toEqual({ category: [2], grass_fed: true, has_delivery: true });
@@ -209,20 +238,20 @@ describe("chipStateToParams", () => {
 
   it("MEH-1087: kosher state maps to the verified-only ?kosher param", () => {
     expect(
-      chipStateToParams({ categoryKey: "all", kosher: true }, dbCategories),
+      chipStateToParams({ categoryKeys: [], kosher: true }, dbCategories),
     ).toEqual({ kosher: true });
   });
 
   it("MEH-1438: vegetarian state maps to the ?vegetarian param", () => {
     expect(
-      chipStateToParams({ categoryKey: "all", vegetarian: true }, dbCategories),
+      chipStateToParams({ categoryKeys: [], vegetarian: true }, dbCategories),
     ).toEqual({ vegetarian: true });
   });
 
   it("ignores a lingering organic state key (filter removed — MEH-1259)", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "all", organic: true, has_delivery: false },
+        { categoryKeys: [], organic: true, has_delivery: false },
         dbCategories,
       ),
     ).toEqual({});

@@ -4,8 +4,8 @@
  *   (MEH-1259: the "אורגני" quality toggle was removed — see TOGGLE_CHIPS.)
  *
  * Layout:
- *   - ONE of {כל, בשר, ירקות, חלב, לחם} is active at a time (radio-group
- *     semantics). "כל" is the reset sentinel.
+ *   - MEH-1465: category chips are MULTI-select (OR union) — any subset of
+ *     {בשר, ירקות, חלב, לחם} can be active at once. "כל" is the reset sentinel.
  *   - delivery is an independent toggle (on top of the above).
  *
  * Category chips map to real DB category IDs at runtime via the
@@ -144,13 +144,18 @@ export function resolveCategoryId(chip, dbCategories) {
  */
 export function chipStateToParams(state, dbCategories) {
   const params = {};
-  if (state.categoryKey && state.categoryKey !== "all") {
-    const chip = CATEGORY_CHIPS.find((c) => c.key === state.categoryKey);
-    // MEH-1465: send EVERY matched id (OR), not just the first. Always a list
-    // so the backend `category: list[int]` contract is uniform; the api-client
-    // paramsSerializer (indexes:null) renders it as ?category=1&category=2.
-    const ids = resolveCategoryIds(chip, dbCategories);
-    if (ids.length > 0) params.category = ids;
+  // MEH-1465: multi-select OR — union the resolved ids of EVERY selected chip.
+  // Dedup via a Set because aggregate chips can resolve to overlapping DB ids.
+  // Always a list so the backend `category: list[int]` contract is uniform; the
+  // api-client paramsSerializer (indexes:null) renders it as ?category=1&category=2.
+  const keys = state.categoryKeys ?? [];
+  if (keys.length > 0) {
+    const ids = new Set();
+    for (const key of keys) {
+      const chip = CATEGORY_CHIPS.find((c) => c.key === key);
+      for (const id of resolveCategoryIds(chip, dbCategories)) ids.add(id);
+    }
+    if (ids.size > 0) params.category = [...ids];
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   if (state.has_delivery) params.has_delivery = true;
