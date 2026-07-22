@@ -364,6 +364,7 @@
   "error": {
     "try_again": "Error, please try again",
     "generic": "Something went wrong, try again",
+    "retry": "Try again",
     "mapper": {
       "offline": "No internet connection. Check your network and try again.",
       "timeout": "The server is taking longer than usual. Try again in a moment.",
