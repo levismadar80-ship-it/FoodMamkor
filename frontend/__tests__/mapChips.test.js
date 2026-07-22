@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
-  QUICK_CHIP_KEYS,
-  countActiveSheetOnlyFilters,
   resolveCategoryId,
   resolveCategoryIds,
   chipStateToParams,
@@ -72,24 +70,15 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(keys).not.toContain("organic");
   });
 
-  it("MEH-1087: kosher is a sheet-only quality chip with the locked label", () => {
+  it("MEH-1087: kosher is a quality-group toggle with the locked label", () => {
     const kosher = TOGGLE_CHIPS.find((c) => c.key === "kosher");
     expect(kosher).toMatchObject({ label: "כשרות מאומתת", group: "quality" });
-    // Sheet-only: must not sit in the inline quick-chip row.
-    expect(QUICK_CHIP_KEYS).not.toContain("kosher");
-    // Counts toward the "סינון" badge (sheet-only active).
-    expect(countActiveSheetOnlyFilters({ kosher: true })).toBe(1);
   });
 
-  // MEH-1461: Sapir-LOCK — the /map quick-chip row is capped at exactly 2 chips
-  // ([מאומתים] [משלוח אליי]); no pickup chip, ever. Any new filter is born
-  // inside FilterSheet, never on the row.
-  it("MEH-1461: quick-chip row is exactly [verified, has_delivery] — no pickup chip", () => {
-    expect(QUICK_CHIP_KEYS).toEqual(["verified", "has_delivery"]);
-    expect(QUICK_CHIP_KEYS).toHaveLength(2);
-    expect(QUICK_CHIP_KEYS).not.toContain("pickup");
-    expect(QUICK_CHIP_KEYS).not.toContain("pickup_points");
-    // Pickup is not a producer toggle filter at all (it's a map-layer toggle).
+  // MEH-1468: pickup is not a producer toggle filter (it's a map-layer toggle).
+  // Preserved from the retired MEH-1461 quick-row test — the sole assertion in it
+  // that was independent of the now-deleted QUICK_CHIP_KEYS.
+  it("no pickup toggle exists in TOGGLE_CHIPS", () => {
     expect(TOGGLE_CHIPS.some((c) => /pickup/.test(c.key))).toBe(false);
   });
 });

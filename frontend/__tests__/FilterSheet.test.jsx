@@ -1,15 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import FilterSheet from "@/components/FilterSheet";
-import { countActiveSheetOnlyFilters } from "@/lib/map-chips";
 
 // MEH-1075 / MEH-1423: FilterSheet — grouped /map filter surface. Covers:
 // closed/open render (3 group headers + all 7 toggle rows), shared-state toggle
 // via role="switch" + aria-checked, the MEH-1423 subtext narrowing (explainer
-// under ONLY kosher / verified / grass_fed — not the other 4), the sheet-only
-// badge count helper, the live apply label (incl. zero state with clear link +
-// apply still enabled), and the close paths (Escape / backdrop) + focus-into-
-// sheet on open.
+// under ONLY kosher / verified / grass_fed — not the other 4), the live apply
+// label (incl. zero state with clear link + apply still enabled), and the close
+// paths (Escape / backdrop) + focus-into-sheet on open.
+// MEH-1468: the sheet-only badge-count helper (countActiveSheetOnlyFilters) test
+// was removed here — the helper was deleted (MEH-1368 replaced it with the inline
+// "· N" count from useMapFilters.activeAttributeCount).
 
 // Namespace-less t() that returns the key; interpolated values are appended
 // as `key#value` so the apply-count assertions can target them.
@@ -118,28 +119,6 @@ describe("FilterSheet (MEH-1075)", () => {
     );
     fireEvent.click(screen.getByRole("switch", { name: "ללא גלוטן" }));
     expect(props.onToggleChip).toHaveBeenCalledWith("gluten_free");
-  });
-
-  it("countActiveSheetOnlyFilters counts sheet-only actives, excluding the quick chips", () => {
-    expect(countActiveSheetOnlyFilters(ALL_OFF)).toBe(0);
-    // verified + has_delivery are quick chips — never counted for the badge.
-    expect(
-      countActiveSheetOnlyFilters({
-        ...ALL_OFF,
-        verified: true,
-        has_delivery: true,
-      }),
-    ).toBe(0);
-    // MEH-1259: was vegan + organic — grass_fed replaces organic as the 2nd
-    // sheet-only quality active (verified is a quick chip, never counted).
-    expect(
-      countActiveSheetOnlyFilters({
-        ...ALL_OFF,
-        vegan: true,
-        grass_fed: true,
-        verified: true,
-      }),
-    ).toBe(2);
   });
 
   it("apply button shows the live result count and closes the sheet", () => {
