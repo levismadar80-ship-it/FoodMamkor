@@ -185,6 +185,29 @@ def _build_base_queries(
     return q, count_q
 
 
+# MEH-1487: region-fallback OR-list cap — the largest region in
+# frontend/data/regions.js is ~18 cities; 40 is generous headroom while
+# still bounding a hostile caller's ?delivery_cities= list.
+_MAX_DELIVERY_CITIES = 40
+
+
+def _delivery_city_condition(city: str):
+    """A producer 'delivers to <city>' iff it has a delivery_areas row for
+    that city OR delivers nationwide and hasn't excluded it (MEH-1255).
+
+    Shared by the single `delivery_city` filter and the `delivery_cities`
+    region-fallback OR-list (MEH-1487) so the two matching paths never drift.
+    """
+    area_match = Producer.delivery_areas.any(
+        func.lower(DeliveryArea.city) == city.lower()
+    )
+    nationwide_match = and_(
+        Producer.delivery_nationwide.is_(True),
+        ~Producer.delivery_excluded_cities.any(city),
+    )
+    return or_(area_match, nationwide_match)
+
+
 def _kosher_condition(kosher: bool):
     """MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
     verified-only — it matches admin-verified kashrut (kashrut_verified_at,
@@ -297,24 +320,26 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         count_q = count_q.filter(cat_cond)
 
     delivery_city = filters.get("delivery_city")
+    delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
     if delivery_city:
         # MEH-1255: nationwide producers now match any delivery_city EXCEPT
-        # their exclusion list ("לכל הארץ חוץ מ:"). Before this they were
-        # never returned here at all — the XOR keeps their delivery_areas
-        # empty, so the old inner JOIN dropped them. EXISTS (.any()) replaces
-        # the JOIN so the OR branch isn't swallowed by join semantics; for
-        # area-based producers the result set is identical.
-        area_match = Producer.delivery_areas.any(
-            func.lower(DeliveryArea.city) == delivery_city.lower()
-        )
-        nationwide_match = and_(
-            Producer.delivery_nationwide.is_(True),
-            ~Producer.delivery_excluded_cities.any(delivery_city),
-        )
-        city_cond = or_(area_match, nationwide_match)
+        # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used so
+        # the OR branch isn't swallowed by join semantics; for area-based
+        # producers the result set is identical. Extracted to
+        # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
+        city_cond = _delivery_city_condition(delivery_city)
         q = q.filter(city_cond)
         count_q = count_q.filter(city_cond)
+    elif delivery_cities:
+        # MEH-1487: region fallback — OR the SAME per-city condition across
+        # the region's cities (nationwide-minus-excluded honoured per city).
+        # Cap + empty-strip guard bound a hostile / malformed list.
+        cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
+        if cities:
+            city_cond = or_(*[_delivery_city_condition(c) for c in cities])
+            q = q.filter(city_cond)
+            count_q = count_q.filter(city_cond)
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
         count_q = count_q.filter(Producer.delivery_areas.any())
@@ -330,10 +355,14 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
 def _apply_search_filter(
     db: Session, q, count_q, search_q: str | None, *, geo_search: bool
 ):
-    """MEH-99 cross-field search: name · description · city · category names · product names.
+    """MEH-99 cross-field search: name · description · city · category names · product names · delivery cities.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
     prefix, then rating, then created_at) — geo mode keeps distance ASC.
+
+    MEH-1488: the search also matches a business's delivery_areas.city, so
+    `q=<city>` surfaces a producer that DELIVERS to that city even when its
+    own Producer.city differs (the city the owner typed under "אזורי משלוח").
     """
     if not (search_q and search_q.strip()):
         return q, count_q
@@ -358,12 +387,25 @@ def _apply_search_filter(
         )
         .exists()
     )
+    # MEH-1488: EXISTS on delivery_areas.city — same pattern as has_category /
+    # has_product. Matches a producer that delivers to the searched city even
+    # when its own Producer.city differs (the exact-match delivery_city filter
+    # in _apply_scalar_filters is a separate, stricter path).
+    has_delivery_city = (
+        db.query(DeliveryArea)
+        .filter(
+            DeliveryArea.producer_id == Producer.id,
+            DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE),
+        )
+        .exists()
+    )
     search_filter = (
         Producer.name.ilike(like, escape=LIKE_ESCAPE)
         | Producer.description.ilike(like, escape=LIKE_ESCAPE)
         | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         | has_category
         | has_product
+        | has_delivery_city
     )
     q = q.filter(search_filter)
     count_q = count_q.filter(search_filter)
@@ -436,7 +478,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
-    category, delivery_city, has_delivery, verified, kosher, city,
+    category, delivery_city, delivery_cities, has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)
