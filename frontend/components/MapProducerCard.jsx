@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Star, CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { styleForProducer } from "@/lib/map-categories";
+import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 

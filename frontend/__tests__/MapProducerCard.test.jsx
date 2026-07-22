@@ -38,7 +38,7 @@ vi.mock("next/image", () => ({
 vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (u) => u || "",
 }));
-vi.mock("@/lib/map-categories", () => ({
+vi.mock("@/lib/category-registry", () => ({
   styleForProducer: () => ({
     color: "#000000",
     icon: (p) => <span data-testid="cat-icon" {...p} />,

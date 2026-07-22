@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import FadeInSection from "@/components/FadeInSection";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 
 // MEH-643: ease-quart curve [0.25,1,0.5,1] mirrored for Framer (= .ease-quart, MEH-136).
 const EASE_QUART = [0.25, 1, 0.5, 1];

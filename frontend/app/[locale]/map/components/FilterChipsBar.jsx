@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { Faders } from "@phosphor-icons/react";
 
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
 import {
   TOGGLE_CHIPS,

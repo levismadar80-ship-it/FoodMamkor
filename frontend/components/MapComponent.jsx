@@ -13,7 +13,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { setUserLocation } from "@/lib/user-location";
 import { CoordSchema } from "@/lib/schemas";
-import { styleForProducer } from "@/lib/map-categories";
+import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 
 /**
