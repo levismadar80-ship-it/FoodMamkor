@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 — MEH-1489 — auth-aware registration surfaces (early gate + adaptive CTA ×5 + login/register redirect) — PR open, frontend-only, LOW-RISK
+
+- Branch `feature/meh-1489-auth-aware-registration` off `origin/staging`. **3 chunks in 3 commits on ONE branch / ONE PR** (not 3 separate PRs). Deviation from the ticket's "3 PRs sequential" plan — reason: the 3 chunks touch **disjoint files** and are one coherent feature; a single branch matches Rule 18 (one feature = one branch) and the harness single-branch setup, while per-chunk commits keep review granularity. Sapir can ask for a split if she prefers. Also note: the ticket's designated `claude/*` branch is **blocked by `check-branch-name.sh`** (MEH-1141) + forbidden by CLAUDE.md rule 3 — used the ticket-authorized `feature/meh-1489-*` name instead.
+- **Chunk A** (`register/producer/RegisterProducerClient.jsx` + `he.json`/`en.json`): early gate ABOVE the pre-flight (MEH-132 freeze) — producer → dashboard-CTA screen, admin → separate-account screen (no CTA, replaces the silent /admin redirect). Broadened `authLoading` guard (no join-pitch flash for token-holders). New `auth.register.producer.gate` i18n block.
+- **Chunk B** (`components/BusinessCtaLink.jsx` NEW + 5 call sites): auth-state-aware CTA — producer→dashboard link, admin→null, else original join CTA. Sites: `/join` (guest keeps `join-cta` testid), `/about/for-businesses` ×2, `/about/process`, home `HomeCTA`. Reuses `account.menu.dashboard` (no new key). Removed now-unused `next/link` import from AboutProcessClient.
+- **Chunk C** (`login/LoginClient.jsx` + `register/RegisterClient.jsx`): `!authLoading && user` → `router.replace(safeInternalRedirect(?redirect))`; form gated on `authLoading||user`. Preserved post-login/OAuth push, MEH-328 inbox screen (user stays null), `?reset=1` toast, MEH-810 clamp.
+- **Verify (CC sandbox):** `npm run build` exit 0 · **full vitest 1556 pass / 10 skip** (+14 new: 3 gate / 5 BusinessCtaLink / 6 redirect) · eslint 0 errors (warn-mode idioms only) · `scripts/check_api_contract.py` 0 mismatch / 0 orphan · RTL logical props only · **0 backend files touched** (backend pytest not run — sandbox `pip install` blocked + no backend diff; regression risk = none).
+- **Left for Sapir:** mobile QA on the Vercel preview / staging (auth-adjacent UI — the ticket's own DoD §1 routes the human check to staging). QA matrix in `docs/MANUAL_TESTING.md` → MEH-1489. `Closes MEH-1489`. **Do NOT push to main** (MEH-1105 release cut — these land post-cut on staging).
+
 ## 2026-07-22 — MEH-1482 — seed↔registry glyph drift gate (tests-only, LOW-RISK, mobile-exempt) — PR open, auto-merge on green
 
 - Branch `feature/meh-1482-seed-registry-drift-gate` off fresh `origin/staging` (tip `3e7f36e2`, MEH-1478). **Single new test file, nothing else.**
