@@ -3,7 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-22 — MEH-1454 — יצירת קבוצת רכש נכשלת (500) · aware/naive datetime fix — PR open (group-buy batch 1454-1458)
+## 2026-07-22 — MEH-1455 — טופס קבוצת רכש · שדה עיר → CitySearch — PR open (group-buy batch, MEH-1454 already MERGED PR #2059)
+
+- **Batch context:** 2nd of the 22/07 group-buy series. MEH-1454 (create-500 fix) merged as **PR #2059** (squash `bb094e26`). Branch `feature/meh-1455-group-buy-city-search` off fresh `origin/staging`.
+- **Change (frontend-only):** `NewGroupBuyForm` (`frontend/app/[locale]/producer/dashboard/group-buys/page.js`) — the last form with a free-text city `<Input>` → swapped to shared `<CitySearch>` (autocomplete over `ISRAEL_CITIES` + `/cities`), same pattern as `EventForm.jsx:205`. `onChange` adapts to CitySearch's value-arg signature (`(val) => setForm({...form, city: val})`); `labelVisible` keeps the visible label using the existing `city_label` key (no new i18n key); prefill from `producerCity` preserved; free typing still allowed. RTL handled inside CitySearch.
+- **Why:** public `/group-buys` filter is exact-match `GroupBuy.city == city` (`group_buys.py:67`); a free-typed `תל אביב` vs canonical `תל אביב-יפו` made the group invisible in the city filter. No backend / public-filter change.
+- **Verify:** `npm run build` + relevant vitest (`DashboardEmptyStateFormExclusive` — mocks `api.get` for `/cities` → CitySearch mounts fine). Mobile (type + pick from list) → Sapir's preview.
+
+## 2026-07-22 — MEH-1454 — יצירת קבוצת רכש נכשלת (500) · aware/naive datetime fix — MERGED PR #2059 (group-buy batch 1454-1458)
 
 - **Batch context:** first of the 22/07 group-buy series (MEH-1454 → 1455 → 1457 → 1458), Sapir pre-approved end-to-end merge authority. Branch `feature/meh-1454-group-buy-create-fix` off `origin/staging`.
 - **Phase 0 repro (done FIRST):** pytest confirmed the exact hypothesis — `TypeError: can't compare offset-naive and offset-aware datetimes` at `backend/app/routers/group_buys.py:196`. The dashboard sends `new Date(...).toISOString()` (ISO-Z → Pydantic aware); the route compared it to naive `datetime.utcnow()` → 500 on every real create. `test_create_naive_deadline_still_works` passed (naive path unaffected), the two aware tests failed with 500 → bug proven before any fix.
