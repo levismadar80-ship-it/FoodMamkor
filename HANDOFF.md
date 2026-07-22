@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 (night run, MEH-1074) — MEH-1413 — WhatsApp-promise → method-agnostic copy sweep (GREEN) — PR open
+
+- Branch `feature/meh-1413-whatsapp-promise-copy` off `origin/staging` (tip `4def6d4c`). Copy-only sweep of the "every business has a WhatsApp button" promise → locked method-agnostic wording (verbatim from ticket). 4 files: `frontend/messages/he.json` + `en.json` (comms-page `intro`), `frontend/components/ChatWidget.jsx` (HARDCODED_ANSWERS), `backend/app/routers/chat.py` (SYSTEM_PROMPT ×3 phrases). Canonical chatbot line byte-identical between chat.py + ChatWidget (verified). No logic change — `PrimaryContactButton` already handles the fallback.
+- **Deferred (no locked copy, flagged not fixed):** `messages.meta_description` ("התקשורת…בוואטסאפ") + `for_businesses` step4_text are WhatsApp-assuming; review-gate (`wa_gate_message`/`reviews.py`) + phone-verify OTP + producer sales call-script are out of scope (not universality promises).
+- Gates: `npm run build` exit 0 · backend `pytest tests/test_api.py` 238 pass/4 skip · ICU parity clean. Merge posture: see night-run SYNC on MEH-1074.
+
 ## 2026-07-22 — MEH-1482 — seed↔registry glyph drift gate (tests-only, LOW-RISK, mobile-exempt) — PR open, auto-merge on green
 
 - Branch `feature/meh-1482-seed-registry-drift-gate` off fresh `origin/staging` (tip `3e7f36e2`, MEH-1478). **Single new test file, nothing else.**
