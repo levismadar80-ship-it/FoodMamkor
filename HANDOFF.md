@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1477 — custom-questions guardrail (content guidance + example placeholders, LOW-RISK) — PR open, auto-merge on green
+
+- Branch `feature/meh-1477-custom-questions-guardrail` off staging (**after MEH-1473 / PR #2078 merged** — no stacking).
+- `CustomQuestionsCard` (`app/[locale]/producer/dashboard/edit/page.js`, contact group): added one `<p>{t("guidance")}</p>` above the inputs using the MEH-1116 helper-text idiom (`text-xs text-fg-muted mb-4`). New guidance line "הכי עובד: שאלות שלקוחות באמת שואלים לפני קנייה — מה במלאי, משלוח, הזמנה.".
+- `he.json` / `en.json`: new `dashboard.producer.custom_questions.guidance` key + replaced `placeholder_1..5` with the five example questions (he keeps literal `[עיר]`; en uses `[city]`). he/en parity preserved.
+- **Verify:** `build` 0 · full vitest green. `EditUnsavedGuard.test.jsx` reads placeholders from `he.json` dynamically → transparent to the change. Card harness @375px in `qa-artifacts/MEH-1477/`.
+- No new component, no hardcoded Hebrew in JSX, RTL `mb-*` only, ADR-024 ungendered. LOW-RISK → auto-merge on green.
+
 ## 2026-07-22 — MEH-1478 — FilterSheet hybrid (diet 2×2 pill grid + trust reorder) — PR open (frontend-only, LOW-RISK, auto-merge on green)
 
 - **Two-step dispatch.** Step 1 (close MEH-1368 / PR #2073) was a **no-op**: PR #2073 was **already merged** by Sapir at 18:11:29Z (staging tip `714168af`), and follow-ups #2074 (MEH-1468) / #2075 (MEH-1465) / #2076 (MEH-1472) already built on top — terminal state reached, nothing to merge. Proceeded to Step 2.
