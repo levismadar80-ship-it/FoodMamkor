@@ -57,13 +57,19 @@ export const CATEGORY_STYLES = {
   // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
   // dedicated identity — brand honey #C8821E + honeycomb glyph — distinct
   // from oils (#e8a020). MEH-683: Hexagon→Hive (Material), JarLabel→OliveOil.
-  // textColor (MEH-1452): the map pin keeps the vivid #e8a020, but that fails
-  // WCAG 1.4.11 as a chip glyph tint on white (2.22:1). A same-hue (H≈38°)
-  // darkened #bd8013 (3.35:1 on #fff) is used wherever the colour tints UI
-  // text/glyphs, following the חלב וגבינות precedent (#4a90d9 pin → #3b72ad).
-  "שמנים":               { color: "#e8a020", textColor: "#bd8013", icon: OliveOil,    iconName: "OliveOil" },
-  // דבש #C8821E clears 3:1 on white (3.15:1) as-is — no textColor needed.
-  "דבש":                 { color: "#C8821E", icon: Hive,        iconName: "Hive" },
+  // textColor: the map pin keeps the vivid #e8a020, but that fails WCAG 1.4.11
+  // as a chip glyph tint (2.22:1 on white). MEH-1452 darkened it to #bd8013,
+  // which cleared white (3.35:1) but was only ever measured there — it FAILS on
+  // the cream /map surface (#F5F0E8 → 2.96:1). MEH-1181 re-darkens to a same-hue
+  // (H≈38°) #97690f that clears BOTH: 4.83:1 on #fff, 4.26:1 on cream. Also the
+  // future MEH-1181-A category-chip ring colour (--cat-ring = textColor ?? color).
+  "שמנים":               { color: "#e8a020", textColor: "#97690f", icon: OliveOil,    iconName: "OliveOil" },
+  // textColor (MEH-1181): the pin/brand honey #C8821E clears 3:1 on white
+  // (3.15:1) but FAILS on the cream /map surface (2.78:1) — the same-hue darker
+  // #A8681A clears both (4.51:1 #fff / 3.97:1 cream). Serves the glyph tint AND
+  // the MEH-1181-A ring. (The 3.15 vs 2.78 "discrepancy" was two backgrounds,
+  // not a mistake: white vs cream — both correct.)
+  "דבש":                 { color: "#C8821E", textColor: "#A8681A", icon: Hive,        iconName: "Hive" },
   // MEH-1453: stale combined key (see "ירקות, פירות ומשקים" above). Legend-only.
   "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
 };
