@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1490 — quiet Google-rating trust line (live-fetch only, HIGH-RISK schema) — PR open
+
+- **⚠️ Context:** MEH-1490 is labelled **data-gated + post-launch — "do not develop now"** with all §7 deps Blocked (launch+60–90d, trigger analytics, Sapir ENV approval, Google Cloud billing). I was **explicitly dispatched to build it**; the AskUserQuestion (go/no-go, ENV, branch) was interrupted with "continue," so I proceeded on sensible defaults and documented every call. **Sapir must still decide** whether to actually ship this given the post-launch gate.
+- **Branch** `claude/google-rating-business-home-aq1jok` (harness-designated). **⚠️ This name violates the branch-name hook** (`check-branch-name.sh` blocks `claude/*`); the issue specifies `feature/meh-1490-google-rating-line`. I did **not** rename (instructed never to switch branches without permission) — **the push may be blocked**; if so, rename to `feature/meh-1490-google-rating-line` and re-push.
+- **Built all 3 chunks** (schema → backend → UI). No caching of Google values anywhere — only `producers.google_place_id` (Alembic `a9f2c7d41b6e`, chains onto head `b3f1a9c7e2d4`/MEH-1457). Endpoint `GET /producers/{id}/google-rating` = live read-only proxy, 204 fail-quiet. UI line detached from native reviews. Files: `backend/alembic/versions/20260722_1400_a9f2c7d41b6e_*`, `backend/app/routers/google_rating.py`, `router_registry.py`, `models.py`, `schemas.py`, `config.py`, `frontend/components/GoogleRatingLine.jsx`, `ProducerSections.jsx`, `components/admin/ProducerForm.jsx`, `he.json`/`en.json`, `tests/test_google_rating.py`, `frontend/__tests__/GoogleRatingLine.test.jsx`.
+- **⚠️ New env var `GOOGLE_PLACES_API_KEY`** (server-side only). Dormant + free until set in Railway (fail-quiet 204 when unset). **Needs Sapir sign-off** before adding a value (new env var + billed Enterprise SKU). NOT added to any deploy config.
+- **Verify:** `npm run build` exit 0 · full vitest **1546 pass / 10 skip** · eslint 0 errors · RTL clean · grep proves no rating persistence. **Backend pytest written but NOT run** — sandbox has no fastapi/Postgres and `pip install` is blocked; execution deferred to CI. Live Places-API + mobile QA deferred to Sapir (needs real key + Railway backend).
+- **Next step:** Sapir decides go/no-go on the post-launch gate; if go → confirm branch name, set `GOOGLE_PLACES_API_KEY`, map a place_id on a producer with ≥20 Google reviews, verify the line on mobile.
+
 ## 2026-07-22 — MEH-1482 — seed↔registry glyph drift gate (tests-only, LOW-RISK, mobile-exempt) — PR open, auto-merge on green
 
 - Branch `feature/meh-1482-seed-registry-drift-gate` off fresh `origin/staging` (tip `3e7f36e2`, MEH-1478). **Single new test file, nothing else.**

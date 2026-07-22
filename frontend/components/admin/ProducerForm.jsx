@@ -131,6 +131,8 @@ const EMPTY = {
   lat: "",
   lng: "",
   slug: "",
+  // MEH-1490: admin-only Google Maps Place ID mapping (live-fetch trust line).
+  google_place_id: "",
   description: "",
   short_description: "",
   top_product_name: "",
@@ -209,6 +211,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         lat: initial.lat ?? "",
         lng: initial.lng ?? "",
         slug: initial.slug ?? "",
+        // MEH-1490: pre-fill the mapping so an unrelated admin save can't wipe it.
+        google_place_id: initial.google_place_id ?? "",
         category_ids: initial.categories?.map((c) => c.id) ?? [],
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
@@ -331,6 +335,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       lat: form.lat === "" ? null : parseFloat(form.lat),
       lng: form.lng === "" ? null : parseFloat(form.lng),
       slug: form.slug,
+      // MEH-1490: admin-only Google Place ID mapping. Blank → null (clears the
+      // mapping). The value round-trips (pre-filled from ProducerDetailOut) so
+      // an unrelated save never wipes an existing mapping.
+      google_place_id: form.google_place_id?.trim() || null,
       description: form.description,
       short_description: form.short_description,
       top_product_name: form.top_product_name,
@@ -479,6 +487,16 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.slug}
             onChange={(e) => update("slug", e.target.value)}
             placeholder={t("producers.form.fields.slug_placeholder")}
+          />
+          {/* MEH-1490: admin-only Google Place ID mapping. The public trust
+              line shows only when this is set AND the live Google profile has
+              ≥20 reviews. place_id only — never a Maps URL (validated server-side). */}
+          <Input
+            label={t("producers.form.fields.google_place_id")}
+            value={form.google_place_id}
+            onChange={(e) => update("google_place_id", e.target.value)}
+            placeholder={t("producers.form.fields.google_place_id_placeholder")}
+            helperText={t("producers.form.fields.google_place_id_hint")}
           />
           {/* MEH-1242 PR2: raw lat/lng inputs replaced by AddressSearch
               (Nominatim geocode) — onSelect fills lat/lng/city. Raw coords

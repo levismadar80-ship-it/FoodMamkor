@@ -41,6 +41,7 @@ erDiagram
         uuid id PK
         string name
         string slug UK "nullable"
+        string google_place_id "nullable — MEH-1490 admin map; only Google datum stored"
         string description
         string city
         string address "nullable — MEH-829, VARCHAR(255); collected at register"
