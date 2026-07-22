@@ -2727,6 +2727,12 @@
       "filter_label": "סינון",
       "clear_all": "נקו הכל"
     },
+    "sort": {
+      "label": "מיון:",
+      "aria_label": "מיון בתי עסק",
+      "newest": "הצטרפו לאחרונה",
+      "top_rated": "הכי מדורגות"
+    },
     "empty": {
       "no_match_search": "לא מצאנו בתי עסק עבור \"{q}\"",
       "no_match_filters": "לא מצאנו בתי עסק שמתאימים לסינון הזה",

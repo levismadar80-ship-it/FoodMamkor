@@ -37,6 +37,7 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  CaretDown: (p) => <span {...p} />, // MEH-1483: sort-select caret
   // MEH-1418: chip leading icons (via lib/chip-icons.js).
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,

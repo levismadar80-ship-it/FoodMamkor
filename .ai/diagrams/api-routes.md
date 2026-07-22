@@ -40,7 +40,7 @@ graph LR
 
 ```mermaid
 graph TD
-    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified]
+    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified<br/>sort=newest default | rating MEH-1483]
     GProducers --> LProducers[Haversine distance,<br/>status=approved only]
 
     Home --> GCategories[GET /categories<br/>🌐 list all]
