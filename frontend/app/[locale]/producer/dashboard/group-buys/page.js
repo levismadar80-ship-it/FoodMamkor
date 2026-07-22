@@ -41,6 +41,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     max_participants: "",
     deadline: "",
     city: producerCity || "",
+    fulfillment_note: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -98,6 +99,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             label={`${t("title_label")}${t("required_marker")}`}
             value={form.title}
             onChange={set("title")}
+            placeholder={t("title_placeholder")}
             required
             dir="rtl"
           />
@@ -108,6 +110,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           <textarea
             value={form.description}
             onChange={set("description")}
+            placeholder={t("description_placeholder")}
             rows={2}
             className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
             dir="rtl"
@@ -118,6 +121,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           label={`${t("product_name_label")}${t("required_marker")}`}
           value={form.product_name}
           onChange={set("product_name")}
+          placeholder={t("product_name_placeholder")}
           required
           dir="rtl"
         />
@@ -171,6 +175,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           min={2}
           value={form.min_participants}
           onChange={set("min_participants")}
+          placeholder={t("min_placeholder")}
           required
           dir="ltr"
         />
@@ -180,6 +185,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           min={2}
           value={form.max_participants}
           onChange={set("max_participants")}
+          placeholder={t("max_placeholder")}
           dir="ltr"
         />
 
@@ -205,6 +211,22 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           value={form.city}
           onChange={(val) => setForm({ ...form, city: val })}
         />
+
+        {/* MEH-1457: optional "מתי ואיך מקבלים" — free text (OFN "Ready for"). */}
+        <div className="sm:col-span-2">
+          <label htmlFor="gb-fulfillment" className="block text-sm font-medium mb-1">
+            {t("fulfillment_label")}
+          </label>
+          <textarea
+            id="gb-fulfillment"
+            value={form.fulfillment_note}
+            onChange={set("fulfillment_note")}
+            placeholder={t("fulfillment_placeholder")}
+            rows={2}
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
+            dir="rtl"
+          />
+        </div>
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
