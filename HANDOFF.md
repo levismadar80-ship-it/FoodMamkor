@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1444 — עמוד בית עסק · חוות דעת: תצוגה מקוצרת 3 + "הצג עוד" + סיכום ציון — MERGED (PR #2042, squash)
+
+- **Status: merged to `staging`.** PR #2042 squash-merged on green via auto-merge (CI gate + Deploy gate success — the real Frontend build ran on the head; backend jobs path-skipped, frontend-only diff). Branch `feature/meh-1444-reviews-display-shorten` off `staging`. Zero backend.
+- **Shipped (`ReviewsSection.jsx`):** initial **3** reviews + centered **"הצג עוד חוות דעת"** button (append +3/click; fetches the next server page when the local buffer runs out — `fetchPage` replace→append, id-deduped, an error keeps what's already loaded); rating **summary block** now shows for any `reviewCount>0` (gate `total>=3`→`total>0`; caption `summary_based_on`→new `summary_count`). Carousel prev/next removed (+ its MEH-877 rtl-exception comment). i18n twins `reviews.show_more`/`reviews.summary_count` (he+en, ICU-parity clean). **Preserved:** `StarRow`, `ReviewReply`, IntersectionObserver lazy-load, HOT-018 in-flight lock.
+- **Verify:** `npm run build` exit 0 (125/125) · parity ✓ · self-QA Playwright @375+@1440 (real component, reviews API route-mocked, total 15 = pages 10+5): 3→6→9→12→15 append across the page boundary, button hidden at total, no dupes under StrictMode → `qa-artifacts/reviews-display/` (4 WebP, 210 KB).
+- **This docs follow-up (branch `feature/meh-1444-changelog`) is code-free** — CHANGELOG/HANDOFF were dropped from the code PR and logged here (rule 11/13). PR body uses `PR #2042`/prose, **not** a bare Linear id, to avoid the rule-29 auto-reopen of the now-Done MEH-1444.
+- **Pre-existing (NOT this change):** the E2E suite is red on `staging` (`map` / `producer-locations` / `producer-detail` specs). The producer-detail VRT is **viewport-only** (`parity.spec.ts:63`), so `ReviewsSection` (below the fold) can't shift it; E2E is not a required gate (testing.md). Worth a ticket if untracked.
+
 ## 2026-07-22 — MEH-1452 — category-chip glyph tinting (supersedes MEH-1441 monochrome) — PR open, auto-merge on green (full-pipeline authority, Sapir 22/07)
 
 - **Shipped (branch `feature/meh-1452-category-chip-tint` off `origin/staging`, on top of merged MEH-1441 #2046 + MEH-1088 Part A #2049):** category chips on `/producers` + `/map` tint their 16px leading glyph with the category colour, **inactive only**; active chip keeps white `currentColor`. Reset chip iconless; no-`CATEGORY_STYLES`-entry categories stay `currentColor` (MEH-763 palette lock). Toggle chips untouched.
