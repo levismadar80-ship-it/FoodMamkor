@@ -115,6 +115,7 @@ function useProducerActions(loadAllProducers) {
       async () => {
         await api.post(`/admin/producers/${producer.id}/approve`);
         loadAllProducers();
+        showToast.success(t("producers.toast_approved")); // MEH-1446
       },
       // MEH-1011 Chunk 2: the MEH-799 (photo) / MEH-971 (license) approve gates
       // return 422. Instead of a dead-end toast, auto-open request-changes with
@@ -136,6 +137,7 @@ function useProducerActions(loadAllProducers) {
       async () => {
         await api.post(`/admin/producers/${id}/toggle-status`);
         loadAllProducers();
+        showToast.success(t("producers.toast_status_updated")); // MEH-1446
       },
       // MEH-769: a 409 means the producer isn't in a toggleable state
       // (pending / rejected) — surface the message-key copy that steers the

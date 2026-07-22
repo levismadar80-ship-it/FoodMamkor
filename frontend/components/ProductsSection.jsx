@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
@@ -125,6 +126,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       setProducts((p) => [...(p || []), r.data]);
       setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
       setAdding(false);
+      showToast.success(t("toast_added")); // MEH-1446
     } catch {
       setError(tErr("save_failed"));
     } finally {
@@ -222,6 +224,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
       setEditingId(null);
+      showToast.success(t("toast_updated")); // MEH-1446
     } catch {
       setError(tErr("save_failed"));
     } finally {
@@ -236,6 +239,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
     try {
       await api.delete(`/producers/me/products/${id}`);
       setProducts((p) => p.filter((pr) => pr.id !== id));
+      showToast.success(t("toast_deleted")); // MEH-1446
     } catch {
       setError(tErr("delete_failed"));
     } finally {

@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import Input from "@/components/ui/Input";
@@ -175,6 +176,7 @@ export default function GroupBuyDetailClient({ id }) {
     try {
       await api.delete(`/group-buys/${id}/commit`);
       await load();
+      showToast.success(t("toast_cancelled")); // MEH-1446
     } catch (err) {
       // MEH-975: same array-detail crash guard as handleCommit.
       setError(detailToMessage(err.response?.data?.detail) || t("errors.cancel_failed"));
