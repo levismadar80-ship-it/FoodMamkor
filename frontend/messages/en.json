@@ -1024,7 +1024,6 @@
       "dispatch_days": "Dispatch on {day}",
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
-      "order_cta": "Send a WhatsApp message",
       "pickup": "Self pickup",
       "show_all": "Show {count} more cities",
       "show_less": "Show less"
