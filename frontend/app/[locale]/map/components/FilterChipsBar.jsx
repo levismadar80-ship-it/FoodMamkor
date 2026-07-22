@@ -1,8 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Faders } from "@phosphor-icons/react";
 
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 import FilterSheet from "@/components/FilterSheet";
 import {
   TOGGLE_CHIPS,
@@ -46,6 +47,19 @@ export default function FilterChipsBar({
 }) {
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
+  // MEH-1441: attach a 16px CATEGORY_ICONS glyph (via the chip's `iconName`) to
+  // each category chip at the render site — map-chips.js stays React-free (only
+  // the string key lives there). "כל" has no iconName → text-only (reset). Memo
+  // keyed on visibleCategoryChips (stable ref from useMapFilters) so a chipState
+  // toggle re-render doesn't rebuild the glyph elements.
+  const categoryChipsWithIcons = useMemo(
+    () =>
+      visibleCategoryChips.map((chip) => {
+        const Glyph = chip.iconName ? CATEGORY_ICONS[chip.iconName] : null;
+        return Glyph ? { ...chip, icon: <Glyph size={16} /> } : chip;
+      }),
+    [visibleCategoryChips],
+  );
   // Stable ref (PR #1565 review): an inline arrow would retrigger the sheet's
   // [open, onClose] keydown effect on every chipState re-render.
   const closeSheet = useCallback(() => setSheetOpen(false), []);
@@ -54,7 +68,7 @@ export default function FilterChipsBar({
     <div dir="rtl" className="min-w-0">
       <ChipScrollRow
         variant="category"
-        chips={visibleCategoryChips}
+        chips={categoryChipsWithIcons}
         activeKey={chipState.categoryKey}
         onChipClick={onCategoryChipClick}
         // MEH-1108: ChipScrollRow's default fadeBg is #ffffff, which smears
