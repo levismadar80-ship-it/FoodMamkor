@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1463 — signature card clarity (eyebrow + fallback description/price) — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+
+- **Shipped (branch `feature/meh-1463-signature-card-clarity` off `origin/staging`):** the `hasSignature` highlight card in `ProducerSections.jsx` gains (1) an accent eyebrow **"המוצר המוביל"** (new i18n key `producer.detail.sections.products.signature_label`, he/en — no reusable consumer label existed; dashboard field is "מוצר עיקרי") and (2) a fallback: when the signature product matched a grid entry (deduped out) **and** `starting_price_label` is empty, the card now shows that product's **description** (`line-clamp-2`) + **price** (numeric → `formatPriceRange` + `dir="ltr"`; free-text → natural dir, MEH-1305 F). Fixes Sapir's 22/07 evidence ("לחם מחמצת כפרי" big name-only card — dedup had erased its info).
+- **No regression:** `starting_price_label` present keeps priority (product-price fallback suppressed). Scope: signature card block + `he.json`/`en.json` only — grid rows, dedup logic, `ProducerHeader` untouched.
+- **Gates:** `npm run build` exit 0 · full vitest **1499 pass / 10 skip** (`ProducerSectionsProducts.test.jsx` +4). Mobile-375 screenshot (both states) `qa-artifacts/MEH-1463/` (component-markup harness — sandbox can't SSR-populate `/producer/[id]`; live mobile QA = Sapir on preview). `Closes MEH-1463`.
+
 ## 2026-07-22 — MEH-1453 — category-registry consolidation (pure refactor) — PR open, auto-merge on green (full-pipeline authority, Sapir 22/07)
 
 - **Shipped (branch `feature/meh-1453-refactor-category-registry` off fresh `origin/staging`, after MEH-1452 #2054 merged, squash `09ae4977`):** NEW `frontend/lib/category-registry.js` is the single import hub for category presentation. **Owns** `CATEGORY_STYLES` / `DEFAULT_CATEGORY_STYLE` / `CATEGORY_LEGEND` / `styleForProducer` (moved **verbatim** from the deleted `lib/map-categories.js` — all 8 keys + order preserved so the `/map` legend is byte-identical); **re-exports** `CATEGORY_ICONS` from `components/CategoryIcons.jsx` (glyph SVG components stay there; no circular import).
