@@ -81,31 +81,11 @@ export const TOGGLE_CHIPS = [
   { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
 ];
 
-// MEH-1075: the two toggles that stay inline on the /map quick-chip row.
-// Everything else is reachable only through FilterSheet — the badge on the
-// "סינון" button counts those sheet-only actives.
-// 🔒 Sapir-LOCK 22/07: quick row is capped at 2 chips. Any new filter is born
-// inside FilterSheet — never on the row.
-// MEH-1368: superseded — the inline quick-chip row was removed (every attribute
-// filter now lives only in FilterSheet), so this constant no longer governs a
-// live row. Still referenced by countActiveSheetOnlyFilters below (also
-// superseded). Deletion + LOCK retirement tracked in MEH-1468.
-export const QUICK_CHIP_KEYS = ["verified", "has_delivery"];
-
-/**
- * Count active toggles that are NOT exposed as quick chips — the number
- * shown on the "סינון" button badge (hidden at 0).
- *
- * MEH-1368: superseded — the "סינון" button now renders an inline "· N" count
- * of ALL active attribute toggles (useMapFilters.activeAttributeCount), not
- * just the sheet-only ones, since the inline quick-chip row is gone. No
- * production consumer remains. Deletion tracked in MEH-1468.
- */
-export function countActiveSheetOnlyFilters(state) {
-  return TOGGLE_CHIPS.filter(
-    (c) => !QUICK_CHIP_KEYS.includes(c.key) && !!state?.[c.key],
-  ).length;
-}
+// MEH-1468: QUICK_CHIP_KEYS + countActiveSheetOnlyFilters were removed here.
+// The inline quick-chip toggle row was retired in MEH-1368 (every attribute
+// filter lives in FilterSheet; the "סינון" button shows an inline "· N" count
+// from useMapFilters.activeAttributeCount) — both symbols had zero production
+// consumers left. The MEH-1461 "quick row capped at 2" LOCK is retired with them.
 
 /**
  * Resolve a category chip's `matches` array against the loaded DB
