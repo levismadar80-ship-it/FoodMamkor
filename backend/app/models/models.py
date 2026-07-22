@@ -1252,6 +1252,9 @@ class GroupBuy(Base):
     max_participants = Column(Integer, nullable=True)
     deadline = Column(DateTime, nullable=False)
     city = Column(String(100), nullable=True)
+    # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
+    # Nullable — hidden on the public page when NULL. Alembic-only (MEH-267).
+    fulfillment_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -3,6 +3,18 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1457 — קבוצת רכש מובנת · fulfillment_note + placeholders — PR open (group-buy batch; 1454 #2059 + 1455 #2061 MERGED)
+
+- **Batch context:** 3rd of the 22/07 group-buy series (Opus/xhigh, HIGH-RISK schema). Branch `feature/meh-1457-group-buy-clarity` off fresh `origin/staging` (incl. merged 1454 #2059 + 1455 #2061).
+- **HARD GATE honored:** authored Alembic revision `b3f1a9c7e2d4` (ADD COLUMN `group_buys.fulfillment_note` TEXT NULL, chains onto single head `c5d9f3a1b2e8`), SHOWed it via AskUserQuestion, WAITed → Sapir approved **"Go — apply & proceed"**. Only then applied. `alembic upgrade head` clean on a fresh DB + `alembic check` = "No new upgrade operations detected" (0 drift). `EXPECTED_TABLES` unchanged (column, not table).
+- **Chunk 1 (fulfillment_note) end-to-end:** `GroupBuy` model (`models.py:1257`), `GroupBuyCreate`+`GroupBuyOut` (`str|None`), `create_group_buy` persist + `_enrich` return, form optional textarea "מתי ואיך מקבלים את המוצרים?" + placeholder, public page shows "איסוף ומשלוח: {note}" under the deadline line, **hidden when NULL**. 2 new pytest (note→GET, no-note→null).
+- **Chunk 2 (WhatsApp share):** SCOPE FINDING — already shipped on staging (`GroupBuyDetailClient.jsx:385`, `wa.me/?text=` translated `share_text`, `noopener`, `_blank`). Left as-is (over-engineering guard); flagged in the gate question, approved. Not rebuilt.
+- **Chunk 3 (placeholders):** every form field (title/description/product_name/unit/min/max/fulfillment) gets an example placeholder from the ticket `<hebrew_copy>`; he+en twins (ICU-parity ✓).
+- **Scope:** exactly the ticket `<file_locations>` (8 files + 1 new migration). `main.py` untouched (Alembic sole authority). No payments/fees/ordering.
+- **Verify:** group-buys pytest 26/26 · ruff clean · en-parity+form-render vitest 5/5 · `npm run build` exit 0 · `/adversarial-review-types` PASS (0 BLOCK). CI drift gate is the authoritative `alembic upgrade head` check on the PR.
+
+## 2026-07-22 — MEH-1455 — טופס קבוצת רכש · שדה עיר → CitySearch — MERGED PR #2061 (group-buy batch, MEH-1454 MERGED PR #2059)
+## 2026-07-22 — MEH-1462 — "יש לי רעיון למתכון" WhatsApp question chip — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
 ## 2026-07-22 — MEH-1461 — "נק' איסוף" → "איסוף עצמי" on /map + 2-chip quick-row LOCK (MEH-1388 follow-up) — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
 
 - **Phase 0 (decision gate) = CASE 2.** The "נק' איסוף" element = the **pickup-points map-layer toggle** in `MapPane.jsx` (MEH-1412 / MEH-1388 chunk 3), a client-side `showSecondaryLayer` pin-visibility toggle (state in `MapClient.jsx:76`), **not** a producer filter — absent from `map-chips.js`, `useMapFilters` chipState, and the FilterSheet badge. Pre-approved CASE 2 → rename consumer label to "איסוף עצמי", **no structural move**.
