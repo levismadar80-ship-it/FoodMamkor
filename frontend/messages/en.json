@@ -784,7 +784,8 @@
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
-        "reveal_phone": "Show phone number"
+        "reveal_phone": "Show phone number",
+        "report_info_link": "Found wrong info? Let us know"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
@@ -957,7 +958,8 @@
       "share_default_region": "Israel",
       "errors": {
         "cancel_failed": "Cancellation failed"
-      }
+      },
+      "toast_cancelled": "Your participation was cancelled"
     },
     "dashboard": {
       "status": {
@@ -994,7 +996,8 @@
         "city_label": "City",
         "required_marker": " *",
         "submitting": "Creating...",
-        "submit": "Create group buy"
+        "submit": "Create group buy",
+        "toast_created": "Group buy created and open for joining"
       }
     },
     "availability": {
@@ -1495,7 +1498,9 @@
           "avail_vacation": "On break ⏸",
           "vacation_until": "Return date (optional)"
         }
-      }
+      },
+      "toast_approved": "Business approved",
+      "toast_status_updated": "Status updated"
     },
     "users": {
       "title": "Users",
@@ -2482,6 +2487,18 @@
       "toasts": {
         "success": "Thanks! Request received. In the meantime, pick the closest category.",
         "error": "Error submitting the request — please try again"
+      }
+    },
+    "report_info": {
+      "title": "Update details",
+      "placeholder": "What's inaccurate? Hours, phone, address — every detail helps",
+      "email_label": "Email for a reply (optional)",
+      "submit": "Send",
+      "submit_loading": "Sending...",
+      "close": "Close",
+      "toasts": {
+        "success": "Thanks! We'll check and update soon",
+        "error": "Error sending — please try again"
       }
     },
     "install_prompt": {
@@ -3805,7 +3822,9 @@
         "vacation_return_label": "Returning on:",
         "remove_vacation_date_aria": "Remove return date",
         "vacation_confirm": "Save",
-        "vacation_date_required": "Pick a return date to switch to on break"
+        "vacation_date_required": "Pick a return date to switch to on break",
+        "saved": "Availability updated",
+        "saved_vacation": "Saved — on a break until {date}"
       },
       "quick_links": {
         "add_event": {
@@ -4420,6 +4439,15 @@
       "card": {
         "edit_aria_template": "Edit {name}",
         "delete_aria_template": "Delete {name}"
+      },
+      "toast_added": "Product added",
+      "toast_updated": "Product updated",
+      "toast_deleted": "Product deleted",
+      "delete_confirm": {
+        "title": "Delete \"{name}\"?",
+        "body": "This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel"
       }
     },
     "locations": {

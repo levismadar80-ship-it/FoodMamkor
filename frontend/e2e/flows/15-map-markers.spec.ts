@@ -4,7 +4,9 @@ import { test, expect } from "@playwright/test";
 // This spec asserts producer *markers* actually render on the canvas.
 // MapComponent uses leaflet.markercluster, so a marker surfaces as either a
 // custom div-icon (.mehamakor-marker-wrap) or a collapsed cluster
-// (.marker-cluster). Markers are data-driven — graceful skip if the staging
+// (.mehamakor-cluster — the app's custom iconCreateFunction class,
+// MapComponent.jsx:454; the leaflet default `.marker-cluster` never renders
+// here — MEH-1440). Markers are data-driven — graceful skip if the staging
 // DB has no approved producers with coordinates.
 test.describe.configure({ retries: 1 });
 
@@ -23,14 +25,14 @@ test.describe("Map markers", () => {
     );
 
     const markers = page.locator(
-      ".leaflet-marker-icon, .mehamakor-marker-wrap, .marker-cluster",
+      ".leaflet-marker-icon, .mehamakor-marker-wrap, .mehamakor-cluster",
     );
     // Give Leaflet a beat to project markers onto the tile layer.
     await page
       .waitForFunction(
         () =>
           document.querySelectorAll(
-            ".leaflet-marker-icon, .mehamakor-marker-wrap, .marker-cluster",
+            ".leaflet-marker-icon, .mehamakor-marker-wrap, .mehamakor-cluster",
           ).length > 0,
         { timeout: 15_000 },
       )

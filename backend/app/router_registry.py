@@ -24,6 +24,7 @@ from app.routers import (
     producer_recipes,
     producers,
     referrals,
+    report_info,
     reports,
     reviews,
     search,
@@ -58,6 +59,9 @@ def register_routers(app: FastAPI) -> None:
     # AND uncomment the include line below.
     # app.include_router(home_products.router)
     app.include_router(reports.router)
+    # MEH-1443: email-only "report wrong info" (distinct from the DB-backed
+    # abuse reports above — see routers/report_info.py "Does NOT").
+    app.include_router(report_info.router)
     app.include_router(upload.router)
     app.include_router(marketing.router)
     app.include_router(events.router)

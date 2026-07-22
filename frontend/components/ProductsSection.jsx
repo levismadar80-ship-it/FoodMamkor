@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
@@ -46,6 +47,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // MEH-1447: { id, name } | null
   const [editUploading, setEditUploading] = useState(false);
   // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
   // renders a distinct error card + retry instead of the "no products yet"
@@ -126,6 +128,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       setProducts((p) => [...(p || []), r.data]);
       setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
       setAdding(false);
+      showToast.success(t("toast_added")); // MEH-1446
     } catch {
       setError(tErr("save_failed"));
     } finally {
@@ -225,6 +228,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
       setEditingId(null);
+      showToast.success(t("toast_updated")); // MEH-1446
     } catch {
       setError(tErr("save_failed"));
     } finally {
@@ -239,12 +243,25 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
     try {
       await api.delete(`/producers/me/products/${id}`);
       setProducts((p) => p.filter((pr) => pr.id !== id));
+      showToast.success(t("toast_deleted")); // MEH-1446
+      setConfirmDelete(null); // MEH-1447: close the dialog only on a successful DELETE
     } catch {
-      setError(tErr("delete_failed"));
+      setError(tErr("delete_failed")); // MEH-1447: failure keeps the dialog open
     } finally {
       setDeletingId(null);
     }
   };
+
+  // MEH-1447: Escape closes the delete-confirm dialog unless a delete is in
+  // flight. Mirrors admin/producers DeleteConfirmDialog (MEH-1023/1027).
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && deletingId == null) setConfirmDelete(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deletingId]);
 
   if (loading) return null;
 
@@ -447,7 +464,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <Pencil size={16} aria-hidden="true" />
               </button>
               <button
-                onClick={() => handleDelete(product.id)}
+                onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
                 className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
@@ -551,6 +568,45 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             </button>
           </div>
         </form>
+      )}
+
+      {/* MEH-1447: confirm before DELETE (replaces one-click delete). Contract
+          copied from admin/producers DeleteConfirmDialog (MEH-1023/1027):
+          aria-modal, Escape closes, buttons disabled while busy, failure keeps
+          the dialog open with the error shown. */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-delete-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+          >
+            <p id="product-delete-title" className="font-medium text-base text-text">
+              {t("delete_confirm.title", { name: confirmDelete.name })}
+            </p>
+            <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="flex gap-3 justify-start pt-1">
+              <button
+                type="button"
+                disabled={deletingId != null}
+                onClick={() => handleDelete(confirmDelete.id)}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {t("delete_confirm.confirm")}
+              </button>
+              <button
+                type="button"
+                disabled={deletingId != null}
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("delete_confirm.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

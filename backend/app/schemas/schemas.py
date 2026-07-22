@@ -1589,6 +1589,25 @@ class ReportOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# MEH-1443: "מצאתן טעות בפרטים?" — email-only producer-info report (v1, no
+# persistence). `producer_slug` is the identifier the producer page used
+# (custom slug OR the UUID path for producers without a slug); the router
+# resolves either. `message` is stripped and re-checked so a whitespace-only
+# body 422s (Field's min_length runs before strip).
+class ProducerInfoReportCreate(BaseModel):
+    producer_slug: str = Field(..., min_length=1, max_length=200)
+    message: str = Field(..., min_length=1, max_length=1000)
+    reporter_email: EmailStr | None = None
+
+    @field_validator("message")
+    @classmethod
+    def _message_not_blank(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("message must not be empty")
+        return stripped
+
+
 # --- Rating ---
 class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)

@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 import LocationModal from "@/components/LocationModal";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -301,10 +302,41 @@ export default function ProducersClient({
   // no icon entry, so it passes through text-only (byte-identical).
   const allChips = withChipIcons([...CHIPS_CONFIG, cityChip]);
   const activeKeys = { ...chips, city: !!cityFilter };
+  // MEH-1088 Part A: hide dead-end category chips — a category with 0 approved
+  // producers is not rendered (fewer chips > disabled chips at this catalog
+  // size). Counted client-side from the UNFILTERED loaded catalog (each
+  // ProducerListOut carries `categories`), so no new endpoint. Only hidden once
+  // the whole catalog is loaded (`!hasMore`); while more pages are unfetched a
+  // category whose producers sit on a later page must NOT be hidden, so nothing
+  // is filtered until then. "הכל" always shows; a category active via the URL
+  // stays visible even at 0 so its active-tag + clear flow keep working.
+  const loadedCategoryIds = new Set();
+  for (const p of [...initialItems, ...appendItems]) {
+    for (const c of p?.categories ?? []) loadedCategoryIds.add(String(c.id));
+  }
+  const catalogFullyLoaded = !hasMore;
+  const visibleCategories = categories.filter(
+    (c) =>
+      !catalogFullyLoaded ||
+      loadedCategoryIds.has(String(c.id)) ||
+      String(c.id) === categoryFilter,
+  );
   // MEH-1081: radio row data — "all" sentinel first, then the DB categories.
+  // MEH-1441: each DB category gets a 16px leading glyph from CATEGORY_ICONS
+  // (keyed by the canonical name = c.name). currentColor inherits the chip's
+  // text color; ChipScrollRow wraps chip.icon in an aria-hidden span. The "all"
+  // reset chip stays iconless; an unknown admin category (no CATEGORY_ICONS row)
+  // gets no icon — never a Leaf fallback.
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
-    ...categories.map((c) => ({ key: String(c.id), label: c.name })),
+    ...visibleCategories.map((c) => {
+      const Glyph = CATEGORY_ICONS[c.name];
+      return {
+        key: String(c.id),
+        label: c.name,
+        ...(Glyph ? { icon: <Glyph size={16} /> } : {}),
+      };
+    }),
   ];
   const activeCategory = categories.find((c) => String(c.id) === categoryFilter);
 
