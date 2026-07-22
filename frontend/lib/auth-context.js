@@ -15,6 +15,11 @@ import {
   setFavoritedLocal,
 } from "./favorites-cache";
 import { useLaunchCohortTag } from "./launch-cohort";
+import {
+  USER_CITY_CHANGED_EVENT,
+  readUserCity,
+  seedCityFromProfile,
+} from "./use-user-city";
 
 const AuthContext = createContext(null);
 
@@ -59,6 +64,10 @@ export function AuthProvider({ children }) {
         .get("/auth/me")
         .then((res) => {
           setUser(res.data);
+          // MEH-1485: seed localStorage user_city from the profile city so
+          // the personalization stores stop diverging (no-op when
+          // localStorage already holds a recent explicit choice).
+          seedCityFromProfile(res.data.city);
           ensureFavoritesLoaded();
         })
         .catch(() => {
@@ -86,6 +95,28 @@ export function AuthProvider({ children }) {
     window.addEventListener("auth:expired", handle);
     return () => window.removeEventListener("auth:expired", handle);
   }, [t]);
+
+  // MEH-1485: profile↔localStorage bridge (write-back half). Every explicit
+  // city choice — home handleCitySelected, /map handleMapCitySelected /
+  // CityPickerModal / CitySearch, settings save — funnels through
+  // useUserCity().setCity, which dispatches USER_CITY_CHANGED_EVENT. When a
+  // logged-in user makes such a choice, write it back to User.city
+  // best-effort (silent, errors swallowed) and refresh context so /settings
+  // reflects it. Skips guests (no user) and the seed itself (localCity ===
+  // profile city → no redundant PATCH, no loop). Guests + logout leave
+  // localStorage untouched.
+  useEffect(() => {
+    const onCityChanged = () => {
+      const localCity = readUserCity();
+      if (!user || !localCity || localCity === (user.city || null)) return;
+      api
+        .patch("/users/me", { city: localCity })
+        .then((res) => setUser(res.data))
+        .catch(() => {});
+    };
+    window.addEventListener(USER_CITY_CHANGED_EVENT, onCityChanged);
+    return () => window.removeEventListener(USER_CITY_CHANGED_EVENT, onCityChanged);
+  }, [user]);
 
   const afterLogin = async (me) => {
     setUser(me);
