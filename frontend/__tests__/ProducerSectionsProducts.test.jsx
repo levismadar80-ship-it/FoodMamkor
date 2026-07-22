@@ -182,6 +182,93 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(freeText.closest('span[dir="ltr"]')).toBeNull();
   });
 
+  // MEH-1463: the signature highlight now carries an accent eyebrow label and,
+  // when its matched grid product was deduped out and starting_price_label is
+  // empty, falls back to that product's own description + price.
+  it("MEH-1463: eyebrow signature_label renders in the highlight card", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          starting_price_label: "החל מ-25₪",
+          products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+        }}
+      />,
+    );
+    // mock returns the i18n key verbatim
+    expect(screen.getByText("producer.detail.sections.products.signature_label")).toBeInTheDocument();
+  });
+
+  it("MEH-1463: empty starting_price_label → highlight shows the matched product's description + numeric price", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          // no starting_price_label → fallback path
+          products: [
+            {
+              id: 21,
+              name: "לחם מחמצת כפרי",
+              image_url: null,
+              description: "מחמצת בהתססה איטית, קמח מלא אורגני",
+              price_min: 25,
+            },
+          ],
+        }}
+      />,
+    );
+    // description surfaced (was deduped out of the grid, would have vanished)
+    expect(screen.getByText("מחמצת בהתססה איטית, קמח מלא אורגני")).toBeInTheDocument();
+    // numeric price surfaced, bidi-isolated
+    const ltr = container.querySelector('span[dir="ltr"]');
+    expect(ltr).toHaveTextContent("25₪");
+  });
+
+  it("MEH-1463: empty starting_price_label with free-text price_range → rendered naturally, not dir=ltr", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "מארז לחמים",
+          products: [
+            { id: 21, name: "מארז לחמים", image_url: null, price_range: "מ-40₪ למארז" },
+          ],
+        }}
+      />,
+    );
+    const freeText = screen.getByText("מ-40₪ למארז");
+    expect(freeText).toBeInTheDocument();
+    expect(freeText.closest('span[dir="ltr"]')).toBeNull();
+  });
+
+  it("MEH-1463: starting_price_label present keeps priority — product price NOT used as fallback", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          starting_price_label: "החל מ-25₪",
+          products: [
+            { id: 21, name: "לחם מחמצת כפרי", image_url: null, price_min: 99 },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+    // the product's own numeric price must not appear (label wins)
+    expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+  });
+
   it("no stray indicator/dot renders on an imageless card", () => {
     const { container } = render(
       <ProducerSections

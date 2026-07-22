@@ -108,6 +108,21 @@ export default function ProducerSections({
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
 
+  // MEH-1463: when the signature product was deduped out of the grid and the
+  // free-text starting_price_label is empty, surface the matched product's own
+  // price/description on the highlight card so the info the dedup removed isn't
+  // lost. starting_price_label keeps priority when present (unchanged). Numeric
+  // price → canonical formatPriceRange (MEH-1140) with dir="ltr" bidi isolation;
+  // free-text price_range is DATA (MEH-1305 F) rendered in natural direction.
+  const signatureNumericPrice =
+    !producer.starting_price_label && signatureProduct?.price_min != null
+      ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
+      : null;
+  const signatureFreeTextPrice =
+    !producer.starting_price_label && !signatureNumericPrice
+      ? signatureProduct?.price_range || null
+      : null;
+
   return (
     <>
       {/* Description — MEH-788: scroll-reveal (motion.section keeps the
@@ -165,12 +180,25 @@ export default function ProducerSections({
                 )}
               </div>
               <div className="min-w-0">
+                {/* MEH-1463: accent eyebrow so the card reads as "the signature
+                    product", not just a bigger unlabeled row. */}
+                <p className="text-accent text-xs font-medium">
+                  {t("producer.detail.sections.products.signature_label")}
+                </p>
                 {producer.top_product_name && (
                   <p className="font-medium text-text">{producer.top_product_name}</p>
                 )}
-                {producer.starting_price_label && (
-                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                {/* MEH-1463: description fallback from the deduped grid product. */}
+                {signatureProduct?.description && (
+                  <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
+                {producer.starting_price_label ? (
+                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                ) : signatureNumericPrice ? (
+                  <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
+                ) : signatureFreeTextPrice ? (
+                  <p className="text-accent font-semibold mt-0.5">{signatureFreeTextPrice}</p>
+                ) : null}
               </div>
             </div>
           )}

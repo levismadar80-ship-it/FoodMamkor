@@ -726,7 +726,8 @@
           "show_all_count": "Show all events"
         },
         "products": {
-          "heading": "Products"
+          "heading": "Products",
+          "signature_label": "Signature product"
         },
         "recipes": {
           "cta": "Our recipes"
