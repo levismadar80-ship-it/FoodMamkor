@@ -12,7 +12,11 @@ let params = {}; // drives useSearchParams().get(key)
 
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  useSearchParams: () => ({
+    get: (k) => (k in params ? params[k] : null),
+    // MEH-1465: categoryFilter inits via getAll (repeated ?category=).
+    getAll: (k) => (k in params ? [params[k]] : []),
+  }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
