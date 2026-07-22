@@ -125,6 +125,15 @@ test.describe("Visual parity — MEH-991", () => {
   // VRT baseline (its PRs #2030/#2033 touched only the 24-producer-locations
   // spec), so the deferred regen lands here. This touch re-fires
   // vrt-update.yml to regenerate map-desktop-linux.png on-runner.
+  // MEH-1440 second touch: the delta is DETERMINISTIC in full-suite e2e runs
+  // (byte-identical 33,522 px on runs 29897314926 + 29899891331) yet the
+  // vrt-update run 29898987845 rendered within the 0.02 threshold and did not
+  // rewrite the baseline (it only rewrites failing shots). The two workflows
+  // differ only in suite composition (visual-only vs full parallel suite) —
+  // if this second bot pass also declines to rewrite while e2e keeps failing
+  // at the same pixel count, the divergence needs eyes on the runner's
+  // map-diff.png artifact (CC sandbox cannot download Actions artifacts —
+  // proxy-blocked); follow-up-ticket material, not silently absorbable here.
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);

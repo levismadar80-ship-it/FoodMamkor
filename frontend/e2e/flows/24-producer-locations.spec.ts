@@ -154,7 +154,20 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
       "pickup/market_stand markers fan out per location",
     ).toBeVisible({ timeout: 20_000 });
 
-    await secondary.first().click();
+    // MEH-1440 run 29899891331: at zoom 13 the seeded pins can overlap, so a
+    // neighbouring marker's DOM may intercept the pointer over `.first()`
+    // ("subtree intercepts pointer events"). Click the first secondary marker
+    // that ACCEPTS the click instead of pinning the assertion to index 0.
+    const secondaryCount = await secondary.count();
+    let clicked = false;
+    for (let i = 0; i < secondaryCount && !clicked; i++) {
+      clicked = await secondary
+        .nth(i)
+        .click({ timeout: 3_000 })
+        .then(() => true)
+        .catch(() => false);
+    }
+    expect(clicked, "at least one secondary marker must accept a click").toBe(true);
     // The shared compact MapProducerCard (data-testid="map-card") renders in the
     // selected slot / bottom sheet for the clicked location's business.
     await expect(page.locator('[data-testid="map-card"]').first()).toBeVisible({
