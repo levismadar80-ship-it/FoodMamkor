@@ -64,6 +64,12 @@ def list_producers(
     # unchanged. The service filters via EXISTS on the whole list.
     category: list[int] | None = Query(None),
     delivery_city: str | None = None,
+    # MEH-1487: region fallback — OR over several delivery cities
+    # (?delivery_cities=a&delivery_cities=b). Same per-city condition as
+    # delivery_city (delivery_areas ∪ nationwide-minus-excluded). Used by the
+    # home empty-result "בתי עסק שמגיעים לאזור" section. delivery_city (single)
+    # takes precedence when both are sent.
+    delivery_cities: list[str] | None = Query(None),
     has_delivery: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
@@ -108,6 +114,7 @@ def list_producers(
         require_physical=require_physical,
         category=category,
         delivery_city=delivery_city,
+        delivery_cities=delivery_cities,
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
