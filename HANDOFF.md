@@ -3,7 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-22 — MEH-1463 — signature card clarity (eyebrow + fallback description/price) — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+## 2026-07-22 — MEH-1462 — "יש לי רעיון למתכון" WhatsApp question chip — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+
+- **Shipped (branch `feature/meh-1462-recipe-idea-chip` off `origin/staging` incl. merged MEH-1463 #2060):** new chip in `WhatsAppQuestionChips.jsx`, rendered **last** in the row + **always visible** (not capped by the "עוד שאלות" expander), gated on a WhatsApp channel (`digits`). No in-page disclosure — always opens WhatsApp with the Sapir-locked prefill "היי! הגעתי מהעמוד שלכם במהמקור — יש לי רעיון למתכון עם המוצרים שלכם:" via a **direct** `getWhatsAppHref` (not `greeting_template`).
+- **Why (research 22/07):** don't build a structured suggestion box (My Starbucks Idea → dead feature + moderation load); route the recipe-idea intent to the existing zero-moderation channel; a business that likes an idea publishes via recipes (MEH-591).
+- **Scope:** `WhatsAppQuestionChips.jsx` + `he.json`/`en.json` only (no `quickAnswers.js` descriptor — always WhatsApp). New keys `whatsapp.question_chips.recipe_idea` + `recipe_idea_message`. ADR-024 ungendered; RTL start-/end- only; no emoji (Phosphor `ChatCircle`).
+- **Gates:** `npm run build` exit 0 · full vitest **1502 pass / 10 skip** (`quickAnswers.test.js` +4). Mobile-375 screenshot `qa-artifacts/MEH-1462/` (row-structure harness — sandbox can't SSR `/producer/[id]`; live mobile QA = Sapir on preview). `Closes MEH-1462`.
+
+## 2026-07-22 — MEH-1463 — signature card clarity (eyebrow + fallback description/price) — MERGED (PR #2060, squash, batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
 
 - **Shipped (branch `feature/meh-1463-signature-card-clarity` off `origin/staging`):** the `hasSignature` highlight card in `ProducerSections.jsx` gains (1) an accent eyebrow **"המוצר המוביל"** (new i18n key `producer.detail.sections.products.signature_label`, he/en — no reusable consumer label existed; dashboard field is "מוצר עיקרי") and (2) a fallback: when the signature product matched a grid entry (deduped out) **and** `starting_price_label` is empty, the card now shows that product's **description** (`line-clamp-2`) + **price** (numeric → `formatPriceRange` + `dir="ltr"`; free-text → natural dir, MEH-1305 F). Fixes Sapir's 22/07 evidence ("לחם מחמצת כפרי" big name-only card — dedup had erased its info).
 - **No regression:** `starting_price_label` present keeps priority (product-price fallback suppressed). Scope: signature card block + `he.json`/`en.json` only — grid rows, dedup logic, `ProducerHeader` untouched.
