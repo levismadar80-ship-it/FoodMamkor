@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1454 — יצירת קבוצת רכש נכשלת (500) · aware/naive datetime fix — PR open (group-buy batch 1454-1458)
+
+- **Batch context:** first of the 22/07 group-buy series (MEH-1454 → 1455 → 1457 → 1458), Sapir pre-approved end-to-end merge authority. Branch `feature/meh-1454-group-buy-create-fix` off `origin/staging`.
+- **Phase 0 repro (done FIRST):** pytest confirmed the exact hypothesis — `TypeError: can't compare offset-naive and offset-aware datetimes` at `backend/app/routers/group_buys.py:196`. The dashboard sends `new Date(...).toISOString()` (ISO-Z → Pydantic aware); the route compared it to naive `datetime.utcnow()` → 500 on every real create. `test_create_naive_deadline_still_works` passed (naive path unaffected), the two aware tests failed with 500 → bug proven before any fix.
+- **Fix (single owner):** `field_validator("deadline")` on `GroupBuyCreate` (`backend/app/schemas/schemas.py`) normalizes aware→naive-UTC at the boundary (`astimezone(utc).replace(tzinfo=None)`). Chose schema validator over route-level so every consumer of `GroupBuyCreate` is covered and DB storage + all `datetime.utcnow()` comparisons stay naive-UTC. **Backend-only — no frontend, no model/DB/Alembic change** (matches ticket scope exactly; diff = schemas.py + test file only).
+- **Tests (`tests/test_group_buys_api.py`, +4):** aware-Z happy (201 + appears in GET open list), naive happy, past-aware → 400 Hebrew (not 500), commit+cancel consistency after aware create. Note: ticket said `backend/tests/test_group_buys.py` but repo convention (`tests/CLAUDE.md`) is repo-root `tests/`; extended existing `tests/test_group_buys_api.py`.
+- **Verify:** group-buy file 24/24 green; `ruff check` + `format --check` clean on schemas.py. Full suite + `npm run build` (untouched, no frontend) confirmed before PR.
+
 ## 2026-07-22 — MEH-1453 — category-registry consolidation (pure refactor) — PR open, auto-merge on green (full-pipeline authority, Sapir 22/07)
 
 - **Shipped (branch `feature/meh-1453-refactor-category-registry` off fresh `origin/staging`, after MEH-1452 #2054 merged, squash `09ae4977`):** NEW `frontend/lib/category-registry.js` is the single import hub for category presentation. **Owns** `CATEGORY_STYLES` / `DEFAULT_CATEGORY_STYLE` / `CATEGORY_LEGEND` / `styleForProducer` (moved **verbatim** from the deleted `lib/map-categories.js` — all 8 keys + order preserved so the `/map` legend is byte-identical); **re-exports** `CATEGORY_ICONS` from `components/CategoryIcons.jsx` (glyph SVG components stay there; no circular import).
