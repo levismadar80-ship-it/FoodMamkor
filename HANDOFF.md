@@ -3,7 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-22 — MEH-1457 — קבוצת רכש מובנת · fulfillment_note + placeholders — PR open (group-buy batch; 1454 #2059 + 1455 #2061 MERGED)
+## 2026-07-22 — MEH-1458 — group-buy full-lifecycle coverage (backend integration test, tests-only) — PR open (final of the 22/07 batch)
+
+- **Batch context:** last of the group-buy series. 1454 #2059 · 1455 #2061 · 1457 #2065 all MERGED. Branch `feature/meh-1458-group-buy-e2e` off fresh `origin/staging`.
+- **DECISION (Sapir 22/07) — backend integration test, NOT Playwright E2E.** Phase 0 (file:line): CI E2E runs against `localhost:3000` (`playwright.config.ts:41`, `e2e.yml:158`) with `/api` proxied to Railway staging (`e2e.yml:118`); `global-setup.ts:49-56` **skips** auth storageState on a local target; `DEMO_OWNER_PASSWORD`/`DEMO_CONSUMER_PASSWORD`/`SMOKE_ADMIN` are **not wired into `e2e.yml`**; only one `demo-consumer` is seeded but funding needs ≥2 distinct committers; no-mocks rule (MEH-417). ⇒ a browser lifecycle spec **cannot run green in CI** without out-of-scope `.github/workflows` + secret + seed changes (CC-deny, MEH-671). Presented 4 options via AskUserQuestion → Sapir picked the backend integration test.
+- **Shipped (tests-only, +91 lines, ZERO product code):** `TestFullLifecycle.test_create_join_fund_cancel_reopen` in `tests/test_group_buys_api.py` — create (approved producer, min=2, canonical city `חיפה`, aware-Z deadline, fulfillment_note) → appears in public `open` list + city filter + note round-trips (GET) → consumer #1 commits (open, count 1) → consumer #2 commits (auto-**funded**, count 2) → consumer #2 cancels → reverts to **open** (count 1). Exercises the exact surfaces that 1454/1455/1457 touched.
+- **Verify:** group-buys pytest **27/27** green locally. `npm run build` unaffected (backend/tests-only). CI pytest gate is the authoritative full-suite run.
+- **Follow-up (not filed):** to enable a real Playwright group-buy lifecycle spec later, wire `DEMO_OWNER_PASSWORD`/`DEMO_CONSUMER_PASSWORD` (+ a 2nd seeded consumer) into `e2e.yml` (CC-deny → Sapir) and run the E2E against a remote preview so `global-setup` provisions auth.
+
+## 2026-07-22 — MEH-1457 — קבוצת רכש מובנת · fulfillment_note + placeholders — MERGED PR #2065 (group-buy batch; 1454 #2059 + 1455 #2061 MERGED)
 
 - **Batch context:** 3rd of the 22/07 group-buy series (Opus/xhigh, HIGH-RISK schema). Branch `feature/meh-1457-group-buy-clarity` off fresh `origin/staging` (incl. merged 1454 #2059 + 1455 #2061).
 - **HARD GATE honored:** authored Alembic revision `b3f1a9c7e2d4` (ADD COLUMN `group_buys.fulfillment_note` TEXT NULL, chains onto single head `c5d9f3a1b2e8`), SHOWed it via AskUserQuestion, WAITed → Sapir approved **"Go — apply & proceed"**. Only then applied. `alembic upgrade head` clean on a fresh DB + `alembic check` = "No new upgrade operations detected" (0 drift). `EXPECTED_TABLES` unchanged (column, not table).
