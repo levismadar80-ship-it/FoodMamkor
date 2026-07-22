@@ -84,6 +84,8 @@ export const TOGGLE_CHIPS = [
 // MEH-1075: the two toggles that stay inline on the /map quick-chip row.
 // Everything else is reachable only through FilterSheet — the badge on the
 // "סינון" button counts those sheet-only actives.
+// 🔒 Sapir-LOCK 22/07: quick row is capped at 2 chips. Any new filter is born
+// inside FilterSheet — never on the row.
 export const QUICK_CHIP_KEYS = ["verified", "has_delivery"];
 
 /**

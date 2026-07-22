@@ -1112,8 +1112,8 @@
       },
       "show_all": "Show all",
       "pickup_layer": {
-        "label": "Pickup points",
-        "aria": "Show or hide pickup points and market stands on the map"
+        "label": "Self-pickup",
+        "aria": "Show or hide self-pickup and market stands on the map"
       }
     },
     "page": {

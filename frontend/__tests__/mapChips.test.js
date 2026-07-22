@@ -79,6 +79,18 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     // Counts toward the "סינון" badge (sheet-only active).
     expect(countActiveSheetOnlyFilters({ kosher: true })).toBe(1);
   });
+
+  // MEH-1461: Sapir-LOCK — the /map quick-chip row is capped at exactly 2 chips
+  // ([מאומתים] [משלוח אליי]); no pickup chip, ever. Any new filter is born
+  // inside FilterSheet, never on the row.
+  it("MEH-1461: quick-chip row is exactly [verified, has_delivery] — no pickup chip", () => {
+    expect(QUICK_CHIP_KEYS).toEqual(["verified", "has_delivery"]);
+    expect(QUICK_CHIP_KEYS).toHaveLength(2);
+    expect(QUICK_CHIP_KEYS).not.toContain("pickup");
+    expect(QUICK_CHIP_KEYS).not.toContain("pickup_points");
+    // Pickup is not a producer toggle filter at all (it's a map-layer toggle).
+    expect(TOGGLE_CHIPS.some((c) => /pickup/.test(c.key))).toBe(false);
+  });
 });
 
 describe("resolveCategoryId", () => {
@@ -208,5 +220,24 @@ describe("boundsToCenterRadius", () => {
       west: 34,
     });
     expect(result.radius_km).toBe(0);
+  });
+});
+
+// MEH-1461: the /map pickup-layer toggle uses consumer language "איסוף עצמי",
+// never the data-model jargon "נקודות איסוף" / "נק' איסוף".
+describe("MEH-1461 — /map pickup-layer consumer copy", () => {
+  it('he: pickup_layer label is "איסוף עצמי", not the jargon "נקודות איסוף"', async () => {
+    const he = (await import("@/messages/he.json")).default;
+    const pl = he.map.pane.pickup_layer;
+    expect(pl.label).toBe("איסוף עצמי");
+    expect(pl.label).not.toContain("נקודות איסוף");
+    expect(pl.aria).not.toContain("נקודות איסוף");
+  });
+
+  it("en: pickup_layer label is the consumer term, not \"Pickup points\"", async () => {
+    const en = (await import("@/messages/en.json")).default;
+    const pl = en.map.pane.pickup_layer;
+    expect(pl.label).toBe("Self-pickup");
+    expect(pl.label).not.toContain("Pickup points");
   });
 });

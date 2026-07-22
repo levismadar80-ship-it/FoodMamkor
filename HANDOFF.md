@@ -3,7 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-22 — MEH-1462 — "יש לי רעיון למתכון" WhatsApp question chip — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+## 2026-07-22 — MEH-1461 — "נק' איסוף" → "איסוף עצמי" on /map + 2-chip quick-row LOCK (MEH-1388 follow-up) — PR open, auto-merge on green (batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
+
+- **Phase 0 (decision gate) = CASE 2.** The "נק' איסוף" element = the **pickup-points map-layer toggle** in `MapPane.jsx` (MEH-1412 / MEH-1388 chunk 3), a client-side `showSecondaryLayer` pin-visibility toggle (state in `MapClient.jsx:76`), **not** a producer filter — absent from `map-chips.js`, `useMapFilters` chipState, and the FilterSheet badge. Pre-approved CASE 2 → rename consumer label to "איסוף עצמי", **no structural move**.
+- **Shipped (branch `feature/meh-1461-pickup-chip-consumer-language` off `origin/staging` incl. merged MEH-1462 #2064 + MEH-1441 #2046):** `map.pane.pickup_layer` label "נקודות איסוף"→"איסוף עצמי" (he) / "Pickup points"→"Self-pickup" (en) + aria updated (no "נקודות איסוף" left on any /map consumer surface). `MapPane.jsx` reads the key → no component edit. **🔒 Sapir-LOCK comment** added above `QUICK_CHIP_KEYS` in `lib/map-chips.js`. The quick row was already exactly 2 chips ([רישוי מאומת] [משלוח]) — no pickup chip ever.
+- **Scope kept tight:** no backend/schema/Alembic, no new filter, no FilterSheet relocation, no MapProducerCard (🔒 MEH-1243). Other "נקודות איסוף"/"נקודת איסוף" strings (producers.tags, register form, dashboard.locations.kind) are admin/owner-facing — out of /map consumer scope, untouched. /map selected-card uses the location's own data `label`, not the jargon key.
+- **Gates:** `npm run build` exit 0 · full vitest **1505 pass / 10 skip** (`mapChips.test.js` +3). Mobile-375 screenshot `qa-artifacts/MEH-1461/` (chrome-structure harness — sandbox can't SSR `/map`; live /map + FilterSheet mobile QA = Sapir on preview). `Closes MEH-1461`.
+
+## 2026-07-22 — MEH-1462 — "יש לי רעיון למתכון" WhatsApp question chip — MERGED (PR #2064, squash, batch 1463/1462/1461, full-pipeline authority, Sapir 22/07)
 
 - **Shipped (branch `feature/meh-1462-recipe-idea-chip` off `origin/staging` incl. merged MEH-1463 #2060):** new chip in `WhatsAppQuestionChips.jsx`, rendered **last** in the row + **always visible** (not capped by the "עוד שאלות" expander), gated on a WhatsApp channel (`digits`). No in-page disclosure — always opens WhatsApp with the Sapir-locked prefill "היי! הגעתי מהעמוד שלכם במהמקור — יש לי רעיון למתכון עם המוצרים שלכם:" via a **direct** `getWhatsAppHref` (not `greeting_template`).
 - **Why (research 22/07):** don't build a structured suggestion box (My Starbucks Idea → dead feature + moderation load); route the recipe-idea intent to the existing zero-moderation channel; a business that likes an idea publishes via recipes (MEH-591).
