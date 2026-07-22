@@ -21,8 +21,12 @@ import { LOAD_MORE_CAP } from "@/lib/use-home-page";
  * and the "load more" button.
  *
  * All state ownership stays in useHomePage; this component is purely
- * presentational and emits two callbacks (onToggleChip / onClearCategory
- * / onLoadMore) plus the onboarding-advance/dismiss pair.
+ * presentational and emits its callbacks (onToggleChip / onClearCategory
+ * / onLoadMore / onSurprise) plus the onboarding-advance/dismiss pair.
+ *
+ * MEH-1476: owns the "הפתיעו אותי" surprise-me button at the grid end (moved
+ * from the hero, MEH-1288/MEH-1369). onSurprise = use-home-page handleSurprise
+ * (GET /producers/random); render-gated on hasProducers.
  */
 export function HomeProducersGrid({
   producers,
@@ -44,6 +48,8 @@ export function HomeProducersGrid({
   onClearCategory,
   onClearLocation,
   onLoadMore,
+  onSurprise,
+  hasProducers,
   geoActive,
   cityActive,
   geoEmptyNotice,
@@ -239,6 +245,26 @@ export function HomeProducersGrid({
                   {t("home.producers.load_more")}
                 </button>
               )}
+            </div>
+          )}
+          {/* MEH-1476: surprise-me relocated here from the hero (was
+              MEH-1288/MEH-1369). Full-catalog random producer via onSurprise
+              (use-home-page handleSurprise → GET /producers/random); gated on
+              hasProducers. Rendered as a TEXT LINK (same weight/classes as the
+              hero "how it works" link) — deliberately LIGHTER than the
+              "עוד בתי עסק" pill above so the two never read as equal-weight twin
+              actions (the MEH-1369 anti-pattern Sapir caught 22/07). `inline-block
+              px-4 py-3` keeps the tap target ≥44px via padding, not font size.
+              Reuses t("home.hero.surprise_me"). */}
+          {hasProducers && (
+            <div className="text-center mt-3">
+              <button
+                type="button"
+                onClick={onSurprise}
+                className="inline-block px-4 py-3 text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
+              >
+                {t("home.hero.surprise_me")}
+              </button>
             </div>
           )}
         </>

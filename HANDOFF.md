@@ -11,6 +11,14 @@
 - **Test (Rule 5):** `SilentFetchFailureFeedback.test.jsx` +1 — first fetch rejects → error + button; click → second fetch resolves → grid renders, error clears, favorites GET count increases. Also made that file's `useRouter` mock return a **stable** ref (real `useRouter` is stable; a fresh object per render re-fired the deps-driven effect and consumed the `...Once` mocks out of order).
 - **Verify:** `npm run build` exit 0 · full vitest **1539 pass / 10 skip** · eslint 0 errors (warnings only, pre-existing file idioms). Harness @375px (default + focus-ring) in `qa-artifacts/meh-1479/`. **Live authed block→click→grid QA deferred to Sapir** on the preview — the CC sandbox can't reach the Railway backend to log in (documented egress block); the click→refetch→grid transition is proven by the unit test. GREEN-tier → merge on CI green (ADR-016).
 
+## 2026-07-22 — MEH-1481 — FilterSheet desktop density + sticky footer — PR open (frontend-only, LOW-RISK, auto-merge on green)
+
+- **Branch** `feature/meh-1481-filtersheet-desktop-density` off fresh `origin/staging` (which already had MEH-1478 `#2080` merged as `3e7f36e2`). **Single file: `frontend/components/FilterSheet.jsx`.**
+- **Desktop-only (all `lg:`-gated):** rows + diet pills `min-h 44→36` (≥24px WCAG 2.5.8), labels `text-sm→text-[13px]`, tighter padding + section gaps; footer `lg:mt-4`.
+- **Safety net:** panel `lg:max-h-[70vh]→lg:max-h-[min(600px,calc(100vh-220px))]` + existing `overflow-y-auto` + footer `lg:sticky lg:bottom-0` (opaque bg + top hairline, `lg:-mx-4 lg:px-4` full-bleed) → apply + ניקוי הכל always visible. No structural change (panel was already the scroll container).
+- **Mobile byte-identical — proven:** the 375px Playwright capture hashes **identically** (MD5 `e6fb2b3d…`) before vs after. Overflow probe `hOverflow:false` at 1280×800 / 1440×900 / 375px.
+- **Verify:** `npm run build` exit 0 · vitest **1536/10** (FilterSheet + mapChips green) · eslint 0 · `check-rtl.sh` clean. Screenshots in `qa-artifacts/MEH-1481/` (1280×800 apply-visible · 1440×900 · 375px unchanged).
+- **Left for Sapir:** auto-merge on green (LOW-RISK per MEH-450/ADR-016). `Closes MEH-1481`.
 ## 2026-07-22 — MEH-1477 — custom-questions guardrail (content guidance + example placeholders, LOW-RISK) — PR open, auto-merge on green
 
 - Branch `feature/meh-1477-custom-questions-guardrail` off staging (**after MEH-1473 / PR #2078 merged** — no stacking).
