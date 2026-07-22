@@ -293,7 +293,22 @@
           "license_what_is_it": "רישיון יצרן מונפק על ידי משרד הבריאות לעסקי מזון.",
           "license_pending_optin_label": "עדיין אין לי מספר רישיון",
           "license_pending_optin_hint": "אפשר להשלים את ההרשמה עכשיו. העסק יאושר ויעלה לאתר רק אחרי קבלת מספר הרישיון.",
-          "license_optional_label": "מספר רישיון יצרן"
+          "license_optional_label": "מספר רישיון יצרן",
+          "referral_source": {
+            "label": "מאיפה שמעת עלינו?",
+            "placeholder": "בחר אפשרות",
+            "other_placeholder": "ספרי לנו איפה",
+            "options": {
+              "business_referral": "המלצה מבית עסק אחר",
+              "friends_family": "המלצה מחברים או משפחה",
+              "instagram": "אינסטגרם",
+              "facebook": "פייסבוק",
+              "google": "גוגל",
+              "whatsapp_group": "קבוצת וואטסאפ",
+              "other": "אחר",
+              "prefer_not_to_say": "מעדיפה לא לענות"
+            }
+          }
         },
         "story_card": {
           "title": "הסיפור שלך הופך לעמוד העסק",
@@ -314,7 +329,8 @@
           "declaration_required": "יש לאשר את ההצהרה לפני ההצטרפות",
           "farmer_required": "יש לאשר את הצהרת החקלאית לפני ההצטרפות",
           "license_format": "מספר רישיון יצרן הוא 7-10 ספרות",
-          "license_required": "מספר רישיון יצרן חובה לקטגוריה זו"
+          "license_required": "מספר רישיון יצרן חובה לקטגוריה זו",
+          "referral_source_required": "יש לבחור מאיפה שמעת עלינו"
         },
         "terms": {
           "intro": "קראתי ואני מסכימה",
@@ -1324,6 +1340,9 @@
         "status_tooltip_rejected": "rejected = נדחה, מוסתר",
         "status_tooltip_suspended": "suspended = הושעה זמנית",
         "status_tooltip_label": "מידע על ערכי סטטוס עסק",
+        "referral": {
+          "label": "מאיפה שמעו"
+        },
         "completeness": {
           "missing_critical_aria": "חסרים פרטים קריטיים",
           "missing_aria": "חסרים פרטים",

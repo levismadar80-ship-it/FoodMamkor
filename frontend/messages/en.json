@@ -284,7 +284,22 @@
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "license_required_label": "Producer license number (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
-          "license_optional_label": "Producer license number"
+          "license_optional_label": "Producer license number",
+          "referral_source": {
+            "label": "Where did you hear about us?",
+            "placeholder": "Select an option",
+            "other_placeholder": "Tell us where",
+            "options": {
+              "business_referral": "Referral from another business",
+              "friends_family": "Friends or family",
+              "instagram": "Instagram",
+              "facebook": "Facebook",
+              "google": "Google",
+              "whatsapp_group": "WhatsApp group",
+              "other": "Other",
+              "prefer_not_to_say": "Prefer not to say"
+            }
+          }
         },
         "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
         "validation": {
@@ -299,7 +314,8 @@
           "terms_required": "Please accept the Terms of Use before joining",
           "declaration_required": "Please confirm the declaration before joining",
           "farmer_required": "Please confirm the grower declaration before joining",
-          "license_format": "Producer license number is 7-10 digits"
+          "license_format": "Producer license number is 7-10 digits",
+          "referral_source_required": "Please select where you heard about us"
         },
         "terms": {
           "intro": "I have read and agree to",
@@ -1322,6 +1338,9 @@
         "status_tooltip_rejected": "rejected = denied, hidden",
         "status_tooltip_suspended": "suspended = temporarily suspended",
         "status_tooltip_label": "Business status values info",
+        "referral": {
+          "label": "Heard via"
+        },
         "completeness": {
           "missing_critical_aria": "Critical details missing",
           "missing_aria": "Details missing",

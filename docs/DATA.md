@@ -62,6 +62,8 @@
 
 > **MEH-1291 (2026-07-18):** producer freshness signal. `producers.updated_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `a3f1c9d2e4b7`, Chunk A) is stamped by the model-level `onupdate=func.now()` (`models.py`) on every real producer UPDATE — owner edits (`producer_me.py:update_my_producer`) and admin edits (`admin.py:admin_update_producer`), both of which load the ORM object + `setattr` + `commit` (a bulk `update()` execute would skip the stamp — no such path exists on producers). **No `server_default`, NO backfill** (ADR-007 Expand-only): the column stays NULL for producers never edited since the migration, so the public "עודכן לאחרונה: {חודש שנה}" line renders nothing for them (honest signal). **Public** — `ProducerDetailOut` (Chunk B) carries `updated_at` read-only; `ProducerListOut`/map do NOT (detail-page-only). Rendered as a modest month-year footnote at the page end (`ProducerSections.jsx`, `frontend/lib/format-date.js` → he-IL/en-US).
 
+> **MEH-1471 (2026-07-22):** self-reported attribution ("מאיפה שמעת עלינו?"). `producers.referral_source` (`VARCHAR(40)`, **nullable**) + `producers.referral_source_other` (`VARCHAR(120)`, **nullable**), migration `d7b2f4a9c6e1`. `referral_source` stores an **English key** from `constants.REFERRAL_SOURCE_KEYS` (`business_referral`\|`friends_family`\|`instagram`\|`facebook`\|`google`\|`whatsapp_group`\|`other`\|`prefer_not_to_say`) chosen at the final registration step; Hebrew labels are rendered from i18n. `referral_source_other` holds the optional free-text answer, revealed only when the key is `other`. Validated at the API boundary (`ProducerRegister._validate_referral_source` → **422** on an unknown key; `referral_source_other` bleach-sanitised) — **no DB CHECK/enum** (app-layer, like `availability_state`/`verification_doc_type`). Field is optional at the Pydantic layer (nullable column, MEH-143 upgrade path); required-ness is a **front-end** registration gate only. **No `server_default`, NO backfill** (ADR-007 Expand-only) — existing rows stay NULL (admin renders "—"). **Admin-only** — `ProducerAdminOut` surfaces both; public `ProducerListOut`/`ProducerDetailOut` do NOT (internal supply-side data, MEH-530 privacy precedent). Displayed read-only under the producer name in the `/admin/producers` table (`AdminProducersTable.jsx`, `"אחר: <text>"` for the `other` case).
+
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
 > moderation). Producer-owned recipes go through Claude Haiku pre-check
@@ -95,6 +97,8 @@ producers (
   contact_name, top_product_name,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
+  -- MEH-1471: self-reported attribution (admin-only; English key + free-text "other")
+  referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   starting_price_label, price_range,
   grass_fed bool, organic_certified bool, kosher,
   has_delivery bool, pickup_points bool,
