@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// MEH-1388: re-trigger E2E against re-seeded staging (producer_locations rows
+// now present) so 24-producer-locations.spec.ts :66/:96 execute with data.
 export default defineConfig({
   testDir: "./e2e",
   // MEH-1241: provision authenticated storageState for the seeded staging QA
