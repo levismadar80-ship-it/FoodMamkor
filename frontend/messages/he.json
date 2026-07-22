@@ -803,7 +803,7 @@
         "image_missing": "{name} — תמונה חסרה"
       },
       "badges": {
-        "delivery_only": "🚚 משלוחים בלבד",
+        "delivery_only": "משלוחים בלבד",
         "available_today": "🛒 מגיעה היום"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"

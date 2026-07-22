@@ -808,7 +808,7 @@
         "image_missing": "{name} — image missing"
       },
       "badges": {
-        "delivery_only": "🚚 Delivery only",
+        "delivery_only": "Delivery only",
         "available_today": "🛒 Coming today"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"

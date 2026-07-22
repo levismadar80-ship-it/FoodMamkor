@@ -139,7 +139,7 @@ prior "WhatsApp button green / Share button gray" rule.
 
 **Visual** (🔒 17/07):
 - [ ] **Selected state = Pin-Echo:** 2px border in the **category color**
-  (`CATEGORY_STYLES` / `styleForProducer`, `lib/map-categories.js:30,66`) + a 6%
+  (`CATEGORY_STYLES` / `styleForProducer`, `lib/category-registry.js:41,86`) + a 6%
   wash of that same color as the card background + the chevron recolored to the
   pin color. Padding compensates 8→7px vs the 1px unselected border so there is
   **zero layout jump**. Replaces the old `border-primary border-2`.
