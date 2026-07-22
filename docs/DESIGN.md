@@ -481,8 +481,11 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   > solid fill, so the chip↔pin colour link (MEH-1452 glyph tint) stays legible
   > when the chip is active. Precise selected-state per surface:
   >
-  > - **CATEGORY chips** (the `/map` category row + the `/producers` category
-  >   row), selected:
+  > - **CATEGORY chips** (all `ChipScrollRow variant="category"` surfaces —
+  >   `/map`, `/producers`, `/events`, and future — MEH-1465), selected:
+  >   A chip with no registry colour (`chip.iconColor` absent, e.g. `/events` or
+  >   an admin category with no `CATEGORY_STYLES` row) falls back to
+  >   `--cat-ring` = the DEFAULT category green (`primary` `#2e6853`).
   >   - `background: color-mix(in srgb, var(--cat-ring) 12%, #fff);`
   >   - `border: 1.5px solid var(--cat-ring);`
   >   - `color: var(--text)` (`#1a1a1a`) — **never** the category colour as text
