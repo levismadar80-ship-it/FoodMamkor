@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, MapPin, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
@@ -114,6 +114,11 @@ function RegisterProducerPageBody() {
   // license number and enter the pending queue.
   const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake toggle.
+  // UI-only — it sets NO backend field, creates NO location rows, and is not
+  // part of the submit payload; on "yes" it points the owner to the dashboard
+  // LocationsEditor (chunk 4a) to add points after registration.
+  const [hasMultipleLocations, setHasMultipleLocations] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
   // ToS/privacy consent above (ADR-014 voice: first-person legal vs plural
@@ -651,6 +656,32 @@ function RegisterProducerPageBody() {
               helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
               dir="rtl"
             />
+
+            {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
+                Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
+                no backend field, no location rows; on "yes" the approved copy
+                refers the owner to the dashboard LocationsEditor (chunk 4a). */}
+            <div className="pt-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasMultipleLocations}
+                  onChange={(e) => setHasMultipleLocations(e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                  data-testid="register-multi-location-toggle"
+                />
+                {t("auth.register.producer.fields.multi_location_label")}
+              </label>
+              {hasMultipleLocations && (
+                <p
+                  data-testid="register-multi-location-copy"
+                  className="mt-2 ms-6 flex items-start gap-1.5 rounded-md bg-primary/5 px-3 py-2 text-xs text-fg-muted"
+                >
+                  <MapPin size={14} weight="fill" className="mt-0.5 shrink-0 text-primary" />
+                  <span>{t("auth.register.producer.fields.multi_location_yes_copy")}</span>
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-3">
               {!isUpgrade && (

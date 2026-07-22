@@ -23,11 +23,22 @@ vi.mock("@phosphor-icons/react", () => {
   return { Check: Stub, Leaf: Stub, MagnifyingGlass: Stub };
 });
 
-// CATEGORY_ICONS keys the 6 popular glyphs to hand-drawn components.
+// MEH-683 #4: CATEGORY_ICONS re-keyed by canonical DB name (was english slug),
+// and EVERY card resolves its glyph (not just popular-6). Mock every real
+// category name below; "תבלינים" (a truncated test fixture, not a canonical
+// seed name) is intentionally absent → it exercises the Leaf fallback path.
 vi.mock("@/components/CategoryIcons", () => {
   const Glyph = (props) => <span data-testid="glyph" {...props} />;
   return {
-    CATEGORY_ICONS: { dairy: Glyph, bread: Glyph, meat: Glyph, oil: Glyph, veg: Glyph, care: Glyph },
+    CATEGORY_ICONS: {
+      "חלב וגבינות": Glyph,
+      "לחמים ואפייה": Glyph,
+      "בשר": Glyph,
+      "שמנים": Glyph,
+      "ירקות": Glyph,
+      "סבונים טבעיים": Glyph,
+      "דבש": Glyph,
+    },
   };
 });
 
