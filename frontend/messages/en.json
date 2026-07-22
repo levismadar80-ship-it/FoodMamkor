@@ -275,6 +275,8 @@
           "city_label": "City *",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
+          "multi_location_label": "More than one sales or pickup point?",
+          "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
           "description_label": "Tell us about your business",
           "description_hint": "A 100-300 word story — how did you start? What makes you special? What's closest to your heart?",
           "phone": "0501234567",
@@ -2736,9 +2738,9 @@
     "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
-    "owner_empty_title": "First reviews come after a few customers",
-    "owner_empty_description": "Reviews are created automatically after customers send you a WhatsApp message. 24 hours after the click they get a link to rate you. No reviews yet because no one has clicked yet.",
-    "owner_empty_cta": "Share your profile on WhatsApp",
+    "owner_empty_title": "First reviews come from happy customers",
+    "owner_empty_description": "Customers who reached out to you on WhatsApp can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
+    "owner_empty_cta": "Share your profile",
     "empty_message": "No reviews here yet.",
     "empty_gate_hint": "Ordered something? We'd love to hear — writing a review opens after you reach out on WhatsApp.",
     "pagination": {
@@ -2879,17 +2881,6 @@
       "quiet_label": "Save",
       "login_prompt_message": "To save businesses you love — sign in"
     }
-  },
-  "rate": {
-    "invalid_link": "Invalid link",
-    "error_generic": "Submission error",
-    "loading": "Loading...",
-    "thanks_title": "Thanks!",
-    "thanks_message": "Your rating has been saved. It helps the community.",
-    "heading": "How was it?",
-    "bought_from": "You bought from <seller>{name}</seller>",
-    "comment_placeholder": "Short comment (optional)",
-    "submit": "Send rating"
   },
   "report": {
     "trigger": "Report business",
@@ -4194,7 +4185,8 @@
         "error_submit": "Failed to send request — please try again.",
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
-        "empty": "No kosher badge yet. You can request one here."
+        "empty": "No kosher badge yet. You can request one here.",
+        "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification."
       },
       "manage_events": {
         "heading": "My events",
@@ -4411,6 +4403,7 @@
         "diet_gluten_free": "🌾 Gluten-free",
         "diet_vegan": "🥦 Vegan",
         "diet_lactose_free": "🥛 Lactose-free",
+        "diet_helper": "Tagging a product lists your business under the matching filter on the search and map pages.",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",
