@@ -62,6 +62,8 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(keys).toContain("grass_fed");
     expect(keys).toContain("gluten_free");
     expect(keys).toContain("vegan");
+    // MEH-1438: vegetarian diet toggle.
+    expect(keys).toContain("vegetarian");
     expect(keys).toContain("lactose_free");
     // MEH-1087: verified-only kosher toggle restored to /map.
     expect(keys).toContain("kosher");
@@ -149,6 +151,12 @@ describe("chipStateToParams", () => {
     expect(
       chipStateToParams({ categoryKey: "all", kosher: true }, dbCategories),
     ).toEqual({ kosher: true });
+  });
+
+  it("MEH-1438: vegetarian state maps to the ?vegetarian param", () => {
+    expect(
+      chipStateToParams({ categoryKey: "all", vegetarian: true }, dbCategories),
+    ).toEqual({ vegetarian: true });
   });
 
   it("ignores a lingering organic state key (filter removed — MEH-1259)", () => {

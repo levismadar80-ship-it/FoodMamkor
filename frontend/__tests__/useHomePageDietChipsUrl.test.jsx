@@ -10,7 +10,7 @@ import api from "@/lib/api";
 // URL, and a shared/refreshed URL silently dropped them. These tests pin the
 // round-trip: toggle → URL param, and deep-link → hydrated chip state.
 // MEH-1259: the "organic" chip was removed (self-declared → not a public
-// filter); the set is now 6 keys.
+// filter). MEH-1438: the "vegetarian" chip was added — the set is now 7 keys.
 
 const router = { replace: vi.fn(), push: vi.fn() };
 
@@ -52,12 +52,13 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     expect(window.location.search).toContain("gluten_free=1");
   });
 
-  it("serializes all 6 chip keys when all are active", () => {
+  it("serializes all 7 chip keys when all are active", () => {
     const { result } = renderHook(() => useHomePage());
     for (const key of [
       "kosher",
       "gluten_free",
       "vegan",
+      "vegetarian",
       "lactose_free",
       "has_delivery",
       "verified",
@@ -70,6 +71,7 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
       "kosher=1",
       "gluten_free=1",
       "vegan=1",
+      "vegetarian=1",
       "lactose_free=1",
       "delivery=1",
       "verified=1",
@@ -87,6 +89,15 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     const producersCall = api.get.mock.calls.find(([path]) => path === "/producers");
     expect(producersCall).toBeDefined();
     expect(producersCall[1].params).toMatchObject({ vegan: true });
+  });
+
+  it("deep-link ?vegetarian=1 hydrates the chip and the initial fetch (MEH-1438)", () => {
+    window.history.replaceState(null, "", "/?vegetarian=1");
+    const { result } = renderHook(() => useHomePage());
+    expect(result.current.chips.vegetarian).toBe(true);
+    const producersCall = api.get.mock.calls.find(([path]) => path === "/producers");
+    expect(producersCall).toBeDefined();
+    expect(producersCall[1].params).toMatchObject({ vegetarian: true });
   });
 
   it("deep-link with a legacy key (?kosher=1) still hydrates — no regression", () => {
