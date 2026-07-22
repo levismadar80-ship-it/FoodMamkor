@@ -312,3 +312,37 @@ describe("MEH-1088 Part A — hide zero-producer category chips", () => {
     expect(within(row).getByText("דבש")).toBeInTheDocument();
   });
 });
+
+describe("/producers — removing city/search preserves the category selection (MEH-1470)", () => {
+  const catParams = (url) => new URLSearchParams(url.split("?")[1] || "").getAll("category");
+  const lastFetchCategory = () => producersCalls().at(-1)?.category;
+
+  it("removing the city chip keeps the 2 selected categories (URL + fetch)", async () => {
+    params = { city: "חיפה" }; // city seeded from the URL → the city-× chip renders
+    render(<ProducersClient {...PROPS} />);
+    const row = await screen.findByTestId("chip-row-category");
+    fireEvent.click(within(row).getByText("בשר")); // id 1
+    fireEvent.click(within(row).getByText("דבש")); // id 18
+    // remove the city chip (its label is "×" + city, so match by content)
+    const cityBtn = screen.getAllByRole("button").find((b) => b.textContent.includes("חיפה"));
+    fireEvent.click(cityBtn);
+    // the two categories survive — URL keeps repeated ?category=, city is gone
+    expect(catParams(lastReplaceUrl())).toEqual(["1", "18"]);
+    expect(lastReplaceUrl()).not.toContain("city=");
+    await waitFor(() => {
+      const c = lastFetchCategory();
+      expect(Array.isArray(c) && c.includes("1") && c.includes("18")).toBe(true);
+    });
+  });
+
+  it("removing the search chip keeps the selected category", async () => {
+    params = { q: "עגבניה" };
+    render(<ProducersClient {...PROPS} />);
+    const row = await screen.findByTestId("chip-row-category");
+    fireEvent.click(within(row).getByText("דבש")); // id 18
+    fireEvent.click(screen.getByTestId("active-search-chip"));
+    expect(catParams(lastReplaceUrl())).toEqual(["18"]);
+    expect(lastReplaceUrl()).not.toContain("q=");
+    await waitFor(() => expect(lastFetchCategory()).toEqual(["18"]));
+  });
+});

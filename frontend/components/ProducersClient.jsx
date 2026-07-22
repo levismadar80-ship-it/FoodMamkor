@@ -486,9 +486,11 @@ export default function ProducersClient({
             <button
               type="button"
               onClick={() => {
+                // MEH-1470: thread categoryFilter through so removing the city
+                // chip doesn't silently drop the active category selection.
                 setCityFilter(null);
-                syncUrl(chips, null, searchQ);
-                fetchFiltered(chips, null, searchQ);
+                syncUrl(chips, null, searchQ, categoryFilter);
+                fetchFiltered(chips, null, searchQ, categoryFilter);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
@@ -501,9 +503,11 @@ export default function ProducersClient({
               type="button"
               data-testid="active-search-chip"
               onClick={() => {
+                // MEH-1470: thread categoryFilter through so removing the search
+                // chip doesn't silently drop the active category selection.
                 setSearchQ("");
-                syncUrl(chips, cityFilter, "");
-                fetchFiltered(chips, cityFilter, "");
+                syncUrl(chips, cityFilter, "", categoryFilter);
+                fetchFiltered(chips, cityFilter, "", categoryFilter);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
