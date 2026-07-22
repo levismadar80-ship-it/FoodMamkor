@@ -170,7 +170,10 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     expect(clicked, "at least one secondary marker must accept a click").toBe(true);
     // The shared compact MapProducerCard (data-testid="map-card") renders in the
     // selected slot / bottom sheet for the clicked location's business.
-    await expect(page.locator('[data-testid="map-card"]').first()).toBeVisible({
+    // MEH-1440 run 29900524694: MapClient renders BOTH shells (desktop lg:grid
+    // + mobile lg:hidden), so a bare .first() can resolve to the card in the
+    // display:none shell — scope to :visible (07-gps-button precedent).
+    await expect(page.locator('[data-testid="map-card"]:visible').first()).toBeVisible({
       timeout: 15_000,
     });
   });
