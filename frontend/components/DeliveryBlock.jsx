@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Truck, Package, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import WhatsAppButton from "@/components/WhatsAppButton";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 
@@ -24,10 +23,13 @@ import { groupDeliveryAreas } from "@/lib/deliveryGroups";
  *                             is stated once and the per-city minimum stands out.
  *   nationwide=false, none  → "משלוחים בתיאום מראש"
  *
- * Plus an optional self-pickup line (invention-fix 6, gated on pickup_points)
- * and a DEMOTED tertiary WhatsApp order CTA (tone="tertiary") so the delivery
- * section no longer competes with the contact card's single primary CTA.
+ * Plus an optional self-pickup line (invention-fix 6, gated on pickup_points).
  * min_order is rendered via formatPrice (MEH-1140 canonical shekel format).
+ *
+ * MEH-1466: the tertiary WhatsApp order CTA was removed. All three
+ * producer-detail WhatsApp CTAs opened the same wa.me, so the delivery
+ * section's CTA added ~zero value — the contact card + sticky bar own the
+ * single primary "שליחת הודעה" CTA.
  */
 
 // One editorial area row: city ↔ minimum only (the day is hoisted/grouped, so
@@ -109,7 +111,7 @@ function CompactCities({ areas, t }) {
   );
 }
 
-export default function DeliveryBlock({ nationwide, excluded = [], areas = [], pickup = false, producer }) {
+export default function DeliveryBlock({ nationwide, excluded = [], areas = [], pickup = false }) {
   const t = useTranslations("group_buys.delivery");
   const hasAreas = areas.length > 0;
   // MEH-1435: city-only areas (no minimum, no dispatch day) render as a compact
@@ -187,17 +189,6 @@ export default function DeliveryBlock({ nationwide, excluded = [], areas = [], p
           {t("pickup")}
         </p>
       )}
-
-      {/* MEH-1305 C: Hebrew label for THIS instance only (prop override) — the
-          delivery CTA no longer reads as an untranslated "WhatsApp"; the global
-          WhatsAppButton default is unchanged. */}
-      <WhatsAppButton
-        phone={producer.phone}
-        productTitle={producer.name}
-        producerId={producer.id}
-        tone="tertiary"
-        label={t("order_cta")}
-      />
     </section>
   );
 }
