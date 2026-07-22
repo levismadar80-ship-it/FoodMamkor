@@ -2706,6 +2706,12 @@
       "filter_label": "Filters",
       "clear_all": "Clear all"
     },
+    "sort": {
+      "label": "Sort:",
+      "aria_label": "Sort businesses",
+      "newest": "Newest",
+      "top_rated": "Top rated"
+    },
     "empty": {
       "no_match_search": "We couldn't find any businesses for \"{q}\"",
       "no_match_filters": "No businesses match this filter",
