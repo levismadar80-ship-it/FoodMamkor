@@ -14,6 +14,7 @@ import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import CitySearch from "@/components/CitySearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
@@ -193,11 +194,16 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           helperText={t("deadline_helper")}
           dir="ltr"
         />
-        <Input
+        {/* MEH-1455: canonical CitySearch (was a free-text Input) — a group
+            created with a canonical city name is findable under the /group-buys
+            city filter (exact-match `GroupBuy.city == city`). Prefill from
+            producerCity kept; free typing still allowed (CitySearch default). */}
+        <CitySearch
+          id="gb-city"
           label={t("city_label")}
+          labelVisible
           value={form.city}
-          onChange={set("city")}
-          dir="rtl"
+          onChange={(val) => setForm({ ...form, city: val })}
         />
       </div>
 
