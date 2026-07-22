@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — reviews-system batch (MEH-1427 / MEH-1429 / MEH-1426 / MEH-1428)
+
+- **MEH-1427 — reviews owner empty-state copy — MERGED** (PR #2025). Rewrote `reviews.owner_empty_*` (he+en) off the buried home-products auto-flow onto the real "share your page" flow. Messages-only.
+- **MEH-1429 — mark rating_dispatcher DEAD + delete /rate page — MERGED** (PR #2027, auto-merge). DEAD header on `rating_dispatcher.py`, deleted `/rate/[token]` page, removed the `rate.*` i18n namespace, dropped `"rate"` from `frontend/lib/static-routes.json` (RouteManifestSync guard). Untouched: models/tables/router_registry/home_products.py.
+- **MEH-1426 — LAUNCH BLOCKER reviews WA-click gate chain — PR OPEN, awaiting Sapir merge + staging QA (HIGH-RISK, DO NOT self-merge).** Branch `feature/meh-1426-reviews-gate-auth`, 4 chunk commits (`a7924794` helper auth · `61243b12` WhatsAppButton · `35bf827a` ContactCard+StickyContactBar · `f1516d42` ReviewsSection re-ping + backend tests). Frontend-only, no `reviews.py` guard change, no schema. Invariant: every WhatsApp click = attribution + unlock; non-WA = neither. Map surface dropped (MEH-1010 retired it). **Left for Sapir:** the live login→WA-click→submit→review-visible flow on **staging** post-merge (couldn't run pre-merge: Vercel preview rate-limited 24h + producer page is SSR so no sandbox route-mock). SQL count on `producer_whatsapp_clicks` (attributed vs total) is Sapir's, attach to PR — not blocking (pre-launch dogfood data; code evidence confirms the root cause).
+- **MEH-1428 — "request a review" signed link — NOT STARTED** (next in the batch, HIGH-RISK, Phase 0 → WAIT).
+- **Rate-limit drift noted:** `reviews.py:208` is `@limiter.limit("20/day")` per-IP, not the MEH-103 spec's "5/user/day". Reported, not changed.
+
 ## 2026-07-21 — MEH-683 — Category icons: unified geometric set — MERGED (PR #2026, squash 22bb5fe3)
 
 - **Status: merged to `staging`.** PR #2026 squash-merged on a verified-green signal (CI gate + Deploy gate ran the real Frontend build + vitest on the head, both success). Branch `feature/meh-683-category-glyphs` off `staging`. Frontend-only; zero backend.

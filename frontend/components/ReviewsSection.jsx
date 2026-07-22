@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
@@ -226,6 +227,24 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   const [error, setError] = useState("");
   const [hasClickedWa, setHasClickedWa] = useState(false);
   const sectionRef = useRef(null);
+  // MEH-1426: fire the anonymous-click→login re-ping at most once per mount.
+  const rePingedRef = useRef(false);
+
+  // MEH-1426: open the review form and repair the anonymous-click→login edge
+  // case. A WhatsApp click made while logged out set wa_clicked_<id> locally but
+  // wrote a user_id=NULL row in the DB, so the backend gate (reviews.py guard 3)
+  // would 403 despite the local flag. On form open, re-fire ONE authenticated
+  // ping (pingWhatsAppBeacon is auth-aware) so an attributed row exists by submit
+  // time — the form's stars + ≥10-char body give the keepalive POST ample time to
+  // commit. Gated to a logged-in user who has the local flag; once per mount
+  // (an extra click row is acceptable, server-side).
+  const openReviewForm = () => {
+    if (user && hasClickedWa && !rePingedRef.current) {
+      pingWhatsAppBeacon(producerId);
+      rePingedRef.current = true;
+    }
+    setShowForm(true);
+  };
   // HOT-018 (MEH-782): synchronous in-flight lock — blocks a second fetch
   // before React re-renders, so rapid pagination clicks can't fire overlapping
   // requests whose responses resolve out of order (displayed page ≠ state).
@@ -355,7 +374,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         hasClickedWa ? (
           !showForm ? (
             <button
-              onClick={() => setShowForm(true)}
+              onClick={openReviewForm}
               className="mb-6 min-h-[44px] border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}

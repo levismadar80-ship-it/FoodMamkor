@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { WhatsappLogo } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
+import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
 /**
  * WhatsApp CTA for home-product cards + producer detail pages.
@@ -14,11 +15,14 @@ import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
  * itself for 1 second so users see that something happened. The
  * `<a>` still opens WhatsApp normally.
  *
- * feature/producer-analytics — if `producerId` is passed, also fire a
- * fire-and-forget beacon to POST /producers/{id}/whatsapp-click so the
- * producer dashboard gets a real count. sendBeacon is guaranteed not to
- * block the window.open, unlike fetch(). Gracefully no-ops on servers
- * or environments without sendBeacon.
+ * feature/producer-analytics — if `producerId` is passed, the click is
+ * logged to POST /producers/{id}/whatsapp-click for the producer dashboard.
+ * MEH-1426: this now routes through the shared contact-tracking helpers
+ * (pingWhatsAppBeacon + markWhatsAppClickedLocal) instead of a private inline
+ * sendBeacon — one attribution mechanism (closes the MEH-271 smell), and every
+ * WhatsApp click both attributes to the logged-in user and unlocks the review
+ * form. pingWhatsAppBeacon is auth-aware (fetch+Bearer when logged in,
+ * sendBeacon fallback otherwise) and keepalive-safe so it survives navigation.
  */
 /**
  * tone: "primary" (default, green `btn-whatsapp` fill — unchanged legacy
@@ -53,16 +57,15 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
     firedRef.current = true;
     setPending(true);
     if (onClick) onClick();
-    // feature/producer-analytics — fire-and-forget beacon to the producer
-    // whatsapp-click endpoint. Only fires when called from a producer
-    // context (producerId present). sendBeacon is the right tool: it
-    // survives page navigation and doesn't block the wa.me window opening.
-    if (producerId && typeof navigator !== "undefined" && navigator.sendBeacon) {
-      try {
-        navigator.sendBeacon(`/api/producers/${producerId}/whatsapp-click`);
-      } catch {
-        // ignore — tracking is best-effort
-      }
+    // MEH-1426: route the click through the shared contact-tracking helpers
+    // instead of a private inline sendBeacon — this closes the MEH-271
+    // duplicate-mechanism smell and enforces the invariant that EVERY WhatsApp
+    // click both (a) attributes to the logged-in user (pingWhatsAppBeacon's
+    // auth-aware fetch, so the reviews WA-gate can pass) and (b) unlocks the
+    // review form (markWhatsAppClickedLocal). Only fires in a producer context.
+    if (producerId) {
+      pingWhatsAppBeacon(producerId);
+      markWhatsAppClickedLocal(producerId);
     }
     // Release after 2s so the user can legitimately click again later.
     // The 1s disabled window also prevents the "did it work?" double-tap.
