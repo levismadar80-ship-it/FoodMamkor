@@ -30,12 +30,28 @@ vi.mock("@phosphor-icons/react", () => ({
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
+  // Category-tint: ProducersClient now imports CATEGORY_STYLES from
+  // lib/map-categories.js, which pulls FlowerTulip from Phosphor.
+  FlowerTulip: (p) => <span {...p} />,
 }));
 
 // MEH-1441: ProducersClient now imports CATEGORY_ICONS for the category-chip
 // glyphs. Stub the icon module so its real Phosphor imports don't need adding
 // to the partial mock above (search wiring here doesn't render category glyphs).
-vi.mock("@/components/CategoryIcons", () => ({ CATEGORY_ICONS: {} }));
+// Category-tint: lib/map-categories.js (imported by ProducersClient for the tint
+// lookup) pulls these named glyphs too, so the strict mock must export them.
+vi.mock("@/components/CategoryIcons", () => {
+  const Glyph = (p) => <span {...p} />;
+  return {
+    CATEGORY_ICONS: {},
+    Meat: Glyph,
+    FishSimple: Glyph,
+    Cheese: Glyph,
+    Bread: Glyph,
+    OliveOil: Glyph,
+    Hive: Glyph,
+  };
+});
 
 // Child components — render nothing meaningful; we only test the search wiring.
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));

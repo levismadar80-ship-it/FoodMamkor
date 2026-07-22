@@ -9,6 +9,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_STYLES } from "@/lib/map-categories";
 import LocationModal from "@/components/LocationModal";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -323,18 +324,25 @@ export default function ProducersClient({
   );
   // MEH-1081: radio row data — "all" sentinel first, then the DB categories.
   // MEH-1441: each DB category gets a 16px leading glyph from CATEGORY_ICONS
-  // (keyed by the canonical name = c.name). currentColor inherits the chip's
-  // text color; ChipScrollRow wraps chip.icon in an aria-hidden span. The "all"
-  // reset chip stays iconless; an unknown admin category (no CATEGORY_ICONS row)
-  // gets no icon — never a Leaf fallback.
+  // (keyed by the canonical name = c.name). ChipScrollRow wraps chip.icon in an
+  // aria-hidden span. The "all" reset chip stays iconless; an unknown admin
+  // category (no CATEGORY_ICONS row) gets no icon — never a Leaf fallback.
+  // Category-tint: the INACTIVE chip's glyph is tinted with the category colour
+  // (CATEGORY_STYLES[c.name].textColor ?? .color — textColor is the WCAG-safe
+  // variant where the pin colour fails 3:1 on white). A category with no
+  // CATEGORY_STYLES entry stays currentColor (deliberate — MEH-763 palette lock
+  // forbids inventing new category colours). The active chip ignores iconColor
+  // (ChipScrollRow) so its glyph stays white.
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
     ...visibleCategories.map((c) => {
       const Glyph = CATEGORY_ICONS[c.name];
+      const style = CATEGORY_STYLES[c.name];
+      const iconColor = style ? (style.textColor ?? style.color) : undefined;
       return {
         key: String(c.id),
         label: c.name,
-        ...(Glyph ? { icon: <Glyph size={16} /> } : {}),
+        ...(Glyph ? { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) } : {}),
       };
     }),
   ];

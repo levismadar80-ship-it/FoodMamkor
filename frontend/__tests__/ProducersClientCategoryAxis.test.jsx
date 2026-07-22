@@ -33,14 +33,28 @@ vi.mock("@phosphor-icons/react", () => ({
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
+  // Category-tint: ProducersClient now imports CATEGORY_STYLES from
+  // lib/map-categories.js, which pulls FlowerTulip from Phosphor.
+  FlowerTulip: (p) => <span {...p} />,
 }));
 
 // MEH-1441: category chips get a 16px CATEGORY_ICONS glyph. Stub the icon module
 // (like CategorySelector.test.jsx) so the real Phosphor imports it pulls don't
-// need to be added to the partial mock above.
+// need to be added to the partial mock above. Category-tint: lib/map-categories.js
+// (imported by ProducersClient for the tint lookup) pulls these named glyphs too,
+// so the strict mock must export them (never rendered here — used as CATEGORY_STYLES
+// icon refs only).
 vi.mock("@/components/CategoryIcons", () => {
   const Glyph = (p) => <span data-testid="cat-glyph" {...p} />;
-  return { CATEGORY_ICONS: { "בשר": Glyph, "דבש": Glyph } };
+  return {
+    CATEGORY_ICONS: { "בשר": Glyph, "דבש": Glyph },
+    Meat: Glyph,
+    FishSimple: Glyph,
+    Cheese: Glyph,
+    Bread: Glyph,
+    OliveOil: Glyph,
+    Hive: Glyph,
+  };
 });
 
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
