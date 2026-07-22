@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1368 — /map filter-bar consolidation (two rows → one) — PR #2073 OPEN, no auto-merge (Sapir merges after mobile QA)
+
+- **HIGH-RISK, shipped chunk-by-chunk with Sapir "go" between each.** Branch `feature/meh-1368-map-filter-bar-consolidation` off staging (gates verified merged first: MEH-1423, MEH-1465 Chunk A `f9c31d2`, MEH-1181-A `#2070`).
+- **Chunk 1** — removed the inline quick-chip toggle row; category `ChipScrollRow` (`flex-1`) + "סינון" button now on ONE line (`FilterChipsBar.jsx`). **Chunk 2** — inline `סינון · N` count (new `useMapFilters.activeAttributeCount` = active `TOGGLE_CHIPS` count, threaded via a 1-line `MapClient` prop), replacing the corner badge. **Chunk 3** — `activeFilterTags` category branch removed → tag strip is **attributes-only** (MEH-1181-A); category exits via "כל"; "נקו הכל"=`resetAllFilters` clears both. Existing green-50 tag row visual kept (scope call 2).
+- **Measured live @375px:** FilterChipsBar 46px default / 78px @3-filters (was ~116px); full bar 117↔149px; **MEH-933 RO→paddingTop tracks exactly** (149↔117, Δ32=tags row) — no `MapClient` structural change. `build` 0 · vitest **1512/10** · eslint 0 · `/adversarial-review` **0 real issues**.
+- **map-chips.js: annotation comments only** — `QUICK_CHIP_KEYS` + `countActiveSheetOnlyFilters` marked superseded. **Next: open MEH-1468** (delete them + retire the MEH-1461 quick-row LOCK, gated on this PR merging).
+- **Left for Sapir:** mobile QA (iOS Safari + Chrome) → merge (no auto-merge). Screenshots in `qa-artifacts/MEH-1368/` (all 3 chunks).
+
 ## 2026-07-22 — MEH-1458 — group-buy full-lifecycle coverage (backend integration test, tests-only) — PR open (final of the 22/07 batch)
 
 - **Batch context:** last of the group-buy series. 1454 #2059 · 1455 #2061 · 1457 #2065 all MERGED. Branch `feature/meh-1458-group-buy-e2e` off fresh `origin/staging`.
