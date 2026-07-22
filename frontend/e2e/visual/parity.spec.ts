@@ -134,6 +134,12 @@ test.describe("Visual parity — MEH-991", () => {
   // at the same pixel count, the divergence needs eyes on the runner's
   // map-diff.png artifact (CC sandbox cannot download Actions artifacts —
   // proxy-blocked); follow-up-ticket material, not silently absorbable here.
+  // MEH-1440 third touch: PR #2046 (category chips gain a 16px CATEGORY_ICONS
+  // leading glyph) merged into staging mid-PR, changing the /map chip-row
+  // chrome AGAIN and staling the baseline the second bot pass (bf8516b3) had
+  // just regenerated. This touch re-fires vrt-update from the post-#2046
+  // build. (Root cause of the churn: the desktop rail + chip row are unmasked
+  // live chrome — see the follow-up flag in PR #2041.)
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);
