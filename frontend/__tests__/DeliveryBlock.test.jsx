@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1146 chunk B — editorial delivery: per-city rows (city · min order · day,
-// fix 4), an optional self-pickup line (fix 6), and a DEMOTED tertiary CTA.
+// fix 4) + an optional self-pickup line (fix 6). MEH-1466: the tertiary WhatsApp
+// order CTA was removed (all producer-detail WA CTAs open the same wa.me).
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
@@ -23,10 +24,6 @@ vi.mock("next-intl", () => ({
       "min_order": "מינימום",
       "pickup": "איסוף עצמי",
       "show_less": "הצג פחות",
-      // MEH-1305 C: Hebrew label passed to the tertiary WhatsAppButton instance.
-      "order_cta": "שליחת הודעה בוואטסאפ",
-      "whatsapp.button.default_message": "msg",
-      "whatsapp.button.opening": "opening",
     };
     return map[key] ?? key;
   },
@@ -132,22 +129,11 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("חיפה")).toBeInTheDocument();
   });
 
-  it("renders the WhatsApp CTA demoted to tertiary (not the green primary)", () => {
+  it("MEH-1466: no WhatsApp order CTA is rendered inside the delivery section", () => {
     render(
       <DeliveryBlock nationwide={true} areas={[]} pickup={false} producer={producer} />,
     );
-    const cta = screen.getByTestId("whatsapp-cta");
-    expect(cta).toHaveAttribute("data-tone", "tertiary");
-    expect(cta.className).not.toMatch(/btn-whatsapp/);
-  });
-
-  it("MEH-1305 C: the delivery CTA shows the Hebrew label, not a bare 'WhatsApp'", () => {
-    render(
-      <DeliveryBlock nationwide={true} areas={[]} pickup={false} producer={producer} />,
-    );
-    const cta = screen.getByTestId("whatsapp-cta");
-    expect(cta).toHaveTextContent("שליחת הודעה בוואטסאפ");
-    expect(cta).not.toHaveTextContent("WhatsApp");
+    expect(screen.queryByTestId("whatsapp-cta")).not.toBeInTheDocument();
   });
 
   it("MEH-1435: city-only areas render as a compact Hebrew-sorted list, no editorial rows / no toggle ≤15", () => {
