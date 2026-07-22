@@ -15,7 +15,7 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.remove": "הסר ממועדפים",
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",
-      "producer.card.badges.delivery_only": "🚚 משלוחים בלבד",
+      "producer.card.badges.delivery_only": "משלוחים בלבד",
       "producer.card.badges.available_today": "🛒 מגיעה היום",
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
       verified_label: "מאומת",
@@ -128,6 +128,8 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-76 chunk 4 — S12 tier badge glyphs rendered by BadgeRow.
   SealCheck: (props) => <span data-testid="icon-seal" {...props} />,
   Note: (props) => <span data-testid="icon-note" {...props} />,
+  // MEH-1459: Truck glyph in the "משלוחים בלבד" card badge (replaces 🚚).
+  Truck: (props) => <span data-testid="icon-truck" {...props} />,
 }));
 
 const fullProducer = {
@@ -440,6 +442,30 @@ describe("ProducerCard — Phase B anatomy", () => {
     const body = screen.getByTestId("location-line");
     body.click();
     expect(onClick).toHaveBeenCalledWith(fullProducer);
+  });
+
+  // MEH-1459: the delivery-only badge renders the Phosphor Truck glyph
+  // (MEH-1418 set) instead of the 🚚 emoji; the label carries no emoji.
+  it("renders the Truck glyph (no 🚚 emoji) on the delivery-only badge", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, has_physical_location: false, offers_delivery: true }}
+      />,
+    );
+    const label = screen.getByText("משלוחים בלבד");
+    expect(label).toBeInTheDocument();
+    const badge = label.closest("span");
+    expect(badge.querySelector('[data-testid="icon-truck"]')).toBeInTheDocument();
+    expect(badge.textContent).not.toMatch(/🚚/);
+  });
+
+  it("does not render the delivery-only badge for a physical producer", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, has_physical_location: true, offers_delivery: true }}
+      />,
+    );
+    expect(screen.queryByText("משלוחים בלבד")).not.toBeInTheDocument();
   });
 
   it("applies active ring classes when active=true", () => {
