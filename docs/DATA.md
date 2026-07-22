@@ -710,6 +710,15 @@ POST /admin/reports/{report_id}/resolve    admin — status→resolved + resolve
 POST /admin/reports/{report_id}/dismiss    admin — status→dismissed + resolved_at/by; 409 if already closed (MEH-1266)
 ```
 
+### Info-report — "מצאתן טעות בפרטים?" (`app/routers/report_info.py`)
+
+```
+POST /reports/producer-info    🌐 public, rate-limited 5/day/IP — visitor reports wrong info on a producer page.
+                               Body {producer_slug, message(1..1000), reporter_email?}. Resolves producer by slug
+                               OR uuid id (else 404). Emails admin (RTL HTML, message escaped); NO DB persist. 204.
+                               MEH-1443. Distinct from the DB-backed abuse reports above.
+```
+
 ### Marketing (`app/routers/marketing.py`)
 
 ```
