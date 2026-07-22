@@ -254,6 +254,13 @@ export default function ProducerDashboardPage() {
       const body = { state };
       if (state === "on_vacation" && vacationUntil) body.vacation_until = vacationUntil;
       await api.post("/producers/me/availability-state", body);
+      // MEH-1445: confirm the successful write with a toast (mirrors the
+      // error-path showToast.error below). Vacation carries the return date.
+      if (state === "on_vacation") {
+        showToast.success(t("availability.saved_vacation", { date: vacationUntil }));
+      } else {
+        showToast.success(t("availability.saved"));
+      }
       // MEH-999: the write is committed — drop the "selected-but-unconfirmed"
       // flag so the mini-form is now driven purely by the saved server state
       // (on failure we intentionally keep it set below, so the form stays open
