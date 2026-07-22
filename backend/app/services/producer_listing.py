@@ -335,9 +335,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         # MEH-1487: region fallback — OR the SAME per-city condition across
         # the region's cities (nationwide-minus-excluded honoured per city).
         # Cap + empty-strip guard bound a hostile / malformed list.
-        cities = [c for c in delivery_cities if c and c.strip()][
-            :_MAX_DELIVERY_CITIES
-        ]
+        cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
         if cities:
             city_cond = or_(*[_delivery_city_condition(c) for c in cities])
             q = q.filter(city_cond)
