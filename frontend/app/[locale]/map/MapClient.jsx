@@ -436,7 +436,7 @@ export default function MapPage() {
         // cancel any pending debounced sheet fetch so it can't clobber this reset.
         // MEH-1087: + kosher (verified-only kashrut toggle).
         filters.cancelPendingSheetFetch();
-        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
+        filters.setChipState({ categoryKeys: [], organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
         filters.setActiveCategoryNames(null);
         filters.setCommittedBounds(null);
         filters.setCityFilter("");

@@ -59,7 +59,7 @@ vi.mock("@/lib/recently-viewed", () => ({
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: () => null }),
+  useSearchParams: () => ({ get: () => null, getAll: () => [] }),
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
