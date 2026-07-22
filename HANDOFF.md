@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1441 — category chips 16px CATEGORY_ICONS glyph (closes MEH-683 V6) — PR open, awaiting Sapir merge
+
+- **Shipped (branch `feature/meh-1441-category-chip-icons` off `origin/staging`, harness `claude/*` blocked by MEH-1141 gate):** category radio chips on `/producers` + `/map` get a 16px leading glyph from `CATEGORY_ICONS` (MEH-683 canonical-name set), via the MEH-1418 `ChipScrollRow` `chip.icon` slot. Reset chip ("כל הקטגוריות" / "כל") stays text-only. Monochrome per V2 — `currentColor`, no category color, `aria-hidden` span (label stays accessible name).
+- **Files (3 src + 3 test):** `ProducersClient.jsx` (keys `CATEGORY_ICONS[c.name]`; unknown admin category → no icon, never Leaf), `FilterChipsBar.jsx` (attaches the glyph to `visibleCategoryChips` at the render site via `useMemo`), `lib/map-chips.js` (each `CATEGORY_CHIPS` row gains a plain-string `iconName` = canonical key: בשר · ירקות · חלב וגבינות · לחמים ואפייה; "all" has none). **`map-chips.js` kept React-free** — the JSX element is built at the render site, not in the data module (the `chip-icons.js` DOM-free invariant), so `chip-icons.js` was NOT touched. `mapChips.test.js` +1; the two `ProducersClient*` tests gained a `CATEGORY_ICONS` stub mock (they now pull the icon module — mirrors `CategorySelector.test.jsx`).
+- **Scope note vs the dispatch:** the prompt named `map-chips.js` + `ProducersClient.jsx` and "nothing else"; the /map render attach necessarily landed in `FilterChipsBar.jsx` (the category `ChipScrollRow` render site — `map-chips.js` is a data module and can't hold JSX). This mirrors the exact MEH-1418 split (data module + `withChipIcons` at the render site). No restyle/color/reorder.
+- **No height change (MEH-1366 non-worsening):** 16px glyph inside the existing `text-sm`/20px-line-height chip, same `py-2.5`/`gap-1.5` `ChipScrollRow` button as the already-shipped MEH-1418 toggle-chip icons → no new vertical box (analytic; identical component + icon size to the shipped toggle chips).
+- **Gates:** full vitest **1466 pass / 10 skip** · `npm run build` exit 0. **Left for Sapir:** mobile QA on the Vercel preview (/producers chip row + /map both rows, 375px RTL). `Closes MEH-1441`.
+- **MEH-1423 status clarified this session:** PR #2024 is MERGED (Sapir, 21/07 21:42). The 21:49 Done→In-Progress flip is a Linear auto-link artifact (rule 29 / MEH-1240 — a later PR mentioned the bare `MEH-1423` id), NOT mid-fix. Recommend flipping back to Done.
+
 ## 2026-07-21 — MEH-683 — Category icons: unified geometric set — MERGED (PR #2026, squash 22bb5fe3)
 
 - **Status: merged to `staging`.** PR #2026 squash-merged on a verified-green signal (CI gate + Deploy gate ran the real Frontend build + vitest on the head, both success). Branch `feature/meh-683-category-glyphs` off `staging`. Frontend-only; zero backend.
