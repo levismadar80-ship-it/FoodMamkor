@@ -161,6 +161,15 @@ export default function WhatsAppQuestionChips({ producer }) {
   const waHref = (q) =>
     digits ? getWhatsAppHref(digits, t("greeting_template", { name, q })) : null;
 
+  // MEH-1462: "יש לי רעיון למתכון" — routes the recipe-idea intent to the
+  // existing WhatsApp channel (research 22/07: no in-app suggestion box, no
+  // moderation). Uses its own Sapir-locked prefill (NOT the greeting_template
+  // that wraps the other questions), no in-page answer, gated on a phone like
+  // every other WhatsApp row.
+  const recipeIdeaHref = digits
+    ? getWhatsAppHref(digits, t("recipe_idea_message"))
+    : null;
+
   // Category-aware stock / custom questions stay WhatsApp — minus the two
   // canonical slots (delivery + ordering) handled above, to avoid duplicates.
   const waQuestions = getProducerQuestions(producer || {})
@@ -203,7 +212,13 @@ export default function WhatsAppQuestionChips({ producer }) {
   if (items.length === 0 && !digits) return null;
 
   return (
-    <QuestionList items={items} showEscalation={!!digits} escalationHref={waHref(t("escalation"))} t={t} />
+    <QuestionList
+      items={items}
+      showEscalation={!!digits}
+      escalationHref={waHref(t("escalation"))}
+      recipeIdeaHref={recipeIdeaHref}
+      t={t}
+    />
   );
 }
 
@@ -215,7 +230,7 @@ export default function WhatsAppQuestionChips({ producer }) {
 // tighter row rhythm) per the approved mockup.
 const VISIBLE_MAX = 3;
 
-function QuestionList({ items, showEscalation, escalationHref, t }) {
+function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, t }) {
   const [expanded, setExpanded] = useState(false);
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
@@ -251,6 +266,23 @@ function QuestionList({ items, showEscalation, escalationHref, t }) {
         >
           <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
           {t("escalation")}
+        </a>
+      )}
+
+      {/* MEH-1462: recipe-idea chip — always rendered LAST in the row (never
+          capped by the "עוד שאלות" expander), only when a WhatsApp channel
+          exists. No in-page disclosure: it always opens WhatsApp with the
+          Sapir-locked recipe-idea prefill. */}
+      {recipeIdeaHref && (
+        <a
+          href={recipeIdeaHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="recipe-idea-link"
+          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
+          {t("recipe_idea")}
         </a>
       )}
     </div>

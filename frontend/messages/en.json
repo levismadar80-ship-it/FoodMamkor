@@ -2981,7 +2981,9 @@
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
       "escalation": "Another question? Send us a message",
-      "more_questions": "More questions"
+      "more_questions": "More questions",
+      "recipe_idea": "I have a recipe idea",
+      "recipe_idea_message": "Hi! I came from your page on Mehamakor — I have a recipe idea using your products:"
     }
   },
   "directory": {

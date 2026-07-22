@@ -3002,7 +3002,9 @@
       "ordering_phone_prefix": "מתקשרים:",
       "ordering_link_label": "למעבר",
       "escalation": "שאלה אחרת? שלחו לנו הודעה",
-      "more_questions": "עוד שאלות"
+      "more_questions": "עוד שאלות",
+      "recipe_idea": "יש לי רעיון למתכון",
+      "recipe_idea_message": "היי! הגעתי מהעמוד שלכם במהמקור — יש לי רעיון למתכון עם המוצרים שלכם:"
     }
   },
   "directory": {

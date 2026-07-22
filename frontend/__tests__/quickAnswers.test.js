@@ -237,4 +237,41 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
     expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? שלחו לנו הודעה");
   });
+
+  // MEH-1462 — recipe-idea chip: last in the row, WhatsApp-only, exact prefill.
+  it("recipe-idea chip renders with a phone, opens WhatsApp with the Sapir-locked prefill", () => {
+    render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
+    const link = screen.getByTestId("recipe-idea-link");
+    expect(link).toHaveTextContent("יש לי רעיון למתכון");
+    const href = link.getAttribute("href");
+    expect(href).toContain("wa.me");
+    expect(decodeURIComponent(href)).toContain(
+      "היי! הגעתי מהעמוד שלכם במהמקור — יש לי רעיון למתכון עם המוצרים שלכם:",
+    );
+  });
+
+  it("recipe-idea chip is rendered LAST — after the escalation link", () => {
+    const { container } = render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
+    const testids = [...container.querySelectorAll("[data-testid]")].map((el) =>
+      el.getAttribute("data-testid"),
+    );
+    const esc = testids.lastIndexOf("escalation-link");
+    const recipe = testids.lastIndexOf("recipe-idea-link");
+    expect(esc).toBeGreaterThanOrEqual(0);
+    expect(recipe).toBeGreaterThan(esc);
+  });
+
+  it("recipe-idea chip is gated on a contact channel — absent without a phone", () => {
+    render(
+      <WhatsAppQuestionChips
+        producer={{
+          city: "צפת",
+          delivery_nationwide: true,
+          primary_contact_method: "external_order",
+          external_order_form: "order.example.com",
+        }}
+      />,
+    );
+    expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
+  });
 });
