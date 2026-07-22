@@ -55,6 +55,12 @@ import * as path from "path";
  * above). This touch re-fires vrt-update to regenerate the trio on the runner
  * (the earlier delete-trigger run regenerated them but its commit step was
  * skipped when the unrelated /producer/[id] nav flake failed the suite).
+ * MEH-1441 (2026-07-22): the category-icon work (PR #2026 unified glyph set →
+ * PR #2021 toggle-chip icons → PR #2046 category-chip icons) added 16px leading
+ * glyphs to the /map chip rows, the home chip rows, and the register step-2
+ * selector — an intended visual change that shifts the /map + home + register
+ * baselines. This touch re-fires vrt-update to regenerate them on the runner
+ * (the icon PRs merged without a baseline refresh — E2E is not a required gate).
  */
 
 const STYLE_PATH = path.join(__dirname, "parity.css");
