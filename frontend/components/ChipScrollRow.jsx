@@ -233,7 +233,20 @@ export default function ChipScrollRow({
                   : "bg-white text-text border-border hover:border-primary hover:text-primary"
               }`}
             >
-              {chip.icon && <span aria-hidden="true">{chip.icon}</span>}
+              {/* MEH category-tint: an INACTIVE chip tints its leading glyph
+                  with chip.iconColor (category colour, set on the span so the
+                  glyph's currentColor fill/stroke inherits it). An ACTIVE chip
+                  omits the style so the glyph inherits the button's white text
+                  (currentColor). Chips with no iconColor stay currentColor in
+                  both states (unchanged). */}
+              {chip.icon && (
+                <span
+                  aria-hidden="true"
+                  style={!active && chip.iconColor ? { color: chip.iconColor } : undefined}
+                >
+                  {chip.icon}
+                </span>
+              )}
               {chip.label}
             </button>
           );

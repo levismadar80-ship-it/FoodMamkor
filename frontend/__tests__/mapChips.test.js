@@ -43,6 +43,18 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(byKey.bread.iconName).toBe("לחמים ואפייה");
   });
 
+  it("category-tint: each category chip declares an iconColor from CATEGORY_STYLES; 'all' has none", () => {
+    const byKey = Object.fromEntries(CATEGORY_CHIPS.map((c) => [c.key, c]));
+    // Reset chip is never tinted.
+    expect(byKey.all.iconColor).toBeUndefined();
+    // Aggregate chips carry the category colour (mirrors map-categories.js —
+    // dairy uses the WCAG-safe textColor #3b72ad, produce = produce-green).
+    expect(byKey.meat.iconColor).toBe("#c04040");
+    expect(byKey.produce.iconColor).toBe("#2e6853");
+    expect(byKey.dairy.iconColor).toBe("#3b72ad");
+    expect(byKey.bread.iconColor).toBe("#896714");
+  });
+
   it("includes all expected toggle chip keys", () => {
     const keys = TOGGLE_CHIPS.map((c) => c.key);
     expect(keys).toContain("has_delivery");

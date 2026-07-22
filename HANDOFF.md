@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1452 — category-chip glyph tinting (supersedes MEH-1441 monochrome) — PR open, auto-merge on green (full-pipeline authority, Sapir 22/07)
+
+- **Shipped (branch `feature/meh-1452-category-chip-tint` off `origin/staging`, on top of merged MEH-1441 #2046 + MEH-1088 Part A #2049):** category chips on `/producers` + `/map` tint their 16px leading glyph with the category colour, **inactive only**; active chip keeps white `currentColor`. Reset chip iconless; no-`CATEGORY_STYLES`-entry categories stay `currentColor` (MEH-763 palette lock). Toggle chips untouched.
+- **Files (4 src + 4 test):** `ChipScrollRow.jsx` (glyph span gets `style={color: chip.iconColor}` only when `!active` — minimal additive), `ProducersClient.jsx` (resolves `iconColor = CATEGORY_STYLES[c.name].textColor ?? .color`), `lib/map-chips.js` (`CATEGORY_CHIPS` explicit `iconColor`; rides `FilterChipsBar`'s spread → `FilterChipsBar.jsx` comment-only), `lib/map-categories.js` (WCAG fix below). Tests: `ChipScrollRow.test.jsx` +3 (tint-gating), `mapChips.test.js` +1 (iconColor contract), 2 `ProducersClient*` test-mocks gained the transitive `CATEGORY_STYLES` glyph exports.
+- **WCAG 1.4.11 (Phase 0, ≥3:1 on white):** all applied tints pass except **שמנים `#e8a020` (2.22:1)** → added `textColor: "#bd8013"` (same hue, 3.35:1, dairy precedent). דבש `#C8821E` passes as-is (3.15:1). Values + ratios in PR body. No new palette colour.
+- **No height change (MEH-1366 non-worsening):** the tint is a CSS `color` on the existing aria-hidden glyph span — zero new box, same `ChipScrollRow` button.
+- **Gates:** `npm run build` exit 0 · full vitest **1490+ pass**. **Live /producers + /map screenshots deferred to Sapir's preview** — SSR `/producers` can't be backend-populated in the CC sandbox (same documented limitation MEH-1088 hit on this surface); behaviour proven by unit tests. `Closes MEH-1452`. **Next:** MEH-1453 category-registry refactor (after this merges).
+
 ## 2026-07-22 — MEH-1088 Part A — hide zero-producer category chips on /producers — PR open, awaiting Sapir merge
 
 - **Shipped (branch `feature/meh-1088-hide-empty-category-chips` off `origin/staging` — includes the merged MEH-1441):** `/producers` category chips whose category has 0 approved producers are not rendered (dead-end prevention; Sapir screenshot 22/07 "פירות" → empty grid). Runs **after** MEH-1441 (same `ProducersClient` `categoryChips` block).
