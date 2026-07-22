@@ -492,6 +492,13 @@ class Product(Base):
     is_vegan = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-1438: vegetarian axis (4th dietary flag). A vegan product is
+    # vegetarian by definition, so the public ?vegetarian filter matches
+    # `is_vegetarian OR is_vegan` (producer_listing.py) and the aggregation
+    # counts is_vegan too — the owner needn't mark both. Mirrors MEH-293.
+    is_vegetarian = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
     is_lactose_free = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
@@ -508,11 +515,16 @@ class Product(Base):
     # idx_products_dietary — added in MEH-293 migration 1afe844d11f4
     # (2026-05-07). Partial index covers products with at least one
     # dietary flag set; mirrors EXISTS-subquery filter pattern.
+    # MEH-1438: predicate extended with is_vegetarian (the MEH-1438 migration
+    # drops + recreates the index). Keep this text byte-identical to the
+    # migration's create_index predicate so `alembic check` stays drift-free.
     __table_args__ = (
         Index(
             "idx_products_dietary",
             "producer_id",
-            postgresql_where=text("is_gluten_free OR is_vegan OR is_lactose_free"),
+            postgresql_where=text(
+                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free"
+            ),
         ),
     )
 

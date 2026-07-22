@@ -43,6 +43,18 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(byKey.bread.iconName).toBe("לחמים ואפייה");
   });
 
+  it("category-tint: each category chip declares an iconColor from CATEGORY_STYLES; 'all' has none", () => {
+    const byKey = Object.fromEntries(CATEGORY_CHIPS.map((c) => [c.key, c]));
+    // Reset chip is never tinted.
+    expect(byKey.all.iconColor).toBeUndefined();
+    // Aggregate chips carry the category colour (mirrors map-categories.js —
+    // dairy uses the WCAG-safe textColor #3b72ad, produce = produce-green).
+    expect(byKey.meat.iconColor).toBe("#c04040");
+    expect(byKey.produce.iconColor).toBe("#2e6853");
+    expect(byKey.dairy.iconColor).toBe("#3b72ad");
+    expect(byKey.bread.iconColor).toBe("#896714");
+  });
+
   it("includes all expected toggle chip keys", () => {
     const keys = TOGGLE_CHIPS.map((c) => c.key);
     expect(keys).toContain("has_delivery");
@@ -50,6 +62,8 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(keys).toContain("grass_fed");
     expect(keys).toContain("gluten_free");
     expect(keys).toContain("vegan");
+    // MEH-1438: vegetarian diet toggle.
+    expect(keys).toContain("vegetarian");
     expect(keys).toContain("lactose_free");
     // MEH-1087: verified-only kosher toggle restored to /map.
     expect(keys).toContain("kosher");
@@ -137,6 +151,12 @@ describe("chipStateToParams", () => {
     expect(
       chipStateToParams({ categoryKey: "all", kosher: true }, dbCategories),
     ).toEqual({ kosher: true });
+  });
+
+  it("MEH-1438: vegetarian state maps to the ?vegetarian param", () => {
+    expect(
+      chipStateToParams({ categoryKey: "all", vegetarian: true }, dbCategories),
+    ).toEqual({ vegetarian: true });
   });
 
   it("ignores a lingering organic state key (filter removed — MEH-1259)", () => {

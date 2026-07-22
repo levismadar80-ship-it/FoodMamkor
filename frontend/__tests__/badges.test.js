@@ -17,6 +17,7 @@ describe("BADGE_PRIORITY", () => {
       "new",
       "grass_fed",
       "gluten_free",
+      "vegetarian",
       "vegan",
       "lactose_free",
       "kosher",
@@ -134,6 +135,22 @@ describe("allBadges", () => {
 
   it("vegan — when has_vegan_products is true", () => {
     expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
+  });
+
+  // MEH-1438: vegetarian badge — driven by the aggregated has_vegetarian_products
+  // (is_vegetarian OR is_vegan). Priority sits after gluten_free, before vegan.
+  it("vegetarian — when has_vegetarian_products is true", () => {
+    expect(allBadges({ has_vegetarian_products: true }).map((b) => b.key)).toEqual(["vegetarian"]);
+  });
+
+  it("vegetarian priority — sits between gluten_free and vegan", () => {
+    expect(
+      allBadges({
+        has_gluten_free_products: true,
+        has_vegetarian_products: true,
+        has_vegan_products: true,
+      }).map((b) => b.key),
+    ).toEqual(["gluten_free", "vegetarian", "vegan"]);
   });
 
   it("lactose_free — when has_lactose_free_products is true", () => {
@@ -350,6 +367,13 @@ describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
   it("lactose_free tooltip states any-product semantics", () => {
     expect(BADGE_CONFIG.lactose_free.tooltip).toBe(
       "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
+    );
+  });
+
+  // MEH-1438: vegetarian tooltip mirrors the same any-product wording.
+  it("vegetarian tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.vegetarian.tooltip).toBe(
+      "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     );
   });
 });

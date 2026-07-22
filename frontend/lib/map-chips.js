@@ -30,14 +30,24 @@ import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 // stays React-free — the JSX element is built by the render site, mirroring how
 // MEH-1418 threads toggle-chip icons via withChipIcons). The "כל" reset chip has
 // no iconName → it renders text-only (the reset differentiator).
+// Category-tint: `iconColor` tints the INACTIVE chip's glyph with the category
+// colour (ChipScrollRow applies it only when !active; the active chip stays
+// white). Declared explicitly for the same reason as iconName — an aggregate
+// chip has no single CATEGORY_STYLES key — and kept a plain STRING (React-free).
+// Values mirror lib/map-categories.js CATEGORY_STYLES (.textColor ?? .color):
+//   meat "בשר"/"דגים" #c04040 · dairy "חלב וגבינות" textColor #3b72ad ·
+//   bread "לחמים ואפייה" #896714 · produce = produce-green #2e6853 (the
+//   "ירקות, פירות ומשקים" style / DEFAULT / primary — same as the map's DEFAULT
+//   pin for the aggregate produce chip). All values ≥3:1 on white (WCAG 1.4.11);
+//   no new palette colour is introduced. "כל" has no iconColor (iconless reset).
 export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר" },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות" },
-  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות" },
-  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה" },
+  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
+  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות", iconColor: "#2e6853" },
+  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
+  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
@@ -50,8 +60,8 @@ export const CATEGORY_CHIPS = [
 // "כל" stays iconless). Labels stay text-only — Emoji LOCK v2 forbids emoji
 // literals, aria-hidden Phosphor glyphs are the approved substitute (MEH-990).
 // MEH-1075: `group` drives the FilterSheet sections (diet | quality | service).
-// Within-group render order = array order (diet order per spec: טבעוני ·
-// ללא גלוטן · ללא לקטוז).
+// Within-group render order = array order (diet order per spec, MEH-1438:
+// טבעוני · צמחוני · ללא גלוטן · ללא לקטוז).
 // MEH-1087: a VERIFIED-ONLY kosher chip ("כשרות מאומתת") IS now allowed — it
 // filters ?kosher=true, which the backend maps to kashrut_verified_at ONLY
 // (producer_listing.py:153 _kosher_condition, MEH-986 ch3b + MEH-1260 expiry),
@@ -66,6 +76,7 @@ export const TOGGLE_CHIPS = [
   { key: "kosher",        label: ATTRIBUTE_LABELS.kosher,        group: "quality" },
   { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
   { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
+  { key: "vegetarian",    label: ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
   { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
 ];
@@ -119,6 +130,7 @@ export function chipStateToParams(state, dbCategories) {
   if (state.grass_fed) params.grass_fed = true;
   if (state.gluten_free) params.gluten_free = true;
   if (state.vegan) params.vegan = true;
+  if (state.vegetarian) params.vegetarian = true;  // MEH-1438
   if (state.lactose_free) params.lactose_free = true;
   return params;
 }
