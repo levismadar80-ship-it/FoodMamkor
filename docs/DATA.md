@@ -420,6 +420,10 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
                                                has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
                                                sort: newest (default) | rating
+                                               MEH-1465: ?category is REPEATABLE (list[int]) — ?category=1&category=2 ORs over the
+                                               ids (a producer in any selected category matches). A single ?category=5 still works
+                                               (parses to [5]). Filtered via EXISTS on producer_categories (Producer.categories.any),
+                                               so a producer in two selected categories appears once; X-Total-Count stays consistent.
                                                MEH-1282: ?require_physical (geo-only, default false). Geo results include
                                                delivery-only producers (has_physical_location=false) by default so the home
                                                "קרוב אליי" flow surfaces every nearby business; require_physical=true keeps
