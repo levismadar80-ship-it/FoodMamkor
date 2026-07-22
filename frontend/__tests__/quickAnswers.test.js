@@ -242,11 +242,11 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
   it("recipe-idea chip renders with a phone, opens WhatsApp with the Sapir-locked prefill", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
     const link = screen.getByTestId("recipe-idea-link");
-    expect(link).toHaveTextContent("יש לי רעיון למתכון");
+    expect(link).toHaveTextContent("אפשר לשתף מתכון שהכנתי?");
     const href = link.getAttribute("href");
     expect(href).toContain("wa.me");
     expect(decodeURIComponent(href)).toContain(
-      "היי! הגעתי מהעמוד שלכם במהמקור — יש לי רעיון למתכון עם המוצרים שלכם:",
+      "היי! הגעתי מהעמוד שלכם במהמקור — הכנתי משהו מהמוצרים שלכם ואשמח לשתף את המתכון:",
     );
   });
 
