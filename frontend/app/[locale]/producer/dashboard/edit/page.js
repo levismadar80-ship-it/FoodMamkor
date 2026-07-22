@@ -1075,6 +1075,12 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">
         {t("context_line")}
       </p>
+      {/* MEH-1477: content guidance — nudges owners toward the questions
+          customers actually ask before buying (stock / delivery / ordering),
+          reusing the MEH-1116 helper-text idiom. */}
+      <p className="text-xs text-fg-muted mb-4">
+        {t("guidance")}
+      </p>
       <div className="space-y-2">
         {questions.map((q, i) => (
           <Input
