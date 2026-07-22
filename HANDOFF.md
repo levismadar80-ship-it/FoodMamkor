@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-22 — MEH-1479 — favorites error-state retry button (LOW-RISK, GREEN tier) — PR open, merge on CI green
+
+- Branch `feature/meh-1479-favorites-retry` off `origin/staging`. One PR.
+- `FavoritesClient.jsx` loadError branch had only `<p>{error.generic}</p>` (no recovery). Added a **"נסו שוב"** button under the text — quiet card (`role="alert"`, no red wash), mirroring `SectionFetchError` (`producer/dashboard/page.js:88`). New `attempt` state added to the fetch `useEffect` deps; click → `setLoadError(false)` + `setLoading(true)` + `attempt+1` → effect refetches (no reload). `type="button"`, `focus-visible` ring, RTL block-axis `mt-4` only.
+- i18n: new key `error.retry` = "נסו שוב"/"Try again" (he+en). `error.try_again`/`error.generic` are full sentences → a dedicated button label was the right call. Scope kept to `FavoritesClient.jsx` + `he.json`/`en.json` (key only); `favorites-cache.js`/`api.js` untouched.
+- **Test (Rule 5):** `SilentFetchFailureFeedback.test.jsx` +1 — first fetch rejects → error + button; click → second fetch resolves → grid renders, error clears, favorites GET count increases. Also made that file's `useRouter` mock return a **stable** ref (real `useRouter` is stable; a fresh object per render re-fired the deps-driven effect and consumed the `...Once` mocks out of order).
+- **Verify:** `npm run build` exit 0 · full vitest **1539 pass / 10 skip** · eslint 0 errors (warnings only, pre-existing file idioms). Harness @375px (default + focus-ring) in `qa-artifacts/meh-1479/`. **Live authed block→click→grid QA deferred to Sapir** on the preview — the CC sandbox can't reach the Railway backend to log in (documented egress block); the click→refetch→grid transition is proven by the unit test. GREEN-tier → merge on CI green (ADR-016).
+
 ## 2026-07-22 — MEH-1473 — recipe chip → question form (i18n-only, LOW-RISK) — PR open, auto-merge on green
 
 - Branch `feature/meh-1473-recipe-chip-rephrase` off staging. i18n-only rephrase of the MEH-1462 recipe chip.

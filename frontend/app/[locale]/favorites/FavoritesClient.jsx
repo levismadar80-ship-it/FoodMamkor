@@ -100,6 +100,10 @@ export default function FavoritesClient() {
   // MEH-996: a failed fetch used to fall through to the "no favorites yet"
   // empty state — indistinguishable from a real empty list (MEH-977 class).
   const [loadError, setLoadError] = useState(false);
+  // MEH-1479: attempt counter drives the retry. Bumping it re-runs the fetch
+  // effect (it's in the deps) so "נסו שוב" refetches without a full reload —
+  // mirrors SectionFetchError's onRetry contract (dashboard/page.js:88).
+  const [attempt, setAttempt] = useState(0);
   const isFirstVisit = useFirstVisit("favorites_tour");
 
   useEffect(() => {
@@ -117,7 +121,15 @@ export default function FavoritesClient() {
         .catch(() => setLoadError(true))
         .finally(() => setLoading(false));
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, attempt]);
+
+  // MEH-1479: clear the error, show the skeleton again, and bump attempt to
+  // re-trigger the fetch effect.
+  const handleRetry = () => {
+    setLoadError(false);
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  };
 
   if (authLoading || !user) return null;
 
@@ -135,8 +147,18 @@ export default function FavoritesClient() {
       {loading ? (
         <SkeletonProducerGrid count={6} />
       ) : loadError ? (
-        <div className="text-center py-20">
+        // MEH-1479: quiet error state (no red wash) + retry button under the
+        // text, mirroring SectionFetchError (dashboard/page.js:88).
+        <div className="text-center py-20" role="alert">
           <p className="text-fg-muted">{tError("generic")}</p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            data-testid="favorites-retry"
+            className="mt-4 text-sm text-primary font-medium hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            {tError("retry")}
+          </button>
         </div>
       ) : favorites.length === 0 ? (
         <div className="text-center py-20">
