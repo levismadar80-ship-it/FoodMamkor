@@ -52,6 +52,10 @@ export default function FilterChipsBar({
   // the string key lives there). "כל" has no iconName → text-only (reset). Memo
   // keyed on visibleCategoryChips (stable ref from useMapFilters) so a chipState
   // toggle re-render doesn't rebuild the glyph elements.
+  // Category-tint: the chip's `iconColor` (declared in map-chips.js) flows
+  // through the `{ ...chip }` spread to ChipScrollRow, which tints the glyph
+  // only while the chip is INACTIVE (active stays white). No handling needed
+  // here — it rides the spread.
   const categoryChipsWithIcons = useMemo(
     () =>
       visibleCategoryChips.map((chip) => {
