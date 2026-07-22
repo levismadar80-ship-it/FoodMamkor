@@ -11,6 +11,13 @@
 - **Mobile byte-identical — proven:** the 375px Playwright capture hashes **identically** (MD5 `e6fb2b3d…`) before vs after. Overflow probe `hOverflow:false` at 1280×800 / 1440×900 / 375px.
 - **Verify:** `npm run build` exit 0 · vitest **1536/10** (FilterSheet + mapChips green) · eslint 0 · `check-rtl.sh` clean. Screenshots in `qa-artifacts/MEH-1481/` (1280×800 apply-visible · 1440×900 · 375px unchanged).
 - **Left for Sapir:** auto-merge on green (LOW-RISK per MEH-450/ADR-016). `Closes MEH-1481`.
+## 2026-07-22 — MEH-1477 — custom-questions guardrail (content guidance + example placeholders, LOW-RISK) — PR open, auto-merge on green
+
+- Branch `feature/meh-1477-custom-questions-guardrail` off staging (**after MEH-1473 / PR #2078 merged** — no stacking).
+- `CustomQuestionsCard` (`app/[locale]/producer/dashboard/edit/page.js`, contact group): added one `<p>{t("guidance")}</p>` above the inputs using the MEH-1116 helper-text idiom (`text-xs text-fg-muted mb-4`). New guidance line "הכי עובד: שאלות שלקוחות באמת שואלים לפני קנייה — מה במלאי, משלוח, הזמנה.".
+- `he.json` / `en.json`: new `dashboard.producer.custom_questions.guidance` key + replaced `placeholder_1..5` with the five example questions (he keeps literal `[עיר]`; en uses `[city]`). he/en parity preserved.
+- **Verify:** `build` 0 · full vitest green. `EditUnsavedGuard.test.jsx` reads placeholders from `he.json` dynamically → transparent to the change. Card harness @375px in `qa-artifacts/MEH-1477/`.
+- No new component, no hardcoded Hebrew in JSX, RTL `mb-*` only, ADR-024 ungendered. LOW-RISK → auto-merge on green.
 
 ## 2026-07-22 — MEH-1478 — FilterSheet hybrid (diet 2×2 pill grid + trust reorder) — PR open (frontend-only, LOW-RISK, auto-merge on green)
 
