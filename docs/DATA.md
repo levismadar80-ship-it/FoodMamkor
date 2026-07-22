@@ -150,7 +150,8 @@ products       (id, producer_id FK, name, description,
                 price_max Numeric(10,2) NULL,       -- MEH-295: canonical max, optional, validator: >= price_min
                 is_gluten_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: single source of truth post column drop. EXISTS subquery powers /producers?gluten_free=true
                 is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293/MEH-479: same
-                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE
+                is_vegetarian Boolean NOT NULL DEFAULT FALSE,    -- MEH-1438: 4th dietary axis. ?vegetarian filter matches is_vegetarian OR is_vegan (a vegan product is vegetarian by definition); migration c5d9f3a1b2e8 seeded TRUE for existing vegan rows
+                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE (predicate extended with is_vegetarian in MEH-1438)
 delivery_areas (id, producer_id FK, city, min_order int, delivery_day)
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
