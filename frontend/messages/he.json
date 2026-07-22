@@ -721,7 +721,8 @@
           "show_all_count": "הצגת כל האירועים"
         },
         "products": {
-          "heading": "מוצרים"
+          "heading": "מוצרים",
+          "signature_label": "המוצר המוביל"
         },
         "recipes": {
           "cta": "המתכונים שלנו"
