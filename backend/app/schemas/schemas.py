@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Literal
 from urllib.parse import urlparse
@@ -2036,6 +2036,20 @@ class GroupBuyCreate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     deadline: datetime
     city: str | None = Field(None, max_length=100)
+
+    @field_validator("deadline")
+    @classmethod
+    def _normalize_deadline_to_naive_utc(cls, v: datetime) -> datetime:
+        # MEH-1454: the dashboard form sends `new Date(...).toISOString()` — an
+        # aware ISO string with a trailing 'Z'. The DB column and every
+        # `datetime.utcnow()` comparison in group_buys.py are naive UTC, so an
+        # aware value made `data.deadline <= datetime.utcnow()` raise
+        # `TypeError: can't compare offset-naive and offset-aware datetimes`
+        # → 500 on real creates. Normalize aware → naive UTC at the boundary so
+        # DB storage and comparisons stay in one (naive-UTC) world.
+        if v.tzinfo is not None:
+            v = v.astimezone(timezone.utc).replace(tzinfo=None)
+        return v
 
 
 class GroupBuyCommitRequest(BaseModel):
