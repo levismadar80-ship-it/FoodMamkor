@@ -281,12 +281,20 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
             q = q.filter(Producer.verified_at.is_(None))
             count_q = count_q.filter(Producer.verified_at.is_(None))
 
+    # MEH-1465: category filter is now OR over a list of ids. An EXISTS
+    # (Producer.categories.any) replaces the prior JOIN — a producer linked to
+    # two of the selected categories would otherwise appear TWICE in the full
+    # SELECT (the JOIN fans out one row per matching producer_categories row;
+    # count_q was already DISTINCT, so page and count would disagree). EXISTS
+    # matches at most once regardless of how many ids overlap. `category` may be
+    # a bare int from a legacy single-value call — normalize to a list.
+    # REUSES: the dietary EXISTS pattern above (Producer.products.any).
     category = filters.get("category")
-    if category is not None:
-        q = q.join(ProducerCategory).filter(ProducerCategory.category_id == category)
-        count_q = count_q.join(ProducerCategory).filter(
-            ProducerCategory.category_id == category
-        )
+    if category:
+        category_ids = category if isinstance(category, list) else [category]
+        cat_cond = Producer.categories.any(Category.id.in_(category_ids))
+        q = q.filter(cat_cond)
+        count_q = count_q.filter(cat_cond)
 
     delivery_city = filters.get("delivery_city")
     has_delivery = filters.get("has_delivery")

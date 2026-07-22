@@ -100,16 +100,33 @@ export function countActiveSheetOnlyFilters(state) {
 
 /**
  * Resolve a category chip's `matches` array against the loaded DB
- * categories (`[{id, name, emoji}, ...]`) to an ID. Returns null when
- * no match is found — caller should hide the chip.
+ * categories (`[{id, name, emoji}, ...]`) to EVERY matching ID.
+ *
+ * MEH-1465: an aggregate chip ("בשר ודגים") covers several DB category rows
+ * (בשר ועוף · דגים · …). The public ?category filter is OR over the whole
+ * list, so the chip must contribute ALL of them — sending only the first
+ * matched id (the pre-1465 behaviour) hid producers filed under the chip's
+ * other names. Returns [] when nothing matches.
  */
-export function resolveCategoryId(chip, dbCategories) {
-  if (!chip?.matches) return null;
+export function resolveCategoryIds(chip, dbCategories) {
+  if (!chip?.matches) return [];
+  const ids = [];
   for (const candidate of chip.matches) {
     const hit = dbCategories.find((c) => c.name === candidate);
-    if (hit) return hit.id;
+    if (hit) ids.push(hit.id);
   }
-  return null;
+  return ids;
+}
+
+/**
+ * First matched category ID, or null when none match. Retained for the
+ * "does this chip match anything in the DB?" visibility check
+ * (useMapFilters.js — a chip with no match is hidden). Filter params go
+ * through resolveCategoryIds instead (all ids, MEH-1465).
+ */
+export function resolveCategoryId(chip, dbCategories) {
+  const ids = resolveCategoryIds(chip, dbCategories);
+  return ids.length > 0 ? ids[0] : null;
 }
 
 /**
@@ -120,8 +137,11 @@ export function chipStateToParams(state, dbCategories) {
   const params = {};
   if (state.categoryKey && state.categoryKey !== "all") {
     const chip = CATEGORY_CHIPS.find((c) => c.key === state.categoryKey);
-    const id = resolveCategoryId(chip, dbCategories);
-    if (id != null) params.category = id;
+    // MEH-1465: send EVERY matched id (OR), not just the first. Always a list
+    // so the backend `category: list[int]` contract is uniform; the api-client
+    // paramsSerializer (indexes:null) renders it as ?category=1&category=2.
+    const ids = resolveCategoryIds(chip, dbCategories);
+    if (ids.length > 0) params.category = ids;
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   if (state.has_delivery) params.has_delivery = true;

@@ -59,7 +59,10 @@ def list_producers(
     # "קרוב אליי" flow). Set true for map-pin semantics (physical location only).
     # No effect outside geo mode.
     require_physical: bool = False,
-    category: int | None = None,
+    # MEH-1465: OR over multiple categories — repeatable ?category=1&category=2.
+    # A single ?category=5 still parses (→ [5]), so existing deep-links are
+    # unchanged. The service filters via EXISTS on the whole list.
+    category: list[int] | None = Query(None),
     delivery_city: str | None = None,
     has_delivery: bool | None = None,
     verified: bool | None = None,

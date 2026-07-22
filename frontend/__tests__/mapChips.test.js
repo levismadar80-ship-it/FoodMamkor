@@ -5,6 +5,7 @@ import {
   QUICK_CHIP_KEYS,
   countActiveSheetOnlyFilters,
   resolveCategoryId,
+  resolveCategoryIds,
   chipStateToParams,
   boundsToCenterRadius,
 } from "@/lib/map-chips";
@@ -121,6 +122,39 @@ describe("resolveCategoryId", () => {
   });
 });
 
+// MEH-1465 Chunk A: an aggregate chip maps to ALL its matched DB ids, not just
+// the first. This is the OR-across-matches fix — resolveCategoryId (first-match)
+// stays for the "does this chip match anything?" visibility check in useMapFilters.
+describe("resolveCategoryIds", () => {
+  it("returns [] for 'all' (no matches array)", () => {
+    const all = CATEGORY_CHIPS.find((c) => c.key === "all");
+    expect(resolveCategoryIds(all, dbCategories)).toEqual([]);
+  });
+
+  it("returns EVERY matched id when the DB carries several of the chip's names", () => {
+    const meat = CATEGORY_CHIPS.find((c) => c.key === "meat");
+    // meat.matches = [בשר ועוף, בשר, דגים, בשר ודגים, בשר, עוף ודגים].
+    const db = [
+      { id: 1, name: "בשר ועוף", emoji: "🥩" },
+      { id: 5, name: "דגים", emoji: "🐟" },
+      { id: 9, name: "חלב וגבינות", emoji: "🥛" }, // unrelated — excluded
+    ];
+    expect(resolveCategoryIds(meat, db)).toEqual([1, 5]);
+  });
+
+  it("returns the single id when only one name matches", () => {
+    const dairy = CATEGORY_CHIPS.find((c) => c.key === "dairy");
+    expect(resolveCategoryIds(dairy, dbCategories)).toEqual([3]);
+  });
+
+  it("returns [] when no candidate matches / chip is nullish", () => {
+    const meat = CATEGORY_CHIPS.find((c) => c.key === "meat");
+    expect(resolveCategoryIds(meat, [])).toEqual([]);
+    expect(resolveCategoryIds(null, dbCategories)).toEqual([]);
+    expect(resolveCategoryIds(undefined, dbCategories)).toEqual([]);
+  });
+});
+
 describe("chipStateToParams", () => {
   it("returns {} for the default 'all' state", () => {
     expect(
@@ -131,13 +165,27 @@ describe("chipStateToParams", () => {
     ).toEqual({});
   });
 
-  it("maps a category chip to {category: <id>}", () => {
+  it("maps a category chip to {category: [<ids>]} — always a list (MEH-1465)", () => {
     expect(
       chipStateToParams(
         { categoryKey: "dairy", organic: false, has_delivery: false },
         dbCategories,
       ),
-    ).toEqual({ category: 3 });
+    ).toEqual({ category: [3] });
+  });
+
+  it("MEH-1465: an aggregate chip emits ALL its matched ids (OR-across-matches)", () => {
+    const db = [
+      { id: 1, name: "בשר ועוף", emoji: "🥩" },
+      { id: 5, name: "דגים", emoji: "🐟" },
+      { id: 2, name: "ירקות ופירות", emoji: "🥬" },
+    ];
+    expect(
+      chipStateToParams(
+        { categoryKey: "meat", organic: false, has_delivery: false },
+        db,
+      ),
+    ).toEqual({ category: [1, 5] });
   });
 
   it("ignores a category chip whose match isn't in the DB", () => {
@@ -156,7 +204,7 @@ describe("chipStateToParams", () => {
         { categoryKey: "produce", grass_fed: true, has_delivery: true },
         dbCategories,
       ),
-    ).toEqual({ category: 2, grass_fed: true, has_delivery: true });
+    ).toEqual({ category: [2], grass_fed: true, has_delivery: true });
   });
 
   it("MEH-1087: kosher state maps to the verified-only ?kosher param", () => {
