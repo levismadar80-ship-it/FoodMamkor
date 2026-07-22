@@ -2755,6 +2755,8 @@
     "user_anonymous": "אנונימית",
     "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",
     "summary_based_on": "{total, plural, one {מבוסס על ביקורת אחת} two {מבוסס על {total} ביקורות} other {מבוסס על {total} ביקורות}}",
+    "summary_count": "{count, plural, one {חוות דעת אחת} two {{count} חוות דעת} other {{count} חוות דעת}}",
+    "show_more": "הצג עוד חוות דעת",
     "write_cta": "כתבו ביקורת",
     "form_heading": "כתבו ביקורת",
     "rating_label": "דירוג",
