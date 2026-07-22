@@ -21,8 +21,12 @@ import { LOAD_MORE_CAP } from "@/lib/use-home-page";
  * and the "load more" button.
  *
  * All state ownership stays in useHomePage; this component is purely
- * presentational and emits two callbacks (onToggleChip / onClearCategory
- * / onLoadMore) plus the onboarding-advance/dismiss pair.
+ * presentational and emits its callbacks (onToggleChip / onClearCategory
+ * / onLoadMore / onSurprise) plus the onboarding-advance/dismiss pair.
+ *
+ * MEH-1476: owns the "הפתיעו אותי" surprise-me button at the grid end (moved
+ * from the hero, MEH-1288/MEH-1369). onSurprise = use-home-page handleSurprise
+ * (GET /producers/random); render-gated on hasProducers.
  */
 export function HomeProducersGrid({
   producers,
@@ -44,6 +48,8 @@ export function HomeProducersGrid({
   onClearCategory,
   onClearLocation,
   onLoadMore,
+  onSurprise,
+  hasProducers,
   geoActive,
   cityActive,
   geoEmptyNotice,
@@ -239,6 +245,22 @@ export function HomeProducersGrid({
                   {t("home.producers.load_more")}
                 </button>
               )}
+            </div>
+          )}
+          {/* MEH-1476: surprise-me relocated here from the hero (was
+              MEH-1288/MEH-1369). Full-catalog random producer via onSurprise
+              (use-home-page handleSurprise → GET /producers/random); gated on
+              hasProducers. Secondary weight — matches the "load more" outline
+              pill above, NOT a filled primary. Reuses t("home.hero.surprise_me"). */}
+          {hasProducers && (
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={onSurprise}
+                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+              >
+                {t("home.hero.surprise_me")}
+              </button>
             </div>
           )}
         </>
