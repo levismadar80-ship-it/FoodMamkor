@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 (night run, MEH-1074 session 3) — MEH-1367 — session-expired toast full-width fix (YELLOW, global Toaster) — PR open, needs-sapir
+
+- Branch `feature/meh-1367-toast-width` off `origin/staging`. One-file fix: `frontend/components/Toaster.jsx` — container gains `w-[min(92vw,28rem)]`, message span gains `min-w-0 flex-1`. The global toast had no width → shrink-to-fit collapse → the session-expired notice wrapped to ~5 narrow lines on mobile.
+- **Corrects session-2's static mis-call** (I said defect b was "unconfirmed / probably fixed" — live repro on the local stack proved it DOES reproduce). Live before/after @375px: **198×124px → 345×64px**. Defect (a) is a non-bug (expired-session guard `if(token)`).
+- Global component → **needs-sapir per the ticket's STOP #2, no auto-merge.** `Refs MEH-1367`.
+
 ## 2026-07-23 (night run, MEH-1074 session 3) — MEH-1467 — remove orphaned WhatsAppButton.jsx + repoint e2e (cleanup, LOW-RISK) — PR open
 
 - Branch `feature/meh-1467-cleanup-orphaned-whatsappbutton` off `origin/staging` (81385ca2). Deleted `frontend/components/WhatsAppButton.jsx` (grep-confirmed orphan, 0 prod imports) + its dead test `WhatsAppButtonAttribution.test.jsx`; removed the stale `vi.mock` in `I18nNamespaceResolution.test.jsx`; repointed `e2e/flows/04-whatsapp-click.spec.ts` to `primary-contact-button` (guard `data-method=whatsapp`) + un-skipped.

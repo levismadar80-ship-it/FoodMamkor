@@ -32,8 +32,12 @@ export default function Toaster() {
 
   return (
     <div
+      // MEH-1367: `w-[min(92vw,28rem)]` gives the centered fixed stack a stable
+      // width — without it a shrink-to-fit `-translate-x-1/2` box collapses toward
+      // min-content and a long toast (the session-expired notice) wraps to ~5
+      // narrow lines on mobile. Full-width-minus-gutter on phones, capped desktop.
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col-reverse gap-2 pointer-events-none"
+      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[min(92vw,28rem)] flex flex-col-reverse gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -61,7 +65,7 @@ export default function Toaster() {
               {icon}
             </span>
           )}
-          <span>{t.message}</span>
+          <span className="min-w-0 flex-1">{t.message}</span>
           {t.action && (
             <a
               href={t.action.href}
