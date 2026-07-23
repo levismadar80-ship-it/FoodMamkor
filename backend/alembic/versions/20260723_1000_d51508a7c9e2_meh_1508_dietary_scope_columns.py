@@ -1,6 +1,6 @@
 """MEH-1508 chunk 1 — business-level dietary scope columns on producers
 
-Adds four nullable VARCHAR columns so a business can later state that its ENTIRE
+Adds four NOT NULL VARCHAR columns so a business can later state that its ENTIRE
 offering is vegan/vegetarian (scope = 'some' vs 'all'), and whether its
 production site handles gluten/lactose ('shared' vs 'dedicated'):
 
@@ -14,12 +14,12 @@ UI touches this in this revision — chunks 2 (form + admin) and 3 (data-gated
 chip/badge) follow after Sapir merges this. VARCHAR + app-level validation (no
 Postgres enum type), matching how `availability_state` is handled.
 
-Default: every row -> 'unknown' (NOT 'some'), via a DB server_default='unknown'
-(so existing rows are backfilled AND post-migration inserts can't land NULL — a
-fourth state outside the spec), plus an explicit COALESCE UPDATE. 'unknown' is
-the honest default — we do not know a business's whole-catalog scope until it is
-asked in chunk 2 — and it guarantees ZERO change to any current filter result
-(no filter reads these columns yet).
+Default: every row -> 'unknown' (NOT 'some'). The columns are NOT NULL with a DB
+server_default='unknown' (server_default makes ADD COLUMN NOT NULL safe on the
+existing rows; NOT NULL then forbids a fourth state outside the spec), plus an
+explicit COALESCE UPDATE. 'unknown' is the honest default — we do not know a
+business's whole-catalog scope until it is asked in chunk 2 — and it guarantees
+ZERO change to any current filter result (no filter reads these columns yet).
 
 down_revision = a9f2c7d41b6e (MEH-1490 producer_google_place_id) — the single
 head on staging at authoring time. No table added, so EXPECTED_TABLES in the CI
@@ -50,19 +50,19 @@ _NEW_COLUMNS = (
 
 
 def upgrade() -> None:
-    # Add nullable WITH server_default='unknown' (matching the MEH-293 precedent
-    # server_default=sa.false()). The server_default does two things: Postgres
-    # backfills existing rows to 'unknown' at ADD COLUMN time, AND — crucially —
-    # every row INSERTed after this migration also lands 'unknown' instead of
-    # NULL, so there is no fourth state outside the unknown|some|all /
-    # unknown|shared|dedicated spec.
+    # Add NOT NULL WITH server_default='unknown' (mirroring the MEH-293 precedent
+    # nullable=False + server_default). The server_default makes ADD COLUMN NOT
+    # NULL safe on existing rows (Postgres backfills them to 'unknown' atomically
+    # at ADD COLUMN time), and NOT NULL closes the last path to a fourth state
+    # outside the unknown|some|all / unknown|shared|dedicated spec before chunk 2
+    # adds the write paths (dashboard form + admin field).
     for name in _NEW_COLUMNS:
         op.add_column(
             "producers",
             sa.Column(
                 name,
                 sa.String(length=20),
-                nullable=True,
+                nullable=False,
                 server_default=sa.text("'unknown'"),
             ),
         )
