@@ -3,6 +3,20 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 — MEH-1503 — /producers "בעיר שלי" consumes saved city + MEH-1485 write-back — PR #2107 open (LOW-RISK, GREEN)
+
+- Branch `feature/meh-1503-producers-my-city-chip` off `origin/staging`. Files: `frontend/components/ProducersClient.jsx` (+1 new test). **Frontend-only, single file + test.**
+- **Fix (Gap 1):** `handleChipClick("city")` with an empty `cityFilter` now reads `useUserCity().city` (`ProducersClient.jsx:88` — added `city: savedUserCity` to the existing destructure) and, when a saved city exists, calls `handleCitySelected(savedUserCity)` for an **instant filter, no modal** (`:361-372`). No saved city → LocationModal opens (unchanged). Active `cityFilter` → click still clears (unchanged, clear branch wins over saved-city).
+- **Phase 0 finding (meta-pattern §1 — orchestrator claim corrected):** the issue's "Gap 2" (write-back missing on /producers) is **already closed**. MEH-1485's write-back is NOT an explicit helper — it's a global `USER_CITY_CHANGED_EVENT` listener in `auth-context.js:108-119` that PATCHes `/users/me` whenever `useUserCity().setCity` dispatches. `ProducersClient.handleCitySelected` already calls `setUserCity(city)` (`:376`), so a logged-in pick already writes back. No code needed for Gap 2; the reused `handleCitySelected` path keeps that trigger for the chip too. Surfaced, not silently dropped.
+- **Test** `ProducersClientCityChip.test.jsx` (3 cases): saved city → `?city=` + no modal + `setCity` called (write-back trigger); no saved city → modal opens, no `?city=`; active filter → click clears.
+- **Verify:** `npm run build` exit 0 · all 4 ProducersClient suites **25 pass** · scope = 1 file + 1 test. Mobile QA on preview deferred to Sapir (sandbox can't log in — Railway egress block). `Closes MEH-1503`. **Do NOT push to main** (MEH-1105 owns the release).
+
+## 2026-07-23 — MEH-1504 — Tel Aviv popular-city chip sends canonical "תל אביב-יפו" — PR #2106 open (LOW-RISK, GREEN)
+
+- Branch `feature/meh-1504-tel-aviv-canonical` off `origin/staging`. `POPULAR_CITIES` `tel_aviv` canonical `תל אביב` → `תל אביב-יפו` in **both** `LocationModal.jsx` + `map/components/CityPickerModal.jsx`; test assertion updated (`LocationModal.test.jsx:65`). Display label unchanged (i18n key). Other 3 cities already canonical → untouched.
+- **Why:** backend does exact-match filtering (`producer_listing.py`), so the site's most-popular city silently filtered to 0 results against producers saved as the official cities-table name "תל אביב-יפו"; post-MEH-1485 the non-canonical value also polluted `User.city` on write-back.
+- **Verify:** `npm run build` exit 0 · `LocationModal.test.jsx` 4 pass. `Closes MEH-1504`.
+
 ## 2026-07-22 — MEH-1490 — quiet Google-rating trust line (live-fetch only, HIGH-RISK schema) — PR #2093 open (staging), NO auto-merge
 
 - **Status (updated 23/07):** post-launch gate **lifted by Sapir 23/07**; `GOOGLE_PLACES_API_KEY` **approved**. No go/no-go pending. **PR #2093** open against `staging`, auto-merge intentionally **off** — Sapir reviews the Alembic revision + does mobile QA (with the live key) first.
