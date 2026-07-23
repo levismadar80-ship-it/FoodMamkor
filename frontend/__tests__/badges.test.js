@@ -10,10 +10,11 @@ import {
 describe("BADGE_PRIORITY", () => {
   it("matches the Phase B fold order", () => {
     // MEH-1259: "organic" removed from the priority list (badge hidden).
+    // MEH-1492: recommended drops below license (fact before opinion).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
       "grass_fed",
       "gluten_free",
@@ -253,10 +254,11 @@ describe("allBadges", () => {
       verification_tier: "verified",
     });
     // MEH-1259: organic_certified is set but earns no badge — absent from order.
+    // MEH-1492: license now precedes recommended.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
       "grass_fed",
       "gluten_free",
@@ -320,10 +322,10 @@ describe("topBadges", () => {
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
-  // MEH-531: license sits between recommended and new.
+  // MEH-1492: license now sits between verified and recommended (fact > opinion).
   // MEH-1162: fixture must be verified-tier — an unverified license no longer
   // earns the chip, so the verified badge (priority 0) leads the expectation.
-  it("license priority — sits between recommended and new", () => {
+  it("license priority — sits between verified and recommended", () => {
     const p = {
       verification_tier: "verified",
       is_recommended: true,
@@ -332,15 +334,15 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 4).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
     ]);
-    // limit=3 → verified + recommended + license, new gets truncated
+    // limit=3 → verified + license + recommended, new gets truncated
     expect(topBadges(p, 3).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
     ]);
   });
 });
