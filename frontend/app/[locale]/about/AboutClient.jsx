@@ -296,6 +296,21 @@ export default function AboutPage() {
         </FadeInSection>
       )}
 
+      {/* ======== "בחירת העורכת" — MEH-1492 (editorial badge criteria + ADR-030 promise) ========
+          id="editors-pick" is the anchor target of /about#editors-pick (the recommended-
+          badge popover, BadgeRow.jsx). Mirrors the #verification section (MEH-1336); copy
+          is Sapir-locked in he.json/en.json, so it renders unconditionally. */}
+      <FadeInSection id="editors-pick" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+            {t("editors_pick.heading")}
+          </h2>
+          <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
+            {t("editors_pick.body")}
+          </p>
+        </div>
+      </FadeInSection>
+
       {/* ======== 05 — Tips accordion ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">

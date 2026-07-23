@@ -214,6 +214,12 @@
       "producer": {
         "heading": "Give your business a home",
         "subtitle": "10 minutes. No commissions. The customer comes straight to you",
+        "gate": {
+          "producer_heading": "You already have a business page on Mehamakor",
+          "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
+          "admin_heading": "An admin account can't register as a business",
+          "admin_body": "To open a business page, create a separate account with a different email address."
+        },
         "preflight": {
           "title": "Before you start",
           "prepare_title": "Good to have ready",
@@ -380,6 +386,7 @@
   "error": {
     "try_again": "Error, please try again",
     "generic": "Something went wrong, try again",
+    "retry": "Try again",
     "mapper": {
       "offline": "No internet connection. Check your network and try again.",
       "timeout": "The server is taking longer than usual. Try again in a moment.",
@@ -460,7 +467,8 @@
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
       "clear_location_filter": "Remove location filter",
-      "geo_empty": "No businesses found nearby — showing all businesses"
+      "geo_empty": "No businesses found nearby — showing all businesses",
+      "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
     },
     "founder_quote": {
       "text": "Real food, from real people, right next door.",
@@ -698,6 +706,10 @@
       "loading_fresh": "Loading fresh businesses...",
       "not_found": "We couldn't find this business — yet",
       "breadcrumb_home": "Home",
+      "google_rating": {
+        "summary": "{rating} · {count} reviews on Google Maps",
+        "link_label": "View the profile on Google Maps (opens in a new tab)"
+      },
       "aria": {
         "back": "Back to previous page",
         "tab_nav": "Quick profile navigation"
@@ -1482,6 +1494,9 @@
           "city": "City / region",
           "slug": "Slug (URL)",
           "slug_placeholder": "auto-generated",
+          "google_place_id": "Google Place ID",
+          "google_place_id_placeholder": "ChIJ… (place_id only)",
+          "google_place_id_hint": "The Google Maps Place ID. The rating line shows only if the business has ≥20 Google reviews. Paste the place_id only — not a URL.",
           "lat": "Latitude",
           "lng": "Longitude",
           "organic_certified": "Certified organic",
@@ -2452,6 +2467,10 @@
         "heading": "How we verify",
         "body": "Every business on Mehamakor is approved by hand — we check a valid business license and talk with the owner before anything goes live. No automatic sign-ups, no shortcuts. So when you see the ✓ Verified seal, you know a real person actually checked."
       },
+      "editors_pick": {
+        "heading": "Editor's Pick",
+        "body": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+      },
       "cta": {
         "heading": "Built a business that deserves a home? We'd love to meet you.",
         "register": "Add your business",
@@ -2722,6 +2741,12 @@
       "category_label": "Category",
       "filter_label": "Filters",
       "clear_all": "Clear all"
+    },
+    "sort": {
+      "label": "Sort:",
+      "aria_label": "Sort businesses",
+      "newest": "Newest",
+      "top_rated": "Top rated"
     },
     "empty": {
       "no_match_search": "We couldn't find any businesses for \"{q}\"",
@@ -3008,8 +3033,8 @@
       "ordering_link_label": "Open",
       "escalation": "Another question? Send us a message",
       "more_questions": "More questions",
-      "recipe_idea": "I have a recipe idea",
-      "recipe_idea_message": "Hi! I came from your page on Mehamakor — I have a recipe idea using your products:"
+      "recipe_idea": "Can I share a recipe I made?",
+      "recipe_idea_message": "Hi! I came from your page on Mehamakor — I made something with your products and I'd love to share the recipe:"
     }
   },
   "directory": {
@@ -4156,11 +4181,12 @@
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
         "subtitle": "Leave blank to show default questions based on your category",
         "context_line": "These questions appear on your business page and help customers start a conversation",
-        "placeholder_1": "Example: What types of cheese do you have this week?",
-        "placeholder_2": "Example: How does delivery work?",
-        "placeholder_3": "Example: What is the kosher certification?",
-        "placeholder_4": "Example: How do I order?",
-        "placeholder_5": "Example: Can I visit in person?",
+        "guidance": "Works best: questions customers actually ask before buying — what's in stock, delivery, ordering.",
+        "placeholder_1": "What's in stock this week?",
+        "placeholder_2": "Do you deliver to [city]?",
+        "placeholder_3": "Can I order for an event?",
+        "placeholder_4": "What's in season now?",
+        "placeholder_5": "Can I arrange a tasting?",
         "save_cta": "Save questions",
         "saving": "Saving…",
         "saved": "✓ Saved"
@@ -4282,7 +4308,7 @@
       "meta_title": "Messages | Mehamakor",
       "meta_description": "Communication on Mehamakor happens directly on WhatsApp with the business.",
       "heading": "How communication works on Mehamakor",
-      "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a WhatsApp button that connects you directly to the business owner.",
+      "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a direct-contact button — WhatsApp, phone, or another channel the business chose — that connects you directly to the business owner.",
       "why_heading": "Why this way?",
       "why_item_no_middlemen": "✓ You know exactly who you're buying from — you talk with the person who grew / prepared / baked it",
       "why_item_direct_terms": "✓ Agree on price, delivery, and availability personally",

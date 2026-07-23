@@ -201,13 +201,10 @@ function RegisterProducerPageBody() {
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
   }, [step, showPreflight]);
 
-  // MEH-669: admins cannot register as producers. Backend rejects with
-  // 403 at auth.py:432; this redirect prevents them from filling out the
-  // form only to hit a server error on submit. Wait for auth to resolve
-  // so we don't bounce mid-load while user is still null.
-  useEffect(() => {
-    if (!authLoading && user?.role === "admin") router.push("/admin");
-  }, [authLoading, user, router]);
+  // MEH-1489: the admin case is now handled by the early gate below (a terminal
+  // "separate account for admin" screen), not a silent /admin redirect — same
+  // intent as the auth.py:~477 403 backstop, surfaced up-front instead of at
+  // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -405,10 +402,53 @@ function RegisterProducerPageBody() {
     }
   };
 
-  // Don't show step 1 (account form) until we know whether user is logged in —
-  // prevents the flash of email/password inputs for already-authenticated users.
-  if (authLoading && step === STEP.ACCOUNT) {
+  // Don't render the wizard/preflight until auth resolves. MEH-1489 broadened
+  // the old `&& step === STEP.ACCOUNT` guard to all authLoading: a token-holder's
+  // step initializes to DETAILS (line 88), so that guard didn't cover them and a
+  // logged-in producer/admin briefly saw the join pitch before the gate. Showing
+  // the existing loading text for every authLoading tick closes that flash;
+  // guests are unaffected (they start at ACCOUNT, resolve immediately).
+  if (authLoading) {
     return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
+  }
+
+  // MEH-1489: early auth-state gate. A logged-in producer already owns a page
+  // (backend 409 already_has_producer at submit) and an admin must use a separate
+  // account (backend 403, auth.py:~477) — both dead-end a 10-minute wizard. Show a
+  // terminal screen up-front instead. Guests + logged-in consumers (MEH-143 upgrade
+  // path, role !== producer/admin) fall through unchanged. Sits ABOVE the
+  // showPreflight return so the wizard tree below stays byte-identical (MEH-132).
+  if (user?.role === "producer") {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate">
+          <div className="mb-4 flex justify-center">
+            <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
+          </div>
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.producer_heading")}</h1>
+          <p className="text-fg-muted mb-6">{t("auth.register.producer.gate.producer_body")}</p>
+          {/* CTA reuses the account-menu dashboard label (single owner, no new key). */}
+          <button
+            onClick={() => router.push("/producer/dashboard")}
+            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+          >
+            {t("account.menu.dashboard")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (user?.role === "admin") {
+    // No dashboard CTA — an admin's daily-work account has no producer page to
+    // manage; the message points them at creating a separate business account.
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate-admin">
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.admin_heading")}</h1>
+          <p className="text-fg-muted">{t("auth.register.producer.gate.admin_body")}</p>
+        </div>
+      </div>
+    );
   }
 
   // MEH-994: pre-flight screen before frame 01. Early return keeps the wizard

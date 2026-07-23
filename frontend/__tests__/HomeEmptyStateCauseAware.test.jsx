@@ -76,3 +76,44 @@ describe("HomeProducersGrid empty state (MEH-1085 DISC-07)", () => {
     expect(screen.queryByText("home.producers.empty_heading_category")).not.toBeInTheDocument();
   });
 });
+
+// MEH-1487: when a delivery_city filter returns 0 but the city belongs to a
+// region, the empty state is replaced by the region-fallback section.
+describe("HomeProducersGrid region fallback (MEH-1487)", () => {
+  it("region hit → fallback header + region producer cards, no generic empty state", () => {
+    render(
+      <HomeProducersGrid
+        {...baseProps}
+        filters={{ category: "", delivery_city: "אריאל", has_delivery: false }}
+        onClearCategory={() => {}}
+        regionFallback={{
+          regionName: "השרון",
+          producers: [{ id: "a" }, { id: "b" }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("region-fallback")).toBeInTheDocument();
+    // header interpolates city + region
+    expect(
+      screen.getByText(/home\.producers\.region_fallback_header/),
+    ).toHaveTextContent("אריאל");
+    expect(
+      screen.getByText(/home\.producers\.region_fallback_header/),
+    ).toHaveTextContent("השרון");
+    // generic empty state is suppressed
+    expect(screen.queryByText("home.producers.empty_heading")).not.toBeInTheDocument();
+  });
+
+  it("no fallback (region miss) → generic empty state renders", () => {
+    render(
+      <HomeProducersGrid
+        {...baseProps}
+        filters={{ category: "", delivery_city: "עיר קטנה", has_delivery: false }}
+        onClearCategory={() => {}}
+        regionFallback={null}
+      />,
+    );
+    expect(screen.queryByTestId("region-fallback")).not.toBeInTheDocument();
+    expect(screen.getByText("home.producers.empty_heading")).toBeInTheDocument();
+  });
+});

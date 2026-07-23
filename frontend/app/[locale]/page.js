@@ -48,7 +48,7 @@ export default function HomePage() {
   const locale = useLocale();
   const {
     user,
-    producers, categories, filters, chips,
+    producers, regionFallback, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
     fridayMode, step0Visible, userCity,
@@ -79,8 +79,6 @@ export default function HomePage() {
         fridayMode={fridayMode}
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
-        onSurprise={handleSurprise}
-        hasProducers={statsProducersCount > 0}
         onScrollDown={scrollToProducers}
       />
 
@@ -193,9 +191,12 @@ export default function HomePage() {
         onClearCategory={handleClearCategory}
         onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}
+        onSurprise={handleSurprise}
+        hasProducers={statsProducersCount > 0}
         geoActive={geoActive}
         cityActive={cityActive}
         geoEmptyNotice={geoEmptyNotice}
+        regionFallback={regionFallback}
       />
 
       {/* =========================

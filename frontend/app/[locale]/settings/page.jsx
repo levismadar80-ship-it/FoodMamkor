@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { useUserCity } from "@/lib/use-user-city";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
@@ -143,6 +144,10 @@ function TabButton({ active, onClick, icon, children }) {
 // SettingsPage.test.jsx), so the phone-validation UX is asserted directly.
 export function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
+  // MEH-1485: mirror a saved profile city into localStorage user_city so the
+  // consumer filters (home/map/FridayDeliveryStrip) update in the same
+  // session — reuses the mehamakor:city-changed event via setCity.
+  const { setCity: setUserCity } = useUserCity();
   const tCommon = useTranslations("settings.common");
   const t = useTranslations("settings.profile");
   const [name, setName] = useState(user.name || "");
@@ -188,6 +193,12 @@ export function ProfileTab() {
       if (city.trim() !== (user.city || "")) patch.city = city.trim();
       if (phone.trim() !== (user.phone || "")) patch.phone = phone.trim();
       await updateProfile(patch);
+      // MEH-1485: when the city changed, push it to localStorage so the
+      // filters reflect it this session (setCity dispatches the shared
+      // city-changed event; the auth-context write-back skips it as a no-op).
+      if (Object.prototype.hasOwnProperty.call(patch, "city")) {
+        setUserCity(patch.city || null);
+      }
       setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {

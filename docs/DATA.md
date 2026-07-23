@@ -94,6 +94,9 @@ producers (
   images text[],
   plan: free|premium,
   slug text unique,
+  -- MEH-1490: admin-mapped Google Maps Place ID. The ONLY Google datum stored —
+  -- rating/userRatingCount are live-fetched (never persisted; ToS §3.2.3(b)).
+  google_place_id varchar(300) nullable,
   contact_name, top_product_name,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
@@ -423,7 +426,10 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
                                                has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
-                                               sort: newest (default) | rating
+                                               sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
+                                               (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
+                                               reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
+                                               Non-geo only (geo results always order by distance). Drives the /producers sort select.
                                                MEH-1465: ?category is REPEATABLE (list[int]) — ?category=1&category=2 ORs over the
                                                ids (a producer in any selected category matches). A single ?category=5 still works
                                                (parses to [5]). Filtered via EXISTS on producer_categories (Producer.categories.any),
@@ -441,6 +447,13 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                self-declared organic_certified boolean (unverified). Re-add only behind an
                                                admin-verified flow. Column + owner toggle + admin checkbox kept.
 GET    /producers/{producer_id}                   public
+GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Google-rating trust line. Read-only
+                                               server-side proxy to Places API (New) (X-Goog-FieldMask:
+                                               rating,userRatingCount,googleMapsUri). NEVER persists any value
+                                               (ToS §3.2.3(b) No Caching). 200 → { rating, user_rating_count,
+                                               google_maps_uri } only when a place_id is mapped AND count ≥ 20;
+                                               204 (fail-quiet) on no place_id / count<20 / API error / no
+                                               GOOGLE_PLACES_API_KEY; 404 only for an unknown producer. 60/min.
 GET    /producers/by-slug/{slug}                  public
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
