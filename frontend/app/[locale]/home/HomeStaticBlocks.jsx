@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
@@ -264,12 +265,13 @@ export function HomeCTA() {
         <p className="text-fg-muted text-lg mb-8 max-w-xl mx-auto">
           {t("home.cta.body_l3")}
         </p>
-        <Link
+        {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+        <BusinessCtaLink
           href="/register/producer"
           className="inline-block bg-primary text-white px-8 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
         >
           {t("home.cta.button")}
-        </Link>
+        </BusinessCtaLink>
       </div>
     </section>
   );

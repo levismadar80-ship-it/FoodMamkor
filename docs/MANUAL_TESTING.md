@@ -3,6 +3,29 @@
 
 ---
 
+## MEH-1489 — משטחי הרשמה מודעי-התחברות (early gate + adaptive CTA + redirect) (23/07)
+
+מטריצת QA — 4 מצבים × משטחי כל chunk (guest / consumer מחוברת / producer מחוברת / admin מחובר):
+
+**Chunk A — `/register/producer`:**
+- [ ] **producer מחוברת** — פותחת `/register/producer` — **תוצאה מצופה:** מסך gate ("כבר יש לך עמוד עסק במהמקור") עם כפתור "לוח הבקרה שלי" → `/producer/dashboard`. אין preflight, אין טופס.
+- [ ] **admin מחובר** — פותח `/register/producer` — **תוצאה מצופה:** מסך gate עם הודעת "חשבון נפרד לניהול", **בלי** כפתור דשבורד. אין redirect ל-/admin.
+- [ ] **אורחת** — פותחת `/register/producer` — **תוצאה מצופה:** preflight רגיל ("לפני שמתחילים") → אשף מלא. אפס שינוי.
+- [ ] **consumer מחוברת (upgrade)** — פותחת `/register/producer` — **תוצאה מצופה:** preflight רגיל בלי שורת יצירת-חשבון → אשף upgrade. אפס שינוי (MEH-143).
+
+**Chunk B — CTA מותאם (5 משטחים: `/join` hero · `/about/for-businesses` header+footer · `/about/process` closing · דף בית HomeCTA):**
+- [ ] **producer מחוברת** — כל 5 המשטחים — **תוצאה מצופה:** ה-CTA מציג "לוח הבקרה שלי" ומוביל ל-`/producer/dashboard`.
+- [ ] **admin מחובר** — כל 5 המשטחים — **תוצאה מצופה:** ה-CTA לא מוצג בכלל (null).
+- [ ] **אורחת / consumer מחוברת** — כל 5 המשטחים — **תוצאה מצופה:** ה-CTA המקורי ("הצטרפו"/`cta`) מוביל ל-`/register/producer`. אפס שינוי.
+
+**Chunk C — `/login` + `/register`:**
+- [ ] **מחוברת (כל תפקיד)** — פותחת `/login` או `/register` — **תוצאה מצופה:** redirect מיידי ל-`?redirect=` (או `/`), הטופס לא מהבהב.
+- [ ] **`/login?redirect=//evil.com` מחוברת** — **תוצאה מצופה:** clamp ל-`/` (MEH-810 נשמר).
+- [ ] **אורחת `/login?reset=1`** — **תוצאה מצופה:** toast "אופס הסיסמה" מוצג + טופס login רגיל.
+- [ ] **אורחת `/register` → submit** — **תוצאה מצופה:** מסך "בדקי את המייל" (אין token → user null → אין redirect).
+
+---
+
 ## MEH-1465 — בחירת קטגוריות מרובה (OR) בשורות הצ'יפים (22/07)
 
 בדקי בנייד (375px, RTL) ב-`/producers` וב-`/map`.
