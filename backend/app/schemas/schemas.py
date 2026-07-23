@@ -849,6 +849,15 @@ class ProducerUpdate(BaseModel):
     opening_hours: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
+    # MEH-1508 ch2: business-level dietary scope — owner declares, admin
+    # cross-checks. Shared by the owner PUT (producer_me.py, gated by
+    # _PRODUCER_WRITABLE_FIELDS) and the admin PUT (admin.py bulk setattr).
+    # Validated below — the columns are NOT NULL, so the validator rejects an
+    # explicit null (an omitted field is dropped by exclude_unset, never validated).
+    vegan_scope: str | None = None
+    vegetarian_scope: str | None = None
+    gluten_free_facility: str | None = None
+    lactose_free_facility: str | None = None
     # MEH-293/MEH-479: dietary flags moved to products.is_X.
     has_delivery: bool | None = None
     pickup_points: bool | None = None
@@ -954,6 +963,27 @@ class ProducerUpdate(BaseModel):
             )
         return v
 
+    # MEH-1508 ch2: the validation debt from chunk 1 — VARCHAR has no enum type,
+    # so the app is the only guard. These run ONLY on an explicitly-provided value
+    # (Pydantic v2 validate_default=False), so an omitted field is untouched; an
+    # explicit null is rejected because the columns are NOT NULL and a null write
+    # would 500 on the constraint.
+    @field_validator("vegan_scope", "vegetarian_scope")
+    @classmethod
+    def _validate_dietary_scope(cls, v):
+        allowed = {"unknown", "some", "all"}
+        if v not in allowed:
+            raise ValueError(f"scope חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
+
+    @field_validator("gluten_free_facility", "lactose_free_facility")
+    @classmethod
+    def _validate_facility_scope(cls, v):
+        allowed = {"unknown", "shared", "dedicated"}
+        if v not in allowed:
+            raise ValueError(f"מתקן חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
+
     @field_validator("availability_state")
     @classmethod
     def _validate_availability_state(cls, v):
@@ -1047,6 +1077,13 @@ class ProducerListOut(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
+    # MEH-1508 ch2: business-level dietary scope (owner-declared, admin
+    # cross-checked). NOT NULL cols (server_default 'unknown') → always a value;
+    # the default here is a from_attributes fallback. ProducerDetailOut inherits.
+    vegan_scope: str = "unknown"
+    vegetarian_scope: str = "unknown"
+    gluten_free_facility: str = "unknown"
+    lactose_free_facility: str = "unknown"
     # MEH-293/MEH-479: dietary flags live on products.is_X. The aggregated
     # has_X_products fields below are computed at serialization time by
     # attach_badge_fields — `True` when at least one product on this
