@@ -6,33 +6,31 @@ name: VRT baseline update
 # chromium): dev machines (Windows) and the CC sandbox render different font
 # stacks, so locally-generated baselines would red-line every CI comparison.
 #
-# Triggers:
-# - workflow_dispatch on a feature branch (when a token with actions:write
-#   is available — the GitHub MCP integration in CC sessions is not).
-# - push to a feature branch touching e2e/visual/** or this file — the
-#   self-service path: any change to the VRT spec/css regenerates baselines
-#   for that branch automatically. The actor guard below stops the bot's
-#   own baseline commit from re-triggering the workflow (self-loop).
-# It never runs on a schedule and never pushes to staging/main — it commits
-# to the ref it ran on, and both protected branches reject direct pushes at
-# the ruleset level anyway (post-merge pushes to staging are filtered out
-# by branches-ignore).
+# Trigger: workflow_dispatch ONLY (manual). MEH-1496 removed the push
+# auto-fire (on.push on e2e/visual/** or this file): it regenerated EVERY
+# route's baseline and committed each changed one, so a targeted regen of a
+# single route (e.g. /map) also rewrote the deliberately-frozen home baseline
+# (MEH-1450 Phase 0; PR #2102 hit exactly this and merged the frozen home
+# baseline to staging). The optional `route` dispatch input (--grep) scopes a
+# run to one baseline; empty input keeps the full regen. Dispatch needs a token
+# with actions:write (the GitHub MCP integration in CC sessions does not have
+# it — run it from the Actions tab / gh CLI on a feature branch).
+# It never runs on a schedule and never pushes to staging/main — it commits to
+# the ref it ran on, and both protected branches reject direct pushes at the
+# ruleset level anyway.
 #
 # Build/start steps mirror e2e.yml (MEH-1044 localhost target) — keep the
 # two in sync when the server strategy changes.
 
 on:
+  # MEH-1496: manual dispatch ONLY. `route` scopes the regen to a single
+  # baseline via Playwright --grep (empty = every route, the prior behavior).
   workflow_dispatch:
     inputs:
       route:
         description: 'Playwright --grep pattern (ריק = כל ה-routes)'
         required: false
         default: ''
-  push:
-    branches-ignore: [staging, main]
-    paths:
-      - "frontend/e2e/visual/**"
-      - ".github/workflows/vrt-update.yml"
 
 permissions:
   contents: write
@@ -107,7 +105,15 @@ jobs:
           exit 1
 
       - name: Regenerate baselines
-        run: npx playwright test e2e/visual --update-snapshots
+        # MEH-1496: scope to one route when `route` is set (e.g. "map" or
+        # "producer detail"); empty input regenerates every baseline. PR #2102
+        # added the input but left this step unscoped — the input was dead.
+        run: |
+          if [ -n "${{ inputs.route }}" ]; then
+            npx playwright test e2e/visual --update-snapshots --grep "${{ inputs.route }}"
+          else
+            npx playwright test e2e/visual --update-snapshots
+          fi
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000

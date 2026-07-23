@@ -702,8 +702,9 @@
       "not_found": "לא מצאנו את בית העסק הזה — עדיין",
       "breadcrumb_home": "בית",
       "google_rating": {
-        "summary": "{rating} · {count} ביקורות ב-Google Maps",
-        "link_label": "צפייה בפרופיל ב-Google Maps (נפתח בכרטיסייה חדשה)"
+        "summary": "ל{name} יש {count} ביקורות ב-Google Maps, בדירוג ממוצע {rating}.",
+        "cta": "לצפייה בהן ‹",
+        "link_label": "צפייה בביקורות ב-Google Maps (נפתח בכרטיסייה חדשה)"
       },
       "aria": {
         "back": "חזרה לעמוד הקודם",
@@ -1499,6 +1500,13 @@
           "google_place_id": "מזהה Google Place",
           "google_place_id_placeholder": "ChIJ… (place_id בלבד)",
           "google_place_id_hint": "מזהה המקום ב-Google Maps. שורת הדירוג תוצג רק אם לעסק ≥20 ביקורות ב-Google. הדביקי place_id בלבד — לא כתובת URL.",
+          "google_place_search": "חפשי בגוגל",
+          "google_place_searching": "מחפשת…",
+          "google_place_search_hint": "חיפוש לפי שם ועיר. בחרי מועמדת כדי למלא את ה-place_id.",
+          "google_place_no_results": "לא נמצאו תוצאות בגוגל",
+          "google_place_error": "החיפוש נכשל, נסי שוב",
+          "google_place_reviews": "{count} ביקורות",
+          "google_place_low_reviews": "פחות מ-20 ביקורות — השורה לא תוצג",
           "lat": "Latitude",
           "lng": "Longitude",
           "organic_certified": "אורגני מוסמך",

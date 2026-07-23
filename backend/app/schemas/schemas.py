@@ -455,13 +455,17 @@ class ProducerLocationOut(BaseModel):
     this array). `precision` is emitted from the ORM's `location_precision`
     column (serialization_alias) to match the epic's map contract shape.
     Street `address` is intentionally NOT exposed here — MEH-829 keeps the
-    exact address admin/owner-only; the map pins on lat/lng + city.
+    exact address admin/owner-only; the map pins on lat/lng + city and
+    navigation is built from lat/lng.
 
-    Field set is exactly the epic's locked `locations[]` contract (kind, label,
-    city, lat, lng, is_primary, precision). The ORM `ProducerLocation` also has
-    `opening_hours` + `phone` (chunk 1) — deliberately NOT serialized here to
-    keep chunk 2 to the locked shape; chunk 3 (map popup / click-to-call) adds
-    them if the pin UI needs them.
+    Field set: kind, label, city, lat, lng, is_primary, precision (the epic's
+    locked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1
+    backend) added the latter two so the public business page can render real
+    pickup / market_stand rows — "where and when" (opening_hours) and
+    click-to-call (phone) — instead of a single generic boolean line. The
+    columns already existed on the ORM `ProducerLocation` (models.py; revision
+    a9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders
+    them in DeliveryBlock.) Street `address` stays OFF this public shape.
     """
 
     kind: str
@@ -470,6 +474,10 @@ class ProducerLocationOut(BaseModel):
     lat: float | None = None
     lng: float | None = None
     is_primary: bool = False
+    # MEH-1509 (MEH-1388, chunk-1 backend): serialized so the business page can
+    # show a pickup point's hours + phone. address stays off (MEH-829).
+    opening_hours: str | None = None
+    phone: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
     # serialization_alias emits the epic's contract key `precision` on the wire
     # (FastAPI dumps response models with by_alias=True).
