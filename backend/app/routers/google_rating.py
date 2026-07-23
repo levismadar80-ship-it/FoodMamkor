@@ -15,6 +15,7 @@ Related:  routers/reviews.py:46 (fail-quiet external-call idiom this mirrors),
           schemas.schemas.GoogleRatingOut, models.Producer.google_place_id.
 History:  MEH-1490 (creation) — external trust signal, live-fetch only.
 """
+
 import logging
 from uuid import UUID
 
@@ -96,11 +97,7 @@ def get_google_rating(
     profile has < MIN_REVIEWS reviews, no server key, or any Google API error.
     404 only when the producer id itself does not exist.
     """
-    row = (
-        db.query(Producer.google_place_id)
-        .filter(Producer.id == producer_id)
-        .first()
-    )
+    row = db.query(Producer.google_place_id).filter(Producer.id == producer_id).first()
     if row is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
