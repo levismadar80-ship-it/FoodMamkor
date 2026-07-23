@@ -449,7 +449,7 @@
       "heading": "Local businesses",
       "heading_category": "Businesses · {name}",
       "map_link": "View on map",
-      "filter_prefix": "Filtering by:",
+      "filter_prefix": "Showing: businesses with",
       "counter": "Showing {shown} of {total}",
       "hint_favorites": "Tap the heart to save businesses you love",
       "filter_showing": "Showing:",
