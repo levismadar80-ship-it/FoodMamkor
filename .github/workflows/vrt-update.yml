@@ -23,6 +23,11 @@ name: VRT baseline update
 
 on:
   workflow_dispatch:
+    inputs:
+      route:
+        description: 'Playwright --grep pattern (ריק = כל ה-routes)'
+        required: false
+        default: ''
   push:
     branches-ignore: [staging, main]
     paths:
