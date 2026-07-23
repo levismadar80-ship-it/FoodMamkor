@@ -3,6 +3,10 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 — MEH-1508 chunk 1 APPROVED + merged (schema)
+
+- **MEH-1508 chunk 1** (PR #2114, `feature/meh-1508-dietary-scope-schema`): 4 NOT NULL VARCHAR(20) scope columns on `producers` (`vegan_scope`/`vegetarian_scope` = unknown|some|all; `gluten_free_facility`/`lactose_free_facility` = unknown|shared|dedicated), `server_default='unknown'` + backfill. Revision `d51508a7c9e2` ← `a9f2c7d41b6e` (single head, Sapir-confirmed live `alembic_version`). Squash-merged to staging → migration applies on Dockerfile boot. CI drift gate green (fresh PG15: upgrade head + table-count + `alembic check`); pytest 1693p/365s/1xf. **CC could not reach the staging DB (MEH-360) for the post-deploy `alembic_version` + scope-count check — Sapir runs it.** **Chunks 2-3 NOT started** (form/admin, then data-gated chip — MEH-1088 pattern).
+
 ## 2026-07-23 — MEH-1506 — semi-automated place_id mapping in admin — MERGED (PR #2110)
 
 - **Shipped end-to-end** (LOW-RISK, user granted build→PR→CI→merge authority). Branch `feature/meh-1506-admin-place-lookup` off `origin/staging`; squash-merged to staging as `29a4001b`.

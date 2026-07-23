@@ -110,6 +110,27 @@ class Producer(Base):
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
+    # MEH-1508 chunk 1 (schema only): business-level dietary scope — distinguishes
+    # "one tagged product" (product-level flags, below) from "the whole catalog".
+    # VARCHAR + app-level validation (no PG enum), like availability_state.
+    # NOT NULL with both a Python-side `default` (ORM inserts) AND a DB
+    # `server_default` ('unknown') — mirrors the MEH-293 product flags
+    # (nullable=False + default + server_default). server_default makes ADD COLUMN
+    # NOT NULL safe on existing rows; NOT NULL then forbids a fourth state outside
+    # the unknown|some|all / unknown|shared|dedicated spec. No filter reads these
+    # yet, so zero behaviour change until chunks 2 (form/admin) + 3 (chip) land.
+    vegan_scope = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | some | all
+    vegetarian_scope = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | some | all
+    gluten_free_facility = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | shared | dedicated
+    lactose_free_facility = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | shared | dedicated
     # MEH-293/MEH-479: dietary flags moved to products.is_X (canonical) and
     # ProducerListOut.has_X_products (aggregated, computed at attach time).
     has_delivery = Column(Boolean, default=False)
