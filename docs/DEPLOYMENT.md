@@ -136,8 +136,11 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
+   | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
    | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
+   | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain (`mehamakor.online`) is verified (SPF+DKIM). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
+   | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.online>` (`config.py`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
@@ -379,6 +382,48 @@ If both IPs land in the same bucket, `TRUSTED_PROXY` is unset or mis-typed
 Assumes exactly one trusted proxy hop (Railway edge). If Cloudflare
 is ever added in front of Railway, revisit the XFF fallback path
 (`X-Real-IP` primary stays correct — Railway still sets it).
+
+
+### D-bis. Single-replica invariant (MEH-1319) — **keep workers at 1**
+
+The backend is designed to run as a **single Railway replica with a
+single Uvicorn worker.** Several mechanisms live in process memory with
+no cross-worker coordination and would misbehave if a second worker
+were ever started:
+
+| Mechanism | Second worker breaks it by… |
+|---|---|
+| APScheduler jobs — onboarding follow-ups (MEH-539) + auto-reply watchdog | Each worker runs its own scheduler → **duplicate emails** and double watchdog runs |
+| slowapi rate limiter (in-memory store) | Per-worker counters → effective limit multiplied by the worker count (login/abuse limits weaken ×N) |
+| Analytics request-metrics deque + trending cache | Fragmented per worker → the admin dashboard sees only one worker's slice |
+| JWKS cache | Redundant fetches; no correctness break, but wasted work |
+
+Because Railway's worker/replica count is a platform setting (Sapir
+domain), the app does **not** crash on a misconfiguration — instead a
+boot-time guard (`_check_single_replica` in
+[`backend/app/startup.py`](../backend/app/startup.py)) reads
+`WEB_CONCURRENCY` / `UVICORN_WORKERS` and logs a loud **ERROR** naming
+these consequences whenever the count parses to `>1`. It fail-opens on
+unset/garbage values (the platform default is one worker). If you ever
+genuinely need horizontal scale, move the scheduler to a leader-elected
+/ locked job and the rate limiter + metrics to a shared store (Redis)
+**before** raising the worker count — do not silence the guard.
+
+
+### D-ter. Cities dataset seed (MEH-1343) — one-time per environment
+
+The `cities` table exists everywhere (Alembic baseline `ef8fb1858f5b`) but
+starts **empty**; the official ~1,270 data.gov.il localities are loaded by a
+one-time, idempotent seed (`ON CONFLICT DO NOTHING` — safe to re-run):
+
+- **From the admin panel / API:** `POST /admin/seed-cities` (admin JWT).
+- **From a shell with `DATABASE_URL`:** `cd backend && python scripts/seed_cities.py`.
+
+Run it once on **staging** and once on **production**. Until an env is
+seeded, `GET /cities` falls back to the ~100-entry static list
+(`backend/app/data/cities.py`), so autocomplete works but small localities
+(מושבים/כפרים) are missing. Verify: `GET /cities?q=פוריידיס` returns a result
+on a seeded env. Local dev: same script against the local DB.
 
 
 ### E. Verify deploys actually ran (MEH-260)
@@ -799,6 +844,93 @@ deploys, which is exactly the opposite of what we want.
 The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
 runs Playwright tests against each PR's Vercel preview URL.
 
+### Staging QA auth fixtures (MEH-1241)
+
+Playwright can drive a logged-in **producer** and **consumer** session against
+staging, so UI behind login (e.g. the account menu) is QA'd automatically
+instead of manually. Three moving parts:
+
+1. **Seed accounts (staging DB).** `backend/scripts/seed_demo_business.py`
+   owns two known-password QA users — `demo-owner@example.com` (role
+   `producer`, linked to the `/ruach-hasadeh` demo) and
+   `demo-consumer@example.com` (role `consumer`). Their passwords come from the
+   env vars **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** (set on the
+   Railway staging backend + GitHub Actions secrets, same values). To (re)apply
+   them **non-destructively** — no producer/review/product rows touched, unlike
+   `--refresh` — run by Sapir against staging only. **Two routes, pick one:**
+
+   **A. Railway Console (in-container, `cwd=/app`)** — the Docker build context
+   is `backend/`, so its contents copy straight to `/app`; there is **no**
+   `/app/backend/`, and the `railway` CLI does not exist inside the container:
+
+   ```bash
+   # Railway → service → Console (already at /app)
+   python scripts/seed_demo_business.py --sync-users
+   ```
+
+   **B. Local machine with the Railway CLI, from the repo root:**
+
+   ```bash
+   railway run python backend/scripts/seed_demo_business.py --sync-users
+   ```
+
+   Both hit the staging DB (route B via the CLI's env injection; route A is
+   already inside the staging service). The script's `_assert_not_production()`
+   refuses any non-staging host. Idempotent; aborts loudly if either
+   `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` is unset. Expected output:
+   `Synced QA users: demo-owner@example.com (password reset),
+   demo-consumer@example.com (created). …`
+
+2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
+   each role in via `POST /api/auth/login` and writes
+   `frontend/e2e/.auth/{producer,consumer}.json` (the JWT lands in
+   `localStorage["token"]`, where the SPA reads it). These files embed a **live
+   JWT** and are **gitignored** (`frontend/.gitignore` → `e2e/.auth/`) — never
+   committed. globalSetup **no-ops on a localhost baseURL** (the accounts exist
+   on staging only) and **throws** on a remote target with a missing password
+   env or a failed login.
+
+3. **A spec opts into a role** — no per-spec login code:
+
+   ```ts
+   import { test } from "@playwright/test";
+   test.use({ storageState: "e2e/.auth/producer.json" }); // or consumer.json
+   ```
+
+**Where these run:** only against a real staging/preview target —
+
+```bash
+cd frontend
+TEST_URL=https://staging.mehamakor.online \
+DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… \
+VERCEL_AUTOMATION_BYPASS_SECRET=… \
+npx playwright test e2e/flows/21-account-menu-auth.spec.ts
+```
+
+**`VERCEL_AUTOMATION_BYPASS_SECRET` is required for any `TEST_URL` staging/preview
+run.** `staging.mehamakor.online` sits behind **Vercel Deployment Protection** —
+without this header a request 302-redirects to `vercel.com/sso-api` and never
+reaches the backend (so both the globalSetup login and the spec's page
+navigations would fail). Get it from **Vercel → Settings → Deployment Protection
+→ Protection Bypass for Automation** (it's the `VERCEL_AUTOMATION_BYPASS_SECRET`
+system env var). `globalSetup` sends it on the login request and
+`playwright.config.ts` sends it on browser navigations (`x-vercel-protection-bypass`);
+globalSetup **throws** on a remote target when it's unset. **Rotating** the secret
+(regenerate in that same Vercel setting) requires a **redeploy** before the new
+value takes effect. Never commit or log the value.
+
+> **Env-name (MEH-1241):** `VERCEL_AUTOMATION_BYPASS_SECRET` is the **canonical**
+> name on **both** surfaces (globalSetup + `playwright.config.ts`, same
+> precedence). The legacy job-export alias `VERCEL_BYPASS_SECRET` is still read as
+> a **fallback** in both, so older CI wiring keeps working — but export the
+> canonical name for new setups.
+
+They do **not** run in the default CI E2E job, which targets a local
+`next start` (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, MEH-1044) where the
+seeded accounts don't exist — there globalSetup logs a skip and returns. The
+existing admin fixture (`SMOKE_ADMIN_*` → `POST /auth/login` in
+`e2e/flows/19,20`) is separate and unchanged.
+
 ### How it works (current: `deployment_status` trigger)
 
 GitHub Actions fires **only after Vercel signals the preview is ready**
@@ -989,6 +1121,24 @@ ANTHROPIC_MODEL=claude-opus-4-6
 # back to ADMIN_EMAIL when unset. If SMTP is unconfigured, the
 # submission is still persisted to contact_messages (fail-open).
 CONTACT_EMAIL=levismadar80@gmail.com
+
+# Email — Resend HTTP API (Railway blocks SMTP ports 25/465/587, so all mail
+# goes through Resend). REQUIRED for any email to send. The key must belong to
+# a Resend account where the sending domain (mehamakor.online) is verified
+# (SPF+DKIM). If unset, every verification/reset/welcome email is SILENTLY
+# skipped (fail-open in backend/app/services/email.py) — the user still sees a
+# "check your email" ack but nothing sends. Boot fails loud when this is missing
+# on staging/production (MEH-1164 guard in backend/app/startup.py).
+RESEND_API_KEY=<from resend.com — account with mehamakor.online verified>
+# Optional sender header; defaults to "מהמקור <noreply@mehamakor.online>".
+# Override only to send from a different address on the same verified domain.
+EMAIL_FROM_ADDRESS=מהמקור <noreply@mehamakor.online>
+
+# LEGACY / removable — SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD are
+# DEAD: no code reads them since the smtplib→Resend migration (MEH-150 / PR #335,
+# ADR-002) deleted the SMTP_* fields from config.py. Verified 2026-07-17 (MEH-1164
+# docs step): zero consumers under backend/. If they still exist in Railway they
+# can be removed (do this yourself in the Railway UI — CC never touches Railway).
 
 FRONTEND_URL=https://mehamakor.online
 ```

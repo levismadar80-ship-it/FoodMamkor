@@ -1,9 +1,34 @@
 import { useTranslations } from "next-intl";
-import { Star } from "@phosphor-icons/react";
+import {
+  Star,
+  WhatsappLogo,
+  Phone,
+  Globe,
+  EnvelopeSimple,
+  InstagramLogo,
+  FacebookLogo,
+  Receipt,
+} from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 
-import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
+
+// MEH-1411: the sticky CTA carried a label with no icon while the inline CTA
+// showed one. Mirror PrimaryContactButton.jsx's per-method icon so the sticky
+// bar matches the inline button — same WhatsappLogo (weight="fill") for the
+// common whatsapp case, method-appropriate icon otherwise. Colors are owned by
+// the className fork below (btn-whatsapp keeps #25D366) — icon only, no recolor.
+// REUSES: components/PrimaryContactButton.jsx VARIANTS icon set.
+const METHOD_ICON = {
+  whatsapp: WhatsappLogo,
+  phone: Phone,
+  website: Globe,
+  email: EnvelopeSimple,
+  instagram: InstagramLogo,
+  facebook: FacebookLogo,
+  external_order: Receipt,
+};
 
 /**
  * Mobile-only sticky bar that slides in from the bottom when the
@@ -27,6 +52,8 @@ export default function StickyContactBar({
   isBarVisible,
 }) {
   const t = useTranslations();
+  // MEH-1411: per-method icon for the sticky CTA (matches the inline button).
+  const CtaIcon = METHOD_ICON[getPrimaryMethod(producer)] || WhatsappLogo;
   return (
     <div
       // MEH-76 chunk 3: border hex literal -> border-border token class; the
@@ -48,7 +75,14 @@ export default function StickyContactBar({
         boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
         opacity: isVacation ? 0.85 : 1,
       }}
-      aria-hidden={!isBarVisible}
+      // MEH-1333: when parked off-screen the bar must be non-focusable, not just
+      // aria-hidden — a bare aria-hidden left the sticky CTA tabbable inside a
+      // hidden subtree (axe aria-hidden-focus, serious). `inert` removes the whole
+      // subtree from tab order AND the a11y tree (implies aria-hidden), so the
+      // rule can't fire and the CTA is truly unreachable while hidden. React
+      // 18.3.1 has no first-class `inert` prop → string idiom ("" = present,
+      // undefined = removed).
+      inert={!isBarVisible ? "" : undefined}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
@@ -74,14 +108,15 @@ export default function StickyContactBar({
             {...(isPrimaryExternal(producer)
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
-            // TODO(MEH-XXX): sticky bar intentionally omits markWhatsAppClickedLocal —
-            // review-form unlock does not trigger from this path. Verify if intentional.
-            // The ContactCard CTA (inline + sidebar) writes localStorage.wa_clicked_<id>;
-            // this site does not. Source pattern preserved from ProducerDetail.jsx:870-879
-            // by Q1 resolution C in PR2 plan.
+            // MEH-1426: TODO resolved — the sticky bar now matches the ContactCard
+            // CTA. A WhatsApp primary click both attributes (pingWhatsAppBeacon) and
+            // unlocks the review form (markWhatsAppClickedLocal, localStorage
+            // wa_clicked_<id>). Invariant: every WhatsApp click = attribution +
+            // unlock; a non-WhatsApp primary fires neither.
             onClick={() => {
               if (getPrimaryMethod(producer) === "whatsapp") {
                 pingWhatsAppBeacon(producer.id);
+                markWhatsAppClickedLocal(producer.id);
               }
             }}
             // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
@@ -97,6 +132,7 @@ export default function StickyContactBar({
                 : "bg-white text-text border border-primary hover:bg-green-50"
             }`}
           >
+            <CtaIcon size={20} weight="fill" aria-hidden="true" />
             {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}
           </a>
         )}

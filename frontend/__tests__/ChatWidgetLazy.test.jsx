@@ -54,4 +54,11 @@ describe("ChatWidgetLazy", () => {
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
   });
+
+  // MEH-1203: the FAB overlapped the first card of the 2-col favorites grid.
+  it("does NOT render the widget on /favorites (FAB vs first card)", () => {
+    mockUsePathname.mockReturnValue("/favorites");
+    const { container } = render(<ChatWidgetLazy />);
+    expect(container).toBeEmptyDOMElement();
+  });
 });

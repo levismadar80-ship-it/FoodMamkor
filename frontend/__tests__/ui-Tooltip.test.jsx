@@ -71,6 +71,23 @@ describe("ui/Tooltip", () => {
     expect(screen.getByRole("tooltip").className).toContain("top-full");
   });
 
+  // MEH-1459: start-anchored bottom variant + responsive width keep the
+  // TrustBadge social-proof strip inside the narrow 2-col mobile card.
+  it("applies the start-anchored bottom variant and a responsive, wrapping width", () => {
+    render(
+      <Tooltip content="10+ ביקורות עם דירוג ממוצע 4.5 ומעלה" position="bottom-start">
+        <span>טריגר</span>
+      </Tooltip>,
+    );
+    fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+    const bubble = screen.getByRole("tooltip");
+    expect(bubble.className).toContain("top-full");
+    expect(bubble.className).toContain("start-0");
+    expect(bubble.className).toContain("break-words");
+    expect(bubble.className).toContain("max-w-[8.5rem]");
+    expect(bubble.className).not.toContain("w-52");
+  });
+
   it("falls back to the top position for an unknown position", () => {
     render(
       <Tooltip content="הסבר" position="diagonal">

@@ -20,7 +20,7 @@
 
 ## 🎯 מודל מומלץ
 
-**Testimonial intake = Opus 4.7. Always.**
+**Testimonial intake = Opus 4.8. Always.**
 
 למה: כל טיוטה היא הכרעת voice (ADR-024 HYBRID, refines ADR-014) + שמירה על verbatim + שיפוט אמת/over-claim. Sonnet נוטה ל"להחליק" ניסוח ולשכתב את הדובר/ת — בדיוק מה שאסור כאן. Effort: medium · Adaptive Thinking: ON.
 

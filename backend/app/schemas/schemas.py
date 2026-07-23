@@ -1,7 +1,8 @@
 import re
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Literal
+from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -82,6 +83,44 @@ def _url_scheme_validator(value: str | None) -> str | None:
     return stripped
 
 
+# MEH-1222: image-URL fields silently accepted garbage — "bread.jpg",
+# "http.ad.jpg", "https://bread.jpg" — which then 404-storm through
+# next/image. Stronger than _url_scheme_validator: besides the http(s)
+# scheme it rejects a bare filename pasted as the host (a netloc that ENDS
+# in an image extension), which is exactly the "https://bread.jpg" class
+# the scheme check alone lets through. A real Cloudinary URL carries the
+# ".jpg" in the PATH ("res.cloudinary.com/…/bread.jpg"), not the host, so
+# it passes. Input schemas only — response schemas stay unvalidated so
+# existing bad rows still READ (data cleanup is a separate DML-side pass).
+_IMAGE_HOST_EXT_RE = re.compile(
+    r"\.(jpe?g|png|webp|gif|svg|avif|bmp|tiff?)$", re.IGNORECASE
+)
+
+
+def _image_url_validator(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    if not stripped.lower().startswith(("http://", "https://")):
+        raise ValueError("כתובת תמונה חייבת להתחיל ב-http:// או https://")
+    # netloc without credentials/port; a real host never ends in an image ext.
+    host = urlparse(stripped).netloc.split("@")[-1].split(":")[0]
+    if not host or "." not in host or _IMAGE_HOST_EXT_RE.search(host):
+        raise ValueError("כתובת התמונה אינה תקינה")
+    return stripped
+
+
+def _image_url_list_validator(value: list[str] | None) -> list[str] | None:
+    # Drop blank entries, validate each surviving URL. Preserves order.
+    if value is None:
+        return value
+    return [
+        _image_url_validator(v) for v in value if v is not None and str(v).strip() != ""
+    ]
+
+
 def _require_categories_validator(value: list[int] | None) -> list[int]:
     """MEH-1153: every business must carry ≥1 category to appear in browsing.
     The client already gates this, but a direct API POST could omit the field
@@ -91,6 +130,21 @@ def _require_categories_validator(value: list[int] | None) -> list[int]:
     """
     if not value:
         raise ValueError("חובה לבחור לפחות קטגוריה אחת")
+    return value
+
+
+# MEH-1297: cap a producer's categories at 3 (Yelp model) to stop category
+# stuffing. Enforced at the Pydantic layer only — existing producers may
+# carry more from import, so there is no DB CHECK constraint (see migration).
+MAX_PRODUCER_CATEGORIES = 3
+
+
+def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
+    """MEH-1297: reject >3 categories. `None` (field omitted on a partial
+    update) passes through untouched so it composes with optional fields.
+    """
+    if value is not None and len(value) > MAX_PRODUCER_CATEGORIES:
+        raise ValueError("ניתן לבחור עד 3 קטגוריות לבית עסק")
     return value
 
 
@@ -178,6 +232,15 @@ class ProducerRegister(BaseModel):
     # status=="approved" (producer_listing.py). Default False = unchanged for
     # every existing caller.
     license_pending: bool = False
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Optional at the
+    # Pydantic layer — the DB column is nullable and the required-ness is a
+    # front-end registration gate only, so an ABSENT value keeps the MEH-143
+    # upgrade path and every existing register test working. A PROVIDED
+    # referral_source must be one of constants.REFERRAL_SOURCE_KEYS (validator
+    # below 422s an unknown key). referral_source_other is the optional free-text
+    # answer for the "other" choice, bleach-sanitised + capped at the DB width.
+    referral_source: str | None = Field(default=None, max_length=40)
+    referral_source_other: str | None = Field(default=None, max_length=120)
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -241,10 +304,37 @@ class ProducerRegister(BaseModel):
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-1471: reject any non-null referral_source outside the allowed key set
+    # (422). None / empty / whitespace-only normalise to None (nullable column;
+    # existing producers + the MEH-143 upgrade path never send it). Inline import
+    # mirrors the ProducerAdminOut._compute_* validators — keeps the constants
+    # dependency out of the module-top imports.
+    @field_validator("referral_source")
+    @classmethod
+    def _validate_referral_source(cls, v):
+        from app.constants import REFERRAL_SOURCE_KEYS
+
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return None
+        if v not in REFERRAL_SOURCE_KEYS:
+            raise ValueError("referral_source לא חוקי")
+        return v
+
+    # MEH-1471: bleach/XSS strip on the free-text "other" answer, same defense as
+    # short_description/address above. Cap mirrors the DB column (120).
+    @field_validator("referral_source_other")
+    @classmethod
+    def _sanitize_referral_source_other(cls, v):
+        return sanitize_text(v, max_length=120)
+
     @field_validator("category_ids")
     @classmethod
     def _require_categories(cls, v):
-        return _require_categories_validator(v)
+        # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
+        return _cap_categories_validator(_require_categories_validator(v))
 
 
 class GoogleAuthRequest(BaseModel):
@@ -331,6 +421,15 @@ class ProducerCityOut(BaseModel):
     count: int
 
 
+class ProducerRandomOut(BaseModel):
+    """MEH-1288 — GET /producers/random: minimal identity of one random
+    approved producer, just enough for the homepage "הפתיעו אותי" button to
+    navigate (slug preferred, id fallback — mirrors ProducerCard's href)."""
+
+    id: UUID
+    slug: str | None = None
+
+
 # --- Delivery Area ---
 class DeliveryAreaCreate(BaseModel):
     city: str
@@ -343,6 +442,137 @@ class DeliveryAreaOut(BaseModel):
     city: str
     min_order: int | None = None
     delivery_day: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProducerLocationOut(BaseModel):
+    """MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /
+    pickup / market_stand) serialized on `ProducerListOut.locations[]`. Read
+    straight off the `ProducerLocation` ORM rows (selectinload'd in
+    producer_listing.py — no N+1). Expand-phase serialization only; the
+    Producer.lat/lng column stays the primary mirror (chunk-3 map UI consumes
+    this array). `precision` is emitted from the ORM's `location_precision`
+    column (serialization_alias) to match the epic's map contract shape.
+    Street `address` is intentionally NOT exposed here — MEH-829 keeps the
+    exact address admin/owner-only; the map pins on lat/lng + city and
+    navigation is built from lat/lng.
+
+    Field set: kind, label, city, lat, lng, is_primary, precision (the epic's
+    locked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1
+    backend) added the latter two so the public business page can render real
+    pickup / market_stand rows — "where and when" (opening_hours) and
+    click-to-call (phone) — instead of a single generic boolean line. The
+    columns already existed on the ORM `ProducerLocation` (models.py; revision
+    a9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders
+    them in DeliveryBlock.) Street `address` stays OFF this public shape.
+    """
+
+    kind: str
+    label: str | None = None
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    is_primary: bool = False
+    # MEH-1509 (MEH-1388, chunk-1 backend): serialized so the business page can
+    # show a pickup point's hours + phone. address stays off (MEH-829).
+    opening_hours: str | None = None
+    phone: str | None = None
+    # Field name matches the ORM attribute (from_attributes reads it directly);
+    # serialization_alias emits the epic's contract key `precision` on the wire
+    # (FastAPI dumps response models with by_alias=True).
+    location_precision: str = Field(default="exact", serialization_alias="precision")
+
+    model_config = {"from_attributes": True}
+
+
+# MEH-1421 (MEH-1388 chunk 4a): shared enums — same value sets as the ORM CHECK
+# constraints (models.py:536) so an invalid kind/precision is a clean 422 at the
+# write boundary, not an IntegrityError at commit.
+_LOCATION_KIND = Literal["branch", "pickup", "market_stand"]
+_LOCATION_PRECISION = Literal["exact", "approximate"]
+
+
+def _optional_label_letters(value: str | None) -> str | None:
+    # MEH-1421: label is optional, but a supplied label is shown in the map
+    # tooltip + drives the same-city disambiguation rule, so a punctuation-only
+    # or 1-2 char label is meaningless. Empty/whitespace → None (treated as "no
+    # label"); a real value must clear the ≥3-letter floor.
+    # REUSES: backend/app/schemas/schemas.py:17 (_min_letters_validator)
+    if value is None or value.strip() == "":
+        return None
+    return _min_letters_validator(value)
+
+
+class ProducerLocationCreate(BaseModel):
+    """MEH-1421 (MEH-1388 chunk 4a): owner-supplied physical presence point —
+    the write side of ProducerLocationOut (schemas.py:414). `kind`/`precision`
+    are the same CHECK-constrained enums as the ORM (models.py:536). Coordinates
+    are optional (an owner may add a point before she has exact lat/lng — manual
+    entry, no geocoding this chunk) but bounded when supplied. `label` reuses the
+    MEH-555 letters floor. The single-primary invariant + same-city-label rule
+    are enforced in the service layer (producer_me.py), not here — they are
+    cross-row and need the DB session.
+    """
+
+    kind: _LOCATION_KIND
+    label: str | None = None
+    city: str | None = Field(None, max_length=100)
+    address: str | None = Field(None, max_length=255)
+    lat: float | None = Field(None, ge=-90, le=90)
+    lng: float | None = Field(None, ge=-180, le=180)
+    opening_hours: str | None = None
+    phone: str | None = Field(None, max_length=20)
+    is_primary: bool = False
+    location_precision: _LOCATION_PRECISION = "exact"
+
+    @field_validator("label")
+    @classmethod
+    def _validate_label(cls, v):
+        return _optional_label_letters(v)
+
+
+class ProducerLocationUpdate(BaseModel):
+    """MEH-1421: partial update — every field optional; the endpoint applies with
+    `exclude_unset=True` so an unsupplied field is left untouched (products
+    precedent, producer_me.py:1109). Sending `label: ""` clears the label."""
+
+    kind: _LOCATION_KIND | None = None
+    label: str | None = None
+    city: str | None = Field(None, max_length=100)
+    address: str | None = Field(None, max_length=255)
+    lat: float | None = Field(None, ge=-90, le=90)
+    lng: float | None = Field(None, ge=-180, le=180)
+    opening_hours: str | None = None
+    phone: str | None = Field(None, max_length=20)
+    is_primary: bool | None = None
+    location_precision: _LOCATION_PRECISION | None = None
+
+    @field_validator("label")
+    @classmethod
+    def _validate_label(cls, v):
+        return _optional_label_letters(v)
+
+
+class ProducerLocationOwnerOut(BaseModel):
+    """MEH-1421: owner-facing read of her OWN location rows. Unlike the public
+    ProducerLocationOut (schemas.py:414, which withholds street `address` per
+    MEH-829 and trims to the map contract), the owner sees the full editable row
+    (address / opening_hours / phone) in the dashboard editor. Emits the raw
+    `location_precision` key (no `precision` alias) so the editor round-trips the
+    same field name it POSTs. Returned by the /producers/me/locations CRUD."""
+
+    id: UUID
+    kind: str
+    label: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    opening_hours: str | None = None
+    phone: str | None = None
+    is_primary: bool = False
+    location_precision: str = "exact"
 
     model_config = {"from_attributes": True}
 
@@ -365,12 +595,21 @@ class ProductCreate(BaseModel):
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
+    # MEH-1438: vegetarian axis. Owner marks it independently; the public
+    # ?vegetarian filter also matches vegan products (is_vegetarian OR is_vegan).
+    is_vegetarian: bool = False
     is_lactose_free: bool = False
 
     @field_validator("image_url", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
         return None if v == "" else v
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
     @model_validator(mode="after")
     def check_price_max_gte_min(self):
@@ -390,12 +629,19 @@ class ProductUpdate(BaseModel):
     # in producer_me.update_my_product means an unsupplied field stays put.
     is_gluten_free: bool | None = None
     is_vegan: bool | None = None
+    is_vegetarian: bool | None = None  # MEH-1438
     is_lactose_free: bool | None = None
 
     @field_validator("image_url", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
         return None if v == "" else v
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
     @model_validator(mode="after")
     def check_price_max_gte_min(self):
@@ -419,6 +665,7 @@ class ProductOut(BaseModel):
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
+    is_vegetarian: bool = False  # MEH-1438
     is_lactose_free: bool = False
 
     model_config = {"from_attributes": True}
@@ -460,7 +707,8 @@ class ProducerCreate(BaseModel):
     @field_validator("category_ids")
     @classmethod
     def _require_categories(cls, v):
-        return _require_categories_validator(v)
+        # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
+        return _cap_categories_validator(_require_categories_validator(v))
 
 
 class ProducerAdminCreate(BaseModel):
@@ -509,6 +757,16 @@ class ProducerAdminCreate(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — only legal
+    # with delivery_nationwide=true (validator below + DB CHECK
+    # delivery_excluded_requires_nationwide).
+    delivery_excluded_cities: list[str] = []
+
+    # MEH-1297: cap categories at 3 (admin create).
+    @field_validator("category_ids")
+    @classmethod
+    def _cap_categories(cls, v):
+        return _cap_categories_validator(v)
 
     @field_validator("description")
     @classmethod
@@ -536,6 +794,12 @@ class ProducerAdminCreate(BaseModel):
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-1222: reject malformed image URLs in the producer photo array.
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
+
     @model_validator(mode="after")
     def _validate_location_mode(self):
         if not self.has_physical_location and not self.offers_delivery:
@@ -545,6 +809,9 @@ class ProducerAdminCreate(BaseModel):
         # semantic, only the field source changed.
         if self.delivery_nationwide and len(self.delivery_area_cities) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1255: an exclusion list is only meaningful in nationwide mode.
+        if self.delivery_excluded_cities and not self.delivery_nationwide:
+            raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
         return self
 
 
@@ -595,9 +862,26 @@ class ProducerUpdate(BaseModel):
     facebook: str | None = None
     external_order_form: str | None = None
     slug: str | None = None
+    # MEH-1490: admin-only Google Maps Place ID mapping. Present on the shared
+    # ProducerUpdate schema but withheld from _PRODUCER_WRITABLE_FIELDS in
+    # routers/producer_me.py, so only the admin PUT (admin.py bulk setattr) can
+    # write it — owners cannot self-map. Validated below (URL-safe charset,
+    # ≤300). No rating value is ever accepted or stored (live-fetch only).
+    google_place_id: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
+    # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
+    # bleach-stripped + capped at 300 below (mirrors short_description);
+    # owner_photo_url gets the MEH-1222 image-URL guard (http(s) scheme + the
+    # "https://bread.jpg" bare-filename-host rejection) — it feeds next/image
+    # on the public producer page, same surface class as images[].
+    owner_bio: str | None = None
+    owner_photo_url: str | None = Field(default=None, max_length=500)
+    # MEH-1242 PR5: owner-editable opening hours (free text). Was absent from
+    # ProducerUpdate — so both the owner PUT and the admin PUT (admin.py:214,
+    # same schema) silently dropped it. Present on ProducerOwnerOut already.
+    opening_hours: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
     # MEH-293/MEH-479: dietary flags moved to products.is_X.
@@ -625,6 +909,11 @@ class ProducerUpdate(BaseModel):
     offers_delivery: bool | None = None
     delivery_nationwide: bool | None = None
     delivery_cities: list[str] | None = None
+    # MEH-1255: nationwide exclusion list. Schema validator catches the
+    # explicit nationwide=false + excluded case; the routers guard the
+    # EFFECTIVE state on partial updates (excluded sent while the stored
+    # delivery_nationwide is false) so the DB CHECK never 500s.
+    delivery_excluded_cities: list[str] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
@@ -633,6 +922,12 @@ class ProducerUpdate(BaseModel):
     # During the 7-day overlap both fields are accepted and writes mirror to old columns.
     availability_state: str | None = None
     vacation_until: date | None = None
+
+    # MEH-1297: cap categories at 3 (admin/owner update). None passes through.
+    @field_validator("category_ids")
+    @classmethod
+    def _cap_categories(cls, v):
+        return _cap_categories_validator(v)
 
     @field_validator("description")
     @classmethod
@@ -650,6 +945,39 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
+
+    # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
+    # mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly
+    # that, so a pasted Maps URL (contains "/", ":", ".") is rejected with a
+    # clear Hebrew error instead of being stored and silently 204-ing forever.
+    @field_validator("google_place_id")
+    @classmethod
+    def _validate_google_place_id(cls, v):
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if len(v) > 300:
+            raise ValueError("מזהה Google Place ארוך מדי")
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
+            raise ValueError(
+                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
+            )
+        return v
+
+    # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
+    # dashboard textarea counter matches this server-side cap).
+    @field_validator("owner_bio")
+    @classmethod
+    def _sanitize_owner_bio(cls, v):
+        return sanitize_text(v, max_length=300)
+
+    # MEH-1335: owner photo — image-URL guard, not just scheme (MEH-1222 class).
+    @field_validator("owner_photo_url")
+    @classmethod
+    def _validate_owner_photo_url(cls, v):
+        return _image_url_validator(v)
 
     @field_validator("availability_status")
     @classmethod
@@ -693,6 +1021,12 @@ class ProducerUpdate(BaseModel):
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-1222: reject malformed image URLs in the producer photo array.
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
+
     @model_validator(mode="after")
     def _validate_location_mode(self):
         hp = self.has_physical_location
@@ -707,6 +1041,11 @@ class ProducerUpdate(BaseModel):
         dc = self.delivery_area_cities
         if dn and dc and len(dc) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1255: excluded cities sent together with an explicit
+        # nationwide=false is always invalid (partial-update effective-state
+        # check lives in the routers).
+        if self.delivery_excluded_cities and dn is False:
+            raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
         return self
 
     @model_validator(mode="after")
@@ -751,6 +1090,9 @@ class ProducerListOut(BaseModel):
     # reads these fields directly (no legacy fallback post MEH-479).
     has_gluten_free_products: bool = False
     has_vegan_products: bool = False
+    # MEH-1438: True when at least one product is is_vegetarian OR is_vegan
+    # (a vegan product is vegetarian by definition). Frontend badges.js reads it.
+    has_vegetarian_products: bool = False
     has_lactose_free_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
@@ -803,6 +1145,9 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
+    # "משלוחים לכל הארץ (למעט …)". Empty unless delivery_nationwide.
+    delivery_excluded_cities: list[str] = []
     # MEH-902: serialize the rich delivery relation so MapProducerCard's
     # "delivers to your city" pill can render — it needs per-row `city` +
     # `delivery_day`, which the flat `delivery_cities` above doesn't carry.
@@ -814,6 +1159,14 @@ class ProducerListOut(BaseModel):
     # is currently unused (live producers have it empty while the relation
     # has rows) — separate cleanup ticket, not addressed here.
     delivery_areas: list[DeliveryAreaOut] = []
+    # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
+    # market_stand). selectinload'd on both LIST branches + the DETAIL query
+    # (producer_listing.py + producers.py) so from_attributes reads the loaded
+    # relationship with no N+1. Empty for producers with no location rows yet
+    # (Expand overlap — Producer.lat/lng still drives their single map pin).
+    # Chunk 3 (map UI) is the consumer; the frontend ProducerSchema (non-strict
+    # z.object, schemas.js:7) silently strips this until chunk 3 declares it.
+    locations: list[ProducerLocationOut] = []
     # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
     # (`producer_queries.py`) from `producer.producer_license_number is not
     # None and stripped`. The raw number is admin-only via ProducerAdminOut.
@@ -901,14 +1254,42 @@ class ProducerDetailOut(ProducerListOut):
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
     created_at: datetime | None = None
+    # MEH-1291: public freshness signal ("עודכן לאחרונה"). Nullable — NULL for
+    # producers never edited since the Chunk A migration (a3f1c9d2e4b7 added the
+    # column without backfill), so the page renders nothing for them. Stamped by
+    # the model-level onupdate=func.now() (models.py:186) on every owner/admin
+    # edit. Read-only exposure — never accepted as input.
+    updated_at: datetime | None = None
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
+    # MEH-1335: owner story fields — deliberately PUBLIC (unlike address just
+    # above): the OwnerCard "מאחורי העסק" renders them on the public producer
+    # page (MEH-1334, dormant variants). NULL = card stays compact.
+    owner_bio: str | None = None
+    owner_photo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
+    # MEH-1490: admin-mapped Google Maps Place ID. Exposed on read so the admin
+    # edit form pre-fills it (and never blanks it on save). Not secret — a
+    # place_id is a public Google identifier that appears in Maps share URLs.
+    # The rating/count are NEVER here — they are live-fetched from
+    # GET /producers/{id}/google-rating (never stored; Google ToS §3.2.3(b)).
+    google_place_id: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-1490: live Google-rating response for GET /producers/{id}/google-rating.
+# Built per-request from a fresh Places API (New) call and returned straight to
+# the client — NEVER persisted (Google Maps Platform ToS §3.2.3(b) No Caching).
+# The endpoint returns 204 (no body) whenever the line must not render, so this
+# shape is only ever produced for an eligible producer (place_id + ≥20 reviews).
+class GoogleRatingOut(BaseModel):
+    rating: float  # Google's average star rating, e.g. 4.7
+    user_rating_count: int  # total Google reviews (guaranteed ≥ MIN_REVIEWS)
+    google_maps_uri: str  # canonical Google Maps profile URL (attribution link)
 
 
 # MEH-530: admin-only response shape. Extends ProducerDetailOut with the
@@ -922,6 +1303,13 @@ class ProducerAdminOut(ProducerDetailOut):
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only —
+    # NOT on the public ProducerDetailOut/ListOut (internal supply-side data,
+    # MEH-530 privacy precedent). NULL for producers who registered before the
+    # field existed (admin renders "—"). `referral_source` is the English key;
+    # the Hebrew label + "אחר: <text>" rendering happen in AdminProducersTable.
+    referral_source: str | None = None
+    referral_source_other: str | None = None
     # MEH-829: street address submitted at registration — admin-visible (+ owner
     # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
     # the producer_license_number privacy precedent.
@@ -1154,6 +1542,17 @@ class HomeProductCreate(BaseModel):
     def _sanitize_allergens(cls, v):
         return sanitize_text(v, max_length=200)
 
+    # MEH-1222: reject malformed image URLs (public neighbor-product form).
+    @field_validator("photo")
+    @classmethod
+    def _validate_photo(cls, v):
+        return _image_url_validator(v)
+
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
+
 
 class HomeProductUpdate(BaseModel):
     title: str | None = None
@@ -1197,6 +1596,17 @@ class HomeProductUpdate(BaseModel):
     @classmethod
     def _sanitize_allergens(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1222: reject malformed image URLs (public neighbor-product form).
+    @field_validator("photo")
+    @classmethod
+    def _validate_photo(cls, v):
+        return _image_url_validator(v)
+
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
 
 
 class HomeProductRatingOut(BaseModel):
@@ -1272,6 +1682,25 @@ class ReportOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# MEH-1443: "מצאתן טעות בפרטים?" — email-only producer-info report (v1, no
+# persistence). `producer_slug` is the identifier the producer page used
+# (custom slug OR the UUID path for producers without a slug); the router
+# resolves either. `message` is stripped and re-checked so a whitespace-only
+# body 422s (Field's min_length runs before strip).
+class ProducerInfoReportCreate(BaseModel):
+    producer_slug: str = Field(..., min_length=1, max_length=200)
+    message: str = Field(..., min_length=1, max_length=1000)
+    reporter_email: EmailStr | None = None
+
+    @field_validator("message")
+    @classmethod
+    def _message_not_blank(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("message must not be empty")
+        return stripped
+
+
 # --- Rating ---
 class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)
@@ -1328,6 +1757,12 @@ class ExperienceCreate(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=300)
 
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
 
 class ExperienceUpdate(BaseModel):
     title: str | None = Field(None, min_length=4, max_length=300)
@@ -1347,6 +1782,7 @@ class ExperienceUpdate(BaseModel):
     requirements: str | None = None
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
+    is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
 
     @field_validator("title")
     @classmethod
@@ -1367,6 +1803,12 @@ class ExperienceUpdate(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=300)
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
 
 class ExperienceModerationAction(BaseModel):
@@ -1438,6 +1880,7 @@ class ExperienceDetailOut(ExperienceListOut):
     requirements: str | None = None
     lat: float | None = None
     lng: float | None = None
+    is_active: bool = True  # MEH-1419: reversible cancel — mirrors EventOut.is_active
     moderation_status: str | None = None
     moderation_reason: str | None = None
     moderation_suggestion: str | None = None
@@ -1491,6 +1934,13 @@ class ProducerRecipeBase(BaseModel):
     def _sanitize_instructions(cls, v):
         return sanitize_text(v, max_length=10000)
 
+    # MEH-1222: reject malformed image URLs at the write boundary
+    # (inherited by ProducerRecipeCreate).
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
 
 class ProducerRecipeCreate(ProducerRecipeBase):
     pass
@@ -1529,6 +1979,12 @@ class ProducerRecipeUpdate(BaseModel):
     @classmethod
     def _sanitize_instructions(cls, v):
         return sanitize_text(v, max_length=10000) if v else v
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
 
 class ProducerRecipeOut(BaseModel):
@@ -1648,6 +2104,7 @@ class GroupBuyOut(BaseModel):
     max_participants: int | None = None
     deadline: datetime
     city: str | None = None
+    fulfillment_note: str | None = None
     status: str
     commits_count: int = 0
     created_at: datetime
@@ -1673,6 +2130,22 @@ class GroupBuyCreate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     deadline: datetime
     city: str | None = Field(None, max_length=100)
+    # MEH-1457: optional free-text "מתי ואיך מקבלים" (OFN "Ready for").
+    fulfillment_note: str | None = Field(None, max_length=1000)
+
+    @field_validator("deadline")
+    @classmethod
+    def _normalize_deadline_to_naive_utc(cls, v: datetime) -> datetime:
+        # MEH-1454: the dashboard form sends `new Date(...).toISOString()` — an
+        # aware ISO string with a trailing 'Z'. The DB column and every
+        # `datetime.utcnow()` comparison in group_buys.py are naive UTC, so an
+        # aware value made `data.deadline <= datetime.utcnow()` raise
+        # `TypeError: can't compare offset-naive and offset-aware datetimes`
+        # → 500 on real creates. Normalize aware → naive UTC at the boundary so
+        # DB storage and comparisons stay in one (naive-UTC) world.
+        if v.tzinfo is not None:
+            v = v.astimezone(timezone.utc).replace(tzinfo=None)
+        return v
 
 
 class GroupBuyCommitRequest(BaseModel):
@@ -1738,6 +2211,12 @@ class EventCreate(BaseModel):
     def _sanitize_location(cls, v):
         return sanitize_text(v, max_length=200)
 
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
 
 class EventUpdate(BaseModel):
     title: str | None = None
@@ -1764,6 +2243,12 @@ class EventUpdate(BaseModel):
     @classmethod
     def _sanitize_location(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
 
 class EventOut(BaseModel):
@@ -2045,6 +2530,8 @@ class AlertPrefsIn(BaseModel):
     notify_new_product: bool = True
     notify_new_event: bool = True
     notify_delivery_area: bool = True
+    # MEH-1361: new_recipe alert type; defaults mirror the sibling flags.
+    notify_new_recipe: bool = True
     whatsapp_opt_in: bool = False
     push_subscription: dict | None = None
 
@@ -2054,6 +2541,7 @@ class AlertPrefsOut(BaseModel):
     notify_new_product: bool
     notify_new_event: bool
     notify_delivery_area: bool
+    notify_new_recipe: bool
     whatsapp_opt_in: bool
     has_push: bool
 
@@ -2101,6 +2589,12 @@ class StatsOut(BaseModel):
 
 class NewsletterIn(BaseModel):
     email: EmailStr
+
+
+# MEH-1330: the unsubscribe link carries a stateless signed token (the
+# subscriber's email in a scoped JWT) — no DB column, no raw email in the URL.
+class NewsletterUnsubscribeIn(BaseModel):
+    token: str = Field(..., min_length=1)
 
 
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of

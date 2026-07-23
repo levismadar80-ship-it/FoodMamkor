@@ -1,5 +1,6 @@
 from app.models.models import (
     AdminSetting,
+    AlertLog,
     Category,
     ContactClick,
     ContactMessage,
@@ -19,6 +20,7 @@ from app.models.models import (
     Producer,
     ProducerCategory,
     ProducerFollower,
+    ProducerLocation,
     ProducerPageView,
     ProducerRecipe,
     ProducerReview,
@@ -64,4 +66,8 @@ __all__ = [
     "producer_recipe_products",
     # MEH-509 PR2b — inbound WhatsApp messages (watchdog consumer)
     "InboundMessage",
+    # MEH-1338 — favorite-alert frequency-cap ledger
+    "AlertLog",
+    # MEH-1395 (MEH-1388 chunk 1) — physical presence points (Expand-phase)
+    "ProducerLocation",
 ]

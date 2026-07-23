@@ -43,7 +43,7 @@ The **tagline** appears in: footer brand line, meta description, OpenGraph card,
 ### Strategic LOCKs (full set in `docs/CONTEXT.md` §2)
 
 - Magazine, not marketplace
-- הדף הבסיסי חינם לעולם. אין עמלות עסקה. פרימיום מסומן בלבד, מותנה-trigger — see docs/decisions/ADR-027-revenue-model.md
+- הדף הבסיסי חינם לעולם. אין עמלות עסקה. פרימיום = כלים בלבד, לעולם לא משפיע על דירוג/חשיפה גם עם סימון — see docs/decisions/ADR-027-revenue-model.md + ADR-030-premium-tools-not-ranking.md
 - Manual approval for every business
 - Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. Unlicensed food production stays out; no home cooks (unchanged)
 - No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
@@ -121,8 +121,9 @@ Phrasings that survived to production once and must be caught in review:
 
 - `"home cooks"` (English boilerplate) — caught in `06-press-quotes-bank.md` duplicate, deleted in Phase ζ.
 - `"שכנות מבשלות"` / `"מהמטבח של השכן"` / `"אוכל ביתי"` — illegal-in-Israel framing, brand LOCK violation.
-- `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024).
+- `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024). **חריג (MEH-1264, Option A):** `"יצרן"` אסור בממשק ובשיווק, למעט כחלק משם רישיון רשמי (`"רישיון יצרן"`, `"מספר רישיון יצרן"`) — דיוק משפטי, lawyer brief §5.3. הצ'יפ הצרכני `"רישיון יצרן"` נשאר AS-IS (שם הרישיון הרשמי של משרד הבריאות).
 - `"marketplace"` / `"פלטפורמת מסחר"` — DNA violation.
+- `"שוק"` as a discovery/sort/nav label (e.g. the old `"חדש בשוק"` sort option) — frames Mehamakor as a trade venue, DNA violation (MEH-1218). The sort label is now `"הצטרפו לאחרונה"`. **Not** forbidden: the named `"שוק שישי"` feature (MEH-50) and the event-type category `"שוק"` (a kind of listed event), which describe a real-world market, not the platform.
 - `"ISSUE 01"` / `"SPRING 2026"` / time-stamped editorial framing — Mehamakor isn't a periodical.
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.

@@ -40,6 +40,8 @@ vi.mock("next-intl", () => {
     "nav.search_label": "חיפוש",
     "nav.trust_strip": "שיחה אישית עם כל בית עסק",
     "nav.add_business": "הוסיפו את העסק שלך",
+    // MEH-1310: favorites row shares AccountSheet's nav.favorites key.
+    "nav.favorites": "מועדפים",
     "account.menu.profile": "הפרופיל שלי",
     "account.menu.settings": "הגדרות",
     "account.menu.dashboard": "לוח הבקרה שלי",
@@ -182,22 +184,30 @@ describe("Header", () => {
       expect(screen.queryByText("התנתקות")).toBeNull();
     });
 
-    it("opens the dropdown on avatar click with profile / settings / logout items", () => {
+    it("opens the dropdown on avatar click with favorites / settings / logout items", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
       expect(screen.getByRole("menu")).toBeInTheDocument();
-      expect(screen.getByText("הפרופיל שלי")).toBeInTheDocument();
+      expect(screen.getByText("מועדפים")).toBeInTheDocument();
       expect(screen.getByText("הגדרות")).toBeInTheDocument();
       expect(screen.getByText("התנתקות")).toBeInTheDocument();
     });
 
-    it("MEH-137: הפרופיל שלי and הגדרות lead to different routes for consumers", () => {
+    // MEH-1226: consumers have no public page, so the profile row is dropped.
+    // MEH-1310: favorites row is present for EVERY logged-in role and lands
+    // on /favorites (shared nav.favorites key with the mobile AccountSheet);
+    // order is מועדפים → הגדרות. settings lands on plain /settings.
+    it("consumer menu = favorites → settings → logout, links resolve", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
-      const profileLink = screen.getByText("הפרופיל שלי").closest("a");
+      expect(screen.queryByText("הפרופיל שלי")).toBeNull();
+      const favoritesLink = screen.getByText("מועדפים").closest("a");
+      expect(favoritesLink.getAttribute("href")).toBe("/favorites");
       const settingsLink = screen.getByText("הגדרות").closest("a");
-      expect(profileLink.getAttribute("href")).toBe("/settings?tab=profile");
-      expect(settingsLink.getAttribute("href")).toBe("/settings?tab=security");
+      expect(settingsLink.getAttribute("href")).toBe("/settings");
+      // favorites sits above settings in the menu
+      const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
+      expect(menuItems.indexOf("מועדפים")).toBeLessThan(menuItems.indexOf("הגדרות"));
     });
 
     it("hides producer/admin items for plain consumers", () => {
@@ -217,14 +227,25 @@ describe("Header", () => {
   });
 
   describe("avatar dropdown — role-specific items (MEH-39)", () => {
-    it("producer sees לוח הבקרה שלי and profile leads to the dashboard", () => {
-      userRef.current = { id: "u1", name: "מיה", role: "producer" };
+    // MEH-1226: dashboard leads the producer menu; the profile row points at
+    // the PUBLIC business page (/producer/[id], from user.producer_id), not the
+    // dashboard or settings. Order: dashboard → profile → settings.
+    it("producer: dashboard first, profile → public /producer/[id], settings → /settings", () => {
+      userRef.current = { id: "u1", name: "מיה", role: "producer", producer_id: "p-42" };
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — מיה"));
-      expect(screen.getByText("לוח הבקרה שלי")).toBeInTheDocument();
       expect(screen.queryByText("ממשק אדמין")).toBeNull();
+      const dashboardLink = screen.getByText("לוח הבקרה שלי").closest("a");
+      expect(dashboardLink.getAttribute("href")).toBe("/producer/dashboard");
       const profileLink = screen.getByText("הפרופיל שלי").closest("a");
-      expect(profileLink.getAttribute("href")).toBe("/producer/dashboard");
+      expect(profileLink.getAttribute("href")).toBe("/producer/p-42");
+      const settingsLink = screen.getByText("הגדרות").closest("a");
+      expect(settingsLink.getAttribute("href")).toBe("/settings");
+      // MEH-1310: full producer order is dashboard → profile → מועדפים → הגדרות
+      const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
+      expect(menuItems.indexOf("לוח הבקרה שלי")).toBeLessThan(menuItems.indexOf("הפרופיל שלי"));
+      expect(menuItems.indexOf("הפרופיל שלי")).toBeLessThan(menuItems.indexOf("מועדפים"));
+      expect(menuItems.indexOf("מועדפים")).toBeLessThan(menuItems.indexOf("הגדרות"));
     });
 
     it("admin sees ממשק אדמין in the dropdown", () => {

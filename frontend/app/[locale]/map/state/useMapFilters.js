@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CATEGORY_LEGEND } from "@/lib/map-categories";
+import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -57,7 +57,8 @@ export function sortProducers(list, sortBy, userLoc) {
  * MapClient.jsx:41-78, :232-296, :458-500, :503-524.
  *
  * Shape of the state machine (preserved from source):
- *   - `chipState.categoryKey` ∈ CATEGORY_CHIPS keys (one active or "all")
+ *   - `chipState.categoryKeys` ⊆ CATEGORY_CHIPS keys (MEH-1465 multi-select OR;
+ *     `[]` = "all"/nothing selected — the reset sentinel)
  *   - `chipState.organic / has_delivery / verified / grass_fed` independent toggles
  *   - `cityFilter` is the city-search input (text)
  *   - `committedBounds` is the bounds the LIST is filtered by — set
@@ -104,16 +105,17 @@ export function useMapFilters({
     return () => document.body.classList.remove("sheet-open");
   }, [selectedProducer]);
 
-  // MEH-14: chip state per the new spec. Exactly one category chip
-  // is active at a time ("all" is the reset sentinel); organic +
-  // has_delivery are independent toggles on top of that.
+  // MEH-14: chip state per the new spec. MEH-1465: categoryKeys is a multi-select
+  // OR array (`[]` = "all"/nothing selected); organic + has_delivery are
+  // independent toggles on top of that.
   // MEH-1075: state completed to all 7 TOGGLE_CHIPS keys — the diet
   // toggles previously worked only via dynamic `!undefined` toggling.
   const [chipState, setChipState] = useState({
-    categoryKey: "all",
+    categoryKeys: [],
     organic: false,
     has_delivery: false,
     verified: false,
+    kosher: false,
     grass_fed: false,
     vegan: false,
     gluten_free: false,
@@ -141,7 +143,14 @@ export function useMapFilters({
 
   const onCategoryChipClick = (key) => {
     cancelPendingSheetFetch();
-    const next = { ...chipState, categoryKey: key };
+    // MEH-1465: multi-select OR. "all" clears the whole set; re-tapping a
+    // selected category removes it; any other category is added to the union.
+    let categoryKeys;
+    if (key === "all") categoryKeys = [];
+    else if (chipState.categoryKeys.includes(key))
+      categoryKeys = chipState.categoryKeys.filter((k) => k !== key);
+    else categoryKeys = [...chipState.categoryKeys, key];
+    const next = { ...chipState, categoryKeys };
     setChipState(next);
     loadProducers(buildParams(next));
     setCommittedBounds(null);
@@ -192,7 +201,7 @@ export function useMapFilters({
   };
 
   // MEH-1075: "ניקוי הכל" inside FilterSheet — resets the 7 toggles only.
-  // categoryKey + cityFilter survive (the tag strip's clear-all,
+  // categoryKeys + cityFilter survive (the tag strip's clear-all,
   // resetAllFilters below, still resets everything). Single action → the
   // fetch is instant, and any pending debounced sheet fetch is superseded.
   const clearSheetFilters = () => {
@@ -202,6 +211,7 @@ export function useMapFilters({
       organic: false,
       has_delivery: false,
       verified: false,
+      kosher: false,
       grass_fed: false,
       vegan: false,
       gluten_free: false,
@@ -230,10 +240,11 @@ export function useMapFilters({
   const resetAllFilters = () => {
     cancelPendingSheetFetch();
     const next = {
-      categoryKey: "all",
+      categoryKeys: [],
       organic: false,
       has_delivery: false,
       verified: false,
+      kosher: false,
       grass_fed: false,
       vegan: false,
       gluten_free: false,
@@ -339,17 +350,26 @@ export function useMapFilters({
   );
 
   // Active filters — each tag carries the key needed to remove it.
+  // MEH-1368 / MEH-1181-A tag-strip rule: removable tags represent ATTRIBUTES
+  // ONLY. A category selection is shown by its chip ring in the category row,
+  // never mirrored as a removable tag — its exit affordance is the "כל" chip.
+  // ("נקו הכל" → resetAllFilters still clears BOTH categories and attributes.)
   const activeFilterTags = useMemo(() => {
     const tags = [];
-    if (chipState.categoryKey && chipState.categoryKey !== "all") {
-      const cat = CATEGORY_CHIPS.find((c) => c.key === chipState.categoryKey);
-      if (cat) tags.push({ kind: "category", key: cat.key, label: cat.label });
-    }
     TOGGLE_CHIPS.forEach((c) => {
       if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
     });
     return tags;
   }, [chipState]);
+
+  // MEH-1368: count of ALL active attribute toggles — drives the inline
+  // "סינון · N" count on the FilterChipsBar button. Replaces the old corner
+  // badge's sheet-only count (countActiveSheetOnlyFilters), now that the inline
+  // quick-chip row is gone and every attribute lives in FilterSheet.
+  const activeAttributeCount = useMemo(
+    () => TOGGLE_CHIPS.filter((c) => chipState[c.key]).length,
+    [chipState],
+  );
 
   return {
     // state
@@ -387,5 +407,6 @@ export function useMapFilters({
     viewportCategoryCounts,
     visibleCategoryChips,
     activeFilterTags,
+    activeAttributeCount,
   };
 }

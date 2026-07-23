@@ -7,13 +7,17 @@ import { render, screen } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
   useFormatter: () => ({ dateTime: () => "" }),
+  useLocale: () => "he",
 }));
 
 vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }));
 // next/dynamic → the MiniMap marker.
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
-vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
+  optimizeCloudinary: (u) => u,
+}));
 vi.mock("@phosphor-icons/react", () => ({ Leaf: () => <span /> }));
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));
@@ -21,6 +25,9 @@ vi.mock("@/components/ReviewsSection", () => ({ default: () => <div data-testid=
 vi.mock("@/components/OpeningHours", () => ({ default: () => <div data-testid="hours" /> }));
 vi.mock("@/components/DirectoryDisclaimer", () => ({ default: () => <div data-testid="disclaimer" /> }));
 vi.mock("@/components/ReportButton", () => ({ default: () => <div data-testid="report" /> }));
+// MEH-1306: the owner pencil is self-gating chrome irrelevant to these
+// assertions — mock it out so its @/i18n/navigation import never loads.
+vi.mock("@/components/OwnerSectionEditLink", () => ({ default: () => null }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => null }));
 vi.mock("@/components/public/RecipeCard", () => ({ default: () => null }));
 vi.mock("@/components/FadeInSection", () => ({
@@ -140,5 +147,32 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("גבינה כפרית")).toBeInTheDocument();
     expect(screen.getByText("מ-35₪")).toBeInTheDocument();
+  });
+});
+
+// MEH-1291 — the "עודכן לאחרונה" freshness line renders only after a real edit
+// stamps producer.updated_at (nullable, no backfill). The next-intl mock returns
+// the key literal, so we assert on the key string.
+describe("ProducerSections last-updated line (MEH-1291)", () => {
+  const freshnessProps = (overrides) => ({
+    producer: { id: 7, name: "חוות", products: [], ...overrides },
+    events: [],
+    similarProducers: [],
+    sectionRefs: { current: {} },
+    reviewsContainerRef: { current: null },
+    reviewsVisible: false,
+  });
+
+  it("renders the freshness line, after the report, when updated_at is set", () => {
+    render(<ProducerSections {...freshnessProps({ updated_at: "2026-07-18T10:00:00Z" })} />);
+    const line = screen.getByText("producer.detail.last_updated");
+    const report = screen.getByTestId("report");
+    expect(line).toBeInTheDocument();
+    expect(before(report, line)).toBe(true); // page-end footnote, below the report
+  });
+
+  it("renders nothing when updated_at is null (untouched producer)", () => {
+    render(<ProducerSections {...freshnessProps({ updated_at: null })} />);
+    expect(screen.queryByText("producer.detail.last_updated")).not.toBeInTheDocument();
   });
 });

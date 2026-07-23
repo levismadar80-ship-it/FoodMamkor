@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import Input from "@/components/ui/Input";
@@ -103,6 +104,8 @@ export default function GroupBuyDetailClient({ id }) {
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const prevStatusRef = useRef(null);
@@ -164,12 +167,16 @@ export default function GroupBuyDetailClient({ id }) {
     }
   };
 
-  const handleCancel = async () => {
-    if (!confirm(t("cancel_confirm"))) return;
+  // MEH-1250: open the confirm modal instead of the native window.confirm().
+  const handleCancel = () => setConfirmCancelOpen(true);
+
+  const doCancel = async () => {
+    setConfirmCancelOpen(false);
     setCancelling(true);
     try {
       await api.delete(`/group-buys/${id}/commit`);
       await load();
+      showToast.success(t("toast_cancelled")); // MEH-1446
     } catch (err) {
       // MEH-975: same array-detail crash guard as handleCommit.
       setError(detailToMessage(err.response?.data?.detail) || t("errors.cancel_failed"));
@@ -308,6 +315,13 @@ export default function GroupBuyDetailClient({ id }) {
             <p className="text-xs text-fg-muted mt-1">
               {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
+            {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
+            {gb.fulfillment_note && (
+              <p className="text-xs text-text mt-1 whitespace-pre-line">
+                <span className="font-medium">{t("fulfillment_prefix")}</span>
+                {gb.fulfillment_note}
+              </p>
+            )}
           </div>
 
           {/* Commit form */}
@@ -353,7 +367,7 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Already committed */}
           {gb.user_committed && (
             <div className="space-y-3">
-              <div className="rounded-[12px] bg-[#EAF3DE] border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
+              <div className="rounded-[12px] bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
                 {t("committed_confirm")}
                 {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
               </div>
@@ -391,6 +405,48 @@ export default function GroupBuyDetailClient({ id }) {
           </div>
         </div>
       </div>
+
+      {/* MEH-1250: destructive cancel-commitment confirm — dedicated modal
+          replacing native confirm() (error-idiom unification, MEH-999
+          JUDGMENT). z-[9500] matches LoginPromptModal so it clears the sticky
+          header (z-1050) + BottomNav (z-1000) on this consumer page; the admin
+          feedback-modal idiom (z-50) is unsafe here. */}
+      {confirmCancelOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gb-cancel-title"
+          onClick={() => setConfirmCancelOpen(false)}
+        >
+          <div
+            className="bg-background rounded-[16px] p-6 max-w-sm w-full border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="gb-cancel-title"
+              className="font-headline-md text-lg font-bold text-text mb-4"
+            >
+              {t("cancel_confirm")}
+            </h2>
+            <div className="flex gap-3">
+              <button
+                onClick={doCancel}
+                disabled={cancelling}
+                className="flex-1 bg-primary text-white py-2.5 rounded-[10px] hover:bg-primary-dark transition text-sm font-medium disabled:opacity-50"
+              >
+                {cancelling ? t("cancelling") : t("cancel_cta")}
+              </button>
+              <button
+                onClick={() => setConfirmCancelOpen(false)}
+                className="flex-1 bg-white border border-border text-text py-2.5 rounded-[10px] hover:bg-green-50 transition text-sm font-medium"
+              >
+                {t("cancel_dismiss")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

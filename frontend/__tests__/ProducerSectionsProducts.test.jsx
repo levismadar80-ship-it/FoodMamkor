@@ -12,6 +12,7 @@ vi.mock("next-intl", () => ({
     return key;
   },
   useFormatter: () => ({ dateTime: () => "" }),
+  useLocale: () => "he",
 }));
 
 vi.mock("next/image", () => ({
@@ -26,7 +27,8 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => new Promise(() => {})) },
 }));
 
-vi.mock("@/lib/cloudinary", () => ({
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (url) => `optimized:${url}`,
 }));
 
@@ -41,6 +43,9 @@ vi.mock("@/components/FadeInSection", () => ({
 }));
 vi.mock("@/components/DirectoryDisclaimer", () => ({ default: () => null }));
 vi.mock("@/components/OpeningHours", () => ({ default: () => null }));
+// MEH-1306: the owner pencil is self-gating chrome irrelevant to these
+// assertions — mock it out so its @/i18n/navigation import never loads.
+vi.mock("@/components/OwnerSectionEditLink", () => ({ default: () => null }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => null }));
 vi.mock("@/components/public/RecipeCard", () => ({ default: () => null }));
 vi.mock("@/components/ReportButton", () => ({ default: () => null }));
@@ -63,23 +68,23 @@ const producerWith = (products) => ({
 });
 
 describe("ProducerSections products — imageless canonical placeholder (MEH-1138)", () => {
-  it("imageless card renders leaf glyph (light) on the cream token, no wordmark", () => {
+  it("MEH-1305 E: imageless GRID card renders a typographic no-photo cell (initial on tint, no leaf)", () => {
     render(
       <ProducerSections
         {...baseProps}
         producer={producerWith([{ id: 11, name: "גרנולה ביתית", image_url: null }])}
       />,
     );
-    const leaf = screen.getByTestId("leaf-icon");
-    expect(leaf).toBeInTheDocument();
-    expect(leaf.dataset.weight).toBe("light");
-    expect(leaf.className).toMatch(/text-primary\/\[0\.32\]/);
-    // MEH-1168 P1: the brand wordmark is gone from the product placeholder.
-    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
-    // Cream surface token, not a gray/tint box.
-    const placeholder = leaf.closest("div");
-    expect(placeholder.className).toMatch(/bg-background/);
+    // No leaf glyph in the grid anymore — the product initial carries the
+    // no-photo state on a bg-primary/[0.06] tint (MEH-1126 "no icon" intent).
+    expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
+    const initial = screen.getByText("ג"); // first letter of "גרנולה"
+    expect(initial).toBeInTheDocument();
+    const placeholder = initial.closest("div");
+    expect(placeholder.className).toMatch(/bg-primary\/\[0\.06\]/);
     expect(placeholder.getAttribute("aria-label")).toContain("גרנולה ביתית");
+    // MEH-1168 P1: the brand wordmark stays gone from the product placeholder.
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
   });
 
   it("imageless card still shows the product name in the card body", () => {
@@ -105,6 +110,163 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
     expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
     expect(screen.getByText("דבש פרחי בר")).toBeInTheDocument();
+  });
+
+  // MEH-1233 B4: the signature product renders as a highlight CARD (photo when
+  // a matching grid product has one, else the leaf placeholder) and the matching
+  // grid entry is deduped so it never appears twice.
+  it("signature with a matching grid product: featured with its photo, deduped from the grid", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          starting_price_label: "החל מ-25₪",
+          products: [
+            { id: 21, name: "לחם מחמצת כפרי", image_url: "https://res.cloudinary.com/x/bread.jpg" },
+            { id: 22, name: "חלה", image_url: null },
+          ],
+        }}
+      />,
+    );
+    // name appears once (highlight only — NOT also a grid card)
+    expect(screen.getAllByText("לחם מחמצת כפרי")).toHaveLength(1);
+    expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+    // highlight photo = the matching product's optimized image
+    const imgs = screen.getAllByTestId("product-image");
+    expect(imgs.some((i) => (i.getAttribute("src") || "").includes("bread.jpg"))).toBe(true);
+    // the other product still shows in the grid
+    expect(screen.getByText("חלה")).toBeInTheDocument();
+  });
+
+  it("free-text signature with no matching product: name + leaf placeholder, grid intact", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "מארז טעימות",
+          products: [
+            { id: 31, name: "לחם מחמצת כפרי", image_url: "https://res.cloudinary.com/x/b.jpg" },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("מארז טעימות")).toBeInTheDocument();
+    // no match → leaf placeholder in the highlight
+    expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
+    // the grid product remains
+    expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
+  });
+
+  it("MEH-1305 F: numeric price is bidi-isolated (formatPrice); free-text price_range renders naturally", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([
+          { id: 40, name: "דבש", image_url: "https://res.cloudinary.com/x/h.jpg", price_min: 35 },
+          { id: 41, name: "ריבה", image_url: "https://res.cloudinary.com/x/j.jpg", price_range: "מ-30₪ לחבילה" },
+        ])}
+      />,
+    );
+    // numeric → canonical "35₪" wrapped in dir="ltr" (bidi isolation).
+    const ltr = container.querySelector('span[dir="ltr"]');
+    expect(ltr).toHaveTextContent("35₪");
+    // free-text price_range → rendered as-is, NOT force-wrapped in dir="ltr"
+    // (which would corrupt the Hebrew "לחבילה").
+    const freeText = screen.getByText("מ-30₪ לחבילה");
+    expect(freeText).toBeInTheDocument();
+    expect(freeText.closest('span[dir="ltr"]')).toBeNull();
+  });
+
+  // MEH-1463: the signature highlight now carries an accent eyebrow label and,
+  // when its matched grid product was deduped out and starting_price_label is
+  // empty, falls back to that product's own description + price.
+  it("MEH-1463: eyebrow signature_label renders in the highlight card", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          starting_price_label: "החל מ-25₪",
+          products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+        }}
+      />,
+    );
+    // mock returns the i18n key verbatim
+    expect(screen.getByText("producer.detail.sections.products.signature_label")).toBeInTheDocument();
+  });
+
+  it("MEH-1463: empty starting_price_label → highlight shows the matched product's description + numeric price", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          // no starting_price_label → fallback path
+          products: [
+            {
+              id: 21,
+              name: "לחם מחמצת כפרי",
+              image_url: null,
+              description: "מחמצת בהתססה איטית, קמח מלא אורגני",
+              price_min: 25,
+            },
+          ],
+        }}
+      />,
+    );
+    // description surfaced (was deduped out of the grid, would have vanished)
+    expect(screen.getByText("מחמצת בהתססה איטית, קמח מלא אורגני")).toBeInTheDocument();
+    // numeric price surfaced, bidi-isolated
+    const ltr = container.querySelector('span[dir="ltr"]');
+    expect(ltr).toHaveTextContent("25₪");
+  });
+
+  it("MEH-1463: empty starting_price_label with free-text price_range → rendered naturally, not dir=ltr", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "מארז לחמים",
+          products: [
+            { id: 21, name: "מארז לחמים", image_url: null, price_range: "מ-40₪ למארז" },
+          ],
+        }}
+      />,
+    );
+    const freeText = screen.getByText("מ-40₪ למארז");
+    expect(freeText).toBeInTheDocument();
+    expect(freeText.closest('span[dir="ltr"]')).toBeNull();
+  });
+
+  it("MEH-1463: starting_price_label present keeps priority — product price NOT used as fallback", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          starting_price_label: "החל מ-25₪",
+          products: [
+            { id: 21, name: "לחם מחמצת כפרי", image_url: null, price_min: 99 },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+    // the product's own numeric price must not appear (label wins)
+    expect(screen.queryByText("99₪")).not.toBeInTheDocument();
   });
 
   it("no stray indicator/dot renders on an imageless card", () => {

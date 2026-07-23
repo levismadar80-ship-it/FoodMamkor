@@ -16,15 +16,16 @@ from app.routers import (
     events,
     experiences,
     favorites,
+    google_rating,
     group_buys,
     health,
     holiday_mode,
-    home_products,
     marketing,
     producer_me,
     producer_recipes,
     producers,
     referrals,
+    report_info,
     reports,
     reviews,
     search,
@@ -51,8 +52,17 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(favorites.router)
     app.include_router(admin.router)
     app.include_router(admin_extra.router)
-    app.include_router(home_products.router)
+    # MEH-1406: home_products.router disabled per brand LOCK (licensed
+    # businesses only — the consumer home-cook / "from-the-neighbor's-kitchen"
+    # surface was removed). Router/module/models/schemas/tables all retained
+    # (no Alembic); this is a reversible unmount. To restore the live API,
+    # BOTH steps are needed: re-add `home_products` to the import tuple above
+    # AND uncomment the include line below.
+    # app.include_router(home_products.router)
     app.include_router(reports.router)
+    # MEH-1443: email-only "report wrong info" (distinct from the DB-backed
+    # abuse reports above — see routers/report_info.py "Does NOT").
+    app.include_router(report_info.router)
     app.include_router(upload.router)
     app.include_router(marketing.router)
     app.include_router(events.router)
@@ -62,6 +72,10 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
     app.include_router(reviews.router)
+    # MEH-1490: live-fetch Google-rating trust line (read-only proxy; no
+    # persistence). Registered near reviews — it's the external counterpart to
+    # the native review block, but a separate router (ToS visual separation).
+    app.include_router(google_rating.router)
     app.include_router(search.router)
     app.include_router(users_me.router)
     app.include_router(admin_outreach.router)

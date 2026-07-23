@@ -11,23 +11,25 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
  * Module:   ProfileCompletenessCard
  * Purpose:  Surface a clear onboarding path to the business owner at the top
  *           of /producer/dashboard as a 4-step checklist (photo →
- *           categories+location → 3 products → primary contact) so a brand-new
+ *           categories+location → first product → primary contact) so a brand-new
  *           producer sees concrete next steps instead of three 0/0/0 analytics
  *           cards. Read-only consumer of the shared completeness heuristic.
  * Does NOT: own the completeness logic — that lives in
  *           lib/producer-completeness.js (heuristic; never edited here) and is
  *           shared with the admin producers list. Does not mutate producer data
- *           or hit any API. The "3 products" step is card-only (MEH-1106 B1) —
+ *           or hit any API. The products step is card-only (MEH-1106 B1) —
  *           it never enters the shared heuristic, so the admin list is
  *           unaffected. Does not touch ChangesRequestedBanner (separate admin
  *           channel).
  * Related:  app/[locale]/producer/dashboard/page.js (mount, above analytics);
  *           lib/producer-completeness.js:24 (the heuristic);
- *           lib/badges.js:125 (PRODUCTS_MIN — same "3 products" threshold);
+ *           lib/badges.js:125 (PRODUCTS_MIN=3 — the auto-badge threshold, now
+ *           DECOUPLED from this checklist's CHECKLIST_PRODUCTS_MIN=1, MEH-1238);
  *           app/[locale]/producer/dashboard/edit/page.js (deep-link anchors).
  * History:  MEH-288 (creation) — unblocks MEH-290 onboarding-tour step 1.
  *           MEH-897 (state-progressive checklist). MEH-1092 (F3 de-red).
  *           MEH-1106 (4-step checklist; card-only products step, B1).
+ *           MEH-1238 (checklist products step 3→1; badge threshold unchanged).
  *
  * States:
  *   complete (4/4 steps) — collapses to a single confirmation line.
@@ -42,10 +44,13 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
 // location, contact); step ③ (products) is card-only per MEH-1106 B1.
 const STEP_COUNT = 4;
 
-// Card-only "3 products" threshold. Mirrors the auto-badge rule so both
-// surfaces agree on what "enough products" means.
-// REUSES: frontend/lib/badges.js:125 (PRODUCTS_MIN).
-const PRODUCTS_MIN = 3;
+// MEH-1238: the checklist products step is DECOUPLED from the badge threshold.
+// badges.js:125 PRODUCTS_MIN = 3 stays as the auto-badge rule (intentionally
+// left untouched), but a business with a single product must be able to reach
+// 100% on the onboarding checklist — a step that can never complete kills the
+// goal-gradient effect (Sapir decision 16/07). Checklist = minimum to activate,
+// not the ideal. So the checklist requires 1; the badge still requires 3.
+const CHECKLIST_PRODUCTS_MIN = 1;
 
 // Canonical profile-editor hub. Every business field is editable here; the
 // per-step deep-links target section anchors added on the edit page
@@ -151,7 +156,7 @@ function buildSteps(producer, missingLabels) {
     },
     {
       key: "products",
-      done: productsCount >= PRODUCTS_MIN,
+      done: productsCount >= CHECKLIST_PRODUCTS_MIN,
       href: `${EDIT_HUB}#profile-products`,
     },
     { key: "contact", done: has("contact"), href: `${EDIT_HUB}#profile-contact` },

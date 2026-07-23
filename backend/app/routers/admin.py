@@ -14,6 +14,7 @@ from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
 )
+from app.services.delivery_validation import ensure_exclusion_requires_nationwide
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
@@ -30,7 +31,6 @@ from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerUpdate,
-    RemoveListingBody,
     RequestChangesIn,
     StoryCardUploadRequest,
 )
@@ -92,8 +92,9 @@ def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
     db.query(ProducerCategory).filter(
         ProducerCategory.producer_id == producer.id
     ).delete()
-    for cid in category_ids:
-        db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+    # MEH-1297: payload order = stored order (position 0 = primary).
+    for pos, cid in enumerate(category_ids):
+        db.add(ProducerCategory(producer_id=producer.id, category_id=cid, position=pos))
 
 
 def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
@@ -192,6 +193,9 @@ def admin_create_producer(
         has_physical_location=data.has_physical_location,
         offers_delivery=data.offers_delivery,
         delivery_nationwide=data.delivery_nationwide,
+        # MEH-1255: nationwide exclusion list — schema validator already
+        # rejected excluded-without-nationwide on create.
+        delivery_excluded_cities=data.delivery_excluded_cities,
         # MEH-903 A: the legacy delivery_cities column is no longer written —
         # delivery_areas (via _apply_delivery_cities below) is the single store.
         # Column stays declared (drop = Chunk C); new rows keep the [] default.
@@ -226,6 +230,8 @@ def admin_update_producer(
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
     payload.pop("delivery_cities", None)
+    # MEH-1255: effective-state guard — excluded cities require nationwide.
+    ensure_exclusion_requires_nationwide(producer, payload)
 
     # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
     # the update. If category_ids is being changed → use the new list,
@@ -353,6 +359,11 @@ def admin_delete_producer(
     products = db.query(Product).filter(Product.producer_id == producer.id).all()
     old_product_urls = [p.image_url for p in products if p.image_url]
     old_story_card_url = producer.story_card_url
+    # MEH-1335: owner photo lives at mehamakor/owner/owner_{producer_id} —
+    # NOT in RESERVED_PUBLIC_ID_PREFIXES (only mehamakor/producers/ is), so
+    # its destroy below needs no bypass. Same orphan class as story_card:
+    # overwrite=True on upload prevents duplicates, not delete-orphans.
+    old_owner_photo_url = producer.owner_photo_url
 
     # MEH-747: unlink any user pointing at this producer BEFORE db.delete.
     # User.producer_id has no ondelete (models.py), so deleting the producer
@@ -393,6 +404,11 @@ def admin_delete_producer(
         old_story_card_url,
         bypass_reserved=True,
         context="admin.admin_delete_producer story_card",
+    )
+    # MEH-1335: owner photo — non-reserved namespace, default reject list OK.
+    destroy_image(
+        old_owner_photo_url,
+        context="admin.admin_delete_producer owner_photo",
     )
 
     return {"detail": "Producer deleted"}
@@ -700,135 +716,13 @@ def revoke_verified(
     return {"detail": "תג מאומת הוסר"}
 
 
-# --- Hidden Home Listings ---
-@router.get("/home-products/hidden")
-def get_hidden_listings(
-    user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
-    """Get home products auto-hidden by negative ratings."""
-    listings = db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).all()
-    return [
-        {
-            "id": str(hp.id),
-            "title": hp.title,
-            "city": hp.city,
-            "seller_name": hp.user.name if hp.user else None,
-            "created_at": hp.created_at.isoformat(),
-        }
-        for hp in listings
-    ]
-
-
-@router.post("/home-products/{product_id}/restore")
-def restore_listing(
-    product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
-    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
-    if not hp:
-        raise HTTPException(status_code=404, detail="Listing not found")
-    hp.is_hidden = False
-    db.commit()
-    return {"detail": "Listing restored"}
-
-
-@router.delete("/home-products/{product_id}")
-def delete_listing(
-    product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
-    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
-    if not hp:
-        raise HTTPException(status_code=404, detail="Listing not found")
-
-    # MEH-375: capture HomeProduct's two image surfaces (cover photo +
-    # images list) BEFORE db.delete; destroy AFTER commit per the
-    # external-cleanup rule (DB and Cloudinary must agree on rollback).
-    # Distinct from the soft-delete at /home-products/{id} (sets
-    # is_active=False), which preserves assets for reactivation.
-    old_photo = hp.photo
-    old_images = list(hp.images or [])
-
-    db.delete(hp)
-    db.commit()
-
-    from app.cloudinary_utils import destroy_image
-
-    if old_photo:
-        destroy_image(old_photo, context="admin.delete_listing photo")
-    for url in old_images:
-        destroy_image(url, context="admin.delete_listing images")
-
-    return {"detail": "Listing deleted"}
-
-
-# --- Moderation queue (FLAGGED by AI) ---
-@router.get("/home-products/flagged")
-def get_flagged_listings(
-    user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
-    """Return home products that AI moderation marked as FLAGGED —
-    published but in the admin review queue.
-    """
-    listings = (
-        db.query(HomeProduct)
-        .filter(
-            HomeProduct.moderation_status == "FLAGGED",
-            HomeProduct.is_active.is_(True),
-        )
-        .order_by(HomeProduct.created_at.desc())
-        .all()
-    )
-    return [
-        {
-            "id": str(hp.id),
-            "title": hp.title,
-            "description": hp.description,
-            "city": hp.city,
-            "price": float(hp.price) if hp.price is not None else None,
-            "seller_name": hp.user.name if hp.user else None,
-            "seller_phone": hp.phone,
-            "moderation_reason": hp.moderation_reason,
-            "moderation_suggestion": hp.moderation_suggestion,
-            "created_at": hp.created_at.isoformat() if hp.created_at else None,
-        }
-        for hp in listings
-    ]
-
-
-@router.post("/home-products/{product_id}/approve")
-def approve_flagged_listing(
-    product_id: UUID,
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Admin clears a FLAGGED listing — it stays published, badge goes away."""
-    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
-    if not hp:
-        raise HTTPException(status_code=404, detail="Listing not found")
-    hp.moderation_status = "APPROVED"
-    hp.moderation_reason = None
-    hp.moderation_suggestion = None
-    db.commit()
-    return {"detail": "Listing approved", "moderation_status": hp.moderation_status}
-
-
-@router.post("/home-products/{product_id}/remove")
-def remove_flagged_listing(
-    product_id: UUID,
-    data: RemoveListingBody = Body(default=RemoveListingBody()),
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Admin removes a flagged listing — is_active=false, records the removal
-    reason so we can surface it to the seller later.
-    """
-    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
-    if not hp:
-        raise HTTPException(status_code=404, detail="Listing not found")
-    hp.is_active = False
-    if data.reason:
-        hp.moderation_reason = data.reason
-    db.commit()
-    return {"detail": "Listing removed"}
+# MEH-1406: admin home-products moderation endpoints removed from the live
+# surface (was: GET /home-products/hidden, POST .../restore, DELETE .../{id},
+# GET /home-products/flagged, POST .../approve, POST .../remove). The
+# consumer home-cook feature was retired per brand LOCK (licensed
+# businesses only), so its admin moderation queue is unmounted too. The
+# HomeProduct model/schemas/tables are retained (no Alembic) — the /admin/stats
+# counts below still read them; only the writable/queue endpoints are gone.
 
 
 # MEH-587: admin Recipe endpoints removed (chunk 0/4) — see

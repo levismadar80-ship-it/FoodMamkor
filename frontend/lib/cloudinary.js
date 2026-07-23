@@ -42,3 +42,30 @@ export function optimizeCloudinary(url, opts = {}) {
   }
   return url.replace("/upload/", `/upload/${parts.join(",")}/`);
 }
+
+// MEH-1229: Per-surface producer-image aspect ratios — the single source of
+// truth for crop ratios across the site. Every producer / product / event
+// image delivery imports its ratio from here and passes it to
+// `optimizeCloudinary`'s `aspectRatio`, so the same uploaded photo crops
+// identically on every surface. That per-surface consistency is what
+// separates "a brand" from "another AI directory" (visibility research,
+// 16/07, template 05 — recommendation #1).
+//
+// Brand LOCK (05-photography-style + onboarding email #3): consistency here
+// means crop + f_auto/q_auto/dpr ONLY. No auto color-grade / filters — that
+// is a separate brand-book decision (brand-book-precedes-code).
+//
+// Surfaces that intentionally OPT OUT (full/intrinsic photo, no fixed crop) —
+// they still ship through optimizeCloudinary for f_auto,q_auto:
+//   - ProducerDetail <ImageGallery> hero + <Lightbox>: art-directed showcase
+//     whose cells have several shapes; one crop would distort them.
+//   - MapProducerCard thumbnail: MEH-1133 measures the loaded image's
+//     intrinsic aspect to letterbox wide logos (object-contain) — a server
+//     crop would collapse that ratio and break the logo path.
+export const IMAGE_RATIOS = {
+  card: "4:3", // ProducerCard grid tile · dashboard-edit photo grid · recipe card
+  featured: "4:5", // HomeFeaturedProducer editorial portrait (reference — MEH-1214; do not change)
+  strip: "16:10", // horizontal producer strips (home recently-viewed, friday-delivery)
+  square: "1:1", // square thumbnails: products, map-marker popup, event/product thumbs
+  banner: "16:9", // wide bg-cover banners: map bottom-sheet, event & experience images
+};

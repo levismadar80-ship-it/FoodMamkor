@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, MapPin, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
@@ -53,7 +53,28 @@ const EMPTY_FORM = {
   // category requires a license and this is empty — helper at
   // backend/app/services/license_validation.py.
   producer_license_number: "",
+  // MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Required
+  // dropdown on the final CONFIRM step (submit blocked while empty). The key is
+  // one of REFERRAL_SOURCE_KEYS; referral_source_other holds the free-text
+  // answer revealed only when "other" is chosen.
+  referral_source: "",
+  referral_source_other: "",
 };
+
+// MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels
+// rendered from i18n (auth.register.producer.fields.referral_source.options.*).
+// Mirror of backend/app/constants.py:REFERRAL_SOURCE_KEYS — keep in sync (the
+// DB persists these exact strings). "other" reveals a free-text input.
+const REFERRAL_SOURCE_KEYS = [
+  "business_referral",
+  "friends_family",
+  "instagram",
+  "facebook",
+  "google",
+  "whatsapp_group",
+  "other",
+  "prefer_not_to_say",
+];
 
 function RegisterProducerPageFallback() {
   const t = useTranslations();
@@ -114,6 +135,11 @@ function RegisterProducerPageBody() {
   // license number and enter the pending queue.
   const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake toggle.
+  // UI-only — it sets NO backend field, creates NO location rows, and is not
+  // part of the submit payload; on "yes" it points the owner to the dashboard
+  // LocationsEditor (chunk 4a) to add points after registration.
+  const [hasMultipleLocations, setHasMultipleLocations] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
   // ToS/privacy consent above (ADR-014 voice: first-person legal vs plural
@@ -175,13 +201,10 @@ function RegisterProducerPageBody() {
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
   }, [step, showPreflight]);
 
-  // MEH-669: admins cannot register as producers. Backend rejects with
-  // 403 at auth.py:432; this redirect prevents them from filling out the
-  // form only to hit a server error on submit. Wait for auth to resolve
-  // so we don't bounce mid-load while user is still null.
-  useEffect(() => {
-    if (!authLoading && user?.role === "admin") router.push("/admin");
-  }, [authLoading, user, router]);
+  // MEH-1489: the admin case is now handled by the early gate below (a terminal
+  // "separate account for admin" screen), not a silent /admin redirect — same
+  // intent as the auth.py:~477 403 backstop, surfaced up-front instead of at
+  // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -314,6 +337,12 @@ function RegisterProducerPageBody() {
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
+        // MEH-1471: self-reported attribution. referral_source is a required
+        // key from the CONFIRM-step dropdown; the free-text answer is sent only
+        // when "other" is chosen (empty otherwise → backend stores NULL).
+        referral_source: form.referral_source,
+        referral_source_other:
+          form.referral_source === "other" ? form.referral_source_other : "",
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
@@ -373,10 +402,53 @@ function RegisterProducerPageBody() {
     }
   };
 
-  // Don't show step 1 (account form) until we know whether user is logged in —
-  // prevents the flash of email/password inputs for already-authenticated users.
-  if (authLoading && step === STEP.ACCOUNT) {
+  // Don't render the wizard/preflight until auth resolves. MEH-1489 broadened
+  // the old `&& step === STEP.ACCOUNT` guard to all authLoading: a token-holder's
+  // step initializes to DETAILS (line 88), so that guard didn't cover them and a
+  // logged-in producer/admin briefly saw the join pitch before the gate. Showing
+  // the existing loading text for every authLoading tick closes that flash;
+  // guests are unaffected (they start at ACCOUNT, resolve immediately).
+  if (authLoading) {
     return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
+  }
+
+  // MEH-1489: early auth-state gate. A logged-in producer already owns a page
+  // (backend 409 already_has_producer at submit) and an admin must use a separate
+  // account (backend 403, auth.py:~477) — both dead-end a 10-minute wizard. Show a
+  // terminal screen up-front instead. Guests + logged-in consumers (MEH-143 upgrade
+  // path, role !== producer/admin) fall through unchanged. Sits ABOVE the
+  // showPreflight return so the wizard tree below stays byte-identical (MEH-132).
+  if (user?.role === "producer") {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate">
+          <div className="mb-4 flex justify-center">
+            <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
+          </div>
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.producer_heading")}</h1>
+          <p className="text-fg-muted mb-6">{t("auth.register.producer.gate.producer_body")}</p>
+          {/* CTA reuses the account-menu dashboard label (single owner, no new key). */}
+          <button
+            onClick={() => router.push("/producer/dashboard")}
+            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+          >
+            {t("account.menu.dashboard")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (user?.role === "admin") {
+    // No dashboard CTA — an admin's daily-work account has no producer page to
+    // manage; the message points them at creating a separate business account.
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate-admin">
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.admin_heading")}</h1>
+          <p className="text-fg-muted">{t("auth.register.producer.gate.admin_body")}</p>
+        </div>
+      </div>
+    );
   }
 
   // MEH-994: pre-flight screen before frame 01. Early return keeps the wizard
@@ -651,6 +723,32 @@ function RegisterProducerPageBody() {
               helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
               dir="rtl"
             />
+
+            {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
+                Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
+                no backend field, no location rows; on "yes" the approved copy
+                refers the owner to the dashboard LocationsEditor (chunk 4a). */}
+            <div className="pt-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasMultipleLocations}
+                  onChange={(e) => setHasMultipleLocations(e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                  data-testid="register-multi-location-toggle"
+                />
+                {t("auth.register.producer.fields.multi_location_label")}
+              </label>
+              {hasMultipleLocations && (
+                <p
+                  data-testid="register-multi-location-copy"
+                  className="mt-2 ms-6 flex items-start gap-1.5 rounded-md bg-primary/5 px-3 py-2 text-xs text-fg-muted"
+                >
+                  <MapPin size={14} weight="fill" className="mt-0.5 shrink-0 text-primary" />
+                  <span>{t("auth.register.producer.fields.multi_location_yes_copy")}</span>
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-3">
               {!isUpgrade && (
@@ -936,6 +1034,68 @@ function RegisterProducerPageBody() {
               )}
             </div>
 
+            {/* MEH-1471: self-reported attribution — REQUIRED dropdown directly
+                above the ToS consent (final step). Default "בחר אפשרות" with no
+                preselection (Ruler Analytics speed-bias → first-option overcount);
+                the submit gate blocks while empty. Selecting "other" reveals an
+                optional free-text input. English keys stored; Hebrew from i18n. */}
+            <div data-testid="register-referral-source-block">
+              <label
+                htmlFor="register-referral-source"
+                className="block text-sm font-medium text-text mb-1 text-start"
+              >
+                {t("auth.register.producer.fields.referral_source.label")}
+              </label>
+              <select
+                id="register-referral-source"
+                data-testid="register-referral-source"
+                value={form.referral_source}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAndSave((prev) => ({
+                    ...prev,
+                    referral_source: value,
+                    // Clear the free-text answer once the choice is not "other".
+                    referral_source_other:
+                      value === "other" ? prev.referral_source_other : "",
+                  }));
+                }}
+                required
+                className="w-full border rounded-md px-3 py-2 min-h-[44px] bg-white text-start"
+              >
+                <option value="" disabled>
+                  {t("auth.register.producer.fields.referral_source.placeholder")}
+                </option>
+                {REFERRAL_SOURCE_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(
+                      `auth.register.producer.fields.referral_source.options.${key}`,
+                    )}
+                  </option>
+                ))}
+              </select>
+              {form.referral_source === "other" && (
+                <input
+                  id="register-referral-source-other"
+                  data-testid="register-referral-source-other"
+                  type="text"
+                  maxLength={120}
+                  value={form.referral_source_other}
+                  onChange={set("referral_source_other")}
+                  placeholder={t(
+                    "auth.register.producer.fields.referral_source.other_placeholder",
+                  )}
+                  // MEH-1471 a11y (IS-5568): the placeholder is the only visible
+                  // text and disappears on input, so name the field explicitly for
+                  // screen readers (the select above uses a visible <label>).
+                  aria-label={t(
+                    "auth.register.producer.fields.referral_source.other_placeholder",
+                  )}
+                  className="w-full border rounded-md px-3 py-2 min-h-[44px] mt-2 text-start"
+                />
+              )}
+            </div>
+
             {/* MEH-759 Chunk C: three separate affirmative acts — ToS/privacy
                 consent (chrome, plural), the binding licensing declaration
                 (first-person), and the conditional grower declaration. ADR-014
@@ -950,8 +1110,8 @@ function RegisterProducerPageBody() {
               />
               <span className="leading-relaxed text-fg-muted">
                 {t("auth.register.producer.terms.intro")}{" "}
-                <a href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</a>{" "}
-                {t("auth.register.producer.terms.and")}<a href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</a>
+                <Link href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</Link>{" "}
+                {t("auth.register.producer.terms.and")}<Link href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</Link>
               </span>
             </label>
 
@@ -1008,6 +1168,11 @@ function RegisterProducerPageBody() {
                   }
                   if (form.category_ids.length === 0) {
                     setError(t("auth.register.producer.validation.category_required"));
+                    return;
+                  }
+                  // MEH-1471: required attribution — block submit while empty.
+                  if (!form.referral_source) {
+                    setError(t("auth.register.producer.validation.referral_source_required"));
                     return;
                   }
                   if (!agreedToTerms) {

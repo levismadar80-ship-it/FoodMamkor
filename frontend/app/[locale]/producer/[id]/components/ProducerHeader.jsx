@@ -1,239 +1,221 @@
-import { useTranslations } from "next-intl";
-import { MapPin, Heart, Star, Truck, StarOfDavid } from "@phosphor-icons/react";
+import { useLocale, useTranslations } from "next-intl";
+import { Star, StarOfDavid } from "@phosphor-icons/react";
 
 import BadgeRow from "@/components/BadgeRow";
-import CategoryTag from "@/components/CategoryTag";
+import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
-import TrustBadge from "@/components/TrustBadge";
+import ShareButton from "@/components/ShareButton";
+import { allBadges } from "@/lib/badges";
 import ReviewExcerpt from "./ReviewExcerpt";
+import { getVacationReturnDate } from "../lib/producer-format";
 
 /**
  * Main-column header block for the producer detail page.
  *
- * Verbatim extraction from ProducerDetail.jsx:281-423 — name + badge
- * row + trust tier + reviews chip + premium chip + favorites count +
- * AvailabilityBadge + daily-availability dot + short description +
- * contact name + city/category line + top-product/price line +
- * secondary-category tags + highlights strip + KashrutBadgeStrip +
- * vacation banner.
+ * MEH-1334 (Quiet Direction v3): restructured from the ~9-element stack to 4
+ * visual groups — [name + single ✓ seal] · [one-liner] · [rating | "חדש"] ·
+ * [meta line with the page's ONLY status + one quiet kosher line] — plus the
+ * quiet actions row (שמירה · מעקב · desktop שיתוף) and the restyled
+ * pull-quote. Removed per decision 4: premium chip, favorites count,
+ * TrustBadge, secondary-category chips, grass_fed/delivery highlight chips,
+ * contact_name line (relocated to OwnerCard). Kept: declared explainer
+ * (ADR-022 gate 1) + the full_this_week banner. The vacation banner was
+ * removed in chunk 3 — it repeated the return date the meta status owns.
  *
- * Sits inside the main column of the two-column grid in
- * ProducerDetail.jsx — the breadcrumb, gallery, and mobile tab bar
- * (ProducerDetail.jsx:218-274) live OUTSIDE the grid and remain
- * inline in ProducerDetail.
+ * The 3-state order status lives HERE and only here (one green per page —
+ * revision-2 #2): open = primary, closed = muted, vacation = gold-deep
+ * (#7a5a10 on cream #f5f0e8 = 5.61:1, AA ✓; the pre-revision #8B6914 failed).
+ *
+ * Sits inside the main column of the two-column grid in ProducerDetail.jsx —
+ * breadcrumb, gallery, and mobile tab bar live OUTSIDE the grid.
  */
 export default function ProducerHeader({
   producer,
   isVacation,
-  vacationReturnLabel,
   primaryCategory,
   hasImages = true,
+  shareUrl,
 }) {
   const t = useTranslations();
-  // MEH-1124 (Task C): union of every delivery signal — the pill-row badge
-  // (badges.js: has_delivery / delivery_count) and the old capability chip
-  // (delivery_areas) used different fields, so deduping to a single chip has to
-  // cover all of them or a producer keyed on only one field loses the badge.
-  const hasDelivery =
-    producer.delivery_areas?.length > 0 ||
-    !!producer.has_delivery ||
-    (typeof producer.delivery_count === "number" && producer.delivery_count > 0);
-  // MEH-1168 P1 (dedup): secondary categories only — the primary category is
-  // already named in the logistics line, so it's excluded from the chip row.
-  const extraCats =
-    producer.categories?.filter((cat) => cat.id !== primaryCategory?.id) ?? [];
-  // MEH-1168 P2: for imageless producers the verified seal is anchored to the
-  // name inside the Tinted Masthead (ImageGallery), so it's hidden from this
-  // header badge row to avoid a duplicate. Imaged producers keep it here — the
-  // h1 lives on this identity line, so the seal is already beside the name.
-  const badgeHideKeys = hasImages
-    ? ["products", "delivery"]
-    : ["products", "delivery", "verified"];
+  const locale = useLocale();
+
+  // MEH-1334: 3-state status. `full` is the legacy availability_status twin of
+  // full_this_week (MEH-291 7-day overlap contract, same as isVacation in
+  // ProducerDetail.jsx). Anything not closed/vacation reads as open — matches
+  // the old ContactCard OPEN_STATES default-open behavior.
+  const availState = producer.availability_state || producer.availability_status;
+  const isClosed = !isVacation && (availState === "full_this_week" || availState === "full");
+  const vacationDate = getVacationReturnDate(producer, locale);
+
+  // Single verified seal next to the name — every other earned badge left the
+  // header (MEH-1334 decision 4). hideKeys derives from the live badge set so
+  // a future lib/badges key can't sneak back in. Imageless profiles anchor the
+  // seal in the Tinted Masthead (MEH-1168 P2), so it hides here too and
+  // BadgeRow renders nothing.
+  const badgeHideKeys = allBadges(producer)
+    .map((b) => b.key)
+    .filter((k) => (hasImages ? k !== "verified" : true));
+
   return (
-    <>
-      {/* Header: name + trust badges */}
-      <div className="flex items-center flex-wrap gap-2 mb-2">
-        {/* MEH-815: when the profile has no images the name is carried by the
-            Tinted Masthead hero (the page <h1>), so this h1 is omitted to keep
-            the producer name appearing exactly once. Badges/meta stay. */}
+    <div className="relative">
+      {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
+          MEH-815: imageless profiles carry the h1 in the Tinted Masthead, so
+          it is omitted here to keep the name singular. lg:pe-56 reserves the
+          title row's inline-end for the absolutely-pinned actions row. */}
+      <div className="flex items-center flex-wrap gap-2 lg:pe-56">
         {hasImages && (
-          // MEH-1031 (A3): me-3 gives the badge row breathing room from the
-          // H1 (margin-inline-end, RTL-safe) without touching the container
-          // gap-2 that sets inter-badge spacing.
           <h1 className="font-headline-lg text-4xl font-black text-text me-3">
             {producer.name}
           </h1>
         )}
-        {/* MEH-18: unified badge row (all earned badges on Detail — no limit).
-            This is the single verification affordance (ADR-022 verification_tier
-            seal), so TrustBadge below no longer emits the verification tiers.
-            MEH-1124 (Task C): the products badge is dropped here (meaningless
-            next to the page's own products section; cards keep it), and the
-            delivery badge is dropped from the pill row so delivery renders
-            exactly once — in the capability strip below (broadened to the union
-            of every delivery signal so no producer loses the indicator). */}
         <BadgeRow producer={producer} hideKeys={badgeHideKeys} />
-        {/* MEH-51 / MEH-1120: recognition-only trust badge — self-gates to
-            tier ≥ 4 (community-leader / ambassador). Tiers 2/3 (phone / business
-            "מאומת") were removed to stop duplicating the BadgeRow seal. */}
-        <TrustBadge tier={producer.trust_tier} />
-        {/* MEH-1048: trust strip — rating + review count as an anchor that
-            scrolls to the lazy reviews section (#reviews, ProducerSections).
-            Zero reviews → nothing (reviews_count guard). Rating decimal is
-            dir="ltr" + .numeric so RTL can't flip "4.8" → "8.4" (MEH-763). */}
-        {producer.reviews_count > 0 && (
-          <a
-            href="#reviews"
-            className="inline-flex items-center gap-1 bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full hover:bg-green-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
-          >
-            <Star size={12} weight="fill" aria-hidden="true" />
-            <span className="numeric" dir="ltr">{Number(producer.avg_rating).toFixed(1)}</span>
-            <span aria-hidden="true">·</span>
-            <span>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</span>
-            {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
-            <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
-          </a>
-        )}
-        {producer.plan === "premium" && (
-          <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">
-            {t("producer.detail.header.premium")}
-          </span>
-        )}
-        {(producer.favorites_count ?? 0) >= 5 && (
-          <span className="inline-flex items-center gap-1 text-[13px] text-fg-muted">
-            <Heart size={14} weight="fill" className="text-primary" aria-hidden="true" />
-            {t("producer.detail.header.favorites_count", { count: producer.favorites_count })}
-          </span>
-        )}
-        {/* MEH-1124 (Task C): availability moved OUT of this chip row to its own
-            status line under the meta row (below) — a bare dot+text badge wedged
-            between padded pills left the orange "busy" dot floating misaligned. */}
       </div>
 
+      {/* Group 2 — one-liner. Imageless profiles have no h1 row here (the
+          masthead owns it), so the one-liner is the header's FIRST line and
+          must clear the absolutely-pinned desktop actions row itself —
+          adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className="text-sm md:text-base text-fg-muted line-clamp-1 mt-1">
+        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-56"}`}>
           {producer.short_description}
         </p>
       )}
 
-      {/* MEH-1048 (chunk 2): one short review quote above the fold. Self-guards
-          on reviews_count (no fetch when zero) and renders nothing if no review
-          has text — so it never adds empty space. */}
-      <ReviewExcerpt producerId={producer.id} reviewsCount={producer.reviews_count} />
-
-      {producer.contact_name && (
-        <p className="text-[12px] text-fg-muted mt-0.5">
-          {t("producer.detail.header.behind", { name: producer.contact_name })}
-        </p>
+      {/* Group 3 — rating anchor (#reviews, MEH-1048) or the "חדש" fallback.
+          "חדש" sits in the rating's slot (Airbnb pattern — a fallback, not
+          another badge). Rating decimal stays dir="ltr" + .numeric so RTL
+          can't flip "4.8" → "8.4" (MEH-763). */}
+      {producer.reviews_count > 0 ? (
+        <a
+          href="#reviews"
+          className="mt-3 inline-flex items-center gap-1.5 self-start rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
+        >
+          <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
+          <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
+            {Number(producer.avg_rating).toFixed(1)}
+          </span>
+          <span className="text-[13px] text-muted underline underline-offset-4">
+            {t("producer.detail.header.review_count", { count: producer.reviews_count })}
+          </span>
+          {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
+          <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
+        </a>
+      ) : (
+        // MEH-1411: "חדש" restyled from a bare 17px bold heading into a small
+        // NEUTRAL pill (bg-surface-card + border-border + text-fg-muted — the
+        // ProducerHeader/ProducerCard quiet-chip idiom, ProducerCard.jsx:271) so
+        // it reads as a quiet badge in the rating's slot, not a second headline.
+        // Deliberately NOT green: MEH-1334's "one green per page — open = primary"
+        // rule means the "פתוח להזמנות" status is the page's single green accent;
+        // a green pill here would double the green for a new+open producer.
+        // Smaller than the old 17px line → mobile top block does not grow.
+        // data-testid preserved for the trust-strip test.
+        <span
+          className="mt-3 inline-block self-start rounded-full bg-surface-card border border-border text-fg-muted px-2.5 py-0.5 text-xs font-medium"
+          data-testid="new-mark"
+        >
+          {t("producer.detail.header.new_mark")}
+        </span>
       )}
 
-      {/* MEH-1146 chunk B: two-tier header — the logistics line consolidates
-          city · category onto one row. MEH-1168 P1 (dedup): the availability
-          status ("פתוח להזמנות") was removed from here — it now lives ONLY in
-          the contact-card status line (open states) / the header vacation +
-          slow-response banners below (full/vacation), so it never renders
-          twice on the page. */}
-      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-fg-muted text-sm mt-2 mb-3">
-        <span className="inline-flex items-center gap-1.5">
-          <MapPin size={14} aria-hidden="true" />
-          {producer.city}
-        </span>
-        {primaryCategory && (
-          <>
-            <span aria-hidden="true">·</span>
-            <span>{primaryCategory.name}</span>
-          </>
-        )}
+      {/* Group 4 — meta line (city · category · status) + one quiet kosher
+          line. The status is colored text, no dot, no chip (mockup 1d). */}
+      <div className="flex flex-col gap-1 mt-2 mb-1">
+        <p className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-sm text-muted">
+          {producer.city && <span>{producer.city}</span>}
+          {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
+          {primaryCategory && <span>{primaryCategory.name}</span>}
+          {(producer.city || primaryCategory) && <span aria-hidden="true" className="opacity-60">·</span>}
+          {isVacation ? (
+            <span className="font-semibold text-gold-deep" data-testid="status-vacation">
+              {vacationDate
+                ? t("producer.detail.header.status.vacation", { date: vacationDate })
+                : t("producer.detail.header.status.vacation_no_date")}
+            </span>
+          ) : isClosed ? (
+            <span className="font-semibold text-muted" data-testid="status-closed">
+              {t("producer.detail.header.status.closed")}
+            </span>
+          ) : (
+            <span className="font-semibold text-primary" data-testid="status-open">
+              {t("producer.detail.header.status.open")}
+            </span>
+          )}
+        </p>
+
+        {/* Kosher renders ONCE (MEH-1334): specific admin-assigned badges via
+            the quiet strip variant (owns the MEH-1260 expiry gate), else the
+            generic label — gated on admin-verified kashrut only, never the
+            free-text producer.kosher (MEH-986 ch3a, חוק איסור הונאה בכשרות). */}
+        {producer.kashrut_badges?.length > 0 ? (
+          <KashrutBadgeStrip
+            variant="quiet"
+            badges={producer.kashrut_badges}
+            verified_at={producer.kashrut_verified_at}
+            expires_at={producer.kashrut_expires_at}
+          />
+        ) : producer.kashrut_verified_at ? (
+          <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
+            <StarOfDavid size={14} aria-hidden="true" />
+            {t("producer.detail.header.attr.kosher")}
+          </p>
+        ) : null}
       </div>
 
-      {/* MEH-1170: declared (tier 2) carries NO chip — the S12 "מוצהר" chip
-          contradicted ADR-022 ("tier 2 = no document, no badge") and was
-          removed from BadgeRow. ADR-022 gate 1 still requires the badge
-          absence to be "affirmatively explained in consumer copy": the locked
-          declared_explainer (its only prior surface was the removed chip
-          tooltip) now renders here as quiet visible copy — verbatim, not new
-          wording. Gated on the declared tier only (verified keeps the seal;
-          null stays silent). */}
+      {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
+          the badge absence to stay "affirmatively explained in consumer copy",
+          so this block survives the MEH-1334 restructure (decision 4). */}
       {producer.verification_tier === "declared" && (
         <p className="text-xs text-fg-muted leading-relaxed mt-2 max-w-prose">
           {t("producer.badge.declared_explainer")}
         </p>
       )}
 
-      {/* Secondary categories — MEH-1168 P1 (dedup): the primary category is
-          already named in the logistics line above, so it is excluded here to
-          avoid the same chip appearing twice. Only the additional categories
-          render as tags. */}
-      {extraCats.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-4">
-          {extraCats.map((cat) => (
-            <CategoryTag key={cat.id} category={cat} />
-          ))}
-        </div>
-      )}
-
-      {/* Highlights strip — grass_fed / organic / delivery / kosher.
-          MEH-1124 (Task C): delivery renders ONCE here (dropped from the pill
-          row via hideKeys), gated on the union `hasDelivery`. */}
-      {(producer.grass_fed || producer.organic_certified || hasDelivery || !!producer.kashrut_verified_at) && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {producer.grass_fed && (
-            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              {t("producer.detail.header.attr.grass_fed")}
-            </span>
-          )}
-          {producer.organic_certified && (
-            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              {t("producer.detail.header.attr.organic")}
-            </span>
-          )}
-          {hasDelivery && (
-            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              <Truck size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
-            </span>
-          )}
-          {/* MEH-986 ch3a (P0 legal — חוק איסור הונאה בכשרות): chip renders ONLY for
-              admin-verified kashrut, never from free-text producer.kosher. Mirrors
-              badges.js:167 (`!!producer.kashrut_verified_at`). */}
-          {!!producer.kashrut_verified_at && (
-            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              <StarOfDavid size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* MEH-51: kashrut badge strip (rendered even when kosher text exists — additive) */}
-      {producer.kashrut_badges?.length > 0 && (
-        <div className="mt-3">
-          <KashrutBadgeStrip
-            badges={producer.kashrut_badges}
-            verified_at={producer.kashrut_verified_at}
-            expires_at={producer.kashrut_expires_at}
+      {/* Quiet actions row (MEH-1334): שמירה · שיתוף-on-desktop.
+          Desktop: absolutely pinned to the title row's inline-end. MEH-1363
+          (decision A, MEH-1362): FollowButton removed — the heart is the single
+          interest control; its toast promised updates that were never wired.
+          Mobile share lives in the hero overlay only (decision 6), hence
+          hidden lg:inline-flex.
+          MEH-1411: after the FollowButton removal the mobile row was a lone
+          heart under a full-width hairline — a framed orphan. Collapsed the
+          hairline (border-t + lg:border-t-0 dropped) and tightened the top
+          margin (mt-3 → mt-2) so the שמירה heart folds quietly into the end of
+          the meta cluster instead of reading as a separate toolbar strip. The
+          44px tap target + aria-pressed live in FavoriteButton (variant="quiet")
+          and are unchanged; desktop still absolute-pins to the title row. */}
+      <div className="flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0">
+        <FavoriteButton producerId={producer.id} producerName={producer.name} variant="quiet" />
+        <span className="hidden lg:inline-flex">
+          <ShareButton
+            variant="quiet"
+            url={shareUrl}
+            title={producer.name}
+            description={producer.description}
+            city={producer.city}
+            category={primaryCategory?.name}
           />
-        </div>
-      )}
+        </span>
+      </div>
 
       {/* MEH-291 — full_this_week banner (response-time hint, not a closure
-          signal). Suppressed during vacation since that banner already
-          dominates the messaging. MEH-76: amber → ADR-019 (cream + fg-muted). */}
+          signal; kept per decision 4 alongside the closed status text).
+          Suppressed during vacation since that banner already dominates. */}
       {producer.availability_state === "full_this_week" && !isVacation && (
         <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
           <p className="text-sm font-bold text-text">{t("producer.detail.header.slow_response")}</p>
         </div>
       )}
 
-      {/* Vacation banner — the page's SINGLE vacation surface (S6 state a:
-          one muted editorial banner, never two). MEH-76 chunk 1: the sidebar
-          + sticky-bar copies were removed; slate → ADR-019 cream + fg-muted. */}
-      {isVacation && (
-        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
-          <p className="text-sm font-bold text-text">{t("producer.detail.header.vacation")}</p>
-          <p className="text-xs text-fg-muted mt-1">
-            {t("producer.detail.header.vacation_return", { label: vacationReturnLabel })}
-          </p>
-        </div>
-      )}
-    </>
+      {/* MEH-1334 chunk 3: the vacation banner was REMOVED — it repeated the
+          return date the gold meta status already owns ("one home per fact").
+          A banner returns here only when an owner-authored free-text vacation
+          message field exists (MEH-1335 family); until then the status line is
+          vacation's single surface. */}
+
+      {/* Pull-quote (MEH-1048) — moved below the header groups per the mockup;
+          self-guards on reviews_count (zero → hidden entirely, per 1e). */}
+      <ReviewExcerpt producerId={producer.id} reviewsCount={producer.reviews_count} />
+    </div>
   );
 }

@@ -7,12 +7,13 @@ import {
   CircleNotch,
   Leaf,
   MagnifyingGlass,
+  MapPinLine,
   MapTrifold,
   NavigationArrow,
   SquaresFour,
 } from "@phosphor-icons/react";
 
-import { CATEGORY_LEGEND } from "@/lib/map-categories";
+import { CATEGORY_LEGEND } from "@/lib/category-registry";
 
 // MEH-473: extracted to a real component so useTranslations() works.
 // next/dynamic's loading callback runs outside any component's render
@@ -65,6 +66,9 @@ export default function MapPane({
   registerApi,
   mapRef,
   visitedIds,
+  // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
+  showSecondaryLayer,
+  onToggleSecondaryLayer,
   // overlay state + handlers
   mapMoved,
   onSearchThisArea,
@@ -96,7 +100,26 @@ export default function MapPane({
         registerApi={registerApi}
         mapRef={mapRef}
         visitedIds={visitedIds}
+        showSecondaryLayer={showSecondaryLayer}
       />
+      {/* MEH-1412 (MEH-1388 chunk 3): pickup / market_stand layer toggle. Logical
+          props (start-*) — this is a UI control, not a geographic map control, so
+          it flips correctly per locale (unlike the physical-positioned legend/GPS
+          below, which are the documented geo exceptions). z-[1000] = controls tier. */}
+      <button
+        type="button"
+        onClick={onToggleSecondaryLayer}
+        aria-pressed={showSecondaryLayer}
+        aria-label={t("map.pane.pickup_layer.aria")}
+        className={`absolute top-4 start-4 z-[1000] flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-md transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          showSecondaryLayer
+            ? "bg-primary text-white border-primary"
+            : "bg-surface-floating text-text border-border hover:bg-green-50"
+        }`}
+      >
+        <MapPinLine size={15} weight={showSecondaryLayer ? "fill" : "regular"} />
+        {t("map.pane.pickup_layer.label")}
+      </button>
       {mapMoved && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
@@ -130,7 +153,7 @@ export default function MapPane({
         disabled={gpsLoading}
         aria-label={t("map.pane.aria.center_on_me")}
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
-        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-background border border-border items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-md items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
       >
         {gpsLoading
           ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
@@ -144,8 +167,13 @@ export default function MapPane({
           NearMePill. lg matches the desktop GPS button (lg:flex) + desktop shell (lg:grid). */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}
       <div ref={legendRef} className="hidden lg:block absolute bottom-4 left-4 z-[800]">
+        {/* MEH-1217: origin-bottom-left so the panel reads as growing up out
+            of the toggle (its near/left edge already shares the button's left
+            edge — both block children of the bottom-4 left-4 container).
+            rtl-ok: the whole legend is physically anchored left-4 (documented
+            map exception), so the physical bottom-left origin is correct. */}
         {legendOpen && (
-          <div className="mb-2 bg-surface-floating border border-border rounded-lg p-2 min-w-[180px]" role="group" aria-label={t("map.pane.aria.categories")}>
+          <div className="mb-2 origin-bottom-left bg-surface-floating border border-border rounded-lg p-2 min-w-[180px]" role="group" aria-label={t("map.pane.aria.categories")}>
             <div className="space-y-0.5">
               {CATEGORY_LEGEND.map((cat) => {
                 const catActive = isCategoryActive(cat.name);

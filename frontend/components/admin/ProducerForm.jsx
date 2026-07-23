@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
+import { useAdminAction } from "@/lib/use-admin-action";
+import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import {
@@ -16,6 +20,16 @@ import {
 } from "@/lib/license-required-categories";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
+
+// MEH-1297: a producer may hold at most 3 categories; the first-selected is the
+// primary (drives categories[0] on the card/map pin). Mirrors the backend cap
+// (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
+const MAX_CATEGORIES = 3;
+
+// MEH-1506: candidates under this review count are shown with a note that the
+// public rating line won't render for them (mirrors backend MIN_REVIEWS=20).
+// Still selectable — the admin decides.
+const GOOGLE_MIN_REVIEWS = 20;
 
 // MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
 const KOSHER_LABEL_KEYS = {
@@ -89,6 +103,17 @@ function ProducerLicenseField({ form, categories, update }) {
           {t("producers.form.fields.license_format_warning")}
         </p>
       )}
+      {/* MEH-1271: manual cross-check against the Ministry of Health food
+          manufacturers registry (by business name / license number). */}
+      <a
+        href={HEALTH_MINISTRY_FOOD_REGISTRY_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+      >
+        <ArrowSquareOut size={14} weight="bold" aria-hidden="true" />
+        {t("producers.form.fields.license_registry_link")}
+      </a>
     </div>
   );
 }
@@ -111,6 +136,8 @@ const EMPTY = {
   lat: "",
   lng: "",
   slug: "",
+  // MEH-1490: admin-only Google Maps Place ID mapping (live-fetch trust line).
+  google_place_id: "",
   description: "",
   short_description: "",
   top_product_name: "",
@@ -135,21 +162,54 @@ const EMPTY = {
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
+  // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
+  delivery_excluded_cities: [],
   // MEH-291 — unified 4-state availability. Backend dual-writes to legacy
   // availability_status during the 7-day overlap; Phase 4 drops the legacy.
   availability_state: "accepting_orders",
   vacation_until: "",
 };
 
+// Focus-retention fix: Section + Field live at MODULE scope. Defining them
+// inside ProducerForm recreated their component identity on every render, so
+// React remounted the whole subtree and dropped input focus mid-typing.
+function Section({ title, children }) {
+  return (
+    <div className="bg-white rounded-[12px] border border-border p-6">
+      <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children, full = false }) {
+  return (
+    <label className={`block ${full ? "md:col-span-2" : ""}`}>
+      <span className="block text-sm text-muted mb-1">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export default function ProducerForm({ initial = null, producerId = null }) {
   const t = useTranslations("admin");
+  // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
+  // address search — no new i18n keys (see dashboard.producer.location).
+  const tLoc = useTranslations("dashboard.producer.location");
   const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
+  const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
   const [categories, setCategories] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
+  // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
+  const [addressText, setAddressText] = useState("");
+  // MEH-1506: admin-only Google Place lookup — search by the producer's own
+  // name+city, admin PICKS a candidate to fill google_place_id. NO auto-select:
+  // even a single candidate is a click. Nothing here is persisted except the
+  // chosen place_id (ToS §3.2.3(b) — count is display-only).
+  const [placeCandidates, setPlaceCandidates] = useState(null);
+  const [placeSearching, setPlaceSearching] = useState(false);
+  const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -163,6 +223,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         lat: initial.lat ?? "",
         lng: initial.lng ?? "",
         slug: initial.slug ?? "",
+        // MEH-1490: pre-fill the mapping so an unrelated admin save can't wipe it.
+        google_place_id: initial.google_place_id ?? "",
         category_ids: initial.categories?.map((c) => c.id) ?? [],
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
@@ -189,6 +251,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-903 A: the single cities input is populated from the delivery_areas
         // relation (the store), not the legacy delivery_cities column.
         delivery_cities: initial.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+        // MEH-1255: nationwide exclusion list.
+        delivery_excluded_cities: initial.delivery_excluded_cities ?? [],
         // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
         availability_state:
           initial.availability_state ??
@@ -206,6 +270,47 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // MEH-1242 PR2: Nominatim address pick → fill lat/lng/city. Never clobber an
+  // existing city when the result lacks one. REUSES edit/cards.jsx LocationCard.
+  const handleAddressSelect = (picked) => {
+    setForm((f) => ({
+      ...f,
+      lat: picked.lat ?? f.lat,
+      lng: picked.lng ?? f.lng,
+      city: picked.city || f.city,
+    }));
+  };
+
+  // MEH-1506: run Places Text Search for this producer (name+city, server-side)
+  // and show up to 3 candidates. 204 / empty → "no results"; reject → "error".
+  // Only available in edit mode — the endpoint reads name+city from the DB row.
+  const handleGooglePlaceSearch = async () => {
+    if (!producerId || placeSearching) return;
+    setPlaceSearching(true);
+    setPlaceCandidates(null);
+    setPlaceSearchState(null);
+    try {
+      const r = await api.get(`/admin/producers/${producerId}/google-place-candidates`);
+      const candidates = r.data?.candidates;
+      if (r.status === 204 || !candidates?.length) {
+        setPlaceSearchState("empty");
+      } else {
+        setPlaceCandidates(candidates);
+      }
+    } catch {
+      setPlaceSearchState("error");
+    } finally {
+      setPlaceSearching(false);
+    }
+  };
+
+  // MEH-1506: admin clicks a candidate → fill google_place_id, clear the list.
+  const pickPlaceCandidate = (placeId) => {
+    update("google_place_id", placeId);
+    setPlaceCandidates(null);
+    setPlaceSearchState(null);
+  };
+
   const toggleCategory = (id) => {
     setForm((f) => {
       const exists = f.category_ids.includes(id);
@@ -218,79 +323,115 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     });
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setUploading(true);
-    try {
-      const uploaded = [];
-      for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const r = await api.post("/upload/image", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        uploaded.push(r.data.url);
-      }
-      setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
-    } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.image_upload"));
-    } finally {
-      setUploading(false);
-    }
+    // MEH-228 pattern: image upload routes through useAdminAction — per-key
+    // in-flight lock + central error toast (no more swallowed failures).
+    run(
+      "producer-images",
+      async () => {
+        const uploaded = [];
+        for (const file of files) {
+          const fd = new FormData();
+          fd.append("file", file);
+          const r = await api.post("/upload/image", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          uploaded.push(r.data.url);
+        }
+        setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
+      },
+      (err) =>
+        showToast.error(
+          detailToMessage(err.response?.data?.detail) ||
+            t("producers.form.errors.image_upload"),
+        ),
+    );
   };
 
   const removeImage = (url) => {
     setForm((f) => ({ ...f, images: f.images.filter((u) => u !== url) }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError("");
-    setSaving(true);
-
+    // Explicit field list (no {...form} spread): the legacy delivery_cities
+    // column is never sent — delivery_area_cities is the sole cities channel
+    // (MEH-903). Save routes through useAdminAction (MEH-228): per-key
+    // in-flight lock + central error toast (no swallowed failures).
     const payload = {
-      ...form,
-      lat: form.lat === "" ? null : parseFloat(form.lat),
-      lng: form.lng === "" ? null : parseFloat(form.lng),
+      name: form.name,
+      contact_name: form.contact_name,
+      opening_hours: form.opening_hours,
+      phone: form.phone,
+      instagram: form.instagram,
+      website: form.website,
+      whatsapp_group: form.whatsapp_group,
+      primary_contact_method: form.primary_contact_method,
       // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
       contact_email: form.contact_email?.trim() || null,
-      // MEH-903 A: the single CitiesAutocomplete (form.delivery_cities) is the
-      // source for delivery_area_cities → delivery_areas table. The legacy
-      // delivery_cities column is spread via ...form but is inert on the backend
-      // (admin no longer writes it — Chunk A).
+      facebook: form.facebook,
+      external_order_form: form.external_order_form,
+      city: form.city,
+      lat: form.lat === "" ? null : parseFloat(form.lat),
+      lng: form.lng === "" ? null : parseFloat(form.lng),
+      slug: form.slug,
+      // MEH-1490: admin-only Google Place ID mapping. Blank → null (clears the
+      // mapping). The value round-trips (pre-filled from ProducerDetailOut) so
+      // an unrelated save never wipes an existing mapping.
+      google_place_id: form.google_place_id?.trim() || null,
+      description: form.description,
+      short_description: form.short_description,
+      top_product_name: form.top_product_name,
+      price_range: form.price_range,
+      category_ids: form.category_ids,
+      has_delivery: form.has_delivery,
+      pickup_points: form.pickup_points,
+      kosher: form.kosher,
+      grass_fed: form.grass_fed,
+      organic_certified: form.organic_certified,
+      is_recommended: form.is_recommended,
+      producer_license_number: form.producer_license_number,
+      admin_notes: form.admin_notes,
+      images: form.images,
+      // MEH-213 — location mode
+      has_physical_location: form.has_physical_location,
+      offers_delivery: form.offers_delivery,
+      delivery_nationwide: form.delivery_nationwide,
+      // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
+      // the legacy delivery_cities column is intentionally omitted.
       delivery_area_cities: form.delivery_cities,
-      // MEH-291 — clear vacation_until when not on vacation
-      vacation_until: form.availability_state === "on_vacation" && form.vacation_until ? form.vacation_until : null,
+      // MEH-1255: exclusion list only meaningful in nationwide mode; the
+      // toggle already clears it otherwise, and the backend guard enforces it.
+      delivery_excluded_cities: form.delivery_nationwide
+        ? form.delivery_excluded_cities
+        : [],
+      // MEH-291 — unified availability; clear vacation_until when not on vacation.
+      availability_state: form.availability_state,
+      vacation_until:
+        form.availability_state === "on_vacation" && form.vacation_until
+          ? form.vacation_until
+          : null,
     };
 
-    try {
-      if (producerId) {
-        await api.put(`/admin/producers/${producerId}`, payload);
-      } else {
-        await api.post("/admin/producers", payload);
-      }
-      router.push("/admin?tab=producers");
-    } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.save"));
-    } finally {
-      setSaving(false);
-    }
+    run(
+      "producer-save",
+      async () => {
+        if (producerId) {
+          await api.put(`/admin/producers/${producerId}`, payload);
+        } else {
+          await api.post("/admin/producers", payload);
+        }
+        router.push("/admin?tab=producers");
+      },
+      (err) =>
+        showToast.error(
+          detailToMessage(err.response?.data?.detail) ||
+            t("producers.form.errors.save"),
+        ),
+    );
   };
-
-  const Section = ({ title, children }) => (
-    <div className="bg-white rounded-[12px] border border-border p-6">
-      <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
-      {children}
-    </div>
-  );
-
-  const Field = ({ label, children, full = false }) => (
-    <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="block text-sm text-muted mb-1">{label}</span>
-      {children}
-    </label>
-  );
 
   // MEH-1128 Wave C: single-line inputs migrated to ui/Input — this recipe
   // now feeds ONLY the selects + textareas (no primitive for them until the
@@ -300,12 +441,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">
-          {error}
-        </div>
-      )}
-
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* MEH-1128 Wave C: single-line fields via ui/Input (labels move to
@@ -395,41 +530,170 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("slug", e.target.value)}
             placeholder={t("producers.form.fields.slug_placeholder")}
           />
-          <Input
-            type="number"
-            step="any"
-            label={t("producers.form.fields.lat")}
-            value={form.lat}
-            onChange={(e) => update("lat", e.target.value)}
-          />
-          <Input
-            type="number"
-            step="any"
-            label={t("producers.form.fields.lng")}
-            value={form.lng}
-            onChange={(e) => update("lng", e.target.value)}
-          />
+          {/* MEH-1490: admin-only Google Place ID mapping. The public trust
+              line shows only when this is set AND the live Google profile has
+              ≥20 reviews. place_id only — never a Maps URL (validated server-side).
+              MEH-1506: "חפשי בגוגל" runs Places Text Search (name+city) and the
+              admin PICKS a candidate to fill this field — no auto-select. */}
+          <div className="md:col-span-2 space-y-2">
+            <Input
+              label={t("producers.form.fields.google_place_id")}
+              value={form.google_place_id}
+              onChange={(e) => update("google_place_id", e.target.value)}
+              placeholder={t("producers.form.fields.google_place_id_placeholder")}
+              helperText={t("producers.form.fields.google_place_id_hint")}
+            />
+            {producerId && (
+              <div>
+                <button
+                  type="button"
+                  onClick={handleGooglePlaceSearch}
+                  disabled={placeSearching}
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {placeSearching
+                    ? t("producers.form.fields.google_place_searching")
+                    : t("producers.form.fields.google_place_search")}
+                </button>
+                <p className="mt-1 text-xs text-muted">
+                  {t("producers.form.fields.google_place_search_hint")}
+                </p>
+                {placeSearchState === "empty" && (
+                  <p className="mt-2 text-sm text-muted" role="status">
+                    {t("producers.form.fields.google_place_no_results")}
+                  </p>
+                )}
+                {placeSearchState === "error" && (
+                  <p className="mt-2 text-sm text-error" role="alert">
+                    {t("producers.form.fields.google_place_error")}
+                  </p>
+                )}
+                {placeCandidates?.length > 0 && (
+                  <ul className="mt-2 space-y-1.5">
+                    {placeCandidates.map((c) => {
+                      const lowReviews = c.user_rating_count < GOOGLE_MIN_REVIEWS;
+                      return (
+                        <li key={c.place_id}>
+                          <button
+                            type="button"
+                            onClick={() => pickPlaceCandidate(c.place_id)}
+                            className="w-full rounded-lg border border-border p-2.5 text-start text-sm hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            <span className="block font-medium text-text">
+                              {c.display_name}
+                            </span>
+                            {c.formatted_address && (
+                              <span className="block text-xs text-muted">
+                                {c.formatted_address}
+                              </span>
+                            )}
+                            <span className="block text-xs text-muted">
+                              {t("producers.form.fields.google_place_reviews", {
+                                count: c.user_rating_count,
+                              })}
+                            </span>
+                            {lowReviews && (
+                              <span className="mt-0.5 block text-xs text-error">
+                                {t("producers.form.fields.google_place_low_reviews")}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+          {/* MEH-1242 PR2: raw lat/lng inputs replaced by AddressSearch
+              (Nominatim geocode) — onSelect fills lat/lng/city. Raw coords
+              stay editable behind the collapsed manual-edit disclosure below
+              (admin escape hatch). REUSES: components/AddressSearch.jsx +
+              edit/cards.jsx LocationCard. */}
+          <div className="md:col-span-2">
+            <label htmlFor="admin-producer-address" className="block text-sm text-muted mb-1">
+              {tLoc("heading")}
+            </label>
+            <AddressSearch
+              id="admin-producer-address"
+              value={addressText}
+              onChange={setAddressText}
+              onSelect={handleAddressSelect}
+            />
+            <p className="text-xs text-muted mt-1">{tLoc("subtitle")}</p>
+            {form.lat !== "" && form.lng !== "" && (
+              <p className="text-xs text-muted mt-2">
+                {tLoc("current_prefix")}{" "}
+                <span className="text-text">
+                  {form.city ? `${form.city} · ` : ""}
+                  <span dir="ltr">{form.lat}, {form.lng}</span>
+                </span>
+              </p>
+            )}
+            <details className="mt-3">
+              <summary className="text-xs text-primary underline cursor-pointer w-fit">
+                {t("common.edit")}
+              </summary>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <Input
+                  type="number"
+                  step="any"
+                  label={t("producers.form.fields.lat")}
+                  value={form.lat}
+                  onChange={(e) => update("lat", e.target.value)}
+                />
+                <Input
+                  type="number"
+                  step="any"
+                  label={t("producers.form.fields.lng")}
+                  value={form.lng}
+                  onChange={(e) => update("lng", e.target.value)}
+                />
+              </div>
+            </details>
+          </div>
         </div>
       </Section>
 
       <Section title={t("producers.form.sections.categories_tags")}>
+        {/* MEH-1297: primary-first + ≤3 cap hint (parity with the register CategorySelector) */}
+        <p className="text-[11px] text-fg-muted mb-2">
+          {t("producers.form.category_cap_hint")}
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-          {categories.map((c) => (
-            <label
-              key={c.id}
-              className="flex items-center gap-2 text-sm cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={form.category_ids.includes(c.id)}
-                onChange={() => toggleCategory(c.id)}
-                className="w-4 h-4 accent-primary"
-              />
-              <span>
-                {c.name}
-              </span>
-            </label>
-          ))}
+          {categories.map((c) => {
+            // MEH-1297: first-selected = primary; cap blocks new picks at 3.
+            const checked = form.category_ids.includes(c.id);
+            const isPrimary = form.category_ids[0] === c.id;
+            const capDisabled =
+              !checked && form.category_ids.length >= MAX_CATEGORIES;
+            return (
+              <label
+                key={c.id}
+                className={`flex items-center gap-2 text-sm ${
+                  capDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={capDisabled}
+                  onChange={() => toggleCategory(c.id)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>{c.name}</span>
+                {isPrimary && (
+                  <span
+                    data-testid="admin-primary-badge"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                  >
+                    {t("producers.form.primary_badge")}
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-border">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -519,7 +783,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   checked={form.delivery_nationwide}
                   onChange={(e) => {
                     update("delivery_nationwide", e.target.checked);
+                    // Clear cities entering nationwide; clear exclusions leaving it.
                     if (e.target.checked) update("delivery_cities", []);
+                    else update("delivery_excluded_cities", []);
                   }}
                   className="w-4 h-4 accent-primary"
                 />
@@ -531,10 +797,23 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   <CitiesAutocomplete
                     value={form.delivery_cities}
                     onChange={(cities) => update("delivery_cities", cities)}
+                    showRegionChips
                   />
                   {form.delivery_cities.length === 0 && (
                     <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
                   )}
+                </div>
+              )}
+              {/* MEH-1255: nationwide exclusion list — "לכל הארץ חוץ מ:" */}
+              {form.delivery_nationwide && (
+                <div>
+                  <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_excluded_label")}</span>
+                  <p className="text-xs text-fg-muted mb-1">{t("producers.form.fields.delivery_excluded_hint")}</p>
+                  <CitiesAutocomplete
+                    value={form.delivery_excluded_cities}
+                    onChange={(cities) => update("delivery_excluded_cities", cities)}
+                    showRegionChips
+                  />
                 </div>
               )}
             </div>
@@ -605,10 +884,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           accept="image/*"
           multiple
           onChange={handleImageUpload}
-          disabled={uploading}
+          disabled={isBusy("producer-images")}
           className="text-sm"
         />
-        {uploading && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
@@ -689,13 +968,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         <button
           type="submit"
           disabled={
-            saving ||
+            isBusy("producer-save") ||
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
           className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
-          {saving ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
+          {isBusy("producer-save") ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>
         <button
           type="button"

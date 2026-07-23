@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -154,9 +155,9 @@ export default function ContactClient() {
               <p className="text-xs text-fg-muted text-center">
                 {t.rich("privacy_notice", {
                   link: (chunks) => (
-                    <a href="/privacy" className="text-primary underline">
+                    <Link href="/privacy" className="text-primary underline">
                       {chunks}
-                    </a>
+                    </Link>
                   ),
                 })}
               </p>

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  BADGE_CONFIG,
   BADGE_PRIORITY,
   allBadges,
   topBadges,
@@ -8,14 +9,16 @@ import {
 
 describe("BADGE_PRIORITY", () => {
   it("matches the Phase B fold order", () => {
+    // MEH-1259: "organic" removed from the priority list (badge hidden).
+    // MEH-1492: recommended drops below license (fact before opinion).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
-      "organic",
       "grass_fed",
       "gluten_free",
+      "vegetarian",
       "vegan",
       "lactose_free",
       "kosher",
@@ -113,8 +116,10 @@ describe("allBadges", () => {
     expect(allBadges({ days_since_created: 31 }).map((b) => b.key)).toEqual([]);
   });
 
-  it("organic — when organic_certified is true", () => {
-    expect(allBadges({ organic_certified: true }).map((b) => b.key)).toEqual(["organic"]);
+  // MEH-1259 (P0 legal — חוק תוצרת אורגנית 2005): the self-declared organic
+  // badge is removed from all public surfaces; organic_certified drives NO badge.
+  it("organic — never earns a badge even when organic_certified is true", () => {
+    expect(allBadges({ organic_certified: true }).map((b) => b.key)).toEqual([]);
   });
 
   it("grass_fed — when grass_fed is true", () => {
@@ -131,6 +136,22 @@ describe("allBadges", () => {
 
   it("vegan — when has_vegan_products is true", () => {
     expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
+  });
+
+  // MEH-1438: vegetarian badge — driven by the aggregated has_vegetarian_products
+  // (is_vegetarian OR is_vegan). Priority sits after gluten_free, before vegan.
+  it("vegetarian — when has_vegetarian_products is true", () => {
+    expect(allBadges({ has_vegetarian_products: true }).map((b) => b.key)).toEqual(["vegetarian"]);
+  });
+
+  it("vegetarian priority — sits between gluten_free and vegan", () => {
+    expect(
+      allBadges({
+        has_gluten_free_products: true,
+        has_vegetarian_products: true,
+        has_vegan_products: true,
+      }).map((b) => b.key),
+    ).toEqual(["gluten_free", "vegetarian", "vegan"]);
   });
 
   it("lactose_free — when has_lactose_free_products is true", () => {
@@ -175,6 +196,32 @@ describe("allBadges", () => {
     expect(allBadges({ kosher: "" }).map((b) => b.key)).toEqual([]);
   });
 
+  // MEH-1260: expiry enforcement — an expired certificate earns no badge;
+  // legacy pre-expiry-era rows (NULL expires_at) stay valid.
+  it("kosher — expiry enforced: valid / expired / legacy-null (MEH-1260)", () => {
+    // valid: expires in the future → badge earned.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
+        kashrut_expires_at: "2099-01-01T00:00:00Z",
+      }).map((b) => b.key),
+    ).toEqual(["kosher"]);
+    // expired: verified but past expires_at → NO badge.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2024-01-01T00:00:00Z",
+        kashrut_expires_at: "2024-06-01T00:00:00Z",
+      }).map((b) => b.key),
+    ).toEqual([]);
+    // legacy: verified with NULL expires_at → unchanged, badge earned.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
+        kashrut_expires_at: null,
+      }).map((b) => b.key),
+    ).toEqual(["kosher"]);
+  });
+
   it("delivery — via delivery_count > 0", () => {
     expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
   });
@@ -206,12 +253,13 @@ describe("allBadges", () => {
       is_recommended: true,
       verification_tier: "verified",
     });
+    // MEH-1259: organic_certified is set but earns no badge — absent from order.
+    // MEH-1492: license now precedes recommended.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
-      "organic",
       "grass_fed",
       "gluten_free",
       "vegan",
@@ -263,20 +311,21 @@ describe("topBadges", () => {
     expect(topBadges(producer, -3)).toEqual([]);
   });
 
-  it("picks organic over delivery when both earned and limit=2 with verified", () => {
-    // verified (priority 0) + organic (priority 3) win over delivery (priority 6)
+  it("picks grass_fed over delivery when both earned and limit=2 with verified", () => {
+    // MEH-1259: was organic (now removed) — grass_fed is the next quality badge.
+    // verified (priority 0) + grass_fed win over delivery (lower priority).
     const p = {
       verification_tier: "verified",
-      organic_certified: true,
+      grass_fed: true,
       has_delivery: true,
     };
-    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "organic"]);
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
-  // MEH-531: license sits between recommended and new.
+  // MEH-1492: license now sits between verified and recommended (fact > opinion).
   // MEH-1162: fixture must be verified-tier — an unverified license no longer
   // earns the chip, so the verified badge (priority 0) leads the expectation.
-  it("license priority — sits between recommended and new", () => {
+  it("license priority — sits between verified and recommended", () => {
     const p = {
       verification_tier: "verified",
       is_recommended: true,
@@ -285,16 +334,49 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 4).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
     ]);
-    // limit=3 → verified + recommended + license, new gets truncated
+    // limit=3 → verified + license + recommended, new gets truncated
     expect(topBadges(p, 3).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
     ]);
+  });
+});
+
+// MEH-1439: dietary badges light on has_X_products (ANY marked product, MEH-479),
+// so the tooltip must not claim the WHOLE catalog. The old copy over-claimed
+// ("כל המוצרים טבעוניים", "המוצרים מתאימים...") — same over-claim risk family as
+// MEH-1259 organic. New copy = "לעסק יש מוצרים ... מסומנים בקטלוג".
+describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
+  it("vegan tooltip states any-product semantics, not 'all products'", () => {
+    expect(BADGE_CONFIG.vegan.tooltip).toBe(
+      "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+    );
+    expect(BADGE_CONFIG.vegan.tooltip).not.toMatch(/כל המוצרים/);
+  });
+
+  it("gluten_free tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.gluten_free.tooltip).toBe(
+      "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
+    );
+    expect(BADGE_CONFIG.gluten_free.tooltip).not.toMatch(/צליאק/);
+  });
+
+  it("lactose_free tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.lactose_free.tooltip).toBe(
+      "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
+    );
+  });
+
+  // MEH-1438: vegetarian tooltip mirrors the same any-product wording.
+  it("vegetarian tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.vegetarian.tooltip).toBe(
+      "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
+    );
   });
 });
 
@@ -311,14 +393,16 @@ describe("badgeCount", () => {
     ).toBe(5);
   });
 
-  it("counts the new Phase B badges", () => {
+  it("counts the new Phase B badges (organic no longer counts — MEH-1259)", () => {
+    // organic_certified is set but earns no badge post-MEH-1259, so only
+    // grass_fed + kosher count.
     expect(
       badgeCount({
         organic_certified: true,
         grass_fed: true,
         kashrut_verified_at: "2026-01-01T00:00:00Z",
       }),
-    ).toBe(3);
+    ).toBe(2);
   });
 
   it("counts the dietary label badges", () => {

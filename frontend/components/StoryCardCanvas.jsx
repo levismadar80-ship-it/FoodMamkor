@@ -10,18 +10,25 @@
  *   - Producer name: Frank Ruhl Libre 52px white
  *   - City + category: DM Sans 24px #EAF3DE
  *   - Vanity URL: DM Sans 20px #2e6853
- *   - CTA: "גלי עוד בתי עסק ב mehamakor.online"
+ *   - CTA: "גלי עוד בתי עסק ב {SITE_HOST}"
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, DownloadSimple } from "@phosphor-icons/react";
+import { Camera, DownloadSimple, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1250: retire native alert() on the async upload-error path (toast idiom).
+import { showToast } from "@/lib/toast";
 import { BRAND_NAME } from "@/lib/constants";
+// MEH-1267: canonical public domain (MEH-1242 PR4). mehamakor.online is the
+// staging alias — never the public-facing address; SITE_URL is mehamakor.co.il.
+import { SITE_URL } from "@/lib/env";
 
 const W = 1080;
 const H = 1920;
+// Bare host for on-card display (SITE_URL is the full https:// origin).
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 
 async function loadFonts() {
   const families = [
@@ -140,7 +147,13 @@ async function drawCard(canvas, producer, strings) {
   wrapText(ctx, producer.name || "", W / 2, nameY, W - 160, 68);
 
   // City + category line
-  const categories = producer.categories?.map((c) => c.name).join("  ·  ") || "";
+  // MEH-1297: cap at the first 2 categories (primary-first order) so a producer
+  // with up to 3 categories can't overflow the fixed-width canvas line.
+  const categories =
+    producer.categories
+      ?.slice(0, 2)
+      .map((c) => c.name)
+      .join("  ·  ") || "";
   const cityLine = [producer.city, categories].filter(Boolean).join("  ·  ");
   ctx.fillStyle = "#EAF3DE";
   ctx.font = `400 28px "DM Sans", sans-serif`;
@@ -151,7 +164,7 @@ async function drawCard(canvas, producer, strings) {
   if (slug) {
     ctx.fillStyle = "#2e6853";
     ctx.font = `500 24px "DM Sans", sans-serif`;
-    ctx.fillText(`mehamakor.online/p/${slug}`, W / 2, nameY + 190);
+    ctx.fillText(`${SITE_HOST}/p/${slug}`, W / 2, nameY + 190);
   }
 
   // Divider
@@ -172,10 +185,10 @@ async function drawCard(canvas, producer, strings) {
   // go through next-intl context. Falls back to HE if missing for safety.
   ctx.fillStyle = "rgba(255,255,255,0.6)";
   ctx.font = `400 24px "DM Sans", sans-serif`;
-  ctx.fillText(strings?.footer_url || "גלי עוד בתי עסק ב mehamakor.online", W / 2, H - 150);
+  ctx.fillText(strings?.footer_url || `גלי עוד בתי עסק ב ${SITE_HOST}`, W / 2, H - 150);
 }
 
-export default function StoryCardCanvas({ producer, onUploaded }) {
+export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
   const t = useTranslations("story.canvas");
   const canvasRef = useRef(null);
   const [rendered, setRendered] = useState(false);
@@ -187,6 +200,17 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
     if (!canvasRef.current) return;
     drawCard(canvasRef.current, producer, { footer_url: t("footer_url") }).then(() => setRendered(true));
   }, [producer, t]);
+
+  // MEH-1267: Esc closes the story panel (mirrors the kebab toggle). The panel
+  // only mounts while open, so the listener is scoped to the open lifetime.
+  useEffect(() => {
+    if (!onClose) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const download = () => {
     if (!canvasRef.current) return;
@@ -207,7 +231,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       setUploadedUrl(r.data.url);
       onUploaded?.(r.data.url);
     } catch (err) {
-      alert(detailToMessage(err.response?.data?.detail) || t("upload_error"));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("upload_error"));
     } finally {
       setUploading(false);
     }
@@ -215,7 +239,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   const caption = `${t("caption_prefix")}\n${producer.name} מ${producer.city || t("default_country")} — ${
     producer.categories?.map((c) => c.name).join(", ") || ""
-  }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 mehamakor.online/p/${producer.slug || ""}`;
+  }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
 
   const copyCaption = () => {
     navigator.clipboard.writeText(caption).then(() => {
@@ -226,7 +250,20 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <p className="text-sm font-semibold text-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
+      {/* MEH-1267: X sits at the logical-start top corner; kebab toggle unchanged. */}
+      <div className="flex items-center gap-2">
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("close")}
+            className="shrink-0 rounded-full p-1 text-muted hover:bg-gray-100 hover:text-text transition"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        )}
+        <p className="text-sm font-semibold text-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
+      </div>
 
       {/* Canvas preview — scaled to fit */}
       <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>

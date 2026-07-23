@@ -17,6 +17,12 @@ name: PR Checks
 # "Expected" and BLOCKS merge — but a draft PR isn't mergeable anyway, so the
 # gate only matters once the PR is marked ready for review.
 on:
+  # MEH-1490 follow-up: allow a manual re-run of the required gates from the
+  # Actions tab (or `gh workflow run`). Useful when a push's webhook is dropped
+  # and the gates never registered against the current head. NOTE: only works
+  # once this workflow lives on the DEFAULT branch — a workflow_dispatch cannot
+  # target a run on a branch where the trigger isn't yet present.
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [staging, main]
@@ -35,7 +41,10 @@ jobs:
   branch-name-gate:
     name: Branch name gate
     runs-on: ubuntu-latest
-    if: github.head_ref
+    # Skip for staging → main release PRs (MEH-1105): the head branch is always
+    # `staging`, which cannot match the feature/meh-* convention by design.
+    # Feature-branch enforcement (the grep below) is untouched.
+    if: ${{ github.head_ref && !(github.base_ref == 'main' && github.head_ref == 'staging') }}
     steps:
       - name: Assert branch name matches the locked convention (MEH-1141)
         run: |
@@ -74,11 +83,22 @@ jobs:
           fetch-depth: 0
       - name: Cap qa-artifacts growth (MEH-1156)
         env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MAX_BYTES: "2097152"
         run: |
           set -euo pipefail
+          # Release-PR exemption (MEH-1105): a staging → main release PR is a
+          # rollup of hundreds of already-merged per-PR diffs, so the 2 MB
+          # *per-PR* cap (MEH-1156) does not apply to it. Exempt exactly that
+          # one base/head combination; every other PR is enforced unchanged.
+          if [ "$BASE_REF" = "main" ] && [ "$HEAD_REF" = "staging" ]; then
+            echo "::notice::Release PR (staging → main) — the per-PR 2 MB qa-artifacts cap does not apply to a release rollup; skipping the cap. (MEH-1105)"
+            echo "qa-artifacts size cap OK (release-PR exemption)."
+            exit 0
+          fi
           total=0
           while read -r f; do
             [ -n "$f" ] || continue
@@ -172,6 +192,78 @@ jobs:
           }
 
   # ─────────────────────────────────────────────
+  # JOB 1b: ai-artifact-scan (MEH-449 Layer 2)
+  # ─────────────────────────────────────────────
+  # Fails the PR if any AI development artifact (by filename) or any
+  # sensitive internal literal reaches the frontend build output. Runs its
+  # own build: GitHub jobs don't share workspaces and the build job doesn't
+  # upload .next; a self-contained rebuild keeps the two jobs independent.
+  # Canonical pattern list: .claude/hooks/check-artifact-location.sh.
+  ai-artifact-scan:
+    name: AI artifact scan (build output)
+    needs: [changes, build]
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (scan target)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: "Scan 2a — forbidden AI-artifact filenames in deployable output"
+        run: |
+          set -euo pipefail
+          # public/ is scanned alongside .next: next build does NOT copy
+          # public/ into .next (no standalone output), and on Vercel
+          # public/ IS the served static root — a CLAUDE.md planted there
+          # ships without ever touching .next.
+          hits=$(find .next public -type f \( \
+            -iname "CLAUDE.md" -o -iname "CLAUDE.local.md" \
+            -o -iname "HANDOFF.md" -o -iname "ROADMAP.md" \
+            -o -iname "AGENTS.md" \) 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::MEH-449 scan 2a — AI dev artifact file(s) found in deployable output:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "Scan 2a clean — no forbidden filenames in .next or public/"
+
+      - name: "Scan 2b — forbidden content literals in deployable output"
+        run: |
+          set -euo pipefail
+          # Known-legitimate exception: the admin-help runbook i18n copy
+          # contains the string "_migrate_columns" (messages/he.json +
+          # en.json, admin.help.* namespace) and is bundled into the
+          # messages_* chunks. Those chunks are excluded; the same literal
+          # anywhere else still fails.
+          for lit in "_migrate_columns" "MEH-265" "JWT_SECRET_KEY="; do
+            hits=$(grep -rl --binary-files=text -- "$lit" .next public 2>/dev/null | grep -v "messages_.*json" || true)
+            if [ -n "$hits" ]; then
+              echo "::error::MEH-449 scan 2b — forbidden literal '$lit' found in deployable output:"
+              echo "$hits"
+              exit 1
+            fi
+          done
+          echo "Scan 2b clean — no forbidden literals in .next or public/"
+
+  # ─────────────────────────────────────────────
   # JOB 2: pytest
   # ─────────────────────────────────────────────
   pytest:
@@ -246,7 +338,8 @@ jobs:
           # PR2c webhook receiver).
           # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
           # risk_reasoning) to producers — additive, no table count change.
-          EXPECTED_TABLES=36
+          # MEH-1338: alert_log (frequency-cap ledger for fire_alerts) — 36 -> 37.
+          EXPECTED_TABLES=38
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
@@ -519,6 +612,35 @@ jobs:
       - name: Run vitest unit suite
         run: npx vitest run
 
+  # ─────────────────────────────────────────────
+  # JOB: linear-mentions — workflow.md rule 29 (Linear auto-reopen guard)
+  # Warn-only ratchet (mirrors backend-mypy):
+  #   1. `|| true` on the script → step exits 0 even on a finding
+  #   2. `continue-on-error: true` at the job → belt-and-braces
+  # Docs-only scope (rule 29 only bans mentions in docs/HANDOFF PRs):
+  # runs when neither frontend nor backend nor workflows changed.
+  # Findings surface as ::warning:: annotations. NOT added to the
+  # required-checks ruleset at this stage.
+  # ─────────────────────────────────────────────
+  linear-mentions:
+    name: Linear mention guard (rule 29, warn-only)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend != 'true' && needs.changes.outputs.backend != 'true' && needs.changes.outputs.workflows != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - name: Write PR title and body to files
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_TITLE" > "$RUNNER_TEMP/pr_title.txt"
+          printf '%s' "$PR_BODY"  > "$RUNNER_TEMP/pr_body.txt"
+      - name: Check for bare Linear identifiers (warn-only)
+        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" || true
+
   ci-gate:
     name: CI gate (required)
     if: always()
@@ -527,6 +649,7 @@ jobs:
       - do-not-merge-gate
       - qa-artifacts-size
       - build
+      - ai-artifact-scan
       - pytest
       - lint-backend
       - env-drift
@@ -545,6 +668,7 @@ jobs:
           R_DNM: ${{ needs.do-not-merge-gate.result }}
           R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
           R_BUILD: ${{ needs.build.result }}
+          R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
           R_PYTEST: ${{ needs.pytest.result }}
           R_LINT_BACKEND: ${{ needs.lint-backend.result }}
           R_ENV_DRIFT: ${{ needs.env-drift.result }}
@@ -596,6 +720,7 @@ jobs:
           if [ "$FRONTEND_TOUCHED" = "true" ]; then
             echo "Frontend stack touched — enforcing frontend checks:"
             check "Frontend build (Next.js)" "$R_BUILD"
+            check "AI artifact scan (MEH-449)" "$R_AI_SCAN"
             check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
             check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
             check "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"

@@ -778,3 +778,21 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 | **seo.share.title** | `ספרו עלינו — מהמקור` |
 | **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
 | **Status** | ✅ MEH-1160 |
+
+## Section 11 — /about/why-local "למה מקומי?" (MEH-1289)
+
+> **Source:** MEH-1289 locked copy (Sapir, 17/07/2026) — shipped verbatim, no rewording. Reader-facing editorial page (magazine prose, no bullets). All keys under `about_why_local.*` (he + en twins, MEH-978/840). Voice per ADR-024. Two external sources cited as live links; the "מחקר בריטי של New Economics Foundation" phrase links inline. No licensing/verification claims (legal-gated, MEH-1285 follow-up).
+
+| Field | Value |
+|---|---|
+| **H1** | `למה מקומי?` |
+| **Intro** | `"מקומי" זה דבר פשוט. אוכל שגדל, נאפה או נעשה קרוב לבית. בעונה שלו. מאנשים עם שם ופנים, לא ממערכות. הנה חמש סיבות טובות לבחור בו — ובסוף, איך מוצאים אותו.` |
+| **H2 — טעם של עכשיו** | `יש הבדל בין עגבנייה שנקטפה הבוקר במושב הסמוך, לבין עגבנייה שנקטפה ירוקה כדי שתשרוד שבועיים בדרכים. אחת הבשילה בשמש, השנייה במחסן — ומרגישים את זה כבר בביס הראשון. ויש עוד סיבה, מפתיעה: הזן. רשתות שיווק מוכרות זנים שנבחרו כי הם שורדים משלוח ונראים טוב על המדף; מגדל מקומי בוחר זן בגלל הטעם. לפעמים זה פשוט לא אותו פרי.` |
+| **H2 — הכסף נשאר קרוב** | `שקל שמוציאים אצל בית עסק מקומי ממשיך להסתובב באזור: הופך למשכורת, לקנייה אצל ספק מהמושב ליד, לערב בעסק אחר קרוב. שקל שהולך לרשת גדולה — רובו עוזב. מחקר בריטי של New Economics Foundation מצא שסלי ירקות מעסקים מקומיים השאירו לכלכלה המקומית בערך כפליים לעומת קנייה ברשתות.` — the phrase `מחקר בריטי של New Economics Foundation` links to `https://www.sustainweb.org/blogs/jul25-what-is-local-food/` (target=_blank rel=noopener). |
+| **H2 — הוגנות למי שעושה את העבודה** | `בלי מתווכים ובלי עמלות, הכסף מגיע למי שגידל, אפה, בישל או יצר — לא למי שעמד באמצע.` |
+| **H2 — לדעת מאיפה זה בא** | `לאוכל מקומי יש כתובת ויש שם. אפשר לשאול מי גידל, איך ומתי — ולקבל תשובה מבן אדם, לא ממדבקה. עם הזמן זה הופך להיכרות: מי שמוכר לכם כבר יודע מה אתם אוהבים, ויגיד לכם מתי זה חוזר. הידיעה הזאת היא סוג של שקט.` |
+| **H2 — טוב לסביבה, טוב לכולנו** | `פחות קילומטרים בדרך, פחות אריזות, פחות ימים בקירור. ומשהו שקל לשכוח: אזור שיודע להאכיל את עצמו הוא אזור חזק יותר — בכל מצב.` |
+| **H2 — איפה מתחילים** | `בשביל זה מהמקור קיים: מקום אחד שמרכז בתי עסק מקומיים — כל אחד נבחר ואושר ידנית, לכל אחד עמוד עם הסיפור שלו, והקשר איתו ישיר. בלי עמלות, בלי מתווכים.` |
+| **CTA** | `גלו בתי עסק באזור שלכם` → `/producers` (locale-aware) |
+| **Sources line** | `מקורות: Sustain UK — What is local food and why does it matter? (2025) · CollectiveCrop — Fresh-Picked vs Supermarket Produce (2026)` — both titles are live links: Sustain → `https://www.sustainweb.org/blogs/jul25-what-is-local-food/`; CollectiveCrop → `https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter` |
+| **Status** | ✅ MEH-1289 |

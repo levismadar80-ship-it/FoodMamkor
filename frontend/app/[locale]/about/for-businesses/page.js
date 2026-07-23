@@ -3,12 +3,12 @@ import {
   Camera,
   BookOpen,
   CaretDown,
-  SealCheck,
   Basket,
   Truck,
   ChatCircleText,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -34,6 +34,14 @@ export async function generateMetadata({ params }) {
       type: "article",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
+      images: ["/og-image.png"],
+    },
+    // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
+    // layout's generic site card).
+    twitter: {
+      card: "summary_large_image",
+      title: t("og_title"),
+      description: t("og_description"),
       images: ["/og-image.png"],
     },
     alternates: buildAlternates("/about/for-businesses", locale),
@@ -133,12 +141,13 @@ export default async function FaqForBusinessesPage({ params }) {
               items. Same string t("cta") + markup as the footer CTA below — no
               new he.json key (MEH-840 freeze). Footer CTA also updated to the
               next-intl Link + focus-ring in this PR (IMP-21). */}
-          <Link
+          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+          <BusinessCtaLink
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">
@@ -209,7 +218,8 @@ export default async function FaqForBusinessesPage({ params }) {
               {[
                 ["photos", Camera],
                 ["story", BookOpen],
-                ["verified", SealCheck],
+                // MEH-1285 legal-gated: restore after lawyer decision on
+                // two-tier model (brief Q2.2). he/en keys kept intact.
                 ["products", Basket],
                 ["delivery", Truck],
                 ["reviews", ChatCircleText],
@@ -238,18 +248,30 @@ export default async function FaqForBusinessesPage({ params }) {
           </figure>
         </section>
 
+        {/* MEH-1284: surface the /about/for-businesses/guides index (MEH-539,
+            3 guides) — previously reachable only from onboarding emails. */}
+        <p className="mt-10 sm:mt-12 text-[15px]">
+          <Link
+            href="/about/for-businesses/guides"
+            className="inline-flex items-center gap-1 underline text-primary focus-ring rounded-sm"
+          >
+            {t("guides_link")}
+            <span aria-hidden="true">←</span>
+          </Link>
+        </p>
+
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
           {/* MEH-1113: Instagram-DM routing replaced with the form + visible email
               (every inbound path → ContactMessage + notification). Neutral-plural
               voice per ADR-024. Site-wide footer Instagram link is untouched. */}
           <p className="text-base mb-4 text-text/90">
             {t("footer_questions_prefix")}{" "}
-            <a
+            <Link
               href="/about?topic=business#contact"
               className="underline text-primary"
             >
               {t("footer_form_link")}
-            </a>{" "}
+            </Link>{" "}
             {t("footer_or_email")}{" "}
             <a
               href={`mailto:${CONTACT_EMAIL}`}
@@ -259,12 +281,13 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          <Link
+          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+          <BusinessCtaLink
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
         </footer>
       </div>
     </section>
