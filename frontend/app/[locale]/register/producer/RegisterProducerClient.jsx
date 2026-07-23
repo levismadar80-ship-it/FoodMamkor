@@ -1085,6 +1085,12 @@ function RegisterProducerPageBody() {
                   placeholder={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
+                  // MEH-1471 a11y (IS-5568): the placeholder is the only visible
+                  // text and disappears on input, so name the field explicitly for
+                  // screen readers (the select above uses a visible <label>).
+                  aria-label={t(
+                    "auth.register.producer.fields.referral_source.other_placeholder",
+                  )}
                   className="w-full border rounded-md px-3 py-2 min-h-[44px] mt-2 text-start"
                 />
               )}
