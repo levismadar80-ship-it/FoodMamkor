@@ -14,10 +14,12 @@ UI touches this in this revision — chunks 2 (form + admin) and 3 (data-gated
 chip/badge) follow after Sapir merges this. VARCHAR + app-level validation (no
 Postgres enum type), matching how `availability_state` is handled.
 
-Backfill: every existing row -> 'unknown' (NOT 'some'). 'unknown' is the honest
-default — we do not know a business's whole-catalog scope until it is asked in
-chunk 2 — and it guarantees ZERO change to any current filter result (no filter
-reads these columns yet).
+Default: every row -> 'unknown' (NOT 'some'), via a DB server_default='unknown'
+(so existing rows are backfilled AND post-migration inserts can't land NULL — a
+fourth state outside the spec), plus an explicit COALESCE UPDATE. 'unknown' is
+the honest default — we do not know a business's whole-catalog scope until it is
+asked in chunk 2 — and it guarantees ZERO change to any current filter result
+(no filter reads these columns yet).
 
 down_revision = a9f2c7d41b6e (MEH-1490 producer_google_place_id) — the single
 head on staging at authoring time. No table added, so EXPECTED_TABLES in the CI
@@ -48,17 +50,28 @@ _NEW_COLUMNS = (
 
 
 def upgrade() -> None:
-    # Add nullable (existing rows tolerate it with no default), then backfill.
+    # Add nullable WITH server_default='unknown' (matching the MEH-293 precedent
+    # server_default=sa.false()). The server_default does two things: Postgres
+    # backfills existing rows to 'unknown' at ADD COLUMN time, AND — crucially —
+    # every row INSERTed after this migration also lands 'unknown' instead of
+    # NULL, so there is no fourth state outside the unknown|some|all /
+    # unknown|shared|dedicated spec.
     for name in _NEW_COLUMNS:
         op.add_column(
             "producers",
-            sa.Column(name, sa.String(length=20), nullable=True),
+            sa.Column(
+                name,
+                sa.String(length=20),
+                nullable=True,
+                server_default=sa.text("'unknown'"),
+            ),
         )
 
-    # Backfill every existing row to the honest 'unknown'. Pre-launch table
-    # (~13 producers, MEH-1437), so a single UPDATE is safe; no batched
-    # loop-with-LIMIT needed (ADR-007's loop is for large backfills). Guarded on
-    # COALESCE so a re-run is idempotent.
+    # Belt-and-suspenders backfill to the honest 'unknown'. The server_default
+    # above already populates existing rows, so this is now idempotent (COALESCE)
+    # and defensive — kept explicit so the intended value is unmistakable. Pre-
+    # launch table (~13 producers, MEH-1437), so a single UPDATE is safe; no
+    # batched loop-with-LIMIT needed (ADR-007's loop is for large backfills).
     op.execute(
         """
         UPDATE producers
