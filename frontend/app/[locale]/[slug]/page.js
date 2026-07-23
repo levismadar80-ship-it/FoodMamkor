@@ -1,23 +1,16 @@
 import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
-import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
+import { buildProducerMetadata, buildJsonLd, serializeJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-
-// Reserved root paths that must NOT be treated as a slug.
-// Next.js static routes already win at routing, but this guards
-// fetch attempts in case of edge cases / direct calls.
-const RESERVED = new Set([
-  "about", "admin", "favorites", "login", "map",
-  "p", "producer", "rate", "register", "settings", "terms",
-  "upgrade", "messages", "discover", "publish",
-  "api", "_next", "favicon.ico", "manifest.json",
-  "robots.txt", "sitemap.xml", "sw.js",
-]);
+// MEH-1119: isSlugShaped (+ its RESERVED / SLUG_SHAPE / SCANNER_PREFIXES) moved
+// to lib/slug.js — a non-Page `export` in a page.js file breaks the Next Page
+// type contract under `next build --webpack`. The test imports it from there.
+import { isSlugShaped } from "@/lib/slug";
 
 async function getProducerBySlug(slug) {
-  if (!slug || RESERVED.has(slug.toLowerCase())) return null;
+  if (!isSlugShaped(slug)) return null;
   try {
     const res = await serverFetch(`${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`, {
       next: { revalidate: 60 },
@@ -36,6 +29,12 @@ async function getProducerBySlug(slug) {
 export async function generateMetadata(props) {
   const params = await props.params;
   const { slug, locale } = params;
+  // MEH-1045: notFound() here (pre-streaming) returns a REAL 404 status.
+  // A page-level notFound() alone streams a 200 + 404 UI because the
+  // [locale] loading.js boundary flushes the shell first — bots would keep
+  // crawling a soft-404. Only scanner-shaped paths get the hard 404;
+  // slug-shaped misses keep the MEH-476 hreflang-carrying 404 metadata.
+  if (!isSlugShaped(slug)) notFound();
   const producer = await getProducerBySlug(slug);
   const path = `/${slug}`;
   const alternates = buildAlternates(path, locale);
@@ -70,7 +69,7 @@ function ProducerJsonLd({ producer, locale }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
     />
   );
 }
@@ -83,7 +82,17 @@ export default async function ProducerSlugPage(props) {
   return (
     <>
       <ProducerJsonLd producer={producer} locale={params.locale} />
+      {/*
+        MEH-1151: `key={params.slug}` forces a full remount on slug→slug
+        navigation within this same [slug] route segment. Without it, React
+        reuses the ProducerDetail instance, so useProducerData's
+        `useState(initialProducer)` (seed-once) keeps the previous producer
+        and its fetch effect short-circuits on `if (initialProducer) return`
+        — the page stays stuck on business A while the URL is already B
+        (e.g. via a "similar producers" card). Remount re-seeds state fresh.
+      */}
       <ProducerDetail
+        key={params.slug}
         initialProducer={producer}
         fetchPath={`/producers/by-slug/${encodeURIComponent(params.slug)}`}
       />

@@ -14,6 +14,14 @@ import { showToast } from "@/lib/toast";
 // Default rows-per-page on the admin producers table (MEH-23 pagination).
 const DEFAULT_PER_PAGE = 25;
 
+// MEH-1011 Chunk 2: map an approve-422 detail string to the request-changes
+// chip key. The license gate detail (MEH-971) contains "רישיון"; the photo
+// gate (MEH-799) doesn't — so "רישיון" present → license, else → photo.
+// Pure + exported so the mapping is unit-testable without the hook.
+export function approveGateReason(detail) {
+  return (detail || "").includes("רישיון") ? "license" : "photo";
+}
+
 // Sub-hook 1 — data state, list fetch, filter/page state.
 function useProducersData() {
   const searchParams = useSearchParams();
@@ -63,17 +71,73 @@ function useProducerActions(loadAllProducers) {
   // MEH-848: errorMessage() copy now lives under the error.* namespace.
   const tError = useTranslations("error");
   const { run, isBusy } = useAdminAction();
-  const quickApprove = (id) =>
-    run(`approve:${id}`, async () => {
-      await api.post(`/admin/producers/${id}/approve`);
-      loadAllProducers();
-    });
+
+  // MEH-1011 Chunk 2: request-changes modal state (shared by the row button
+  // and the approve-422 auto-open path). `modalProducer` null = closed.
+  const [modalProducer, setModalProducer] = useState(null);
+  const [feedback, setFeedback] = useState("");
+  const openRequestChanges = (producer, prefill = "") => {
+    setModalProducer(producer);
+    setFeedback(prefill);
+  };
+  const closeRequestChanges = () => {
+    setModalProducer(null);
+    setFeedback("");
+  };
+  const submitRequestChanges = () => {
+    if (!modalProducer) return;
+    const fb = feedback.trim();
+    if (!fb) {
+      showToast.error(t("producers.request_changes.validate"));
+      return;
+    }
+    const id = modalProducer.id;
+    return run(
+      `request-changes:${id}`,
+      async () => {
+        await api.post(`/admin/producers/${id}/request-changes`, { feedback: fb });
+        closeRequestChanges();
+        loadAllProducers();
+      },
+      // 409 = producer no longer pending (mirrors toggleStatus:82 precedent).
+      (err) =>
+        showToast.error(
+          err?.response?.status === 409
+            ? t("producers.request_changes.invalid_state")
+            : errorMessage(err, tError),
+        ),
+    );
+  };
+
+  const quickApprove = (producer) =>
+    run(
+      `approve:${producer.id}`,
+      async () => {
+        await api.post(`/admin/producers/${producer.id}/approve`);
+        loadAllProducers();
+        showToast.success(t("producers.toast_approved")); // MEH-1446
+      },
+      // MEH-1011 Chunk 2: the MEH-799 (photo) / MEH-971 (license) approve gates
+      // return 422. Instead of a dead-end toast, auto-open request-changes with
+      // the gate-matched chip prefilled so the admin can send it in one click.
+      (err) => {
+        if (err?.response?.status === 422) {
+          const reason = approveGateReason(err.response.data?.detail);
+          const prefill = t(`producers.request_changes.chips.${reason}`);
+          openRequestChanges(producer, prefill);
+          showToast.info(t("producers.request_changes.approve_blocked_info"));
+        } else {
+          showToast.error(errorMessage(err, tError));
+        }
+      },
+    );
   const toggleStatus = (id) =>
     run(
       `status:${id}`,
       async () => {
         await api.post(`/admin/producers/${id}/toggle-status`);
         loadAllProducers();
+        showToast.success(t("producers.toast_status_updated")); // MEH-1446
       },
       // MEH-769: a 409 means the producer isn't in a toggleable state
       // (pending / rejected) — surface the message-key copy that steers the
@@ -86,15 +150,26 @@ function useProducerActions(loadAllProducers) {
             : errorMessage(err, tError),
         ),
     );
-  const deleteProducer = (id, name) => {
-    if (!confirm(t("producers.table.confirm_delete", { name }))) return;
+  // MEH-1027 Chunk B: the native browser confirm was replaced by a modal dialog
+  // (page.js renders it — mirrors the content/page.js category-delete dialog,
+  // MEH-1023 Ch.B pattern). Signature unchanged so AdminProducersTable's
+  // kebab wiring (Chunk A) is untouched; this now only OPENS the dialog.
+  const [confirmDelete, setConfirmDelete] = useState(null); // {id, name} | null
+  const deleteProducer = (id, name) => setConfirmDelete({ id, name });
+  const closeDeleteConfirm = () => setConfirmDelete(null);
+  const confirmDeleteProducer = () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
     // MEH-747: surface delete failures — the 500 was previously swallowed
     // silently (no catch), so a failed delete looked like a no-op to the admin.
+    // Dialog closes only on success; on failure the delete_error toast fires
+    // (run's onError) and the dialog stays open for retry/cancel.
     return run(
       `delete:${id}`,
       async () => {
         await api.delete(`/admin/producers/${id}`);
         loadAllProducers();
+        setConfirmDelete(null);
       },
       t("producers.table.delete_error"),
     );
@@ -104,7 +179,14 @@ function useProducerActions(loadAllProducers) {
       await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
       loadAllProducers();
     });
-  return { quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy };
+  return {
+    quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy,
+    // MEH-1011 Chunk 2: request-changes modal controller.
+    modalProducer, feedback, setFeedback,
+    openRequestChanges, closeRequestChanges, submitRequestChanges,
+    // MEH-1027 Chunk B: delete confirm dialog controller.
+    confirmDelete, closeDeleteConfirm, confirmDeleteProducer,
+  };
 }
 
 // Sub-hook 3 — Excel import flow (dry-run preview, then confirm).
@@ -172,8 +254,31 @@ export function useAdminProducers() {
     data.setPage(1);
   };
 
+  // MEH-1421 (MEH-1388 chunk 4a): read-only dedup signal. Flag a producer that
+  // shares a (normalized) name OR city with ANOTHER producer so the admin can
+  // eyeball likely-duplicate registrations at approval time (epic "עסק קיים
+  // באותו שם/עיר"; MEH-409 dedup). Signal only — no mutation, no auto-block. The
+  // badge's title states which axis collided so a shared-city match (weaker than
+  // a shared-name match on a growing dataset) reads as context, not a verdict.
+  const _norm = (s) => (s || "").trim().toLowerCase();
+  const nameCounts = {};
+  const cityCounts = {};
+  for (const p of data.producers) {
+    const n = _norm(p.name);
+    const c = _norm(p.city);
+    if (n) nameCounts[n] = (nameCounts[n] || 0) + 1;
+    if (c) cityCounts[c] = (cityCounts[c] || 0) + 1;
+  }
+
   // Derived: annotate, filter, paginate.
-  const annotated = data.producers.map((p) => ({ ...p, _completeness: producerCompleteness(p) }));
+  const annotated = data.producers.map((p) => ({
+    ...p,
+    _completeness: producerCompleteness(p),
+    _dup: {
+      name: nameCounts[_norm(p.name)] > 1,
+      city: cityCounts[_norm(p.city)] > 1,
+    },
+  }));
   const incompleteCount = annotated.filter((p) => p._completeness.priority !== "green").length;
   const visible = data.incompleteOnly
     ? annotated.filter((p) => p._completeness.priority !== "green")

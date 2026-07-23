@@ -30,6 +30,15 @@ export async function generateMetadata({ params }) {
       // image here or social previews will have no image.
       images: ["/og-image.png"],
     },
+    // MEH-1060 (SEO-10): explicit Twitter card mirroring og so the page no
+    // longer inherits the layout's generic site card (Next.js REPLACES twitter
+    // on override, same as openGraph).
+    twitter: {
+      card: "summary_large_image",
+      title: t("og_title"),
+      description: t("og_description"),
+      images: ["/og-image.png"],
+    },
     alternates: buildAlternates("/map", locale),
   };
 }

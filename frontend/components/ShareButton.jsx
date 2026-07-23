@@ -1,11 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { showToast } from "@/lib/toast";
-import { ShareNetwork, Check } from "@phosphor-icons/react";
+import { ShareNetwork } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 
-export default function ShareButton({ url, title, description, city, category }) {
+/**
+ * Variants (MEH-1334):
+ *   - "default" — bordered box (legacy surfaces)
+ *   - "quiet"   — header quiet-actions row: borderless icon + "שיתוף"
+ *   - "overlay" — mobile hero overlay: white circle, icon-only (the share
+ *                 affordance's single mobile home; heart moved to actions row)
+ */
+export default function ShareButton({ url, title, description, city, category, variant = "default" }) {
   const t = useTranslations("share");
   const resolvedTitle = title || t("wa_message_business_fallback");
   const metaSep = t("wa_meta_separator");
@@ -20,34 +26,62 @@ export default function ShareButton({ url, title, description, city, category })
     .filter(Boolean)
     .join("\n");
 
+  // MEH-1290: WhatsApp is the product's viral loop, so when the native share
+  // sheet is unavailable (desktop / older browsers) fall back to wa.me with a
+  // concise pre-filled message — business-name line + link — instead of a
+  // silent clipboard copy. navigator.share stays the primary path on mobile.
+  const waText = [t("wa_message_with_meta", { title: resolvedTitle }), `👉 ${url}`]
+    .filter(Boolean)
+    .join("\n");
+  const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+
   const handleShare = async () => {
     if (!url) return;
-    // Try native share first (mobile) — text only, no file fetching
+    // Native share first (mobile) — its sheet already surfaces WhatsApp among
+    // the OS share targets. Return whether it resolves or is cancelled, so a
+    // cancelled sheet never force-opens WhatsApp.
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: title || BRAND_NAME, text: shareText, url });
-        return;
       } catch {
-        // user cancelled or unsupported — fall through to clipboard
+        // user cancelled or share failed — do not fall through
       }
+      return;
     }
-    try {
-      await navigator.clipboard.writeText(shareText);
-      showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
-    } catch {
-      // last-resort fallback
-      const ta = document.createElement("textarea");
-      ta.value = shareText;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand("copy");
-        showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
-      } finally {
-        document.body.removeChild(ta);
-      }
-    }
+    // No native share (desktop / older browsers) → wa.me fallback.
+    window.open(waHref, "_blank", "noopener,noreferrer");
   };
+
+  if (variant === "overlay") {
+    return (
+      <button
+        onClick={handleShare}
+        // Mirrors FavoriteButton's gallery circle so the hero corner control
+        // swap (heart → share, MEH-1334 decision 6) is visually seamless.
+        className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        title={t("copy_link")}
+        aria-label={t("modal_title")}
+      >
+        <ShareNetwork size={20} className="text-text" aria-hidden="true" />
+      </button>
+    );
+  }
+
+  if (variant === "quiet") {
+    // MEH-1334: header quiet-actions row — borderless icon + locked label
+    // "שיתוף"; ≥44px hit-area via min-h + transparent padding (revision-2 #5).
+    return (
+      <button
+        onClick={handleShare}
+        className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        title={t("copy_link")}
+        aria-label={t("modal_title")}
+      >
+        <ShareNetwork size={17} className="text-primary-dark" aria-hidden="true" />
+        {t("quiet_label")}
+      </button>
+    );
+  }
 
   return (
     <button

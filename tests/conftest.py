@@ -174,7 +174,6 @@ def make_producer(
         lat=32.0853,
         lng=34.7818,
         status=status,
-        is_verified=True,
         # MEH-799: approve gate requires >=1 image; default stays imageless
         # so the gate's own tests exercise the 422 path explicitly.
         images=images or [],
@@ -240,13 +239,28 @@ def valid_producer_register_payload() -> dict:
     pre-MEH-306 8-char floor (PasswordField swap-in tracked separately —
     see PR description). The 12-char default is conservative against a
     future tightening.
+
+    MEH-1153: ProducerRegister now enforces ≥1 category server-side, so this
+    shared helper (relied on by guard tests — Regression rule 6) must carry a
+    real category, not `[]`. It seeds a NON-license-required category via its
+    own committed session so the row is visible to the endpoint under test —
+    keeping the signature argument-free so no call site has to thread `db`.
+    A unique name avoids the `Category.name` UNIQUE collision when a single
+    test builds two payloads. `_clean_tables` (TRUNCATE … RESTART IDENTITY)
+    cleans it up between tests.
     """
+    seed_session = SessionLocal()
+    try:
+        cat = make_category(seed_session, name=f"קטגוריית-בדיקה-{uuid.uuid4().hex[:8]}")
+        cat_id = cat.id
+    finally:
+        seed_session.close()
     return {
         "email": "producer@example.com",
         "name": "יצרנית בדיקה",
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "חוות הבדיקה",
-        "category_ids": [],
+        "category_ids": [cat_id],
         "primary_contact_method": "whatsapp",
         # MEH-759 (ADR-022 gate 2): binding declaration is mandatory for a
         # successful registration; the handler 422s when falsy.

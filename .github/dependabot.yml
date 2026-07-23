@@ -3,6 +3,11 @@
 # CLAUDE.md branch strategy). Limit per ecosystem keeps the queue manageable.
 # Companion CI gate: .github/workflows/dependency-audit.yml (warn-only sprint 1,
 # flipped to required after umbrella ticket MEH-336 clears the baseline).
+#
+# MEH-1044 — burst throttling after the 2026-07-06 spike (8 dependabot PRs →
+# 8 Vercel preview deploys → Edge Requests overage): limits 5→3 per ecosystem
+# and npm minor/patch updates grouped into a single PR. Major bumps stay
+# individual PRs (they need human review anyway).
 
 version: 2
 updates:
@@ -15,7 +20,7 @@ updates:
       time: "06:00"
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
       - "meh-330"
@@ -31,7 +36,15 @@ updates:
       time: "06:00"
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    # MEH-1044: one grouped PR for all npm minor+patch bumps instead of one
+    # PR (→ one Vercel preview deploy) per package.
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "meh-330"
@@ -47,7 +60,7 @@ updates:
       time: "06:00"
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
       - "ci"

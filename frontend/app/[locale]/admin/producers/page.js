@@ -1,11 +1,14 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
+import RequestChangesModal from "./RequestChangesModal";
 import { useAdminProducers } from "./use-admin-producers";
+import { useReviewChecklist } from "./use-review-checklist";
+import { ADMIN_REVIEW_APPROVE_CONFIRM } from "@/lib/admin-review-checklist";
 
 function SuspenseFallback() {
   const t = useTranslations("admin");
@@ -30,8 +33,107 @@ function PageHeader({ count }) {
   );
 }
 
+// MEH-1027 Chunk B: producer-delete confirm dialog — replaces the native
+// confirm() that guarded DELETE /admin/producers/:id (use-admin-producers.js).
+// REUSES: app/[locale]/admin/content/page.js:118 — MEH-1023 Ch.B dialog
+// markup + Escape-unless-deleting contract; `deleting` here comes from the
+// hook's isBusy(`delete:${id}`) instead of a local flag.
+function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
+  const t = useTranslations("admin");
+
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !deleting) onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deleting, onCancel]);
+
+  if (!confirmDelete) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="producer-delete-title"
+        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+      >
+        <p id="producer-delete-title" className="font-medium text-base">
+          {t("producers.table.confirm_delete", { name: confirmDelete.name })}
+        </p>
+        <div className="flex gap-3 justify-start">
+          <button
+            disabled={deleting}
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+          >
+            {deleting ? t("producers.table.deleting") : t("common.delete")}
+          </button>
+          <button
+            disabled={deleting}
+            onClick={onCancel}
+            className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// MEH-1396: soft approve-confirm — shown when the admin clicks "אשר" with
+// review-checklist items still unticked. REUSES the DeleteConfirmDialog markup
+// (MEH-1023/MEH-1027 dialog contract); affirmative button is primary (not
+// destructive) since this confirms an approval. Escape cancels.
+function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
+  useEffect(() => {
+    if (!approveConfirm) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [approveConfirm, onCancel]);
+
+  if (!approveConfirm) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="approve-confirm-title"
+        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+      >
+        <p id="approve-confirm-title" className="font-medium text-base">
+          {ADMIN_REVIEW_APPROVE_CONFIRM.message(approveConfirm.count)}
+        </p>
+        <div className="flex gap-3 justify-start">
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90"
+          >
+            {ADMIN_REVIEW_APPROVE_CONFIRM.confirmLabel}
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"
+          >
+            {ADMIN_REVIEW_APPROVE_CONFIRM.cancelLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProducersAdminPage() {
   const h = useAdminProducers();
+  // MEH-1396: session-local checklist + soft approve gate. `attemptApprove`
+  // replaces the raw approve on the row button; `quickApprove` (the real
+  // request) is what it ultimately calls once the checklist is clear/confirmed.
+  const checklist = useReviewChecklist(h.quickApprove);
 
   return (
     <div className="space-y-5">
@@ -69,18 +171,46 @@ function ProducersAdminPage() {
         incompleteOnly={h.incompleteOnly}
         storyCardOpenId={h.storyCardOpenId}
         onSetStoryCardOpenId={h.setStoryCardOpenId}
-        onQuickApprove={h.quickApprove}
+        onQuickApprove={checklist.attemptApprove}
+        onRequestChanges={h.openRequestChanges}
         onToggleStatus={h.toggleStatus}
         onToggleAmbassador={h.toggleAmbassador}
         onDeleteProducer={h.deleteProducer}
         onUploadStoryCard={h.handleStoryCardUpload}
         isBusy={h.isBusy}
+        checklist={checklist}
         page={h.safePage}
         totalPages={h.totalPages}
         perPage={h.perPage}
         onPageChange={h.setPage}
         onPerPageChange={h.handlePerPageChange}
         visibleCount={h.visible.length}
+      />
+
+      {/* MEH-1011 Chunk 2: request-changes composer — opened by the row button
+          or auto-opened on approve-422 with the gate-matched chip prefilled. */}
+      <RequestChangesModal
+        producer={h.modalProducer}
+        feedback={h.feedback}
+        setFeedback={h.setFeedback}
+        onClose={h.closeRequestChanges}
+        onSubmit={h.submitRequestChanges}
+        submitting={h.modalProducer ? h.isBusy(`request-changes:${h.modalProducer.id}`) : false}
+      />
+
+      {/* MEH-1027 Chunk B: context-rich delete confirm (was native confirm()). */}
+      <DeleteConfirmDialog
+        confirmDelete={h.confirmDelete}
+        deleting={h.confirmDelete ? h.isBusy(`delete:${h.confirmDelete.id}`) : false}
+        onConfirm={h.confirmDeleteProducer}
+        onCancel={h.closeDeleteConfirm}
+      />
+
+      {/* MEH-1396: soft review-checklist confirm on approve with unticked items. */}
+      <ApproveConfirmDialog
+        approveConfirm={checklist.approveConfirm}
+        onConfirm={checklist.confirmApprove}
+        onCancel={checklist.cancelApprove}
       />
     </div>
   );

@@ -61,6 +61,7 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    ProducerReview,
     Report,
 )
 from app.rate_limit import email_from_body, limiter
@@ -504,10 +505,18 @@ async def register_producer(
         )
         db.add(producer)
         db.flush()
+        # MEH-1297: payload order = stored order; position advances only on a
+        # valid category so it stays contiguous when an invalid id is skipped.
+        _pos = 0
         for cid in data.category_ids:
             cat = db.query(Category).filter(Category.id == cid).first()
             if cat:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id, category_id=cid, position=_pos
+                    )
+                )
+                _pos += 1
         for da in data.delivery_areas:
             db.add(
                 DeliveryArea(
@@ -602,10 +611,18 @@ async def register_producer(
         )
         db.add(producer)
         db.flush()
+        # MEH-1297: payload order = stored order; position advances only on a
+        # valid category so it stays contiguous when an invalid id is skipped.
+        _pos = 0
         for cid in data.category_ids:
             cat = db.query(Category).filter(Category.id == cid).first()
             if cat:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id, category_id=cid, position=_pos
+                    )
+                )
+                _pos += 1
         for da in data.delivery_areas:
             db.add(
                 DeliveryArea(
@@ -1269,10 +1286,34 @@ def delete_account(
       - ProducerReview, ProducerFollower, Favorite
       - ProducerPageView, ProducerWhatsAppClick
       - Report (on producer), Event, Experience
+
+    MEH-1150: the user's ProducerReview rows on THIRD-PARTY businesses also
+    cascade on the user delete. Those businesses' denormalized avg_rating /
+    reviews_count (maintained only in reviews.py) are recomputed after the
+    deletion commits so they don't keep counting reviews that no longer exist.
     """
     user_email = user.email
     user_name = user.name
     producer_id = user.producer_id
+
+    # MEH-1150: capture the OTHER businesses this user has reviewed BEFORE the
+    # cascade runs. ProducerReview.user_id is ondelete=CASCADE (models.py), so
+    # `db.delete(user)` below silently removes the user's reviews of third-party
+    # businesses — but producers.avg_rating / reviews_count are denormalized and
+    # maintained ONLY in reviews.py (_recompute_producer_rating), so without a
+    # refresh those businesses would keep an inflated rating that counts reviews
+    # no longer in the DB. We collect the set now and recompute each AFTER the
+    # deletion commits (below). The user's OWN producer is excluded: it is
+    # hard-deleted in step 2, so recomputing it is pointless and it no longer
+    # exists. Empty set (user wrote no reviews) → no extra work.
+    reviewed_producer_ids = {
+        pid
+        for (pid,) in db.query(ProducerReview.producer_id)
+        .filter(ProducerReview.user_id == user.id)
+        .distinct()
+        .all()
+        if pid != producer_id
+    }
 
     # MEH-375: capture every Cloudinary URL owned by this user BEFORE
     # any db.delete, since the cascade detaches relationships and the
@@ -1346,6 +1387,19 @@ def delete_account(
     # 3. Finally, delete the user itself.
     db.delete(user)
     db.commit()
+
+    # MEH-1150: the user's reviews of third-party businesses are now gone
+    # (cascade committed above). Refresh the cached rating aggregate on each
+    # of those businesses so avg_rating / reviews_count no longer count the
+    # deleted reviews. Synchronous — the per-user review count is small
+    # (over-engineering guard: no background job). `_recompute_producer_rating`
+    # commits internally. Local import avoids the auth<->reviews import cycle
+    # (reviews.py imports app.auth).
+    if reviewed_producer_ids:
+        from app.routers.reviews import _recompute_producer_rating
+
+        for reviewed_pid in reviewed_producer_ids:
+            _recompute_producer_rating(reviewed_pid, db)
 
     # MEH-375: post-commit Cloudinary cleanup. fail-open per
     # destroy_image contract — failures log via app.upload, the cleanup

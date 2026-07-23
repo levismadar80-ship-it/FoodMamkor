@@ -4,6 +4,9 @@ test.describe("Search", () => {
   test("submitting hero search navigates to /producers?q=", async ({ page }) => {
     await page.goto("/");
     const searchInput = page.locator('[data-testid="hero-search"]');
+    // MEH-1078: assert exactly one hero-search (retries until hydration settles)
+    // so a transient double-mount can't trip a strict-mode "resolved to 2" flake.
+    await expect(searchInput).toHaveCount(1, { timeout: 15_000 });
     await expect(searchInput).toBeVisible({ timeout: 15_000 });
 
     await searchInput.fill("חלב");

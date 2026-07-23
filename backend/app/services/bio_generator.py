@@ -1,8 +1,13 @@
-"""AI bio writer for producer profiles (MEH-56).
+"""AI description writer for producer profiles (MEH-56; MEH-1173).
 
-Accepts an Instagram handle, URL, or free text. Tries to scrape public
-Instagram meta description if it looks like a handle; falls back to the
-raw text. Calls Claude Haiku to generate a Hebrew ≤150-char bio.
+Composes a Hebrew ≤150-char business description from STRUCTURED input —
+what the business sells, its area, what's special, and an optional
+Instagram link used as inspiration only — then calls Claude Haiku.
+
+MEH-1173: the old free-text ``{source}`` + Instagram-scrape path is gone.
+Instagram blocks datacenter IPs (Railway), so the scrape failed and fed
+Haiku a raw handle → generic bio. Input is now the 3-question form from
+the dashboard "תיאור העסק" card. Prompt is gender-neutral (ADR-024).
 
 Fail-open: returns "" if ANTHROPIC_API_KEY is missing or any step fails.
 """
@@ -10,7 +15,6 @@ Fail-open: returns "" if ANTHROPIC_API_KEY is missing or any step fails.
 from __future__ import annotations
 
 import logging
-import re
 
 from app.config import settings
 
@@ -40,56 +44,41 @@ def _get_client():
         return None
 
 
-def _extract_instagram_handle(source: str) -> str | None:
-    """Return cleaned handle if source looks like an IG handle or URL."""
-    s = source.strip()
-    if "instagram.com" in s:
-        m = re.search(r"instagram\.com/([A-Za-z0-9._]+)", s)
-        return m.group(1) if m else None
-    if s.startswith("@"):
-        return s.lstrip("@")
-    # Looks like a bare handle: no spaces, no dots as domain, no slashes
-    if re.match(r"^[A-Za-z0-9._]{2,30}$", s):
-        return s
-    return None
+# MEH-1173: LOCKED gender-neutral prompt (ADR-024). Empty optional fields
+# drop their whole line so Haiku is never handed a dangling "אזור פעילות: ".
+_PROMPT_HEADER = (
+    "כתוב תיאור קצר בעברית לעסק מזון ישראלי, עד 150 תווים, בלשון ניטרלית "
+    "או בגוף ראשון רבים — בלי הנחות על מגדר הבעלים. החזר רק את התיאור, "
+    "ללא הסברים."
+)
 
 
-def _fetch_instagram_bio(handle: str) -> str | None:
-    """Try to extract the meta description from a public Instagram page."""
-    try:
-        import httpx
-
-        url = f"https://www.instagram.com/{handle}/"
-        headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (compatible; Googlebot/2.1; "
-                "+http://www.google.com/bot.html)"
-            )
-        }
-        resp = httpx.get(url, headers=headers, timeout=8, follow_redirects=True)
-        if resp.status_code != 200:
-            return None
-        # Try og:description first, then name=description
-        for pattern in (
-            r'property=["\']og:description["\'][^>]*content=["\'](.*?)["\']',
-            r'name=["\']description["\'][^>]*content=["\'](.*?)["\']',
-        ):
-            m = re.search(pattern, resp.text, re.I | re.S)
-            if m:
-                text = m.group(1).strip()
-                if len(text) > 10:
-                    return text
-        return None
-    except Exception as e:
-        logger.debug("[BIO] Instagram scrape failed for %s: %s", handle, e)
-        return None
+def _compose_prompt(
+    sells: str,
+    area: str | None,
+    special: str | None,
+    instagram: str | None,
+) -> str:
+    lines = [_PROMPT_HEADER, f"מה העסק מוכר: {sells.strip()}"]
+    if area and area.strip():
+        lines.append(f"אזור פעילות: {area.strip()}")
+    if special and special.strip():
+        lines.append(f"מה מיוחד: {special.strip()}")
+    if instagram and instagram.strip():
+        lines.append(f"אינסטגרם (השראה בלבד): {instagram.strip()}")
+    return "\n".join(lines)
 
 
-def generate_bio(source: str) -> str:
-    """Generate a Hebrew ≤150-char business bio.
+def generate_bio(
+    sells: str,
+    area: str | None = None,
+    special: str | None = None,
+    instagram: str | None = None,
+) -> str:
+    """Generate a Hebrew ≤150-char business description from structured input.
 
-    source: Instagram handle / URL, or any descriptive text.
-    Returns "" on any failure (fail-open).
+    sells is required; area / special / instagram are optional context.
+    Returns "" on any failure (fail-open) or when sells is blank.
     """
     client = _get_client()
     if not client:
@@ -98,31 +87,16 @@ def generate_bio(source: str) -> str:
         )
         return ""
 
-    text = source.strip()[:500]
-
-    handle = _extract_instagram_handle(text)
-    if handle:
-        ig_bio = _fetch_instagram_bio(handle)
-        if ig_bio:
-            text = ig_bio
-            logger.info("[BIO] Using scraped Instagram bio for handle %s", handle)
-
-    if not text:
+    if not sells or not sells.strip():
         return ""
+
+    prompt = _compose_prompt(sells, area, special, instagram)
 
     try:
         msg = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=100,
-            messages=[
-                {
-                    "role": "user",
-                    "content": (
-                        "כתבי ביו בעברית בגוף נקבה, עד 150 תווים, לעסק מזון ישראלי "
-                        "על בסיס הטקסט הבא. החזירי רק את הביו, ללא הסברים:\n\n" + text
-                    ),
-                }
-            ],
+            messages=[{"role": "user", "content": prompt}],
         )
         bio = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""

@@ -82,6 +82,7 @@ def _serialize_detail(ex: Experience) -> dict:
         "requirements": ex.requirements,
         "lat": ex.lat,
         "lng": ex.lng,
+        "is_active": bool(ex.is_active),  # MEH-1419
         "moderation_status": ex.moderation_status,
         "moderation_reason": ex.moderation_reason,
         "moderation_suggestion": ex.moderation_suggestion,
@@ -125,6 +126,9 @@ def list_experiences(
         .filter(
             Experience.status == "approved",
             Experience.event_date >= date.today(),
+            # MEH-1419: a host-cancelled experience drops from the public feed
+            # (mirrors events.py:73). It stays visible on GET /experiences/mine.
+            Experience.is_active.is_(True),
         )
     )
     if category:
@@ -192,6 +196,14 @@ def get_experience(
         payload["moderation_suggestion"] = None
         payload["admin_feedback"] = None
         payload["rejection_reason"] = None
+        # MEH-1417: for a HOME experience the address is a host's
+        # residence, so the coords must go too — MEH-1404's MiniMap
+        # draws a precise pin from lat/lng and would otherwise leak
+        # the exact location the address-hiding above protects.
+        # `public` venues keep their pin (the location is the point).
+        if ex.location_type == "home":
+            payload["lat"] = None
+            payload["lng"] = None
     return payload
 
 
@@ -286,16 +298,30 @@ def update_experience(
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
     if ex.host_user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not your experience")
+        # MEH-1001: 404 (not 403) on cross-owner access so a stranger can't
+        # confirm another host's experience exists. Stays owner-only.
+        # REUSES events.py update_event (producer_recipes.py:203-206).
+        raise HTTPException(status_code=404, detail="Experience not found")
 
     payload = data.model_dump(exclude_unset=True)
     for field, value in payload.items():
         setattr(ex, field, value)
 
-    # Any edit after a negative moderation verdict sends the experience
-    # back to `pending` and clears the admin-written feedback so the
-    # admin queue shows a fresh card. Claude re-runs on the new content.
-    if ex.status in ("changes_requested", "rejected", "approved"):
+    # MEH-1419: a pure cancel/reactivate toggle (is_active only) must NOT
+    # re-trigger moderation or reset the experience to `pending` —
+    # cancelling is a reversible host action, not a content edit, so a
+    # reactivated approved experience returns to the public feed immediately.
+    # This intentionally holds for ALL statuses, not just `approved`: a bare
+    # is_active flip on a changes_requested/rejected row has no public effect
+    # (those never reach the feed) and still must not re-run Claude. Events
+    # have no moderation, so their toggle is a plain PUT (events.py:238); the
+    # experience toggle needs this guard because content edits below reset.
+    content_changed = any(field != "is_active" for field in payload)
+
+    # Any content edit after a negative moderation verdict sends the
+    # experience back to `pending` and clears the admin-written feedback so
+    # the admin queue shows a fresh card. Claude re-runs on the new content.
+    if content_changed and ex.status in ("changes_requested", "rejected", "approved"):
         ex.status = "pending"
         ex.admin_feedback = None
         ex.rejection_reason = None
@@ -342,8 +368,10 @@ def delete_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
     is_owner = ex.host_user_id == user.id
     is_admin = getattr(user, "role", None) == "admin"
+    # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
+    # experience's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="אין הרשאה")
+        raise HTTPException(status_code=404, detail="Experience not found")
     db.delete(ex)
     db.commit()
     return {"detail": "Experience deleted"}

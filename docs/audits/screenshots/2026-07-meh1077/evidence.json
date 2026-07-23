@@ -1,0 +1,43 @@
+{
+  "producer": {
+    "id": "fbc83e1a-94db-4d05-9b35-deb72419b863",
+    "name": "טבע פור - סבונים ושמנים",
+    "slug": "teva-pure"
+  },
+  "category_click": {
+    "before": {
+      "url": "http://localhost:3000/",
+      "hist": 2,
+      "y": 0
+    },
+    "after": {
+      "url": "http://localhost:3000/?category=1",
+      "hist": 2,
+      "y": 2395
+    },
+    "counter": "מציגים 1 מתוך 1",
+    "visible": [
+      "חוות הגליל - בשר אורגני"
+    ]
+  },
+  "category_back": {
+    "url": "about:blank"
+  },
+  "dairy_click": {
+    "url": "http://localhost:3000/?category=3"
+  },
+  "glutenfree_home": {
+    "url": "http://localhost:3000/"
+  },
+  "producers_organic": {
+    "url": "http://localhost:3000/producers?organic=1",
+    "hist": 4
+  },
+  "producers_back_after_chip": {
+    "url": "http://localhost:3000/"
+  },
+  "map_url_after_load": {
+    "url": "http://localhost:3000/map"
+  },
+  "favorite_gate_modal": true
+}

@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S5 · MEH-122 · /map v2 — FINAL — fixed + states + CTA variants</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ──────────────────────────────────────────────────────────────
+   BRAND TOKENS — verbatim from Design System v1.0 (S2/S3/S4 lineage)
+   Every colour on the mock surfaces resolves to one of these, or a
+   color-mix() of these. Zero raw hex below the :root block.
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --green:        #2E6853;
+  --green-dark:   #1F4A38;
+  --green-light:  #3A7D64;
+  --primary:      #2E6853;
+  --primary-light:#3A7D64;
+  --primary-dark: #2E4A2E;
+  --secondary:    #4CB08B;
+  --background:   #F5F0E8;
+  --bg-card:      #FFFEFB;
+  --text:         #1C1A17;
+  --fg-muted:     #57524A;
+  --gold:         #8B6914;
+  --gold-soft:    #E7C88A;
+  --accent-warm:  #E8823A;
+  --light:        #EAF3DE;
+  --border:       #E8E0D0;
+  --focus-ring:   rgba(46,104,83,0.40);
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --duration-fast: 180ms;
+  --duration-base: 420ms;
+  --ease-quart:    cubic-bezier(.25, 1, .5, 1);
+
+  --shadow-card:   0 8px 32px rgba(46,104,83,0.12);
+  --shadow-header: 0 2px 20px rgba(46,104,83,0.06);
+
+  /* warm food-photo placeholders — token-derived, not raw hex.
+     Stand in for golden-hour photography until real assets land. */
+  --ph-dairy:   radial-gradient(60% 55% at 32% 28%, color-mix(in oklab, var(--light) 70%, white), transparent 70%), linear-gradient(140deg, color-mix(in oklab, var(--gold) 20%, var(--background)), color-mix(in oklab, var(--gold) 52%, var(--accent-warm)));
+  --ph-bread:   radial-gradient(58% 50% at 64% 30%, color-mix(in oklab, var(--gold-soft) 76%, white), transparent 68%), linear-gradient(150deg, color-mix(in oklab, var(--accent-warm) 36%, var(--background)), color-mix(in oklab, var(--gold) 64%, var(--primary-dark)));
+  --ph-produce: radial-gradient(58% 52% at 36% 32%, color-mix(in oklab, var(--secondary) 60%, white), transparent 70%), linear-gradient(145deg, color-mix(in oklab, var(--secondary) 42%, var(--light)), color-mix(in oklab, var(--primary) 60%, var(--gold)));
+  --ph-honey:   radial-gradient(56% 50% at 60% 30%, color-mix(in oklab, var(--gold-soft) 82%, white), transparent 66%), linear-gradient(150deg, color-mix(in oklab, var(--gold) 48%, var(--background)), color-mix(in oklab, var(--accent-warm) 70%, var(--gold)));
+  --ph-meat:    radial-gradient(56% 50% at 38% 30%, color-mix(in oklab, var(--accent-warm) 54%, white), transparent 64%), linear-gradient(145deg, color-mix(in oklab, var(--accent-warm) 56%, var(--primary-dark)), color-mix(in oklab, var(--gold) 40%, var(--primary-dark)));
+  --ph-soap:    radial-gradient(58% 52% at 34% 30%, color-mix(in oklab, var(--light) 76%, white), transparent 70%), linear-gradient(150deg, color-mix(in oklab, var(--secondary) 30%, var(--background)), color-mix(in oklab, var(--primary) 36%, var(--light)));
+
+  /* Doc chrome only — never reaches the mock surfaces */
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg); color: var(--doc-ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+}
+body { padding: 48px 40px 96px; min-width: 1460px; }
+
+.numeric { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-style: normal; direction: ltr; unicode-bidi: isolate; }
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+.docpage { max-width: 1380px; margin: 0 auto; }
+
+/* ── DOC MASTHEAD ─────────────────── */
+.masthead { display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(42,38,32,0.18); padding-bottom: 24px; margin-bottom: 32px; gap: 24px; }
+.masthead .phase-nav { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--doc-ink-mute); }
+.masthead .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); display: inline-block; }
+.masthead .pip.is-on  { background: var(--green); border-color: var(--green); }
+.masthead .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+.masthead h1 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.05; color: var(--doc-ink); }
+.masthead h1 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: #6b4f0f; }
+.masthead .sub { font-family: var(--font-italic); font-style: italic; font-size: 18px; color: var(--doc-ink-mute); margin-top: 6px; max-width: 82ch; line-height: 1.5; }
+.masthead .stamp { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.85; }
+.masthead .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.masthead .stamp .dot { color: var(--gold); }
+
+/* ── SECTION HEAD ─────────────────── */
+.section-head { border-top: 1px solid rgba(42,38,32,0.30); padding: 32px 0 24px; margin-bottom: 28px; display: grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: baseline; }
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 96px; color: var(--gold); line-height: 1; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.05; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 80ch; line-height: 1.5; }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ── FRAME CAPTION + VIEWPORT ─────── */
+.bp-cap { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: baseline; margin-bottom: 16px; }
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); text-transform: none; }
+.bp-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 13px; color: var(--gold); }
+.bp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); align-self: center; }
+.cap-note { font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--doc-ink-mute); margin: 14px 0 0; max-width: 60ch; line-height: 1.55; }
+.cap-note b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); font-size: 12px; }
+
+.vp { background: var(--background); border: 1px solid rgba(42,38,32,0.18); overflow: hidden; position: relative; }
+.vp.desktop { width: 1280px; height: 820px; }
+.vp.mobile  { width: 375px;  height: 812px; }
+
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR SURFACE
+   ══════════════════════════════════════════════════════════════ */
+.mh { direction: rtl; font-family: var(--font-body); color: var(--text); height: 100%; }
+.paper::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+
+/* photo treatment — reads as a real photo (vignette + grain) */
+.photo { position: relative; background-size: cover; background-position: center; }
+.photo.dairy   { background-image: var(--ph-dairy); }
+.photo.bread   { background-image: var(--ph-bread); }
+.photo.produce { background-image: var(--ph-produce); }
+.photo.honey   { background-image: var(--ph-honey); }
+.photo.meat    { background-image: var(--ph-meat); }
+.photo.soap    { background-image: var(--ph-soap); }
+.photo::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 100% at 50% 0%, transparent 55%, rgba(31,74,56,0.18)); }
+.photo::after { content: ""; position: absolute; inset: 0; mix-blend-mode: overlay; opacity: 0.28; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"); }
+
+/* ─── FloatingNavbar v5 LOCKED — Composition B ─── */
+.nav-shell { display: flex; justify-content: center; padding: 24px; direction: rtl; z-index: 30; position: relative; }
+.mobile .nav-shell { padding: 14px 14px 0; position: absolute; top: 0; inset-inline: 0; }
+.nav { width: 100%; max-width: 1200px; display: grid; align-items: center; border-radius: 9999px; transition: background-color var(--duration-base) var(--ease-quart), border-color var(--duration-base) var(--ease-quart), box-shadow var(--duration-base) var(--ease-quart); }
+.nav.is-default  { background: transparent; border: 1px solid transparent; padding: 8px 24px; }
+.nav.is-scrolled { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 16px 8px 8px; box-shadow: var(--shadow-header); }
+.desktop .nav { grid-template-columns: auto 1fr auto; gap: 32px; min-height: 64px; }
+.mobile  .nav { grid-template-columns: auto 1fr auto auto; gap: 10px; min-height: 52px; padding: 6px 8px 6px 16px; }
+
+/* canonical wordmark — מהמקור, Frank Ruhl Libre, no niqud / no Latin / no glyph */
+.logo { display: inline-flex; align-items: center; text-decoration: none; }
+.wordmark { font-family: var(--font-display); font-weight: 700; color: var(--green-dark); line-height: 1; letter-spacing: 0.01em; }
+.desktop .wordmark { font-size: 30px; }
+.mobile  .wordmark { font-size: 23px; }
+
+.nav-links { display: flex; align-items: center; justify-content: center; gap: 32px; font-family: var(--font-body); font-weight: 500; font-size: 14px; }
+.nav-link { color: var(--text); text-decoration: none; padding: 8px 0; position: relative; transition: color var(--duration-fast) var(--ease-quart); }
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current::after { content: ""; position: absolute; inset-inline: 0; bottom: 2px; height: 1px; background: var(--gold); }
+
+.nav-end { display: inline-flex; align-items: center; gap: 8px; }
+/* כניסה לחשבון = text */
+.btn-text { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); background: transparent; border: 1px solid transparent; padding: 10px 14px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; border-radius: 9999px; transition: background-color var(--duration-fast) var(--ease-quart); }
+.btn-text:hover { background: var(--light); }
+/* הוסיפו עסק = outlined */
+.btn-outline { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px solid var(--green); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; transition: background-color var(--duration-fast) var(--ease-quart), color var(--duration-fast) var(--ease-quart); }
+.btn-outline:hover { background: var(--green); color: var(--background); }
+.btn-outline .arr { font-family: var(--font-italic); font-style: italic; display: inline-block; transform: scaleX(-1); }
+/* search = filled primary */
+.btn-search { font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; transition: background-color var(--duration-fast) var(--ease-quart); }
+.btn-search:hover { background: var(--primary-light); }
+.btn-search svg, .btn-outline svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn { width: 44px; height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; cursor: default; flex: none; }
+.icon-btn.filled { background: var(--primary); border: 1px solid var(--primary); color: var(--background); }
+.icon-btn.ghost  { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+.icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─── WARM MAP TONE ─── */
+.map { position: absolute; inset: 0; background: var(--background); overflow: hidden; }
+.map-land { position: absolute; inset: -10%; background:
+    radial-gradient(34% 30% at 22% 26%, color-mix(in oklab, var(--light) 78%, transparent), transparent 72%),
+    radial-gradient(30% 26% at 74% 20%, color-mix(in oklab, var(--secondary) 26%, transparent), transparent 70%),
+    radial-gradient(40% 34% at 82% 74%, color-mix(in oklab, var(--light) 70%, transparent), transparent 74%),
+    radial-gradient(26% 24% at 38% 82%, color-mix(in oklab, var(--secondary) 20%, transparent), transparent 72%),
+    color-mix(in oklab, var(--gold) 6%, var(--background)); }
+.road { position: absolute; background: color-mix(in oklab, var(--border) 88%, var(--bg-card)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--border) 60%, transparent); }
+.road.h { height: 10px; border-radius: 9999px; }
+.road.v { width: 9px; border-radius: 9999px; }
+.road.thin { background: color-mix(in oklab, var(--border) 70%, var(--background)); }
+.river { position: absolute; height: 40px; border-radius: 9999px; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--secondary) 30%, var(--background)) 20%, color-mix(in oklab, var(--secondary) 34%, var(--background)) 80%, transparent); filter: blur(2px); opacity: 0.8; }
+.map-place { position: absolute; font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; color: color-mix(in oklab, var(--fg-muted) 70%, transparent); white-space: nowrap; }
+
+/* circular business-PHOTO markers (default) */
+.mk { position: absolute; transform: translate(-50%, -50%); z-index: 6; display: grid; justify-items: center; gap: 6px; }
+.mk-dot { width: 46px; height: 46px; border-radius: 9999px; border: 2px solid var(--bg-card); box-shadow: 0 6px 16px rgba(46,104,83,0.22); position: relative; overflow: hidden; }
+.mk.is-selected { z-index: 9; }
+.mk.is-selected .mk-dot { width: 60px; height: 60px; border: 3px solid var(--gold); box-shadow: 0 10px 26px rgba(46,104,83,0.3); }
+.mk-name { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-family: var(--font-display); font-weight: 700; font-size: 13px; line-height: 1; white-space: nowrap; padding: 6px 10px; border-radius: 9999px; box-shadow: var(--shadow-header); }
+.mk-name .d { color: var(--gold); font-family: var(--font-body); font-weight: 500; font-size: 11px; margin-inline-start: 6px; }
+/* category-colour circle — ONLY as cluster / photo-less fallback */
+.mk-dot.fallback { background: color-mix(in oklab, var(--secondary) 40%, var(--bg-card)); display: grid; place-items: center; }
+.mk-dot.fallback svg { width: 22px; height: 22px; fill: none; stroke: var(--green-dark); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.mk-dot.cluster { background: var(--primary); color: var(--background); display: grid; place-items: center; font-family: var(--font-body); font-weight: 700; font-size: 14px; }
+
+.loc { position: absolute; transform: translate(-50%, -50%); z-index: 5; }
+.loc .dot { width: 18px; height: 18px; border-radius: 9999px; background: var(--green); border: 3px solid var(--bg-card); box-shadow: 0 2px 8px rgba(46,104,83,0.35); position: relative; z-index: 2; }
+.loc .ring { position: absolute; top: 50%; left: 50%; width: 18px; height: 18px; border-radius: 9999px; background: color-mix(in oklab, var(--green) 40%, transparent); transform: translate(-50%,-50%); animation: locpulse 2.6s var(--ease-quart) infinite; }
+@keyframes locpulse { 0% { transform: translate(-50%,-50%) scale(1); opacity: 0.5; } 100% { transform: translate(-50%,-50%) scale(4.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .loc .ring { animation: none; opacity: 0; } }
+
+.map-fab { position: absolute; z-index: 12; width: 48px; height: 48px; border-radius: 9999px; background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); display: inline-flex; align-items: center; justify-content: center; cursor: default; color: var(--green-dark); }
+.map-fab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─── FILTER PILLS — glyph tier; ONE selected affordance (filled primary) ─── */
+.filters { display: flex; align-items: center; gap: 10px; }
+.near-me { display: inline-flex; align-items: center; gap: 8px; flex: none; font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 9px 16px; min-height: 40px; cursor: default; white-space: nowrap; transition: background-color var(--duration-fast) var(--ease-quart); }
+.near-me:hover { background: var(--light); }
+.near-me svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.filter-sep { width: 1px; align-self: stretch; background: var(--border); margin: 4px 2px; flex: none; }
+.pill-row { display: flex; align-items: center; gap: 10px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; flex: none; font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--text); background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 8px 15px; min-height: 40px; cursor: default; white-space: nowrap; transition: background-color var(--duration-fast) var(--ease-quart), border-color var(--duration-fast) var(--ease-quart), color var(--duration-fast) var(--ease-quart); }
+.pill:hover { border-color: var(--green); }
+.pill .glyph { width: 20px; height: 20px; display: inline-block; }
+.pill .glyph svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+.pill.is-selected { background: var(--primary); border-color: var(--primary); color: var(--background); }
+.pill.is-selected .glyph svg { opacity: 1; }
+/* disabled — 0 businesses */
+.pill.is-disabled { color: color-mix(in oklab, var(--fg-muted) 60%, transparent); background: color-mix(in oklab, var(--background) 70%, var(--bg-card)); border-style: dashed; border-color: var(--border); cursor: not-allowed; }
+.pill.is-disabled .glyph svg { opacity: 0.4; }
+.pill .zero { font-numeric: tabular; font-size: 11px; color: color-mix(in oklab, var(--fg-muted) 70%, transparent); margin-inline-start: 2px; }
+
+/* ─── LIST PANEL + CARD (ProducerCard v4 · square photo · no heart) ─── */
+.list-panel { background: var(--bg-card); border-inline-start: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; position: relative; z-index: 1; }
+.list-head { padding: 22px 28px 18px; border-bottom: 1px solid var(--border); display: grid; gap: 4px; }
+.list-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 10px; }
+.list-eyebrow .rule { width: 22px; height: 1px; background: var(--gold); display: inline-block; }
+.list-count { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--text); }
+.list-count .n { color: var(--gold); }
+.list-scroll { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+
+.lcard { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; display: grid; grid-template-columns: 104px 1fr; gap: 14px; padding: 12px; position: relative; transition: border-color var(--duration-fast) var(--ease-quart), background-color var(--duration-fast) var(--ease-quart); }
+.lcard:hover { border-color: var(--green); }
+.lcard.is-selected { border-color: var(--gold); background: color-mix(in oklab, var(--light) 40%, var(--bg-card)); }
+.lcard.is-selected::before { content: ""; position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); }
+.lcard-media { position: relative; width: 104px; height: 104px; overflow: hidden; background: var(--background); }
+.lcard-media .photo { position: absolute; inset: 0; }
+.lcard.is-closed .lcard-media .photo { filter: saturate(0.55) brightness(0.96); }
+.lcard.is-closed .lcard-media::after { content: ""; position: absolute; inset: 0; background: rgba(87,82,74,0.14); z-index: 3; }
+.lcard-body { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.lcard-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fg-muted); }
+.lcard-nrow { display: flex; align-items: center; gap: 7px; }
+.lcard-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.2; color: var(--text); }
+.lcard.is-closed .lcard-name { color: var(--fg-muted); }
+.verified { display: inline-flex; align-items: center; color: var(--green); flex: none; }
+.verified svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.lcard-meta { font-family: var(--font-body); font-size: 12px; color: var(--fg-muted); }
+/* hours = neutral text, no status dot */
+.lcard-hours { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 7px; }
+.lcard-hours svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
+
+.lcard-cta { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.btn-contact { display: inline-flex; align-items: center; gap: 8px; flex: none; font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); border-radius: 9999px; padding: 9px 16px; min-height: 40px; cursor: default; transition: background-color var(--duration-fast) var(--ease-quart); }
+.btn-contact:hover { background: var(--primary-light); }
+.btn-contact svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.btn-full { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); text-decoration: none; padding: 9px 6px; min-height: 40px; display: inline-flex; align-items: center; cursor: default; position: relative; }
+.btn-full::after { content: ""; position: absolute; inset-inline: 6px; bottom: 6px; height: 1px; background: var(--gold); transform: scaleX(0); transform-origin: right; transition: transform var(--duration-fast) var(--ease-quart); }
+.btn-full:hover::after { transform: scaleX(1); }
+
+/* ─── DESKTOP SPLIT ─── */
+.map-page { display: flex; flex-direction: column; height: 100%; }
+.topbar { background: var(--background); position: relative; z-index: 20; }
+.filterbar { background: var(--background); border-bottom: 1px solid var(--border); padding: 0 0 18px; position: relative; z-index: 20; }
+.filterbar-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.split { flex: 1; min-height: 0; display: grid; grid-template-columns: 40% 60%; }
+.split .map { position: relative; }
+
+/* ─── MOBILE SHEET ─── */
+.sheet-map { position: absolute; inset: 0; }
+.m-filterbar { position: absolute; top: 70px; inset-inline: 0; z-index: 18; padding: 8px 0; }
+.m-pill-row { display: flex; gap: 8px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
+.m-pill-row::-webkit-scrollbar { display: none; }
+.m-pill-row .pill { padding: 7px 13px; min-height: 38px; box-shadow: var(--shadow-header); }
+
+.sheet { position: absolute; inset-inline: 0; bottom: 0; z-index: 22; background: var(--bg-card); border-top: 1px solid var(--border); border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(46,104,83,0.14); display: flex; flex-direction: column; min-height: 0; }
+.sheet-grab { display: grid; justify-items: center; padding: 9px 0 5px; flex: none; cursor: grab; }
+.sheet-grab .bar { width: 44px; height: 5px; border-radius: 9999px; background: color-mix(in oklab, var(--border) 70%, var(--fg-muted)); }
+.sheet-head { padding: 5px 18px 11px; border-bottom: 1px solid var(--border); display: grid; gap: 2px; flex: none; }
+.sheet-head .row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.sheet-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 8px; }
+.sheet-eyebrow .rule { width: 18px; height: 1px; background: var(--gold); display: inline-block; }
+.sheet-count { font-family: var(--font-display); font-weight: 700; font-size: 21px; line-height: 1.15; color: var(--text); }
+.sheet-count .n { color: var(--gold); }
+.sheet-sort { font-family: var(--font-body); font-size: 12px; color: var(--green-dark); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.sheet-sort svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sheet-scroll { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.sheet-scroll .lcard { grid-template-columns: 88px 1fr; gap: 12px; padding: 10px; }
+.sheet-scroll .lcard-body { gap: 4px; }
+.sheet-scroll .lcard-media { width: 88px; height: 88px; }
+.sheet-scroll .lcard-name { font-size: 17px; }
+.sheet-scroll .lcard-cta { margin-top: 3px; }
+.sheet-scroll .btn-contact, .sheet-scroll .btn-full { min-height: 38px; }
+.fade-bottom::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 30px; background: linear-gradient(transparent, var(--bg-card)); pointer-events: none; z-index: 2; border-radius: 0 0 24px 24px; }
+
+/* snap-point markers on the doc, beside the mobile frame */
+.snap-rail { position: relative; width: 64px; flex: none; }
+.snap-rail .tick { position: absolute; inset-inline-start: 0; width: 64px; display: grid; grid-template-columns: 10px 1fr; gap: 6px; align-items: center; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.08em; color: var(--doc-ink-mute); }
+.snap-rail .tick .d { width: 9px; height: 9px; border-radius: 9999px; border: 1px solid var(--gold); }
+.snap-rail .tick.on .d { background: var(--gold); }
+.snap-rail .tick .lab { line-height: 1.2; }
+.snap-rail .tick .lab b { display: block; color: var(--doc-ink); font-weight: 700; font-size: 11px; }
+
+/* ─── CITY SEARCH (location-denied) ─── */
+.city-head { padding: 6px 16px 12px; border-bottom: 1px solid var(--border); display: grid; gap: 8px; flex: none; }
+.city-title { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--text); line-height: 1.1; }
+.city-sub { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); line-height: 1.4; }
+.city-input { display: flex; align-items: center; gap: 10px; background: var(--background); border: 1px solid var(--border); border-radius: 9999px; padding: 11px 16px; min-height: 46px; color: var(--fg-muted); }
+.city-input svg { width: 18px; height: 18px; fill: none; stroke: var(--green-dark); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.city-input .ph { font-family: var(--font-body); font-size: 14px; color: color-mix(in oklab, var(--fg-muted) 80%, transparent); }
+.city-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.city-chip { font-family: var(--font-body); font-size: 12.5px; color: var(--green-dark); background: var(--light); border: 1px solid var(--border); border-radius: 9999px; padding: 7px 13px; min-height: 36px; display: inline-flex; align-items: center; cursor: default; }
+.city-chip:hover { background: color-mix(in oklab, var(--light) 70%, var(--secondary)); }
+
+/* banner over map for denied state */
+.deny-banner { position: absolute; top: 70px; inset-inline: 14px; z-index: 18; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-header); padding: 12px 14px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
+.deny-banner .ic { width: 34px; height: 34px; border-radius: 9999px; background: var(--light); display: grid; place-items: center; color: var(--green-dark); }
+.deny-banner .ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.deny-banner .tx { font-family: var(--font-body); font-size: 12px; color: var(--text); line-height: 1.35; }
+.deny-banner .tx b { font-weight: 600; }
+
+/* ─── EMPTY STATE (0 businesses) ─── */
+.empty { display: grid; justify-items: center; text-align: center; gap: 12px; padding: 40px 28px; }
+.empty .mark { width: 64px; height: 64px; color: color-mix(in oklab, var(--green) 60%, var(--border)); }
+.empty .mark svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.empty h4 { font-family: var(--font-display); font-weight: 700; font-size: 21px; color: var(--text); line-height: 1.25; max-width: 22ch; }
+.empty p { font-family: var(--font-body); font-size: 13px; color: var(--fg-muted); line-height: 1.55; max-width: 30ch; }
+.empty .reset { margin-top: 4px; font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); border-radius: 9999px; padding: 10px 20px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; }
+
+/* ─── SKELETON ─── */
+.skl { background: linear-gradient(90deg, color-mix(in oklab, var(--border) 50%, var(--bg-card)) 25%, color-mix(in oklab, var(--border) 78%, var(--bg-card)) 37%, color-mix(in oklab, var(--border) 50%, var(--bg-card)) 63%); background-size: 400% 100%; animation: shimmer 1.4s linear infinite; border-radius: 4px; }
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skl { animation: none; } }
+.skl-card { background: var(--bg-card); border: 1px solid var(--border); display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 10px; }
+.skl-media { width: 88px; height: 88px; }
+.skl-body { display: grid; gap: 9px; align-content: start; padding-top: 4px; }
+.skl-line { height: 11px; }
+.skl-pill { height: 34px; width: 120px; border-radius: 9999px; margin-top: 4px; }
+
+/* ── CTA SPECIMEN STAGE ── */
+.cta-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.cta-cell { background: var(--background); border: 1px solid rgba(42,38,32,0.18); padding: 28px; }
+.cta-cell .tag { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px; }
+.cta-cell .tag .ch { color: var(--gold); }
+.cta-cell .desc { font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--doc-ink-mute); margin-bottom: 20px; line-height: 1.5; }
+.cta-cell .mh { height: auto; }
+.cta-cell .lcard { grid-template-columns: 116px 1fr; }
+.cta-cell .lcard-media { width: 116px; height: 116px; }
+
+/* ── PANELS (decision + lock) ── */
+.panel { background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 32px; margin-bottom: 32px; }
+.panel > h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--doc-ink); margin-bottom: 4px; }
+.panel > h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.panel > .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); margin-bottom: 22px; line-height: 1.5; max-width: 88ch; }
+.lock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.lock-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(42,38,32,0.18); }
+.lock-row { display: grid; grid-template-columns: 20px 1fr; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 13.5px; line-height: 1.5; color: var(--doc-ink); }
+.lock-row:last-child { border-bottom: 0; }
+.lock-row .box { width: 16px; height: 16px; border: 1px solid var(--green); background: var(--green); color: var(--background); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.lock-row code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+.lock-row .he { font-family: var(--font-body); }
+.lock-row em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+
+footer { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+footer .italic { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 14px; color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="docpage">
+
+  <!-- ─── MASTHEAD ─── -->
+  <header class="masthead">
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-now"></span>
+        <span class="ltr"> S5 · MEH-122 · /map · v2</span>
+      </div>
+      <h1>The map — <em>iteration v2.</em></h1>
+      <div class="sub">Nine fixes against the locked system: canonical wordmark מהמקור, FloatingNavbar v5 exactly (search filled · הוסיפו עסק outlined · כניסה לחשבון text), business photos back on cards and markers, heart removed, neutral hours line, ק״מ units, single filled-pill selected state, and the sheet locked to 45vh with two snap points. Plus three state frames and the two contact-CTA variants.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> S5 signed off<br>
+      Surface <strong>/map</strong> · v2<br>
+      <span class="numeric">2026-06-05</span><br>
+      <strong>S5 · FINAL</strong>
+    </div>
+  </header>
+
+  <!-- ════════════════ A · DESKTOP 1280 ════════════════ -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Desktop — <em>1280, fixed.</em></h2>
+      <p class="pitch">Split 60/40, list on the reading-start. Navbar v5 embedded exactly: filled-primary חיפוש, outlined הוסיפו עסק, text כניסה לחשבון. Markers are circular business photos; one cluster bubble stands in for a dense group. Cards carry square photos, a neutral hours line, ק״מ distance, and one contact CTA + לדף המלא.</p>
+    </div>
+    <div class="meta">≥ 1024 px<br><strong>split view</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">01</span><span class="label">Desktop · /map</span><span class="rule"></span><span class="dims numeric">1280 × 820</span></div>
+
+  <div class="vp desktop" dir="rtl" data-screen-label="/map · Desktop 1280">
+    <div class="mh">
+      <div class="map-page">
+
+        <div class="topbar">
+          <div class="nav-shell">
+            <nav class="nav is-default" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <div class="nav-links">
+                <a class="nav-link" href="#">גלו</a>
+                <a class="nav-link is-current" href="#">מפה</a>
+                <a class="nav-link" href="#">אודות</a>
+              </div>
+              <div class="nav-end">
+                <button class="btn-text" type="button">כניסה לחשבון</button>
+                <button class="btn-outline" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+                <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+              </div>
+            </nav>
+          </div>
+        </div>
+
+        <div class="filterbar">
+          <div class="filterbar-inner">
+            <div class="filters">
+              <button class="near-me" type="button">__ICO_CROSS__ קרוב אלי</button>
+              <span class="filter-sep"></span>
+              <div class="pill-row">
+                <span class="pill is-selected"><span class="glyph">__G_DAIRY__</span>חלב וגבינות</span>
+                <span class="pill"><span class="glyph">__G_BREAD__</span>לחמים ואפייה</span>
+                <span class="pill"><span class="glyph">__G_PRODUCE__</span>ירקות ופירות</span>
+                <span class="pill"><span class="glyph">__G_PANTRY__</span>שמנים ודבש</span>
+                <span class="pill"><span class="glyph">__G_MEAT__</span>בשר, עוף ודגים</span>
+                <span class="pill"><span class="glyph">__G_BODYCARE__</span>טיפוח וסבונים</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="split">
+          <!-- LIST -->
+          <aside class="list-panel">
+            <div class="list-head">
+              <span class="list-eyebrow"><span class="rule"></span>קרוב אלייך · עמק חפר והשרון</span>
+              <span class="list-count"><span class="n numeric">12</span> בתי עסק מאומתים באזור</span>
+            </div>
+            <div class="list-scroll fade-bottom">
+
+              <article class="lcard is-selected" data-screen-label="list card · selected · WhatsApp primary">
+                <div class="lcard-media"><div class="photo dairy"></div></div>
+                <div class="lcard-body">
+                  <p class="lcard-eyebrow">חלב וגבינות</p>
+                  <div class="lcard-nrow"><h3 class="lcard-name">מחלבת בן ארי</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                  <p class="lcard-meta">כפר ויתקין · <span class="numeric">3.2</span> ק״מ</p>
+                  <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">08:00–18:00</span></span></p>
+                  <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+                </div>
+              </article>
+
+              <article class="lcard" data-screen-label="list card · phone primary">
+                <div class="lcard-media"><div class="photo bread"></div></div>
+                <div class="lcard-body">
+                  <p class="lcard-eyebrow">לחמים ואפייה</p>
+                  <div class="lcard-nrow"><h3 class="lcard-name">מאפיית תמר</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                  <p class="lcard-meta">נתניה · <span class="numeric">5.1</span> ק״מ</p>
+                  <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">07:00–14:00</span></span></p>
+                  <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_PHONE__ התקשרי</button><a class="btn-full" href="#">לדף המלא</a></div>
+                </div>
+              </article>
+
+              <article class="lcard">
+                <div class="lcard-media"><div class="photo produce"></div></div>
+                <div class="lcard-body">
+                  <p class="lcard-eyebrow">ירקות ופירות</p>
+                  <div class="lcard-nrow"><h3 class="lcard-name">החווה של דנה</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                  <p class="lcard-meta">עמק חפר · <span class="numeric">6.8</span> ק״מ</p>
+                  <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">09:00–17:00</span></span></p>
+                  <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+                </div>
+              </article>
+
+              <article class="lcard is-closed">
+                <div class="lcard-media"><div class="photo honey"></div></div>
+                <div class="lcard-body">
+                  <p class="lcard-eyebrow">שמנים ודבש</p>
+                  <div class="lcard-nrow"><h3 class="lcard-name">הכוורת של יואב</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                  <p class="lcard-meta">אבן יהודה · <span class="numeric">8.0</span> ק״מ</p>
+                  <p class="lcard-hours">__ICO_CLOCK__ <span>סגור כעת · נפתח ראשון <span class="numeric">08:00</span></span></p>
+                  <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+                </div>
+              </article>
+
+              <article class="lcard">
+                <div class="lcard-media"><div class="photo soap"></div></div>
+                <div class="lcard-body">
+                  <p class="lcard-eyebrow">טיפוח וסבונים</p>
+                  <div class="lcard-nrow"><h3 class="lcard-name">סבוני הגליל</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                  <p class="lcard-meta">תל מונד · <span class="numeric">11.2</span> ק״מ</p>
+                  <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">10:00–19:00</span></span></p>
+                  <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_PHONE__ התקשרי</button><a class="btn-full" href="#">לדף המלא</a></div>
+                </div>
+              </article>
+
+            </div>
+          </aside>
+
+          <!-- MAP -->
+          <div class="map paper">
+            <div class="map-land"></div>
+            <div class="river" style="top: 20%; inset-inline-start: -6%; width: 60%; transform: rotate(-14deg);"></div>
+            <div class="road h" style="top: 38%; inset-inline-start: 4%; width: 78%;"></div>
+            <div class="road h thin" style="top: 64%; inset-inline-start: 0; width: 92%;"></div>
+            <div class="road v" style="top: 8%; inset-inline-start: 30%; height: 80%;"></div>
+            <div class="road v thin" style="top: 14%; inset-inline-start: 62%; height: 70%;"></div>
+            <div class="map-place" style="top: 30%; inset-inline-start: 12%;">כפר ויתקין</div>
+            <div class="map-place" style="top: 70%; inset-inline-start: 54%;">עמק חפר</div>
+            <div class="map-place" style="top: 12%; inset-inline-start: 66%;">נתניה</div>
+
+            <div class="loc" style="top: 52%; inset-inline-start: 44%;"><span class="ring"></span><span class="dot"></span></div>
+
+            <div class="mk is-selected" style="top: 40%; inset-inline-start: 30%;">
+              <div class="mk-name">מחלבת בן ארי<span class="d numeric">3.2 ק״מ</span></div>
+              <div class="mk-dot photo dairy"></div>
+            </div>
+            <div class="mk" style="top: 22%; inset-inline-start: 58%;"><div class="mk-dot photo bread"></div></div>
+            <div class="mk" style="top: 62%; inset-inline-start: 52%;"><div class="mk-dot photo produce"></div></div>
+            <div class="mk" style="top: 30%; inset-inline-start: 78%;"><div class="mk-dot photo honey"></div></div>
+            <div class="mk" style="top: 74%; inset-inline-start: 24%;"><div class="mk-dot photo soap"></div></div>
+            <!-- cluster bubble (dense group) -->
+            <div class="mk" style="top: 56%; inset-inline-start: 72%;"><div class="mk-dot cluster">+<span class="numeric">5</span></div></div>
+            <!-- photo-less fallback -->
+            <div class="mk" style="top: 48%; inset-inline-start: 14%;"><div class="mk-dot fallback">__G_MEAT__</div></div>
+
+            <button class="map-fab" type="button" style="bottom: 24px; inset-inline-start: 24px;" aria-label="מרכזי את המפה עליי">__ICO_CROSS__</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ B · MOBILE 375 (fixed, 45vh) ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">B</div>
+    <div>
+      <h2>Mobile — <em>375, sheet at 45vh.</em></h2>
+      <p class="pitch">Full map under the wordmark pill and filter rail. Sheet locked to 45vh rest with a visible drag handle. Two snap points only — 45vh ↔ expanded — marked on the rail at right. At rest the map stays interactive; the list scrolls only once expanded.</p>
+    </div>
+    <div class="meta">390 px min<br><strong>2 snaps</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">02</span><span class="label">Mobile · /map · rest</span><span class="rule"></span><span class="dims numeric">375 × 812</span></div>
+
+  <div style="display: flex; gap: 16px; align-items: stretch;">
+    <div class="vp mobile" dir="rtl" data-screen-label="/map · Mobile · sheet 45vh">
+      <div class="mh">
+        <div class="sheet-map map paper">
+          <div class="map-land"></div>
+          <div class="river" style="top: 16%; inset-inline-start: -10%; width: 80%; transform: rotate(-12deg);"></div>
+          <div class="road h" style="top: 30%; inset-inline-start: 0; width: 96%;"></div>
+          <div class="road h thin" style="top: 46%; inset-inline-start: 4%; width: 92%;"></div>
+          <div class="road v" style="top: 4%; inset-inline-start: 40%; height: 52%;"></div>
+          <div class="loc" style="top: 34%; inset-inline-start: 48%;"><span class="ring"></span><span class="dot"></span></div>
+          <div class="mk is-selected" style="top: 26%; inset-inline-start: 36%;"><div class="mk-name">מחלבת בן ארי<span class="d numeric">3.2 ק״מ</span></div><div class="mk-dot photo dairy"></div></div>
+          <div class="mk" style="top: 14%; inset-inline-start: 70%;"><div class="mk-dot photo bread"></div></div>
+          <div class="mk" style="top: 42%; inset-inline-start: 22%;"><div class="mk-dot photo produce"></div></div>
+          <div class="mk" style="top: 20%; inset-inline-start: 16%;"><div class="mk-dot cluster">+<span class="numeric">4</span></div></div>
+          <button class="map-fab" type="button" style="bottom: calc(45% + 16px); inset-inline-start: 14px;" aria-label="מרכזי את המפה עליי">__ICO_CROSS__</button>
+        </div>
+
+        <div class="nav-shell">
+          <nav class="nav is-scrolled" aria-label="primary">
+            <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+            <span></span>
+            <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+            <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+          </nav>
+        </div>
+
+        <div class="m-filterbar">
+          <div class="m-pill-row">
+            <span class="pill is-selected"><span class="glyph">__G_DAIRY__</span>חלב וגבינות</span>
+            <span class="pill"><span class="glyph">__G_BREAD__</span>לחמים ואפייה</span>
+            <span class="pill"><span class="glyph">__G_PRODUCE__</span>ירקות ופירות</span>
+            <span class="pill"><span class="glyph">__G_PANTRY__</span>שמנים ודבש</span>
+          </div>
+        </div>
+
+        <div class="sheet fade-bottom" style="height: 45%;">
+          <div class="sheet-grab"><span class="bar"></span></div>
+          <div class="sheet-head">
+            <div class="row">
+              <span class="sheet-eyebrow"><span class="rule"></span>קרוב אלייך</span>
+              <span class="sheet-sort">__ICO_SORT__ לפי מרחק</span>
+            </div>
+            <span class="sheet-count"><span class="n numeric">12</span> בתי עסק מאומתים</span>
+          </div>
+          <div class="sheet-scroll">
+            <article class="lcard is-selected">
+              <div class="lcard-media"><div class="photo dairy"></div></div>
+              <div class="lcard-body">
+                <p class="lcard-eyebrow">חלב וגבינות</p>
+                <div class="lcard-nrow"><h3 class="lcard-name">מחלבת בן ארי</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                <p class="lcard-meta">כפר ויתקין · <span class="numeric">3.2</span> ק״מ</p>
+                <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">08:00–18:00</span></span></p>
+                <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+              </div>
+            </article>
+            <article class="lcard">
+              <div class="lcard-media"><div class="photo bread"></div></div>
+              <div class="lcard-body">
+                <p class="lcard-eyebrow">לחמים ואפייה</p>
+                <div class="lcard-nrow"><h3 class="lcard-name">מאפיית תמר</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                <p class="lcard-meta">נתניה · <span class="numeric">5.1</span> ק״מ</p>
+                <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">07:00–14:00</span></span></p>
+                <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_PHONE__ התקשרי</button><a class="btn-full" href="#">לדף המלא</a></div>
+              </div>
+            </article>
+            <article class="lcard">
+              <div class="lcard-media"><div class="photo produce"></div></div>
+              <div class="lcard-body">
+                <p class="lcard-eyebrow">ירקות ופירות</p>
+                <div class="lcard-nrow"><h3 class="lcard-name">החווה של דנה</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                <p class="lcard-meta">עמק חפר · <span class="numeric">6.8</span> ק״מ</p>
+                <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">09:00–17:00</span></span></p>
+                <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- snap rail -->
+    <div class="snap-rail">
+      <div class="tick on" style="top: 55%;"><span class="d"></span><span class="lab"><b>45vh</b>rest</span></div>
+      <div class="tick" style="top: 8%;"><span class="d"></span><span class="lab"><b>full</b>expanded</span></div>
+    </div>
+  </div>
+  <p class="cap-note"><b>Sheet behaviour.</b> Drag handle always visible. Snap A = 45vh (count + two full cards + a peek); drag up to Snap B = expanded list. No intermediate stops. Map gestures (pan / zoom / marker tap) stay live at rest; the list captures scroll only when expanded.</p>
+
+  <!-- ════════════════ C · CONTACT CTA VARIANTS ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">C</div>
+    <div>
+      <h2>Contact CTA — <em>two variants.</em></h2>
+      <p class="pitch">The card's primary channel follows the business's own preference. Exactly one primary CTA plus the לדף המלא secondary link — never three buttons. Both render in the same green per the locked editorial palette, not WhatsApp brand green.</p>
+    </div>
+    <div class="meta">ProducerCard v4<br><strong>1 primary + link</strong></div>
+  </section>
+
+  <div class="cta-stage">
+    <div class="cta-cell">
+      <div class="tag">Variant <span class="ch">A</span> · primary channel — WhatsApp</div>
+      <div class="desc">For WhatsApp-first businesses (the default). Tapping opens the chat pre-filled with the brand message.</div>
+      <div class="mh" dir="rtl">
+        <article class="lcard" data-screen-label="CTA variant A · WhatsApp">
+          <div class="lcard-media"><div class="photo dairy"></div></div>
+          <div class="lcard-body">
+            <p class="lcard-eyebrow">חלב וגבינות</p>
+            <div class="lcard-nrow"><h3 class="lcard-name">מחלבת בן ארי</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+            <p class="lcard-meta">כפר ויתקין · <span class="numeric">3.2</span> ק״מ</p>
+            <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">08:00–18:00</span></span></p>
+            <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <div class="cta-cell">
+      <div class="tag">Variant <span class="ch">B</span> · primary channel — phone</div>
+      <div class="desc">For businesses that take orders by call. Same hierarchy: one primary, one secondary link — only the channel changes.</div>
+      <div class="mh" dir="rtl">
+        <article class="lcard" data-screen-label="CTA variant B · phone">
+          <div class="lcard-media"><div class="photo bread"></div></div>
+          <div class="lcard-body">
+            <p class="lcard-eyebrow">לחמים ואפייה</p>
+            <div class="lcard-nrow"><h3 class="lcard-name">מאפיית תמר</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+            <p class="lcard-meta">נתניה · <span class="numeric">5.1</span> ק״מ</p>
+            <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">07:00–14:00</span></span></p>
+            <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_PHONE__ התקשרי</button><a class="btn-full" href="#">לדף המלא</a></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ D · STATES ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">D</div>
+    <div>
+      <h2>States — <em>denied · empty · loading.</em></h2>
+      <p class="pitch">Three mobile frames. Location-denied swaps the sheet header for בחרי עיר with a city search and drops distances. A disabled filter (0 businesses) routes to an empty state. The loading skeleton mirrors the card rhythm while results resolve.</p>
+    </div>
+    <div class="meta">375 px<br><strong>3 frames</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">03</span><span class="label">Mobile state frames</span><span class="rule"></span><span class="dims numeric">375 × 812 each</span></div>
+
+  <div style="display: flex; gap: 40px; align-items: flex-start;">
+
+    <!-- (a) location-denied -->
+    <div>
+      <div style="font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 14px; margin-bottom: 12px;">(a) location denied — <span style="color: var(--gold);">בחרי עיר</span></div>
+      <div class="vp mobile" dir="rtl" data-screen-label="/map · Mobile · location denied">
+        <div class="mh">
+          <div class="sheet-map map paper">
+            <div class="map-land" style="filter: saturate(0.6);"></div>
+            <div class="river" style="top: 16%; inset-inline-start: -10%; width: 80%; transform: rotate(-12deg);"></div>
+            <div class="road h" style="top: 30%; inset-inline-start: 0; width: 96%;"></div>
+            <div class="road v" style="top: 4%; inset-inline-start: 40%; height: 52%;"></div>
+          </div>
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="deny-banner">
+            <div class="ic">__ICO_CROSS__</div>
+            <div class="tx"><b>לא איתרנו את המיקום שלך.</b> בחרי עיר כדי לראות בתי עסק קרובים.</div>
+          </div>
+
+          <div class="sheet" style="height: 52%;">
+            <div class="sheet-grab"><span class="bar"></span></div>
+            <div class="city-head">
+              <div class="city-title">בחרי עיר</div>
+              <div class="city-sub">נציג בתי עסק מאומתים בעיר שתבחרי. מרחקים יופיעו כשהמיקום יהיה זמין.</div>
+              <div class="city-input">__ICO_SEARCH__ <span class="ph">חיפוש עיר או יישוב</span></div>
+              <div class="city-chips">
+                <span class="city-chip">תל אביב-יפו</span>
+                <span class="city-chip">חיפה</span>
+                <span class="city-chip">נתניה</span>
+                <span class="city-chip">כפר סבא</span>
+                <span class="city-chip">רעננה</span>
+                <span class="city-chip">הרצליה</span>
+              </div>
+            </div>
+            <div class="sheet-scroll">
+              <article class="lcard">
+                <div class="lcard-media"><div class="photo produce"></div></div>
+                <div class="lcard-body">
+                  <p class="lcard-eyebrow">ירקות ופירות</p>
+                  <div class="lcard-nrow"><h3 class="lcard-name">החווה של דנה</h3><span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span></div>
+                  <p class="lcard-meta">נתניה</p>
+                  <p class="lcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">09:00–17:00</span></span></p>
+                  <div class="lcard-cta"><button class="btn-contact" type="button">__ICO_WA__ וואטסאפ</button><a class="btn-full" href="#">לדף המלא</a></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note" style="max-width: 34ch;">No <code style="font-family: ui-monospace, monospace; font-size: 11px;">ק״מ</code> until permission is granted — city only.</p>
+    </div>
+
+    <!-- (b) 0 businesses / filter disabled -->
+    <div>
+      <div style="font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 14px; margin-bottom: 12px;">(b) filter disabled — <span style="color: var(--gold);">0 בתי עסק</span></div>
+      <div class="vp mobile" dir="rtl" data-screen-label="/map · Mobile · empty / filter disabled">
+        <div class="mh">
+          <div class="sheet-map map paper">
+            <div class="map-land"></div>
+            <div class="river" style="top: 16%; inset-inline-start: -10%; width: 80%; transform: rotate(-12deg);"></div>
+            <div class="road h" style="top: 30%; inset-inline-start: 0; width: 96%;"></div>
+            <div class="road v" style="top: 4%; inset-inline-start: 40%; height: 52%;"></div>
+            <div class="loc" style="top: 36%; inset-inline-start: 48%;"><span class="ring"></span><span class="dot"></span></div>
+          </div>
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-filterbar">
+            <div class="m-pill-row">
+              <span class="pill is-disabled"><span class="glyph">__G_MEAT__</span>בשר, עוף ודגים <span class="zero numeric">0</span></span>
+              <span class="pill"><span class="glyph">__G_DAIRY__</span>חלב וגבינות</span>
+              <span class="pill"><span class="glyph">__G_BREAD__</span>לחמים ואפייה</span>
+            </div>
+          </div>
+
+          <div class="sheet" style="height: 45%;">
+            <div class="sheet-grab"><span class="bar"></span></div>
+            <div class="sheet-head">
+              <div class="row">
+                <span class="sheet-eyebrow"><span class="rule"></span>קרוב אלייך</span>
+              </div>
+              <span class="sheet-count"><span class="n numeric">0</span> בתי עסק בקטגוריה הזו</span>
+            </div>
+            <div class="empty">
+              <div class="mark">__ICO_BASKET__</div>
+              <h4>אין עדיין בתי עסק לבשר, עוף ודגים באזור שלך</h4>
+              <p>הקטגוריה כבויה כי לא נמצאו בתי עסק מאומתים ברדיוס הזה. נסי קטגוריה אחרת או הרחיבי את האזור.</p>
+              <span class="reset">__ICO_CROSS__ הרחיבי את האזור</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note" style="max-width: 34ch;">Disabled pill: dashed border, dimmed glyph, <code style="font-family: ui-monospace, monospace; font-size: 11px;">0</code> count — not tappable.</p>
+    </div>
+
+    <!-- (c) loading skeleton -->
+    <div>
+      <div style="font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 14px; margin-bottom: 12px;">(c) loading — <span style="color: var(--gold);">skeleton</span></div>
+      <div class="vp mobile" dir="rtl" data-screen-label="/map · Mobile · loading skeleton">
+        <div class="mh">
+          <div class="sheet-map map paper">
+            <div class="map-land" style="opacity: 0.8;"></div>
+            <div class="road h" style="top: 30%; inset-inline-start: 0; width: 96%;"></div>
+            <div class="road v" style="top: 4%; inset-inline-start: 40%; height: 52%;"></div>
+            <div class="loc" style="top: 36%; inset-inline-start: 48%;"><span class="ring"></span><span class="dot"></span></div>
+          </div>
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-filterbar">
+            <div class="m-pill-row">
+              <span class="pill is-selected"><span class="glyph">__G_DAIRY__</span>חלב וגבינות</span>
+              <span class="pill"><span class="glyph">__G_BREAD__</span>לחמים ואפייה</span>
+              <span class="pill"><span class="glyph">__G_PRODUCE__</span>ירקות ופירות</span>
+            </div>
+          </div>
+
+          <div class="sheet" style="height: 45%;">
+            <div class="sheet-grab"><span class="bar"></span></div>
+            <div class="sheet-head">
+              <div class="row">
+                <span class="sheet-eyebrow"><span class="rule"></span>קרוב אלייך</span>
+                <span class="skl" style="width: 64px; height: 12px;"></span>
+              </div>
+              <span class="skl" style="width: 190px; height: 18px; margin-top: 4px;"></span>
+            </div>
+            <div class="sheet-scroll">
+              <div class="skl-card"><div class="skl skl-media"></div><div class="skl-body"><div class="skl skl-line" style="width: 40%;"></div><div class="skl skl-line" style="width: 72%; height: 15px;"></div><div class="skl skl-line" style="width: 54%;"></div><div class="skl skl-pill"></div></div></div>
+              <div class="skl-card"><div class="skl skl-media"></div><div class="skl-body"><div class="skl skl-line" style="width: 36%;"></div><div class="skl skl-line" style="width: 66%; height: 15px;"></div><div class="skl skl-line" style="width: 48%;"></div><div class="skl skl-pill"></div></div></div>
+              <div class="skl-card"><div class="skl skl-media"></div><div class="skl-body"><div class="skl skl-line" style="width: 42%;"></div><div class="skl skl-line" style="width: 70%; height: 15px;"></div><div class="skl skl-line" style="width: 50%;"></div><div class="skl skl-pill"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note" style="max-width: 34ch;">Skeleton mirrors the card grid — 88px media + three lines + CTA pill.</p>
+    </div>
+
+  </div>
+
+  <!-- ─── BRAND-LOCK SELF-CHECK ─── -->
+  <section class="panel" style="margin-top: 56px;" aria-label="Brand-LOCK self-check">
+    <h2>Brand-LOCK self-check — <em>v2, against the locked system.</em></h2>
+    <p class="lede">Explicit pass list. Each row maps a fix in this brief to its resolution and the source it answers to — homepage tokens, FloatingNavbar v5, ProducerCard v4, or the MEH-122 carried decisions.</p>
+    <div class="lock-grid">
+      <div class="lock-col">
+        <h3>This iteration's fixes</h3>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Logo</strong> — canonical wordmark <span class="he">מהמקור</span>, 6 letters in Frank Ruhl Libre. No niqud, no Latin tagline, no flower glyph. Desktop + mobile pill identical.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Navbar v5</strong> embedded as-is: <span class="he">חיפוש</span> filled primary · <span class="he">הוסיפו עסק</span> outlined · <span class="he">כניסה לחשבון</span> text. One composition, no per-page variants. Links <span class="he">גלו · מפה · אודות</span>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Photos back</strong> — list cards carry a square business photo; map markers are circular photos. Category-colour circle used <em>only</em> for the cluster bubble and the photo-less fallback.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Glyph tier quarantined</strong> — hand-drawn category glyphs appear only inside filter pills (and the one fallback marker). Never on cards, never mixed with Phosphor on the same surface.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>CTA</strong> — two variants: WhatsApp primary and phone (<span class="he">התקשרי</span>) primary. Exactly one primary + <span class="he">לדף המלא</span> link. Never three buttons.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Heart removed</strong> entirely (feature doesn't exist). <span class="he">פעיל היום</span> replaced by a neutral hours line in <code>--fg-muted</code>, no status colour.</span></div>
+      </div>
+      <div class="lock-col">
+        <h3>System &amp; states</h3>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Units &amp; ranges</strong> — distances read <span class="he">ק״מ</span> with the gershayim; hours render as a single LTR-isolated range (<span class="numeric">08:00–18:00</span>, never reordered). No Latin "km".</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Handoff dir note</strong> — every numeral, time, time-range and distance is wrapped in <code>.numeric</code> (<code>direction: ltr; unicode-bidi: isolate</code>). Devs must keep that wrapper on bidi-sensitive runs so the en-dash and colons don't flip inside RTL.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Pills</strong> — one selected affordance only: filled primary. No ✕ pattern. Disabled pill = dashed + dimmed + <code>0</code> count, not tappable.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Sheet</strong> — locked at 45vh rest, visible drag handle, two snap points (45vh ↔ expanded). Map interactive at rest; list scrolls only when expanded.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>States</strong> — (a) location-denied → <span class="he">בחרי עיר</span> + city search, distances dropped; (b) disabled filter → 0-business empty state; (c) loading skeleton mirroring card rhythm.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Tokens</strong> — colours resolve to v1.0 primitives or <code>color-mix()</code> of them; photo placeholders are token-derived gradients. Borders 1px <code>--border</code>; pills/CTAs <code>9999px</code>; single shadow token.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Copy</strong> — feminine voice, <span class="he">בית עסק</span> never <span class="he">יצרן</span>, zero Unicode emoji, no <span class="he">דירקטורי</span> / "marketplace" / <span class="he">אוכל ביתי</span>. RTL logical properties throughout; touch targets ≥ <span class="numeric">44</span>px.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Mehamakor · S5 · MEH-122 · /map · v2 · 2026-06-05</span>
+    <span class="italic">S5 — final. Design only.</span>
+  </footer>
+
+</div>
+
+<!-- Shared SVG injection — logo is text, so only icons + glyphs here. No app logic. -->
+<script>
+(function(){
+  var ICO_SEARCH = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+  var ICO_BURGER = '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  var ICO_CROSS  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.2v3.4M12 18.4v3.4M2.2 12h3.4M18.4 12h3.4"/></svg>';
+  var ICO_SEAL   = '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.2 1.7 2.7-.2 1 2.5 2.5 1-.2 2.7 1.7 2.2-1.7 2.2.2 2.7-2.5 1-1 2.5-2.7-.2L12 21.4l-2.2-1.7-2.7.2-1-2.5-2.5-1 .2-2.7L2.1 11.5l1.7-2.2-.2-2.7 2.5-1 1-2.5 2.7.2z"/><path d="M9 12l2.1 2.1L15.2 10"/></svg>';
+  var ICO_WA     = '<svg viewBox="0 0 24 24"><path d="M3.6 20.4l1.3-4.1A8 8 0 1 1 8 19.1l-4.4 1.3z"/><path d="M9 8.6c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.6 4.1 3.6 2 .8 2.4.7 2.9.6.5-.1 1.3-.5 1.5-1.1.2-.5.2-1 .1-1.1l-.5-.3c-.3-.1-1.3-.6-1.5-.7-.2-.1-.4-.1-.5.1l-.6.8c-.1.1-.3.2-.5.1-.3-.1-1-.4-1.7-1-.6-.6-1.1-1.3-1.2-1.5-.1-.2 0-.4.1-.5l.4-.4c.1-.1.2-.3.2-.4.1-.2 0-.3 0-.4 0-.1-.5-1.3-.7-1.7-.2-.4-.4-.4-.5-.4z"/></svg>';
+  var ICO_PHONE  = '<svg viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4-2 1.3a12 12 0 0 0 5.2 5.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg>';
+  var ICO_SORT   = '<svg viewBox="0 0 24 24"><path d="M7 5v14M7 19l-3-3M7 5l3 3M17 19V5M17 5l3 3M17 19l-3-3"/></svg>';
+  var ICO_CLOCK  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  var ICO_BASKET = '<svg viewBox="0 0 24 24"><path d="M5 9h14l-1.2 9.5a2 2 0 0 1-2 1.5H8.2a2 2 0 0 1-2-1.5z"/><path d="M9 9 12 3l3 6"/><path d="M9.5 13v3M14.5 13v3"/></svg>';
+
+  var G = {
+    dairy:    '<svg viewBox="0 0 120 120"><path d="M48 22 h24 v10 q0 4 -4 6 q-8 4 -8 14 v40 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 v-40 q0 -10 -8 -14 q-4 -2 -4 -6 v-10 z"/><path d="M48 28 h24"/><path d="M50 70 h20"/></svg>',
+    bread:    '<svg viewBox="0 0 120 120"><path d="M60 18 v90"/><path d="M60 30 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 30 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/><path d="M60 50 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 50 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/><path d="M60 70 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 70 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/></svg>',
+    produce:  '<svg viewBox="0 0 120 120"><path d="M30 100 q4 -34 30 -50 q26 -16 60 -14"/><path d="M52 64 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M76 50 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M100 38 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M60 80 q-12 -2 -16 -12"/></svg>',
+    pantry:   '<svg viewBox="0 0 120 120"><path d="M46 36 h28 v6 h-28 z"/><path d="M42 42 h36 v52 a8 8 0 0 1 -8 8 h-20 a8 8 0 0 1 -8 -8 z"/><path d="M60 14 v22"/><path d="M56 14 q4 -6 8 0"/><path d="M52 62 q4 4 8 0 q4 -4 8 0"/><path d="M52 76 q4 4 8 0 q4 -4 8 0"/></svg>',
+    meat:     '<svg viewBox="0 0 120 120"><path d="M42 38 q22 -16 46 -4 q16 9 13 30 q-3 23 -28 27 q-27 4 -36 -17 q-7 -19 5 -36 z"/><path d="M64 50 v30"/><path d="M64 60 q-7 -3 -12 2"/><path d="M64 60 q7 -3 12 2"/></svg>',
+    bodycare: '<svg viewBox="0 0 120 120"><path d="M60 22 v68"/><path d="M40 50 q10 -16 20 -16 q10 0 20 16"/><path d="M44 66 q8 -10 16 -10 q8 0 16 10"/><path d="M48 80 q6 -8 12 -8 q6 0 12 8"/><path d="M50 90 h20"/><path d="M52 90 v10 h16 v-10"/><path d="M52 96 h16"/></svg>'
+  };
+
+  var map = {
+    '__ICO_SEARCH__': ICO_SEARCH, '__ICO_BURGER__': ICO_BURGER, '__ICO_CROSS__': ICO_CROSS,
+    '__ICO_SEAL__': ICO_SEAL, '__ICO_WA__': ICO_WA, '__ICO_PHONE__': ICO_PHONE,
+    '__ICO_SORT__': ICO_SORT, '__ICO_CLOCK__': ICO_CLOCK, '__ICO_BASKET__': ICO_BASKET,
+    '__G_DAIRY__': G.dairy, '__G_BREAD__': G.bread, '__G_PRODUCE__': G.produce,
+    '__G_PANTRY__': G.pantry, '__G_MEAT__': G.meat, '__G_BODYCARE__': G.bodycare
+  };
+
+  function walk(node){
+    for (var i = node.childNodes.length - 1; i >= 0; i--) {
+      var c = node.childNodes[i];
+      if (c.nodeType === 3) {
+        var t = c.nodeValue;
+        if (t.indexOf('__') !== -1 && /__[A-Z_]+__/.test(t)) {
+          var html = t.replace(/__[A-Z_]+__/g, function(m){ return map[m] || m; });
+          if (html !== t) {
+            var span = document.createElement('span');
+            span.style.display = 'contents';
+            span.innerHTML = html;
+            c.parentNode.replaceChild(span, c);
+          }
+        }
+      } else if (c.nodeType === 1 && c.tagName !== 'SCRIPT' && c.tagName !== 'STYLE') {
+        walk(c);
+      }
+    }
+  }
+  walk(document.body);
+})();
+</script>
+</body>
+</html>

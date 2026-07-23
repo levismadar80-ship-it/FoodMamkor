@@ -12,7 +12,11 @@ let params = {}; // drives useSearchParams().get(key)
 
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  useSearchParams: () => ({
+    get: (k) => (k in params ? params[k] : null),
+    // MEH-1465: categoryFilter inits via getAll (repeated ?category=).
+    getAll: (k) => (k in params ? [params[k]] : []),
+  }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
@@ -23,7 +27,36 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  CaretDown: (p) => <span {...p} />, // MEH-1483: sort-select caret
+  // MEH-1418: chip leading icons (via lib/chip-icons.js).
+  SealCheck: (p) => <span {...p} />,
+  Truck: (p) => <span {...p} />,
+  Certificate: (p) => <span {...p} />,
+  GrainsSlash: (p) => <span {...p} />,
+  Barn: (p) => <span {...p} />,
+  DropSlash: (p) => <span {...p} />,
+  // Category-tint: ProducersClient now imports CATEGORY_STYLES from
+  // lib/map-categories.js, which pulls FlowerTulip from Phosphor.
+  FlowerTulip: (p) => <span {...p} />,
 }));
+
+// MEH-1441: ProducersClient now imports CATEGORY_ICONS for the category-chip
+// glyphs. Stub the icon module so its real Phosphor imports don't need adding
+// to the partial mock above (search wiring here doesn't render category glyphs).
+// Category-tint: lib/map-categories.js (imported by ProducersClient for the tint
+// lookup) pulls these named glyphs too, so the strict mock must export them.
+vi.mock("@/components/CategoryIcons", () => {
+  const Glyph = (p) => <span {...p} />;
+  return {
+    CATEGORY_ICONS: {},
+    Meat: Glyph,
+    FishSimple: Glyph,
+    Cheese: Glyph,
+    Bread: Glyph,
+    OliveOil: Glyph,
+    Hive: Glyph,
+  };
+});
 
 // Child components — render nothing meaningful; we only test the search wiring.
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
@@ -51,7 +84,9 @@ vi.mock("@/lib/api", () => ({
 const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1, perPage: 12 };
 
 beforeEach(() => {
-  router.replace.mockClear();
+  // MEH-1294: syncUrl now writes via window.history.replaceState — reset the
+  // jsdom URL each test so assertions read a clean starting search string.
+  window.history.replaceState(null, "", "/");
   params = {};
 });
 
@@ -61,9 +96,9 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     const box = screen.getByRole("searchbox");
     fireEvent.change(box, { target: { value: "גבינה" } });
     fireEvent.submit(box.closest("form"));
-    expect(router.replace).toHaveBeenCalledTimes(1);
-    const url = router.replace.mock.calls[0][0];
-    expect(url).toContain(`q=${encodeURIComponent("גבינה")}`);
+    // MEH-1294: syncUrl mirrors via window.history.replaceState — assert the
+    // resulting URL directly (transport-agnostic).
+    expect(window.location.search).toContain(`q=${encodeURIComponent("גבינה")}`);
   });
 
   it("trims whitespace and an empty term clears q (URL has no q=)", () => {
@@ -71,8 +106,9 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     const box = screen.getByRole("searchbox");
     fireEvent.change(box, { target: { value: "   " } });
     fireEvent.submit(box.closest("form"));
-    expect(router.replace).toHaveBeenCalledTimes(1);
-    expect(router.replace.mock.calls[0][0]).not.toContain("q=");
+    // MEH-1294: an empty term leaves no q= in the URL (the same-URL guard may
+    // skip the write when the URL is already clean — either way, no q=).
+    expect(window.location.search).not.toContain("q=");
   });
 
   it("?focus=1 focuses the search input on mount", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowCounterClockwise,
@@ -22,6 +22,8 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -114,7 +116,6 @@ export default function EventsPage() {
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
   const search = useSearchParams();
-  const router = useRouter();
   // Tab state lives in the URL so /events?tab=experiences is a real
   // deep-link and survives refresh / share / bookmark.
   const initialTab = search.get("tab") === "experiences" ? "experiences" : "events";
@@ -125,20 +126,47 @@ export default function EventsPage() {
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("");
+  // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
+  // URL on mount like `tab` above. A URL category is accepted only when it
+  // belongs to the initial tab's vocabulary, so a cross-tab share link can't
+  // silently filter to zero rows.
+  const [city, setCity] = useState(() => search.get("city") || "");
+  const [category, setCategory] = useState(() => {
+    const fromUrl = search.get("category") || "";
+    const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
+    return vocab.some((c) => c.key === fromUrl) ? fromUrl : "";
+  });
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
-  // silently filter to zero rows.
+  // silently filter to zero rows. The URL-sync effect below mirrors the
+  // reset into the query string.
   const switchTab = (next) => {
     if (next === tab) return;
     setTab(next);
     setCategory("");
     setCity("");
-    const qs = next === "experiences" ? "?tab=experiences" : "";
-    router.replace(`/events${qs}`, { scroll: false });
   };
+
+  // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
+  // {tab, city, category}, so filters survive refresh/share and the switchTab
+  // reset clears them from the URL too — a cross-tab category is never
+  // resurrected. Shallow history.replaceState, NOT router.replace: a Next
+  // navigation from this mount-time effect re-suspends the useSearchParams
+  // boundary (page.js Suspense) and resets client state — the E2E calendar
+  // toggle caught exactly that. replaceState keeps it a pure URL mirror
+  // (and preserves the locale-prefixed pathname on /en).
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (tab === "experiences") p.set("tab", "experiences");
+    if (city) p.set("city", city);
+    if (category) p.set("category", category);
+    const qs = p.toString();
+    const current = window.location.search.replace(/^\?/, "");
+    if (qs === current) return;
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
+  }, [tab, city, category]);
 
   useEffect(() => {
     load();
@@ -238,10 +266,10 @@ export default function EventsPage() {
         {/* Text — bottom-anchored on the scrim; start-aligned (RTL right). */}
         <div className="absolute inset-x-0 bottom-0 px-4 pb-6 md:px-14 md:pb-10 text-background">
           <div className="max-w-5xl mx-auto">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-100">
+            <p className="text-xs font-semibold text-green-100">
               {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
             </p>
-            <h1 className="font-headline-display font-bold text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
+            <h1 className="font-headline-display font-black text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
               {isExp ? t("h1_experiences") : t("title")}
             </h1>
             <p className="text-base md:text-xl text-background/85 mt-2 leading-snug">
@@ -414,7 +442,7 @@ function EntryRow({ entry, freeLabel }) {
       <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
       {/* date rail */}
       <div className="py-4 md:py-5 grid justify-items-center content-start gap-0.5">
-        <span className="font-headline-display font-bold text-3xl md:text-5xl leading-none text-text numeric">
+        <span className="font-headline-display font-black text-3xl md:text-5xl leading-none text-text numeric">
           {day}
         </span>
         <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
@@ -448,7 +476,7 @@ function EntryRow({ entry, freeLabel }) {
             <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
           ) : (
             <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
-              {`₪${entry.price}`}
+              {formatPrice(entry.price)}
             </span>
           )}
         </div>
@@ -480,7 +508,7 @@ function EmptyState({ tab, t, onReset }) {
         {isExp ? (
           <Link
             href="/experiences/new"
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
@@ -489,7 +517,7 @@ function EmptyState({ tab, t, onReset }) {
           <button
             type="button"
             onClick={onReset}
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <ArrowCounterClockwise size={18} weight="bold" />
             {t("empty_events_cta")}

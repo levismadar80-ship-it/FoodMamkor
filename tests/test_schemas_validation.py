@@ -19,13 +19,16 @@ from app.schemas.schemas import ExperienceCreate, HomeProductCreate, ProducerCre
 
 def test_producer_name_junk_rejected():
     """'???' has 0 letter chars → ValidationError."""
+    # MEH-1153: pass a non-empty category_ids so the raise isolates the NAME
+    # validator (category_ids is now required too).
     with pytest.raises(ValidationError):
-        ProducerCreate(name="???")
+        ProducerCreate(name="???", category_ids=[1])
 
 
 def test_producer_name_valid_accepted():
     """'מאפיית רחל' has many letter chars → valid."""
-    obj = ProducerCreate(name="מאפיית רחל")
+    # MEH-1153: category_ids is now required (≥1) on ProducerCreate.
+    obj = ProducerCreate(name="מאפיית רחל", category_ids=[1])
     assert obj.name == "מאפיית רחל"
 
 

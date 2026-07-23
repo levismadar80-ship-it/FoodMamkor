@@ -32,7 +32,7 @@ function Section({ title, children }) {
 function Swatch({ label, children }) {
   return (
     <div className="flex flex-col items-start gap-2">
-      <span className="text-[11px] uppercase tracking-[0.15em] text-fg-muted">{label}</span>
+      <span className="text-[11px] text-fg-muted">{label}</span>
       {children}
     </div>
   );
@@ -95,6 +95,11 @@ export default function DevComponentsPage() {
           <Input type="search" label="חיפוש" placeholder="מה בא לך לאכול?" />
           <Input type="text" label="שדה שגוי" defaultValue="??" error="יש להזין לפחות 3 אותיות" />
           <Input type="text" label="מושבת" placeholder="לא ניתן לעריכה" disabled />
+          {/* MEH-1128 D1: startAdornment (currency + icon) and success state. */}
+          <Input type="number" dir="ltr" className="text-end" label="מחיר" placeholder="49" startAdornment="₪" />
+          <Input type="search" label="יישוב" placeholder="חפשו עיר…" startAdornment={<MagnifyingGlass size={16} aria-hidden="true" />} />
+          <Input type="text" label="שדה תקין" defaultValue="רות לוי" success successText="נראה מצוין" />
+          <Input type="text" label="תקין בלי הודעה" defaultValue="זכרון יעקב" success helperText="ה-helper נשאר" />
         </div>
       </Section>
 
@@ -148,12 +153,13 @@ export default function DevComponentsPage() {
               }
               footer={
                 <>
-                  <span className="text-sm font-semibold text-accent">₪45</span>
+                  {/* MEH-1140: keeps the gallery honest to the price canon (amount then ₪) */}
+                  <span className="text-sm font-semibold text-accent">45₪</span>
                   <Heart size={18} weight="regular" className="text-primary" aria-hidden="true" />
                 </>
               }
             >
-              <p className="text-[11px] uppercase tracking-[0.15em] text-fg-muted">קטגוריה</p>
+              <p className="text-[11px] text-fg-muted">קטגוריה</p>
               <Heading level={3} variant="editorial" className="text-[20px] hover:text-primary">
                 שם בית העסק
               </Heading>

@@ -1,0 +1,252 @@
+/* =============================================================
+   Mehamakor Design System — canonical tokens.
+   Import this file first in every prototype. Never invent new
+   colors; extend semantically (e.g. --btn-bg: var(--primary)).
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=Heebo:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* ---------- color — primitive ---------- */
+  --primary:        #2e6853;  /* dark forest — CTA, logo, links */
+  --primary-light:  #3a7d64;  /* hover */
+  --primary-dark:   #2E4A2E;  /* overlays, footer */
+  --secondary:      #4cb08b;  /* mid green — highlights */
+  --secondary-light:#6dc4a3;
+  --background:     #F5F0E8;  /* warm cream — never pure white */
+  --site-text:      #1C1A17;  /* warm black — never pure black */
+  --site-muted:     #5c584f;  /* warm gray — body de-emphasis */
+  --accent:         #8B6914;  /* warm gold — prices, small accents */
+  --accent-warm:    #E8823A;  /* warm orange — new / premium ONLY */
+  --accent-warm-light:#f0a060;
+  --light:          #EAF3DE;  /* pale green — badges, card bg */
+  --border:         #e8e0d0;  /* warm border — always 0.5–1px */
+
+  /* ---------- color — semantic ---------- */
+  --fg:              var(--site-text);
+  --fg-muted:        var(--site-muted);
+  --fg-inverse:      var(--background);
+  --bg:              var(--background);
+  --bg-card:         #ffffff;        /* white is allowed on cards, but sparingly */
+  --bg-inverse:      var(--primary-dark);
+  --link:            var(--primary);
+  --link-hover:      var(--primary-light);
+  --success:         var(--secondary);
+  --focus-ring:      color-mix(in oklch, var(--primary) 40%, transparent);
+
+  /* ---------- typography — families ---------- */
+  --font-headline:   'Frank Ruhl Libre', 'Heebo', serif;
+  --font-english:    'Cormorant Garamond', serif;
+  --font-body:       'DM Sans', 'Heebo', system-ui, -apple-system, sans-serif;
+  --font-hebrew-fallback: 'Heebo', system-ui, sans-serif;
+
+  /* ---------- typography — scale ---------- */
+  --fs-hero:         clamp(42px, 6vw, 84px);
+  --fs-h2:           clamp(32px, 4vw, 52px);
+  --fs-h3:           24px;
+  --fs-card-title:   20px;
+  --fs-body:         16px;
+  --fs-small:        13px;
+  --fs-micro:        11px;
+  --fs-price:        15px;
+
+  --lh-hero:         0.95;
+  --lh-tight:        1.1;
+  --lh-snug:         1.25;
+  --lh-body:         1.7;
+  --lh-small:        1.5;
+
+  --tracking-hero:  -0.02em;
+  --tracking-h2:    -0.01em;
+  --tracking-eyebrow: 0.15em;
+
+  /* ---------- spacing (micro scale) ---------- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  --container-max: 1280px;
+
+  /* ---------- radius ---------- */
+  --radius-sm:   8px;   /* inputs, chips */
+  --radius-md:  16px;   /* default card */
+  --radius-lg:  24px;   /* hero + feature */
+  --radius-full: 9999px;
+
+  /* ---------- shadow ---------- */
+  --shadow-card:   0 8px 32px rgba(46,104,83,0.12);
+  --shadow-header: 0 2px 20px rgba(46,104,83,0.06);
+
+  /* ---------- motion ---------- */
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --dur-fast: 180ms;
+  --dur-base: 300ms;
+  --dur-slow: 800ms;
+}
+
+/* =============================================================
+   Base
+   ============================================================= */
+
+html { direction: rtl; }
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  background-color: var(--bg);
+  /* Paper-noise SVG at 3% opacity — organic texture, no HTTP request. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =============================================================
+   Semantic typography — classes and element defaults
+   Use .h-hero / .h-2 / .h-3 / .eyebrow / .price / .lead on
+   arbitrary elements. Element defaults mirror the classes for
+   prototypes that lean on plain <h1><h2>.
+   ============================================================= */
+
+h1, .h-hero {
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-size: var(--fs-hero);
+  line-height: var(--lh-hero);
+  letter-spacing: var(--tracking-hero);
+  color: var(--fg);
+}
+
+h2, .h-2 {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: var(--fs-h2);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-h2);
+  color: var(--fg);
+}
+
+h3, .h-3 {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-snug);
+  color: var(--fg);
+}
+
+.card-title {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: var(--fs-card-title);
+  line-height: var(--lh-snug);
+}
+
+.lead {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.english-italic {
+  font-family: var(--font-english);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.english-numeral {
+  font-family: var(--font-english);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--accent);
+}
+
+.price {
+  font-family: var(--font-english);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--fs-price);
+  color: var(--accent);
+}
+
+.small { font-size: var(--fs-small); line-height: var(--lh-small); font-weight: 500; }
+.muted { color: var(--fg-muted); }
+
+/* =============================================================
+   Utilities shared across prototypes
+   ============================================================= */
+
+.container-max { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--space-4); }
+
+.section-y { padding-top: var(--space-20); padding-bottom: var(--space-20); }
+@media (max-width: 768px) {
+  .section-y { padding-top: var(--space-12); padding-bottom: var(--space-12); }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  min-height: 44px; padding: 10px 20px;
+  font-family: var(--font-body); font-weight: 500; font-size: 15px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  transition: background-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out);
+  cursor: pointer; text-decoration: none;
+}
+.btn-primary   { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-ghost     { background: transparent; color: var(--primary); border-color: var(--primary); }
+.btn-ghost:hover { background: var(--primary); color: #fff; }
+.btn-whatsapp  { background: #25D366; color: #fff; }
+.btn-lg        { min-height: 52px; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: var(--radius-md); }
+.btn-pill      { border-radius: var(--radius-full); }
+
+/* Chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--radius-full);
+  font-size: var(--fs-small); font-weight: 500;
+  background: var(--light); color: var(--primary);
+  border: 1px solid transparent;
+}
+.chip-active { background: var(--primary); color: #fff; }
+.chip-outline { background: transparent; border-color: var(--border); color: var(--fg); }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+
+/* Focus — visible and warm */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

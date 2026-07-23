@@ -11,6 +11,7 @@
         "muted": "#6b6860",
         "fg-muted": "#5c584f",
         "accent": "#896714",
+        "gold-deep": "#7a5a10",
         "honey": "#c8821e",
         "gold-on-dark": "#e7c88a",
         "border": "#e5dfd3",
@@ -24,7 +25,9 @@
         "surface-floating": "#fffefb",
         "action-primary": "#2e6853",
         "action-primary-hover": "#2e4a2e",
-        "state-selected": "#2e4a2e"
+        "state-selected": "#2e4a2e",
+        "error": "#b3261e",
+        "error-on-dark": "#fca5a5"
       },
       "fontFamily": {
         "headline-display": [

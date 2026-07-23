@@ -17,16 +17,21 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from tests.conftest import auth_header, make_producer, make_user
+from tests.conftest import (
+    auth_header,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 
 
-VALID_PRODUCER_UPGRADE_REG = {
-    "producer_name": "חוות MEH-509",
-    "phone": "0501234567",
-    "category_ids": [],
-    "primary_contact_method": "whatsapp",
-    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-}
+def _upgrade_payload(**overrides):
+    # MEH-1153: derive from the shared registration helper (seeds a real
+    # category, now required) and drop the fields the upgrade path ignores.
+    base = valid_producer_register_payload()
+    for field in ("email", "name", "password"):
+        base.pop(field, None)
+    return {**base, "producer_name": "חוות MEH-509", "phone": "0501234567", **overrides}
 
 
 def _install_whatsapp_capture(monkeypatch, *, should_raise: bool = False):
@@ -61,7 +66,7 @@ def test_signup_with_phone_fires_welcome_template(client, db, monkeypatch):
 
     resp = client.post(
         "/auth/register/producer",
-        json=VALID_PRODUCER_UPGRADE_REG,
+        json=_upgrade_payload(),
         headers=auth_header(user),
     )
 
@@ -83,11 +88,10 @@ def test_signup_without_phone_skips_welcome(client, db, monkeypatch):
     captured = _install_whatsapp_capture(monkeypatch)
     user = make_user(db, email="meh509-signup-b@example.com")
 
-    payload = {
-        **VALID_PRODUCER_UPGRADE_REG,
-        "primary_contact_method": "email",
-        "contact_email": "nophone@example.com",
-    }
+    payload = _upgrade_payload(
+        primary_contact_method="email",
+        contact_email="nophone@example.com",
+    )
     payload.pop("phone", None)
 
     resp = client.post(
@@ -108,7 +112,7 @@ def test_signup_whatsapp_failure_does_not_break_signup(client, db, monkeypatch):
 
     resp = client.post(
         "/auth/register/producer",
-        json=VALID_PRODUCER_UPGRADE_REG,
+        json=_upgrade_payload(),
         headers=auth_header(user),
     )
 
@@ -126,7 +130,7 @@ def test_signup_does_not_send_both_text_and_template(client, db, monkeypatch):
 
     resp = client.post(
         "/auth/register/producer",
-        json=VALID_PRODUCER_UPGRADE_REG,
+        json=_upgrade_payload(),
         headers=auth_header(user),
     )
 
@@ -217,7 +221,7 @@ def test_welcome_sends_exactly_one_body_param(client, db, monkeypatch):
 
     resp = client.post(
         "/auth/register/producer",
-        json=VALID_PRODUCER_UPGRADE_REG,
+        json=_upgrade_payload(),
         headers=auth_header(user),
     )
 

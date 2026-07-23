@@ -1,7 +1,82 @@
 import createMiddleware from "next-intl/middleware";
+import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
+import { isSlugShaped } from "./lib/slug";
+import staticRoutes from "./lib/static-routes.json";
 
-export default createMiddleware(routing);
+/**
+ * Module:   middleware
+ * Purpose:  next-intl locale routing + MEH-1398 real-HTTP-404 for matched-route
+ *           producer misses. A miss on /[locale]/<slug> or /[locale]/producer/
+ *           <id> is detected here (edge, ABOVE the [locale]/loading.js streaming
+ *           boundary that pins page-level notFound() at 200 — measured MEH-918/
+ *           1398) and rewritten to an unmatched path so experimental.
+ *           globalNotFound (PR #1995) renders a real 404.
+ * Does NOT: own the 404 status for VALID pages (those pass straight through).
+ *           Producer data-loading + not-found UI still live in [slug]/page.js +
+ *           producer/[id]/page.js.
+ * Related:  lib/static-routes.json (the guarded manifest this skips),
+ *           app/global-not-found.js (real-404 renderer), lib/slug.js.
+ * History:  MEH-1398 (creation — middleware existence-check).
+ */
+
+// Real static route segments under app/[locale]/ (excluding the [slug]
+// catch-all). The middleware must NOT existence-check these — lib/slug.js
+// RESERVED is INCOMPLETE, so we use the full manifest. Kept honest by
+// __tests__/RouteManifestSync.test.js (bidirectional filesystem sync, CI-gated
+// via frontend-vitest) + scripts/validate-registry-paths.py.
+const STATIC_ROUTES = new Set(staticRoutes.routes);
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const intlMiddleware = createMiddleware(routing);
+
+async function producerExists(url) {
+  try {
+    // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
+    // only in the Node page / Server-Component runtime — NOT in Edge Middleware,
+    // which runs on the native Web fetch. So treat every call here as an UNCACHED
+    // backend lookup: each slug-shaped request (hit OR miss) costs one GET to the
+    // producers API. Abuse is bounded by the backend's slowapi rate limiting, not
+    // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
+    // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
+    const res = await fetch(url, { next: { revalidate: 60 } });
+    return res.ok;
+  } catch {
+    // Backend unreachable → fail OPEN (let the page handle it) rather than
+    // false-404 a possibly-valid page on a transient blip.
+    return true;
+  }
+}
+
+export default async function middleware(request) {
+  const intlResponse = intlMiddleware(request);
+  // next-intl issued a redirect (locale negotiation) — never existence-check it.
+  if (intlResponse.headers.get("location")) return intlResponse;
+
+  const { pathname } = request.nextUrl;
+  const parts = pathname.split("/").filter(Boolean);
+  const locale = routing.locales.includes(parts[0]) ? parts[0] : null;
+  const segs = locale ? parts.slice(1) : parts;
+
+  let existsUrl = null;
+  if (segs.length === 1) {
+    const slug = segs[0];
+    if (!STATIC_ROUTES.has(slug.toLowerCase()) && isSlugShaped(slug)) {
+      existsUrl = `${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`;
+    }
+  } else if (segs.length === 2 && segs[0] === "producer" && segs[1] !== "dashboard") {
+    existsUrl = `${API_URL}/producers/${encodeURIComponent(segs[1])}`;
+  }
+
+  if (existsUrl && !(await producerExists(existsUrl))) {
+    // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
+    const nf = request.nextUrl.clone();
+    nf.pathname = "/__mm_not_found__";
+    return NextResponse.rewrite(nf, { status: 404 });
+  }
+
+  return intlResponse;
+}
 
 export const config = {
   matcher: [

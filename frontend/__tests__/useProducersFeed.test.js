@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -60,5 +60,64 @@ describe("useProducersFeed — MEH-779 response validation", () => {
     const { result } = renderHook(() => useProducersFeed());
     await waitFor(() => expect(showToast.error).toHaveBeenCalled());
     expect(result.current.allProducers).toEqual([]);
+  });
+});
+
+// MEH-1054 (MAP-16): the additive `loading` flag drives the bottom-sheet
+// skeleton. It must start true (mount effect fetches immediately), clear on
+// EVERY terminal path (data / malformed / network error — a stuck skeleton
+// over the error state would hide the toast'd empty list), and re-arm when
+// loadProducers refetches.
+describe("useProducersFeed — MEH-1054 loading flag", () => {
+  beforeEach(() => {
+    api.get.mockReset();
+    showToast.error.mockClear();
+  });
+
+  it("starts true, clears after a successful load", async () => {
+    let resolveProducers;
+    routeProducers(
+      () => new Promise((resolve) => { resolveProducers = resolve; })
+    );
+    const { result } = renderHook(() => useProducersFeed());
+    expect(result.current.loading).toBe(true);
+    await act(async () => {
+      resolveProducers({ data: validProducers });
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.allProducers).toHaveLength(2);
+  });
+
+  it("clears on network failure (skeleton must not stick over the error state)", async () => {
+    routeProducers(() => Promise.reject(new Error("network")));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(showToast.error).toHaveBeenCalled();
+  });
+
+  it("clears on malformed payload", async () => {
+    routeProducers(() => Promise.resolve({ data: [{ id: 1, name: 123 }] }));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.allProducers).toEqual([]);
+  });
+
+  it("re-arms on a loadProducers refetch, then clears again", async () => {
+    routeProducers(() => Promise.resolve({ data: validProducers }));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let resolveSecond;
+    routeProducers(
+      () => new Promise((resolve) => { resolveSecond = resolve; })
+    );
+    act(() => {
+      result.current.loadProducers({ category: 5 });
+    });
+    expect(result.current.loading).toBe(true);
+    await act(async () => {
+      resolveSecond({ data: validProducers });
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
   });
 });

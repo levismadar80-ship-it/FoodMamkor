@@ -47,6 +47,8 @@ export default async function sitemap() {
     { path: "/group-buys", priority: 0.8, changeFrequency: "daily" },
     { path: "/about/process", priority: 0.5, changeFrequency: "monthly" },
     { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
+    // MEH-1289: reader-facing "why local" editorial page.
+    { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact, /search intentionally NOT listed —
     // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility
@@ -63,6 +65,8 @@ export default async function sitemap() {
   // MEH-23 — also emit /producers?page=1..N so Google can walk the
   // paginated index. 24 per page mirrors the SSR route.
   let producerIndexPages = [];
+  // MEH-1062 (SEO-03): recipe detail pages (published+approved), slug-based.
+  let recipePages = [];
   try {
     const res = await serverFetch(`${API_URL}/producers`);
     if (res.ok) {
@@ -88,6 +92,28 @@ export default async function sitemap() {
           }),
         );
       }
+
+      // MEH-1062 (SEO-03): recipe detail URLs. Recipes are per-producer
+      // (GET /producers/{slug}/recipes — published+approved only), so fan out
+      // concurrently over slugged producers; each fetch fails open (recipes
+      // are additive — a miss must never drop the producer/event sitemap).
+      const slugged = producers.filter((p) => p.slug);
+      const recipeLists = await Promise.all(
+        slugged.map((p) =>
+          serverFetch(`${API_URL}/producers/${encodeURIComponent(p.slug)}/recipes`)
+            .then((r) => (r.ok ? r.json() : []))
+            .catch(() => []),
+        ),
+      );
+      recipePages = slugged.flatMap((p, i) =>
+        (recipeLists[i] || []).flatMap((recipe) =>
+          localizeEntry(`/${p.slug}/recipes/${recipe.id}`, {
+            lastModified: now,
+            priority: 0.6,
+            changeFrequency: "monthly",
+          }),
+        ),
+      );
     }
   } catch {
     // API not available during build — skip dynamic pages
@@ -111,5 +137,11 @@ export default async function sitemap() {
     // ignore
   }
 
-  return [...staticPages, ...producerIndexPages, ...producerPages, ...eventPages];
+  return [
+    ...staticPages,
+    ...producerIndexPages,
+    ...producerPages,
+    ...recipePages,
+    ...eventPages,
+  ];
 }

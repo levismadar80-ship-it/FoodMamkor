@@ -1,0 +1,35 @@
+{
+  "desktop": {
+    "icons": 5,
+    "clusters": 5,
+    "pins": 0,
+    "consoleErrors": []
+  },
+  "mobile": {
+    "icons": 5,
+    "clusters": 5,
+    "nearMeResult": "ok:{\"lat\":32.08,\"lng\":34.78}",
+    "searchAreaResult": "ok-geo-refetch",
+    "consoleErrors": []
+  },
+  "expectedMarkers": 42
+}
+{
+  "part2": {
+    "zoomMethod": "cluster-clicks",
+    "zoomedIn": {
+      "pins": 33,
+      "secondary": 10,
+      "clusters": 0
+    },
+    "toggleFound": true,
+    "afterToggleOff": {
+      "secondary": 0
+    },
+    "afterToggleOn": {
+      "secondary": 10
+    },
+    "searchThisArea": "ok-refetch: lat=32.88430125131238&lng=34.770502247755275&radius_km=39&require_physical=true",
+    "consoleErrors": []
+  }
+}

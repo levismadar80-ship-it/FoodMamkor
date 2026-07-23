@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { SkeletonStyles } from "@/components/Skeleton";
+
 // S5 FINAL (MEH-763): split-view sheet — TWO snap points, peek + 45vh open.
 // PEEK/HALF export names kept (useFirstVisitHints imports PEEK; useMapSync
 // imports HALF for the marker-tap open) — only HALF's value moved 55→45.
@@ -16,8 +18,30 @@ function closest(value) {
   return SNAPS.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a));
 }
 
-export default function MapBottomSheet({ snap, onSnapChange, children, count }) {
+// MEH-1054 (MAP-16): static list-row geometry shown while the feed's first
+// fetch is in flight — reuses the global `skeleton-box` pulse util (CARD-26
+// spec, globals.css), no new animation. Row height ≈ MobileSheetCard so the
+// swap to real cards doesn't jump the sheet content.
+function SheetListSkeleton({ label }) {
+  return (
+    // role="status" + existing common.skeleton.loading_businesses label —
+    // mirrors SkeletonProducerGrid so AT hears "loading", not silence
+    // (bars themselves stay aria-hidden).
+    <div data-testid="sheet-list-skeleton" role="status" aria-label={label}>
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="skeleton-box rounded-[16px] h-20 mb-3" aria-hidden="true" />
+      ))}
+      {/* skeleton-box styles are NOT global CSS — they ship via styled-jsx
+          from Skeleton.jsx; without this mount the bars render invisible. */}
+      <SkeletonStyles />
+    </div>
+  );
+}
+
+export default function MapBottomSheet({ snap, onSnapChange, children, count, loading = false }) {
   const t = useTranslations("map.bottom_sheet");
+  // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
+  const tSkeleton = useTranslations("common.skeleton");
   const sheetRef = useRef(null);
   const startY = useRef(0);
   const startSnap = useRef(snap);
@@ -25,6 +49,37 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
   const [transient, setTransient] = useState(null);
 
   const heightVh = transient ?? snap;
+
+  // MEH-970 R2: publish the sheet's live visible height as the `--map-sheet-h`
+  // CSS var on <html> — the `--cookie-banner-h` precedent (MEH-850). Map
+  // controls that must ride the sheet edge (the NearMePill) self-position via
+  // calc(var(--map-sheet-h) + gap) instead of guessing a fixed offset. `heightVh`
+  // is `transient ?? snap`, so this updates on every drag frame AND every snap —
+  // the pill tracks the edge continuously through both. Published as a `vh`
+  // string to match the sheet's own `height: ${heightVh}vh`.
+  //
+  // `--map-sheet-anim` publishes the sheet's OWN transition mode (this same
+  // `transient != null ? "none" : 0.3s` split the sheet uses on its height, line
+  // ~110) so the pill animates its `bottom` in LOCKSTEP: 0ms during a drag →
+  // instant finger-tracking, 300ms on a snap → the pill glides with the sheet
+  // instead of teleporting to the target while the sheet is still animating (that
+  // teleport briefly floated the pill over the collapsing cards on a button/marker
+  // HALF→PEEK collapse — the very overlap class this ticket fixes).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--map-sheet-h", `${heightVh}vh`);
+    root.style.setProperty("--map-sheet-anim", transient != null ? "0ms" : "300ms");
+  }, [heightVh, transient]);
+  // Clean up ONLY on unmount so a non-/map page never inherits a stale offset
+  // (mirrors CookieBanner.jsx:50). Kept separate from the publish effect so the
+  // per-frame drag updates don't churn a remove/re-add cycle.
+  useEffect(() => {
+    return () => {
+      const root = document.documentElement;
+      root.style.removeProperty("--map-sheet-h");
+      root.style.removeProperty("--map-sheet-anim");
+    };
+  }, []);
 
   const onTouchStart = useCallback((e) => {
     startY.current = e.touches[0].clientY;
@@ -64,39 +119,56 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
   return (
     <div
       ref={sheetRef}
-      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-lg border-t border-border flex flex-col"
+      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-3xl border-t border-border flex flex-col"
       style={{
         height: `${heightVh}vh`,
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",
         paddingBottom: "64px",
       }}
     >
-      {/* Drag handle — S5 FINAL 32×4, warm tan (#D4C5A9, FINAL-specified; not yet tokenized) */}
+      {/* Drag handle — MEH-1029 (MAP-11): S5 chrome 44×5 (was 32×4). Warm tan
+          (#D4C5A9) kept as-is — tokenization is a separate token-additions issue.
+          `justify-center` is the direction-neutral centering idiom (no physical prop). */}
       <div className="flex justify-center py-2 cursor-grab shrink-0" aria-hidden="true">
-        <div className="w-8 h-1 rounded-full bg-[#D4C5A9]" />
+        <div className="w-11 h-[5px] rounded-full bg-[#D4C5A9]" />
       </div>
 
       {/* Peek header */}
       <div className="px-4 pb-2 shrink-0 flex items-center justify-between">
         {/* MEH-935: ICU plural — count=1 singular, count=2 Hebrew dual, ≥3 plural.
-            Was `{count} {t("title")}` (static noun → "1 בתי עסק מקומיים באזור"). */}
-        <p className="text-sm font-medium text-text numeric">
-          {t("count", { count })}
-        </p>
-        {snap === HALF && (
-          <button
-            type="button"
-            onClick={() => onSnapChange(PEEK)}
-            className="text-sm text-primary font-medium hover:underline"
-          >
-            {t("show_map")}
-          </button>
+            Was `{count} {t("title")}` (static noun → "1 בתי עסק מקומיים באזור").
+            MEH-1029 (MAP-11): gold accent token (styling only; count string unchanged). */}
+        {loading ? (
+          // MEH-1054: while loading, a short pulse bar holds the count's slot —
+          // rendering "0 בתי עסק" before the first response would read as a
+          // (false) empty result. Count string itself unchanged (MAP-16
+          // constraint: geometry only, no copy change).
+          <span
+            data-testid="sheet-count-skeleton"
+            className="skeleton-box rounded-lg inline-block"
+            style={{ width: "120px", height: "14px" }}
+            aria-hidden="true"
+          />
+        ) : (
+          <p className="text-sm font-medium text-accent numeric">
+            {t("count", { count })}
+          </p>
         )}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4">
-        {children}
+      {/* Scrollable content — MEH-1133: `pt-1` gives the first card a little
+          breathing room under the peek header (the header's `pb-2` alone left the
+          first card's top edge visually touching the count row). Small so it
+          doesn't eat the already-short PEEK content area.
+          MEH-1298: `[overflow-anchor:none]` disables the browser's scroll
+          anchoring for this container so the MobileSheetSelectedCard mount ->
+          scrollTop compensation (MobileSheetSelectedCard.jsx) is deterministic
+          across browsers. Chromium anchors natively (so the manual comp would
+          double-shift); iOS Safari's anchoring is weaker (so it would shift with
+          no comp). Turning anchoring OFF makes the manual comp the single,
+          consistent mechanism -> zero list shift everywhere. */}
+      <div className="flex-1 overflow-y-auto [overflow-anchor:none] px-4 pt-1">
+        {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}
       </div>
     </div>
   );

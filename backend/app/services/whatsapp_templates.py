@@ -19,6 +19,7 @@ and field order verified against the call sites in Phase 0):
 
     producer_welcome_v1    he  1 param  (producer_name)
     producer_approved_v1   he  1 param  (producer_name)
+    producer_changes_requested_v1 he 2 params (producer_name, missing_details)
     after_hours_response_he he 0 params
     vacation_response_he_v2 he 1 param  (return_date, ISO date string)
     producer_otp_v1        he  1 param  (code) — AUTHENTICATION category,
@@ -32,7 +33,8 @@ Meta AUTHENTICATION templates need the code in BOTH the body parameter
 AND the copy-code URL-button component — a body-only payload 400s.
 
 History:  MEH-672 (creation, chunk 1); MEH-754 (OtpCodeV1 — OTP via
-          authentication template, copy-code button).
+          authentication template, copy-code button); MEH-1051
+          (ProducerChangesRequestedV1 — first 2-param template).
 """
 
 from __future__ import annotations
@@ -90,6 +92,19 @@ class ProducerApprovedV1(WhatsAppTemplate):
     producer_name: str
 
 
+class ProducerChangesRequestedV1(WhatsAppTemplate):
+    """Sent when an admin requests completion details (MEH-1011 flow).
+
+    Two params in {{n}} placeholder order: business name, what's missing.
+    UTILITY category, no buttons — the first 2-param template; the base
+    `to_components()` emits both body parameters in declaration order.
+    """
+
+    name: ClassVar[str] = "producer_changes_requested_v1"
+    producer_name: str
+    missing_details: str
+
+
 class AfterHoursResponseHe(WhatsAppTemplate):
     """Auto-reply outside business hours. No params."""
 
@@ -128,5 +143,48 @@ class OtpCodeV1(WhatsAppTemplate):
                 "sub_type": "url",
                 "index": 0,
                 "parameters": [{"type": "text", "text": self.code}],
+            },
+        ]
+
+
+class FavoriteAlertHeV1(WhatsAppTemplate):
+    """Favorite-alert notification (MEH-1329). UTILITY category, dynamic-URL button.
+
+    Delivered business-initiated (outside the 24h service window), so free-form
+    `send_text` — which 131047/window_expires for a customer who never messaged
+    us — is replaced by this approved template. Two body params in {{n}} order
+    plus a URL-button param that is NOT a body parameter:
+
+        {{1}} producer_name — the saved business's name
+        {{2}} update_line   — the sanitized headline (emoji-stripped, single-line)
+        url_path            — the "/…" path for the dynamic button URL
+                              (https://mehamakor.co.il{{1}}; the domain lives on
+                              the Meta side, so we pass only the leading-"/" path)
+
+    Like `OtpCodeV1`, `to_components()` is overridden — the base builder would
+    (wrongly) emit `url_path` as a third body parameter. Here the body carries
+    only producer_name + update_line, and url_path goes solely to the button
+    (`sub_type="url"`, `index=0`), mirroring the OtpCodeV1 precedent.
+    """
+
+    name: ClassVar[str] = "favorite_alert_he_v1"
+    producer_name: str
+    update_line: str
+    url_path: str
+
+    def to_components(self) -> list[dict[str, object]]:
+        return [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": self.producer_name},
+                    {"type": "text", "text": self.update_line},
+                ],
+            },
+            {
+                "type": "button",
+                "sub_type": "url",
+                "index": 0,
+                "parameters": [{"type": "text", "text": self.url_path}],
             },
         ]

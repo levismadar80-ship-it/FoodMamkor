@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -60,6 +60,14 @@ function deleteRecent(query) {
 export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   const t = useTranslations("search.hero");
   const router = useRouter();
+  // MEH-1078: per-instance ids (useId is SSR-stable) so a transient double-
+  // mount of HeroSearch can't collide id="hero-search-input" (duplicate-id-
+  // active) or its aria wiring. data-testid stays stable — the specs gate on
+  // toHaveCount(1) instead of relying on a unique testid.
+  const uid = useId();
+  const inputId = `${uid}-input`;
+  const listboxId = `${uid}-listbox`;
+  const rowId = (i) => `${uid}-row-${i}`;
   const [value, setValue] = useState("");
   const [results, setResults] = useState(EMPTY_RESULT);
   const [isOpen, setIsOpen] = useState(false);
@@ -125,8 +133,42 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
     return rows;
   }, [results]);
 
+  // Empty-state rows (recent OR trending) as keyboard-navigable options,
+  // so the dropdown is one listbox model in both states (ARIA APG combobox).
+  const emptyRows = useMemo(() => {
+    if (recentSearches.length > 0) {
+      return recentSearches.map((q) => ({ kind: "recent", id: q, data: q }));
+    }
+    return trending.map((q) => ({ kind: "trending", id: q, data: q }));
+  }, [recentSearches, trending]);
+
+  // Derived open/mode flags (used by both the keyboard handler and render).
+  const trimmed = value.trim();
+  const isAutocomplete = trimmed.length >= 2;
+  const hasAutoResults = flatRows.length > 0;
+  const showAutocomplete = isOpen && isAutocomplete;
+  const showEmpty =
+    isOpen && !isAutocomplete && (recentSearches.length > 0 || trending.length > 0);
+  // The single set of rows the arrow keys + activedescendant address.
+  const navRows = showAutocomplete ? flatRows : showEmpty ? emptyRows : [];
+
+  // Keep the highlighted index within the currently-shown row set.
+  useEffect(() => {
+    setHighlightIdx((i) => (i > navRows.length - 1 ? 0 : i));
+  }, [navRows.length]);
+
+  // Unified selection dispatch — autocomplete rows navigate, query rows search.
+  const selectRow = (row) => {
+    if (row.kind === "recent" || row.kind === "trending") {
+      submitRaw(row.data);
+    } else {
+      navigate(row);
+    }
+  };
+
   const handleFocus = () => {
     setIsOpen(true);
+    setHighlightIdx(0);
     // Fetch trending once per mount, only when input is empty.
     if (!value.trim() && !trendingFetchedRef.current) {
       trendingFetchedRef.current = true;
@@ -159,9 +201,6 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   };
 
   const handleKeyDown = (e) => {
-    const trimmed = value.trim();
-    const isAutocomplete = trimmed.length >= 2;
-
     if (!isOpen) {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -170,50 +209,49 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       return;
     }
 
-    if (isAutocomplete && flatRows.length > 0) {
+    // One keyboard model for both dropdown states (autocomplete + recent/
+    // trending): ArrowUp/Down move the active option, Enter selects it,
+    // Escape closes, Delete removes the active recent query (APG combobox).
+    if (navRows.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setHighlightIdx((i) => Math.min(i + 1, flatRows.length - 1));
+        setHighlightIdx((i) => Math.min(i + 1, navRows.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setHighlightIdx((i) => Math.max(i - 1, 0));
       } else if (e.key === "Enter") {
         e.preventDefault();
-        const row = flatRows[highlightIdx];
-        if (row) navigate(row);
+        const row = navRows[highlightIdx];
+        if (row) selectRow(row);
         else submitRaw();
       } else if (e.key === "Escape") {
         setIsOpen(false);
-      }
-    } else {
-      if (e.key === "Enter") {
+      } else if (e.key === "Delete" && navRows[highlightIdx]?.kind === "recent") {
         e.preventDefault();
-        submitRaw();
-      } else if (e.key === "Escape") {
-        setIsOpen(false);
+        const next = deleteRecent(navRows[highlightIdx].data);
+        setRecentSearches(next);
+        setHighlightIdx((i) => Math.max(0, Math.min(i, next.length - 1)));
       }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      submitRaw();
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
     }
   };
-
-  const trimmed = value.trim();
-  const isAutocomplete = trimmed.length >= 2;
-  const hasAutoResults = flatRows.length > 0;
-  const showAutocomplete = isOpen && isAutocomplete;
-  const showEmpty =
-    isOpen && !isAutocomplete && (recentSearches.length > 0 || trending.length > 0);
 
   let cursor = 0;
 
   return (
     <div ref={containerRef} className={`relative flex items-center gap-2 min-w-0 ${className}`}>
       {srLabel && (
-        <label htmlFor="hero-search-input" className="sr-only">
+        <label htmlFor={inputId} className="sr-only">
           {srLabel}
         </label>
       )}
       <input
         ref={inputRef}
-        id="hero-search-input"
+        id={inputId}
         data-testid="hero-search"
         type="text"
         value={value}
@@ -228,12 +266,12 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
-        aria-expanded={(showAutocomplete && hasAutoResults) || showEmpty}
+        aria-expanded={showAutocomplete || showEmpty}
         aria-autocomplete="list"
-        aria-controls="hero-search-listbox"
+        aria-controls={listboxId}
         aria-activedescendant={
-          isAutocomplete && hasAutoResults
-            ? `hero-search-row-${highlightIdx}`
+          isOpen && navRows.length > 0
+            ? rowId(Math.min(highlightIdx, navRows.length - 1))
             : undefined
         }
       />
@@ -242,7 +280,8 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       <button
         type="button"
         onClick={() => submitRaw()}
-        className="shrink-0 text-primary hover:text-primary-dark transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+        // MEH-991 (HOME-05): filled green square submit per S14 (was icon-only).
+        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-md transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >
@@ -252,7 +291,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       {/* ---- Autocomplete dropdown (≥2 chars) ---- */}
       {showAutocomplete && (
         <div
-          id="hero-search-listbox"
+          id={listboxId}
           role="listbox"
           data-testid="hero-search-dropdown"
           className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-start"
@@ -274,7 +313,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                 return (
                   <Row
                     key={`prod-${p.id}`}
-                    id={`hero-search-row-${i}`}
+                    id={rowId(i)}
                     active={i === highlightIdx}
                     onSelect={() => navigate({ kind: "producer", data: p })}
                     onHover={() => setHighlightIdx(i)}
@@ -296,12 +335,11 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                 return (
                   <Row
                     key={`cat-${c.id}`}
-                    id={`hero-search-row-${i}`}
+                    id={rowId(i)}
                     active={i === highlightIdx}
                     onSelect={() => navigate({ kind: "category", data: c })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    <span>{c.emoji ? `${c.emoji} ` : ""}</span>
                     {highlightMatch(c.name, trimmed)}
                   </Row>
                 );
@@ -316,7 +354,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                 return (
                   <Row
                     key={`city-${city}`}
-                    id={`hero-search-row-${i}`}
+                    id={rowId(i)}
                     active={i === highlightIdx}
                     onSelect={() => navigate({ kind: "city", data: city })}
                     onHover={() => setHighlightIdx(i)}
@@ -333,16 +371,24 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       {/* ---- Empty-input dropdown (recent or trending) ---- */}
       {showEmpty && (
         <div
+          id={listboxId}
+          role="listbox"
           data-testid="hero-search-history"
           className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl text-start"
           dir="rtl"
         >
           {recentSearches.length > 0 ? (
             <Section title={t("recent_heading")}>
-              {recentSearches.map((q) => (
+              {recentSearches.map((q, i) => (
                 <li
                   key={q}
-                  className="flex items-center justify-between px-3 py-2.5 text-sm text-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
+                  id={rowId(i)}
+                  role="option"
+                  aria-selected={i === highlightIdx}
+                  className={`flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer min-h-[44px] ${
+                    i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
+                  }`}
+                  onMouseEnter={() => setHighlightIdx(i)}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     submitRaw(q);
@@ -356,8 +402,11 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                     />
                     {q}
                   </span>
+                  {/* tabIndex -1: not a tab stop inside the option; keyboard
+                      users remove via the Delete key (handleKeyDown). */}
                   <button
                     type="button"
+                    tabIndex={-1}
                     className="text-fg-muted hover:text-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label={t("remove_recent_aria", { q })}
                     onMouseDown={(e) => {
@@ -373,10 +422,16 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
             </Section>
           ) : (
             <Section title={t("trending_heading")}>
-              {trending.map((q) => (
+              {trending.map((q, i) => (
                 <li
                   key={q}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
+                  id={rowId(i)}
+                  role="option"
+                  aria-selected={i === highlightIdx}
+                  className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer min-h-[44px] ${
+                    i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
+                  }`}
+                  onMouseEnter={() => setHighlightIdx(i)}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     submitRaw(q);
@@ -401,7 +456,9 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
 function Section({ title, children }) {
   return (
     <div className="py-1">
-      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+      {/* MEH-1103: uppercase/tracking-wider dropped (MEH-867 rule — Hebrew has
+          no uppercase and letter-spacing harms RTL legibility). Refs MEH-1073 T10. */}
+      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-fg-muted">
         {title}
       </div>
       <ul className="py-1">{children}</ul>

@@ -77,6 +77,7 @@ and MEH-374 (62 commits)._
 2. **Branch from `staging`** — never from `main`. See
    [.claude/rules/deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
+   Locked pattern (MEH-1141): `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*` — mechanically enforced by `.claude/hooks/check-branch-name.sh` (blocks non-conforming push / branch-create) + the `Branch name gate` CI job in `pr-checks.yml`.
 4. **Plan before coding + interview mode.** Propose the approach in
    plain text before touching files; wait for explicit `go` before
    editing. **If the task is ambiguous** — missing spec, unclear
@@ -248,6 +249,30 @@ and MEH-374 (62 commits)._
     on a "failing" signal you cannot read logs for. Wait for budget
     resolution before proceeding. (Root cause: MEH-314/317, 2026-04-25 —
     test bug was masked by budget exhaustion and shipped in PR #337.)
+    - **Superseded-run false-failure.** A `CI gate (required)` failure
+      webhook can be a *cancelled* run, not a real one: flipping a PR
+      draft→ready (or a rapid second push) starts a new `pr-checks` run
+      that concurrency-cancels the in-flight one, and the gate's bash
+      aggregator maps its `cancelled` deps to FAIL (`R_BUILD: cancelled`
+      → `exit 1`). Before diagnosing a gate failure, list runs for the
+      head SHA — if a newer run is `in_progress`, the older
+      `conclusion: cancelled` gate is stale; wait for the newer run
+      rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
+      emitted "CI gate failed" from superseded run #2279 while #2280 ran
+      green and auto-merged.)
+    - **Draft PRs produce a skip-green signal, not a real pass.** The
+      backend jobs (`Backend tests`, `Backend lint`, build) gate on
+      `github.event.pull_request.draft == false`, so on a *draft* they
+      report `skipped` — and `CI gate`/`Deploy gate` still aggregate to
+      `success` because a skipped leg passes. That green means "nothing
+      ran," not "tests passed." A PR that must merge on CI has to be marked
+      **ready** (`draft: false`) so the real jobs execute; never read a
+      draft's green aggregators as a verified signal. (18/07 — the first
+      MEH-1331 run showed both required gates green while pytest never ran.)
+      Same aggregator mechanic (skipped leg = pass) is documented for
+      docs-only PRs in `.claude/rules/testing.md` → "Required status checks +
+      docs-only merge (MEH-716)" — cross-ref, don't duplicate; if one note
+      changes, update both.
 
 ---
 
@@ -272,11 +297,22 @@ and MEH-374 (62 commits)._
    parameter precedes the auth dep in the function signature. Use
    `valid_*_payload()` fixtures from `tests/conftest.py`; schema
    changes must not silently invalidate security tests.
-7. **Docs-only files → direct commit to staging, no PR.**
+7. **Docs-only files still go through a feature branch + PR.**
    `HANDOFF.md` / `CHANGELOG.md` / `ROADMAP.md` / `MANUAL_TESTING.md`
-   do not need a PR.
+   are no exception — the `protect-staging` ruleset blocks *all* direct
+   pushes to `staging` (`push declined due to repository rule
+   violations`), docs or not. Branch off `staging`, open a PR, let the
+   docs-only twin checks (MEH-736) satisfy the required gates; merge
+   stays Sapir-only. (This rule previously claimed docs could be
+   committed straight to `staging` — factually wrong since the ruleset
+   landed; corrected in MEH-1012 after a rejected push on 2026-07-03.)
 8. **Never add new env vars without listing them explicitly**
    **and waiting for confirmation.**
+9. **Test dummy URLs must be real backend routes (matching method).**
+   The static API-contract audit scans `frontend/__tests__/**` and reds
+   the Deploy gate on orphan/method-mismatch paths. Full rule:
+   [.claude/rules/testing.md](./testing.md) → "Test dummy URLs must be
+   real backend routes".
 
 ---
 
@@ -390,8 +426,18 @@ When a bug is found and fixed:
 1. **Identify the root cause** — don't just fix the symptom. Document
    *why* the bug happened.
 2. **Grep for siblings (MANDATORY before closing task).**
-   `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx"`
+   `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx" --include="*.json"`
    and report findings to user before marking done.
+   - **2a — i18n copy siblings (MEH-1308).** When the fix changes a
+     user-visible string, grep the STRING VALUE (the rendered text, not
+     just the code identifier) across `frontend/messages/he.json` and
+     `frontend/messages/en.json`; report every occurrence before marking
+     done. _MEH-1301's sweep missed the hero subtitle + trust strip in `he.json`._
+   - **2b — VRT baselines (MEH-1328).** When any `he.json` value rendered
+     on a VRT-covered route changes, regenerate
+     `frontend/e2e/visual/parity.spec.ts-snapshots/` in the SAME PR —
+     never a follow-up ticket. Routes: `/`, `/map`, `/about`, `/login`,
+     `/register`, producer detail. _Home baselines went stale after MEH-1308._
 3. **Add a regression rule** to this file (workflow.md) if the pattern
    is likely to recur.
 4. **Add a test** that would have caught the bug. If no automated test
@@ -409,8 +455,8 @@ punctuation-only strings (e.g. "???") unless explicitly validated.
 When adding a `String` field visible to admins or users, add a
 `field_validator` requiring ≥ 3 letter chars via `[א-תa-zA-Z]` regex.
 Count letters AFTER `strip()`, not before. Return the stripped value.
-Sibling gaps not yet fixed: `ProducerCreate.name`, `HomeProductCreate.title`,
-`ExperienceCreate.title` — track in follow-up tickets.
+Sibling gaps closed (verified 18/07/26): all three schemas carry the
+letters validator.
 
 ---
 
@@ -440,7 +486,10 @@ REFEREE verdicts fixed.
 | Hotfix | Only the broken thing | Minimal |
 
 Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`,
-`MANUAL_TESTING.md`): commit directly to `staging` — no PR needed.
+`MANUAL_TESTING.md`): still branch + PR — direct pushes to `staging`
+are blocked by the `protect-staging` ruleset. The docs-only twin checks
+(MEH-736) satisfy the required gates so no admin override is needed;
+merge stays Sapir-only. (See Regression rule 7 above.)
 
 ---
 
@@ -480,6 +529,11 @@ turn-by-turn output.
 
 If the task doesn't clearly fit a tier, ask Smadar before starting.
 See [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md) for current GREEN/YELLOW/RED tier definitions.
+
+**Override (ADR-016 amendment, 2026-07-12):** an explicit per-batch
+DO-NOT-MERGE / Sapir-merges instruction from the orchestrator OVERRIDES
+tier-level auto-merge authority — the batch-specific instruction is the
+specific rule and wins over the default tier authority.
 
 _Source: MEH-450 (2026-05-04). Evidence: MEH-326 auth refactor (chunked
 review justified), MEH-331/348 email transport — chunked review caught
@@ -534,6 +588,7 @@ the variant matching the diff; use the base when the class is unknown:
 - `/adversarial-review-types` — diff touches `backend/app/models/`,
   `backend/app/schemas/`, `frontend/lib/schemas.js`, or
   `backend/alembic/versions/` (MEH-283/321 schema-drift family).
+  חריג merge-revision ריק — ראו ADR-025 Amendment 18/07/2026.
 - `/adversarial-review-errors` — diff touches `backend/app/services/`,
   `backend/app/routers/`, background tasks, or any `try:`/`except:` in
   side-effect code (MEH-325 silent-except family).
@@ -565,6 +620,8 @@ Code session = quota usage. Use on-demand, never always-on.
 - 5+ concurrent loops in same session
 
 Tasks auto-expire after 7 days.
+
+**Loop-primitive tiers + DoD self-check (MEH-1052):** `/goal` · `/loop` · `/schedule` authority by GREEN/YELLOW/RED — and the `mehamakor-dod` skill (`bash .claude/skills/mehamakor-dod/check.sh`; exit 0 = mechanical DoD met, required before any GREEN `/goal` declares itself done) — are defined in [ADR-025](../../docs/decisions/ADR-025-loop-tiers.md).
 
 ---
 
@@ -646,6 +703,22 @@ Tasks auto-expire after 7 days.
     — preserves the original feature SHAs for adversarial review and the
     merge commit makes the sync point explicit in `git log`. Never force-push.
 
+    **Concurrent-merge storm (staging churns during your CI cycle).** When
+    other PRs land on `staging` across your ~8-min backend-CI run, two
+    failure modes compound. (a) **Stale-ref revert:** a `git merge
+    origin/staging` that reused an earlier `git fetch` can silently
+    reintroduce another PR's *deletions* — `git fetch origin staging`
+    immediately before EVERY merge and confirm the merge shows the expected
+    deletions (18/07 nearly reverted MEH-1317's `analytics.py` removal;
+    caught by adversarial review). (b) **Append-only churn:** your
+    top-of-`## Unreleased` CHANGELOG entry conflicts with every concurrent
+    CHANGELOG insertion → `mergeable_state: dirty` after each CI pass, a
+    loop. Break it by **dropping the CHANGELOG entry from the code PR**
+    (`git checkout origin/staging -- docs/CHANGELOG.md`) so the branch no
+    longer touches CHANGELOG, then re-add it in a later PR. Pair with GitHub
+    **auto-merge** so the PR lands the instant a clean+green window opens.
+    (18/07 — PR #1928 churned ~5 CI cycles before the CHANGELOG-drop cleared it.)
+
     _Source: 2026-05-15 night batch — PR #662 (MEH-222) hit an avoidable
     CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660
     (MEH-481) merged between branch creation and push. Three merges in a
@@ -685,3 +758,54 @@ Tasks auto-expire after 7 days.
     landed in the interim, so these slot at 26 + 27 to preserve sequential
     numbering with no gaps and no collision. Rule bodies are verbatim from
     the MEH-405 spec; only the leading numbers changed._
+
+28. **Single-dispatch rule — one prompt per ticket, from the ticket.**
+    Prompt ל-CC יוצא רק מ-ticket קיים. פעם אחת.
+
+    - אין ticket → אין prompt. נותנים תוכנית ממוספרת בלבד (עקרון 5, Manus).
+      Ticket נוצר → ה-prompt יוצא ממנו, ורק ממנו.
+    - ה-prompt חי ב-description. לא מודבק לשיחה לפני שנוצר.
+      Ticket description = the dispatch. אין dispatch שני לאותה עבודה.
+    - שינוי אחרי dispatch → עריכת description + הודעה ל-CC לקרוא מחדש.
+      לעולם לא prompt חדש.
+
+    **Pre-dispatch check (חובה, לפני כל prompt ל-CC):**
+    1. Linear live: קיים ticket לאותה עבודה? (list_issues query על הקבצים/הנושא)
+    2. אותה עבודה כבר דווחה merged בשיחה הזאת או ב-HANDOFF? → STOP, אמת מול staging.
+    3. Umbrella ticket + split tickets על אותם קבצים = double-dispatch.
+       בחרי אחד. השני נסגר כ-duplicate לפני dispatch, לא אחרי.
+
+    _Source: MEH-1215/1216 (2026-07-15) — ה-prompt הודבק לשיחה לפני יצירת
+    ה-tickets, ואז שוב מתוכם. שני CC sessions עבדו אותן שורות: PRs #1755+#1756
+    (שניהם מוזגו — duplicate merge), #1757+#1760 (השני empty, נסגר). CC's STOP
+    condition + Rule 1 (single-session) תפסו את זה בדיעבד — ה-guard האחרון עבד,
+    אבל הוא לא אמור להידרש. Extends Rule 1 (session-start parallel-session audit)
+    ו-Rule 27 (search Linear before opening an issue) לצד ה-dispatch._
+
+29. **Linear auto-reopen guard — no bare `MEH-XXXX` in docs/HANDOFF PRs that
+    only MENTION already-Done issues.** In a `docs/`-only or `HANDOFF.md` PR
+    whose diff merely *references* issues that are already `Done`, do NOT put
+    the bare Linear identifier (`MEH-1234`) in the **branch name**, **PR
+    title**, or **PR body**. Write `PR #1772` or a prose description instead.
+
+    - **Why:** the Linear↔GitHub integration (the Linear workspace app — **not**
+      a repo Action; `.github/` has no Linear reference) auto-links on identifier
+      match and fires "linked PR opened → In Progress", flipping the mentioned
+      closed issues back to In Progress. A merge whose body has no closing
+      keyword (`Closes`/`Fixes`) does **not** restore them to Done — so they
+      stay reopened and need manual re-closing.
+    - **Evidence (16/07):** PR #1778 (docs/HANDOFF) carried `Refs` + two closed
+      identifiers in its body → Linear linked both; they flipped Done→In Progress
+      ~3s after the PR opened (19:31:55Z) and the non-`Closes` merge left them
+      reopened.
+    - **Scope of the ban:** only the identifier of an **already-Done** issue that
+      the PR merely mentions. The identifier of the issue the PR actually
+      *closes* still belongs in the body as `Closes MEH-XXXX` (that link is
+      correct — the issue is genuinely active and should return to Done on
+      merge). Branch-name gate (MEH-1141) requires `meh-[0-9]+` for code PRs, so
+      this ban applies to the *mentioned-and-Done* identifiers, not to a code
+      PR's own active-ticket branch slug.
+
+    _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
+    #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
+    automation._

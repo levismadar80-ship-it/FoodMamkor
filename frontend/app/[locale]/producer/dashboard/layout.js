@@ -21,10 +21,12 @@
  */
 
 import { useEffect } from "react";
-import { usePathname, Link } from "@/i18n/navigation";
-import { useRouter } from "next/navigation";
+// MEH-1165 item 6 (MEH-1157 residual): useRouter comes from the locale-aware
+// wrapper too — the boot-401 push("/login") was dropping an /en session onto
+// the default-locale page (same fix as edit/page.js:37).
+import { usePathname, Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { SquaresFour, PencilSimple, ChartLine, Wrench } from "@phosphor-icons/react";
+import { SquaresFour, PencilSimple, ChartLine, Wrench, Eye } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 
 // Tab order is the source of truth for the persistent nav (locked design
@@ -84,6 +86,21 @@ export default function ProducerDashboardLayout({ children }) {
               </Link>
             );
           })}
+          {/* MEH-1357: persistent "צפייה בדף" (GBP "See your profile") — replaces
+              the removed tools-page הצגת-העסק card. NOT a tab (no active border):
+              a quiet inline-end link. Targets the UUID route /producer/{id}, not
+              /p/{slug}: the owner-exception (producers.py:247-253) lets the owner
+              view her OWN page while pending, whereas the slug route
+              (producers.py:204) is approved-only and would 404 pre-approval. */}
+          {user.producer_id && (
+            <Link
+              href={`/producer/${user.producer_id}`}
+              className="ms-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
+            >
+              <Eye size={18} aria-hidden="true" />
+              {t("view_page")}
+            </Link>
+          )}
         </div>
       </nav>
       {children}

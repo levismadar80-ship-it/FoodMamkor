@@ -33,7 +33,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import api from "@/lib/api";
-import { styleForProducer } from "@/lib/map-categories";
+import { styleForProducer } from "@/lib/category-registry";
 
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real

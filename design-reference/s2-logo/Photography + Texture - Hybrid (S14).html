@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S14 · MEH-135 · Photography + Texture — Consolidated Hybrid · home + /about</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:ital,wght@0,400;0,700;0,900;1,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+
+<link rel="stylesheet" href="s13/doc.css">
+<link rel="stylesheet" href="s14/surface.css">
+<style>
+/* S14 doc-layer additions */
+.vp.desktop{width:1280px;}
+.codeblock{font-family:var(--doc-mono); font-size:11px; line-height:1.75; color:var(--primary-dark);
+  background:rgba(255,255,255,.5); border:1px solid var(--doc-rule); border-radius:8px;
+  padding:14px 16px; white-space:pre; overflow-x:auto; direction:ltr; text-align:left;}
+.aaclaim{font-family:var(--doc-mono); font-size:10.5px; line-height:1.8; color:var(--doc-mute); margin-top:12px; direction:ltr; text-align:left;}
+.aaclaim b{color:var(--primary-dark); font-weight:700;}
+.dlog{display:grid; gap:8px; margin-bottom:30px; border:1px solid var(--doc-rule); border-radius:10px;
+  background:rgba(255,255,255,.32); padding:16px 20px;}
+.dlog .lh{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-ink); font-weight:600; margin-bottom:4px;}
+.dlog .it{display:grid; grid-template-columns:18px 1fr; gap:10px; font-size:12.5px; color:var(--doc-mute); line-height:1.55;}
+.dlog .it b{color:var(--doc-ink); font-weight:600;}
+.dlog .ok{color:var(--primary-dark); font-weight:700;}
+.dlog .no{color:var(--doc-warn); font-weight:700;}
+.rmap{display:grid; gap:3px;}
+.rmap .rrow{display:grid; grid-template-columns:30px 22px 1fr; gap:9px; align-items:center;
+  font-size:11px; color:var(--doc-mute); line-height:1.4;}
+.rmap .pos{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:13px; color:var(--accent);}
+.rmap .chipd{width:22px; height:13px; border-radius:3px; border:1px solid rgba(42,38,32,.18);}
+.rmap .chipd.cream{background:var(--background);}
+.rmap .chipd.alt{background:var(--background-alt);}
+.rmap .chipd.photo{background:linear-gradient(160deg,#c9b98c,#4e6347);}
+.rmap .chipd.card{background:#fff;}
+.rmap .chipd.dark{background:var(--primary-dark);}
+.rmap .rrow b{color:var(--doc-ink); font-weight:600;}
+.rmap .cutmark{font-family:var(--doc-mono); font-size:9px; color:var(--accent); letter-spacing:.06em; padding-inline-start:61px;}
+h3.framesec{font-family:var(--font-headline); font-weight:900; font-size:26px; margin:0 0 22px;}
+h3.framesec em{font-family:var(--font-english); font-style:italic; font-weight:600; color:#6b4f0f;}
+.pagegrp{border-top:1px solid var(--doc-rule); padding-top:32px; margin-bottom:58px;}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ░░ MASTHEAD ░░ -->
+  <header class="masthead">
+    <div>
+      <nav class="phase-nav" aria-label="phase">
+        <span class="pip on"><i></i>S11</span><span>·</span>
+        <span class="pip on"><i></i>S12</span><span>·</span>
+        <span class="pip on"><i></i>S13</span><span>·</span>
+        <span class="pip now"><i></i>S14</span>
+      </nav>
+      <h1>Photography + Texture — <em>Consolidated Hybrid</em></h1>
+      <p class="sub">MEH-135 finalize step. One mockup, not new options: base = S13 <b>B</b> (framed editorial-inset), home hero borrowed from <b>A</b> (full-bleed). Direction C and its IMG-04 detail crop are <b>dropped</b>. Copy verbatim from locked sources — zero new strings, zero new tokens. Mobile 375 + Desktop 1280 below render from one container-query surface. CC port notes at the foot.</p>
+    </div>
+    <div class="stamp">
+      Series <strong>S14</strong> <span class="dot">·</span> home + /about<br>
+      3 slots <span class="dot">·</span> 1 scrim <span class="dot">·</span> <strong>0</strong> raw hex<br>
+      Kinfolk · Natoora <span class="dot">·</span> licensed <strong>בתי עסק</strong>
+    </div>
+  </header>
+
+  <!-- ░░ DECISION LOG ░░ -->
+  <div class="dlog">
+    <span class="lh">Consolidation record — what changed vs S13</span>
+    <div class="it"><span class="ok">✓</span><span><b>Base = B.</b> Framed plates, warm-white mat + hairline, text always on cream beside the photo.</span></div>
+    <div class="it"><span class="ok">✓</span><span><b>Home hero = A.</b> Full-bleed IMG-02 under the FRL-900 headline. P1 v2 "typography-only" hero lock is <b>superseded by this decision for position 01 only</b> — record in the ADR alongside MEH-135.</span></div>
+    <div class="it"><span class="no">✕</span><span><b>C dropped</b> — seam-straddle collage and IMG-04 detail crop removed from the slice. Slot inventory is now exactly 3.</span></div>
+    <div class="it"><span class="no">✕</span><span><b>21:9 dropped</b> — feature band is a framed 3:2 inset; no specially-composed ultra-wide shot needed.</span></div>
+  </div>
+
+  <!-- ░░ LEGEND ░░ -->
+  <div class="legend">
+    <span class="lh">Conventions</span>
+    <span class="item"><span class="sw slot"></span><b>Labeled image slot</b> — purpose + ratio + Cloudinary attrs. No fake stock</span>
+    <span class="item"><span class="sw db"></span><b>DB field chip</b> — caption/alt assembled from the בית-עסק record, never invented</span>
+    <span class="item"><span class="sw verbatim"></span><b>Verbatim copy</b> — P5 v2 / MEH-472 (home) · S8 D he.json (/about)</span>
+    <span class="item"><span class="sw placeholder"></span>Unchanged sections — tinted to show which surface they sit on</span>
+  </div>
+
+  <!-- ░░ SHARED SYSTEM ░░ -->
+  <section class="syspanel">
+    <h2>The system — <em>one scrim, three slots, layered cream</em></h2>
+    <p class="lede">Photography enters at exactly three points. Everywhere else, depth comes from the cream itself: grain 0.035, tonal steps to background-alt with a hand-cut seam, and the plate's offset panel. The hero is the only place text ever sits over an image.</p>
+    <div class="sysgrid">
+      <div>
+        <h4>The contrast-scrim token</h4>
+        <div class="codeblock">--scrim-ink: linear-gradient(
+  to top,
+  rgb(28 26 23 / .88)  0%,
+  rgb(28 26 23 / .80) 44%,
+  rgb(28 26 23 / .40) 66%,
+  rgb(28 26 23 / 0)   86%);
+/* ink = --site-text. token-derived,
+   no new hue. bottom-anchored. */</div>
+        <p class="aaclaim"><b>AA assumption — stated:</b> worst case is a 100%-white blown highlight directly under the text, on a busy composition — NOT a smooth gradient. The hero mock below renders a deliberately bright/busy test fill to prove it.<br><b>· sub + search + CTAs zone</b> (bottom 44%, α ≥ .80): composite vs cream ≥ <b>8.0 : 1</b> — AA + AAA<br><b>· H1 top line</b> (may reach ~50% on 4:5 mobile, α ≥ .70): ≥ <b>6.0 : 1</b> — large-text AA ×2 margin<br><b>· everything else in the system:</b> text on cream/alt at token defaults — no overlay anywhere.</p>
+      </div>
+      <div>
+        <h4>Depth on cream — between the photos</h4>
+        <ul>
+          <li><span class="n">1</span><b>Grain 0.035, global</b> — the shipped /about recipe, one layer, over photography too.</li>
+          <li><span class="n">2</span><b>Tonal steps with a hand-cut seam.</b> <code>--background → --background-alt</code> transitions get a torn-paper edge (CSS mask, ~4px amplitude) — DS signature gesture №4. The cream folds; nothing floats.</li>
+          <li><span class="n">3</span><b>The plate's offset panel</b> — every framed photo carries a background-alt rectangle offset behind its mat: depth by overlap, zero shadows.</li>
+          <li><span class="n">4</span><b>Overlap moments</b> — search card rides the hero seam; /about portrait column keeps S8 D sticky behavior.</li>
+          <li><span class="n">5</span><b>Ken Burns on the hero only</b> — 22s, ≤ 1.06. <code>prefers-reduced-motion</code> → static frame; #1053 motion layer untouched.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Section rhythm — the void, killed in type-land too</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:22px;">
+          <div class="rmap">
+            <div class="rrow" style="margin-bottom:2px;"><span></span><span></span><b style="font-size:10px; letter-spacing:.12em; text-transform:uppercase;">home</b></div>
+            <div class="rrow"><span class="pos">01</span><span class="chipd photo"></span><span><b>Hero</b> — IMG-02 + scrim</span></div>
+            <div class="rrow"><span class="pos">02–05</span><span class="chipd cream"></span><span>cream + grain</span></div>
+            <div class="cutmark">✂ hand-cut seam</div>
+            <div class="rrow"><span class="pos">06</span><span class="chipd alt"></span><span><b>Feature band</b> — alt step</span></div>
+            <div class="cutmark">✂ hand-cut seam</div>
+            <div class="rrow"><span class="pos">07–08</span><span class="chipd cream"></span><span>cream + grain</span></div>
+            <div class="rrow"><span class="pos">12</span><span class="chipd alt"></span><span>alt step (seams both ends)</span></div>
+            <div class="rrow"><span class="pos">13</span><span class="chipd cream"></span><span>cream</span></div>
+            <div class="rrow"><span class="pos">14</span><span class="chipd dark"></span><span>footer — primary-dark</span></div>
+          </div>
+          <div class="rmap">
+            <div class="rrow" style="margin-bottom:2px;"><span></span><span></span><b style="font-size:10px; letter-spacing:.12em; text-transform:uppercase;">/about</b></div>
+            <div class="rrow"><span class="pos">01</span><span class="chipd cream"></span><span>hero — cream</span></div>
+            <div class="rrow"><span class="pos">02</span><span class="chipd cream"></span><span><b>story</b> — IMG-01 plate + offset alt panel</span></div>
+            <div class="rrow"><span class="pos">—</span><span class="chipd cream"></span><span>pull-quote — cream air (kept)</span></div>
+            <div class="cutmark">✂ hand-cut seam</div>
+            <div class="rrow"><span class="pos">03</span><span class="chipd alt"></span><span>benefits — alt step (kept)</span></div>
+            <div class="cutmark">✂ hand-cut seam</div>
+            <div class="rrow"><span class="pos">04–06</span><span class="chipd cream"></span><span>cream · values box on warm white</span></div>
+            <div class="rrow"><span class="pos">07</span><span class="chipd alt"></span><span>cta — alt step</span></div>
+            <div class="rrow"><span class="pos">08</span><span class="chipd cream"></span><span>contact — cream</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h4 style="font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; margin:26px 0 10px;">Slot inventory — exactly 3</h4>
+    <table class="inv">
+      <thead><tr><th>Slot</th><th>Page · position</th><th>Ratio</th><th>Subject brief (§7-safe)</th><th>Treatment + loading</th></tr></thead>
+      <tbody>
+        <tr><td>IMG-02</td><td><b>home</b> · 01 hero — full-bleed</td><td>4:5 m → 16:9 d (cap 560px)</td><td>Licensed בית עסק — produce / market table, golden hour, depth of field</td><td>Ken-Burns-ready · <code>f_auto,q_auto,w_auto,dpr_auto</code> · eager · fetchpriority=high · aspect-ratio box, CLS 0</td></tr>
+        <tr><td>IMG-03</td><td><b>home</b> · 06 feature band — framed inset</td><td>3:2 (fixed)</td><td>Full-bleed-style produce or workspace of a licensed בית עסק</td><td>static · <code>f_auto,q_auto</code> · lazy</td></tr>
+        <tr><td>IMG-01</td><td><b>/about</b> · 02 story — replaces the beach photo</td><td>3:4 (fixed)</td><td>Founder, environmental, at a vetted בית עסק</td><td><b>matte natural light</b> — flat midtones, side window light. NOT glossy, NO center-bloom / lens-flare · <code>f_auto,q_auto</code> · eager · lazy off</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════════════ HOME ══════════════════════════ -->
+  <section class="pagegrp">
+    <h3 class="framesec">home — <em>full-bleed hero, framed band</em></h3>
+    <div class="frames">
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">a</span><span class="label">MOBILE</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="Home · Mobile 375"><div class="hy" data-mount="home-m"></div></div>
+        <p class="capnote"><b>Hero text discipline.</b> Only H1 + subtitle sit on the scrim; the search card rides the photo seam onto cream and the CTAs land fully on cream — less overlay surface than spec'd, AA for free.</p>
+      </div>
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">b</span><span class="label">DESKTOP</span><span class="dims">1280 × scroll</span></div>
+        <div class="vp desktop" data-screen-label="Home · Desktop 1280"><div class="hy" data-mount="home-d"></div></div>
+        <p class="capnote" style="max-width:80ch;"><b>Hero 16:9, height-capped 560px</b> — photo breathes, fold keeps the search card visible. Feature band: quote at start on the alt step, 3:2 plate at end — the texture moment that breaks the typography run. The worst-case test fill (bright, busy stripes) is intentional: it proves the scrim; the real photo will only be kinder.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ /ABOUT ══════════════════════════ -->
+  <section class="pagegrp">
+    <h3 class="framesec">/about — <em>framed portrait beside the gold byline</em></h3>
+    <div class="frames">
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">a</span><span class="label">MOBILE</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="About · Mobile 375"><div class="hy" data-mount="about-m"></div></div>
+        <p class="capnote"><b>Respected, not reverted.</b> Grain 0.035 · tonal step at benefits · cream typographic pull-quote — all kept. The portrait plate + offset alt panel replace the weak beach photo; the gold byline doesn't move.</p>
+      </div>
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">b</span><span class="label">DESKTOP</span><span class="dims">1280 × scroll</span></div>
+        <div class="vp desktop" data-screen-label="About · Desktop 1280"><div class="hy" data-mount="about-d"></div></div>
+        <p class="capnote" style="max-width:80ch;"><b>S8 D structure verbatim</b> — asymmetric prose + sticky portrait column. The plate mat + alt panel are the only additions; the page now opens authored, with the founder present in the first viewport-and-a-half.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ░░ CC PORT NOTES — PHASE 3 ░░ -->
+  <div class="doc-foot">
+    <h3>Port notes for CC — Phase 3</h3>
+    <table class="cmp">
+      <thead><tr><th>Slot</th><th>Target</th><th>Change</th><th>Flags</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>IMG-02 · home hero</td>
+          <td><code>components/HeroDirectionA.jsx</code><br>mounted in <code>app/page.jsx</code> pos 01</td>
+          <td>Add absolutely-positioned photo layer + <code>--scrim-ink</code> behind the existing type block; copy moves onto the scrim in cream; search card gets <code>margin-top</code> overlap onto cream. KB via existing <code>components/motion/</code> wrapper. <code>priority</code> + <code>fetchpriority="high"</code>, explicit aspect-ratio box.</td>
+          <td><span class="warn">LOCK:</span> P1 v2 "typography-only" superseded by this decision — record in ADR before merging.<br><span class="warn">COPY Δ:</span> code renders <span dir="rtl">"אוכל מקומי. / במקום אחד."</span> + CTA <span dir="rtl">"גילוי עסקים קרובים"</span>; this mock renders the P5 v2 / MEH-472 strings per the lock. Code copy is canonical (S8 convention) — reconcile strings before port; the photo layer is independent of the outcome.</td>
+        </tr>
+        <tr>
+          <td>IMG-03 · feature band</td>
+          <td><code>components/EditorialBreath.jsx</code></td>
+          <td>Becomes the texture moment: section bg <code>--bg-card → --background-alt</code> with hand-cut seams both ends; pull-quote keeps its gold rules at start; framed 3:2 plate + DB-field caption chips at end (5/7 grid desktop, stacked mobile). <code>loading="lazy"</code>.</td>
+          <td><span class="warn">POSITION Δ:</span> code mounts it at position 02; the lock says 06. <span class="warn">COPY Δ:</span> code quote is <span dir="rtl">"אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור."</span> + cite; lock cites the position-06 string rendered here. Reconcile both with Smadar — plate + chips are additive either way.</td>
+        </tr>
+        <tr>
+          <td>IMG-01 · founder portrait</td>
+          <td><code>AboutClient.jsx</code> story column (S8 D port)</td>
+          <td>Replace the beach photo with the framed 3:4 plate + offset <code>--background-alt</code> panel; sticky column + gold byline untouched. Alt text assembled from record fields — pattern <span dir="rtl">"ספיר, מייסדת מהמקור"</span>; no neighbor framing.</td>
+          <td>Art direction on the shoot brief: matte, side window light, flat midtones — reject glossy / center-bloom retouching at intake.</td>
+        </tr>
+        <tr>
+          <td>shared · texture</td>
+          <td><code>app/globals.css</code> + <code>app/page.jsx</code> section order</td>
+          <td>Grain layer already global — bump alpha to a shared <code>0.035</code> with /about. Add <code>--background-alt</code> + <code>--scrim-ink</code> tokens and a <code>.seam-cut</code> utility (CSS mask, no new assets). Apply the rhythm map above to section wrappers.</td>
+          <td>No new hues, no shadows. Tailwind: surfaces map to <code>bg-[var(--background-alt)]</code> etc. — tokens stay the single source.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     HOME SURFACE — cloned into mobile + desktop mounts
+     ══════════════════════════════════════════════════════════════ -->
+<template id="tpl-home">
+  <div class="ph-bar head">FloatingNavbar — parallel track (P4 v5)</div>
+
+  <!-- 01 · HERO — full-bleed IMG-02 + --scrim-ink -->
+  <section class="hero">
+    <figure class="slot kb">
+      <div class="fill f-worst"></div>
+      <div class="scrim"></div>
+      <span class="tag"><b>IMG-02</b> · HOME HERO · 4:5 m → 16:9 d (cap 560) · f_auto,q_auto,w_auto,dpr_auto · eager · fetchpriority=high · KB</span>
+      <span class="tag t2">FILL = WORST-CASE TEST — bright/busy, AA proven against this</span>
+    </figure>
+    <div class="hero-copy">
+      <h1>אוכל מקומי, במקום אחד</h1>
+      <p class="sub">בתי עסק מקומיים בישראל — ישר מהמקור</p>
+    </div>
+  </section>
+  <div class="hero-search">
+    <div class="srch-card">
+      <div class="srch"><span class="ic"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></span><span class="srch-ph">לחם מחמצת, ביצים אורגניות, ירקות ופירות</span><span class="srch-go"><i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i></span></div>
+    </div>
+  </div>
+  <div class="hero-acts">
+    <div class="acts"><span class="pill-near"><i class="ph ph-crosshair" aria-hidden="true"></i>קרוב אלי</span><span class="pill-cta">גלו עסקים</span><span class="lnk">איך זה עובד</span></div>
+  </div>
+
+  <div class="ph-bar mid">02–05 · stats · categories lead-in — unchanged · cream + grain</div>
+
+  <!-- 06 · FEATURE BAND — alt step, hand-cut seams, framed 3:2 plate -->
+  <div class="cut top"></div>
+  <section class="band step">
+    <div class="band-grid">
+      <div class="band-quote">
+        <div class="marker"><span class="rule"></span><span class="eb">מהמקור</span></div>
+        <p class="bq">מהמקור הוא הבית הראשון של העסק שלך</p>
+      </div>
+      <figure class="plate">
+        <span class="slot r32"><span class="fill f-bread"></span><span class="tag"><b>IMG-03</b> · FEATURE BAND · 3:2 framed inset · f_auto,q_auto · lazy</span></span>
+        <figcaption class="plate-cap"><div class="dbrow"><span class="db-chip">שם בית העסק</span><span class="db-chip">קטגוריה</span><span class="db-chip">עיר</span></div></figcaption>
+      </figure>
+    </div>
+  </section>
+  <div class="cut bot"></div>
+
+  <div class="ph-bar mid">07–08 · categories · featured — unchanged · cream + grain</div>
+  <div class="cut top"></div>
+  <div class="ph-bar mid alt">12 · how it works — unchanged · background-alt step</div>
+  <div class="cut bot"></div>
+  <div class="ph-bar mid">13 · for business — unchanged · cream</div>
+  <div class="ph-bar foot">14 · Footer — primary-dark (existing)</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════════
+     /ABOUT SURFACE — cloned into mobile + desktop mounts
+     ══════════════════════════════════════════════════════════════ -->
+<template id="tpl-about">
+  <div class="ph-bar head">Header — parallel track</div>
+
+  <!-- 01 · HERO (cream — unchanged) -->
+  <section class="ahero">
+    <h1 class="h1a">פעם היית צריכה לדעת את מי לשאול. עכשיו כבר לא</h1>
+    <p class="subm">אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.</p>
+  </section>
+
+  <!-- 02 · STORY — IMG-01 framed plate beside the gold byline -->
+  <section class="story">
+    <div class="story-grid">
+      <div class="prose">
+        <p class="greet">היי, אני ספיר</p>
+        <p class="storyp muted-lead">לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר, קוראת רשימת רכיבים שלא הצלחתי לפענח. ידעתי שאי־שם בסביבה שלי יש אנשים שמכינים אוכל טוב, ישר מהמקור — פשוט לא ידעתי איך למצוא אותם.</p>
+        <p class="storyp">התחלתי לשאול. חברה הכירה אופה, שהכיר חוואית, שסיפרה לי על גבן שעובד שלוש שכונות מכאן. כל שם הגיע בלחישה, מפה לאוזן, כאילו זה איזה סוד ששומרים עליו.</p>
+        <div class="more-note">¶3–5 — unchanged (S8 D)</div>
+      </div>
+      <div class="pcol">
+        <div class="plate-wrap">
+          <div class="plate-bg"></div>
+          <figure class="plate">
+            <span class="slot r34"><span class="fill f-portrait"></span><span class="tag"><b>IMG-01</b> · FOUNDER PORTRAIT · 3:4 · matte natural light, no bloom · f_auto,q_auto · eager</span></span>
+          </figure>
+        </div>
+        <div class="byline">
+          <div class="eb">ספיר · מהמקור</div>
+          <p>מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.</p>
+          <p>את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.</p>
+        </div>
+      </div>
+    </div>
+    <div class="story-after"></div>
+  </section>
+
+  <!-- pull-quote — cream typographic (existing, untouched) -->
+  <section class="quoteb">
+    <span class="em-mark">מהמקור</span>
+    <blockquote>אוכל טוב — לא שומרים לעצמנו</blockquote>
+  </section>
+
+  <div class="cut top"></div>
+  <div class="ph-bar mid alt">03 · benefits — unchanged · background-alt step (existing tonal separation, kept)</div>
+  <div class="cut bot"></div>
+  <div class="ph-bar mid">04–06 · tips · stories · values — unchanged · cream + warm-white values box</div>
+  <div class="cut top"></div>
+  <div class="ph-bar mid alt">07 · cta — background-alt step</div>
+  <div class="cut bot"></div>
+  <div class="ph-bar mid">08 · contact — unchanged · cream</div>
+  <div class="ph-bar foot">Footer — parallel track</div>
+</template>
+
+<script>
+(function(){
+  var tplHome = document.getElementById('tpl-home');
+  var tplAbout = document.getElementById('tpl-about');
+  document.querySelectorAll('[data-mount]').forEach(function(mount){
+    var which = mount.getAttribute('data-mount').indexOf('home') === 0 ? tplHome : tplAbout;
+    mount.appendChild(which.content.cloneNode(true));
+  });
+})();
+</script>
+</body>
+</html>

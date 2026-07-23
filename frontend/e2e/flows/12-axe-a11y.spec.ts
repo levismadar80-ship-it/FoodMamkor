@@ -95,7 +95,9 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
       test.skip(true, "No producer cards found — staging DB may be empty");
     }
     await expect(firstCard).toBeVisible({ timeout: 15_000 });
-    await firstCard.click();
+    // MEH-1369: click the card's inner nav anchor (real <a href>), not the
+    // <article> wrapper whose click races hydration. See parity.spec.ts header.
+    await firstCard.locator('a[href^="/"]').first().click();
     // MEH-828: accept slug-routed detail pages too. Slug producers (e.g.
     // /teva-pure) never hit /producer/{id}, so includes("/producer/") timed
     // out and the axe scan silently never ran. Mirror 03-view-producer-detail:

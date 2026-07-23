@@ -85,6 +85,21 @@ describe("BottomNav", () => {
     expect(hrefs).not.toContain("/favorites");
   });
 
+  // MEH-1202: on the public producer detail page the StickyContactBar is the
+  // single bottom chrome layer — BottomNav gates itself off so mobile shows one
+  // bottom bar, not two.
+  it("renders null on /producer/[id] (StickyContactBar is the sole bottom bar)", () => {
+    pathnameRef.current = "/producer/123";
+    const { container } = render(<BottomNav />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("still renders on the /producer/dashboard owner subtree", () => {
+    pathnameRef.current = "/producer/dashboard";
+    render(<BottomNav />);
+    expect(screen.getAllByRole("link")).toHaveLength(3);
+  });
+
   it("account tab is a dialog-toggle button, not a route", () => {
     render(<BottomNav />);
     const account = screen.getByRole("button");
@@ -113,8 +128,22 @@ describe("BottomNav", () => {
   it("shows the user's initial on the account tab when logged in", () => {
     userRef.current = { id: "u1", name: "דנה" };
     render(<BottomNav />);
-    // Avatar initial replaces the User glyph; the label stays "חשבון".
+    // Avatar initial replaces the User glyph.
     expect(screen.getByText("ד")).toBeInTheDocument();
     expect(screen.getByRole("button")).toHaveAttribute("aria-haspopup", "dialog");
+  });
+
+  // MEH-991 (NAV-14): logged-in label is the user's first name, not "חשבון".
+  it("shows the user's first name as the account label when logged in", () => {
+    userRef.current = { id: "u1", name: "דנה כהן" };
+    render(<BottomNav />);
+    expect(screen.getByText("דנה")).toBeInTheDocument();
+    expect(screen.queryByText("חשבון")).not.toBeInTheDocument();
+  });
+
+  it("shows 'חשבון' as the account label when logged out", () => {
+    userRef.current = null;
+    render(<BottomNav />);
+    expect(screen.getByText("חשבון")).toBeInTheDocument();
   });
 });

@@ -2,29 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  autocompleteAddresses,
+  resolveSuggestion,
+  newSessionToken,
+} from "@/lib/places";
 
 /**
- * AddressSearch — Israeli address autocomplete via OpenStreetMap Nominatim.
+ * AddressSearch — Israeli address autocomplete (MEH-1234).
  *
- * Why Nominatim:
- *   - Free, no API key, no billing surprises (unlike Google Places)
- *   - Hebrew-friendly (`accept-language=he`)
- *   - Restricted to Israel via `countrycodes=il` for clean results
- *   - Returns a structured `address` object (street, suburb/neighborhood,
- *     city, postcode) plus `lat`/`lon` — exactly what the listing forms
- *     need to fill in once instead of asking the user to type each field.
+ * Provider-agnostic (see lib/places.js). When NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ * is set it uses Google Places Autocomplete (New) over REST — IL-restricted,
+ * Hebrew, session-token'd (Wolt pattern); otherwise it falls back to the free
+ * OpenStreetMap Nominatim path with IDENTICAL behavior to before, so the app
+ * (and this component's API) works with no key at all.
  *
- * Usage policy notes:
- *   - Nominatim's policy: max ~1 req/sec from a single source. We debounce
- *     to 450 ms and only query when the user has typed ≥ 3 chars.
- *   - For high-volume production usage we should proxy through our backend
- *     with a User-Agent identifying mehamakor.co.il (browsers can't set
- *     User-Agent client-side). MVP volume is fine direct.
- *   - The component degrades gracefully: on network failure or rate-limit
- *     it just keeps the field as a free-text input — users can still type
- *     a manual address.
+ * The component owns:
+ *   - the ≥3-char / 450 ms debounce + requestSeq stale-response guard (kept)
+ *   - the Places session-token lifecycle: mint one per autocomplete session,
+ *     consume it on select (a fresh one is minted for the next search)
+ *   - dedupe is done in lib/places.js so no two identical rows render
  *
- * Props:
+ * Props (UNCHANGED — LocationCard/RegisterProducer consumers untouched):
  *   - id (required) — for <label htmlFor>
  *   - label (string, sr-only-friendly)
  *   - value (string) — current input text
@@ -45,7 +44,7 @@ export default function AddressSearch({
 }) {
   const t = useTranslations("search.address_search");
   const inputPlaceholder = placeholder ?? t("placeholder");
-  const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -54,52 +53,45 @@ export default function AddressSearch({
   // Track the latest in-flight request so a slow earlier response can't
   // overwrite a fresher result (classic out-of-order async hazard).
   const requestSeq = useRef(0);
+  // Google Places session token — minted lazily per autocomplete session,
+  // consumed on select. Nominatim ignores it (harmless).
+  const sessionTokenRef = useRef(null);
 
-  // Debounced Nominatim lookup — see usage policy notes above.
+  // Debounced provider lookup (Google Places when keyed, else Nominatim).
   useEffect(() => {
     const q = (value || "").trim();
     if (q.length < 3) {
-      setResults([]);
+      setSuggestions([]);
       return;
     }
     const seq = ++requestSeq.current;
+    const controller = new AbortController();
+    // Lazily open a session for the current autocomplete run (Google cost
+    // control; Nominatim ignores the token).
+    if (!sessionTokenRef.current) sessionTokenRef.current = newSessionToken();
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const url =
-          "https://nominatim.openstreetmap.org/search" +
-          `?q=${encodeURIComponent(q)}` +
-          "&countrycodes=il" +
-          "&format=json" +
-          "&addressdetails=1" +
-          "&accept-language=he" +
-          "&limit=6";
-        const res = await fetch(url, {
-          headers: {
-            // Browsers strip/normalise User-Agent and Referer; setting
-            // Accept-Language is the one identification handle we have.
-            "Accept-Language": "he,en;q=0.8",
-          },
+        const list = await autocompleteAddresses(q, {
+          signal: controller.signal,
+          sessionToken: sessionTokenRef.current,
         });
         if (seq !== requestSeq.current) return; // stale
-        if (!res.ok) {
-          setResults([]);
-          return;
-        }
-        const data = await res.json();
-        if (seq !== requestSeq.current) return; // stale
-        setResults(Array.isArray(data) ? data : []);
+        setSuggestions(list);
         setHighlight(0);
         setIsOpen(true);
       } catch {
-        // Network error / blocked / offline — silently degrade. The input
-        // still works as plain text so the user can type their address.
-        if (seq === requestSeq.current) setResults([]);
+        // Network error / blocked / offline / aborted — silently degrade. The
+        // input still works as plain text so the user can type their address.
+        if (seq === requestSeq.current) setSuggestions([]);
       } finally {
         if (seq === requestSeq.current) setLoading(false);
       }
     }, 450);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [value]);
 
   // Close on outside click
@@ -111,49 +103,42 @@ export default function AddressSearch({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  /** Pull what we care about out of a Nominatim result. */
-  const normalize = (r) => {
-    const a = r.address || {};
-    // Nominatim's "city" can land in any of these fields depending on
-    // whether the place is a metropolis, town, village, etc.
-    const city =
-      a.city || a.town || a.village || a.municipality || a.county || "";
-    const neighborhood =
-      a.neighbourhood || a.suburb || a.quarter || a.city_district || "";
-    // Build a "street + number" string from the parts.
-    const street = [a.road, a.house_number].filter(Boolean).join(" ");
-    return {
-      displayName: r.display_name || "",
-      street,
-      neighborhood,
-      city,
-      postcode: a.postcode || "",
-      lat: r.lat ? Number(r.lat) : null,
-      lng: r.lon ? Number(r.lon) : null,
-    };
-  };
-
-  const selectResult = (r) => {
-    const picked = normalize(r);
-    // Update the visible text to the street part if we have one,
-    // otherwise the full display name (so the user sees something useful).
-    onChange(picked.street || picked.displayName);
-    onSelect?.(picked);
+  const selectResult = async (s) => {
+    if (!s) return;
+    // Close immediately for responsiveness; the resolve (Google details call)
+    // finishes in the background and then fills the fields.
     setIsOpen(false);
-    setResults([]);
+    setSuggestions([]);
+    try {
+      const picked = await resolveSuggestion(s, {
+        sessionToken: sessionTokenRef.current,
+      });
+      if (picked) {
+        // Update the visible text to the street part if we have one, otherwise
+        // the full display name (so the user sees something useful).
+        onChange(picked.street || picked.displayName || s.primary);
+        onSelect?.(picked);
+      }
+    } catch {
+      // Resolve failed (e.g. Google details network error) — keep the typed
+      // text; the user can still submit a manual address.
+    } finally {
+      // End the session: a fresh token is minted for the next search.
+      sessionTokenRef.current = null;
+    }
   };
 
   const handleKeyDown = (e) => {
-    if (!isOpen || results.length === 0) return;
+    if (!isOpen || suggestions.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlight((h) => Math.min(h + 1, results.length - 1));
+      setHighlight((h) => Math.min(h + 1, suggestions.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (results[highlight]) selectResult(results[highlight]);
+      if (suggestions[highlight]) selectResult(suggestions[highlight]);
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
@@ -198,13 +183,13 @@ export default function AddressSearch({
             onChange(e.target.value);
             setIsOpen(true);
           }}
-          onFocus={() => results.length > 0 && setIsOpen(true)}
+          onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
           className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted"
           autoComplete="off"
           role="combobox"
-          aria-expanded={isOpen && results.length > 0}
+          aria-expanded={isOpen && suggestions.length > 0}
           aria-autocomplete="list"
           aria-controls={listboxId}
         />
@@ -218,43 +203,34 @@ export default function AddressSearch({
         )}
       </div>
 
-      {isOpen && results.length > 0 && (
+      {isOpen && suggestions.length > 0 && (
         <ul
           id={listboxId}
           role="listbox"
           className="absolute z-50 mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
         >
-          {results.map((r, idx) => {
-            const picked = normalize(r);
-            const primary = picked.street || picked.displayName.split(",")[0];
-            const secondary = [picked.neighborhood, picked.city]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <li
-                key={r.place_id || idx}
-                role="option"
-                aria-selected={idx === highlight}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  selectResult(r);
-                }}
-                onMouseEnter={() => setHighlight(idx)}
-                className={`px-3 py-2 cursor-pointer text-sm border-b border-border last:border-b-0 ${
-                  idx === highlight
-                    ? "bg-green-50 text-primary"
-                    : "text-text"
-                }`}
-              >
-                <div className="font-medium">{primary}</div>
-                {secondary && (
-                  <div className="text-xs text-fg-muted mt-0.5">
-                    {secondary}
-                  </div>
-                )}
-              </li>
-            );
-          })}
+          {suggestions.map((s, idx) => (
+            <li
+              key={s.id ?? idx}
+              role="option"
+              aria-selected={idx === highlight}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                selectResult(s);
+              }}
+              onMouseEnter={() => setHighlight(idx)}
+              className={`px-3 py-2 cursor-pointer text-sm border-b border-border last:border-b-0 ${
+                idx === highlight ? "bg-green-50 text-primary" : "text-text"
+              }`}
+            >
+              <div className="font-medium">{s.primary}</div>
+              {s.secondary && (
+                <div className="text-xs text-fg-muted mt-0.5">
+                  {s.secondary}
+                </div>
+              )}
+            </li>
+          ))}
         </ul>
       )}
     </div>

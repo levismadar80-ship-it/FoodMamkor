@@ -7,6 +7,7 @@ import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
+import BackToTop from "@/components/BackToTop";
 import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
 import {
   HomeHowItWorks,
@@ -21,7 +22,7 @@ import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { Sparkle } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
-import { buildHomeJsonLd } from "@/lib/seo";
+import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
 
 // MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
 // because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
@@ -47,15 +48,15 @@ export default function HomePage() {
   const locale = useLocale();
   const {
     user,
-    producers, categories, filters, chips,
+    producers, regionFallback, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
     fridayMode, step0Visible, userCity,
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
-    featuredProducer,
-    handleNearMe, handleCitySelected, handleCategoryCardClick,
+    featuredProducer, geoActive, cityActive, geoEmptyNotice,
+    handleNearMe, handleSurprise, handleCitySelected, handleClearLocation,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
@@ -72,7 +73,7 @@ export default function HomePage() {
       {/* MEH-804: homepage Organization + WebSite (SearchAction) JSON-LD. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildHomeJsonLd(locale)) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildHomeJsonLd(locale)) }}
       />
       <HomeHero
         fridayMode={fridayMode}
@@ -166,11 +167,9 @@ export default function HomePage() {
         />
       </div>
 
-      <HomeCategoryGrid
-        categoryCards={categoryCards}
-        onCardClick={handleCategoryCardClick}
-        selectedCategory={filters.category}
-      />
+      {/* MEH-1080: cards are real links to /producers?category=<id> —
+          no click handler, no selection state on the homepage anymore. */}
+      <HomeCategoryGrid categoryCards={categoryCards} />
 
       <HomeProducersGrid
         producers={producers}
@@ -190,7 +189,14 @@ export default function HomePage() {
         onAdvanceFromStep0={handleAdvanceFromStep0}
         onToggleChip={toggleChip}
         onClearCategory={handleClearCategory}
+        onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}
+        onSurprise={handleSurprise}
+        hasProducers={statsProducersCount > 0}
+        geoActive={geoActive}
+        cityActive={cityActive}
+        geoEmptyNotice={geoEmptyNotice}
+        regionFallback={regionFallback}
       />
 
       {/* =========================
@@ -239,6 +245,10 @@ export default function HomePage() {
       <HomeRecentlyViewed items={recentlyViewed} />
 
       <HomeCTA />
+
+      {/* MEH-1309: floating back-to-top for the long home scroll. Stacks above
+          the chat FAB (bottom-END corner) via the shared cookie-banner clearance. */}
+      <BackToTop />
     </div>
   );
 }

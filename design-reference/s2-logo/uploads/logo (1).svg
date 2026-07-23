@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" role="img" aria-label="מהמקור">
+  <title>מהמקור</title>
+  <g transform="rotate(36)" opacity="0.92">
+    <path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"></path>
+    <ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"></ellipse>
+  </g>
+  <g transform="rotate(108)" opacity="0.92">
+    <path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"></path>
+    <ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"></ellipse>
+  </g>
+  <g transform="rotate(180)" opacity="0.92">
+    <path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"></path>
+    <ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"></ellipse>
+  </g>
+  <g transform="rotate(252)" opacity="0.92">
+    <path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"></path>
+    <ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"></ellipse>
+  </g>
+  <g transform="rotate(324)" opacity="0.92">
+    <path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"></path>
+    <ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"></ellipse>
+  </g>
+</svg>

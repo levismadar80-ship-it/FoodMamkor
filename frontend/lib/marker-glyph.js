@@ -20,21 +20,34 @@ import { renderToStaticMarkup } from "react-dom/server";
 // "every entry must carry a matching iconName" contract to drift. renderToStatic-
 // Markup runs once per glyph, reused across every marker + re-render (the /map
 // feed renders up to ~100 producers).
+// MEH-1412: nested Map<Component, Map<styleKey, svg>> so the secondary
+// (pickup/market_stand outline) marker can render the same glyph in the
+// category colour without invalidating the default white/fill cache entry.
 const glyphSvgCache = new Map();
 
 /**
  * @param {import("react").ComponentType<{size?: number, weight?: string, color?: string}>} IconComponent
  *   A Phosphor icon component (e.g. from styleForProducer(producer).icon).
- * @returns {string} static `<svg>` markup, white fill, 18px — safe to inject
- *   into the divIcon HTML string (no user data flows through here).
+ * @param {{size?: number, weight?: string, color?: string}} [style]
+ *   Optional glyph style. Defaults to the MEH-936 primary-marker look
+ *   (white fill, 18px) so existing callers are byte-identical.
+ * @returns {string} static `<svg>` markup — safe to inject into the divIcon
+ *   HTML string (no user data flows through here).
  */
-export function categoryGlyphSvg(IconComponent) {
-  let svg = glyphSvgCache.get(IconComponent);
+export function categoryGlyphSvg(
+  IconComponent,
+  { size = 18, weight = "fill", color = "#ffffff" } = {},
+) {
+  let byStyle = glyphSvgCache.get(IconComponent);
+  if (byStyle === undefined) {
+    byStyle = new Map();
+    glyphSvgCache.set(IconComponent, byStyle);
+  }
+  const styleKey = `${size}|${weight}|${color}`;
+  let svg = byStyle.get(styleKey);
   if (svg === undefined) {
-    svg = renderToStaticMarkup(
-      createElement(IconComponent, { size: 18, weight: "fill", color: "#ffffff" }),
-    );
-    glyphSvgCache.set(IconComponent, svg);
+    svg = renderToStaticMarkup(createElement(IconComponent, { size, weight, color }));
+    byStyle.set(styleKey, svg);
   }
   return svg;
 }

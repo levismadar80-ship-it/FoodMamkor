@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
+import { ArrowRight, EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -64,7 +64,7 @@ function LoginPageBody() {
   const params = useSearchParams();
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
   const redirectTo = safeInternalRedirect(params.get("redirect"));
-  const { login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +79,16 @@ function LoginPageBody() {
       showToast.success(t("reset_success"));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-1489 chunk C: an already-authenticated visitor never needs the login
+  // form — bounce to the clamped ?redirect= target (falls back to "/" via the
+  // MEH-810 helper). replace() so /login doesn't sit in history. Guests keep
+  // the form + the ?reset=1 toast above; the register inbox screen has no token
+  // so user stays null there (no redirect). Post-login/OAuth push() lands on
+  // the same target, so this is idempotent, not a second navigation elsewhere.
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectTo);
+  }, [authLoading, user, router, redirectTo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,6 +137,17 @@ function LoginPageBody() {
   const passwordValidLength = passwordTouched && password.length >= 1;
   const formIsValid = validateEmail(email) && password.length >= 1;
 
+  // MEH-1489 chunk C: gate the form render while auth resolves (or once a user
+  // is present and the redirect above is in flight) so the login form never
+  // flashes for an authenticated visitor.
+  if (authLoading || user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+        {t("loading")}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
 
@@ -159,7 +180,7 @@ function LoginPageBody() {
 
         {/* Head — gold eyebrow rule + Frank Ruhl 900 welcome headline */}
         <div className="grid gap-3 text-start">
-          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium tracking-[0.16em]">
+          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium">
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("title")}
           </span>
@@ -216,6 +237,8 @@ function LoginPageBody() {
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setEmailTouched(true)}
                 required
+                // MEH-991 (LOGIN-04): S9 email field shows a format example.
+                placeholder="name@example.com"
                 aria-invalid={emailInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   emailInvalid
@@ -297,11 +320,12 @@ function LoginPageBody() {
             </p>
           )}
 
-          {/* Submit — site-standard rounded primary (per "NOT green pill" constraint) */}
+          {/* Submit — S9 green pill + reading-forward arrow (Refs MEH-1033).
+              Overrides the prior site-standard-rounded ("NOT green pill") constraint. */}
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-[10px] px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">
@@ -309,7 +333,10 @@ function LoginPageBody() {
                 {t("submitting")}
               </span>
             ) : (
-              t("submit")
+              <span className="inline-flex items-center justify-center">
+                {t("submit")}
+                <ArrowRight size={18} weight="bold" aria-hidden="true" className="ms-1 rtl:rotate-180" />
+              </span>
             )}
           </button>
         </form>

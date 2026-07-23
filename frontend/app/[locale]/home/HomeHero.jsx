@@ -46,9 +46,16 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  *
  * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2),
  * MEH-788 (#1055 Cloudinary+KB · #1063 scrim token · S14 capped-hero + cream
- * search/CTAs).
+ * search/CTAs), MEH-1288 (surprise-me button beside near-me),
+ * MEH-1476 (surprise-me relocated to the producers-grid end — hero now
+ * carries only the filled primary + near-me ghost + "how it works" link).
  */
-export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
+export function HomeHero({
+  fridayMode,
+  geoLoading,
+  onNearMe,
+  onScrollDown,
+}) {
   const t = useTranslations();
   // Mirrors the use-home-page.js scrollToProducers pattern (getElementById +
   // smooth scroll); target id added on HomeHowItWorks (HomeStaticBlocks.jsx).
@@ -63,7 +70,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         aria-label={t("home.hero.main_label")}
       >
         {/* Ken Burns layer — decorative produce photo. inset -5% gives the
-            ≤1.08 zoom drift room. REUSES: components/ParallaxQuote.jsx:36 */}
+            ≤1.06 zoom drift room. REUSES: components/ParallaxQuote.jsx:36 */}
         <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           <div
             className="kenburns-right absolute"
@@ -94,7 +101,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
               initial={{ y: 40 }}
               animate={{ y: 0 }}
               transition={{ duration: 0.64, ease: EASE_QUART }}
-              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,4.5vw,60px)] max-w-[18ch] mx-auto md:mx-0"
+              className="font-headline-display font-black leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,4.5vw,60px)] max-w-[18ch] mx-auto md:mx-0"
               style={{ lineHeight: 1.12 }}
             >
               {t("home.hero.title")}
@@ -120,18 +127,28 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
         role="search"
         aria-label={t("home.hero.search_area_label")}
-        className="relative z-10 mx-auto -mt-8 md:-mt-10 bg-surface-card shadow-lg px-6 py-3.5"
-        style={{ borderRadius: "50px", width: "min(580px, calc(100% - 2rem))" }}
+        // MEH-991 (HOME-05): S14 seam-search — cream card (radius 16) with a white
+        // inner field, replacing the single white pill.
+        className="relative z-10 mx-auto -mt-8 md:-mt-10 bg-background border border-border shadow-lg rounded-2xl p-2"
+        style={{ width: "min(580px, calc(100% - 2rem))" }}
       >
-        <HeroSearch
-          placeholder={t("home.search.placeholder")}
-          srLabel={t("home.search.sr_label")}
-          className="w-full"
-        />
+        <div className="bg-surface rounded-xl border border-border px-4 py-1.5">
+          <HeroSearch
+            placeholder={t("home.search.placeholder")}
+            srLabel={t("home.search.sr_label")}
+            className="w-full"
+          />
+        </div>
       </motion.div>
 
       {/* Actions — on cream (re-coloured from the on-photo treatment): primary
-          CTA (גלו עסקים) + near-me (MEH-41) + "how it works". */}
+          CTA (גלו עסקים) + near-me (MEH-41) + "how it works". MEH-1070: CTA row
+          is centered at every breakpoint — supersedes HOME-06 alignment per
+          Sapir 09/07 (the md:justify-start + md:px-12 start-geometry from #1476
+          is dropped; centered content needs neither). MEH-1369: exactly ONE filled
+          primary — near-me is the single .action-ghost secondary; how-it-works is
+          a text link. MEH-1476: surprise-me left the hero — it now lives at the
+          producers-grid end beside "load more". */}
       <motion.div
         initial={{ y: 12 }}
         animate={{ y: 0 }}
@@ -141,21 +158,26 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         <button
           type="button"
           onClick={onScrollDown}
-          className="bg-action-primary hover:bg-action-primary-hover text-white font-medium text-sm px-6 py-2.5 rounded-full transition-colors duration-base ease-quart focus-ring"
+          className="bg-action-primary hover:bg-action-primary-hover text-white font-medium text-sm px-6 py-2.5 rounded-sm transition-colors duration-base ease-quart focus-ring"
         >
           {t("home.hero.cta_primary")}
         </button>
 
+        {/* MEH-1369: single ghost secondary — .action-ghost (globals.css:138)
+            demotes near-me below the filled primary; no longer a same-size twin. */}
         <button
           type="button"
           onClick={onNearMe}
           disabled={geoLoading}
-          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-border px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
+          className="action-ghost inline-flex items-center gap-2 px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
         </button>
 
+        {/* MEH-1476: "how it works" is now the sole secondary text link — the
+            surprise-me link that used to sit beside it (MEH-1369/MEH-1409) moved
+            to the producers-grid end. Same text-link weight, unchanged handler. */}
         <button
           type="button"
           onClick={scrollToHowItWorks}

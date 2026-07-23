@@ -9,7 +9,7 @@ Covers the grant/revoke admin endpoints that record the OUTCOME of the
   - re-grant overwrites verified_at + doc_type (legit correction path);
   - revoke clears both to NULL; revoke is idempotent on an unverified row;
   - permission guard: non-admin 403 (schema-valid body), missing 404;
-  - legacy is_verified is left untouched (decoupling = Chunk 4);
+  - grant/revoke round-trip verified_at with no legacy column (ch6 drop);
   - no auto-stamp on the admin-create/import path (make_producer).
 
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py.
@@ -18,6 +18,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
+
+from app.models.models import Producer
 
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -166,19 +168,23 @@ def test_grant_404_on_missing_producer(client, db):
     assert resp.status_code == 404
 
 
-def test_grant_revoke_leave_is_verified_untouched(client, db):
-    # make_producer sets is_verified=True; Chunk 2 must not touch the legacy
-    # axis (decoupling is Chunk 4). Both grant and revoke leave it as-is.
-    producer = make_producer(db, name="חוות is_verified")
-    assert producer.is_verified is True
+def test_grant_revoke_work_without_legacy_column(client, db):
+    # MEH-766 ch6: the legacy is_verified column is DROPPED — this test was
+    # the ch2-era "grant/revoke leave is_verified untouched" decoupling proof.
+    # What remains to lock: the model has no such attribute, and grant/revoke
+    # still round-trip verified_at cleanly without it.
+    producer = make_producer(db, name="חוות ללא עמודה")
+    assert not hasattr(Producer, "is_verified")
     hdr = _admin_header(db)
-    client.post(
+    resp = client.post(
         f"/admin/producers/{producer.id}/grant-verified",
         json={"doc_type": "license"},
         headers=hdr,
     )
+    assert resp.status_code == 200, resp.text
     db.refresh(producer)
-    assert producer.is_verified is True
-    client.post(f"/admin/producers/{producer.id}/revoke-verified", headers=hdr)
+    assert producer.verified_at is not None
+    resp = client.post(f"/admin/producers/{producer.id}/revoke-verified", headers=hdr)
+    assert resp.status_code == 200, resp.text
     db.refresh(producer)
-    assert producer.is_verified is True
+    assert producer.verified_at is None

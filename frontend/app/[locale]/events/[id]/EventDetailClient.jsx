@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
+
+// MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
+// that carry coords. ssr:false — leaflet touches window at module eval.
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 const DETAIL_DATE_OPTIONS = {
   weekday: "long",
@@ -75,7 +83,7 @@ export default function EventDetailClient() {
       {event.image_url && (
         <div
           className="h-[360px] bg-cover bg-center"
-          style={{ backgroundImage: `url(${event.image_url})` }}
+          style={{ backgroundImage: `url(${optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })})` }}
           role="img"
           aria-label={event.title}
         />
@@ -95,7 +103,7 @@ export default function EventDetailClient() {
           {event.category}
         </span>
 
-        <h1 className="font-headline-display text-4xl md:text-5xl font-bold text-text mb-4">
+        <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-4">
           {event.title}
         </h1>
 
@@ -117,7 +125,8 @@ export default function EventDetailClient() {
                 glyph leads in this row's accent color — same principle as MapPin
                 leading its row in text-primary at :96. */}
             <Coins size={16} className="text-accent inline align-[-3px]" aria-hidden="true" />
-            {event.price > 0 ? `₪${event.price}` : t("free")}
+            {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
+            {event.price > 0 ? <span dir="ltr">{formatPrice(event.price)}</span> : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">
@@ -127,6 +136,14 @@ export default function EventDetailClient() {
             </p>
           )}
         </div>
+
+        {/* MEH-1404: map + navigation buttons when the event has coordinates.
+            Without coords the location line above stays text-only (unchanged). */}
+        {event.lat != null && event.lng != null && (
+          <div className="mb-6">
+            <MiniMap lat={event.lat} lng={event.lng} name={event.title} />
+          </div>
+        )}
 
         {event.description && (
           <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-text/90">
@@ -140,21 +157,21 @@ export default function EventDetailClient() {
               href={event.registration_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
+              className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition"
             >
               {t("register")}
             </a>
           ) : (
             <Link
               href={`/producer/${event.producer_id}`}
-              className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
+              className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition"
             >
               {t("contact_producer")}
             </Link>
           )}
           <Link
             href="/events"
-            className="border border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
+            className="border border-primary text-primary px-6 py-3 rounded-sm font-medium hover:bg-green-50 transition"
           >
             {t("all_events")}
           </Link>

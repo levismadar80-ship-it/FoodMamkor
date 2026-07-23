@@ -98,7 +98,18 @@ const SECTIONS = [
           {CONTACT_EMAIL}
         </a>
         <br />
-        <Phone size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("sections.contact.phone_placeholder")}
+        {/* MEH-1074 legal review (12/07): named coordinator + real phone line
+            restored per תקנות שוויון זכויות (requires a named contact + phone).
+            The number is the approved business WhatsApp line. */}
+        <Phone size={16} className="inline align-[-2px] text-primary" aria-hidden="true" />{" "}
+        <strong>{t("sections.contact.phone_label")}</strong>{" "}
+        <a
+          href="tel:+972552553744"
+          className="text-primary hover:underline"
+          dir="ltr"
+        >
+          055-255-3744
+        </a>
         <br />
         <span className="text-sm text-fg-muted">
           {t("sections.contact.footnote")}
@@ -137,6 +148,8 @@ export default async function AccessibilityPage({ params }) {
         <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
           {t("heading")}
         </h1>
+        {/* MEH-1059 (תקנה 35): statement update date + last-check date. */}
+        <p className="text-fg-muted mb-1">{t("statement_date")}</p>
         <p className="text-fg-muted mb-12">{t("date_label")}</p>
 
         <div className="space-y-4">

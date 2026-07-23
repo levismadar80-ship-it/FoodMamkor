@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { WhatsappLogo } from "@phosphor-icons/react";
+import { ShareNetwork } from "@phosphor-icons/react";
 
 /**
  * WhatsApp share button for producer pages — the viral loop.
@@ -30,7 +30,10 @@ export default function WhatsAppShareButton({ producer, url }) {
       className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] text-sm font-medium border border-border bg-white text-[#1C1A17] hover:bg-[#F5F0E8] transition"
       aria-label={t("share_aria")}
     >
-      <WhatsappLogo size={18} weight="fill" className="text-[#25D366]" aria-hidden="true" />
+      {/* MEH-1049 (MEH-1074 Task A): neutral ShareNetwork icon (was a green
+          WhatsappLogo) so this share affordance no longer reads as a second
+          WhatsApp contact path next to the primary contact CTA. */}
+      <ShareNetwork size={18} aria-hidden="true" />
       {t("share_to_friend")}
     </a>
   );

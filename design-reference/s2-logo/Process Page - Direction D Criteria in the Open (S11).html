@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S11 · MEH-534 · תהליך הקבלה · Direction D "Criteria in the Open"</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- ADR-013 LOCK: Phosphor REGULAR weight only. No bold/fill stylesheet on this surface. -->
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR BRAND TOKENS — verbatim from colors_and_type.css
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --primary:#2e6853; --primary-light:#3a7d64; --primary-dark:#2E4A2E;
+  --secondary:#4cb08b; --background:#F5F0E8; --site-text:#1C1A17;
+  --site-muted:#5c584f; --accent:#8B6914; --accent-warm:#E8823A;
+  --light:#EAF3DE; --border:#e8e0d0;
+  --font-headline:'Frank Ruhl Libre','Heebo',serif;
+  --font-english:'Cormorant Garamond',serif;
+  --font-body:'DM Sans','Heebo',system-ui,sans-serif;
+
+  /* spec-document chrome (annotation layer, NOT the brand surface) */
+  --doc-bg:#e7e1d6; --doc-ink:#2a2620; --doc-mute:#6f695e;
+  --doc-rule:rgba(42,38,32,0.16); --doc-mono:ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+
+html,body{background:var(--doc-bg); color:var(--doc-ink);
+  font-family:var(--font-body); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;}
+body{padding:48px 40px 100px; min-width:1180px;}
+
+.num{font-feature-settings:"tnum" 1,"lnum" 1; font-variant-numeric:tabular-nums lining-nums; direction:ltr; unicode-bidi:isolate;}
+
+/* ── DOC MASTHEAD ─────────────────────────────────────────────── */
+.doc{max-width:1760px; margin:0 auto;}
+.masthead{display:grid; grid-template-columns:1fr auto; align-items:end;
+  border-bottom:1px solid var(--doc-rule); padding-bottom:26px; margin-bottom:30px; gap:32px;}
+.phase-nav{display:inline-flex; gap:7px; align-items:center; margin-bottom:14px;
+  font-family:var(--doc-mono); font-size:11px; letter-spacing:.06em; color:var(--doc-mute);}
+.pip{display:inline-flex; align-items:center; gap:4px;}
+.pip i{width:7px; height:7px; border:1px solid rgba(42,38,32,.32); display:inline-block; border-radius:50%;}
+.pip.on i{background:var(--primary); border-color:var(--primary);}
+.pip.now i{background:var(--accent); border-color:var(--accent); outline:2px solid rgba(139,105,20,.22); outline-offset:2px;}
+.masthead h1{font-family:var(--font-headline); font-weight:900; font-size:42px; line-height:1.04; color:var(--doc-ink);}
+.masthead h1 em{font-family:var(--font-english); font-style:italic; font-weight:600; color:#6b4f0f;}
+.masthead .sub{font-family:var(--font-english); font-style:italic; font-size:18px; color:var(--doc-mute); margin-top:9px; max-width:82ch; line-height:1.5;}
+.masthead .sub code{font-family:var(--doc-mono); font-style:normal; font-size:12px; color:var(--primary-dark);}
+.stamp{font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--doc-mute); text-align:right; line-height:1.95;}
+.stamp strong{color:var(--doc-ink); font-weight:700;}
+.stamp .dot{color:var(--accent);}
+
+/* ── LEGEND ───────────────────────────────────────────────────── */
+.legend{display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center;
+  border:1px solid var(--doc-rule); border-radius:10px; padding:14px 20px; margin-bottom:34px;
+  background:rgba(255,255,255,.32);}
+.legend .lh{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-ink); font-weight:600;}
+.legend .item{display:inline-flex; align-items:center; gap:9px; font-size:12.5px; color:var(--doc-mute);}
+.legend .item b{color:var(--doc-ink); font-weight:600;}
+.sw{width:26px; height:14px; border-radius:3px; flex:none;}
+.sw.draft{background:var(--background); border:1px dashed var(--accent);}
+.sw.locked{background:var(--background); border:1px solid var(--primary); position:relative;}
+.sw.locked::after{content:""; position:absolute; inset-inline-start:3px; top:3px; width:5px; height:5px; border-radius:50%; background:var(--primary);}
+.sw.excluded{background:repeating-linear-gradient(45deg,#d7b9b3,#d7b9b3 4px,#cdaaa3 4px,#cdaaa3 8px); border:1px solid #b98f86;}
+
+/* ── FRAME COLUMNS ────────────────────────────────────────────── */
+.frames{display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap;}
+.frame{min-width:0;}
+.cap{font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-mute);
+  display:flex; align-items:baseline; gap:12px; margin-bottom:14px;}
+.cap .num-i{font-family:var(--font-english); font-style:italic; font-size:22px; color:var(--accent); text-transform:none;}
+.cap .label{color:var(--doc-ink); font-size:13px; letter-spacing:.1em;}
+.cap .dims{font-family:var(--font-english); font-style:italic; font-size:13px; color:var(--accent); text-transform:none;}
+
+.vp{background:var(--background); border:1px solid rgba(42,38,32,.18); overflow:hidden; position:relative;
+  box-shadow:0 1px 0 rgba(42,38,32,.04);}
+.vp.mobile{width:375px;}
+.vp.desktop{width:1280px;}
+
+.capnote{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--doc-mute);
+  margin-top:16px; max-width:60ch; line-height:1.55;}
+.capnote b{font-family:var(--font-body); font-style:normal; font-weight:600; color:var(--doc-ink); font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;}
+.capnote code{font-family:var(--doc-mono); font-style:normal; font-size:11px; color:var(--primary-dark);}
+.capnote .fold{color:var(--primary-dark); font-style:normal; font-weight:600;}
+
+/* ── DOC FOOTER (patterns / anti-patterns / copy table) ───────── */
+.doc-foot{margin-top:64px; padding-top:34px; border-top:1px solid var(--doc-rule);
+  display:grid; grid-template-columns:1fr 1fr; gap:48px; max-width:1200px;}
+.doc-foot h4{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:16px;}
+.doc-foot ol,.doc-foot ul{list-style:none;}
+.doc-foot li{margin-bottom:14px; font-size:13.5px; line-height:1.55; color:var(--doc-mute); padding-inline-start:30px; position:relative;}
+.doc-foot .n{position:absolute; inset-inline-start:0; top:-2px; font-family:var(--font-english); font-style:italic; font-weight:600; font-size:18px; color:var(--accent);}
+.doc-foot li b{color:var(--doc-ink); font-weight:600;}
+.doc-foot .src{font-family:var(--font-english); font-style:italic; color:var(--primary-dark);}
+.doc-foot li .x{position:absolute; inset-inline-start:2px; top:0; color:#8B2E2E; font-weight:700;}
+
+/* ── COPY TABLE (Sapir lock · MEH-758) ────────────────────────── */
+.copytable{margin-top:56px; padding-top:34px; border-top:1px solid var(--doc-rule); max-width:1760px;}
+.copytable h4{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:6px;}
+.copytable .note{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--doc-mute); margin-bottom:18px;}
+.copytable table{border-collapse:collapse; width:100%; font-size:12.5px;}
+.copytable th{text-align:start; font-family:var(--doc-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--doc-mute); font-weight:600; padding:8px 14px; border-bottom:1px solid var(--doc-rule); vertical-align:bottom;}
+.copytable td{padding:9px 14px; border-bottom:1px solid rgba(42,38,32,.08); vertical-align:top; color:var(--doc-ink); line-height:1.5;}
+.copytable td.k{font-family:var(--doc-mono); font-size:11px; color:var(--primary-dark); white-space:nowrap;}
+.copytable td.he{direction:rtl; font-family:var(--font-body); max-width:42ch;}
+.copytable td.st{font-family:var(--doc-mono); font-size:10px; letter-spacing:.04em; color:var(--doc-mute); white-space:nowrap;}
+.copytable tr:hover td{background:rgba(255,255,255,.28);}
+.copytable .grp td{background:rgba(42,38,32,.05); font-family:var(--doc-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--doc-mute); font-weight:600;}
+
+/* ══════════════════════════════════════════════════════════════
+   ░░  THE MEHAMAKOR תהליך הקבלה SURFACE  ░░
+   container-query responsive: base = mobile, ≥760cqw = desktop.
+   ══════════════════════════════════════════════════════════════ */
+.s11{
+  container-type:inline-size;
+  direction:rtl; font-family:var(--font-body); color:var(--site-text);
+  background:var(--background); position:relative; line-height:1.65;
+  --pad:22px; --prose:680px; --bleed:1120px;
+}
+.s11 *{box-sizing:border-box;}
+.s11::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+.s11 > *{position:relative; z-index:1;}
+
+.wrap{max-width:var(--prose); margin-inline:auto; padding-inline:var(--pad);}
+.bleed{max-width:var(--bleed); margin-inline:auto; padding-inline:var(--pad);}
+
+.sec{padding-block:54px;}
+.sec.air{padding-block:72px;}
+
+/* section marker: thin gold rule + Cormorant italic numeral + eyebrow */
+.marker{display:flex; align-items:center; gap:14px; margin-bottom:24px;}
+.marker .rule{height:1px; width:42px; background:var(--accent); flex:none; opacity:.7;}
+.marker .nm{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:21px; color:var(--accent);}
+.marker .eb{font-family:var(--font-body); font-weight:500; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--site-muted);}
+
+/* ── HEADER / FOOTER / BOTTOMNAV PLACEHOLDERS (parallel track) ── */
+.ph-bar{background:repeating-linear-gradient(45deg,#dad3c6,#dad3c6 6px,#d2cabc 6px,#d2cabc 12px);
+  border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+  color:#8d8675; font-size:10px; letter-spacing:.22em; text-transform:uppercase; font-weight:600; height:60px;}
+.ph-bar.foot{border-bottom:none; border-top:1px solid var(--border); height:120px; align-items:flex-start; padding-top:22px;}
+.ph-bar.nav{height:64px; border-top:1px solid var(--border); border-bottom:none;}
+
+/* ── 01 · HERO ────────────────────────────────────────────────── */
+.hero{padding-block:56px 40px;}
+.hero .eyebrow-he{font-family:var(--font-body); font-weight:600; font-size:12px; letter-spacing:.04em; color:var(--accent); margin-bottom:18px; display:inline-flex; align-items:center; gap:8px;}
+.hero .eyebrow-he i{font-size:15px;}
+.hero h1{font-family:var(--font-headline); font-weight:900; letter-spacing:-.02em; line-height:1.02;
+  font-size:clamp(34px,9.4cqw,48px); max-width:15ch;}
+.hero h1 em{font-family:var(--font-english); font-style:italic; font-weight:600; color:var(--accent);}
+.hero .sub{margin-top:22px; font-size:18px; line-height:1.62; color:var(--site-text); max-width:44ch;}
+
+/* ── 02 · THE 4-STEP PERSONAL PROCESS (above the fold on mobile) ─ */
+.steps-sec .lead-line{font-family:var(--font-english); font-style:italic; font-size:19px; color:var(--site-muted); margin-bottom:30px; max-width:48ch;}
+.steps{position:relative; list-style:none; display:grid; gap:30px;}
+.steps::before{content:""; position:absolute; top:22px; bottom:22px; inset-inline-start:21px; width:1px;
+  background-image:linear-gradient(var(--accent) 55%, transparent 0); background-size:1px 9px; background-repeat:repeat-y; opacity:.55;}
+.step{display:grid; grid-template-columns:44px 1fr; gap:18px; align-items:start; position:relative;}
+.snum{width:44px; height:44px; border-radius:50%; border:1px solid var(--accent); background:var(--background);
+  display:grid; place-items:center; font-family:var(--font-english); font-style:italic; font-weight:600;
+  font-size:20px; color:var(--accent); position:relative; z-index:1;}
+.step .stitle{display:flex; align-items:center; gap:9px; margin-bottom:7px;}
+.step .stitle i{color:var(--primary); font-size:19px; flex:none;}
+.step h3{font-family:var(--font-headline); font-weight:700; font-size:21px; line-height:1.22;}
+.step p{font-size:15.5px; line-height:1.6; color:var(--site-muted); max-width:50ch;}
+.step .optional{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--accent); margin-inline-start:8px; white-space:nowrap;}
+.badge-aside{margin-top:14px; border:1px dashed rgba(139,105,20,.5); border-radius:12px;
+  padding:14px 16px; background:rgba(139,105,20,.05); display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start;}
+.badge-aside i{color:var(--accent); font-size:20px; margin-top:2px;}
+.badge-aside .ba-t{font-weight:600; font-size:14.5px; color:var(--site-text); margin-bottom:3px;}
+.badge-aside p{font-size:14px; line-height:1.55; color:var(--site-muted); max-width:none;}
+
+/* ── 03 · WHAT'S CHECKED FOR EVERYONE ─────────────────────────── */
+.everyone .intro{font-size:17px; line-height:1.62; color:var(--site-text); max-width:52ch; margin-bottom:8px;}
+.everyone .grid{display:grid; grid-template-columns:1fr; gap:30px; margin-top:30px;}
+.echeck .en{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:30px; color:var(--accent); display:block; margin-bottom:10px;}
+.echeck .en .em{opacity:.5;}
+.echeck h3{font-family:var(--font-headline); font-weight:700; font-size:20px; line-height:1.25; margin-bottom:8px; display:flex; align-items:center; gap:8px;}
+.echeck h3 i{color:var(--primary); font-size:18px;}
+.echeck p{font-size:15.5px; line-height:1.6; color:var(--site-muted);}
+
+/* ── 04 · THE BADGE — WHAT IT ADDS ────────────────────────────── */
+.badge-sec .box{border:1px solid var(--border); border-radius:24px; padding:38px 30px; background:rgba(255,255,255,.4);}
+.badge-sec .oneliner{font-family:var(--font-headline); font-weight:700; font-size:clamp(23px,5.2cqw,28px); line-height:1.28; max-width:24ch; letter-spacing:-.01em;}
+.badge-sec .oneliner em{font-family:var(--font-english); font-style:italic; font-weight:600; color:var(--accent);}
+.badge-demo{display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-top:26px;}
+.gbadge{display:inline-flex; align-items:center; gap:8px; background:var(--background); border:1px solid var(--accent);
+  color:var(--accent); border-radius:9999px; padding:8px 16px 8px 14px; font-weight:600; font-size:14.5px;}
+.gbadge svg{flex:none;}
+.badge-tooltip{display:inline-flex; align-items:center; gap:8px; font-size:13.5px; color:var(--site-muted);
+  font-family:var(--font-english); font-style:italic; font-size:15px;}
+.badge-tooltip .ar{color:var(--accent); font-style:normal;}
+.refchip{display:inline-flex; align-items:center; gap:5px; font-family:var(--doc-mono); font-size:9.5px;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--accent); border:1px dashed rgba(139,105,20,.5);
+  border-radius:5px; padding:3px 8px; background:rgba(139,105,20,.06); margin-top:18px;}
+
+/* affirmative absence — never negative */
+.absence{margin-top:30px; border-inline-start:3px solid var(--secondary); padding:4px 0 4px 0; padding-inline-start:20px;}
+.absence h3{font-family:var(--font-headline); font-weight:700; font-size:20px; margin-bottom:10px; line-height:1.25;}
+.absence p{font-size:15.5px; line-height:1.62; color:var(--site-text); max-width:52ch; margin-bottom:12px;}
+.absence p:last-child{margin-bottom:0;}
+.absence .kicker{font-family:var(--font-english); font-style:italic; font-weight:500; font-size:18px; color:var(--primary-dark);}
+
+/* ── 05 · PUBLIC VERIFICATION MATRIX ──────────────────────────── */
+.matrix .intro{font-size:17px; line-height:1.62; color:var(--site-text); max-width:54ch; margin-bottom:6px;}
+.mgroup{margin-top:34px;}
+.mgroup-head{margin-bottom:16px;}
+.mgroup-head .gt{font-family:var(--font-headline); font-weight:700; font-size:19px; line-height:1.25; display:flex; align-items:center; gap:9px; margin-bottom:6px;}
+.mgroup-head .gt i{color:var(--accent); font-size:18px;}
+.mgroup-head .gd{font-size:14.5px; line-height:1.55; color:var(--site-muted); max-width:56ch;}
+.mgroup-head .gd b{color:var(--primary-dark); font-weight:600;}
+
+.mtable{border-top:1px solid var(--border);}
+.mrow{display:grid; grid-template-columns:1fr; gap:6px 18px; padding:16px 2px; border-bottom:1px solid var(--border); align-items:start;}
+.mrow .mcat{font-family:var(--font-headline); font-weight:700; font-size:17px; line-height:1.2; display:flex; align-items:center; gap:8px;}
+.mrow .mpath{display:inline-flex; align-items:center; gap:7px; flex-wrap:wrap;}
+.mrow .mdoc{font-size:14px; line-height:1.5; color:var(--site-muted);}
+.mrow .mdoc .declare{display:block; font-family:var(--font-english); font-style:italic; font-size:14.5px; color:var(--primary-dark); margin-top:3px;}
+
+.tag{display:inline-flex; align-items:center; gap:5px; border-radius:9999px; padding:4px 11px; font-size:12.5px; font-weight:600; white-space:nowrap;}
+.tag.verified{background:rgba(139,105,20,.1); color:var(--accent); border:1px solid rgba(139,105,20,.35);}
+.tag.declared{background:var(--light); color:var(--primary-dark); border:1px solid rgba(46,104,83,.22);}
+.tag.opt{background:transparent; color:var(--site-muted); border:1px dashed var(--border);}
+.tag i{font-size:13px;}
+.pathsep{font-family:var(--font-english); font-style:italic; color:var(--site-muted); font-size:14px;}
+
+.caveat{margin-top:34px; display:grid; grid-template-columns:auto 1fr; gap:13px; align-items:start;
+  background:rgba(46,104,83,.05); border:1px solid rgba(46,104,83,.18); border-radius:14px; padding:18px 20px;}
+.caveat i{color:var(--primary); font-size:20px; margin-top:2px;}
+.caveat p{font-size:14.5px; line-height:1.6; color:var(--site-text); max-width:62ch;}
+.caveat a{color:var(--primary); font-weight:600; text-decoration:none; border-bottom:1px solid rgba(46,104,83,.35);}
+
+/* ── 06 · CLOSING LINE ────────────────────────────────────────── */
+.closing{padding-block:78px; position:relative;}
+.closing .em-mark{font-family:var(--font-english); font-style:italic; font-size:15px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); display:block; margin-bottom:20px; padding-inline-start:24px;}
+.closing blockquote{margin:0; border-inline-start:2px solid var(--accent); padding-inline-start:24px;
+  max-width:17ch; margin-inline-end:auto;
+  font-family:var(--font-headline); font-style:italic; font-weight:500;
+  font-size:clamp(28px,8cqw,34px); line-height:1.2; letter-spacing:-.01em; color:var(--primary-dark);}
+.closing .attrib{padding-inline-start:24px; margin-top:18px; font-family:var(--doc-mono); font-size:10px;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--site-muted);}
+
+/* ── 07 · CTA / JOIN FORM ─────────────────────────────────────── */
+.cta{text-align:start;}
+.cta h2{font-family:var(--font-headline); font-weight:700; font-size:clamp(27px,5.6cqw,34px); line-height:1.12; letter-spacing:-.01em; max-width:18ch;}
+.cta .ci{font-size:16.5px; color:var(--site-muted); margin-top:14px; max-width:46ch; line-height:1.6;}
+.jform{margin-top:28px; display:grid; gap:16px; max-width:560px;}
+.field{display:grid; gap:7px;}
+.field label{font-size:13px; font-weight:600; color:var(--site-text);}
+.field input,.field select{font-family:var(--font-body); font-size:16px; color:var(--site-text);
+  background:#fff; border:1px solid var(--border); border-radius:8px; padding:13px 15px; width:100%;}
+.field input:focus,.field select:focus{outline:2px solid rgba(46,104,83,.4); outline-offset:1px; border-color:var(--primary);}
+.btn{display:inline-flex; align-items:center; gap:9px; min-height:52px; padding:14px 28px;
+  font-family:var(--font-body); font-weight:600; font-size:16px; border:1px solid transparent; border-radius:16px;
+  cursor:pointer; text-decoration:none; transition:background-color 300ms ease,color 300ms ease,border-color 300ms ease;}
+.btn-primary{background:var(--primary); color:#fff;}
+.btn-primary:hover{background:var(--primary-light);}
+.btn-primary i{font-size:19px;}
+.jform .submit{justify-self:start;}
+
+.s11 [data-draft]{text-decoration:underline; text-decoration-style:dashed; text-decoration-color:rgba(139,105,20,.32);
+  text-underline-offset:5px; text-decoration-thickness:1px;}
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP — container ≥ 760px (only fires inside the 1280 frame)
+   ══════════════════════════════════════════════════════════════ */
+@container (min-width:760px){
+  .s11{--pad:48px;}
+  .sec{padding-block:80px;}
+  .sec.air{padding-block:104px;}
+  .ph-bar{height:72px;}
+  .ph-bar.foot{height:148px;}
+
+  .hero{padding-block:96px 56px;}
+  .hero h1{font-size:clamp(58px,5.8cqw,80px); max-width:16ch;}
+  .hero .sub{font-size:21px; max-width:42ch;}
+
+  /* steps → 4 columns with a horizontal connector across the numerals */
+  .steps-sec .wrap{max-width:1040px;}
+  .steps{grid-template-columns:repeat(4,1fr); gap:30px;}
+  .steps::before{top:21px; bottom:auto; inset-inline:12.5%; height:1px; width:auto;
+    background-image:linear-gradient(90deg,var(--accent) 55%,transparent 0); background-size:9px 1px; background-repeat:repeat-x;}
+  .step{grid-template-columns:1fr; gap:16px;}
+  .step h3{font-size:22px;}
+  .step.step4{grid-column:auto;}
+  .badge-aside{grid-column:1 / -1; margin-top:6px;}
+
+  .everyone .wrap{max-width:1040px;}
+  .everyone .grid{grid-template-columns:repeat(3,1fr); gap:48px;}
+
+  .badge-sec .wrap{max-width:1040px;}
+  .badge-sec .box{padding:48px 48px; display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center;}
+  .badge-sec .box .left{align-self:center;}
+  .absence{margin-top:0;}
+
+  .matrix .bleed{max-width:1040px;}
+  .mrow{grid-template-columns:minmax(180px,1.1fr) minmax(160px,auto) 1.4fr; gap:24px; align-items:center; padding:18px 4px;}
+  .mrow .mcat{font-size:18px;}
+
+  .closing blockquote{font-size:clamp(40px,4cqw,52px); max-width:19ch; padding-inline-start:34px;}
+  .closing .em-mark{padding-inline-start:34px;}
+  .closing .attrib{padding-inline-start:34px;}
+
+  .cta .wrap{max-width:1040px;}
+  .cta .layout{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:start;}
+  .jform{margin-top:6px;}
+  .jform .row2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ░░ MASTHEAD ░░ -->
+  <header class="masthead">
+    <div>
+      <nav class="phase-nav" aria-label="phase">
+        <span class="pip on"><i></i>S2</span><span>·</span>
+        <span class="pip on"><i></i>S5</span><span>·</span>
+        <span class="pip on"><i></i>S6</span><span>·</span>
+        <span class="pip on"><i></i>S7</span><span>·</span>
+        <span class="pip on"><i></i>S8</span><span>·</span>
+        <span class="pip on"><i></i>S9</span><span>·</span>
+        <span class="pip on"><i></i>S10</span><span>·</span>
+        <span class="pip now"><i></i>S11</span>
+      </nav>
+      <h1>תהליך הקבלה — <em>Criteria in the Open</em></h1>
+      <p class="sub">New page for <code>mehamakor.online</code>. Direction&nbsp;D, locked (your call, not a timeout default). Warm 4-step process up top — above the fold on mobile — then the verification criteria published in the open as the evidence layer. Tier model per <code>ADR-022</code>; matrix is a <strong style="font-style:normal;color:var(--primary-dark)">consumer-simplified</strong> view of <code>VERIFICATION.md</code> — closed-status categories only. Header / Footer / BottomNav are parallel-track placeholders.</p>
+    </div>
+    <div class="stamp">
+      Series&nbsp;<strong>S11</strong> <span class="dot">·</span> MEH-534<br>
+      Mobile&nbsp;375 <span class="dot">→</span> Desktop&nbsp;1280<br>
+      RTL <span class="dot">·</span> tiers&nbsp;<strong>מאומת / מוצהר</strong><br>
+      voice&nbsp;<span class="dot">·</span> narrative&nbsp;<strong>fem.</strong> <span class="dot">·</span> CTA neutral-pl<br>
+      Phosphor&nbsp;regular <span class="dot">·</span> <strong>no emoji</strong>
+    </div>
+  </header>
+
+  <!-- ░░ LEGEND ░░ -->
+  <div class="legend">
+    <span class="lh">Copy + content provenance</span>
+    <span class="item"><span class="sw draft"></span><b>Draft copy</b> — real Hebrew, pending Sapir lock (dashed gold underline · feeds MEH-758)</span>
+    <span class="item"><span class="sw locked"></span><b>Locked content rule</b> — ADR-022 tier model + language lock (מאומת / מוצהר only)</span>
+    <span class="item"><span class="sw excluded"></span><b>Excluded by design</b> — §1ג open-question categories (eggs / herbs / supplements) never published</span>
+  </div>
+
+  <!-- ░░ FRAMES ░░ -->
+  <div class="frames">
+
+    <!-- ── MOBILE 375 ── -->
+    <div class="frame">
+      <div class="cap"><span class="num-i">a</span><span class="label">MOBILE</span><span class="dims">375 × scroll</span></div>
+      <div class="vp mobile"><div class="s11" data-mount="mobile"></div></div>
+      <p class="capnote"><b>3-second test.</b> Hero + the 4 warm steps sit <span class="fold">above the fold</span> — a visitor sees "a real person checks every business" before any criteria table. The matrix is the evidence layer, reached on scroll. Tier tags (<span dir="rtl">מאומת / מוצהר</span>) read as equals; <span dir="rtl">מוצהר</span> is the baseline, never flagged.</p>
+    </div>
+
+    <!-- ── DESKTOP 1280 ── -->
+    <div class="frame">
+      <div class="cap"><span class="num-i">b</span><span class="label">DESKTOP</span><span class="dims">1280 × scroll</span></div>
+      <div class="vp desktop"><div class="s11" data-mount="desktop"></div></div>
+      <p class="capnote"><b>≥768 connector treatment.</b> The 4 steps rotate from a vertical dotted spine (mobile) to a horizontal connector across the numerals. Matrix rows become 3 aligned columns: category · path · qualifying document. Badge stays <i>contextual</i> — a chip with its tooltip, never a hero. Candle row shows the affirmative "no path to a badge — nothing to verify" framing.</p>
+    </div>
+
+  </div>
+
+  <!-- ░░ PHOTOGRAPHY ROADMAP (annotation only — surface unchanged) ░░ -->
+  <p class="capnote" style="max-width:92ch;margin-top:30px;"><b>Photography roadmap — S11 stays type-forward for FINAL.</b> No real Sapir-visit photos exist yet, so the page ships type-only and the composition holds without imagery. Three additive integration points for future visit photography, none requiring a layout change: <span class="fold">(1)</span> <b style="font-weight:600">Hero</b> — a warm 3:4 portrait / visit frame beside the headline on desktop (mobile: full-bleed under the sub). <span class="fold">(2)</span> <b style="font-weight:600">Step 03 · ביקור</b> — one documentary visit photo (kitchen / farm / hive) anchoring the connector spine. <span class="fold">(3)</span> <b style="font-weight:600">Closing line</b> — a quiet full-bleed visit image beneath the quote. Slots are placeholders for FINAL; type-first hierarchy survives if photography never lands.</p>
+
+  <!-- ░░ DOC FOOTER — patterns / anti-patterns ░░ -->
+  <div class="doc-foot">
+    <div>
+      <h4>3 patterns used</h4>
+      <ol>
+        <li><span class="n">1</span><b>Published verification criteria as a public trust surface.</b> The qualifying-document matrix is shown openly, by category — the F9 open lane (no Israeli competitor publishes criteria). <span class="src">— CrowdFarming "How we verify our farms" · GrownBy "Approval criteria"</span></li>
+        <li><span class="n">2</span><b>Affirmative absence — explain the missing badge, never flag it.</b> A calm block states why a business may have no badge (legally exempt category), so absence reads as lawful, not suspect. <span class="src">— Yelp Verified License FAQ (relative-perception mitigation, Saeedi 2023)</span></li>
+        <li><span class="n">3</span><b>Editorial numerals + ink-on-paper restraint.</b> Cormorant gold numerals as magazine devices, hairline rules, flat cream canvas, gold as sparing accent — the house voice carried into a content-dense page. <span class="src">— NYT Cooking · Kinfolk</span></li>
+      </ol>
+    </div>
+    <div>
+      <h4>2 anti-patterns avoided</h4>
+      <ul>
+        <li><span class="x">✕</span><b>No two competing tier cards · no "unverified" label.</b> Tiers are not pitted side-by-side as winner/loser; <span dir="rtl" style="font-weight:600">מוצהר</span> is the baseline path and is never negatively marked. The badge marks <i>an extra document, not extra trust</i>.</li>
+        <li><span class="x">✕</span><b>No AI-slop, no over-claim.</b> No Inter/Roboto, no purple gradients, no shadcn cards, no Lucide, no stock photos, no emoji — Phosphor regular only. Copy never claims "we check every license" (over-claim under ADR-022): personal vetting for all, document check = מאומת tier only.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ░░ COPY TABLE — Sapir verbatim lock · MEH-758 ░░ -->
+  <div class="copytable">
+    <h4>Copy table — ready for Sapir verbatim lock · feeds MEH-758</h4>
+    <p class="note">Every visible string, keyed for per-tier copy locking. All rows are draft (real Hebrew) until Sapir locks. Tier words are מאומת / מוצהר only — "מורשה/מורשים" is barred from consumer copy (ADR-022 language lock). <b style="color:var(--primary-dark)">Gender decision (page-wide):</b> narrative + person references = feminine; team = feminine plural; section headings + CTAs = neutral plural; business-as-entity actions = passive. "בית עסק", never "יצרן". No regulatory reasoning in consumer cells.</p>
+    <table>
+      <thead><tr><th>Key</th><th>String (draft, he)</th><th>Status</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td colspan="4">Hero</td></tr>
+        <tr><td class="k">process.hero.eyebrow</td><td class="he">תהליך הקבלה</td><td class="st">draft</td><td>section label · neutral</td></tr>
+        <tr><td class="k">process.hero.h1</td><td class="he">כל בית עסק כאן עובר דרכנו — היכרות אישית.</td><td class="st">LOCKED</td><td>FINAL · Sapir-locked; gold emphasis on "היכרות אישית"</td></tr>
+        <tr><td class="k">process.hero.sub</td><td class="he">לפני שעסק עולה לאתר, אנחנו מכירות את מי שעומדת מאחוריו — שומעות את הסיפור, מבינות איך עובדים, ולפעמים גם באות לבקר.</td><td class="st">draft</td><td>narrative feminine; positive-led (no negation)</td></tr>
+        <tr class="grp"><td colspan="4">4-step process</td></tr>
+        <tr><td class="k">process.step.1.title</td><td class="he">הבקשה מגיעה אלינו</td><td class="st">draft</td><td>בקשה</td></tr>
+        <tr><td class="k">process.step.1.body</td><td class="he">הכול מתחיל בטופס קצר — מה מכינים, מאילו חומרי גלם, ואיפה. כל בקשה נקראת בידי אדם, מהמילה הראשונה.</td><td class="st">draft</td><td>positive-led</td></tr>
+        <tr><td class="k">process.step.2.title</td><td class="he">מדברות, באמת</td><td class="st">draft</td><td>שיחה</td></tr>
+        <tr><td class="k">process.step.2.body</td><td class="he">שיחה אישית — בוואטסאפ או בטלפון. מי עומדת מאחורי העסק, איך נראה יום העבודה, ומאיפה מגיעים חומרי הגלם.</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.step.3.title</td><td class="he">ביקור, אם צריך</td><td class="st">draft</td><td>ביקור אם רלוונטי</td></tr>
+        <tr><td class="k">process.step.3.body</td><td class="he">לפעמים נוסעות. כשזה עוזר להבין את המקום — מגיעות לראות את המטבח, החווה או הכוורת במו עינינו.</td><td class="st">draft</td><td>"ולפעמים גם נסיעה" thread</td></tr>
+        <tr><td class="k">process.step.4.title</td><td class="he">עלייה לאתר — אחרי שהכרנו</td><td class="st">draft</td><td>MUST stay separate from badge</td></tr>
+        <tr><td class="k">process.step.4.body</td><td class="he">עברנו היכרות, יש התאמה — בית העסק עולה לאתר. זהו: עכשיו אפשר למצוא אותו ולכתוב לו ישירות.</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.step.4.badge_aside</td><td class="he">תג "מאומת" הוא שלב נפרד — ולא חובה. הוא מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו. בלי התג, העסק עדיין כאן — ועדיין עבר את אותה היכרות אישית כמו כולם.</td><td class="st">draft</td><td>badge = separate optional step; sentence split</td></tr>
+        <tr class="grp"><td colspan="4">What's checked for everyone</td></tr>
+        <tr><td class="k">process.everyone.h2</td><td class="he">מה נבדק אצל כל בית עסק</td><td class="st">draft</td><td>heading · neutral/plural</td></tr>
+        <tr><td class="k">process.everyone.intro</td><td class="he">לא משנה מה הקטגוריה ולא משנה אם יש תג — שלושת הדברים האלה נבדקים אצל כולם, תמיד.</td><td class="st">draft</td><td>no over-claim re: license</td></tr>
+        <tr><td class="k">process.everyone.1</td><td class="he">זהות — מי עומדת מאחורי העסק. שם ומקום אמיתיים. בלי אנונימיות.</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.everyone.2</td><td class="he">סיפור — איך ולמה עובדים ככה. מה נכנס למוצר ומה לא.</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.everyone.3</td><td class="he">שיחה — דיברנו. אדם מולנו, לא טופס שאישר את עצמו.</td><td class="st">draft</td><td>—</td></tr>
+        <tr class="grp"><td colspan="4">Badge — what it adds</td></tr>
+        <tr><td class="k">process.badge.h2</td><td class="he">תג "מאומת" — מה הוא מוסיף</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.badge.oneliner</td><td class="he">תג "מאומת" אומר דבר אחד: הוגש מסמך רישוי או פטור רשמי — ואנחנו בדקנו אותו.</td><td class="st">draft</td><td>consumer test: badge in 1 sentence</td></tr>
+        <tr><td class="k">process.badge.tooltip</td><td class="he">רישיון הוגש ונבדק בתאריך X</td><td class="st">locked-ish</td><td>tooltip copy from ADR-022; X = real date</td></tr>
+        <tr><td class="k">process.badge.absence.h3</td><td class="he">אין תג מאומת? זה לא אומר פחות</td><td class="st">draft</td><td>affirmative · never negative</td></tr>
+        <tr><td class="k">process.badge.absence.body</td><td class="he">חלק מהקטגוריות פטורות מרישיון לפי החוק — אין להן מסמך להציג, פשוט כי הוא לא נדרש. בית עסק כזה הוא "מוצהר": נחתמה הצהרה מחייבת על פעילות כדין, והעסק עבר את אותה היכרות אישית כמו כולם.</td><td class="st">draft</td><td>tier-2 welcome test; passive declaration</td></tr>
+        <tr><td class="k">process.badge.absence.kicker</td><td class="he">התג מסמן מסמך נוסף — לא אמון נוסף.</td><td class="st">draft</td><td>the equalizer line</td></tr>
+        <tr class="grp"><td colspan="4">Verification matrix</td></tr>
+        <tr><td class="k">process.matrix.h2</td><td class="he">מה בעצם נבדק — לפי קטגוריה</td><td class="st">draft</td><td>F9 open lane</td></tr>
+        <tr><td class="k">process.matrix.intro</td><td class="he">אנחנו לא מסתירות את הקריטריונים. הנה, לפי קטגוריה, מה המסמך שמזכה בתג "מאומת" — ומתי "מוצהר" הוא המסלול הנכון לגמרי.</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.matrix.groupA.title</td><td class="he">קטגוריות שבהן הדין מחייב רישיון</td><td class="st">draft</td><td>1א · 8 cats</td></tr>
+        <tr><td class="k">process.matrix.groupA.desc</td><td class="he">כאן החוק דורש רישיון — אז כאן תמיד יש מסמך רשמי (מהרשות המקומית או ממשרד הבריאות) שהוגש ונבדק. בלי רישיון בתוקף, העסק פשוט לא עולה.</td><td class="st">draft</td><td>issuer named once here, not per row</td></tr>
+        <tr><td class="k">process.matrix.groupA.doc</td><td class="he">רישיון רשמי בתוקף. <span style="color:var(--doc-mute)">(דבש: שלושה רישיונות — כוורן, שיווק ועסק)</span></td><td class="st">draft</td><td>uniform doc cell · no regulatory reasoning</td></tr>
+        <tr><td class="k">process.matrix.groupB.title</td><td class="he">קטגוריות פטורות מרישיון לפי החוק</td><td class="st">draft</td><td>1ב</td></tr>
+        <tr><td class="k">process.matrix.groupB.desc</td><td class="he">כאן הדין פוטר מרישיון. רוב בתי העסק יהיו "מוצהר" — מסלול מלא בפני עצמו. מי שרוצה, יכולה להוסיף אישור פטור או רישום ולקבל גם תג "מאומת".</td><td class="st">draft</td><td>equal framing</td></tr>
+        <tr><td class="k">process.matrix.declared.note</td><td class="he">מוצהר: הצהרה שזו תוצרת שגידלה בעצמה.</td><td class="st">draft</td><td>ירקות/פירות · replaces internal declaration quote</td></tr>
+        <tr><td class="k">process.matrix.candles.note</td><td class="he">בקטגוריה הזו אין מסלול לתג — פשוט אין מסמך לאמת, וזה בסדר גמור.</td><td class="st">draft</td><td>נרות וארומה · מוצהר only</td></tr>
+        <tr><td class="k">process.matrix.caveat</td><td class="he">התהליך אצלנו אישי, והקריטריונים מתעדכנים עם הדין ועם הקטגוריות החדשות. אם משהו לא ברור — דברו איתנו, ונסביר.</td><td class="st">draft</td><td>replaces internal "לא ייעוץ משפטי"</td></tr>
+        <tr class="grp"><td colspan="4">Closing + CTA</td></tr>
+        <tr><td class="k">process.closing.quote</td><td class="he">אני רוצה לדעת ממי אני קונה. בניתי מקום שבו גם אתם יודעים. — ספיר</td><td class="st">LOCKED</td><td>FINAL · Sapir-locked verbatim</td></tr>
+        <tr><td class="k">process.cta.secondary</td><td class="he">ממשיכים לטופס ההרשמה</td><td class="st">draft</td><td>link hint · to S7 register flow</td></tr>
+        <tr><td class="k">process.cta.h2</td><td class="he">יש לך בית עסק שמגיע לו בית?</td><td class="st">draft</td><td>—</td></tr>
+        <tr><td class="k">process.cta.intro</td><td class="he">ספרו לנו עליו. נקרא, נחזור אליכם, ונתחיל בהיכרות.</td><td class="st">draft</td><td>CTA neutral/plural</td></tr>
+        <tr><td class="k">process.cta.submit</td><td class="he">ספרו לנו על העסק</td><td class="st">draft</td><td>plural imperative · links to existing S7 register flow (no embedded form)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SURFACE TEMPLATE — cloned into mobile + desktop mounts
+     ══════════════════════════════════════════════════════════════ -->
+<template id="surface">
+
+  <!-- HEADER placeholder (parallel track) -->
+  <div class="ph-bar" aria-hidden="true">Header — parallel track</div>
+
+  <!-- 01 · HERO -->
+  <section class="sec hero">
+    <div class="wrap">
+      <span class="eyebrow-he"><i class="ph ph-path" aria-hidden="true"></i>תהליך הקבלה</span>
+      <h1 data-draft>כל בית עסק כאן עובר דרכנו — <em>היכרות אישית</em>.</h1>
+      <p class="sub" data-draft>לפני שעסק עולה לאתר, אנחנו מכירות את מי שעומדת מאחוריו — שומעות את הסיפור, מבינות איך עובדים, ולפעמים גם באות לבקר.</p>
+    </div>
+  </section>
+
+  <!-- 02 · THE 4-STEP PERSONAL PROCESS -->
+  <section class="sec steps-sec">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="nm">01</span><span class="eb">ההיכרות</span></div>
+      <p class="lead-line">ארבעה שלבים, אדם אחד מהצד השני. ככה זה עובד מהבקשה ועד שהעסק באוויר.</p>
+      <ol class="steps">
+        <li class="step">
+          <div class="snum num">01</div>
+          <div class="sbody">
+            <div class="stitle"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i><h3 data-draft>הבקשה מגיעה אלינו</h3></div>
+            <p data-draft>הכול מתחיל בטופס קצר — מה מכינים, מאילו חומרי גלם, ואיפה. כל בקשה נקראת בידי אדם, מהמילה הראשונה.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum num">02</div>
+          <div class="sbody">
+            <div class="stitle"><i class="ph ph-chats-circle" aria-hidden="true"></i><h3 data-draft>מדברות, באמת</h3></div>
+            <p data-draft>שיחה אישית — בוואטסאפ או בטלפון. מי עומדת מאחורי העסק, איך נראה יום העבודה, ומאיפה מגיעים חומרי הגלם.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum num">03</div>
+          <div class="sbody">
+            <div class="stitle"><i class="ph ph-map-pin" aria-hidden="true"></i><h3 data-draft>ביקור, אם צריך</h3></div>
+            <p data-draft>לפעמים נוסעות. כשזה עוזר להבין את המקום — מגיעות לראות את המטבח, החווה או הכוורת במו עינינו.</p>
+          </div>
+        </li>
+        <li class="step step4">
+          <div class="snum num">04</div>
+          <div class="sbody">
+            <div class="stitle"><i class="ph ph-storefront" aria-hidden="true"></i><h3 data-draft>עלייה לאתר — אחרי שהכרנו</h3></div>
+            <p data-draft>עברנו היכרות, יש התאמה — בית העסק עולה לאתר. זהו: עכשיו אפשר למצוא אותו ולכתוב לו ישירות.</p>
+            <div class="badge-aside">
+              <i class="ph ph-seal-check" aria-hidden="true"></i>
+              <div>
+                <div class="ba-t" data-draft>תג "מאומת" הוא שלב נפרד — ולא חובה</div>
+                <p data-draft>הוא מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו. בלי התג, העסק עדיין כאן — ועדיין עבר את אותה היכרות אישית כמו כולם.</p>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 03 · WHAT'S CHECKED FOR EVERYONE -->
+  <section class="sec air everyone">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="nm">02</span><span class="eb">אצל כולם</span></div>
+      <h2 class="card-title" style="font-family:var(--font-headline);font-weight:700;font-size:clamp(26px,5.4cqw,32px);line-height:1.12;letter-spacing:-.01em;">מה נבדק אצל כל בית עסק</h2>
+      <p class="intro" data-draft style="margin-top:14px;">לא משנה מה הקטגוריה ולא משנה אם יש תג — שלושת הדברים האלה נבדקים אצל כולם, תמיד.</p>
+      <div class="grid">
+        <div class="echeck">
+          <span class="en num">01<span class="em">—</span></span>
+          <h3><i class="ph ph-user" aria-hidden="true"></i>זהות</h3>
+          <p data-draft>מי עומדת מאחורי העסק. שם ומקום אמיתיים. בלי אנונימיות.</p>
+        </div>
+        <div class="echeck">
+          <span class="en num">02<span class="em">—</span></span>
+          <h3><i class="ph ph-book-open" aria-hidden="true"></i>סיפור</h3>
+          <p data-draft>איך ולמה עובדים ככה. מה נכנס למוצר — ומה לא.</p>
+        </div>
+        <div class="echeck">
+          <span class="en num">03<span class="em">—</span></span>
+          <h3><i class="ph ph-chat-circle-text" aria-hidden="true"></i>שיחה</h3>
+          <p data-draft>דיברנו. אדם מולנו, לא טופס שאישר את עצמו.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · THE BADGE — WHAT IT ADDS -->
+  <section class="sec badge-sec">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="nm">03</span><span class="eb">התג</span></div>
+      <div class="box">
+        <div class="left">
+          <p class="oneliner" data-draft>תג "מאומת" אומר דבר אחד: הוגש מסמך רישוי או פטור רשמי — <em>ואנחנו בדקנו אותו.</em></p>
+          <div class="badge-demo">
+            <span class="gbadge">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              מאומת
+            </span>
+            <span class="badge-tooltip"><i class="ph ph-cursor" aria-hidden="true" style="font-size:14px;"></i><span data-draft>רישיון הוגש ונבדק בתאריך <span class="ar num">5.6.2026</span></span></span>
+          </div>
+          <span class="refchip"><i class="ph ph-arrow-up-left" aria-hidden="true" style="font-size:11px;"></i>badge component spec = S6 · illustrative here</span>
+        </div>
+        <div class="absence">
+          <h3 data-draft>אין תג מאומת? זה לא אומר פחות</h3>
+          <p data-draft>חלק מהקטגוריות פטורות מרישיון לפי החוק — אין להן מסמך להציג, פשוט כי הוא לא נדרש. בית עסק כזה הוא "מוצהר": נחתמה הצהרה מחייבת על פעילות כדין, והעסק עבר את אותה היכרות אישית כמו כולם.</p>
+          <p class="kicker" data-draft>התג מסמן מסמך נוסף — לא אמון נוסף.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · PUBLIC VERIFICATION MATRIX -->
+  <section class="sec air matrix">
+    <div class="bleed">
+      <div class="marker"><span class="rule"></span><span class="nm">04</span><span class="eb">בשקיפות</span></div>
+      <h2 style="font-family:var(--font-headline);font-weight:700;font-size:clamp(26px,5.4cqw,32px);line-height:1.12;letter-spacing:-.01em;">מה בעצם נבדק — לפי קטגוריה</h2>
+      <p class="intro" data-draft style="margin-top:14px;">אנחנו לא מסתירות את הקריטריונים. הנה, לפי קטגוריה, מה המסמך שמזכה בתג "מאומת" — ומתי "מוצהר" הוא המסלול הנכון לגמרי.</p>
+
+      <!-- GROUP A — license required -->
+      <div class="mgroup">
+        <div class="mgroup-head">
+          <div class="gt"><i class="ph ph-certificate" aria-hidden="true"></i>קטגוריות שבהן הדין מחייב רישיון</div>
+          <div class="gd" data-draft>כאן החוק דורש רישיון — אז כאן <b>תמיד</b> יש מסמך רשמי (מהרשות המקומית או ממשרד הבריאות) שהוגש ונבדק. בלי רישיון בתוקף, העסק פשוט לא עולה.</div>
+        </div>
+        <div class="mtable">
+          <div class="mrow">
+            <div class="mcat">בשר ודגים</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">חלב וגבינות</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">לחמים ואפייה</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">מוצרים מוכנים</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">מותססים וכבושים</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">יין, בירה ומשקאות</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">שוקולד וממתקים</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>רישיון רשמי בתוקף.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">דבש</div>
+            <div class="mpath"><span class="tag verified"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>שלושה רישיונות יחד — כוורן, שיווק ועסק. אחד לבדו לא מספיק.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GROUP B — exempt -->
+      <div class="mgroup">
+        <div class="mgroup-head">
+          <div class="gt"><i class="ph ph-leaf" aria-hidden="true"></i>קטגוריות פטורות מרישיון לפי החוק</div>
+          <div class="gd" data-draft>כאן הדין פוטר מרישיון. רוב בתי העסק יהיו <b>"מוצהר"</b> — מסלול מלא בפני עצמו. מי שרוצה, יכולה להוסיף אישור פטור או רישום ולקבל גם תג "מאומת".</div>
+        </div>
+        <div class="mtable">
+          <div class="mrow">
+            <div class="mcat">ירקות</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: אישור פטור מהרשות המקומית.<span class="declare">מוצהר: הצהרה שזו תוצרת שגידלה בעצמה.</span></div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">פירות</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: אישור פטור מהרשות המקומית.<span class="declare">מוצהר: הצהרה שזו תוצרת שגידלה בעצמה.</span></div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">שמן זית ושמנים</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: אישור פטור רשמי ממחלקת רישוי עסקים.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">תבלינים וצמחי תיבול</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: אישור פטור רשמי.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">סבונים טבעיים</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: רישום במרשם התמרוקים (משרד הבריאות).</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">קרמים ושמנים לעור</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: רישום במרשם התמרוקים.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">תכשירי צמחים</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span><span class="pathsep">או</span><span class="tag opt"><i class="ph ph-seal-check"></i>מאומת</span></div>
+            <div class="mdoc" data-draft>מאומת: רישום במרשם התמרוקים.</div>
+          </div>
+          <div class="mrow">
+            <div class="mcat">נרות וארומה</div>
+            <div class="mpath"><span class="tag declared"><i class="ph ph-note"></i>מוצהר</span></div>
+            <div class="mdoc" data-draft>בקטגוריה הזו אין מסלול לתג — פשוט אין מסמך לאמת, וזה בסדר גמור.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="caveat">
+        <i class="ph ph-hand-heart" aria-hidden="true"></i>
+        <p data-draft>התהליך אצלנו אישי, והקריטריונים מתעדכנים עם הדין ועם הקטגוריות החדשות. אם משהו לא ברור — <a href="#join">דברו איתנו</a>, ונסביר.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · CLOSING LINE -->
+  <section class="sec closing" aria-label="closing">
+    <div class="wrap">
+      <span class="em-mark">מהמקור</span>
+      <blockquote>אני רוצה לדעת ממי אני קונה. בניתי מקום שבו גם אתם יודעים.</blockquote>
+      <div class="attrib">— ספיר</div>
+    </div>
+  </section>
+
+  <!-- 07 · CTA / JOIN FORM -->
+  <section class="sec cta" id="join">
+    <div class="wrap">
+      <div class="layout">
+        <div>
+          <h2>יש לך בית עסק שמגיע לו בית?</h2>
+          <p class="ci" data-draft>ספרו לנו עליו. נקרא, נחזור אליכם, ונתחיל בהיכרות.</p>
+        </div>
+        <div class="cta-actions" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+          <a class="btn btn-primary" href="Register Flow - Producer + Consumer (S7).html" style="white-space:nowrap;">ספרו לנו על העסק<i class="ph ph-arrow-left" aria-hidden="true"></i></a>
+          <span class="small muted" data-draft style="font-size:13px;color:var(--site-muted);">ממשיכים לטופס ההרשמה</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER + BOTTOMNAV placeholders (parallel track) -->
+  <div class="ph-bar foot" aria-hidden="true">Footer — parallel track</div>
+  <div class="ph-bar nav only-mobile" aria-hidden="true" data-mobile-only>BottomNav — parallel track</div>
+
+</template>
+
+<script>
+(function(){
+  var tpl = document.getElementById('surface');
+  document.querySelectorAll('[data-mount]').forEach(function(mount){
+    mount.appendChild(tpl.content.cloneNode(true));
+    mount.querySelectorAll('[data-draft]').forEach(function(el){
+      el.setAttribute('title','draft copy — real Hebrew, pending Sapir lock (MEH-758)');
+    });
+    if(mount.getAttribute('data-mount') !== 'mobile'){
+      var bn = mount.querySelector('[data-mobile-only]');
+      if(bn) bn.remove();
+    }
+  });
+})();
+</script>
+</body>
+</html>

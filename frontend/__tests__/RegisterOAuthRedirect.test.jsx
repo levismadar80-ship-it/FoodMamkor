@@ -33,7 +33,17 @@ vi.mock("@/lib/env", () => ({
 }));
 
 vi.mock("next/image", () => ({ default: () => null }));
-vi.mock("next/link", () => ({ default: ({ children }) => children }));
+// MEH-1285: RegisterClient now uses Link from @/i18n/navigation (locale-aware);
+// stub it so next-intl's createNavigation isn't loaded under jsdom.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+}));
 vi.mock("@phosphor-icons/react", () => ({
   EnvelopeSimple: () => null,
   Leaf: () => null,

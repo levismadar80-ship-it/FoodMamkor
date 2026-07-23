@@ -2,10 +2,11 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, MapPin, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
@@ -13,6 +14,8 @@ import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
+import Input from "@/components/ui/Input";
+import RegisterPreflight from "./RegisterPreflight";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
@@ -24,6 +27,15 @@ import {
 const DRAFT_KEY = "producer_registration_draft";
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
+// MEH-435: readable step labels for funnel events (numeric step is
+// re-index-fragile; the label is stable across the STEP enum).
+const STEP_NAME = {
+  [STEP.ACCOUNT]: "account",
+  [STEP.DETAILS]: "details",
+  [STEP.CATEGORY]: "category",
+  [STEP.STORY]: "story",
+  [STEP.CONFIRM]: "confirm",
+};
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
 // MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
@@ -80,6 +92,11 @@ function RegisterProducerPageBody() {
     return STEP.ACCOUNT;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
+  // MEH-994: pre-flight intro screen ("לפני שמתחילים") gates the wizard until
+  // the CTA is clicked. Entry chrome only — no STEP change, no localStorage
+  // "seen" flag (shows on every visit by design). Both auth states see it;
+  // the upgrade path hides the account-creation checklist line.
+  const [showPreflight, setShowPreflight] = useState(true);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -97,6 +114,11 @@ function RegisterProducerPageBody() {
   // license number and enter the pending queue.
   const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake toggle.
+  // UI-only — it sets NO backend field, creates NO location rows, and is not
+  // part of the submit payload; on "yes" it points the owner to the dashboard
+  // LocationsEditor (chunk 4a) to add points after registration.
+  const [hasMultipleLocations, setHasMultipleLocations] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
   // ToS/privacy consent above (ADR-014 voice: first-person legal vs plural
@@ -147,13 +169,21 @@ function RegisterProducerPageBody() {
     if (isUpgrade && step === STEP.ACCOUNT) setStep(STEP.DETAILS);
   }, [isUpgrade]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // MEH-669: admins cannot register as producers. Backend rejects with
-  // 403 at auth.py:432; this redirect prevents them from filling out the
-  // form only to hit a server error on submit. Wait for auth to resolve
-  // so we don't bounce mid-load while user is still null.
+  // MEH-435: funnel instrumentation. One effect covers every step transition
+  // (forward, back, OAuth jump, and the CONFIRM landing) — DRY over
+  // instrumenting each setStep call site. Gated on showPreflight so the first
+  // "step_viewed" fires when the wizard actually opens, not on the pre-flight
+  // intro screen. trackEvent is itself consent-gated + no-op unless a PostHog
+  // key is set, so this is safe to fire unconditionally here.
   useEffect(() => {
-    if (!authLoading && user?.role === "admin") router.push("/admin");
-  }, [authLoading, user, router]);
+    if (showPreflight) return;
+    trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
+  }, [step, showPreflight]);
+
+  // MEH-1489: the admin case is now handled by the early gate below (a terminal
+  // "separate account for admin" screen), not a silent /admin redirect — same
+  // intent as the auth.py:~477 403 backstop, surfaced up-front instead of at
+  // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -317,12 +347,17 @@ function RegisterProducerPageBody() {
         // Refresh auth context so user.role reflects the upgrade immediately.
         await refreshUser();
       }
+      // MEH-435: successful submit — the funnel conversion event.
+      trackEvent("producer_register_submitted");
       // Non-upgrade: no token, no refreshUser. Step 3 renders the
       // inbox-check UI keyed on didUpgrade === false.
       setStep(STEP.CONFIRM);
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
+      // MEH-435: submit failure — {step} is STORY at submit time (the wizard
+      // step the error surfaced on).
+      trackEvent("producer_register_error", { step: STEP_NAME[step] });
       // MEH-328: only upgrade path can return 409 post-refactor.
       // isUpgrade frontend flag is sufficient for this error branch
       // (non-upgrade 409 was removed in Chunk B).
@@ -340,10 +375,74 @@ function RegisterProducerPageBody() {
     }
   };
 
-  // Don't show step 1 (account form) until we know whether user is logged in —
-  // prevents the flash of email/password inputs for already-authenticated users.
-  if (authLoading && step === STEP.ACCOUNT) {
+  // Don't render the wizard/preflight until auth resolves. MEH-1489 broadened
+  // the old `&& step === STEP.ACCOUNT` guard to all authLoading: a token-holder's
+  // step initializes to DETAILS (line 88), so that guard didn't cover them and a
+  // logged-in producer/admin briefly saw the join pitch before the gate. Showing
+  // the existing loading text for every authLoading tick closes that flash;
+  // guests are unaffected (they start at ACCOUNT, resolve immediately).
+  if (authLoading) {
     return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
+  }
+
+  // MEH-1489: early auth-state gate. A logged-in producer already owns a page
+  // (backend 409 already_has_producer at submit) and an admin must use a separate
+  // account (backend 403, auth.py:~477) — both dead-end a 10-minute wizard. Show a
+  // terminal screen up-front instead. Guests + logged-in consumers (MEH-143 upgrade
+  // path, role !== producer/admin) fall through unchanged. Sits ABOVE the
+  // showPreflight return so the wizard tree below stays byte-identical (MEH-132).
+  if (user?.role === "producer") {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate">
+          <div className="mb-4 flex justify-center">
+            <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
+          </div>
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.producer_heading")}</h1>
+          <p className="text-fg-muted mb-6">{t("auth.register.producer.gate.producer_body")}</p>
+          {/* CTA reuses the account-menu dashboard label (single owner, no new key). */}
+          <button
+            onClick={() => router.push("/producer/dashboard")}
+            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+          >
+            {t("account.menu.dashboard")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (user?.role === "admin") {
+    // No dashboard CTA — an admin's daily-work account has no producer page to
+    // manage; the message points them at creating a separate business account.
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate-admin">
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.admin_heading")}</h1>
+          <p className="text-fg-muted">{t("auth.register.producer.gate.admin_body")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // MEH-994: pre-flight screen before frame 01. Early return keeps the wizard
+  // tree below byte-identical (functional-freeze, MEH-132). Hero h1+subtitle
+  // are repeated here so the page identity doesn't jump when the CTA is
+  // clicked. showAccountLine: upgrade users (and token-holders whose step
+  // already initialized past ACCOUNT) never see the account-creation frame,
+  // so the checklist must not promise it.
+  if (showPreflight) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8">
+          <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+          <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+          <RegisterPreflight
+            showAccountLine={!isUpgrade && step === STEP.ACCOUNT}
+            onStart={() => setShowPreflight(false)}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -450,37 +549,27 @@ function RegisterProducerPageBody() {
                 key is repurposed as an example placeholder. required attr added.
                 (F3): min-h-[44px] enforces the WCAG 2.5.5 touch-target floor,
                 matching CitySearch.jsx:118. */}
-            <div>
-              <label htmlFor="producer-account-name" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.name_label")}
-              </label>
-              <input
-                id="producer-account-name"
-                data-testid="register-account-name"
-                placeholder={t("auth.register.producer.fields.name")}
-                value={form.name}
-                onChange={set("name")}
-                required
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
-                dir="rtl"
-              />
-            </div>
-            <div>
-              <label htmlFor="producer-account-email" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.email_label")}
-              </label>
-              <input
-                id="producer-account-email"
-                type="email"
-                data-testid="register-account-email"
-                placeholder={t("auth.register.producer.fields.email")}
-                value={form.email}
-                onChange={set("email")}
-                required
-                className="w-full border rounded-md px-3 py-2 min-h-[44px]"
-                dir="ltr"
-              />
-            </div>
+            <Input
+              id="producer-account-name"
+              label={t("auth.register.producer.fields.name_label")}
+              data-testid="register-account-name"
+              placeholder={t("auth.register.producer.fields.name")}
+              value={form.name}
+              onChange={set("name")}
+              required
+              dir="rtl"
+            />
+            <Input
+              id="producer-account-email"
+              type="email"
+              label={t("auth.register.producer.fields.email_label")}
+              data-testid="register-account-email"
+              placeholder={t("auth.register.producer.fields.email")}
+              value={form.email}
+              onChange={set("email")}
+              required
+              dir="ltr"
+            />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
                 (rendered on 409 from submit) is preserved by Chunk D. */}
@@ -536,21 +625,16 @@ function RegisterProducerPageBody() {
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
 
-            <div>
-              <label htmlFor="producer-business-name" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.producer_name_label")}
-              </label>
-              <input
-                id="producer-business-name"
-                data-testid="register-details-name"
-                placeholder={t("auth.register.producer.fields.producer_name")}
-                value={form.producer_name}
-                onChange={set("producer_name")}
-                required
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
-                dir="rtl"
-              />
-            </div>
+            <Input
+              id="producer-business-name"
+              label={t("auth.register.producer.fields.producer_name_label")}
+              data-testid="register-details-name"
+              placeholder={t("auth.register.producer.fields.producer_name")}
+              value={form.producer_name}
+              onChange={set("producer_name")}
+              required
+              dir="rtl"
+            />
 
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
@@ -587,7 +671,8 @@ function RegisterProducerPageBody() {
             <div data-testid="register-details-city">
             <CitySearch
               id="producer-city"
-              label={t("auth.register.producer.fields.city")}
+              labelVisible
+              label={t("auth.register.producer.fields.city_label")}
               placeholder={t("auth.register.producer.fields.city")}
               value={form.city}
               onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
@@ -600,23 +685,42 @@ function RegisterProducerPageBody() {
 
             {/* address is optional (no "*", not gated at submit) — label carries
                 no asterisk and the input gets no required attr. */}
-            <div>
-              <label htmlFor="producer-address" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.address_label")}
+            {/* MEH-951 map-privacy reassurance now rides the Input helperText slot. */}
+            <Input
+              id="producer-address"
+              label={t("auth.register.producer.fields.address_label")}
+              data-testid="register-details-address"
+              placeholder={t("auth.register.producer.fields.address")}
+              value={form.address}
+              onChange={set("address")}
+              helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
+              dir="rtl"
+            />
+
+            {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
+                Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
+                no backend field, no location rows; on "yes" the approved copy
+                refers the owner to the dashboard LocationsEditor (chunk 4a). */}
+            <div className="pt-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasMultipleLocations}
+                  onChange={(e) => setHasMultipleLocations(e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                  data-testid="register-multi-location-toggle"
+                />
+                {t("auth.register.producer.fields.multi_location_label")}
               </label>
-              <input
-                id="producer-address"
-                data-testid="register-details-address"
-                placeholder={t("auth.register.producer.fields.address")}
-                value={form.address}
-                onChange={set("address")}
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
-                dir="rtl"
-              />
-              {/* MEH-951: map-privacy reassurance under the address field. */}
-              <p className="text-xs text-fg-muted mt-1 text-start">
-                {t("auth.register.producer.fields.address_map_privacy_hint")}
-              </p>
+              {hasMultipleLocations && (
+                <p
+                  data-testid="register-multi-location-copy"
+                  className="mt-2 ms-6 flex items-start gap-1.5 rounded-md bg-primary/5 px-3 py-2 text-xs text-fg-muted"
+                >
+                  <MapPin size={14} weight="fill" className="mt-0.5 shrink-0 text-primary" />
+                  <span>{t("auth.register.producer.fields.multi_location_yes_copy")}</span>
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3">
@@ -808,20 +912,14 @@ function RegisterProducerPageBody() {
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
             <div>
-              <label
-                htmlFor="producer-tagline"
-                className="block text-sm font-medium text-text mb-1 text-start"
-              >
-                {t("auth.register.producer.fields.tagline_label")}
-              </label>
-              <input
+              <Input
                 id="producer-tagline"
+                label={t("auth.register.producer.fields.tagline_label")}
                 data-testid="register-story-tagline"
                 value={form.short_description}
                 onChange={set("short_description")}
                 maxLength={160}
                 placeholder={t("auth.register.producer.fields.tagline_placeholder")}
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
                 dir="rtl"
               />
               <p className="text-xs text-fg-muted mt-1">{form.short_description.length}/160</p>
@@ -923,8 +1021,8 @@ function RegisterProducerPageBody() {
               />
               <span className="leading-relaxed text-fg-muted">
                 {t("auth.register.producer.terms.intro")}{" "}
-                <a href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</a>{" "}
-                {t("auth.register.producer.terms.and")}<a href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</a>
+                <Link href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</Link>{" "}
+                {t("auth.register.producer.terms.and")}<Link href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</Link>
               </span>
             </label>
 

@@ -1,0 +1,408 @@
+[
+  {
+    "idx": "01",
+    "journey": "customer",
+    "name": "home-top",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Refused to apply style from 'http://127.0.0.1:3000/_next/static/chunks/2v481ngzzsf7w.css' because its MIME type ('text/plain') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/1llttfb_acjsq.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/3mnkawe_2jna3.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/3cxrkpk6ccu-r.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/0_3ahpo_90bhj.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "ChunkLoadError: Failed to load chunk /_next/static/chunks/0_3ahpo_90bhj.js from module 982666\n    at http://127.0.0.1:3000/_next/static/chunks/turbopack-1-m2koqk8ynri.js:1:6130\n    at async Promise.all (index 0)",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    ]
+  },
+  {
+    "idx": "02",
+    "journey": "customer",
+    "name": "home-categories",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "03",
+    "journey": "customer",
+    "name": "producers-list",
+    "status": "FAIL",
+    "error": "TimeoutError: locator.waitFor: Timeout 10000ms exceeded.",
+    "console": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/42mbmu4ya3uuv.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/0_3ahpo_90bhj.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "ChunkLoadError: Failed to load chunk /_next/static/chunks/0_3ahpo_90bhj.js from module 982666\n    at http://127.0.0.1:3000/_next/static/chunks/turbopack-1-m2koqk8ynri.js:1:6130\n    at async Promise.all (index 0)"
+    ]
+  },
+  {
+    "idx": "04",
+    "journey": "customer",
+    "name": "producer-demo-top",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/1pt3brlqk6f24.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/3nq6u2xz-xqye.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/1zw6m_f_cutym.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "05",
+    "journey": "customer",
+    "name": "producer-demo-fullpage",
+    "status": "OK",
+    "fullPage": true
+  },
+  {
+    "idx": "06",
+    "journey": "customer",
+    "name": "producer-demo-reviews",
+    "status": "FAIL",
+    "error": "TimeoutError: locator.click: Timeout 8000ms exceeded.",
+    "console": []
+  },
+  {
+    "idx": "07",
+    "journey": "customer",
+    "name": "whatsapp-cta",
+    "status": "FAIL",
+    "error": "Error: WhatsApp CTA did not open a wa.me target",
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    ]
+  },
+  {
+    "idx": "08",
+    "journey": "customer",
+    "name": "recipe-detail",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    ]
+  },
+  {
+    "idx": "09",
+    "journey": "customer",
+    "name": "recipe-detail-fullpage",
+    "status": "OK",
+    "fullPage": true
+  },
+  {
+    "idx": "10",
+    "journey": "customer",
+    "name": "events-list",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    ]
+  },
+  {
+    "idx": "11",
+    "journey": "customer",
+    "name": "event-detail",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ]
+  },
+  {
+    "idx": "12",
+    "journey": "customer",
+    "name": "map",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "13",
+    "journey": "customer",
+    "name": "search",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ]
+  },
+  {
+    "idx": "14",
+    "journey": "customer",
+    "name": "favorites-gate-logged-out",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ]
+  },
+  {
+    "idx": "15",
+    "journey": "customer",
+    "name": "register-consumer",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "16",
+    "journey": "customer",
+    "name": "register-consumer-submit",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "17",
+    "journey": "customer",
+    "name": "review-attempt",
+    "status": "FAIL",
+    "error": "TimeoutError: locator.scrollIntoViewIfNeeded: Timeout 8000ms exceeded.",
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "18",
+    "journey": "customer",
+    "name": "review-form-filled",
+    "status": "FAIL",
+    "error": "TimeoutError: locator.fill: Timeout 5000ms exceeded.",
+    "console": []
+  },
+  {
+    "idx": "19",
+    "journey": "producer",
+    "name": "wizard-preflight",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "20",
+    "journey": "producer",
+    "name": "wizard-account",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "21",
+    "journey": "producer",
+    "name": "wizard-details",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "22",
+    "journey": "producer",
+    "name": "wizard-category",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "23",
+    "journey": "producer",
+    "name": "wizard-story-submit",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "24",
+    "journey": "producer",
+    "name": "admin-approve-ui",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    ]
+  },
+  {
+    "idx": "25",
+    "journey": "producer",
+    "name": "admin-approve-click",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "idx": "26",
+    "journey": "producer",
+    "name": "logout-admin-login-producer",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    ]
+  },
+  {
+    "idx": "27",
+    "journey": "producer",
+    "name": "dashboard-overview",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "28",
+    "journey": "producer",
+    "name": "dashboard-overview-fullpage",
+    "status": "OK",
+    "fullPage": true
+  },
+  {
+    "idx": "29",
+    "journey": "producer",
+    "name": "dashboard-edit",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_next/static/chunks/0vm75vyvwy1vj.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.",
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "30",
+    "journey": "producer",
+    "name": "dashboard-edit-fullpage",
+    "status": "OK",
+    "fullPage": true
+  },
+  {
+    "idx": "31",
+    "journey": "producer",
+    "name": "dashboard-add-product",
+    "status": "FAIL",
+    "error": "TimeoutError: locator.scrollIntoViewIfNeeded: Timeout 8000ms exceeded.",
+    "console": []
+  },
+  {
+    "idx": "32",
+    "journey": "producer",
+    "name": "dashboard-recipes",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "33",
+    "journey": "producer",
+    "name": "recipe-new-form",
+    "status": "OK",
+    "error": null,
+    "console": []
+  },
+  {
+    "idx": "34",
+    "journey": "producer",
+    "name": "events-new-form",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "35",
+    "journey": "producer",
+    "name": "vacation-mode",
+    "status": "FAIL",
+    "error": "TimeoutError: locator.scrollIntoViewIfNeeded: Timeout 8000ms exceeded.",
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "36",
+    "journey": "producer",
+    "name": "insights",
+    "status": "OK",
+    "error": null,
+    "console": [
+      "Failed to load resource: net::ERR_CONNECTION_RESET",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Refused to execute script from 'http://127.0.0.1:3000/_vercel/speed-insights/script.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+    ]
+  },
+  {
+    "idx": "37",
+    "journey": "producer",
+    "name": "insights-fullpage",
+    "status": "OK",
+    "fullPage": true
+  }
+]

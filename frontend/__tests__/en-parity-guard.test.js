@@ -22,7 +22,8 @@ import he from "../messages/he.json";
 // them to en means deleting its line here (the second test enforces that).
 
 const BASELINE = new Set([
-  "admin.layout.nav.whatsapp_failures",
+  // MEH-997: admin.layout.nav.whatsapp_failures translated (sidebar rendered
+  // the raw key in /en) — removed from the baseline per the honesty test.
   "admin.whatsapp_failures.columns.error_code",
   "admin.whatsapp_failures.columns.error_message",
   "admin.whatsapp_failures.columns.kind",
@@ -39,7 +40,8 @@ const BASELINE = new Set([
   "auth.register.consumer.eyebrow",
   "auth.register.producer.account_reassurance",
   "auth.register.producer.fields.address_map_privacy_hint",
-  "auth.register.producer.fields.city",
+  // MEH-1127: auth.register.producer.fields.city translated to en (placeholder
+  // "e.g. Zikhron Ya'akov") — removed from the baseline per the honesty test.
   "auth.register.producer.fields.city_required_marker",
   "auth.register.producer.fields.license_pending_optin_hint",
   "auth.register.producer.fields.license_pending_optin_label",
@@ -49,16 +51,15 @@ const BASELINE = new Set([
   "auth.register.producer.story_card.body",
   "auth.register.producer.story_card.title",
   "auth.register.producer.validation.license_required",
-  "dashboard.producer.completeness.checklist_aria",
-  "dashboard.producer.completeness.checklist_done",
-  "dashboard.producer.completeness.checklist_todo",
+  // MEH-1106: completeness.checklist_aria/done/todo translated to en (the
+  // 4-step checklist renders in both locales — the he-only gate is gone).
   // MEH-992 — group-buy form clarity copy (he-first per ADR-024; en wave under MEH-472).
   "group_buys.dashboard.form.concept_intro",
   "group_buys.dashboard.form.price_helper",
   "group_buys.dashboard.form.deadline_helper",
   "map.near_me_pill.aria",
   "map.near_me_pill.empty",
-  "map.near_me_pill.label",
+  // MEH-1194: the near-me label key was deleted (pill → icon-only button).
   "nav.trust_strip",
 ]);
 

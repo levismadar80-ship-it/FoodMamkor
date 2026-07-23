@@ -29,6 +29,17 @@
         "hooks": [
           {
             "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-449 Layer 4 — AI-artifact location guard: blocks writing AI dev artifacts (CLAUDE.md, HANDOFF.md, ROADMAP.md, CHANGELOG.md, AGENTS.md, .claude/, .cursor/, docs/SECURITY.md family — canonical list lives in the hook) into deployable directories (frontend/public/, frontend/app/api/, backend/static/, backend/app/static/). Exit 2 = block. Fail-closed if jq missing or input malformed.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-artifact-location.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
             "_comment": "Central component guard (MEH-128): warns when editing high-risk files. Warning-only, always exits 0. See docs/CENTRAL_COMPONENTS.md.",
             "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/pre-edit-guard.js\""
           }
@@ -97,6 +108,17 @@
             "timeout": 5000,
             "_comment": "MEH-397 Layer 1: blocks WebFetch outside the supply-chain allowlist (github, anthropic, npmjs, pypi, mehamakor, vercel, railway). Exit 2 = block. Fail-closed if jq missing.",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-webfetch-allowlist.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-1141 branch-name guard — enforces workflow rule 3. Blocks git push / branch-create when the branch name doesn't match the locked pattern. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-branch-name.sh\""
           }
         ]
       }
@@ -281,7 +303,6 @@
       "Bash(alembic upgrade*)",
       "Bash(alembic downgrade*)",
       "Bash(alembic stamp*)",
-      "Bash(alembic revision*)",
       "Bash(railway up*)",
       "Bash(railway redeploy*)",
       "Bash(railway run*)",
@@ -299,7 +320,6 @@
       "Bash(vercel domains*)",
       "Bash(vercel env*)",
       "Bash(vercel link*)",
-      "Bash(gh pr merge*)",
       "Bash(gh pr close*)",
       "Bash(rm *)",
       "Bash(del *)",
@@ -316,11 +336,9 @@
       "Bash(curl -X POST*)",
       "Edit(backend/app/main.py)",
       "Edit(backend/app/config.py)",
-      "Edit(.github/workflows/**)",
       "Edit(.claude/settings.json)",
       "Edit(.claude/hooks/**)",
       "Edit(frontend/middleware.ts)",
-      "Edit(frontend/middleware.js)",
       "Edit(frontend/next.config.js)",
       "Edit(Dockerfile)",
       "Edit(railway.json)",
@@ -332,7 +350,6 @@
       "Edit(package-lock.json)",
       "Edit(pyproject.toml)",
       "Edit(uv.lock)",
-      "Write(.github/workflows/**)",
       "Write(.claude/settings.json)",
       "Write(.env*)"
     ]

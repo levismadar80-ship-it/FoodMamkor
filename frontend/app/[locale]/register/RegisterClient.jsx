@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { EnvelopeSimple } from "@phosphor-icons/react";
@@ -11,6 +11,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import PasswordInput from "@/components/PasswordInput";
+import Input from "@/components/ui/Input";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
@@ -60,7 +61,7 @@ function RegisterPageBody() {
   const t = useTranslations();
   // MEH-628: scoped translator for password-policy failure copy.
   const tValidation = useTranslations("auth.passwordValidation");
-  const { register } = useAuth();
+  const { user, loading: authLoading, register } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   // MEH-837: honor a post-signup ?redirect= the same way /login does, clamped
@@ -85,6 +86,15 @@ function RegisterPageBody() {
       // private browsing — ignore
     }
   }, []);
+
+  // MEH-1489 chunk C: an already-authenticated visitor doesn't need the signup
+  // form — bounce to the clamped ?redirect= target (MEH-810 helper -> "/"
+  // fallback). The MEH-328 flow leaves user null after register() (no token, no
+  // auto-login), so the emailSent inbox screen never triggers this. OAuth
+  // success sets user and also push()es redirectTo — same target, idempotent.
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectTo);
+  }, [authLoading, user, router, redirectTo]);
   // Per-field touched state for
   // onBlur inline validation. Password eye toggle + live policy
   // feedback now lives in <PasswordInput> (MEH-306 sub-B).
@@ -194,6 +204,18 @@ function RegisterPageBody() {
     "https://res.cloudinary.com/dfzpscjks/image/upload/register/hero-box-produce.jpg"
   );
 
+  // MEH-1489 chunk C: gate the form while auth resolves / redirect is in flight
+  // so the signup form never flashes for an authenticated visitor. Placed above
+  // the emailSent branch: the register flow keeps user null, so a post-signup
+  // inbox screen is never gated by this.
+  if (authLoading || user) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+        <ButtonSpinner />
+      </div>
+    );
+  }
+
   if (emailSent) {
     // MEH-328 Chunk D: unconditional inbox-check screen. Backend returns
     // an identical 200 ack regardless of whether the email was new or
@@ -261,7 +283,7 @@ function RegisterPageBody() {
         <div className="mb-6 text-start">
           {/* MEH-929: gold eyebrow rule — exact parity with LoginClient's
               eyebrow (LoginClient.jsx:161-164). */}
-          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium tracking-[0.16em] mb-3">
+          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium mb-3">
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("auth.register.consumer.eyebrow")}
           </span>
@@ -276,66 +298,44 @@ function RegisterPageBody() {
             The three orphaned keys stay in the JSONs (untouched), same as
             login's retained value_save/rate/publish. */}
 
-        {/* MEH-49: referral discount badge */}
-        {referralCode && (
-          <div className="mb-4 rounded-md bg-green-50 border border-primary/20 px-4 py-2 text-sm text-primary font-medium">
-            {t("auth.register.consumer.referral_badge")}
-          </div>
-        )}
+        {/* MEH-1056: the MEH-49 referral discount badge is removed — a blanket
+            platform promise no business opted into (MEH-1050 ruling). The
+            referralCode state + /referral/claim call below stay live; copy only. */}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="register-name" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.name")}</label>
-            <input
-              id="register-name"
-              value={form.name}
-              onChange={set("name")}
-              onBlur={() => setNameTouched(true)}
-              required
-              aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-start transition ${
-                nameInvalid
-                  ? "border-red-400"
-                  : nameValid
-                    ? "border-primary"
-                    : ""
-              }`}
-              dir="rtl"
-            />
-            {nameInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
-            )}
-            {nameValid && (
-              <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="register-email" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.email")}</label>
-            <input
-              id="register-email"
-              type="email"
-              value={form.email}
-              onChange={set("email")}
-              onBlur={() => setEmailTouched(true)}
-              required
-              aria-invalid={emailInvalid || undefined}
-              // text-right kept: email input is dir="ltr"; physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-right transition ${
-                emailInvalid
-                  ? "border-red-400"
-                  : emailValid
-                    ? "border-primary"
-                    : ""
-              }`}
-              dir="ltr"
-            />
-            {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
-            )}
-            {emailValid && (
-              <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
-            )}
-          </div>
+          {/* MEH-1128 D2: name + email adopt ui/Input with the D1 success state —
+              this closes Wave A's "0 migrations" gap (the consumer valid-state
+              affordance the primitive couldn't express pre-D1). Same
+              nameTouched/emailTouched trigger logic + i18n keys; error wins over
+              success inside the primitive, mirroring the mutually-exclusive
+              invalid/valid derivations. text-end on the ltr email = right (its
+              own end), preserving the old physical text-right. */}
+          <Input
+            id="register-name"
+            label={t("auth.register.consumer.fields.name")}
+            value={form.name}
+            onChange={set("name")}
+            onBlur={() => setNameTouched(true)}
+            required
+            error={nameInvalid ? t("auth.register.consumer.validation.name_required") : undefined}
+            success={nameValid}
+            successText={nameValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
+            dir="rtl"
+          />
+          <Input
+            id="register-email"
+            type="email"
+            label={t("auth.register.consumer.fields.email")}
+            value={form.email}
+            onChange={set("email")}
+            onBlur={() => setEmailTouched(true)}
+            required
+            error={emailInvalid ? t("auth.register.consumer.validation.email_invalid") : undefined}
+            success={emailValid}
+            successText={emailValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
+            className="text-end"
+            dir="ltr"
+          />
           <div>
             <label htmlFor="pw-password" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.password")}</label>
             {/* MEH-306: PasswordInput owns input + eye toggle + live policy
@@ -359,18 +359,18 @@ function RegisterPageBody() {
             />
             <span className="leading-relaxed">
               {t("auth.register.consumer.terms.intro")}{" "}
-              <a href="/terms" target="_blank" className="text-primary hover:underline">
+              <Link href="/terms" target="_blank" className="text-primary hover:underline">
                 {t("auth.register.consumer.terms.tos_link")}
-              </a>{" "}
+              </Link>{" "}
               {t("auth.register.consumer.terms.and")}
-              <a href="/privacy" target="_blank" className="text-primary hover:underline">
+              <Link href="/privacy" target="_blank" className="text-primary hover:underline">
                 {t("auth.register.consumer.terms.privacy_link")}
-              </a>
+              </Link>
             </span>
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
-          {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+          {error && <p className="text-error text-sm" role="alert">{error}</p>}
           {/* MEH-839: filled-green primary, mirrors /login's CTA fill
               (LoginClient.jsx:303) — was a ghost/outline. Height stays in
               register's 44px field rhythm (MEH-838), not login's 54px. */}

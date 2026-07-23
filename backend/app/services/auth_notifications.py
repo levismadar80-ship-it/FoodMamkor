@@ -1,5 +1,7 @@
 """
-WhatsApp + email notifications for the producer-registration flow.
+WhatsApp + email notifications for the producer-registration flow,
+plus the admin-facing recipe-submission ping (MEH-1000) that reuses the
+same admin channel as notify_admin_new_producer.
 
 Producer-facing notifications fail-open so a WhatsApp outage cannot
 break producer signup or admin approval. MEH-287 retained: every skip
@@ -13,16 +15,22 @@ swapped the producer-facing welcome from free-text send_text to the
 pre-approved producer_welcome_v1 template and added the symmetric
 producer_approved_v1 hook for admin approval (works outside the 24h
 customer-service window — required since approval can land days after
-signup).
+signup); MEH-1051 added the producer_changes_requested_v1 mirror for the
+MEH-1011 request-changes flow (WhatsApp alongside the existing email).
 """
 
 import logging
+import re
 from uuid import UUID
 
 from app.config import settings
 from app.services.email import send_email
 from app.services.whatsapp import send_template, send_text
-from app.services.whatsapp_templates import ProducerApprovedV1, ProducerWelcomeV1
+from app.services.whatsapp_templates import (
+    ProducerApprovedV1,
+    ProducerChangesRequestedV1,
+    ProducerWelcomeV1,
+)
 from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
@@ -39,7 +47,7 @@ def _normalize_il_phone(phone: str) -> str:
 def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
     """Shared MEH-287 skip-and-log gate for producer-facing WhatsApp.
 
-    `kind` is "welcome" / "approved" — only used in the log line so
+    `kind` is "welcome" / "approved" / "changes_requested" — only used in the log line so
     Railway/Sentry can distinguish which template was suppressed.
     """
     missing = []
@@ -121,6 +129,289 @@ def notify_producer_approved(
         return True
     logger.error(f"[WHATSAPP] Producer approved FAILED for {mask_phone(normalized)}")
     return False
+
+
+# MEH-1051: Meta rejects template params containing newline/tab/4+ consecutive
+# spaces; 550 chars keeps the 2-param body safely under Meta's total limit.
+_WA_PARAM_MAX_LEN = 550
+
+
+def _sanitize_wa_param(text: str) -> str:
+    """Flatten free text into a Meta-safe single-line template parameter.
+
+    Strip \\r, turn \\n and \\t into single spaces, collapse space runs,
+    trim, truncate to _WA_PARAM_MAX_LEN. Precedent:
+    experience_notifications.py notify_host_changes_requested (email-side
+    flattening of the same admin free-text feedback).
+    """
+    flat = text.replace("\r", "").replace("\n", " ").replace("\t", " ")
+    flat = re.sub(r" {2,}", " ", flat).strip()
+    return flat[:_WA_PARAM_MAX_LEN]
+
+
+def notify_producer_changes_requested(
+    name: str, phone: str | None, feedback: str
+) -> bool:
+    """Send WhatsApp changes-requested template after an admin asks a pending
+    producer to complete details (MEH-1011 flow, MEH-1051 template).
+
+    Fires the Meta-approved ``producer_changes_requested_v1`` template with
+    two positional params: business name + what's missing. Returns True on
+    success, False on skip/failure (MEH-287 contract preserved).
+    """
+    # Template shape is LOCKED to the Meta-approved form: 2 body params, no
+    # button components (MEH-509 precedent: an un-approved URL button → 400).
+    # `or not phone` narrows str | None → str for _normalize_il_phone below;
+    # preflight already returns False on a falsy phone, so this is defensive.
+    if not _producer_wa_preflight(name, phone, "changes_requested") or not phone:
+        return False
+    normalized = _normalize_il_phone(phone)
+    sanitized = _sanitize_wa_param(feedback)
+    try:
+        ok = send_template(
+            normalized,
+            # Name sanitized too (review round 2) — same Meta param rules apply;
+            # a tab/newline in a name (e.g. future import paths) must not 400.
+            ProducerChangesRequestedV1(
+                producer_name=_sanitize_wa_param(name), missing_details=sanitized
+            ),
+        )
+    except Exception as e:  # belt-and-suspenders; send_template is fail-open
+        logger.warning(
+            f"[WHATSAPP] Producer changes_requested unexpected error for {mask_phone(normalized)}: {e}"
+        )
+        return False
+    if ok:
+        logger.info("[WHATSAPP] Producer changes_requested template sent")
+        return True
+    logger.error(
+        f"[WHATSAPP] Producer changes_requested FAILED for {mask_phone(normalized)}"
+    )
+    return False
+
+
+def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
+    """Ping admin (WhatsApp + email) that a recipe awaits moderation.
+
+    MEH-1000 — closes the MEH-997 journey-1b gap: the /admin/recipes
+    queue was poll-only while producer registration already notified.
+    REUSES: notify_admin_new_producer below — same free-text send_text
+    to settings.admin_whatsapp_to + email to settings.admin_email, no
+    Meta template needed. Fire-and-forget: runs as a BackgroundTask and
+    swallows-and-logs any failure (MEH-977 — observable, never breaks
+    the submission).
+    """
+    # Producer-controlled free text — flatten so a crafted title can't inject
+    # extra lines (e.g. a fake URL line) into the admin message. Reuses the
+    # MEH-1051 sanitizer (one flattener per file, MEH-271) — also covers
+    # \r/\t, space runs, and the 550-char cap.
+    safe_title = _sanitize_wa_param(recipe_title)
+    safe_name = _sanitize_wa_param(producer_name)
+    message = (
+        f"מתכון חדש ממתין לאישור: {safe_title}\n"
+        f"בית עסק: {safe_name}\n"
+        f"לאישור: {settings.frontend_url}/admin/recipes"
+    )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not
+    # skip the email, matching notify_admin_new_producer's independence.
+    try:
+        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Recipe-pending notification sent to admin")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH recipe context.
+                logger.warning(
+                    "[WHATSAPP] Recipe-pending notification NOT delivered for "
+                    f"'{safe_title}' (business '{safe_name}')"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin recipe-pending WhatsApp FAILED for "
+            f"'{safe_title}' (business '{safe_name}'): {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - מתכון חדש ממתין לאישור: {safe_title}",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin recipe-pending email FAILED for "
+            f"'{safe_title}' (business '{safe_name}'): {e}"
+        )
+
+
+def notify_admin_producer_resubmit(producer_name: str, city: str | None) -> None:
+    """Ping admin (WhatsApp + email) that a producer finished completing her
+    details after a request-changes and is ready for a re-review.
+
+    MEH-1236 — the resubmit affordance: after an admin sends a completion
+    request (MEH-1011), the owner had no way to signal she was done, so the
+    admin never knew to look again. This closes that loop with a
+    notification-only ping (NO schema change, no "resubmitted" DB state).
+    REUSES: notify_admin_new_recipe above 1:1 — same free-text send_text to
+    settings.admin_whatsapp_to + email to settings.admin_email, no Meta
+    template needed. Fire-and-forget: runs as a BackgroundTask and
+    swallows-and-logs any failure (MEH-977 — observable, never breaks the
+    200 the producer already got).
+    """
+    # Producer-controlled free text — flatten so a crafted name can't inject
+    # extra lines (e.g. a fake URL line) into the admin message. REUSES the
+    # MEH-1051 sanitizer (one flattener per file, MEH-271).
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    message = (
+        f"העסק {safe_name} השלים את הפרטים — מוכן לבדיקה חוזרת\n"
+        f"עיר: {safe_city}\n"
+        f"לבדיקה: {settings.frontend_url}/admin/producers"
+    )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not
+    # skip the email, matching notify_admin_new_recipe's independence.
+    try:
+        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Producer-resubmit notification sent to admin")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH business context.
+                logger.warning(
+                    "[WHATSAPP] Producer-resubmit notification NOT delivered for "
+                    f"'{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin producer-resubmit WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - {safe_name} מוכן לבדיקה חוזרת",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin producer-resubmit email FAILED for '{safe_name}': {e}"
+        )
+
+
+def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> None:
+    """Ping admin (WhatsApp + email) that a pending producer first became
+    APPROVABLE — has ≥1 image and a license when its categories require one.
+
+    MEH-1351 — the registration-time ping (notify_admin_new_producer) fires
+    when the profile is ~25% and the approve gate (admin.py MEH-799 photo /
+    MEH-971 license 422s) still blocks action. This is the actionable ping,
+    fired on the false→true approvability transition during PUT /producers/me
+    (producer_me.py). Notification-only: NO schema change, no sent-flag —
+    the transition check is the idempotency guard, so repeated toggling
+    (remove image → re-add) can re-ping; accepted trade-off.
+    REUSES: notify_admin_producer_resubmit above 1:1 — sanitizer, per-channel
+    guards, fail-open, BackgroundTask contract.
+    """
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    message = (
+        f"העסק {safe_name} מוכן לאישור — יש תמונה וכל הפרטים הדרושים\n"
+        f"עיר: {safe_city}\n"
+        f"לבדיקה: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info(
+                    "[WHATSAPP] Producer review-ready notification sent to admin"
+                )
+            else:
+                logger.warning(
+                    "[WHATSAPP] Producer review-ready notification NOT delivered for "
+                    f"'{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin review-ready WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - {safe_name} מוכן לאישור",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(f"[NOTIFY] Admin review-ready email FAILED for '{safe_name}': {e}")
+
+
+def notify_admin_new_category_request(
+    requested_name: str, producer_name: str | None
+) -> None:
+    """Ping admin (WhatsApp + email) that a new category was requested.
+
+    MEH-1063 — mirrors notify_admin_new_recipe above 1:1: same free-text
+    send_text to settings.admin_whatsapp_to + email to settings.admin_email,
+    no Meta template needed. Fire-and-forget: runs as a BackgroundTask and
+    swallows-and-logs any failure (MEH-977 — observable, never breaks the
+    submission). `producer_name` is None/empty for anonymous submissions.
+    """
+    # Producer-controlled free text — flatten so a crafted name can't inject
+    # extra lines (e.g. a fake URL line) into the admin message. REUSES the
+    # MEH-1051 sanitizer (one flattener per file, MEH-271) — also covers
+    # \r/\t, space runs, and the 550-char cap.
+    safe_requested = _sanitize_wa_param(requested_name)
+    safe_business = _sanitize_wa_param(producer_name) if producer_name else "אנונימי"
+    message = (
+        f"בקשת קטגוריה חדשה: {safe_requested}\n"
+        f"בית עסק: {safe_business}\n"
+        f"לאישור: {settings.frontend_url}/admin/category-requests"
+    )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not
+    # skip the email, matching notify_admin_new_recipe's independence.
+    try:
+        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Category-request notification sent to admin")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH request context.
+                logger.warning(
+                    "[WHATSAPP] Category-request notification NOT delivered for "
+                    f"'{safe_requested}' (business '{safe_business}')"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin category-request WhatsApp FAILED for "
+            f"'{safe_requested}' (business '{safe_business}'): {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - בקשת קטגוריה חדשה: {safe_requested}",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin category-request email FAILED for "
+            f"'{safe_requested}' (business '{safe_business}'): {e}"
+        )
 
 
 def notify_admin_new_producer(name: str, city: str | None) -> None:

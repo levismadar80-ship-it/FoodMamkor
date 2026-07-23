@@ -17,9 +17,14 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, require_producer
+from app.auth import (
+    get_current_user,
+    get_current_user_optional,
+    require_producer,
+    require_verified_producer,
+)
 from app.database import get_db
-from app.models import Event, User
+from app.models import Event, Producer, User
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
 
 router = APIRouter(tags=["events"])
@@ -59,6 +64,7 @@ def _serialize(event: Event) -> EventOut:
 @router.get("/events", response_model=list[EventOut])
 def list_events(
     filters: Annotated[EventFilters, Depends()],
+    viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     q = (
@@ -66,6 +72,20 @@ def list_events(
         .options(joinedload(Event.producer))
         .filter(Event.is_active.is_(True))
     )
+    # MEH-1161: the public feed only lists events of approved producers — a
+    # pending producer's event (business name included) must not go public
+    # before the business is approved. Bypass: an admin, or the owner viewing
+    # their own producer page (?producer_id=<own>), still sees pending events.
+    is_admin = getattr(viewer, "role", None) == "admin"
+    is_owner_view = (
+        viewer is not None
+        and filters.producer_id is not None
+        and viewer.producer_id == filters.producer_id
+    )
+    if not (is_admin or is_owner_view):
+        q = q.join(Producer, Event.producer_id == Producer.id).filter(
+            Producer.status == "approved"
+        )
     if filters.producer_id:
         q = q.filter(Event.producer_id == filters.producer_id)
     if filters.city:
@@ -92,7 +112,13 @@ def upcoming_events(
     events = (
         db.query(Event)
         .options(joinedload(Event.producer))
-        .filter(Event.is_active.is_(True), Event.event_date >= date.today())
+        # MEH-1161: home-page cards are pure-public — approved producers only.
+        .join(Producer, Event.producer_id == Producer.id)
+        .filter(
+            Event.is_active.is_(True),
+            Event.event_date >= date.today(),
+            Producer.status == "approved",
+        )
         .order_by(Event.event_date.asc(), Event.event_time.asc())
         .limit(limit)
         .all()
@@ -100,8 +126,31 @@ def upcoming_events(
     return [_serialize(ev) for ev in events]
 
 
+# MEH-1405: owner-scoped list so a producer can manage her own events from the
+# dashboard — includes inactive (canceled) events, unlike the public feed which
+# filters is_active. Mirrors GET /experiences/mine (experiences.py:141). Declared
+# BEFORE /events/{event_id} so "mine" isn't captured as a UUID path param.
+@router.get("/events/mine", response_model=list[EventOut])
+def list_my_events(
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    events = (
+        db.query(Event)
+        .options(joinedload(Event.producer))
+        .filter(Event.producer_id == user.producer_id)
+        .order_by(Event.event_date.desc(), Event.event_time.desc())
+        .all()
+    )
+    return [_serialize(ev) for ev in events]
+
+
 @router.get("/events/{event_id}", response_model=EventOut)
-def get_event(event_id: UUID, db: Session = Depends(get_db)):
+def get_event(
+    event_id: UUID,
+    viewer: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
     event = (
         db.query(Event)
         .options(joinedload(Event.producer))
@@ -110,6 +159,16 @@ def get_event(event_id: UUID, db: Session = Depends(get_db)):
     )
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    # MEH-1161: a pending/rejected producer's event is not consented-to-public.
+    # Strangers get 404 (not 403) so the UUID can't be used to enumerate queue
+    # state — REUSES: backend/app/routers/producers.py:210-217 (MEH-254) and
+    # the MEH-1001 cross-owner convention. Owner + admin still see it.
+    producer_status = event.producer.status if event.producer else None
+    if producer_status != "approved":
+        is_admin = getattr(viewer, "role", None) == "admin"
+        is_owner = viewer is not None and viewer.producer_id == event.producer_id
+        if not (is_admin or is_owner):
+            raise HTTPException(status_code=404, detail="Event not found")
     return _serialize(event)
 
 
@@ -117,7 +176,7 @@ def get_event(event_id: UUID, db: Session = Depends(get_db)):
 def create_event(
     data: EventCreate,
     background_tasks: BackgroundTasks,
-    user: User = Depends(require_producer),
+    user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
     if data.category not in VALID_CATEGORIES:
@@ -185,8 +244,11 @@ def update_event(
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    # MEH-1001: 404 (not 403) on cross-owner access so a stranger can't
+    # confirm another producer's event exists. Stays owner-only — admin
+    # management lives on admin endpoints (REUSES producer_recipes.py:203-206).
     if event.producer_id != user.producer_id:
-        raise HTTPException(status_code=403, detail="Not the owner of this event")
+        raise HTTPException(status_code=404, detail="Event not found")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         if field == "category" and value not in VALID_CATEGORIES:
@@ -215,8 +277,10 @@ def delete_event(
         raise HTTPException(status_code=404, detail="Event not found")
     is_owner = user.producer_id == event.producer_id
     is_admin = getattr(user, "role", None) == "admin"
+    # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
+    # event's existence isn't leaked. Admin-override preserved (admin → 200).
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="אין הרשאה")
+        raise HTTPException(status_code=404, detail="Event not found")
     db.delete(event)
     db.commit()
     return {"detail": "Event deleted"}

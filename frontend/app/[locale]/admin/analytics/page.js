@@ -82,7 +82,7 @@ export default function AdminAnalyticsPage() {
               {cats.map((c) => (
                 <li key={c.name} className="text-sm">
                   <div className="flex justify-between mb-1">
-                    <span>{c.emoji} {c.name}</span>
+                    <span>{c.name}</span>
                     <span className="text-muted">{c.count}</span>
                   </div>
                   <div className="bg-accent rounded-full h-2">

@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S13 · MEH-135 · Photography + Texture — home + /about · 3 Directions</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:ital,wght@0,400;0,700;0,900;1,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+
+<link rel="stylesheet" href="s13/doc.css">
+<link rel="stylesheet" href="s13/surface.css">
+<link rel="stylesheet" href="s13/directions.css">
+</head>
+<body>
+<div class="doc">
+
+  <!-- ░░ MASTHEAD ░░ -->
+  <header class="masthead">
+    <div>
+      <nav class="phase-nav" aria-label="phase">
+        <span class="pip on"><i></i>S8</span><span>·</span>
+        <span class="pip on"><i></i>S9</span><span>·</span>
+        <span class="pip on"><i></i>S10</span><span>·</span>
+        <span class="pip on"><i></i>S11</span><span>·</span>
+        <span class="pip on"><i></i>S12</span><span>·</span>
+        <span class="pip now"><i></i>S13</span>
+      </nav>
+      <h1>Photography + Texture — <em>3 Directions</em></h1>
+      <p class="sub">MEH-135 · kills the flat-cream voids on <code>home</code> + <code>/about</code>, pre-launch slice: founder portrait + 2–3 feature images. Copy is <b>verbatim</b> from locked sources (P5 v2 home · S8 D /about) — zero new copy, zero new tokens. Mobile 375 mockups below; desktop 1280 in the notes column. Tailwind port mapping ships with Phase&nbsp;3 notes after a direction is picked.</p>
+    </div>
+    <div class="stamp">
+      Series <strong>S13</strong> <span class="dot">·</span> home + /about<br>
+      Kinfolk <span class="dot">·</span> Natoora <strong>only</strong> (BRAND §5)<br>
+      RTL <span class="dot">·</span> licensed <strong>בתי עסק</strong> (BRAND §7)
+    </div>
+  </header>
+
+  <!-- ░░ LEGEND ░░ -->
+  <div class="legend">
+    <span class="lh">Conventions</span>
+    <span class="item"><span class="sw slot"></span><b>Labeled image slot</b> — purpose + ratio + Cloudinary params. No fake stock (banned)</span>
+    <span class="item"><span class="sw db"></span><b>DB field chip</b> — caption/alt comes from the בית-עסק record, never invented</span>
+    <span class="item"><span class="sw verbatim"></span><b>Verbatim copy</b> — locked he.json / P5 v2 strings only</span>
+    <span class="item"><span class="sw placeholder"></span>Parallel track / unchanged sections — zero design work here</span>
+  </div>
+
+  <!-- ░░ SHARED TEXTURE SYSTEM ░░ -->
+  <section class="syspanel">
+    <h2>The shared system — <em>texture before treatment</em></h2>
+    <p class="lede">All three directions ride the same depth stack. Nothing here is new — it extends what already shipped on /about (QA rounds 4–5): film grain, tonal steps, hairline borders. Photography is the fourth layer, not a replacement.</p>
+    <div class="sysgrid">
+      <div>
+        <h4>The depth stack</h4>
+        <div class="swatches">
+          <div class="swatch"><div class="face cream"></div><div class="lab">0 · flat cream — the void</div></div>
+          <div class="swatch"><div class="face grain"></div><div class="lab">1 · film grain 0.035</div></div>
+          <div class="swatch"><div class="face step"></div><div class="lab">2 · tonal step bg-alt</div></div>
+        </div>
+      </div>
+      <div>
+        <h4>Rules — texture &amp; depth</h4>
+        <ul>
+          <li><span class="n">1</span><b>One grain layer, everywhere.</b> Same SVG recipe already live on /about, alpha <code>0.035</code> — and it sits <b>over</b> the photography too, so images and cream share the same air.</li>
+          <li><span class="n">2</span><b>Tonal steps, not shadows.</b> <code>--background → --background-alt</code> is the only sectioning device. Depth = overlap + step + mat. Zero new shadow tokens.</li>
+          <li><span class="n">3</span><b>One scrim recipe.</b> Text over photos sits on the production overlay family <code>rgba(46,74,46,…)</code>, bottom-up fade. Never a full-frame darken.</li>
+          <li><span class="n">4</span><b>Motion = Ken Burns only.</b> 22s drift, scale ≤ 1.06, on hero slots marked <code>KB</code>. <code>prefers-reduced-motion</code> → static frame, scrim unchanged — reads intentional. #1053 layer untouched.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Rules — sourcing &amp; performance</h4>
+        <ul>
+          <li><span class="n">5</span><b>Subjects: licensed בתי עסק only</b> (BRAND §7). Alt-text pattern <span dir="rtl">"{שם בית העסק} — {קטגוריה}, {עיר}"</span>. No home-kitchen / neighbor framing in any caption or alt.</li>
+          <li><span class="n">6</span><b>Look: Kinfolk + Natoora</b> (BRAND §5) — natural light, warm, editorial. Not glossy stock, not marketplace.</li>
+          <li><span class="n">7</span><b>Cloudinary contract:</b> <code>f_auto,q_auto,w_auto,dpr_auto</code> · hero <code>eager + fetchpriority=high</code> · all else <code>loading="lazy"</code> · every slot is an <code>aspect-ratio</code> box → zero layout shift.</li>
+          <li><span class="n">8</span><b>AA floor:</b> cream on the scrim text-zone ≥ 7:1 worst-case (measured against a blown-highlight frame). Numbers per direction in the notes column.</li>
+        </ul>
+      </div>
+    </div>
+    <h4 style="font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; margin:26px 0 10px;">Pre-launch slot inventory — 3 images + 1 crop, total</h4>
+    <table class="inv">
+      <thead><tr><th>Slot</th><th>Page · position</th><th>Ratio (mobile → desktop)</th><th>Subject brief (§7-safe)</th><th>Loading</th></tr></thead>
+      <tbody>
+        <tr><td>IMG-01</td><td><b>/about</b> · founder standfirst — replaces the beach photo</td><td>3:4 (fixed)</td><td>Founder, environmental — at a vetted בית עסק, warm natural light, not studio</td><td>eager</td></tr>
+        <tr><td>IMG-02</td><td><b>home</b> · hero</td><td>4:5 → 16:9 (A) · 4:5 (B/C)</td><td>Licensed בית עסק — produce / market table, golden hour</td><td>eager · fetchpriority=high</td></tr>
+        <tr><td>IMG-03</td><td><b>home</b> · feature band (position 06, Editorial Breath)</td><td>4:3 → 21:9</td><td>Full-bleed produce or workspace of a licensed בית עסק</td><td>lazy</td></tr>
+        <tr><td>IMG-04</td><td><b>C only</b> · duo partner, home + /about detail</td><td>1:1</td><td>Close crop — product detail (bread crust, cheese wheel) at a licensed בית עסק. May be a second crop of IMG-03</td><td>lazy</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════════════ DIRECTION A ══════════════════════════ -->
+  <section class="dir">
+    <div class="dir-head">
+      <span class="dn">A</span>
+      <div>
+        <h2>Full Immersion — <em>photo-forward</em></h2>
+        <p class="thesis">Natoora weighting. The photograph IS the hero surface; the FRL-900 headline sits in cream on the production scrim. The search card overlaps the photo seam — the first depth moment is structural, not decorative. Feature band runs full-bleed with the locked pull-quote as its on-image caption.</p>
+      </div>
+      <div class="axes">
+        treatment <b>full-bleed immersive</b><br>
+        balance <b>photo-forward · Natoora</b><br>
+        portrait <b>full-bleed standfirst</b><br>
+        <span class="warn">⚠ breaks P1 v2 hero LOCK (typography-only)</span>
+      </div>
+    </div>
+    <div class="frames">
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">a</span><span class="label">HOME</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="A · Home · Mobile 375">
+          <div class="mk dA">
+            <div class="ph-bar head">FloatingNavbar — parallel track (P4 v5)</div>
+            <section class="heroA">
+              <figure class="slot kb r45">
+                <div class="fill f-market"></div>
+                <div class="scrim"></div>
+                <span class="tag"><b>IMG-02</b> · HOME HERO · 4:5 m → 16:9 d · f_auto,q_auto · eager · fetchpriority=high · KB</span>
+              </figure>
+              <div class="copy">
+                <h1>אוכל מקומי, במקום אחד</h1>
+                <p class="sub">בתי עסק מקומיים בישראל — ישר מהמקור</p>
+              </div>
+            </section>
+            <div class="search-wrap">
+              <div class="srch-card">
+                <div class="srch"><span class="ic"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></span><span class="srch-ph">לחם מחמצת, ביצים אורגניות, ירקות ופירות</span><span class="srch-go"><i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i></span></div>
+              </div>
+            </div>
+            <div class="acts-row">
+              <div class="acts"><span class="pill-near"><i class="ph ph-crosshair" aria-hidden="true"></i>קרוב אלי</span><span class="pill-cta">גלו עסקים</span><span class="lnk">איך זה עובד</span></div>
+            </div>
+            <div class="ph-bar mid">02–05 · stats · categories · featured — unchanged</div>
+            <section class="bandA">
+              <figure class="slot r43">
+                <div class="fill f-bread"></div>
+                <div class="scrim"></div>
+                <span class="tag"><b>IMG-03</b> · FEATURE BAND · 4:3 m → 21:9 d · f_auto,q_auto · lazy</span>
+              </figure>
+              <div class="bandcap">
+                <p class="bq">מהמקור הוא הבית הראשון של העסק שלך</p>
+                <div class="dbrow"><span class="db-chip on-photo">שם בית העסק</span><span class="db-chip on-photo">קטגוריה</span><span class="db-chip on-photo">עיר</span></div>
+              </div>
+            </section>
+            <div class="ph-bar mid alt">07–13 · how it works · for business — unchanged · on background-alt step</div>
+            <div class="ph-bar foot">Footer — parallel track</div>
+          </div>
+        </div>
+        <p class="capnote"><b>Verbatim.</b> H1 + subtitle + CTAs (P5 v2 · MEH-472 lock) · pull-quote = position 06 Editorial Breath string. Caption is DB fields only.</p>
+      </div>
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">b</span><span class="label">/ABOUT</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="A · About · Mobile 375">
+          <div class="mk dA">
+            <div class="ph-bar head">Header — parallel track</div>
+            <section class="heroAb">
+              <h1 class="h1a">פעם היית צריכה לדעת את מי לשאול. עכשיו כבר לא</h1>
+              <p class="subm">אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.</p>
+            </section>
+            <section class="standA">
+              <figure class="slot r34">
+                <div class="fill f-portrait"></div>
+                <div class="scrim"></div>
+                <span class="tag"><b>IMG-01</b> · FOUNDER PORTRAIT · 3:4 · f_auto,q_auto · eager</span>
+              </figure>
+              <div class="ovl byline-photo">
+                <div class="eb">ספיר · מהמקור</div>
+                <p>מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.</p>
+              </div>
+            </section>
+            <section class="storyA">
+              <p class="greet">היי, אני ספיר</p>
+              <p class="storyp muted-lead">לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר, קוראת רשימת רכיבים שלא הצלחתי לפענח. ידעתי שאי־שם בסביבה שלי יש אנשים שמכינים אוכל טוב, ישר מהמקור — פשוט לא ידעתי איך למצוא אותם.</p>
+              <p class="storyp">התחלתי לשאול. חברה הכירה אופה, שהכיר חוואית, שסיפרה לי על גבן שעובד שלוש שכונות מכאן. כל שם הגיע בלחישה, מפה לאוזן, כאילו זה איזה סוד ששומרים עליו.</p>
+              <div class="more-note">¶3–5 + remaining byline line — unchanged (S8 D)</div>
+            </section>
+            <section class="quoteb wrapm">
+              <span class="em-mark">מהמקור</span>
+              <blockquote>אוכל טוב — לא שומרים לעצמנו</blockquote>
+            </section>
+            <div class="ph-bar mid alt">03–08 · benefits · tips · values · cta · contact — unchanged · tonal step kept</div>
+            <div class="ph-bar foot">Footer — parallel track</div>
+          </div>
+        </div>
+        <p class="capnote"><b>Respected, not reverted.</b> Grain 0.035 · tonal step · cream typographic pull-quote all kept. Byline rides the scrim; second byline line stays in the story column (S8 D).</p>
+      </div>
+
+      <div class="dnotes">
+        <h4>Desktop 1280 — notes · Direction A</h4>
+        <ol>
+          <li><span class="n">1</span><b>Hero:</b> 16:9, full viewport bleed, max-height 72vh. H1 84px cream, ≤ 14ch; search card overlaps the bottom seam by 50%, max-width 640, anchored to the start edge.</li>
+          <li><span class="n">2</span><b>Feature band:</b> 21:9 full-bleed; quote + DB chips sit inset-inline-start 48px / bottom 40px on the scrim.</li>
+          <li><span class="n">3</span><b>Ken Burns:</b> hero only — 22s, 1 → 1.06, alternate. Reduced-motion serves the static frame; composition is designed to hold still.</li>
+          <li><span class="n">4</span><b>/about standfirst:</b> full-bleed 3:4 becomes a 16:10 crop, story column overlaps its bottom edge by 64px — the page opens authored, not stock.</li>
+          <li><span class="n">5</span><b>LCP:</b> the hero photo IS the LCP — <code>preload</code> + <code>w_1920</code> + fetchpriority=high; aspect-ratio box reserves height (CLS 0). This is the only direction where LCP budget moves.</li>
+        </ol>
+        <hr class="hr">
+        <p class="aa"><b>AA:</b> text zone scrim ≥ .85 primary-dark → cream ≈ 7.2:1 worst-case highlight (AA + AAA-large). Chips: dashed cream on rgba(28,26,23,.28).<br><b>⚠ LOCK:</b> P1 v2 hero is "Direction A typography-only" — this revises a locked component. Needs explicit unlock sign-off before Phase 3.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ DIRECTION B ══════════════════════════ -->
+  <section class="dir">
+    <div class="dir-head">
+      <span class="dn">B</span>
+      <div>
+        <h2>The Framed Plate — <em>typography-forward</em></h2>
+        <p class="thesis">Kinfolk weighting. The locked typography hero doesn't move; photography enters as a framed plate — warm-white mat, hairline border, a tonal panel offset behind it. The cream stays dominant; the photo is a held object on the paper. Lowest-risk direction: every locked component is untouched.</p>
+      </div>
+      <div class="axes">
+        treatment <b>framed editorial inset</b><br>
+        balance <b>typography-forward · Kinfolk</b><br>
+        portrait <b>framed side-by-side</b><br>
+        P1 v2 hero LOCK <b>intact</b>
+      </div>
+    </div>
+    <div class="frames">
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">a</span><span class="label">HOME</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="B · Home · Mobile 375">
+          <div class="mk dB">
+            <div class="ph-bar head">FloatingNavbar — parallel track (P4 v5)</div>
+            <section class="heroB">
+              <h1 class="h1m">אוכל מקומי, במקום אחד</h1>
+              <p class="subm">בתי עסק מקומיים בישראל — ישר מהמקור</p>
+              <div class="srch"><span class="ic"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></span><span class="srch-ph">לחם מחמצת, ביצים אורגניות, ירקות ופירות</span><span class="srch-go"><i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i></span></div>
+              <div class="acts"><span class="pill-near"><i class="ph ph-crosshair" aria-hidden="true"></i>קרוב אלי</span><span class="pill-cta">גלו עסקים</span><span class="lnk">איך זה עובד</span></div>
+              <div class="plate-wrap">
+                <div class="plate-bg"></div>
+                <figure class="plate">
+                  <span class="slot kb r45"><span class="fill f-market"></span><span class="tag"><b>IMG-02</b> · HERO PLATE · 4:5 · f_auto,q_auto · eager · KB</span></span>
+                  <figcaption class="plate-cap"><div class="dbrow"><span class="db-chip">שם בית העסק</span><span class="db-chip">עיר</span></div></figcaption>
+                </figure>
+              </div>
+              <div class="heroB-after"></div>
+            </section>
+            <div class="ph-bar mid">02–05 · stats · categories · featured — unchanged</div>
+            <section class="tonal">
+              <div class="bandB-quote">
+                <div class="marker"><span class="rule"></span><span class="eb">מהמקור</span></div>
+                <p class="bq">מהמקור הוא הבית הראשון של העסק שלך</p>
+              </div>
+              <div class="bandB">
+                <figure class="plate">
+                  <span class="slot r32"><span class="fill f-bread"></span><span class="tag"><b>IMG-03</b> · FEATURE BAND · 3:2 inset · f_auto,q_auto · lazy</span></span>
+                  <figcaption class="plate-cap"><div class="dbrow"><span class="db-chip">שם בית העסק</span><span class="db-chip">קטגוריה</span><span class="db-chip">עיר</span></div></figcaption>
+                </figure>
+              </div>
+            </section>
+            <div class="ph-bar mid">07–13 · how it works · for business — unchanged</div>
+            <div class="ph-bar foot">Footer — parallel track</div>
+          </div>
+        </div>
+        <p class="capnote"><b>Hero LOCK intact.</b> Type metrics, search, CTAs untouched (P1 v2 / MEH-472). The plate + tonal panel are purely additive below the locked block.</p>
+      </div>
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">b</span><span class="label">/ABOUT</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="B · About · Mobile 375">
+          <div class="mk dB">
+            <div class="ph-bar head">Header — parallel track</div>
+            <section class="heroAb2">
+              <h1 class="h1a">פעם היית צריכה לדעת את מי לשאול. עכשיו כבר לא</h1>
+              <p class="subm">אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.</p>
+            </section>
+            <section class="storyB">
+              <p class="greet">היי, אני ספיר</p>
+              <p class="storyp muted-lead">לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר, קוראת רשימת רכיבים שלא הצלחתי לפענח. ידעתי שאי־שם בסביבה שלי יש אנשים שמכינים אוכל טוב, ישר מהמקור — פשוט לא ידעתי איך למצוא אותם.</p>
+              <div class="more-note">¶2–5 — unchanged (S8 D)</div>
+            </section>
+            <div class="aboutB-portrait">
+              <div class="plate-bg"></div>
+              <figure class="plate">
+                <span class="slot r34"><span class="fill f-portrait"></span><span class="tag"><b>IMG-01</b> · FOUNDER PORTRAIT · 3:4 · f_auto,q_auto · eager</span></span>
+              </figure>
+              <figcaption class="byline">
+                <div class="eb">ספיר · מהמקור</div>
+                <p>מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.</p>
+                <p>את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.</p>
+              </figcaption>
+            </div>
+            <div class="aboutB-after"></div>
+            <section class="quoteb wrapm">
+              <span class="em-mark">מהמקור</span>
+              <blockquote>אוכל טוב — לא שומרים לעצמנו</blockquote>
+            </section>
+            <div class="ph-bar mid alt">03–08 — unchanged · tonal step kept</div>
+            <div class="ph-bar foot">Footer — parallel track</div>
+          </div>
+        </div>
+        <p class="capnote"><b>S8 D kept.</b> Same side-by-side portrait + gold byline that QA approved — upgraded with the mat + offset tonal panel so the column reads layered, not pasted.</p>
+      </div>
+
+      <div class="dnotes">
+        <h4>Desktop 1280 — notes · Direction B</h4>
+        <ol>
+          <li><span class="n">1</span><b>Hero:</b> type column 7/12 start; plate 4/12 end, 4:5. The tonal panel behind it bleeds to the viewport end edge — first depth moment without touching the locked type.</li>
+          <li><span class="n">2</span><b>Feature band:</b> full-width background-alt band, 80px block padding; 5/7 grid — quote at start, 3:2 plate at end. Breaks the typography run with one held image.</li>
+          <li><span class="n">3</span><b>/about:</b> S8 D two-column layout verbatim (sticky portrait); plate mat + tonal panel added behind the portrait column only.</li>
+          <li><span class="n">4</span><b>Ken Burns:</b> inside the plate frame only — subtler read; reduced-motion static.</li>
+          <li><span class="n">5</span><b>Degrades to 2 images:</b> if sourcing slips, drop IMG-02 — the hero stands as shipped today, zero layout debt.</li>
+        </ol>
+        <hr class="hr">
+        <p class="aa"><b>AA:</b> no text ever sits on photography — all type on cream / background-alt at token defaults (body ≈ 13:1). Zero overlay risk.<br><b>LCP:</b> unchanged — hero stays text-first; plate is below-the-headline, IMG-02 still eager but not LCP-critical.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ DIRECTION C ══════════════════════════ -->
+  <section class="dir">
+    <div class="dir-head">
+      <span class="dn">C</span>
+      <div>
+        <h2>The Seam — <em>duo rhythm</em></h2>
+        <p class="thesis">The hybrid. Typography hero stays locked; below it the page steps to background-alt and a duo of images straddles the seam — half on cream, half on the tonal block, separated by a cream key-line. Depth comes from the paper itself folding, not from the photo's size. The /about portrait straddles an in-story step the same way.</p>
+      </div>
+      <div class="axes">
+        treatment <b>duo / collage on the seam</b><br>
+        balance <b>balanced — Kinfolk frame, Natoora band</b><br>
+        portrait <b>seam-straddle + detail crop</b><br>
+        P1 v2 hero LOCK <b>intact</b>
+      </div>
+    </div>
+    <div class="frames">
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">a</span><span class="label">HOME</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="C · Home · Mobile 375">
+          <div class="mk dC">
+            <div class="ph-bar head">FloatingNavbar — parallel track (P4 v5)</div>
+            <section class="heroC">
+              <h1 class="h1m">אוכל מקומי, במקום אחד</h1>
+              <p class="subm">בתי עסק מקומיים בישראל — ישר מהמקור</p>
+              <div class="srch"><span class="ic"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></span><span class="srch-ph">לחם מחמצת, ביצים אורגניות, ירקות ופירות</span><span class="srch-go"><i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i></span></div>
+              <div class="acts"><span class="pill-near"><i class="ph ph-crosshair" aria-hidden="true"></i>קרוב אלי</span><span class="pill-cta">גלו עסקים</span><span class="lnk">איך זה עובד</span></div>
+            </section>
+            <div class="seam">
+              <div class="duo">
+                <figure class="slot kb r45 duo-a"><div class="fill f-market"></div><span class="tag"><b>IMG-02</b> · HERO DUO · 4:5 · f_auto,q_auto · eager · KB</span></figure>
+                <figure class="slot r11 duo-b"><div class="fill f-detail"></div><span class="tag"><b>IMG-04</b> · DETAIL · 1:1 · lazy</span></figure>
+              </div>
+              <div class="dbrow duo-credit"><span class="db-chip">שם בית העסק</span><span class="db-chip">קטגוריה</span><span class="db-chip">עיר</span></div>
+            </div>
+            <div class="ph-bar mid">02–05 · stats · categories · featured — unchanged</div>
+            <section class="bandC">
+              <figure class="slot r43"><div class="fill f-bread"></div><span class="tag"><b>IMG-03</b> · FEATURE BAND · 4:3 m → 21:9 d · f_auto,q_auto · lazy</span></figure>
+              <div class="bandcap">
+                <p class="bq">מהמקור הוא הבית הראשון של העסק שלך</p>
+                <div class="dbrow"><span class="db-chip">שם בית העסק</span><span class="db-chip">קטגוריה</span><span class="db-chip">עיר</span></div>
+              </div>
+            </section>
+            <div class="ph-bar mid alt">07–13 — unchanged · on background-alt step</div>
+            <div class="ph-bar foot">Footer — parallel track</div>
+          </div>
+        </div>
+        <p class="capnote"><b>Hero LOCK intact.</b> Band = Natoora full-bleed, but its caption returns to cream under a gold rule — quote never sits on the photo, so AA is free.</p>
+      </div>
+
+      <div class="frame">
+        <div class="cap"><span class="num-i">b</span><span class="label">/ABOUT</span><span class="dims">375 × scroll</span></div>
+        <div class="vp" data-screen-label="C · About · Mobile 375">
+          <div class="mk dC">
+            <div class="ph-bar head">Header — parallel track</div>
+            <section class="heroAb2">
+              <h1 class="h1a">פעם היית צריכה לדעת את מי לשאול. עכשיו כבר לא</h1>
+              <p class="subm">אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.</p>
+            </section>
+            <section class="storyB">
+              <p class="greet">היי, אני ספיר</p>
+              <p class="storyp muted-lead">לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר, קוראת רשימת רכיבים שלא הצלחתי לפענח. ידעתי שאי־שם בסביבה שלי יש אנשים שמכינים אוכל טוב, ישר מהמקור — פשוט לא ידעתי איך למצוא אותם.</p>
+              <div class="more-note">¶2–5 — unchanged (S8 D)</div>
+            </section>
+            <div class="seam2">
+              <div class="duo2">
+                <figure class="slot r34"><div class="fill f-portrait"></div><span class="tag"><b>IMG-01</b> · FOUNDER PORTRAIT · 3:4 · f_auto,q_auto · eager</span></figure>
+                <figure class="slot r11 det"><div class="fill f-detail"></div><span class="tag"><b>IMG-04</b> · DETAIL · 1:1 · alt crop · lazy</span></figure>
+              </div>
+              <div class="byline">
+                <div class="eb">ספיר · מהמקור</div>
+                <p>מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.</p>
+                <p>את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.</p>
+              </div>
+            </div>
+            <section class="quoteb wrapm">
+              <span class="em-mark">מהמקור</span>
+              <blockquote>אוכל טוב — לא שומרים לעצמנו</blockquote>
+            </section>
+            <div class="ph-bar mid alt">03–08 — unchanged · tonal step kept</div>
+            <div class="ph-bar foot">Footer — parallel track</div>
+          </div>
+        </div>
+        <p class="capnote"><b>The step starts mid-story.</b> Portrait + detail crop straddle it; the gold byline lands on the alt block. Pull-quote returns to cream — existing treatment untouched.</p>
+      </div>
+
+      <div class="dnotes">
+        <h4>Desktop 1280 — notes · Direction C</h4>
+        <ol>
+          <li><span class="n">1</span><b>Hero:</b> type 6/12 start; duo 6/12 end — 4:5 anchor + 1:1 detail overlapping by 48px with an 8px cream key-line. Seam crosses at ~42% of the hero block height.</li>
+          <li><span class="n">2</span><b>The seam is the signature:</b> background-alt begins mid-composition so images sit half-on / half-off the step — layered paper, not floating cards. No shadows anywhere.</li>
+          <li><span class="n">3</span><b>Feature band:</b> 21:9 full-bleed; caption below on cream — gold rule + quote + DB chips, anchored to the start edge.</li>
+          <li><span class="n">4</span><b>/about:</b> S8 D column structure kept; the in-story step replaces the portrait column's flat backdrop. Sticky behavior unchanged.</li>
+          <li><span class="n">5</span><b>Image economy:</b> IMG-04 may be a crop of IMG-03 — full system ships with 3 photographed assets.</li>
+        </ol>
+        <hr class="hr">
+        <p class="aa"><b>AA:</b> only DB chips overlay photography (dashed, ≥ 44px targets not required — non-interactive). All reading text on cream/alt at token defaults.<br><b>LCP:</b> unchanged — text hero remains LCP; duo is eager but below the headline fold.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ░░ DOC FOOTER — comparison + recommendation ░░ -->
+  <div class="doc-foot">
+    <h3>Side-by-side</h3>
+    <table class="cmp">
+      <thead><tr><th></th><th>A · Full Immersion</th><th>B · The Framed Plate</th><th>C · The Seam</th></tr></thead>
+      <tbody>
+        <tr><td>Kills the void (MEH-135)</td><td class="good">Strongest — photo replaces the void</td><td>Gentlest — cream still dominates</td><td class="good">Strong — the paper itself folds</td></tr>
+        <tr><td>3-sec test risk</td><td class="warn">Watch marketplace-gloss read if the photo is too produced</td><td class="good">Lowest — reads authored/editorial by construction</td><td class="good">Low — duo reads curated, magazine rhythm</td></tr>
+        <tr><td>P1 v2 hero LOCK</td><td class="warn">Broken — needs explicit unlock sign-off</td><td class="good">Intact</td><td class="good">Intact</td></tr>
+        <tr><td>Images needed</td><td>3 (IMG-01/02/03)</td><td class="good">2–3 (degrades to 2)</td><td>3 + 1 crop</td></tr>
+        <tr><td>LCP</td><td class="warn">Hero photo becomes LCP — preload budget moves</td><td class="good">Unchanged</td><td class="good">Unchanged</td></tr>
+        <tr><td>Text over photo</td><td>H1 + byline + captions (scrim, ≈7.2:1)</td><td class="good">Never</td><td class="good">Chips only</td></tr>
+      </tbody>
+    </table>
+    <div class="reco">
+      <div>
+        <h4>Recommendation</h4>
+        <ol>
+          <li><span class="n">1</span><b>Pick C.</b> Best depth-per-image: both locks intact, LCP untouched, and the seam-straddle is a signature gesture (asymmetric grid + tonal step) rather than a borrowed one. <span class="src">— ships with 3 photographed assets</span></li>
+          <li><span class="n">2</span><b>B is the fallback</b> if image sourcing slips before launch — it degrades to two images with zero layout debt.</li>
+          <li><span class="n">3</span><b>A only with an unlock decision.</b> Biggest emotional swing, but it re-opens P1 v2, moves the LCP budget, and is the only direction with real overlay-contrast surface area.</li>
+        </ol>
+      </div>
+      <div>
+        <h4>Guardrails honoured</h4>
+        <ul>
+          <li><span class="x">✕</span><b>No neighbor framing.</b> Every caption/alt is assembled from בית-עסק record fields; subject briefs name licensed businesses only (BRAND §7).</li>
+          <li><span class="x">✕</span><b>No fake stock.</b> Slots are labeled placeholders with purpose + ratio; fills are token-family gradients, not imagery.</li>
+          <li><span class="x">✕</span><b>Nothing reinvented.</b> Grain recipe, tonal step, cream pull-quote, gold byline — all extended from shipped /about work, zero new tokens, zero raw hex on the surface.</li>
+          <li><span class="x">✕</span><b>Retired artifacts untouched.</b> No gardensweet / Graza / .impeccable.md references — pre-reset drift trap avoided.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

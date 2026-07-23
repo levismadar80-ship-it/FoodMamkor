@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     Date,
     DateTime,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
@@ -71,12 +73,24 @@ class Producer(Base):
         String(20), default="pending"
     )  # pending | approved | rejected | inactive
     images = Column(ARRAY(Text), default=[])
-    is_verified = Column(Boolean, default=False)
+    # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
+    # is verification_tier/verified_at only (ADR-022). Do not re-add.
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
+    # MEH-1335: owner story fields consumed by the public OwnerCard
+    # ("מאחורי העסק", MEH-1334 — dormant until data exists). Both nullable,
+    # Expand-only, no backfill: NULL = owner hasn't told her story yet and
+    # the card stays in its compact variant. owner_bio caps at 300 chars at
+    # the app layer (schemas.ProducerUpdate sanitize validator), mirroring
+    # short_description (Text column + app cap, no DB CHECK). owner_photo_url
+    # is written by POST /upload/owner-photo (Cloudinary, mehamakor/owner,
+    # fixed public_id + overwrite — MEH-375 zero-orphan pattern). Paired
+    # migration: f7d2a9c4b1e8.
+    owner_bio = Column(Text, nullable=True)
+    owner_photo_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(
@@ -158,11 +172,29 @@ class Producer(Base):
     # Delivery scope — mutually exclusive: nationwide flag XOR city list.
     delivery_nationwide = Column(Boolean, nullable=False, default=False)
     delivery_cities = Column(ARRAY(Text), nullable=False, default=[])
+    # MEH-1255: nationwide exclusion list — "משלוחים לכל הארץ חוץ מ:".
+    # Only meaningful when delivery_nationwide=true; CHECK constraint
+    # delivery_excluded_requires_nationwide keeps it empty otherwise
+    # (ShipperHQ include/exclude zone model).
+    delivery_excluded_cities = Column(
+        ARRAY(Text),
+        nullable=False,
+        default=[],
+        server_default=text("'{}'::text[]"),
+    )
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
+    # MEH-1291: "עודכן לאחרונה" freshness signal. Nullable, NO default, NO
+    # server_default, NO backfill — an honest signal: the column stays NULL
+    # until a real UPDATE fires `onupdate=func.now()`, so untouched producers
+    # render nothing on the public page. tz-aware (MEH-762 verified_at
+    # precedent, NOT naive utcnow). Expand-only (ADR-007). Paired migration:
+    # a3f1c9d2e4b7. Exposed public read-only via ProducerDetailOut (MEH-1291
+    # Chunk B).
+    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
     # MEH-51: trust ladder + kashrut badges
     phone_verified = Column(Boolean, default=False)
     ambassador = Column(Boolean, default=False)
@@ -176,6 +208,15 @@ class Producer(Base):
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
     # never added it to the DB, baseline didn't pick it up).
     rejection_reason = Column(Text, nullable=True)
+    # MEH-1011: producer "request-changes" trail — the non-terminal twin of
+    # rejection_reason. When the admin sends a completion request (missing
+    # photo / license), status STAYS "pending"; `requested_changes` holds the
+    # admin's free-text feedback and `changes_requested_at` stamps when it was
+    # sent (tz-aware — MEH-762 D1 precedent, NOT naive utcnow). Both nullable,
+    # Expand-only (ADR-007, no backfill); cleared on approve. Admin-only
+    # exposure via ProducerAdminOut. Paired migration: a1b2c3d4e5f6.
+    requested_changes = Column(Text, nullable=True)
+    changes_requested_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-539: timestamps for the 4 onboarding follow-up emails (Day 2 / 5 /
     # 10 / 30). NULL = not yet sent — non-null is the durable "delivered to
     # Resend" record. Scheduler (APScheduler, daily) reads created_at +
@@ -185,8 +226,13 @@ class Producer(Base):
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
 
+    # MEH-1297: order_by position so categories[0] is deterministic (the
+    # producer's primary/first-selected category), not an arbitrary row.
     categories = relationship(
-        "Category", secondary="producer_categories", back_populates="producers"
+        "Category",
+        secondary="producer_categories",
+        back_populates="producers",
+        order_by="ProducerCategory.position",
     )
     products = relationship(
         "Product", back_populates="producer", cascade="all, delete-orphan"
@@ -208,6 +254,15 @@ class Producer(Base):
     # FK cascade on producer_recipe_products.recipe_id).
     producer_recipes = relationship(
         "ProducerRecipe", back_populates="producer", cascade="all, delete-orphan"
+    )
+    # MEH-1395 (MEH-1388 chunk 1): physical presence points (branches / pickup
+    # points / market stands). Expand-phase data layer only — no serialization
+    # or UI in this chunk. Default (lazy="select") loading is deliberate: an
+    # eager joinedload would fan a producer row out per location and regress
+    # the list/count queries (producer_queries.py Haversine + producer_listing
+    # counts). back_populates + delete-orphan mirrors delivery_areas.
+    locations = relationship(
+        "ProducerLocation", back_populates="producer", cascade="all, delete-orphan"
     )
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
@@ -236,6 +291,28 @@ class Producer(Base):
         # Added in migration b504e4be4225 alongside the 4 email_followup_*
         # columns above.
         Index("idx_producers_created_at", "created_at"),
+        # MEH-272: two CHECK constraints that already live on prod/staging
+        # (added by the removed `_migrate_columns` raw SQL, MEH-267 era) but
+        # were never declared in the ORM or the alembic baseline — so fresh
+        # bootstrapped DBs (local dev, new env, CI) silently lacked them.
+        # Pydantic `model_validator` guards the API layer; these protect the
+        # direct-SQL paths (seeds, imports, psql). Migration f9a2c7d41b83 adds
+        # them idempotently (IF NOT EXISTS) so it's a no-op where they exist.
+        CheckConstraint(
+            "has_physical_location OR offers_delivery",
+            name="producer_location_mode",
+        ),
+        CheckConstraint(
+            "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
+            name="delivery_nationwide_xor_cities",
+        ),
+        # MEH-1255: an exclusion list without nationwide mode is contradictory.
+        # Column is NOT NULL so the equality form is NULL-free (no
+        # array_length three-valued-logic edge). Added in e7c4b1f95a2d.
+        CheckConstraint(
+            "delivery_nationwide OR delivery_excluded_cities = '{}'::text[]",
+            name="delivery_excluded_requires_nationwide",
+        ),
     )
 
 
@@ -384,6 +461,10 @@ class ProducerCategory(Base):
     category_id = Column(
         Integer, ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True
     )
+    # MEH-1297: 0-based order within the producer's selection; 0 = primary.
+    # server_default text("'0'") mirrors the migration ADD so `alembic check`
+    # sees no model↔schema drift.
+    position = Column(Integer, nullable=False, server_default=text("'0'"))
 
 
 class Product(Base):
@@ -411,6 +492,13 @@ class Product(Base):
     is_vegan = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-1438: vegetarian axis (4th dietary flag). A vegan product is
+    # vegetarian by definition, so the public ?vegetarian filter matches
+    # `is_vegetarian OR is_vegan` (producer_listing.py) and the aggregation
+    # counts is_vegan too — the owner needn't mark both. Mirrors MEH-293.
+    is_vegetarian = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
     is_lactose_free = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
@@ -427,11 +515,16 @@ class Product(Base):
     # idx_products_dietary — added in MEH-293 migration 1afe844d11f4
     # (2026-05-07). Partial index covers products with at least one
     # dietary flag set; mirrors EXISTS-subquery filter pattern.
+    # MEH-1438: predicate extended with is_vegetarian (the MEH-1438 migration
+    # drops + recreates the index). Keep this text byte-identical to the
+    # migration's create_index predicate so `alembic check` stays drift-free.
     __table_args__ = (
         Index(
             "idx_products_dietary",
             "producer_id",
-            postgresql_where=text("is_gluten_free OR is_vegan OR is_lactose_free"),
+            postgresql_where=text(
+                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free"
+            ),
         ),
     )
 
@@ -450,6 +543,89 @@ class DeliveryArea(Base):
     delivery_day = Column(String(50))
 
     producer = relationship("Producer", back_populates="delivery_areas")
+
+
+class ProducerLocation(Base):
+    """MEH-1395 (MEH-1388 chunk 1): a physical presence point of a producer —
+    a branch, a self-pickup point, or a market stand. One producer can have
+    many (evidence: "הלחם של גל" self-pickup from 10 points, MEH-1382). This
+    chunk lays the Expand-phase data layer ONLY: no serialization (schemas),
+    no routers, no map/geo query wiring — those are MEH-1388 chunks 2-4.
+
+    Conventions mirrored from the recent child models:
+      - id / producer_id FK CASCADE / created_at / updated_at follow
+        ProducerRecipe (models.py:1328-1365) and DeliveryArea (models.py:511).
+      - `opening_hours` is the SAME unbounded free-text String as
+        Producer.opening_hours (models.py:166, MEH-102) — the ticket asks for
+        parity; not a bounded column.
+      - `kind` / `location_precision` CHECK constraints are declared BOTH here
+        (so a fresh create_all test DB has them) AND mirrored in the paired
+        Alembic revision, matching the Producer MEH-272 precedent
+        (models.py:292-306). Alembic autogenerate does not diff CHECK
+        conditions, so no canonical-form worry (unlike the MEH-291 index
+        predicate at models.py:269-272).
+
+    Delivery *areas* stay in the separate `delivery_areas` table — a delivery
+    zone is not a physical location (MEH-1382 constraint). Paired migration:
+    drafted in the MEH-1395 PR body, committed by Sapir (alembic/versions is
+    CC-deny).
+
+    History: MEH-1395 (creation, chunk 1/5 of the producer_locations epic
+    MEH-1388).
+    """
+
+    __tablename__ = "producer_locations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # branch | pickup | market_stand — CHECK mirrored in the revision.
+    kind = Column(String(20), nullable=False)
+    label = Column(String(200), nullable=True)
+    city = Column(String(100), nullable=True, index=True)
+    address = Column(String(255), nullable=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+    # Same unbounded free-text type as Producer.opening_hours (MEH-102).
+    opening_hours = Column(String, nullable=True)
+    phone = Column(String(20), nullable=True)
+    is_primary = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # exact | approximate — CHECK mirrored in the revision.
+    location_precision = Column(
+        String(20),
+        nullable=False,
+        default="exact",
+        server_default=text("'exact'"),
+    )
+    created_at = Column(
+        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        server_default=text("now()"),
+    )
+
+    producer = relationship("Producer", back_populates="locations")
+
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('branch', 'pickup', 'market_stand')",
+            name="producer_location_kind",
+        ),
+        CheckConstraint(
+            "location_precision IN ('exact', 'approximate')",
+            name="producer_location_precision",
+        ),
+    )
 
 
 class Favorite(Base):
@@ -497,6 +673,10 @@ class FavoriteAlert(Base):
     notify_new_product = Column(Boolean, default=True)
     notify_new_event = Column(Boolean, default=True)
     notify_delivery_area = Column(Boolean, default=True)
+    # MEH-1361: 4th alert type — fires when a favorited producer's recipe
+    # first becomes publicly visible (admin approve). server_default in the
+    # migration opts existing rows in, matching the sibling columns' default.
+    notify_new_recipe = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -504,6 +684,50 @@ class FavoriteAlert(Base):
 
     user = relationship("User")
     producer = relationship("Producer")
+
+
+class AlertLog(Base):
+    """MEH-1338: append-only ledger of delivered favorite-alerts, per channel —
+    the frequency-cap backing store for `fire_alerts`.
+
+    The cap is "at most one message per (user, producer, channel) in a rolling
+    24h window", so the cap check is an EXISTS on
+    (user_id, producer_id, channel, sent_at >= now-24h) — the composite index
+    below serves exactly that lookup. `alert_type` is recorded but is NOT part
+    of the cap key (a new_product and a new_event from the same producer on the
+    same channel within 24h still collapse to one send); it is kept for a
+    future digest / analytics.
+
+    Append-only: nothing prunes this table yet — a retention/purge policy is a
+    separate follow-up (see the MEH-1338 exec report). Rows CASCADE-delete with
+    their user/producer.
+    """
+
+    __tablename__ = "alert_log"
+    __table_args__ = (
+        Index(
+            "ix_alert_log_cap_lookup",
+            "user_id",
+            "producer_id",
+            "channel",
+            "sent_at",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    channel = Column(String(16), nullable=False)  # "push" | "whatsapp"
+    alert_type = Column(
+        String(32), nullable=False
+    )  # new_event|new_product|delivery_area
+    sent_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class ProducerFollower(Base):
@@ -622,8 +846,25 @@ class Report(Base):
     )
     reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # MEH-1266: report lifecycle. status ∈ {open, resolved, dismissed};
+    # dashboard counters + /admin/reports filter on status == "open".
+    status = Column(
+        String,
+        nullable=False,
+        default="open",
+        server_default=text("'open'"),
+    )
+    resolved_at = Column(DateTime, nullable=True)
+    # SET NULL (not CASCADE): closing an account must not delete the report
+    # history — only drop the resolver attribution.
+    resolved_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
-    reporter = relationship("User")
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    resolver = relationship("User", foreign_keys=[resolved_by])
     producer = relationship("Producer", back_populates="reports")
 
 
@@ -754,6 +995,15 @@ class Experience(Base):
     admin_feedback = Column(Text, nullable=True)  # populated on "request changes"
     rejection_reason = Column(Text, nullable=True)  # populated on "reject"
 
+    # MEH-1419: reversible host cancel — mirrors Event.is_active (models.py:903).
+    # Non-null + server_default true to match the MEH-1419 Alembic migration
+    # (keeps `alembic check` drift-free; existing rows backfill to active). The
+    # public list filters is_active IS TRUE; /mine returns inactive too so the
+    # dashboard can show + reactivate a cancelled experience.
+    is_active = Column(
+        Boolean, nullable=False, server_default=text("true"), default=True
+    )
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -804,6 +1054,13 @@ class ProducerReview(Base):
     body = Column(Text, nullable=True)
     is_hidden = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # MEH-1039: business-owner reply to a customer review — one per review,
+    # set/edited only by the producer owner (review.producer_id ==
+    # user.producer_id). Both nullable / Expand-only (ADR-007) — existing rows
+    # predate the reply. Naive DateTime to match created_at above and the
+    # utcnow() the endpoint writes (CHUNK B). Alembic revision b8f3d21a9c47.
+    reply = Column(Text, nullable=True)
+    reply_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")
@@ -995,6 +1252,9 @@ class GroupBuy(Base):
     max_participants = Column(Integer, nullable=True)
     deadline = Column(DateTime, nullable=False)
     city = Column(String(100), nullable=True)
+    # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
+    # Nullable — hidden on the public page when NULL. Alembic-only (MEH-267).
+    fulfillment_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

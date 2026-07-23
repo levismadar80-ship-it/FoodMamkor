@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 140" role="img" aria-label="מהמקור — אוכל טוב לא שומרים לעצמנו">
+  <title>מהמקור — Mehamakor · horizontal lockup (Hebrew, RTL)</title>
+  <defs>
+    
+  </defs>
+
+  
+  <g transform="translate(410 70) scale(0.58)">
+    <g opacity="0.94">
+      <g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"></path><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"></ellipse></g>
+      <g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"></path><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"></ellipse></g>
+      <g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"></path><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"></ellipse></g>
+      <g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"></path><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"></ellipse></g>
+      <g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"></path><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"></ellipse></g>
+    </g>
+  </g>
+
+  
+  <text x="350" y="76" text-anchor="end" direction="rtl" font-family="&#39;Suez One&#39;, &#39;Frank Ruhl Libre&#39;, &#39;David Libre&#39;, serif" font-weight="400" font-size="50" fill="#1C1A17" letter-spacing="0">מהמקור</text>
+  <text x="350" y="104" text-anchor="end" direction="rtl" font-family="&#39;Frank Ruhl Libre&#39;, &#39;David Libre&#39;, &#39;Times New Roman&#39;, serif" font-weight="400" font-size="15" fill="#5c584f" letter-spacing="0.02em">אוכל טוב לא שומרים לעצמנו</text>
+</svg>
