@@ -11,7 +11,7 @@ import { setUserLocation } from "@/lib/user-location";
 // resolve via t(`modals.location.popular_cities.${key}`) so /en/ shows the
 // transliterated form ("Tel Aviv", "Jerusalem", etc.).
 const POPULAR_CITIES = [
-  { key: "tel_aviv", canonical: "תל אביב" },
+  { key: "tel_aviv", canonical: "תל אביב-יפו" },
   { key: "jerusalem", canonical: "ירושלים" },
   { key: "haifa", canonical: "חיפה" },
   { key: "beersheba", canonical: "באר שבע" },
