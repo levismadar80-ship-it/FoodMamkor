@@ -32,15 +32,19 @@ export default function Toaster() {
 
   return (
     <div
-      // MEH-1367 (Sapir decision — content-width with a floor+ceiling): without a
-      // width the centered `-translate-x-1/2` stack shrinks-to-fit to min-content
-      // and a long toast (the session-expired notice) wraps to ~5 narrow lines on
-      // mobile. `w-fit` sizes to content; `min-w-[16rem]` keeps short toasts (e.g.
-      // "נשמר") from looking cramped; `max-w-[min(92vw,28rem)]` caps long ones
-      // (full-width-minus-gutter on phones, capped desktop) so they wrap to ~2
-      // lines. Paired with `min-w-0 flex-1` on the message span below.
+      // MEH-1367 (Sapir decision — content-width with a floor+ceiling). The
+      // width authority lives on the toast ITEM, not this container: a `fixed`
+      // element with `width:fit-content` + a 50% start-inset only ever gets ~half
+      // the viewport (~187px @375) of layout width, which sits below the 16rem
+      // floor — so `w-fit` here floored every long toast at 256px and it never
+      // reached the ceiling (measured: cssLeft 187.5px, computedW 256px,
+      // item max-content 382px). Fix: give the container a viewport-driven width
+      // (`w-[92vw] max-w-[28rem]`) and `items-center` so the flex column does not
+      // stretch its child; the item then sizes itself via `w-fit min-w-[16rem]
+      // max-w-full` (see below), so short toasts stay snug at the 16rem floor and
+      // long ones fill up to 92vw/28rem and wrap to ~2 lines.
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-fit min-w-[16rem] max-w-[min(92vw,28rem)] flex flex-col-reverse gap-2 pointer-events-none"
+      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[92vw] max-w-[28rem] flex flex-col-reverse items-center gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -54,7 +58,7 @@ export default function Toaster() {
         <div
           key={t.id}
           className={[
-            "pointer-events-auto px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium flex items-center gap-3",
+            "pointer-events-auto w-fit min-w-[16rem] max-w-full px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium flex items-center gap-3",
             "animate-[toast-in_200ms_ease-out]",
             t.type === "error"
               ? "bg-red-600 text-white"
