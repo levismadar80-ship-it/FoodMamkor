@@ -37,11 +37,9 @@ vi.mock("@/lib/toast", () => {
   return { showToast, default: showToast };
 });
 
-// WhatsAppButton drags in schemas/tracking — out of scope for ns resolution.
-vi.mock("@/components/WhatsAppButton", () => ({
-  default: () => <div data-testid="wa-stub" />,
-}));
-
+// MEH-1467: the WhatsAppButton mock was removed — DeliveryBlock no longer
+// imports WhatsAppButton (MEH-1466 dropped it from the delivery CTA), and the
+// component itself is deleted, so the mock is a dead no-op.
 vi.mock("@/lib/holidays", () => ({
   getActiveHoliday: () => ({
     key: "sukkot",
