@@ -82,12 +82,36 @@ if [ "$RTL_RC" -eq 2 ]; then
 elif [ "$RTL_RC" -eq 1 ]; then
   fail "RTL scan — frontend/app or frontend/components missing"
 else
-  RTL_COUNT="$(printf '%s\n' "$RTL_OUT" | head -n1)"
-  if [ "$RTL_COUNT" = "0" ]; then
+  # rtl-scan.sh honors the allowlist, but its PATH-EXCEPTION step uses
+  # `grep -v -f` (BRE regex): an allowlist path containing regex metacharacters
+  # — notably the Next.js `[locale]` segment, where `[locale]` reads as a
+  # character class — never matches, so path-exempt files leak through as false
+  # positives (MEH-1513: MapPane.jsx:145-146, comment prose describing the
+  # documented geographic-control exception). rtl-scan.sh is a shared guard,
+  # outside this fix's single-file scope, so re-apply the PATH EXCEPTIONS here
+  # with fixed-string matching (grep -F) — the same literal semantics the repo's
+  # real guard uses (check-rtl.sh:66, `[[ == *"$allowed"* ]]`). rtl-scan.sh's
+  # rtl-ok ±1 inline suppression already works and is left untouched.
+  RTL_VIOL="$(printf '%s\n' "$RTL_OUT" | tail -n +2)"
+  RTL_ALLOWLIST="$ROOT/.claude/hooks/rtl-allowlist.txt"
+  if [ -f "$RTL_ALLOWLIST" ] && [ -n "$RTL_VIOL" ]; then
+    RTL_PATH_EXC="$(awk '
+      /^#.*PATH EXCEPTIONS/  { s="path";    next }
+      /^#.*CONTENT PATTERNS/ { s="content"; next }
+      /^[[:space:]]*(#|$)/   { next }
+      s == "path"            { print }
+    ' "$RTL_ALLOWLIST")"
+    if [ -n "$RTL_PATH_EXC" ]; then
+      RTL_VIOL="$(printf '%s\n' "$RTL_VIOL" | grep -vFf <(printf '%s\n' "$RTL_PATH_EXC") || true)"
+    fi
+  fi
+  RTL_VIOL="$(printf '%s\n' "$RTL_VIOL" | sed '/^[[:space:]]*$/d')"
+  if [ -z "$RTL_VIOL" ]; then
     pass "RTL scan (0 physical-prop violations)"
   else
+    RTL_COUNT="$(printf '%s\n' "$RTL_VIOL" | wc -l | tr -d ' ')"
     fail "RTL scan — $RTL_COUNT physical-prop violation(s):"
-    printf '%s\n' "$RTL_OUT" | tail -n +2 | sed 's/^/        /' >&2
+    printf '%s\n' "$RTL_VIOL" | sed 's/^/        /' >&2
   fi
 fi
 
