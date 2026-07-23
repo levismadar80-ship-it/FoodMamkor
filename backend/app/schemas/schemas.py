@@ -819,6 +819,12 @@ class ProducerUpdate(BaseModel):
     facebook: str | None = None
     external_order_form: str | None = None
     slug: str | None = None
+    # MEH-1490: admin-only Google Maps Place ID mapping. Present on the shared
+    # ProducerUpdate schema but withheld from _PRODUCER_WRITABLE_FIELDS in
+    # routers/producer_me.py, so only the admin PUT (admin.py bulk setattr) can
+    # write it — owners cannot self-map. Validated below (URL-safe charset,
+    # ≤300). No rating value is ever accepted or stored (live-fetch only).
+    google_place_id: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
@@ -896,6 +902,26 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
+
+    # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
+    # mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly
+    # that, so a pasted Maps URL (contains "/", ":", ".") is rejected with a
+    # clear Hebrew error instead of being stored and silently 204-ing forever.
+    @field_validator("google_place_id")
+    @classmethod
+    def _validate_google_place_id(cls, v):
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if len(v) > 300:
+            raise ValueError("מזהה Google Place ארוך מדי")
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
+            raise ValueError(
+                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
+            )
+        return v
 
     # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
     # dashboard textarea counter matches this server-side cap).
@@ -1202,8 +1228,25 @@ class ProducerDetailOut(ProducerListOut):
     # the /map card can read it too).
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
+    # MEH-1490: admin-mapped Google Maps Place ID. Exposed on read so the admin
+    # edit form pre-fills it (and never blanks it on save). Not secret — a
+    # place_id is a public Google identifier that appears in Maps share URLs.
+    # The rating/count are NEVER here — they are live-fetched from
+    # GET /producers/{id}/google-rating (never stored; Google ToS §3.2.3(b)).
+    google_place_id: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-1490: live Google-rating response for GET /producers/{id}/google-rating.
+# Built per-request from a fresh Places API (New) call and returned straight to
+# the client — NEVER persisted (Google Maps Platform ToS §3.2.3(b) No Caching).
+# The endpoint returns 204 (no body) whenever the line must not render, so this
+# shape is only ever produced for an eligible producer (place_id + ≥20 reviews).
+class GoogleRatingOut(BaseModel):
+    rating: float  # Google's average star rating, e.g. 4.7
+    user_rating_count: int  # total Google reviews (guaranteed ≥ MIN_REVIEWS)
+    google_maps_uri: str  # canonical Google Maps profile URL (attribution link)
 
 
 # MEH-530: admin-only response shape. Extends ProducerDetailOut with the
