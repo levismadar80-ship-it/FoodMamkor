@@ -26,6 +26,11 @@ const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 // (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
 const MAX_CATEGORIES = 3;
 
+// MEH-1506: candidates under this review count are shown with a note that the
+// public rating line won't render for them (mirrors backend MIN_REVIEWS=20).
+// Still selectable — the admin decides.
+const GOOGLE_MIN_REVIEWS = 20;
+
 // MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
 const KOSHER_LABEL_KEYS = {
   "": "producers.form.fields.kosher_none",
@@ -198,6 +203,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const [categories, setCategories] = useState([]);
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
+  // MEH-1506: admin-only Google Place lookup — search by the producer's own
+  // name+city, admin PICKS a candidate to fill google_place_id. NO auto-select:
+  // even a single candidate is a click. Nothing here is persisted except the
+  // chosen place_id (ToS §3.2.3(b) — count is display-only).
+  const [placeCandidates, setPlaceCandidates] = useState(null);
+  const [placeSearching, setPlaceSearching] = useState(false);
+  const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -267,6 +279,36 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       lng: picked.lng ?? f.lng,
       city: picked.city || f.city,
     }));
+  };
+
+  // MEH-1506: run Places Text Search for this producer (name+city, server-side)
+  // and show up to 3 candidates. 204 / empty → "no results"; reject → "error".
+  // Only available in edit mode — the endpoint reads name+city from the DB row.
+  const handleGooglePlaceSearch = async () => {
+    if (!producerId || placeSearching) return;
+    setPlaceSearching(true);
+    setPlaceCandidates(null);
+    setPlaceSearchState(null);
+    try {
+      const r = await api.get(`/admin/producers/${producerId}/google-place-candidates`);
+      const candidates = r.data?.candidates;
+      if (r.status === 204 || !candidates?.length) {
+        setPlaceSearchState("empty");
+      } else {
+        setPlaceCandidates(candidates);
+      }
+    } catch {
+      setPlaceSearchState("error");
+    } finally {
+      setPlaceSearching(false);
+    }
+  };
+
+  // MEH-1506: admin clicks a candidate → fill google_place_id, clear the list.
+  const pickPlaceCandidate = (placeId) => {
+    update("google_place_id", placeId);
+    setPlaceCandidates(null);
+    setPlaceSearchState(null);
   };
 
   const toggleCategory = (id) => {
@@ -490,14 +532,80 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           />
           {/* MEH-1490: admin-only Google Place ID mapping. The public trust
               line shows only when this is set AND the live Google profile has
-              ≥20 reviews. place_id only — never a Maps URL (validated server-side). */}
-          <Input
-            label={t("producers.form.fields.google_place_id")}
-            value={form.google_place_id}
-            onChange={(e) => update("google_place_id", e.target.value)}
-            placeholder={t("producers.form.fields.google_place_id_placeholder")}
-            helperText={t("producers.form.fields.google_place_id_hint")}
-          />
+              ≥20 reviews. place_id only — never a Maps URL (validated server-side).
+              MEH-1506: "חפשי בגוגל" runs Places Text Search (name+city) and the
+              admin PICKS a candidate to fill this field — no auto-select. */}
+          <div className="md:col-span-2 space-y-2">
+            <Input
+              label={t("producers.form.fields.google_place_id")}
+              value={form.google_place_id}
+              onChange={(e) => update("google_place_id", e.target.value)}
+              placeholder={t("producers.form.fields.google_place_id_placeholder")}
+              helperText={t("producers.form.fields.google_place_id_hint")}
+            />
+            {producerId && (
+              <div>
+                <button
+                  type="button"
+                  onClick={handleGooglePlaceSearch}
+                  disabled={placeSearching}
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {placeSearching
+                    ? t("producers.form.fields.google_place_searching")
+                    : t("producers.form.fields.google_place_search")}
+                </button>
+                <p className="mt-1 text-xs text-muted">
+                  {t("producers.form.fields.google_place_search_hint")}
+                </p>
+                {placeSearchState === "empty" && (
+                  <p className="mt-2 text-sm text-muted" role="status">
+                    {t("producers.form.fields.google_place_no_results")}
+                  </p>
+                )}
+                {placeSearchState === "error" && (
+                  <p className="mt-2 text-sm text-error" role="alert">
+                    {t("producers.form.fields.google_place_error")}
+                  </p>
+                )}
+                {placeCandidates?.length > 0 && (
+                  <ul className="mt-2 space-y-1.5">
+                    {placeCandidates.map((c) => {
+                      const lowReviews = c.user_rating_count < GOOGLE_MIN_REVIEWS;
+                      return (
+                        <li key={c.place_id}>
+                          <button
+                            type="button"
+                            onClick={() => pickPlaceCandidate(c.place_id)}
+                            className="w-full rounded-lg border border-border p-2.5 text-start text-sm hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            <span className="block font-medium text-text">
+                              {c.display_name}
+                            </span>
+                            {c.formatted_address && (
+                              <span className="block text-xs text-muted">
+                                {c.formatted_address}
+                              </span>
+                            )}
+                            <span className="block text-xs text-muted">
+                              {t("producers.form.fields.google_place_reviews", {
+                                count: c.user_rating_count,
+                              })}
+                            </span>
+                            {lowReviews && (
+                              <span className="mt-0.5 block text-xs text-error">
+                                {t("producers.form.fields.google_place_low_reviews")}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
           {/* MEH-1242 PR2: raw lat/lng inputs replaced by AddressSearch
               (Nominatim geocode) — onSelect fills lat/lng/city. Raw coords
               stay editable behind the collapsed manual-edit disclosure below

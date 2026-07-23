@@ -10,7 +10,7 @@ The endpoint is a read-only proxy to Google Places API (New). It must:
 Google is never actually called: _fetch_place_details is monkeypatched so the
 suite is deterministic and offline (mirrors test_api.py's Anthropic mocks).
 """
-from conftest import make_producer
+from conftest import auth_header, make_producer, make_user
 
 from app.models import Producer
 from app.routers import google_rating
@@ -135,3 +135,99 @@ def test_no_rating_persistence_on_the_model():
         assert not hasattr(Producer, forbidden), (
             f"Producer.{forbidden} must not exist — MEH-1490 is live-fetch only"
         )
+
+
+# ---------------------------------------------------------------------------
+# MEH-1506 — GET /admin/producers/{id}/google-place-candidates (admin lookup).
+# Google is never really called: _search_place_candidates is monkeypatched.
+# ---------------------------------------------------------------------------
+
+_CANDIDATES = [
+    {
+        "place_id": "ChIJaaa",
+        "display_name": "מאפיית הכפר",
+        "formatted_address": "הרצל 1, כפר סבא",
+        "user_rating_count": 128,
+    },
+    {
+        "place_id": "ChIJbbb",
+        "display_name": "מאפיית הכפר הקטן",
+        "formatted_address": "ויצמן 3, כפר סבא",
+        "user_rating_count": 12,  # below MIN_REVIEWS — shown with a note, still pickable
+    },
+]
+
+
+def _admin_headers(db):
+    return auth_header(make_user(db, role="admin"))
+
+
+def test_candidates_admin_results_returns_200(client, db, monkeypatch):
+    """Admin + Google returns matches → 200 with up to 3 candidates (name,
+    address, count). The low-count candidate is included (UI adds the note)."""
+    p = make_producer(db)
+    monkeypatch.setattr(
+        google_rating, "_search_place_candidates", lambda name, city: _CANDIDATES
+    )
+    r = client.get(
+        f"/admin/producers/{p.id}/google-place-candidates", headers=_admin_headers(db)
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert [c["place_id"] for c in body["candidates"]] == ["ChIJaaa", "ChIJbbb"]
+    assert body["candidates"][0]["user_rating_count"] == 128
+    assert body["candidates"][1]["user_rating_count"] == 12  # kept, not filtered
+
+
+def test_candidates_no_results_returns_204(client, db, monkeypatch):
+    """Admin + no Google matches → 204 (fail-quiet, no body)."""
+    p = make_producer(db)
+    monkeypatch.setattr(
+        google_rating, "_search_place_candidates", lambda name, city: None
+    )
+    r = client.get(
+        f"/admin/producers/{p.id}/google-place-candidates", headers=_admin_headers(db)
+    )
+    assert r.status_code == 204
+    assert r.content == b""
+
+
+def test_candidates_no_key_returns_204(client, db, monkeypatch):
+    """No GOOGLE_PLACES_API_KEY → 204, and httpx is never called (dormant)."""
+    p = make_producer(db)
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "google_places_api_key", "", raising=False)
+
+    def _no_http(*args, **kwargs):
+        raise AssertionError("httpx must not be called when the key is unset")
+
+    monkeypatch.setattr(google_rating.httpx, "post", _no_http)
+    r = client.get(
+        f"/admin/producers/{p.id}/google-place-candidates", headers=_admin_headers(db)
+    )
+    assert r.status_code == 204
+
+
+def test_candidates_non_admin_returns_403(client, db, monkeypatch):
+    """A non-admin (consumer) is refused with 403 — never reaches Google."""
+    p = make_producer(db)
+
+    def _boom(name, city):
+        raise AssertionError("Google must not be searched for a non-admin")
+
+    monkeypatch.setattr(google_rating, "_search_place_candidates", _boom)
+    headers = auth_header(make_user(db, role="consumer"))
+    r = client.get(
+        f"/admin/producers/{p.id}/google-place-candidates", headers=headers
+    )
+    assert r.status_code == 403
+
+
+def test_candidates_unknown_producer_returns_404(client, db):
+    """Admin + a non-existent producer id → 404."""
+    r = client.get(
+        "/admin/producers/00000000-0000-0000-0000-000000000000/google-place-candidates",
+        headers=_admin_headers(db),
+    )
+    assert r.status_code == 404
