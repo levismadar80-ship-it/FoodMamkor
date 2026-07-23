@@ -85,7 +85,9 @@ export default function ProducersClient({
   const [baseItems, setBaseItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const { setCity: setUserCity } = useUserCity();
+  // MEH-1503: read the saved city too (not just the setter) — the "בעיר שלי"
+  // chip consults it (post-MEH-1485 it's seeded from the profile on login).
+  const { city: savedUserCity, setCity: setUserCity } = useUserCity();
   const mountFetched = useRef(false);
 
   // Infinite scroll state (unfiltered mode only)
@@ -362,6 +364,13 @@ export default function ProducersClient({
         setCityFilter(null);
         syncUrl(chips, null, searchQ, categoryFilter);
         fetchFiltered(chips, null, searchQ, categoryFilter);
+      } else if (savedUserCity) {
+        // MEH-1503: a saved city (localStorage user_city — seeded from the
+        // profile on login by MEH-1485) filters instantly, no modal. Reuse
+        // handleCitySelected so the apply path is identical to a modal pick
+        // (setCityFilter + setUserCity → MEH-1485 write-back + syncUrl +
+        // fetchFiltered + trackEvent).
+        handleCitySelected(savedUserCity);
       } else {
         setLocationModalOpen(true);
       }
