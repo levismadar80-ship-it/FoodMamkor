@@ -686,8 +686,9 @@
       "not_found": "לא מצאנו את בית העסק הזה — עדיין",
       "breadcrumb_home": "בית",
       "google_rating": {
-        "summary": "{rating} · {count} ביקורות ב-Google Maps",
-        "link_label": "צפייה בפרופיל ב-Google Maps (נפתח בכרטיסייה חדשה)"
+        "summary": "ל{name} יש {count} ביקורות ב-Google Maps, בדירוג ממוצע {rating}.",
+        "cta": "לצפייה בהן ‹",
+        "link_label": "צפייה בביקורות ב-Google Maps (נפתח בכרטיסייה חדשה)"
       },
       "aria": {
         "back": "חזרה לעמוד הקודם",

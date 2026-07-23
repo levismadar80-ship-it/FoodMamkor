@@ -3,10 +3,15 @@
 /**
  * GoogleRatingLine — MEH-1490
  *
- * One quiet, muted trust line on a producer page: "★ 4.7 · 128 ביקורות ב-Google
- * Maps", linking out to the business's Google Maps profile. NOT a scoreboard,
- * NOT a "from the web" tab — a single detached footnote below the native review
- * block (the caller places the separator).
+ * One quiet, muted trust SENTENCE on a producer page:
+ *   "ל{name} יש {count} ביקורות ב-Google Maps, בדירוג ממוצע {rating}. לצפייה בהן ‹"
+ * The "לצפייה בהן ‹" tail links out to the business's Google Maps profile. NOT a
+ * scoreboard, NOT a "from the web" tab — a single detached footnote below the
+ * native review block (the caller places the separator). No star glyph.
+ *
+ * The producer NAME is not returned by the endpoint (it only serves the live
+ * Google numbers), so the caller passes it in as `producerName` — the producer
+ * page already holds it.
  *
  * Data is live-fetched from our own backend proxy (GET /producers/{id}/
  * google-rating), which talks to Google server-side and NEVER persists the
@@ -15,21 +20,20 @@
  * Google reviews, API error, or no server key) — so this component renders
  * NOTHING in every non-eligible case: no placeholder, no layout hole.
  *
- * Attribution ("Google Maps") + the out-link are mandatory on every render
- * (ToS). Kept visually separate from our own avg_rating block to avoid mixing
- * Google content with native content (ToS) and to limit review cannibalization
- * (Rohde, Kupfer & Zimmermann 2022).
+ * Attribution ("Google Maps", in the sentence) + the out-link are mandatory on
+ * every render (ToS). Kept visually separate from our own avg_rating block to
+ * avoid mixing Google content with native content (ToS) and to limit review
+ * cannibalization (Rohde, Kupfer & Zimmermann 2022).
  *
  * Does NOT: fetch when producerId is falsy; the caller additionally gates the
  * mount on producer.google_place_id so unmapped producers make zero requests.
  */
 import { useEffect, useState } from "react";
-import { Star, ArrowSquareOut } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 
-export default function GoogleRatingLine({ producerId }) {
+export default function GoogleRatingLine({ producerId, producerName }) {
   const t = useTranslations("producer.detail.google_rating");
   const [data, setData] = useState(null);
 
@@ -55,19 +59,22 @@ export default function GoogleRatingLine({ producerId }) {
   if (!data) return null;
 
   return (
-    <div className="mt-8 border-t border-border pt-4">
+    <div className="mt-8 border-t border-border pt-4 text-sm text-fg-muted">
+      <span>
+        {t("summary", {
+          name: producerName,
+          count: data.user_rating_count,
+          rating: data.rating,
+        })}
+      </span>{" "}
       <a
         href={data.google_maps_uri}
         target="_blank"
         rel="noopener noreferrer nofollow"
         aria-label={t("link_label")}
-        className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-text"
+        className="font-medium text-primary transition-colors hover:text-primary-dark whitespace-nowrap"
       >
-        <Star size={16} weight="fill" className="text-[#F9AB00]" aria-hidden="true" />
-        <span>
-          {t("summary", { rating: data.rating, count: data.user_rating_count })}
-        </span>
-        <ArrowSquareOut size={14} className="opacity-70" aria-hidden="true" />
+        {t("cta")}
       </a>
     </div>
   );
