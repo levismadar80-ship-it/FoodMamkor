@@ -24,6 +24,9 @@ vi.mock("next-intl", () => ({
       "min_order": "מינימום",
       "pickup": "איסוף עצמי",
       "show_less": "הצג פחות",
+      // MEH-1512: map.mini keys reused by the pickup-row Waze nav link.
+      "open_in_waze": "Waze",
+      "open_in_waze_aria": "פתיחה ב-Waze",
     };
     return map[key] ?? key;
   },
@@ -36,7 +39,7 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { Truck: Stub, Package: Stub, WhatsappLogo: Stub, CaretDown: Stub, CaretUp: Stub };
+  return { Truck: Stub, Package: Stub, WhatsappLogo: Stub, CaretDown: Stub, CaretUp: Stub, NavigationArrow: Stub };
 });
 
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -182,5 +185,84 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByRole("button", { name: "הצג פחות" })).toBeInTheDocument();
     fireEvent.click(toggle);
     expect(screen.queryByText("עיר 16")).not.toBeInTheDocument();
+  });
+
+  // ── MEH-1512: pickup / market_stand rows from producer.locations[] ──────────
+
+  it("MEH-1512: renders a row per pickup location — label, city subline, hours, Waze nav", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={true}
+        producer={{
+          ...producer,
+          locations: [
+            { kind: "pickup", label: "דוכן השוק", city: "חיפה", lat: 32.8, lng: 35.0, opening_hours: "שישי 8-13" },
+            { kind: "market_stand", label: "יריד אורגני", city: "עכו", lat: 32.9, lng: 35.1 },
+            { kind: "branch", label: "הסניף הראשי", city: "נהריה", lat: 33.0, lng: 35.1 },
+          ],
+        }}
+      />,
+    );
+    // Pickup heading (locked string), both pickup/market rows, branch excluded.
+    expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
+    expect(screen.getByText("דוכן השוק")).toBeInTheDocument();
+    expect(screen.getByText("יריד אורגני")).toBeInTheDocument();
+    expect(screen.getByText("חיפה")).toBeInTheDocument(); // city subline (label present)
+    expect(screen.getByText("שישי 8-13")).toBeInTheDocument(); // opening_hours
+    expect(screen.queryByText("הסניף הראשי")).not.toBeInTheDocument(); // branch out of scope
+    // Outbound Waze nav link built from lat/lng (no second in-page map).
+    const nav = screen.getAllByRole("link", { name: "פתיחה ב-Waze" });
+    expect(nav).toHaveLength(2);
+    expect(nav[0]).toHaveAttribute("href", expect.stringContaining("waze.com/ul?ll="));
+  });
+
+  it("MEH-1512: label falls back to city when label is null", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={true}
+        producer={{ ...producer, locations: [{ kind: "pickup", label: null, city: "מודיעין", lat: 31.9, lng: 35.0 }] }}
+      />,
+    );
+    // City is the heading; no duplicate city subline when label is absent.
+    expect(screen.getAllByText("מודיעין")).toHaveLength(1);
+  });
+
+  it("MEH-1512: 10 pickup rows show a 5-row preview + the existing show-more toggle", () => {
+    const locations = Array.from({ length: 10 }, (_, i) => ({
+      kind: "pickup",
+      label: `נקודה ${String(i + 1).padStart(2, "0")}`,
+      city: `עיר ${String(i + 1).padStart(2, "0")}`,
+      lat: 32 + i / 100,
+      lng: 35,
+    }));
+    render(
+      <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={{ ...producer, locations }} />,
+    );
+    // First 5 shown (sorted city→label), the 6th hidden behind the reused toggle.
+    expect(screen.getByText("נקודה 05")).toBeInTheDocument();
+    expect(screen.queryByText("נקודה 06")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "הצג עוד 5 ערים" });
+    fireEvent.click(toggle);
+    expect(screen.getByText("נקודה 10")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "הצג פחות" })).toBeInTheDocument();
+  });
+
+  it("MEH-1512: fallback — pickup=true with zero pickup rows still renders the generic line", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={true}
+        producer={{ ...producer, locations: [{ kind: "branch", label: "סניף", city: "חיפה", lat: 32.8, lng: 35 }] }}
+      />,
+    );
+    // Only a branch row exists → no pickup rows → the generic "איסוף עצמי" line.
+    expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
+    // No Waze nav link is rendered for the generic fallback line.
+    expect(screen.queryByRole("link", { name: "פתיחה ב-Waze" })).not.toBeInTheDocument();
   });
 });
