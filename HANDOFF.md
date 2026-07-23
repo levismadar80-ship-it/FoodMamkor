@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 (night run, MEH-1074 session 3) — MEH-1467 — remove orphaned WhatsAppButton.jsx + repoint e2e (cleanup, LOW-RISK) — PR open
+
+- Branch `feature/meh-1467-cleanup-orphaned-whatsappbutton` off `origin/staging` (81385ca2). Deleted `frontend/components/WhatsAppButton.jsx` (grep-confirmed orphan, 0 prod imports) + its dead test `WhatsAppButtonAttribution.test.jsx`; removed the stale `vi.mock` in `I18nNamespaceResolution.test.jsx`; repointed `e2e/flows/04-whatsapp-click.spec.ts` to `primary-contact-button` (guard `data-method=whatsapp`) + un-skipped.
+- **Local full-stack self-QA** (correction_2 path): frontend `next start` + `uvicorn :8000` + seeded Postgres (5 approved WhatsApp producers). Repointed e2e-04 ran green: /producers → `/teva-pure` → click primary CTA → `/whatsapp-click` beacon fired = **PASS**. build exit 0, full vitest 1566 pass/10 skip.
+- Also this session: re-verified the 18–19/07 /map stale batch on the local stack — **MEH-1366 STALE**, **MEH-1370 STALE** (verdicts + measurements in their descriptions), **MEH-1414 LIVE-partial** (diagnose comment; central → not a night merge).
+
 ## 2026-07-23 — MEH-1489 — auth-aware registration surfaces (early gate + adaptive CTA ×5 + login/register redirect) — merged PR #2092 (SHA 4be39d3c), frontend-only, LOW-RISK
 
 - Branch `feature/meh-1489-auth-aware-registration` off `origin/staging`. **3 chunks in 3 commits on ONE branch / ONE PR** (not 3 separate PRs). Deviation from the ticket's "3 PRs sequential" plan — reason: the 3 chunks touch **disjoint files** and are one coherent feature; a single branch matches Rule 18 (one feature = one branch) and the harness single-branch setup, while per-chunk commits keep review granularity. Sapir can ask for a split if she prefers. Also note: the ticket's designated `claude/*` branch is **blocked by `check-branch-name.sh`** (MEH-1141) + forbidden by CLAUDE.md rule 3 — used the ticket-authorized `feature/meh-1489-*` name instead.
