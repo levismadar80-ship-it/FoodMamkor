@@ -18,7 +18,8 @@
  *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > license > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery > products
+ *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery > products
+ *   (MEH-1492: license — a regulatory fact — outranks recommended, an opinion.)
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -36,8 +37,16 @@ export const BADGE_CONFIG = {
   },
   recommended: {
     key: "recommended",
-    label: "מומלץ",
-    tooltip: "המלצת עורכת מהמקור — אהבנו את איכות המוצרים או השירות.",
+    // MEH-1492: renamed מומלץ → "בחירת העורכת" — the label now names who stands
+    // behind the opinion (an editor), and the popover links out to the /about
+    // criteria + the ADR-030 "can't be bought" promise (aboutHref below).
+    label: "בחירת העורכת",
+    tooltip:
+      "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
+    // MEH-1492: the badge popover links here (BadgeRow wraps the tooltip in a
+    // LocaleLink when aboutHref is set — mirrors the verified → /about#verification
+    // pattern, MEH-1336). Editorial opinion → publish the criteria.
+    aboutHref: "/about#editors-pick",
     color: "accent",
   },
   // MEH-531: license badge — trust signal for Ministry of Health producer
@@ -125,10 +134,12 @@ export const BADGE_CONFIG = {
 };
 
 // Priority order — left = highest. Exposed for tests.
+// MEH-1492: recommended ("בחירת העורכת") drops BELOW license — a regulatory
+// fact (Ministry of Health licence) outranks an editorial opinion.
 export const BADGE_PRIORITY = [
   "verified",
-  "recommended",
   "license",
+  "recommended",
   "new",
   // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
   "grass_fed",

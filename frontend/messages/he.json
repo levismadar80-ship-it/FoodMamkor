@@ -216,6 +216,12 @@
       "producer": {
         "heading": "תנו לעסק שלכם בית",
         "subtitle": "10 דקות. בלי עמלות. הלקוחה מגיעה ישירות אלייך",
+        "gate": {
+          "producer_heading": "כבר יש לך עמוד עסק במהמקור",
+          "producer_body": "הכל מחובר לחשבון שלך — אפשר לעדכן את העמוד, המוצרים והסיפור ישירות מלוח הבקרה.",
+          "admin_heading": "חשבון ניהול לא יכול להירשם כבית עסק",
+          "admin_body": "כדי לפתוח עמוד עסק, יש ליצור חשבון נפרד עם כתובת אימייל אחרת."
+        },
         "preflight": {
           "title": "לפני שמתחילים",
           "prepare_title": "מה כדאי להכין",
@@ -293,7 +299,22 @@
           "license_what_is_it": "רישיון יצרן מונפק על ידי משרד הבריאות לעסקי מזון.",
           "license_pending_optin_label": "עדיין אין לי מספר רישיון",
           "license_pending_optin_hint": "אפשר להשלים את ההרשמה עכשיו. העסק יאושר ויעלה לאתר רק אחרי קבלת מספר הרישיון.",
-          "license_optional_label": "מספר רישיון יצרן"
+          "license_optional_label": "מספר רישיון יצרן",
+          "referral_source": {
+            "label": "מאיפה שמעת עלינו?",
+            "placeholder": "בחר אפשרות",
+            "other_placeholder": "ספרי לנו איפה",
+            "options": {
+              "business_referral": "המלצה מבית עסק אחר",
+              "friends_family": "המלצה מחברים או משפחה",
+              "instagram": "אינסטגרם",
+              "facebook": "פייסבוק",
+              "google": "גוגל",
+              "whatsapp_group": "קבוצת וואטסאפ",
+              "other": "אחר",
+              "prefer_not_to_say": "מעדיפה לא לענות"
+            }
+          }
         },
         "story_card": {
           "title": "הסיפור שלך הופך לעמוד העסק",
@@ -314,7 +335,8 @@
           "declaration_required": "יש לאשר את ההצהרה לפני ההצטרפות",
           "farmer_required": "יש לאשר את הצהרת החקלאית לפני ההצטרפות",
           "license_format": "מספר רישיון יצרן הוא 7-10 ספרות",
-          "license_required": "מספר רישיון יצרן חובה לקטגוריה זו"
+          "license_required": "מספר רישיון יצרן חובה לקטגוריה זו",
+          "referral_source_required": "יש לבחור מאיפה שמעת עלינו"
         },
         "terms": {
           "intro": "קראתי ואני מסכימה",
@@ -441,7 +463,7 @@
       "heading": "בתי עסק מקומיים",
       "heading_category": "בתי עסק · {name}",
       "map_link": "הצגה במפה",
-      "filter_prefix": "מסנן לפי:",
+      "filter_prefix": "מציג: עסקים עם",
       "counter": "מציגים {shown} מתוך {total}",
       "hint_favorites": "לחצו על הלב כדי לשמור בתי עסק שאהבתם",
       "filter_showing": "מציג:",
@@ -679,6 +701,11 @@
       "loading_fresh": "בטעינה…",
       "not_found": "לא מצאנו את בית העסק הזה — עדיין",
       "breadcrumb_home": "בית",
+      "google_rating": {
+        "summary": "ל{name} יש {count} ביקורות ב-Google Maps, בדירוג ממוצע {rating}.",
+        "cta": "לצפייה בהן ‹",
+        "link_label": "צפייה בביקורות ב-Google Maps (נפתח בכרטיסייה חדשה)"
+      },
       "aria": {
         "back": "חזרה לעמוד הקודם",
         "tab_nav": "ניווט מהיר בפרופיל"
@@ -1326,6 +1353,9 @@
         "status_tooltip_rejected": "rejected = נדחה, מוסתר",
         "status_tooltip_suspended": "suspended = הושעה זמנית",
         "status_tooltip_label": "מידע על ערכי סטטוס עסק",
+        "referral": {
+          "label": "מאיפה שמעו"
+        },
         "completeness": {
           "missing_critical_aria": "חסרים פרטים קריטיים",
           "missing_aria": "חסרים פרטים",
@@ -1467,6 +1497,16 @@
           "city": "עיר / אזור",
           "slug": "Slug (URL)",
           "slug_placeholder": "auto-generated",
+          "google_place_id": "מזהה Google Place",
+          "google_place_id_placeholder": "ChIJ… (place_id בלבד)",
+          "google_place_id_hint": "מזהה המקום ב-Google Maps. שורת הדירוג תוצג רק אם לעסק ≥20 ביקורות ב-Google. הדביקי place_id בלבד — לא כתובת URL.",
+          "google_place_search": "חפשי בגוגל",
+          "google_place_searching": "מחפשת…",
+          "google_place_search_hint": "חיפוש לפי שם ועיר. בחרי מועמדת כדי למלא את ה-place_id.",
+          "google_place_no_results": "לא נמצאו תוצאות בגוגל",
+          "google_place_error": "החיפוש נכשל, נסי שוב",
+          "google_place_reviews": "{count} ביקורות",
+          "google_place_low_reviews": "פחות מ-20 ביקורות — השורה לא תוצג",
           "lat": "Latitude",
           "lng": "Longitude",
           "organic_certified": "אורגני מוסמך",
@@ -2455,6 +2495,10 @@
       "verification": {
         "heading": "איך אנחנו מאמתים",
         "body": "כל בית עסק במהמקור עובר אישור ידני — אנחנו בודקות רישיון עסק בתוקף, מדברות עם בעלת העסק, ורק אז הוא עולה לאתר. בלי הרשמה אוטומטית, בלי קיצורי דרך. ככה כשאת רואה ✓ מאומתת — את יודעת שמישהי באמת בדקה."
+      },
+      "editors_pick": {
+        "heading": "בחירת העורכת",
+        "body": "מדי פעם אני מסמנת עסק שאהבתי במיוחד — בגלל איכות המוצרים, הטריות, או סיפור שראוי שתכירו. זו בחירה אישית שלי, אחרי היכרות עם העסק. שני דברים חשוב שתדעו: אי אפשר לשלם על התגית הזו — לא בפרימיום ולא בשום דרך אחרת. והיא לא ציון — עסק בלי התגית הוא לא פחות טוב; פשוט עוד לא הספקתי, או שעוד לא יצא."
       },
       "cta": {
         "heading": "בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.",

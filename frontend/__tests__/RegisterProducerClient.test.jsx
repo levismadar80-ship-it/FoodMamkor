@@ -112,6 +112,16 @@ async function fillDetailsToStory() {
   await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`); // STORY marker
 }
 
+// MEH-1471: the attribution dropdown is a REQUIRED field on the STORY step —
+// every submit flow must pick a key or the submit gate blocks with
+// referral_source_required. The <select> stores English keys (labels come from
+// i18n, mocked to key paths), so change the value directly.
+function selectReferral(value = "instagram") {
+  fireEvent.change(screen.getByTestId("register-referral-source"), {
+    target: { value },
+  });
+}
+
 describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => {
   it("ACCOUNT validation gates the first advance (invalid email blocks)", async () => {
     await renderWizard();
@@ -157,6 +167,7 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
     fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
       target: { value: "הכי טרי שיש" },
     });
+    selectReferral(); // MEH-1471: required attribution key
     // declarations gate: ToS + binding declaration (non-agri → no farmer checkbox)
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
@@ -171,6 +182,9 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
       address: "הרצל 1",
       short_description: "הכי טרי שיש",
       category_ids: [1],
+      // MEH-1471: attribution key rides along; no free text (not "other").
+      referral_source: "instagram",
+      referral_source_other: "",
     });
     expect(body).toHaveProperty("declaration_accepted", true);
     // Non-upgrade path also carries the account fields.
@@ -213,6 +227,8 @@ describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
+    // MEH-1471: pick the required attribution so the gate reaches the ToS check.
+    selectReferral();
     // submit without checking the declaration boxes → blocked at the ToS gate
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.terms_required`);
@@ -269,6 +285,7 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
       target: { value: "הכי טרי שיש" },
     });
+    selectReferral(); // MEH-1471: required field on STORY
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
@@ -350,11 +367,78 @@ describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", (
     fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
       target: { value: "הכי טרי שיש" },
     });
+    selectReferral(); // MEH-1471: required field on STORY
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
     const [, body] = api.post.mock.calls[0];
     expect(Object.keys(body).some((k) => k.toLowerCase().includes("multi"))).toBe(false);
+  });
+});
+
+// MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a REQUIRED dropdown
+// on the final (STORY) step, directly above the ToS checkbox. Default has no
+// preselection, so the submit gate blocks until a key is chosen; "other" reveals
+// an optional free-text input, and both values ride the submit body.
+describe("RegisterProducerClient — referral source (MEH-1471)", () => {
+  it("blocks submit while no attribution is selected (required)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    // consent boxes checked, but the attribution dropdown left empty
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      `${K}.validation.referral_source_required`,
+    );
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("selecting 'other' reveals the free-text input and submits both values", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // no free-text input until 'other' is chosen
+    expect(
+      screen.queryByTestId("register-referral-source-other"),
+    ).not.toBeInTheDocument();
+    selectReferral("other");
+    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
+      target: { value: "שמעתי עליכם בשוק" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body).toMatchObject({
+      referral_source: "other",
+      referral_source_other: "שמעתי עליכם בשוק",
+    });
+  });
+
+  it("switching away from 'other' hides the free-text input and sends no other text", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    selectReferral("other");
+    fireEvent.change(screen.getByTestId("register-referral-source-other"), {
+      target: { value: "טקסט זמני" },
+    });
+    selectReferral("google"); // switch to a non-other key
+    expect(
+      screen.queryByTestId("register-referral-source-other"),
+    ).not.toBeInTheDocument();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body).toMatchObject({
+      referral_source: "google",
+      referral_source_other: "",
+    });
   });
 });
 
@@ -418,5 +502,41 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     fireEvent.click(screen.getByTestId("pick-category")); // deselect id 1
     fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1489 chunk A — early auth-state gate. A logged-in producer/admin can never
+// complete the wizard (409 already_has_producer / 403 admin at submit), so they
+// see a terminal screen instead of the preflight+wizard. Guests + logged-in
+// consumers (MEH-143 upgrade path) are unchanged — the two upgrade-path tests
+// above (user without a role) already pin that the preflight still renders.
+describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", () => {
+  it("producer sees the gate (dashboard CTA), never the preflight or wizard", async () => {
+    authState.user = { email: "p@example.com", role: "producer" };
+    render(<RegisterProducerClient />);
+    expect(await screen.findByTestId("register-producer-gate")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.gate.producer_heading`)).toBeInTheDocument();
+    // CTA reuses the account-menu dashboard label (no new i18n key).
+    expect(screen.getByText("account.menu.dashboard")).toBeInTheDocument();
+    // No wizard entry surfaces leak past the gate.
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-account")).not.toBeInTheDocument();
+  });
+
+  it("admin sees the gate with NO dashboard CTA (separate-account message)", async () => {
+    authState.user = { email: "a@example.com", role: "admin" };
+    render(<RegisterProducerClient />);
+    expect(await screen.findByTestId("register-producer-gate-admin")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.gate.admin_heading`)).toBeInTheDocument();
+    expect(screen.queryByText("account.menu.dashboard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+  });
+
+  it("logged-in consumer (role consumer) still sees the preflight — no gate", async () => {
+    authState.user = { email: "c@example.com", role: "consumer" };
+    render(<RegisterProducerClient />);
+    expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-producer-gate-admin")).not.toBeInTheDocument();
   });
 });

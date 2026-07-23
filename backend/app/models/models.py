@@ -93,6 +93,14 @@ class Producer(Base):
     owner_photo_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
+    # MEH-1490: admin-mapped Google Maps Place ID. The ONLY Google datum we
+    # store — rating/userRatingCount are live-fetched per request and NEVER
+    # persisted (Google Maps Platform ToS §3.2.3(b) No Caching; place_id is
+    # the explicit storable exception). NULL until an admin maps it; the quiet
+    # public GoogleRatingLine renders only when set AND the live profile has
+    # ≥20 reviews. Written admin-only (excluded from _PRODUCER_WRITABLE_FIELDS
+    # in producer_me.py). Migration: a9f2c7d41b6e.
+    google_place_id = Column(String(300), nullable=True)
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
@@ -102,6 +110,27 @@ class Producer(Base):
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
+    # MEH-1508 chunk 1 (schema only): business-level dietary scope — distinguishes
+    # "one tagged product" (product-level flags, below) from "the whole catalog".
+    # VARCHAR + app-level validation (no PG enum), like availability_state.
+    # NOT NULL with both a Python-side `default` (ORM inserts) AND a DB
+    # `server_default` ('unknown') — mirrors the MEH-293 product flags
+    # (nullable=False + default + server_default). server_default makes ADD COLUMN
+    # NOT NULL safe on existing rows; NOT NULL then forbids a fourth state outside
+    # the unknown|some|all / unknown|shared|dedicated spec. No filter reads these
+    # yet, so zero behaviour change until chunks 2 (form/admin) + 3 (chip) land.
+    vegan_scope = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | some | all
+    vegetarian_scope = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | some | all
+    gluten_free_facility = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | shared | dedicated
+    lactose_free_facility = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | shared | dedicated
     # MEH-293/MEH-479: dietary flags moved to products.is_X (canonical) and
     # ProducerListOut.has_X_products (aggregated, computed at attach time).
     has_delivery = Column(Boolean, default=False)
@@ -115,6 +144,17 @@ class Producer(Base):
     # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
+    # final registration step. `referral_source` holds an English key from
+    # constants.REFERRAL_SOURCE_KEYS (validated at the API boundary — no DB
+    # enum/CHECK, app-layer like availability_state); `referral_source_other`
+    # holds the optional free-text answer revealed only when the key is "other".
+    # Both nullable — existing rows predate the field (Expand-only, ADR-007, no
+    # backfill). Admin-only exposure via ProducerAdminOut; never on the public
+    # ProducerListOut/DetailOut (internal supply-side data — MEH-530 privacy
+    # precedent). Paired migration: d7b2f4a9c6e1.
+    referral_source = Column(String(40), nullable=True)
+    referral_source_other = Column(String(120), nullable=True)
     # MEH-759 (ADR-022 gate 2): binding tier-2 declaration audit trail.
     # Both nullable — existing rows predate the trail; Expand-only (ADR-007,
     # no backfill). `declared_at` = when the binding declaration was made;

@@ -64,7 +64,7 @@ function LoginPageBody() {
   const params = useSearchParams();
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
   const redirectTo = safeInternalRedirect(params.get("redirect"));
-  const { login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +79,16 @@ function LoginPageBody() {
       showToast.success(t("reset_success"));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-1489 chunk C: an already-authenticated visitor never needs the login
+  // form — bounce to the clamped ?redirect= target (falls back to "/" via the
+  // MEH-810 helper). replace() so /login doesn't sit in history. Guests keep
+  // the form + the ?reset=1 toast above; the register inbox screen has no token
+  // so user stays null there (no redirect). Post-login/OAuth push() lands on
+  // the same target, so this is idempotent, not a second navigation elsewhere.
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectTo);
+  }, [authLoading, user, router, redirectTo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,6 +136,17 @@ function LoginPageBody() {
   const passwordInvalid = passwordTouched && password.length > 0 && password.length < 1;
   const passwordValidLength = passwordTouched && password.length >= 1;
   const formIsValid = validateEmail(email) && password.length >= 1;
+
+  // MEH-1489 chunk C: gate the form render while auth resolves (or once a user
+  // is present and the redirect above is in flight) so the login form never
+  // flashes for an authenticated visitor.
+  if (authLoading || user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+        {t("loading")}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
