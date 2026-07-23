@@ -3,7 +3,7 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-23 — MEH-1503 — /producers "בעיר שלי" consumes saved city + MEH-1485 write-back — PR #2107 open (LOW-RISK, GREEN)
+## 2026-07-23 — MEH-1503 — /producers "בעיר שלי" consumes saved city + MEH-1485 write-back — PR #2109 open (LOW-RISK, GREEN)
 
 - Branch `feature/meh-1503-producers-my-city-chip` off `origin/staging`. Files: `frontend/components/ProducersClient.jsx` (+1 new test). **Frontend-only, single file + test.**
 - **Fix (Gap 1):** `handleChipClick("city")` with an empty `cityFilter` now reads `useUserCity().city` (`ProducersClient.jsx:88` — added `city: savedUserCity` to the existing destructure) and, when a saved city exists, calls `handleCitySelected(savedUserCity)` for an **instant filter, no modal** (`:361-372`). No saved city → LocationModal opens (unchanged). Active `cityFilter` → click still clears (unchanged, clear branch wins over saved-city).
