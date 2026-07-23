@@ -161,6 +161,31 @@ function ProducerTags({ producer }) {
   );
 }
 
+// MEH-1471: read-only self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only
+// (ProducerAdminOut). Renders the Hebrew option label, "אחר: <text>" for the
+// free-text case, and "—" for producers who registered before the field existed.
+// Option labels come from the auth namespace (single source of the Hebrew copy)
+// so the strings aren't duplicated in the admin namespace.
+function ReferralSource({ producer }) {
+  const t = useTranslations("admin");
+  const tOpt = useTranslations(
+    "auth.register.producer.fields.referral_source.options",
+  );
+  const key = producer.referral_source;
+  let value = "—";
+  if (key === "other") {
+    const other = (producer.referral_source_other || "").trim();
+    value = other ? `${tOpt("other")}: ${other}` : tOpt("other");
+  } else if (key) {
+    value = tOpt(key);
+  }
+  return (
+    <div className="text-[11px] text-muted mt-0.5">
+      {t("producers.table.referral.label")}: {value}
+    </div>
+  );
+}
+
 export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
@@ -341,6 +366,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
             <CompletenessBadge missing={missing} priority={priority} />
             <span>{p.name}</span>
           </div>
+          <ReferralSource producer={p} />
         </td>
         <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>

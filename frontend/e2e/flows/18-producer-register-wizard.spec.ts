@@ -83,6 +83,9 @@ test.describe("Producer register wizard (5-frame)", () => {
     // ── STORY (frame 03) — tagline (short_description) + declarations ──
     await expect(page.getByTestId("register-frame-story")).toBeVisible();
     await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
+    // MEH-1471: attribution dropdown is required on STORY — pick a key or the
+    // submit gate blocks (referral_source_required) and CONFIRM never renders.
+    await page.getByTestId("register-referral-source").selectOption("instagram");
     // ToS + binding declaration (non-agri → no farmer checkbox). Check all shown.
     for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
       await cb.check();
