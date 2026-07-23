@@ -443,7 +443,9 @@ export default function ProducerSections({
           + cannibalization guard). Mount is gated on a mapped place_id so
           unmapped producers make zero requests; the component itself renders
           nothing on a 204 (< 20 reviews / API error / no key). */}
-      {producer.google_place_id && <GoogleRatingLine producerId={producer.id} />}
+      {producer.google_place_id && (
+        <GoogleRatingLine producerId={producer.id} producerName={producer.name} />
+      )}
 
       {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
       {similarProducers.length >= 3 && (
