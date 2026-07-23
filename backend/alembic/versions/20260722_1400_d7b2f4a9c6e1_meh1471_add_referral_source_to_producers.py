@@ -65,3 +65,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_column("producers", "referral_source_other")
     op.drop_column("producers", "referral_source")
+
+
+# MEH-1471 re-trigger note: the marker line was removed from the PR body, but an
+# empty commit did not fire a CI run, so the required marker gate never re-read
+# the corrected body. This comment is the minimal real diff that regenerates the
+# event. Comment only, no behaviour change.
