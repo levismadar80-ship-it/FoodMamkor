@@ -15,7 +15,8 @@
  *           backend/app/schemas/schemas.py:924-941 (public delivery fields:
  *           has_physical_location, offers_delivery, delivery_nationwide,
  *           delivery_excluded_cities, delivery_areas).
- * History:  MEH-1302 (creation).
+ * History:  MEH-1302 (creation); MEH-1512 (pickup_only derives cities from
+ *           locations[] so a multi-pickup business isn't reduced to one city).
  */
 import { getPrimaryMethod, getPrimaryContactHref } from "@/lib/contact-method";
 
@@ -62,7 +63,24 @@ export function buildDeliveryAnswer(producer) {
 
   // No delivery + a physical location → self-pickup is the honest answer.
   if (!producer.offers_delivery && producer.has_physical_location) {
-    return { kind: "pickup_only", city: producer.city || null };
+    // MEH-1512: a multi-pickup business must not claim one city. Derive the
+    // distinct pickup / market_stand cities from locations[]: exactly one → name
+    // it; more than one → null (renders the "no city" copy, honest for a
+    // multi-point business); none → the producer's own city as before.
+    const pickupCities = [
+      ...new Set(
+        (producer.locations || [])
+          .filter((l) => l && (l.kind === "pickup" || l.kind === "market_stand") && l.city)
+          .map((l) => l.city),
+      ),
+    ];
+    const city =
+      pickupCities.length === 1
+        ? pickupCities[0]
+        : pickupCities.length > 1
+          ? null
+          : producer.city || null;
+    return { kind: "pickup_only", city };
   }
 
   return null;

@@ -81,6 +81,32 @@ describe("buildDeliveryAnswer (MEH-1302)", () => {
     ).toEqual({ kind: "pickup_only", city: null });
   });
 
+  it("MEH-1512: a single pickup location names that city (from locations[])", () => {
+    expect(
+      buildDeliveryAnswer({
+        offers_delivery: false,
+        has_physical_location: true,
+        city: "ירושלים",
+        locations: [{ kind: "pickup", city: "חיפה" }],
+      }),
+    ).toEqual({ kind: "pickup_only", city: "חיפה" });
+  });
+
+  it("MEH-1512: multiple distinct pickup cities → null city (no single-city claim)", () => {
+    expect(
+      buildDeliveryAnswer({
+        offers_delivery: false,
+        has_physical_location: true,
+        city: "ירושלים",
+        locations: [
+          { kind: "pickup", city: "חיפה" },
+          { kind: "market_stand", city: "עכו" },
+          { kind: "branch", city: "נהריה" },
+        ],
+      }),
+    ).toEqual({ kind: "pickup_only", city: null });
+  });
+
   it("offers delivery but no specifics → null (WhatsApp fallback)", () => {
     expect(buildDeliveryAnswer({ offers_delivery: true, has_physical_location: true })).toBeNull();
   });
