@@ -32,8 +32,16 @@ export default function Toaster() {
 
   return (
     <div
+      // MEH-1499: the mobile bottom offset consumes CookieBanner's
+      // `--cookie-banner-h` (published on <html> via ResizeObserver, MEH-850) so a
+      // toast stacks ABOVE the consent banner while it's mounted and returns to
+      // exactly bottom-20 (5rem) when the var is absent — no leftover gap.
+      // Without this the toast (z-2000) covered the banner's (z-1100) accept/
+      // decline buttons: both anchor to 80px on mobile. Precedent: the same
+      // clearance pattern in ChatWidget.jsx:183 + BackToTop.jsx:31. `md:` (desktop)
+      // is left unchanged.
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col-reverse gap-2 pointer-events-none"
+      className="fixed bottom-[calc(5rem+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col-reverse gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"
