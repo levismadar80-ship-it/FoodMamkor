@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 
-// MEH-1490 — the quiet Google-rating line: renders ONLY on a 200 with a rating;
-// 204 / 404 / network error → renders nothing (no placeholder, no layout hole).
-// Attribution text + the out-link are asserted on the eligible render.
+// MEH-1490 — the quiet Google-rating SENTENCE: renders ONLY on a 200 with a
+// rating; 204 / 404 / network error → renders nothing (no placeholder, no
+// layout hole). Producer name (a prop, not from the endpoint) + attribution +
+// the "לצפייה בהן ‹" out-link are asserted on the eligible render. No star glyph.
 
 const apiMock = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock("@/lib/api", () => ({ default: apiMock }));
@@ -22,7 +23,7 @@ beforeEach(() => {
 });
 
 describe("GoogleRatingLine (MEH-1490)", () => {
-  it("renders the line, attribution + out-link on a 200 eligible response", async () => {
+  it("renders the sentence (name/count/rating) + out-link on a 200, no star", async () => {
     apiMock.get.mockResolvedValue({
       status: 200,
       data: {
@@ -32,16 +33,24 @@ describe("GoogleRatingLine (MEH-1490)", () => {
       },
     });
 
-    render(<GoogleRatingLine producerId="p1" />);
+    const { container } = render(
+      <GoogleRatingLine producerId="p1" producerName="חוות השקמה" />,
+    );
 
-    // The out-link carries the attribution copy + interpolated rating/count.
+    // The out-link is the "לצפייה בהן ‹" CTA (cta key), pointing at the profile.
     const link = await screen.findByRole("link");
     expect(link).toHaveAttribute("href", "https://maps.google.com/?cid=42");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
-    expect(link.textContent).toContain(
-      'producer.detail.google_rating.summary:{"rating":4.7,"count":128}',
+    expect(link.textContent).toContain("producer.detail.google_rating.cta");
+
+    // The sentence (name + count + rating, with "Google Maps" attribution) is
+    // muted text OUTSIDE the link.
+    expect(container.textContent).toContain(
+      'producer.detail.google_rating.summary:{"name":"חוות השקמה","count":128,"rating":4.7}',
     );
+    // No star glyph (nor any icon) — the component renders no SVGs.
+    expect(container.querySelector("svg")).toBeNull();
     expect(apiMock.get).toHaveBeenCalledWith("/producers/p1/google-rating");
   });
 

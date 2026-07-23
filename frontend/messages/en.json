@@ -691,8 +691,9 @@
       "not_found": "We couldn't find this business — yet",
       "breadcrumb_home": "Home",
       "google_rating": {
-        "summary": "{rating} · {count} reviews on Google Maps",
-        "link_label": "View the profile on Google Maps (opens in a new tab)"
+        "summary": "{name} has {count} reviews on Google Maps, averaging {rating}.",
+        "cta": "View them ‹",
+        "link_label": "View the reviews on Google Maps (opens in a new tab)"
       },
       "aria": {
         "back": "Back to previous page",
