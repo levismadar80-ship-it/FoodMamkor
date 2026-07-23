@@ -232,6 +232,15 @@ class ProducerRegister(BaseModel):
     # status=="approved" (producer_listing.py). Default False = unchanged for
     # every existing caller.
     license_pending: bool = False
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Optional at the
+    # Pydantic layer — the DB column is nullable and the required-ness is a
+    # front-end registration gate only, so an ABSENT value keeps the MEH-143
+    # upgrade path and every existing register test working. A PROVIDED
+    # referral_source must be one of constants.REFERRAL_SOURCE_KEYS (validator
+    # below 422s an unknown key). referral_source_other is the optional free-text
+    # answer for the "other" choice, bleach-sanitised + capped at the DB width.
+    referral_source: str | None = Field(default=None, max_length=40)
+    referral_source_other: str | None = Field(default=None, max_length=120)
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -294,6 +303,32 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    # MEH-1471: reject any non-null referral_source outside the allowed key set
+    # (422). None / empty / whitespace-only normalise to None (nullable column;
+    # existing producers + the MEH-143 upgrade path never send it). Inline import
+    # mirrors the ProducerAdminOut._compute_* validators — keeps the constants
+    # dependency out of the module-top imports.
+    @field_validator("referral_source")
+    @classmethod
+    def _validate_referral_source(cls, v):
+        from app.constants import REFERRAL_SOURCE_KEYS
+
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return None
+        if v not in REFERRAL_SOURCE_KEYS:
+            raise ValueError("referral_source לא חוקי")
+        return v
+
+    # MEH-1471: bleach/XSS strip on the free-text "other" answer, same defense as
+    # short_description/address above. Cap mirrors the DB column (120).
+    @field_validator("referral_source_other")
+    @classmethod
+    def _sanitize_referral_source_other(cls, v):
+        return sanitize_text(v, max_length=120)
 
     @field_validator("category_ids")
     @classmethod
@@ -1305,6 +1340,13 @@ class ProducerAdminOut(ProducerDetailOut):
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only —
+    # NOT on the public ProducerDetailOut/ListOut (internal supply-side data,
+    # MEH-530 privacy precedent). NULL for producers who registered before the
+    # field existed (admin renders "—"). `referral_source` is the English key;
+    # the Hebrew label + "אחר: <text>" rendering happen in AdminProducersTable.
+    referral_source: str | None = None
+    referral_source_other: str | None = None
     # MEH-829: street address submitted at registration — admin-visible (+ owner
     # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
     # the producer_license_number privacy precedent.

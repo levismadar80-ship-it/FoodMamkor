@@ -144,6 +144,17 @@ class Producer(Base):
     # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
+    # final registration step. `referral_source` holds an English key from
+    # constants.REFERRAL_SOURCE_KEYS (validated at the API boundary — no DB
+    # enum/CHECK, app-layer like availability_state); `referral_source_other`
+    # holds the optional free-text answer revealed only when the key is "other".
+    # Both nullable — existing rows predate the field (Expand-only, ADR-007, no
+    # backfill). Admin-only exposure via ProducerAdminOut; never on the public
+    # ProducerListOut/DetailOut (internal supply-side data — MEH-530 privacy
+    # precedent). Paired migration: d7b2f4a9c6e1.
+    referral_source = Column(String(40), nullable=True)
+    referral_source_other = Column(String(120), nullable=True)
     # MEH-759 (ADR-022 gate 2): binding tier-2 declaration audit trail.
     # Both nullable — existing rows predate the trail; Expand-only (ADR-007,
     # no backfill). `declared_at` = when the binding declaration was made;

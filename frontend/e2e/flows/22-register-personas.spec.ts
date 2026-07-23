@@ -154,6 +154,9 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       // STORY — tagline + all declarations (ToS + binding), then submit
       await expect(page.getByTestId("register-frame-story")).toBeVisible();
       await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
+      // MEH-1471: required attribution dropdown — pick a key or the submit gate
+      // blocks (referral_source_required) and CONFIRM never renders.
+      await page.getByTestId("register-referral-source").selectOption("instagram");
       for (const cb of await page
         .getByTestId("register-frame-story")
         .getByRole("checkbox")
