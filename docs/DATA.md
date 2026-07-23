@@ -422,7 +422,10 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
                                                has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
-                                               sort: newest (default) | rating
+                                               sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
+                                               (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
+                                               reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
+                                               Non-geo only (geo results always order by distance). Drives the /producers sort select.
                                                MEH-1465: ?category is REPEATABLE (list[int]) — ?category=1&category=2 ORs over the
                                                ids (a producer in any selected category matches). A single ?category=5 still works
                                                (parses to [5]). Filtered via EXISTS on producer_categories (Producer.categories.any),
