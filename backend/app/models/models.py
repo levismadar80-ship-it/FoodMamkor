@@ -119,10 +119,18 @@ class Producer(Base):
     # NOT NULL safe on existing rows; NOT NULL then forbids a fourth state outside
     # the unknown|some|all / unknown|shared|dedicated spec. No filter reads these
     # yet, so zero behaviour change until chunks 2 (form/admin) + 3 (chip) land.
-    vegan_scope = Column(String(20), nullable=False, default="unknown", server_default=text("'unknown'"))  # unknown | some | all
-    vegetarian_scope = Column(String(20), nullable=False, default="unknown", server_default=text("'unknown'"))  # unknown | some | all
-    gluten_free_facility = Column(String(20), nullable=False, default="unknown", server_default=text("'unknown'"))  # unknown | shared | dedicated
-    lactose_free_facility = Column(String(20), nullable=False, default="unknown", server_default=text("'unknown'"))  # unknown | shared | dedicated
+    vegan_scope = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | some | all
+    vegetarian_scope = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | some | all
+    gluten_free_facility = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | shared | dedicated
+    lactose_free_facility = Column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )  # unknown | shared | dedicated
     # MEH-293/MEH-479: dietary flags moved to products.is_X (canonical) and
     # ProducerListOut.has_X_products (aggregated, computed at attach time).
     has_delivery = Column(Boolean, default=False)
