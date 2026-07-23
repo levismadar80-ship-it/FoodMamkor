@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Package, CaretDown, CaretUp } from "@phosphor-icons/react";
+import { Truck, Package, CaretDown, CaretUp, NavigationArrow } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
@@ -111,9 +111,102 @@ function CompactCities({ areas, t }) {
   );
 }
 
-export default function DeliveryBlock({ nationwide, excluded = [], areas = [], pickup = false }) {
+// MEH-1512 (MEH-1509 chunk 2): one pickup / market_stand location row from the
+// producer's locations[] — label (falls back to city) · city · opening_hours ·
+// an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
+// second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
+function PickupRow({ loc, tMap }) {
+  const hasCoords =
+    loc.lat != null && loc.lng != null && !isNaN(Number(loc.lat)) && !isNaN(Number(loc.lng));
+  const wazeUrl = hasCoords ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : null;
+  const heading = loc.label || loc.city;
+  return (
+    <li className="flex items-start justify-between gap-3 py-2.5 text-sm">
+      <div className="min-w-0">
+        <p className="font-medium text-text">{heading}</p>
+        {/* city as a subline only when a distinct label already owns the top line */}
+        {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
+        {loc.opening_hours && <p className="text-[13px] text-fg-muted">{loc.opening_hours}</p>}
+      </div>
+      {wazeUrl && (
+        <a
+          href={wazeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={tMap("open_in_waze_aria")}
+          className="flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          <NavigationArrow size={16} aria-hidden="true" />
+          {tMap("open_in_waze")}
+        </a>
+      )}
+    </li>
+  );
+}
+
+// MEH-1512: the pickup-rows list. Mirrors the MEH-1435 CompactCities
+// progressive-disclosure structure above (DeliveryBlock.jsx:75-112) — useState
+// + slice + a reused show_all/show_less toggle — so a long market-stand list
+// stays short (preview PICKUP_PREVIEW_LIMIT + "הצג עוד"). Sorted city→label,
+// stable. Heading reuses the MEH-1461-locked "איסוף עצמי" string (t("pickup")).
+const PICKUP_PREVIEW_LIMIT = 5;
+
+function PickupRows({ locations, t, tMap }) {
+  const [expanded, setExpanded] = useState(false);
+  const sorted = [...locations].sort(
+    (a, b) =>
+      (a.city || "").localeCompare(b.city || "", "he") ||
+      (a.label || "").localeCompare(b.label || "", "he"),
+  );
+  const overLimit = sorted.length > PICKUP_PREVIEW_LIMIT;
+  const visible = expanded || !overLimit ? sorted : sorted.slice(0, PICKUP_PREVIEW_LIMIT);
+  const hiddenCount = sorted.length - PICKUP_PREVIEW_LIMIT;
+  return (
+    <div className="mb-4">
+      <p className="flex items-center gap-2 text-sm font-medium text-text mb-1">
+        <Package size={18} className="text-primary" aria-hidden="true" />
+        {t("pickup")}
+      </p>
+      <ul className="divide-y divide-border border-y border-border">
+        {visible.map((loc, i) => (
+          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} tMap={tMap} />
+        ))}
+      </ul>
+      {overLimit && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
+        >
+          {expanded ? t("show_less") : t("show_all", { count: hiddenCount })}
+          {expanded ? (
+            <CaretUp size={16} aria-hidden="true" />
+          ) : (
+            <CaretDown size={16} aria-hidden="true" />
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function DeliveryBlock({
+  nationwide,
+  excluded = [],
+  areas = [],
+  pickup = false,
+  producer = null,
+}) {
   const t = useTranslations("group_buys.delivery");
+  const tMap = useTranslations("map.mini");
   const hasAreas = areas.length > 0;
+  // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
+  // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
+  const pickupLocations = (producer?.locations || []).filter(
+    (l) => l && (l.kind === "pickup" || l.kind === "market_stand"),
+  );
+  const hasPickupRows = pickupLocations.length > 0;
   // MEH-1435: city-only areas (no minimum, no dispatch day) render as a compact
   // list; anything info-bearing keeps the MEH-1305 editorial rows unchanged.
   const bare = hasAreas && areas.every((da) => !da.min_order && !da.delivery_day);
@@ -182,12 +275,20 @@ export default function DeliveryBlock({ nationwide, excluded = [], areas = [], p
         <p className="text-sm text-fg-muted mb-4">{t("arranged")}</p>
       )}
 
-      {/* Self-pickup — invention-fix 6: only when the pickup_points flag is set. */}
-      {pickup && (
-        <p className="flex items-center gap-2 text-sm text-text mb-4">
-          <Package size={18} className="text-primary" aria-hidden="true" />
-          {t("pickup")}
-        </p>
+      {/* Self-pickup (MEH-1512): render real pickup / market_stand rows from
+          producer.locations[] when present — city · label · hours · Waze nav.
+          Fallback preserved (invention-fix 6): pickup_points true but no
+          location rows → today's generic single line, so no producer loses
+          information. MEH-1461 language lock: "איסוף עצמי" only. */}
+      {hasPickupRows ? (
+        <PickupRows locations={pickupLocations} t={t} tMap={tMap} />
+      ) : (
+        pickup && (
+          <p className="flex items-center gap-2 text-sm text-text mb-4">
+            <Package size={18} className="text-primary" aria-hidden="true" />
+            {t("pickup")}
+          </p>
+        )
       )}
     </section>
   );
