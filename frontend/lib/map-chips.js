@@ -68,17 +68,33 @@ export const CATEGORY_CHIPS = [
 // never the free-text Producer.kosher. A FREE-TEXT kosher chip stays forbidden
 // (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — MEH-1418 sourced it
 // from the shared ATTRIBUTE_LABELS.kosher so /producers + /map read identically.
+// MEH-1507: grass_fed is /map-only, so its scope×evidence object stays LOCAL
+// (never entered the shared ATTRIBUTE_LABELS). It is a producer-level boolean
+// column (models.py:111 `grass_fed`), owner-declared → business scope,
+// self-declared evidence. Subtext LOCKED per MEH-1507 §hebrew_copy. Shape
+// matches an ATTRIBUTE_LABELS entry so the contract guard treats it uniformly.
+const GRASS_FED_LABEL = {
+  label: "גראס פד",
+  scope: "business",
+  evidence: "self-declared",
+  subtext: "לפי הצהרת בית העסק",
+};
+
+// MEH-1507: each entry spreads its {label, scope, evidence, subtext} object so
+// `chip.label` stays a plain string (chip row unchanged) while every entry
+// carries the scope+evidence the contract guard (LabelScopeContract.test.js)
+// requires. `group` stays a TOGGLE_CHIPS-local field.
 export const TOGGLE_CHIPS = [
-  { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
-  { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
+  { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery,  group: "service" },
+  { key: "verified",      ...ATTRIBUTE_LABELS.verified,      group: "service" },
   // MEH-1259: organic chip removed — self-declared organic is no longer a
   // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
-  { key: "kosher",        label: ATTRIBUTE_LABELS.kosher,        group: "quality" },
-  { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
-  { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
-  { key: "vegetarian",    label: ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
-  { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
-  { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
+  { key: "kosher",        ...ATTRIBUTE_LABELS.kosher,        group: "quality" },
+  { key: "grass_fed",     ...GRASS_FED_LABEL,                group: "quality" },
+  { key: "vegan",         ...ATTRIBUTE_LABELS.vegan,         group: "diet" },
+  { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
+  { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
+  { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
 ];
 
 // MEH-1468: QUICK_CHIP_KEYS + countActiveSheetOnlyFilters were removed here.

@@ -53,7 +53,28 @@ const EMPTY_FORM = {
   // category requires a license and this is empty — helper at
   // backend/app/services/license_validation.py.
   producer_license_number: "",
+  // MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Required
+  // dropdown on the final CONFIRM step (submit blocked while empty). The key is
+  // one of REFERRAL_SOURCE_KEYS; referral_source_other holds the free-text
+  // answer revealed only when "other" is chosen.
+  referral_source: "",
+  referral_source_other: "",
 };
+
+// MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels
+// rendered from i18n (auth.register.producer.fields.referral_source.options.*).
+// Mirror of backend/app/constants.py:REFERRAL_SOURCE_KEYS — keep in sync (the
+// DB persists these exact strings). "other" reveals a free-text input.
+const REFERRAL_SOURCE_KEYS = [
+  "business_referral",
+  "friends_family",
+  "instagram",
+  "facebook",
+  "google",
+  "whatsapp_group",
+  "other",
+  "prefer_not_to_say",
+];
 
 function RegisterProducerPageFallback() {
   const t = useTranslations();
@@ -316,6 +337,12 @@ function RegisterProducerPageBody() {
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
+        // MEH-1471: self-reported attribution. referral_source is a required
+        // key from the CONFIRM-step dropdown; the free-text answer is sent only
+        // when "other" is chosen (empty otherwise → backend stores NULL).
+        referral_source: form.referral_source,
+        referral_source_other:
+          form.referral_source === "other" ? form.referral_source_other : "",
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
@@ -1007,6 +1034,68 @@ function RegisterProducerPageBody() {
               )}
             </div>
 
+            {/* MEH-1471: self-reported attribution — REQUIRED dropdown directly
+                above the ToS consent (final step). Default "בחר אפשרות" with no
+                preselection (Ruler Analytics speed-bias → first-option overcount);
+                the submit gate blocks while empty. Selecting "other" reveals an
+                optional free-text input. English keys stored; Hebrew from i18n. */}
+            <div data-testid="register-referral-source-block">
+              <label
+                htmlFor="register-referral-source"
+                className="block text-sm font-medium text-text mb-1 text-start"
+              >
+                {t("auth.register.producer.fields.referral_source.label")}
+              </label>
+              <select
+                id="register-referral-source"
+                data-testid="register-referral-source"
+                value={form.referral_source}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAndSave((prev) => ({
+                    ...prev,
+                    referral_source: value,
+                    // Clear the free-text answer once the choice is not "other".
+                    referral_source_other:
+                      value === "other" ? prev.referral_source_other : "",
+                  }));
+                }}
+                required
+                className="w-full border rounded-md px-3 py-2 min-h-[44px] bg-white text-start"
+              >
+                <option value="" disabled>
+                  {t("auth.register.producer.fields.referral_source.placeholder")}
+                </option>
+                {REFERRAL_SOURCE_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(
+                      `auth.register.producer.fields.referral_source.options.${key}`,
+                    )}
+                  </option>
+                ))}
+              </select>
+              {form.referral_source === "other" && (
+                <input
+                  id="register-referral-source-other"
+                  data-testid="register-referral-source-other"
+                  type="text"
+                  maxLength={120}
+                  value={form.referral_source_other}
+                  onChange={set("referral_source_other")}
+                  placeholder={t(
+                    "auth.register.producer.fields.referral_source.other_placeholder",
+                  )}
+                  // MEH-1471 a11y (IS-5568): the placeholder is the only visible
+                  // text and disappears on input, so name the field explicitly for
+                  // screen readers (the select above uses a visible <label>).
+                  aria-label={t(
+                    "auth.register.producer.fields.referral_source.other_placeholder",
+                  )}
+                  className="w-full border rounded-md px-3 py-2 min-h-[44px] mt-2 text-start"
+                />
+              )}
+            </div>
+
             {/* MEH-759 Chunk C: three separate affirmative acts — ToS/privacy
                 consent (chrome, plural), the binding licensing declaration
                 (first-person), and the conditional grower declaration. ADR-014
@@ -1079,6 +1168,11 @@ function RegisterProducerPageBody() {
                   }
                   if (form.category_ids.length === 0) {
                     setError(t("auth.register.producer.validation.category_required"));
+                    return;
+                  }
+                  // MEH-1471: required attribution — block submit while empty.
+                  if (!form.referral_source) {
+                    setError(t("auth.register.producer.validation.referral_source_required"));
                     return;
                   }
                   if (!agreedToTerms) {
