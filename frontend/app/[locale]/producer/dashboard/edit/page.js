@@ -77,6 +77,9 @@ import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
+// MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
+// cards.jsx is already >1600 lines).
+import DietaryScopeCard from "./DietaryScopeCard";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -871,6 +874,23 @@ function EditPageInner() {
               {t("kashrut.heading")}
             </h3>
             <KashrutCard profile={profile} reportDirty={reportDirty} />
+          </div>
+
+          {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
+              vegan/vegetarian + gluten facility). Sub-section next to kashrut;
+              writes producer scope fields via PUT /producers/me (onSave merges). */}
+          <div
+            id="dietary-scope"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("dietaryScope.heading")}
+            </h3>
+            <DietaryScopeCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
           </div>
         </EditAccordionCard>
       </div>

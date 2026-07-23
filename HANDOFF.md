@@ -3,6 +3,10 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 — MEH-1508 chunk 2 Phase B done (owner form + admin + business page)
+
+- **MEH-1508 chunk 2 Phase B** (PR #2121, `feature/meh-1508-chunk2-dietary-scope-io`, `Refs MEH-1508`): UI for the scope columns. Owner `DietaryScopeCard.jsx` (2 YES/NO → all/some + 1 gluten 3-way) next to KashrutCard; admin 3 `<select>` in `ProducerForm.jsx`; plain-text gluten line in `ProducerHeader.jsx` (shared/dedicated only, MEH-1259 pattern). **Lactose cut (§6.3).** Copy = §6.2/6.4/6.5 locked. Backend untouched (Phase A did it). build 0 · vitest 1588p (+18) · he/en parity · RTL clean · label guard untouched. **NOT merged** — merge gate = Sapir confirms `alembic_version == d51508a7c9e2` + mobile QA on preview (CC can't screenshot: MEH-360 + auth-gated dashboard). **Chunk 3** (100% chip/badge, data-gated, + the vegan_scope='all' vs is_vegan-EXISTS contradiction fix from §5) NOT started.
+
 ## 2026-07-23 — MEH-1508 chunk 1 APPROVED + merged (schema)
 
 - **MEH-1508 chunk 1** (PR #2114, `feature/meh-1508-dietary-scope-schema`): 4 NOT NULL VARCHAR(20) scope columns on `producers` (`vegan_scope`/`vegetarian_scope` = unknown|some|all; `gluten_free_facility`/`lactose_free_facility` = unknown|shared|dedicated), `server_default='unknown'` + backfill. Revision `d51508a7c9e2` ← `a9f2c7d41b6e` (single head, Sapir-confirmed live `alembic_version`). Squash-merged to staging → migration applies on Dockerfile boot. CI drift gate green (fresh PG15: upgrade head + table-count + `alembic check`); pytest 1693p/365s/1xf. **CC could not reach the staging DB (MEH-360) for the post-deploy `alembic_version` + scope-count check — Sapir runs it.** **Chunks 2-3 NOT started** (form/admin, then data-gated chip — MEH-1088 pattern).
