@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 (night run, MEH-1074 session 4) — MEH-1499 + MEH-1367 toast-width decision — 2 needs-sapir PRs, merge-ordered
+
+- **MEH-1499** (PR #2104, `feature/meh-1499-toast-consent-stacking`): toast stacks above the cookie-consent banner. One line in `Toaster.jsx` — mobile `bottom-20 → bottom-[calc(5rem+var(--cookie-banner-h,0px))]`, consuming the var CookieBanner already publishes (MEH-850; CookieBanner unchanged). @375px: both consent buttons trial-click PASS (were occluded), toast 172px w/ banner / 80px w/o (no leftover), bottom-nav PASS. build 0 · vitest 1566/10 · pytest 238/4. **needs-sapir, merges FIRST.**
+- **MEH-1367 / PR #2097** (`feature/meh-1367-toast-width`): Sapir chose the **content-width** alt — `Toaster.jsx` container `w-[min(92vw,28rem)] → w-fit min-w-[16rem] max-w-[min(92vw,28rem)]`, span keeps `min-w-0 flex-1`. @375px: short toast 256×44 (snug), session-expired 256×84 (~3 lines, readable). Flagged in the PR body: `flex-1` caps the long toast at the 16rem floor (3 lines vs the fixed-width's 2) — one-line `flex-1`-drop offered if she wants long toasts to expand to the ceiling. build 0 · toast tests 14/14. **needs-sapir, merges AFTER #2104.**
+- Both verified on the local full stack (frontend `next start` + `uvicorn :8000` + seeded Postgres). Blocker-ladder rung 4 only (Cloudinary/Leaflet egress — irrelevant to toasts). Neither auto-merged.
+
 ## 2026-07-23 (night run, MEH-1074 session 3) — MEH-1367 — session-expired toast full-width fix (YELLOW, global Toaster) — PR open, needs-sapir
 
 - Branch `feature/meh-1367-toast-width` off `origin/staging`. One-file fix: `frontend/components/Toaster.jsx` — container gains `w-[min(92vw,28rem)]`, message span gains `min-w-0 flex-1`. The global toast had no width → shrink-to-fit collapse → the session-expired notice wrapped to ~5 narrow lines on mobile.

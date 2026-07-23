@@ -32,12 +32,15 @@ export default function Toaster() {
 
   return (
     <div
-      // MEH-1367: `w-[min(92vw,28rem)]` gives the centered fixed stack a stable
-      // width — without it a shrink-to-fit `-translate-x-1/2` box collapses toward
-      // min-content and a long toast (the session-expired notice) wraps to ~5
-      // narrow lines on mobile. Full-width-minus-gutter on phones, capped desktop.
+      // MEH-1367 (Sapir decision — content-width with a floor+ceiling): without a
+      // width the centered `-translate-x-1/2` stack shrinks-to-fit to min-content
+      // and a long toast (the session-expired notice) wraps to ~5 narrow lines on
+      // mobile. `w-fit` sizes to content; `min-w-[16rem]` keeps short toasts (e.g.
+      // "נשמר") from looking cramped; `max-w-[min(92vw,28rem)]` caps long ones
+      // (full-width-minus-gutter on phones, capped desktop) so they wrap to ~2
+      // lines. Paired with `min-w-0 flex-1` on the message span below.
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[min(92vw,28rem)] flex flex-col-reverse gap-2 pointer-events-none"
+      className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-fit min-w-[16rem] max-w-[min(92vw,28rem)] flex flex-col-reverse gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"
