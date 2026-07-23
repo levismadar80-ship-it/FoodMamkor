@@ -93,6 +93,14 @@ class Producer(Base):
     owner_photo_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
+    # MEH-1490: admin-mapped Google Maps Place ID. The ONLY Google datum we
+    # store — rating/userRatingCount are live-fetched per request and NEVER
+    # persisted (Google Maps Platform ToS §3.2.3(b) No Caching; place_id is
+    # the explicit storable exception). NULL until an admin maps it; the quiet
+    # public GoogleRatingLine renders only when set AND the live profile has
+    # ≥20 reviews. Written admin-only (excluded from _PRODUCER_WRITABLE_FIELDS
+    # in producer_me.py). Migration: a9f2c7d41b6e.
+    google_place_id = Column(String(300), nullable=True)
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
