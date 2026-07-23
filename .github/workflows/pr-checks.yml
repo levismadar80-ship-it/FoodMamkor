@@ -35,7 +35,10 @@ jobs:
   branch-name-gate:
     name: Branch name gate
     runs-on: ubuntu-latest
-    if: github.head_ref
+    # Skip for staging → main release PRs (MEH-1105): the head branch is always
+    # `staging`, which cannot match the feature/meh-* convention by design.
+    # Feature-branch enforcement (the grep below) is untouched.
+    if: ${{ github.head_ref && !(github.base_ref == 'main' && github.head_ref == 'staging') }}
     steps:
       - name: Assert branch name matches the locked convention (MEH-1141)
         run: |
@@ -74,11 +77,22 @@ jobs:
           fetch-depth: 0
       - name: Cap qa-artifacts growth (MEH-1156)
         env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MAX_BYTES: "2097152"
         run: |
           set -euo pipefail
+          # Release-PR exemption (MEH-1105): a staging → main release PR is a
+          # rollup of hundreds of already-merged per-PR diffs, so the 2 MB
+          # *per-PR* cap (MEH-1156) does not apply to it. Exempt exactly that
+          # one base/head combination; every other PR is enforced unchanged.
+          if [ "$BASE_REF" = "main" ] && [ "$HEAD_REF" = "staging" ]; then
+            echo "::notice::Release PR (staging → main) — the per-PR 2 MB qa-artifacts cap does not apply to a release rollup; skipping the cap. (MEH-1105)"
+            echo "qa-artifacts size cap OK (release-PR exemption)."
+            exit 0
+          fi
           total=0
           while read -r f; do
             [ -n "$f" ] || continue

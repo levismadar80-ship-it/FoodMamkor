@@ -2448,6 +2448,10 @@
         "heading": "How we verify",
         "body": "Every business on Mehamakor is approved by hand — we check a valid business license and talk with the owner before anything goes live. No automatic sign-ups, no shortcuts. So when you see the ✓ Verified seal, you know a real person actually checked."
       },
+      "editors_pick": {
+        "heading": "Editor's Pick",
+        "body": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+      },
       "cta": {
         "heading": "Built a business that deserves a home? We'd love to meet you.",
         "register": "Add your business",
