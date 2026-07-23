@@ -919,8 +919,7 @@ class ProducerUpdate(BaseModel):
             raise ValueError("מזהה Google Place ארוך מדי")
         if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
             raise ValueError(
-                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד "
-                "(לא כתובת URL)"
+                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
             )
         return v
 
