@@ -16,6 +16,7 @@ from app.routers import (
     events,
     experiences,
     favorites,
+    google_rating,
     group_buys,
     health,
     holiday_mode,
@@ -71,6 +72,10 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
     app.include_router(reviews.router)
+    # MEH-1490: live-fetch Google-rating trust line (read-only proxy; no
+    # persistence). Registered near reviews — it's the external counterpart to
+    # the native review block, but a separate router (ToS visual separation).
+    app.include_router(google_rating.router)
     app.include_router(search.router)
     app.include_router(users_me.router)
     app.include_router(admin_outreach.router)

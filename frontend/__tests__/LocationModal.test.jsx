@@ -62,7 +62,9 @@ describe("LocationModal commit contract (MEH-1192)", () => {
     const chip = screen.getByText("modals.location.popular_cities.tel_aviv");
     await act(async () => { fireEvent.click(chip); });
     expect(onSelectCity).toHaveBeenCalledTimes(1);
-    expect(onSelectCity).toHaveBeenCalledWith("תל אביב");
+    // MEH-1504: Tel Aviv chip commits the canonical city name "תל אביב-יפו"
+    // (the official cities-table value) so backend exact-match filtering hits.
+    expect(onSelectCity).toHaveBeenCalledWith("תל אביב-יפו");
   });
 
   // MEH-1192 (R1): geolocate SUCCESS must persist the GPS fix (the third and

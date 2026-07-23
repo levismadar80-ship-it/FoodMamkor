@@ -25,7 +25,7 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 // is the data axis (sent to onSelectCity → backend search), distinct from
 // the displayed label which resolves via t(`modals.location.popular_cities.${key}`).
 const POPULAR_CITIES = [
-  { key: "tel_aviv", canonical: "תל אביב" },
+  { key: "tel_aviv", canonical: "תל אביב-יפו" },
   { key: "jerusalem", canonical: "ירושלים" },
   { key: "haifa", canonical: "חיפה" },
   { key: "beersheba", canonical: "באר שבע" },

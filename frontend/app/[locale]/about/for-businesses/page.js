@@ -8,6 +8,7 @@ import {
   ChatCircleText,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -140,12 +141,13 @@ export default async function FaqForBusinessesPage({ params }) {
               items. Same string t("cta") + markup as the footer CTA below — no
               new he.json key (MEH-840 freeze). Footer CTA also updated to the
               next-intl Link + focus-ring in this PR (IMP-21). */}
-          <Link
+          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+          <BusinessCtaLink
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">
@@ -279,12 +281,13 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          <Link
+          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+          <BusinessCtaLink
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
         </footer>
       </div>
     </section>

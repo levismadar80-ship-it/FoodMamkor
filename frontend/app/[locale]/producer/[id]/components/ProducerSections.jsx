@@ -26,6 +26,9 @@ import ReportButton from "@/components/ReportButton";
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
 import ReportInfoModal from "@/components/ReportInfoModal";
 import ReviewsSection from "@/components/ReviewsSection";
+// MEH-1490: quiet live-fetch Google-rating line — renders below (and detached
+// from) the native reviews block, only for producers an admin mapped.
+import GoogleRatingLine from "@/components/GoogleRatingLine";
 
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
@@ -434,6 +437,15 @@ export default function ProducerSections({
           />
         )}
       </div>
+
+      {/* MEH-1490: quiet Google-rating trust line — detached from the native
+          reviews block above (its own border-t + margin, ToS visual separation
+          + cannibalization guard). Mount is gated on a mapped place_id so
+          unmapped producers make zero requests; the component itself renders
+          nothing on a 204 (< 20 reviews / API error / no key). */}
+      {producer.google_place_id && (
+        <GoogleRatingLine producerId={producer.id} producerName={producer.name} />
+      )}
 
       {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
       {similarProducers.length >= 3 && (
