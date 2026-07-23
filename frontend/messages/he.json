@@ -465,7 +465,8 @@
       "geo_chip": "בתי עסק ליד המיקום שלך",
       "city_chip": "עסקים באזור {city}",
       "clear_location_filter": "הסרת סינון מיקום",
-      "geo_empty": "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק"
+      "geo_empty": "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק",
+      "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:"
     },
     "recent": {
       "heading": "צפית לאחרונה"
@@ -2731,6 +2732,12 @@
       "category_label": "קטגוריה",
       "filter_label": "סינון",
       "clear_all": "נקו הכל"
+    },
+    "sort": {
+      "label": "מיון:",
+      "aria_label": "מיון בתי עסק",
+      "newest": "הצטרפו לאחרונה",
+      "top_rated": "הכי מדורגות"
     },
     "empty": {
       "no_match_search": "לא מצאנו בתי עסק עבור \"{q}\"",

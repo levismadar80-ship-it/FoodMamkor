@@ -53,6 +53,7 @@ export function HomeProducersGrid({
   geoActive,
   cityActive,
   geoEmptyNotice,
+  regionFallback,
 }) {
   const t = useTranslations();
   // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
@@ -193,7 +194,35 @@ export function HomeProducersGrid({
               </motion.div>
             ))}
           </div>
-          {producers.length === 0 && (
+          {/* MEH-1487: region fallback — when a city filter returned 0 but the
+              city belongs to a region, show the businesses that deliver
+              anywhere in that region. Editorial discovery framing, not a
+              delivery-eligibility check. Replaces the generic empty state. */}
+          {producers.length === 0 && regionFallback?.producers?.length > 0 && (
+            <div data-testid="region-fallback">
+              <h3 className="font-headline-md text-lg font-bold text-text mb-4">
+                {t("home.producers.region_fallback_header", {
+                  city: filters.delivery_city,
+                  region: regionFallback.regionName,
+                })}
+              </h3>
+              <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
+                {regionFallback.producers.map((p, idx) => (
+                  <motion.div
+                    key={p.id}
+                    className="h-full"
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.1 }}
+                    transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+          {producers.length === 0 && !(regionFallback?.producers?.length > 0) && (
             <div className="text-center py-16">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} className="text-primary" />
