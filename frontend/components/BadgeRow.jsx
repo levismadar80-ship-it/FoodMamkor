@@ -59,7 +59,7 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }
         b.key === "verified" ? (
           <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} />
         ) : (
-          <Badge key={b.key} badge={b} />
+          <Badge key={b.key} badge={b} surface={surface} />
         ),
       )}
     </div>
@@ -202,8 +202,28 @@ function VerifiedTierBadge({ producer, surface, t }) {
   );
 }
 
-function Badge({ badge }) {
+function Badge({ badge, surface = "hero" }) {
   const colorClass = COLOR_CLASSES[badge.color] || COLOR_CLASSES.muted;
+
+  // MEH-1492: on the HERO surface (producer detail), a badge with an aboutHref
+  // (recommended → /about#editors-pick) turns its popover body into a link — the
+  // locked tooltip copy becomes the clickable explainer to the criteria + the
+  // ADR-030 "can't be bought" promise. Mirrors the verified seal's hero-only
+  // popover → /about#verification (MEH-1336); no new copy. Card surfaces keep the
+  // compact plain-text tooltip (and never mount a locale link).
+  const linkOut = badge.aboutHref && surface === "hero";
+  const popoverBody = linkOut ? (
+    <LocaleLink
+      href={badge.aboutHref}
+      className="inline-flex items-start gap-1 font-medium text-primary hover:text-primary-dark"
+    >
+      <span>{badge.tooltip}</span>
+      {/* Forward chevron points LEFT in RTL (mirrors the verified popover). */}
+      <CaretLeft size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+    </LocaleLink>
+  ) : (
+    badge.tooltip
+  );
 
   // MEH-800: click-popover routed through ui/Popover — the primitive owns
   // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
@@ -228,7 +248,7 @@ function Badge({ badge }) {
           </button>
         }
       >
-        {badge.tooltip}
+        {popoverBody}
       </Popover>
     </span>
   );
