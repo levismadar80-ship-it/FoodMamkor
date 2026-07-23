@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 — MEH-1506 — semi-automated place_id mapping in admin — MERGED (PR #2110)
+
+- **Shipped end-to-end** (LOW-RISK, user granted build→PR→CI→merge authority). Branch `feature/meh-1506-admin-place-lookup` off `origin/staging`; squash-merged to staging as `29a4001b`.
+- **What it does:** admin "חפשי בגוגל" button next to `google_place_id` (edit mode only) → `GET /admin/producers/{id}/google-place-candidates` (`require_admin`, 30/min) runs Places Text Search (New) on the producer's own name+city → up to 3 candidates (name · address · count); admin clicks one to fill the field. **No auto-select** (STOP #2 honored — even a lone candidate is a click).
+- **SKU (STOP #1 honored):** FieldMask `id,displayName,formattedAddress,userRatingCount` = Enterprise, exactly as the ticket §4 assumes (`userRatingCount` drives the "N ביקורות" line + "<20" note). Not pricier than assumed → proceeded, stated in PR body. **Zero persistence** of Google values (count display-only; only chosen place_id stored — ToS §3.2.3(b)).
+- **Files:** `backend/app/routers/google_rating.py` (endpoint + `_search_place_candidates` helper, extending the MEH-1490 router — no `admin.py`), `frontend/components/admin/ProducerForm.jsx`, `he.json`/`en.json` (7 new functional strings — scope addition beyond the 3 ticket files, per MEH-1490 precedent), `tests/test_google_rating.py` (+5 cases). No Alembic, no new env var.
+- **CI:** both required gates green (`CI gate` + `Deploy gate`); **backend pytest green in CI** (5 new cases ran — sandbox has no Postgres/backend deps, so pytest was CI-only). Local: build 0 · eslint 0 · RTL clean. Only non-required red = `Playwright E2E (Vercel preview)`, failing purely because **Vercel is deploy-rate-limited ("retry in 24h")** → no preview target; admin-only change behind auth, E2E covers public routes. **Not a code failure.**
+- **Open follow-up for Sapir:** mobile QA on the admin producer-edit form can't run off a preview URL until the Vercel 24h rate-limit clears — do it against `staging` once it redeploys, or a preview tomorrow. The CI-trigger wall (MEH-1501) did **not** bite this PR (all 26 checks fired normally).
+
 ## 2026-07-23 (night run, MEH-1074 session 4) — MEH-1499 + MEH-1367 toast-width decision — 2 needs-sapir PRs, merge-ordered
 
 - **MEH-1499** (PR #2104, `feature/meh-1499-toast-consent-stacking`): toast stacks above the cookie-consent banner. One line in `Toaster.jsx` — mobile `bottom-20 → bottom-[calc(5rem+var(--cookie-banner-h,0px))]`, consuming the var CookieBanner already publishes (MEH-850; CookieBanner unchanged). @375px: both consent buttons trial-click PASS (were occluded), toast 172px w/ banner / 80px w/o (no leftover), bottom-nav PASS. build 0 · vitest 1566/10 · pytest 238/4. **needs-sapir, merges FIRST.**
