@@ -3,6 +3,17 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-23 (night run, MEH-1074 session 4) — MEH-1499 + MEH-1367 toast-width decision — 2 needs-sapir PRs, merge-ordered
+
+- **MEH-1499** (PR #2104, `feature/meh-1499-toast-consent-stacking`): toast stacks above the cookie-consent banner. One line in `Toaster.jsx` — mobile `bottom-20 → bottom-[calc(5rem+var(--cookie-banner-h,0px))]`, consuming the var CookieBanner already publishes (MEH-850; CookieBanner unchanged). @375px: both consent buttons trial-click PASS (were occluded), toast 172px w/ banner / 80px w/o (no leftover), bottom-nav PASS. build 0 · vitest 1566/10 · pytest 238/4. **needs-sapir, merges FIRST.**
+- **MEH-1367 / PR #2097** (`feature/meh-1367-toast-width`): Sapir chose **content-width**; shipped as **Option 3 — width authority on the toast ITEM, not the flex-column container** (the earlier container-`w-fit` floored long toasts at 256px/3 lines because a `fixed left-1/2` element with `width:fit-content` only gets ~half the viewport of layout width, below the 16rem floor). Final: container `w-[92vw] max-w-[28rem] items-center`; item `w-fit min-w-[16rem] max-w-full`; span keeps `min-w-0 flex-1`. @375px: short "נשמר" **256×44 (1 line, snug, centered)**, session-expired **345×64 (2 lines** — final line is the orphan word "להמשיך.", not a 3-line wrap so it ships); @1440 short 256×44, session-expired 391.8×44 (1 line), both centered — no desktop regression. Screenshots in `qa-artifacts/MEH-1367/` (webp, 74KB; superseded content-width webps removed). build 0 · toast tests 14/14. **needs-sapir, merges AFTER #2104.**
+- Both verified on the local full stack (frontend `next start` + Playwright, real renders). Both re-synced with `origin/staging` (google-rating batch #2093/MEH-1490 landed mid-session) so both are mergeable. Blocker-ladder rung 4 only (Cloudinary/Leaflet egress — irrelevant to toasts). Neither auto-merged. **Only non-required red is Vercel "deployment rate limited" (external preview integration, not a required gate); required `Deploy gate` = success, `CI gate` settling after the staging-sync push (superseded-run pattern).**
+
+## 2026-07-23 (night run, MEH-1074 session 3) — MEH-1367 — session-expired toast full-width fix (YELLOW, global Toaster) — PR open, needs-sapir
+
+- Branch `feature/meh-1367-toast-width` off `origin/staging`. One-file fix: `frontend/components/Toaster.jsx` — container gains `w-[min(92vw,28rem)]`, message span gains `min-w-0 flex-1`. The global toast had no width → shrink-to-fit collapse → the session-expired notice wrapped to ~5 narrow lines on mobile.
+- **Corrects session-2's static mis-call** (I said defect b was "unconfirmed / probably fixed" — live repro on the local stack proved it DOES reproduce). Live before/after @375px: **198×124px → 345×64px**. Defect (a) is a non-bug (expired-session guard `if(token)`).
+- Global component → **needs-sapir per the ticket's STOP #2, no auto-merge.** `Refs MEH-1367`.
 ## 2026-07-23 — MEH-1503 — /producers "בעיר שלי" consumes saved city + MEH-1485 write-back — PR #2109 open (LOW-RISK, GREEN)
 
 - Branch `feature/meh-1503-producers-my-city-chip` off `origin/staging`. Files: `frontend/components/ProducersClient.jsx` (+1 new test). **Frontend-only, single file + test.**

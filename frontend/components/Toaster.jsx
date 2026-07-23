@@ -40,8 +40,18 @@ export default function Toaster() {
       // decline buttons: both anchor to 80px on mobile. Precedent: the same
       // clearance pattern in ChatWidget.jsx:183 + BackToTop.jsx:31. `md:` (desktop)
       // is left unchanged.
+      // MEH-1367 (Sapir decision — content-width with a floor+ceiling). The width
+      // authority lives on the toast ITEM, not this container: a `fixed` element
+      // with `width:fit-content` + a 50% start-inset only ever gets ~half the
+      // viewport (~187px @375) of layout width, below the 16rem floor — so `w-fit`
+      // here floored every long toast at 256px and never reached the ceiling
+      // (measured: cssLeft 187.5px, computedW 256px, item max-content 382px). Fix:
+      // give the container a viewport-driven width (`w-[92vw] max-w-[28rem]`) and
+      // `items-center` so the flex column does not stretch its child; the item
+      // sizes itself via `w-fit min-w-[16rem] max-w-full` (below), so short toasts
+      // stay snug at the 16rem floor and long ones fill up to 92vw/28rem (~2 lines).
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-[calc(5rem+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col-reverse gap-2 pointer-events-none"
+      className="fixed bottom-[calc(5rem+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[92vw] max-w-[28rem] flex flex-col-reverse items-center gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -55,7 +65,7 @@ export default function Toaster() {
         <div
           key={t.id}
           className={[
-            "pointer-events-auto px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium flex items-center gap-3",
+            "pointer-events-auto w-fit min-w-[16rem] max-w-full px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium flex items-center gap-3",
             "animate-[toast-in_200ms_ease-out]",
             t.type === "error"
               ? "bg-red-600 text-white"
@@ -69,7 +79,7 @@ export default function Toaster() {
               {icon}
             </span>
           )}
-          <span>{t.message}</span>
+          <span className="min-w-0 flex-1">{t.message}</span>
           {t.action && (
             <a
               href={t.action.href}
