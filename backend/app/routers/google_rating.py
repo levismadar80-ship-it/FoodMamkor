@@ -14,6 +14,8 @@ Does NOT: store, cache, or persist any Google value. The rating/count are
 Related:  routers/reviews.py:46 (fail-quiet external-call idiom this mirrors),
           schemas.schemas.GoogleRatingOut, models.Producer.google_place_id.
 History:  MEH-1490 (creation) — external trust signal, live-fetch only.
+          MEH-1506 — admin-only Places Text Search to map a place_id
+          semi-automatically (search here, a human picks in ProducerForm).
 """
 
 import logging
@@ -23,9 +25,10 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
+from app.auth import require_admin
 from app.config import settings
 from app.database import get_db
-from app.models import Producer
+from app.models import Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import GoogleRatingOut
 
@@ -44,6 +47,18 @@ MIN_REVIEWS = 20
 _PLACES_URL = "https://places.googleapis.com/v1/places/{place_id}"
 _FIELD_MASK = "rating,userRatingCount,googleMapsUri"
 _TIMEOUT_SECONDS = 4.0
+
+# MEH-1506: Places Text Search (New) — admin place_id lookup. The FieldMask
+# lands on the ENTERPRISE SKU exactly as the ticket assumes: id + displayName +
+# formattedAddress = Pro, and userRatingCount (load-bearing — it drives the
+# "N ביקורות" line + the "< 20" transparency note in ProducerForm) tips it to
+# Enterprise. No field dropped. userRatingCount is DISPLAYED to the admin and
+# never stored (only the chosen place_id is persisted — ToS §3.2.3(b)).
+_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
+_SEARCH_FIELD_MASK = (
+    "places.id,places.displayName,places.formattedAddress,places.userRatingCount"
+)
+MAX_CANDIDATES = 3
 
 
 def _fetch_place_details(place_id: str) -> dict | None:
@@ -112,3 +127,85 @@ def get_google_rating(
         return Response(status_code=204)
 
     return GoogleRatingOut(**details)
+
+
+def _search_place_candidates(name: str | None, city: str | None) -> list[dict] | None:
+    """Live Places Text Search for `<name> <city>`, up to MAX_CANDIDATES.
+    Fail-quiet: returns None on missing key, empty query, any HTTP/parse error,
+    or no results. NEVER caches — userRatingCount is passed to the caller for
+    display only (the admin still picks; only the chosen place_id is stored).
+    """
+    api_key = settings.google_places_api_key
+    if not api_key:
+        return None
+    query = " ".join(part for part in (name, city) if part and part.strip()).strip()
+    if not query:
+        return None
+    try:
+        resp = httpx.post(
+            _TEXT_SEARCH_URL,
+            headers={
+                "X-Goog-Api-Key": api_key,
+                "X-Goog-FieldMask": _SEARCH_FIELD_MASK,
+                "Content-Type": "application/json",
+            },
+            json={"textQuery": query, "languageCode": "he", "regionCode": "IL"},
+            timeout=_TIMEOUT_SECONDS,
+        )
+        if resp.status_code != 200:
+            log.info(
+                "[google_rating] Text Search %s for query=%r — fail-quiet",
+                resp.status_code,
+                query,
+            )
+            return None
+        data = resp.json()
+    except Exception as exc:  # noqa: BLE001 — fail-quiet on ANY error (network/JSON)
+        log.warning("[google_rating] Text Search call failed: %s — fail-quiet", exc)
+        return None
+
+    candidates: list[dict] = []
+    for place in (data.get("places") or [])[:MAX_CANDIDATES]:
+        place_id = place.get("id")
+        if not place_id:
+            continue
+        candidates.append(
+            {
+                "place_id": place_id,
+                "display_name": (place.get("displayName") or {}).get("text"),
+                "formatted_address": place.get("formattedAddress"),
+                # Absent for a place with no reviews yet → 0 (below MIN_REVIEWS).
+                "user_rating_count": place.get("userRatingCount") or 0,
+            }
+        )
+    return candidates or None
+
+
+@router.get("/admin/producers/{producer_id}/google-place-candidates")
+@limiter.limit("30/minute")
+def get_google_place_candidates(
+    producer_id: UUID,
+    request: Request,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin-only: up to 3 Google Place candidates for a producer, or 204.
+
+    Builds the query from the producer's own name + city and runs Places Text
+    Search. 204 (fail-quiet) when: no server key, no results, or any Google API
+    error. 403 for non-admins (require_admin). 404 for an unknown producer.
+    NO auto-select — the admin picks one in ProducerForm; the response is
+    display-only and nothing here is stored (ToS §3.2.3(b)).
+    """
+    row = (
+        db.query(Producer.name, Producer.city)
+        .filter(Producer.id == producer_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    candidates = _search_place_candidates(row[0], row[1])
+    if not candidates:
+        return Response(status_code=204)
+    return {"candidates": candidates}
