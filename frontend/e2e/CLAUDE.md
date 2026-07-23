@@ -24,6 +24,13 @@ Mirror this shape for new flows; keep timeouts explicit, not implicit.
   Vercel deployment-status webhook payload (no polling).
 - **No mocks** since MEH-417 (2026-05-09) — mocks hid real backend bugs
   for 8 CI cycles (HANDOFF.md "Key lessons" #3).
+  - **Narrow, deliberate exception — VRT specs only (MEH-1497, ticket §2.4):**
+    `e2e/visual/**` may use `page.route()` to freeze a data-dependent shot
+    (the subject there is layout/pixels; the data is noise). This is scoped
+    to visual specs — **functional specs under `e2e/flows/` stay unmocked**,
+    which is exactly what MEH-417 protects. Do not generalise it: mocking a
+    flow spec reintroduces the MEH-417 regression. Currently applied in
+    `e2e/visual/parity.spec.ts` (`producer detail`).
 
 ## Gotchas
 - **Google Sign-In singleton** (MEH-274): `google.accounts.id.initialize()`
