@@ -35,22 +35,25 @@ import { BADGE_CONFIG } from "@/lib/badges";
  *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched);
  *           MEH-1481 (desktop-only density: rows+pills min-h 36px, 13px labels,
  *           tighter gaps + capped scroll body + sticky footer — all lg:-gated,
- *           mobile byte-identical).
+ *           mobile byte-identical); MEH-1507 (Label Scope Contract: diet group
+ *           reverts from the MEH-1478 pill grid to full-width rows so every diet
+ *           term shows its scope-explicit subtext; subtext source moved from the
+ *           SUBTEXT_KEYS/BADGE_CONFIG narrowing to per-chip contract metadata).
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
 const GROUP_ORDER = ["diet", "quality", "service"];
 
-// MEH-1423: keep the muted explainer for ONLY the 3 trust-loaded / loanword
-// terms (kosher · verified · grass_fed). The other 4 toggles (vegan ·
-// gluten_free · lactose_free · has_delivery) are everyday vocabulary where a
-// dictionary line is noise (Baymard "Always Explain Industry-Specific Filters",
-// research 21/07). Copy is UNCHANGED — still the BADGE_CONFIG tooltips MEH-1418
-// wired (SoT, no new strings, ADR-022 / MEH-1087 locks); this only narrows
-// WHICH rows render it. All 3 keys own a BADGE_CONFIG entry, so no key remap.
-const SUBTEXT_KEYS = new Set(["kosher", "verified", "grass_fed"]);
-function chipSubtext(key) {
-  return SUBTEXT_KEYS.has(key) ? BADGE_CONFIG[key]?.tooltip ?? null : null;
+// MEH-1507 — Label Scope Contract: each chip carries its own scope-explicit
+// `subtext` (attribute-labels.js, and the /map-local grass_fed object). The diet
+// rows now render the LOCKED "עסקים עם מוצרים … בקטלוג" copy that names the
+// any-product scope MEH-293 introduced; grass_fed reads "לפי הצהרת בית העסק". The
+// trust rows (kosher · verified) have no contract subtext of their own, so they
+// fall back to the BADGE_CONFIG tooltip MEH-1418 wired (has_delivery has neither
+// → no subtext, unchanged). This REVERSES the MEH-1423/1478 narrowing to 3 rows:
+// every diet term now explains its scope in-component (Baymard).
+function chipSubtext(chip) {
+  return chip.subtext ?? BADGE_CONFIG[chip.key]?.tooltip ?? null;
 }
 
 // MEH-1478: within-group render order. Default = TOGGLE_CHIPS array order; the
@@ -196,95 +199,58 @@ export default function FilterSheet({
             <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1 lg:mt-3 lg:mb-0.5">
               {t(`filters.sheet.group_${group}`)}
             </h3>
-            {group === "diet" ? (
-              /* MEH-1478: the 4 diet toggles render as a 2-column pill GRID
-                 (grid-template-columns: repeat(2, minmax(0,1fr)), gap 8px)
-                 instead of full-width rows — they are everyday, self-evident
-                 vocabulary (no subtext, MEH-1423) so a compact multi-select grid
-                 keeps the whole sheet on one 375px screen. Each pill is a toggle
-                 BUTTON with aria-pressed that writes the SHARED chipState
-                 immediately via onToggleChip (no draft), exactly like the rows;
-                 multi-select is unchanged. Selected = solid primary fill (matches
-                 the sibling rows' Switch-on colour at :bg-primary), default =
-                 white surface + hairline border. Icon (aria-hidden) + label
-                 centred; label stays the accessible name. */
-              <div className="grid grid-cols-2 gap-2 mt-1 lg:mt-0.5">
-                {chipsForGroup(group).map((chip) => {
-                  const active = !!chipState[chip.key];
-                  const icon = chipIcon(chip.key);
-                  return (
+            {/* MEH-1507: ALL groups (incl. diet) render as full-width ROWS —
+                leading icon + label at the inline-start, a Switch at the
+                inline-end, hairline divider between rows (divide-y), and a
+                scope-explicit subtext BELOW the button (outside its accessible
+                name). The MEH-1478 2-col diet pill GRID is retired: its rationale
+                was "everyday terms, no subtext", but the Label Scope Contract now
+                gives every diet term a subtext, so the row form (which carries a
+                subtext line) is the fit. Each row is ONE role="switch" button
+                (min-h 44px tap target); multi-select is unchanged. MEH-1478
+                service reorder (רישוי מאומת → משלוח) still applies via
+                chipsForGroup. MEH-1481 desktop density preserved.
+                REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 — label+icon
+                at start, role="switch" pill at end, knob start-1(off)→end-1(on)
+                via logical insets (RTL-safe). */}
+            <div className="divide-y divide-border">
+              {chipsForGroup(group).map((chip) => {
+                const active = !!chipState[chip.key];
+                const icon = chipIcon(chip.key);
+                const subtext = chipSubtext(chip);
+                return (
+                  <div key={chip.key} className="py-1 lg:py-0.5">
                     <button
-                      key={chip.key}
                       type="button"
-                      aria-pressed={active}
+                      role="switch"
+                      aria-checked={active}
                       onClick={() => onToggleChip(chip.key)}
-                      /* MEH-1481: desktop density — min-h 44→36 (≥24px WCAG
-                         2.5.8), label 14→13px, tighter padding on lg+ only. */
-                      className={`flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-full border px-3 py-2 lg:py-1 text-sm lg:text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                        active
-                          ? "bg-primary text-white border-primary"
-                          : "bg-surface text-text border-border hover:border-primary"
-                      }`}
+                      className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
-                      {icon && <span aria-hidden="true">{icon}</span>}
-                      {chip.label}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              /* MEH-1423: each toggle is a full-width ROW — leading icon + label
-                 at the inline-start, a Switch at the inline-end — with a hairline
-                 divider between rows (divide-y). The whole row is ONE
-                 role="switch" button (min-h 44px tap target), so the entire row
-                 is the hit area; the visual track/knob is aria-hidden and the
-                 label stays the accessible name. Subtext (3 rows only) sits BELOW
-                 the button, outside its accessible name. MEH-1478: service group
-                 reordered רישוי מאומת → משלוח via chipsForGroup. */
-              <div className="divide-y divide-border">
-                {chipsForGroup(group).map((chip) => {
-                  const active = !!chipState[chip.key];
-                  const icon = chipIcon(chip.key);
-                  const subtext = chipSubtext(chip.key);
-                  return (
-                    <div key={chip.key} className="py-1 lg:py-0.5">
-                      {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
-                          label+icon at start, role="switch" pill at end, knob
-                          start-1(off)→end-1(on) via logical insets (RTL-safe).
-                          MEH-1481: desktop density — min-h 44→36, tighter
-                          padding + 13px label on lg+ only. */}
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={active}
-                        onClick={() => onToggleChip(chip.key)}
-                        className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
+                        {icon && <span aria-hidden="true">{icon}</span>}
+                        {chip.label}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
+                          active ? "bg-primary" : "bg-border"
+                        }`}
                       >
-                        <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
-                          {icon && <span aria-hidden="true">{icon}</span>}
-                          {chip.label}
-                        </span>
                         <span
-                          aria-hidden="true"
-                          className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
-                            active ? "bg-primary" : "bg-border"
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                            active ? "end-1" : "start-1"
                           }`}
-                        >
-                          <span
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                              active ? "end-1" : "start-1"
-                            }`}
-                          />
-                        </span>
-                      </button>
-                      {subtext && (
-                        <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                        />
+                      </span>
+                    </button>
+                    {subtext && (
+                      <p className="text-xs text-fg-muted ps-1 pb-1 m-0">{subtext}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
 
