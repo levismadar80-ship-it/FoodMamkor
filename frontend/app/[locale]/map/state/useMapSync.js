@@ -63,7 +63,6 @@ export function useMapSync({
   categories,
   setAllProducers,
   // from useFirstVisitHints
-  setShowMapHint,
   setSheetSnap,
 }) {
   const t = useTranslations();
@@ -73,9 +72,19 @@ export function useMapSync({
   // hidden container (display:none, 0×0) produces degenerate bounds — we validate
   // below before using them.
   const mapRef = useRef(null);
-  const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
+  // MEH-1010: producer.id → Set of card wrapper DOM nodes. The card list
+  // renders twice (desktop sidebar + mobile sheet) — a single-node map let
+  // the mobile mount overwrite the desktop node, so desktop marker-click
+  // scrollIntoView hit a display:none element and no-oped. Registration in
+  // MapCardList.jsx; the visible node is resolved at click time below.
+  const cardRefs = useRef(new Map());
   const hoverTimerRef = useRef(null);
   const [mapBounds, setMapBounds] = useState(null);
+  // MEH-1412 (MEH-1388 chunk 3): the location row behind the last-clicked
+  // marker, so the selected card can show its label (business name + label).
+  // Lives here (not useMapFilters) because the click handler owns it; the card
+  // only renders while selectedProducer is set, so a stale value is never shown.
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   const registerMapApi = useCallback((api) => {
     if (!api) return;
@@ -98,29 +107,50 @@ export function useMapSync({
     setMapBounds(bounds);
   }, []);
 
-  // Card click → fly map to producer + open popup + highlight card
+  // Card click → select + pin-sync + fly map to producer (NO page scroll).
   const handleCardClick = useCallback((producer) => {
     if (!producer?.lat || !producer?.lng) return;
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
-    document
-      .getElementById("map-container")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // MEH-1412: a sidebar-card selection is not location-specific — clear any
+    // label left over from a previous marker click so the card never shows the
+    // wrong point's label (e.g. tap producer A's pickup pin, then B's card).
+    setSelectedLocation(null);
+    // MEH-1298: removed the legacy `#map-container` scrollIntoView — a
+    // stacked-layout page-scroll that moved the list under the pointer between
+    // the two taps of the MEH-1243 Direction-B select→navigate gesture, so the
+    // second tap landed on a different card. It is a no-op on today's
+    // full-screen /map (no page scroll), but keeping it risks the bug if the
+    // layout ever becomes scrollable. Selection + pin-sync + focusProducer stay.
     setTimeout(() => mapApiRef.current?.focusProducer(producer.id), 250);
   }, [setActiveProducerId, setSelectedProducer]);
 
   // MEH-58 Phase 2: mobile tap marker → sheet HALF + scroll card.
   // Desktop click marker → mini-popup only (handled by MapComponent).
-  const handleMarkerClick = useCallback((producer) => {
+  const handleMarkerClick = useCallback((producer, location = null) => {
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
+    // MEH-1412: remember which location's marker was clicked (null for the
+    // lat/lng fallback marker) so the card can label the point.
+    setSelectedLocation(location);
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
     if (!isDesktop) {
       setSheetSnap(HALF);
     }
-    const el = cardRefs.current.get(producer.id);
+    // MEH-1010: pick the VISIBLE wrapper from the per-id Set (offsetParent is
+    // null inside the display:none shell) — same visible-instance discipline
+    // as registerMapApi above. Prune disconnected nodes while we're here.
+    const nodes = cardRefs.current.get(producer.id);
+    let el = null;
+    if (nodes) {
+      for (const n of nodes) {
+        if (!n.isConnected) { nodes.delete(n); continue; }
+        if (n.offsetParent !== null) el = n;
+      }
+    }
     if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
   }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
+  // setSelectedLocation is a stable setState fn — omitted from deps intentionally.
 
   // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync: map → card
   const handleMarkerHover = useCallback((producerId) => {
@@ -144,22 +174,18 @@ export function useMapSync({
   }, [setHoveredProducerId]);
 
   // docs/archive/MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button.
-  // Also dismisses the onboarding hint immediately: panning means the user
-  // has already engaged with the map so the hint is no longer useful, and
-  // rtl-ok: comment references the existing horizontal-center idiom in MapClient.jsx,
-  // does not introduce any className — the substring below is documentation-only.
-  // both elements share top-4 with the centered class — letting them stack is confusing.
+  // MEH-1193: the first-visit onboarding hint (and its dismiss-on-pan +
+  // session flag) was removed — the map is self-evident (clickable markers +
+  // visible list + drag handle), so handleMapMove now only flips the "search
+  // this area" affordance.
   const handleMapMove = useCallback(() => {
     setMapMoved(true);
-    if (typeof window !== "undefined" && !sessionStorage.getItem("map_tour_shown")) {
-      setShowMapHint(false);
-      sessionStorage.setItem("map_tour_shown", "1");
-    }
-  }, [setMapMoved, setShowMapHint]);
+  }, [setMapMoved]);
 
   const handleMapCanvasClick = useCallback(() => {
     setSelectedProducer(null);
     setActiveProducerId(null);
+    setSelectedLocation(null); // MEH-1412: clear the labelled point with the selection.
   }, [setSelectedProducer, setActiveProducerId]);
 
   // MEH-14 / old bug #14: commit the current viewport AND refetch
@@ -215,7 +241,12 @@ export function useMapSync({
       showToast.info(msg);
       return;
     }
-    const params = { ...chipParams, ...geoValidation.data };
+    // MEH-1282: /map is a MAP — pins need a physical location. The geo
+    // /producers default flipped to include delivery-only producers (for the
+    // home "קרוב אליי" flow), so the map's "חפשי באזור זה" fetch must opt back
+    // into MEH-213's has_physical_location filter, or delivery-only businesses
+    // with stored coords would appear as pins (reopening MEH-213).
+    const params = { ...chipParams, ...geoValidation.data, require_physical: true };
     if (process.env.NODE_ENV !== "production") {
       console.log("[חפשי באזור זה] GET /producers", params);
     }
@@ -240,5 +271,6 @@ export function useMapSync({
     handleMapMove,
     handleMapCanvasClick,
     handleSearchThisArea,
+    selectedLocation,
   };
 }

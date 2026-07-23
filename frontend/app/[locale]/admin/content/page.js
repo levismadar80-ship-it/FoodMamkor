@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
+// MEH-1176 F4: this was the last audited admin page NOT riding the MEH-228
+// double-submit hook — create/update/delete/page-save all lacked an
+// in-flight lock (and create/update/page-save swallowed errors silently).
 import { useAdminAction } from "@/lib/use-admin-action";
 
 export default function AdminContentPage() {
@@ -16,7 +20,6 @@ export default function AdminContentPage() {
       <div className="flex gap-2 flex-wrap">
         {[
           { id: "categories", label: t("content.tabs.categories") },
-          { id: "home_products", label: t("content.tabs.home_products") },
           { id: "about", label: t("content.tabs.about") },
           { id: "terms", label: t("content.tabs.terms") },
         ].map((s) => (
@@ -33,7 +36,6 @@ export default function AdminContentPage() {
       </div>
 
       {section === "categories" && <CategoriesEditor />}
-      {section === "home_products" && <HiddenHomeProducts />}
       {(section === "about" || section === "terms") && <PageEditor slug={section} />}
     </div>
   );
@@ -41,47 +43,76 @@ export default function AdminContentPage() {
 
 function CategoriesEditor() {
   const t = useTranslations("admin");
+  const { run, isBusy } = useAdminAction();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("");
+  // MEH-1023 Chunk B: replaces the native browser confirm with a modal dialog showing
+  // the category name. { id, name } while a delete is pending; null otherwise.
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  // MEH-1176 F4: the ad-hoc `deleting` state became the hook's per-key busy
+  // flag — same UI contract (disabled buttons, Escape gate, dialog stays
+  // open on failure), plus a genuine synchronous double-fire lock.
+  const deleting = confirmDelete ? isBusy(`category-delete-${confirmDelete.id}`) : false;
 
   useEffect(() => { load(); }, []);
   const load = () => api.get("/admin/categories").then((r) => setItems(r.data));
 
-  const create = async (e) => {
+  const create = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await api.post("/admin/categories", { name, emoji });
-    setName("");
-    setEmoji("");
-    load();
+    run("category-create", async () => {
+      await api.post("/admin/categories", { name });
+      setName("");
+      load();
+    });
   };
-  const update = async (id, name, emoji) => {
-    await api.put(`/admin/categories/${id}`, { name, emoji });
-    load();
-  };
-  const remove = async (id) => {
-    if (!confirm(t("content.categories.confirm_delete"))) return;
-    await api.delete(`/admin/categories/${id}`);
-    load();
-  };
+  const update = (id, newName) =>
+    run(`category-save-${id}`, async () => {
+      await api.put(`/admin/categories/${id}`, { name: newName });
+      load();
+    });
+  // Open the confirm dialog; the DELETE call only fires from confirmRemove.
+  // MEH-1034: carry producer_count so the dialog can show the blast radius.
+  const remove = (cat) =>
+    setConfirmDelete({ id: cat.id, name: cat.name, producer_count: cat.producer_count ?? 0 });
+  const confirmRemove = () =>
+    run(
+      `category-delete-${confirmDelete.id}`,
+      async () => {
+        await api.delete(`/admin/categories/${confirmDelete.id}`);
+        load();
+        setConfirmDelete(null); // close only on success
+      },
+      // Keep the dialog open on failure so the admin can retry or cancel.
+      () => showToast.error(t("content.categories.delete_error")),
+    );
+
+  // Escape closes the dialog (unless a delete is mid-flight). Mirrors the
+  // AdminRowMenu (Chunk A) dismissal contract; the users/page.js modal we
+  // otherwise mirror predates it.
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deleting]);
 
   return (
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
-        <input
-          placeholder={t("content.categories.emoji_placeholder")}
-          value={emoji}
-          onChange={(e) => setEmoji(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 w-20 text-center"
-        />
         <input
           placeholder={t("content.categories.name_placeholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
         />
-        <button type="submit" className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+        <button
+          type="submit"
+          disabled={isBusy("category-create")}
+          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
+        >
           {t("content.categories.add")}
         </button>
       </form>
@@ -91,102 +122,98 @@ function CategoriesEditor() {
           <li className="text-sm text-muted text-center py-4">{t("content.categories.empty")}</li>
         ) : (
           items.map((c) => (
-            <CategoryRow key={c.id} cat={c} onSave={update} onDelete={remove} />
+            <CategoryRow
+              key={c.id}
+              cat={c}
+              onSave={update}
+              onDelete={remove}
+              saving={isBusy(`category-save-${c.id}`)}
+            />
           ))
         )}
       </ul>
-    </div>
-  );
-}
 
-function CategoryRow({ cat, onSave, onDelete }) {
-  const t = useTranslations("admin");
-  const [name, setName] = useState(cat.name);
-  const [emoji, setEmoji] = useState(cat.emoji || "");
-  const dirty = name !== cat.name || emoji !== (cat.emoji || "");
-
-  return (
-    <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
-      <input value={emoji} onChange={(e) => setEmoji(e.target.value)} className="border border-border rounded-lg px-2 py-1 w-16 text-center" />
-      <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded-lg px-2 py-1" />
-      <button
-        onClick={() => onSave(cat.id, name, emoji)}
-        disabled={!dirty}
-        className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
-      >
-        {t("content.categories.save")}
-      </button>
-      <button onClick={() => onDelete(cat.id)} className="text-xs text-red-600">{t("content.categories.delete")}</button>
-    </li>
-  );
-}
-
-function HiddenHomeProducts() {
-  const t = useTranslations("admin");
-  const { run, isBusy } = useAdminAction();
-  const [items, setItems] = useState([]);
-  useEffect(() => {
-    api.get("/admin/home-products/hidden").then((r) => setItems(r.data)).catch(() => setItems([]));
-  }, []);
-
-  const restore = (id) =>
-    run(`restore:${id}`, async () => {
-      await api.post(`/admin/home-products/${id}/restore`);
-      setItems(items.filter((i) => i.id !== id));
-    });
-  const remove = (id) => {
-    if (!confirm(t("content.home_products.confirm_delete"))) return;
-    return run(`delete:${id}`, async () => {
-      await api.delete(`/admin/home-products/${id}`);
-      setItems(items.filter((i) => i.id !== id));
-    });
-  };
-
-  return (
-    <div className="bg-white border border-border rounded-[12px] p-5">
-      <h2 className="font-semibold mb-3">{t("content.home_products.heading")}</h2>
-      {items.length === 0 ? (
-        <p className="text-sm text-muted">{t("content.home_products.empty")}</p>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((hp) => (
-            <li key={hp.id} className="flex items-center justify-between border border-border rounded-[12px] p-3">
-              <div>
-                <p className="font-medium">{hp.title}</p>
-                <p className="text-xs text-muted">{hp.seller_name} · {hp.city}</p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => restore(hp.id)} disabled={isBusy(`restore:${hp.id}`)} className="bg-primary text-white px-3 py-1 rounded-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed">{t("content.home_products.restore")}</button>
-                <button onClick={() => remove(hp.id)} disabled={isBusy(`delete:${hp.id}`)} className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed">{t("content.home_products.delete")}</button>
-              </div>
-            </li>
-          ))}
-        </ul>
+      {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-delete-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+          >
+            <p id="category-delete-title" className="font-medium text-base">
+              {t("content.categories.confirm_delete", {
+                name: confirmDelete.name,
+                count: confirmDelete.producer_count,
+              })}
+            </p>
+            <div className="flex gap-3 justify-start">
+              <button
+                disabled={deleting}
+                onClick={confirmRemove}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
+              </button>
+              <button
+                disabled={deleting}
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
+function CategoryRow({ cat, onSave, onDelete, saving }) {
+  const t = useTranslations("admin");
+  const [name, setName] = useState(cat.name);
+  const dirty = name !== cat.name;
+
+  return (
+    <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
+      <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded-lg px-2 py-1" />
+      {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
+      <span className="text-xs text-muted whitespace-nowrap">
+        {t("content.categories.producer_count", { count: cat.producer_count ?? 0 })}
+      </span>
+      <button
+        onClick={() => onSave(cat.id, name)}
+        disabled={!dirty || saving}
+        className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
+      >
+        {t("content.categories.save")}
+      </button>
+      <button onClick={() => onDelete(cat)} className="text-xs text-red-600">{t("content.categories.delete")}</button>
+    </li>
+  );
+}
+
 function PageEditor({ slug }) {
   const t = useTranslations("admin");
+  const { run, isBusy } = useAdminAction();
   const [page, setPage] = useState({ title: "", body: "" });
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // MEH-1176 F4: hook-keyed busy state — the old try/finally had no catch,
+  // so a failed save was silent; run() now surfaces the central error toast.
+  const saving = isBusy(`page-save-${slug}`);
 
   useEffect(() => {
     setSaved(false);
     api.get(`/admin/pages/${slug}`).then((r) => setPage(r.data));
   }, [slug]);
 
-  const save = async () => {
-    setSaving(true);
-    try {
+  const save = () =>
+    run(`page-save-${slug}`, async () => {
       await api.put(`/admin/pages/${slug}`, { title: page.title, body: page.body });
       setSaved(true);
-    } finally {
-      setSaving(false);
-    }
-  };
+    });
 
   return (
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">

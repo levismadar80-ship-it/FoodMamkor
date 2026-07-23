@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import InfoTooltip from "@/components/InfoTooltip";
+import Input from "@/components/ui/Input";
 
 export default function AdminSettingsPage() {
   const t = useTranslations("admin");
@@ -144,46 +145,40 @@ export default function AdminSettingsPage() {
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">{t("settings.sections.notifications")}</h2>
-        <Field label={t("settings.fields.admin_email")}>
-          <input
-            type="email"
-            dir="ltr"
-            value={settings.admin_email || ""}
-            onChange={(event) => update("admin_email", event.target.value)}
-            className="w-full border border-border rounded-[12px] px-3 py-2"
-            placeholder="admin@mehamakor.co.il"
-          />
-        </Field>
-        <Field label={t("settings.fields.admin_whatsapp")}>
-          <input
-            value={settings.admin_whatsapp || ""}
-            onChange={(event) => update("admin_whatsapp", event.target.value)}
-            className="w-full border border-border rounded-[12px] px-3 py-2"
-            placeholder="+972501234567"
-          />
-        </Field>
+        {/* MEH-1128 Wave C: single-line fields via ui/Input; Field stays
+            for the holiday select below. */}
+        <Input
+          type="email"
+          dir="ltr"
+          label={t("settings.fields.admin_email")}
+          value={settings.admin_email || ""}
+          onChange={(event) => update("admin_email", event.target.value)}
+          placeholder="admin@mehamakor.co.il"
+        />
+        <Input
+          label={t("settings.fields.admin_whatsapp")}
+          value={settings.admin_whatsapp || ""}
+          onChange={(event) => update("admin_whatsapp", event.target.value)}
+          placeholder="+972501234567"
+        />
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">{t("settings.sections.freemium")}</h2>
-        <Field label={t("settings.fields.premium_price")}>
-          <input
-            type="number"
-            value={settings.freemium_premium_price || ""}
-            onChange={(event) => update("freemium_premium_price", event.target.value)}
-            className="w-full border border-border rounded-[12px] px-3 py-2"
-            placeholder="49"
-          />
-        </Field>
-        <Field label={t("settings.fields.free_image_limit")}>
-          <input
-            type="number"
-            value={settings.freemium_free_image_limit || ""}
-            onChange={(event) => update("freemium_free_image_limit", event.target.value)}
-            className="w-full border border-border rounded-[12px] px-3 py-2"
-            placeholder="3"
-          />
-        </Field>
+        <Input
+          type="number"
+          label={t("settings.fields.premium_price")}
+          value={settings.freemium_premium_price || ""}
+          onChange={(event) => update("freemium_premium_price", event.target.value)}
+          placeholder="49"
+        />
+        <Input
+          type="number"
+          label={t("settings.fields.free_image_limit")}
+          value={settings.freemium_free_image_limit || ""}
+          onChange={(event) => update("freemium_free_image_limit", event.target.value)}
+          placeholder="3"
+        />
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
@@ -285,19 +280,17 @@ export default function AdminSettingsPage() {
           </button>
         </div>
         {vacation.active && (
-          <Field label={t("settings.sections.vacation_return_label")}>
-            <input
-              type="date"
-              dir="ltr"
-              value={vacation.return_date || ""}
-              onChange={(event) => {
-                setVacationToast(null);
-                setVacationError(null);
-                setVacation({ ...vacation, return_date: event.target.value });
-              }}
-              className="w-full border border-border rounded-[12px] px-3 py-2"
-            />
-          </Field>
+          <Input
+            type="date"
+            dir="ltr"
+            label={t("settings.sections.vacation_return_label")}
+            value={vacation.return_date || ""}
+            onChange={(event) => {
+              setVacationToast(null);
+              setVacationError(null);
+              setVacation({ ...vacation, return_date: event.target.value });
+            }}
+          />
         )}
         <div className="flex items-center gap-3 flex-wrap">
           <button

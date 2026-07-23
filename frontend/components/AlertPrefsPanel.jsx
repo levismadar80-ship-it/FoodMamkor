@@ -5,25 +5,37 @@
  * Allows users to choose which notifications to receive and opt in to push.
  */
 
-import { useEffect, useState, useCallback } from "react";
-import { Bell, BellSlash, Check, Confetti, Handbag, Truck, ChatCircle } from "@phosphor-icons/react";
+import { useEffect, useId, useState } from "react";
+import { Bell, BellSlash, Check, Confetti, CookingPot, Handbag, Truck, ChatCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { useAuth } from "@/lib/auth-context";
+import { validateIsraeliPhone } from "@/lib/validators";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
   notify_new_product: true,
   notify_delivery_area: true,
+  // MEH-1361: 4th alert type — new recipe published by the producer.
+  notify_new_recipe: true,
   whatsapp_opt_in: false,
 };
 
 export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   const t = useTranslations("sweep_tail.alert_prefs");
+  const headingId = useId();
+  const { user, updateProfile } = useAuth();
   const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pushStatus, setPushStatus] = useState("unknown"); // unknown | granted | denied | unsupported
+  // MEH-1191: just-in-time phone collection when opting into WhatsApp alerts.
+  const [showPhoneField, setShowPhoneField] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const hasPhone = !!(user?.phone && user.phone.trim());
+  const phoneValid = validateIsraeliPhone(phoneInput.trim());
 
   useEffect(() => {
     if (!producerId) return;
@@ -35,6 +47,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             notify_new_event: r.data.notify_new_event,
             notify_new_product: r.data.notify_new_product,
             notify_delivery_area: r.data.notify_delivery_area,
+            notify_new_recipe: r.data.notify_new_recipe,
             whatsapp_opt_in: r.data.whatsapp_opt_in,
           });
         } else {
@@ -44,16 +57,36 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       .catch(() => setPrefs({ ...DEFAULT_PREFS }))
       .finally(() => setLoading(false));
 
-    if ("Notification" in window) {
+    // MEH-1326: gate the push button on a server-provided VAPID key. With no
+    // key configured, Web Push can never deliver, so we keep pushStatus at
+    // "unsupported" (button not rendered) rather than showing a dead promise.
+    let alive = true;
+    (async () => {
+      const { getVapidPublicKey } = await import("@/lib/push");
+      const key = await getVapidPublicKey();
+      if (!alive) return;
+      if (!key || !("Notification" in window)) {
+        setPushStatus("unsupported");
+        return;
+      }
       setPushStatus(Notification.permission === "granted" ? "granted" : "prompt");
-    } else {
-      setPushStatus("unsupported");
-    }
+    })();
+    return () => {
+      alive = false;
+    };
   }, [producerId]);
 
-  const toggle = useCallback((key) => {
+  const toggle = (key) => {
+    // MEH-1191: turning WhatsApp ON without a phone → collect it just-in-time
+    // rather than saving an opt-in that fire_alerts can never deliver. The
+    // toggle does NOT flip until a valid phone is saved.
+    if (key === "whatsapp_opt_in" && !prefs.whatsapp_opt_in && !hasPhone) {
+      setPhoneInput("");
+      setShowPhoneField(true);
+      return;
+    }
     setPrefs((p) => ({ ...p, [key]: !p[key] }));
-  }, []);
+  };
 
   const enablePush = async () => {
     const { requestPushPermission, subscribeToPush } = await import("@/lib/push");
@@ -71,20 +104,24 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     }
   };
 
-  const save = async () => {
+  const save = async (override) => {
     if (!prefs) return;
     setSaving(true);
     try {
+      // MEH-1191: `override` lets savePhoneAndEnable persist whatsapp_opt_in=true
+      // in the same interaction without waiting on the async setPrefs to flush.
+      const effective = { ...prefs, ...(override || {}) };
       let push_subscription = prefs._push_subscription || null;
       if (!push_subscription && pushStatus === "granted") {
         const { subscribeToPush } = await import("@/lib/push");
         push_subscription = await subscribeToPush();
       }
       await api.put(`/users/me/favorites/${producerId}/alerts`, {
-        notify_new_event: prefs.notify_new_event,
-        notify_new_product: prefs.notify_new_product,
-        notify_delivery_area: prefs.notify_delivery_area,
-        whatsapp_opt_in: prefs.whatsapp_opt_in,
+        notify_new_event: effective.notify_new_event,
+        notify_new_product: effective.notify_new_product,
+        notify_delivery_area: effective.notify_delivery_area,
+        notify_new_recipe: effective.notify_new_recipe,
+        whatsapp_opt_in: effective.whatsapp_opt_in,
         push_subscription,
       });
       showToast.success(t("save_success_toast"), { icon: <Check size={18} /> });
@@ -94,6 +131,29 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  // MEH-1191: save the just-collected phone (reusing PATCH /users/me from
+  // MEH-1190), flip the toggle ON, and persist the opt-in — one interaction.
+  const savePhoneAndEnable = async () => {
+    if (!phoneValid) return;
+    setPhoneSaving(true);
+    try {
+      await updateProfile({ phone: phoneInput.trim() });
+      setPrefs((p) => ({ ...p, whatsapp_opt_in: true }));
+      setShowPhoneField(false);
+      setPhoneInput("");
+      await save({ whatsapp_opt_in: true });
+    } catch {
+      showToast.error(t("save_error_toast"));
+    } finally {
+      setPhoneSaving(false);
+    }
+  };
+
+  const cancelPhone = () => {
+    setShowPhoneField(false);
+    setPhoneInput("");
   };
 
   if (loading) {
@@ -126,17 +186,32 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   );
 
   return (
-    <div className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm" dir="rtl">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-text text-sm flex items-center gap-1.5">
-          <Bell size={16} weight="fill" className="text-primary" aria-hidden="true" />
-          {t("heading")}
-          <span className="font-normal text-fg-muted">({producerName})</span>
+    <div
+      role="dialog"
+      aria-labelledby={headingId}
+      className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
+      dir="rtl"
+    >
+      <div className="flex items-center justify-between gap-2">
+        {/* MEH-1359: the fixed "הודיעו לי כש…" label (+ bell) stays shrink-0 so it
+            never truncates; only the business name ellipsizes, with a title
+            attribute exposing the full name on hover. */}
+        <h3
+          id={headingId}
+          className="font-semibold text-text text-sm flex items-center gap-1.5 min-w-0"
+        >
+          <Bell size={16} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+          <span className="shrink-0">{t("heading")}</span>
+          <span className="font-normal text-fg-muted truncate min-w-0" title={producerName}>
+            ({producerName})
+          </span>
         </h3>
-        {onClose && (
+        {/* MEH-1359: exactly one dismissal affordance at a time — while the phone
+            sub-field is open its own × is the active one, so hide the header ×. */}
+        {onClose && !showPhoneField && (
           <button
             onClick={onClose}
-            className="text-fg-muted hover:text-text text-lg leading-none"
+            className="text-fg-muted hover:text-text text-lg leading-none shrink-0"
             aria-label={t("close_aria")}
           >
             ×
@@ -144,42 +219,90 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         )}
       </div>
 
-      <div className="divide-y divide-border/40">
-        {toggleRow("notify_new_event", t("row_new_event"), Confetti)}
-        {toggleRow("notify_new_product", t("row_new_product"), Handbag)}
-        {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
-        {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
+      {/* MEH-1407: group A — WHAT to notify about (the alert-type toggles). */}
+      <div>
+        <p className="text-xs font-semibold text-fg-muted mb-1">{t("group_what")}</p>
+        <div className="divide-y divide-border/40">
+          {toggleRow("notify_new_event", t("row_new_event"), Confetti)}
+          {toggleRow("notify_new_product", t("row_new_product"), Handbag)}
+          {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
+          {toggleRow("notify_new_recipe", t("row_new_recipe"), CookingPot)}
+        </div>
       </div>
 
-      {pushStatus !== "unsupported" && pushStatus !== "granted" && (
-        <button
-          onClick={enablePush}
-          disabled={pushStatus === "denied"}
-          className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-[8px] hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
-        >
-          {pushStatus === "denied" ? (
-            <>
-              <BellSlash size={14} aria-hidden="true" />
-              {t("push_blocked")}
-            </>
-          ) : (
-            <>
-              <Bell size={14} aria-hidden="true" />
-              {t("push_enable")}
-            </>
-          )}
-        </button>
-      )}
+      {/* MEH-1407: group B — HOW to receive (channels: WhatsApp opt-in + push). */}
+      <div>
+        <p className="text-xs font-semibold text-fg-muted mb-1">{t("group_how")}</p>
+        <div className="space-y-2">
+          {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
 
-      {pushStatus === "granted" && (
-        <p className="text-xs text-primary flex items-center gap-1">
-          <Bell size={12} weight="fill" aria-hidden="true" />
-          {t("push_active")}
-        </p>
-      )}
+          {showPhoneField && (
+            <div className="rounded-[8px] bg-primary/5 border border-primary/20 p-3 space-y-2">
+              <p className="text-xs text-text">{t("phone_required_prompt")}</p>
+              <input
+                type="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="050-1234567"
+                dir="ltr"
+                aria-label={t("phone_required_prompt")}
+                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+              />
+              {/* MEH-1359: the save button is disabled until the phone is valid — say
+                  why, so the greyed-out state isn't an unexplained dead end. */}
+              {!phoneValid && !phoneSaving && (
+                <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={savePhoneAndEnable}
+                  disabled={!phoneValid || phoneSaving}
+                  className="flex-1 bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+                >
+                  {phoneSaving ? t("saving") : t("phone_save_cta")}
+                </button>
+                <button
+                  onClick={cancelPhone}
+                  className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
+                  aria-label={t("close_aria")}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(pushStatus === "prompt" || pushStatus === "denied") && (
+            <button
+              onClick={enablePush}
+              disabled={pushStatus === "denied"}
+              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-[8px] hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
+            >
+              {pushStatus === "denied" ? (
+                <>
+                  <BellSlash size={14} aria-hidden="true" />
+                  {t("push_blocked")}
+                </>
+              ) : (
+                <>
+                  <Bell size={14} aria-hidden="true" />
+                  {t("push_enable")}
+                </>
+              )}
+            </button>
+          )}
+
+          {pushStatus === "granted" && (
+            <p className="text-xs text-primary flex items-center gap-1">
+              <Bell size={12} weight="fill" aria-hidden="true" />
+              {t("push_active")}
+            </p>
+          )}
+        </div>
+      </div>
 
       <button
-        onClick={save}
+        onClick={() => save()}
         disabled={saving}
         className="w-full bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
       >

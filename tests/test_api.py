@@ -10,7 +10,14 @@ Coverage:
 """
 import pytest
 from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage, User
-from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
+from conftest import (
+    auth_header,
+    make_category,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+    valid_review_payload,
+)
 
 
 # ---------- Auth ----------
@@ -238,16 +245,26 @@ class TestAuth:
 
     # --- Producer registration (MEH-144 regression tests) ---
 
-    VALID_PRODUCER_REG = {
-        "email": "producer@test.com",
-        "name": "שרה ישראלית",
-        "password": "Zx7Yp9Mq2Lr4",
-        "producer_name": "חוות שרה",
-        "phone": "0501234567",
-        "category_ids": [],
-        "primary_contact_method": "whatsapp",
-        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-    }
+    @property
+    def VALID_PRODUCER_REG(self):
+        # MEH-1153: derive from the shared helper (it seeds a real category, now
+        # required by ProducerRegister) rather than a static dict; a property so
+        # the many `{**self.VALID_PRODUCER_REG, ...}` spreads below are unchanged.
+        # Pins the email/name/producer_name this suite's assertions look up.
+        return valid_producer_register_payload() | {
+            "email": "producer@test.com",
+            "name": "שרה ישראלית",
+            "producer_name": "חוות שרה",
+            "phone": "0501234567",
+        }
+
+    def _upgrade_reg(self, **overrides):
+        # Upgrade-path variant: drop the email/name/password the upgrade flow
+        # ignores (it uses the authenticated identity).
+        base = valid_producer_register_payload()
+        for field in ("email", "name", "password"):
+            base.pop(field, None)
+        return {**base, "phone": "0521234567", **overrides}
 
     def test_register_producer_new_email_returns_ack(self, client, db):
         """MEH-328 Chunk B: non-upgrade signup → 200 + generic ack (no
@@ -487,13 +504,7 @@ class TestAuth:
         user = make_user(db, email="consumer@upgrade.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "חוות השדרוג",
-                "phone": "0521234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: mandatory declaration
-            },
+            json=self._upgrade_reg(),
             headers=auth_header(user),
         )
         assert resp.status_code == 200
@@ -516,13 +527,7 @@ class TestAuth:
         db.commit()
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "חוות שנייה",
-                "phone": "0521234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: passes guard → 409
-            },
+            json=self._upgrade_reg(),
             headers=auth_header(user),
         )
         assert resp.status_code == 409
@@ -541,13 +546,7 @@ class TestAuth:
         """Unauthenticated POST without email/name/password → 422."""
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "חוות אנונימית",
-                "phone": "0521234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: isolates account-field 422
-            },
+            json=self._upgrade_reg(),
         )
         assert resp.status_code == 422
 
@@ -619,15 +618,11 @@ class TestRegisterPerEmailRateLimit:
             "app.routers.auth.notify_producer_registered",
             lambda *a, **kw: None,
         )
-        payload = {
+        payload = valid_producer_register_payload() | {
             "email": "rl_victim_producer@test.com",
             "name": "שרה",
-            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות שרה",
             "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         }
         statuses = [
             client.post(
@@ -825,7 +820,11 @@ class TestProducers:
         "phone": "0501234567",
         "instagram": None,
         "website": None,
-        "category_ids": [],
+        # MEH-1153: ProducerCreate now requires ≥1 category. The guard tests
+        # below (401 / 403 / overlong-name-422) never reach the DB insert, so a
+        # non-empty placeholder id keeps them schema-valid (Regression rule 6);
+        # the 201-success test overrides this with a real seeded category id.
+        "category_ids": [1],
         "delivery_areas": [],
     }
 
@@ -848,9 +847,13 @@ class TestProducers:
         """Authenticated user → 201, producer created with status=pending
         (pre-existing behavior, now gated behind auth)."""
         user = make_user(db, email="creator@test.com")
+        # MEH-1153: this path inserts ProducerCategory rows, so the category
+        # must actually exist — override the placeholder id with a real one.
+        cat = make_category(db)
+        payload = {**self.VALID_PRODUCER_PAYLOAD, "category_ids": [cat.id]}
         resp = client.post(
             "/producers",
-            json=self.VALID_PRODUCER_PAYLOAD,
+            json=payload,
             headers=auth_header(user),
         )
         assert resp.status_code == 201
@@ -1004,6 +1007,21 @@ class TestAdminFlows:
         )
         assert resp.status_code == 200
 
+    def test_categories_producer_count(self, client, db):
+        # MEH-1034: GET /admin/categories annotates each row with a
+        # query-time producer_count (0 for empty, N for associated).
+        admin = make_user(db, role="admin")
+        with_producers = make_category(db, name="עם עסקים", emoji="🧀")
+        empty = make_category(db, name="בלי עסקים", emoji="🫙")
+        make_producer(db, name="עסק א", category=with_producers)
+        make_producer(db, name="עסק ב", category=with_producers)
+
+        resp = client.get("/admin/categories", headers=auth_header(admin))
+        assert resp.status_code == 200
+        by_id = {c["id"]: c for c in resp.json()}
+        assert by_id[with_producers.id]["producer_count"] == 2
+        assert by_id[empty.id]["producer_count"] == 0
+
     def test_settings_get_and_update(self, client, db):
         admin = make_user(db, role="admin")
         resp = client.get("/admin/settings", headers=auth_header(admin))
@@ -1060,15 +1078,11 @@ class TestMeh56WhatsAppOnboarding:
         monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
-        resp = client.post("/auth/register/producer", json={
+        resp = client.post("/auth/register/producer", json=valid_producer_register_payload() | {
             "email": "farm56@test.com",
             "name": "Farmer",
-            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות הבדיקה",
             "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         })
         assert resp.status_code == 200
         from app.models.models import Producer
@@ -1114,17 +1128,18 @@ class TestMeh56BioGenerator:
 
         resp = client.post(
             "/producers/me/bio/generate",
-            json={"source": "organic farm in the Galilee"},
+            json={"sells": "organic farm in the Galilee"},
             headers=auth_header(user),
         )
         assert resp.status_code == 200
         assert resp.json()["bio"] == ""
 
     def test_bio_generate_requires_auth(self, client):
-        resp = client.post("/producers/me/bio/generate", json={"source": "test"})
+        resp = client.post("/producers/me/bio/generate", json={"sells": "test"})
         assert resp.status_code == 401
 
-    def test_bio_generate_rejects_empty_source(self, client, db):
+    def test_bio_generate_rejects_missing_sells(self, client, db):
+        # MEH-1173: sells is the one required structured field.
         from conftest import make_user
         p = make_producer(db, name="ביו2")
         user = make_user(db, email="biouser2@test.com", role="producer")
@@ -1132,10 +1147,101 @@ class TestMeh56BioGenerator:
         db.commit()
         resp = client.post(
             "/producers/me/bio/generate",
-            json={"source": ""},
+            json={"area": "הגליל", "special": "מתכון סבתא"},
             headers=auth_header(user),
         )
         assert resp.status_code == 422
+
+    def test_bio_generate_happy_path_returns_bio(self, client, db, monkeypatch):
+        # MEH-1235: lock the success contract at the route level — when the AI
+        # IS available the endpoint returns the generated text (the frontend
+        # then fills the textarea). Pairs with the fail-open empty case above so
+        # the "textarea fills OR visible Hebrew error, never silent" invariant
+        # is covered on both branches. generate_bio is imported inside the
+        # handler, so patch it at its source module.
+        import app.services.bio_generator as bg
+        monkeypatch.setattr(bg, "generate_bio", lambda *a, **k: "ריבות בעבודת יד מהגליל")
+
+        from conftest import make_user
+        p = make_producer(db, name="ביו3")
+        user = make_user(db, email="biouser3@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/bio/generate",
+            json={"sells": "ריבות ביתיות"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["bio"] == "ריבות בעבודת יד מהגליל"
+
+
+class TestMeh1236RequestReview:
+    """POST /producers/me/request-review — resubmit-for-review ping.
+
+    Notification-only (no schema change): pending producer → 200 + admin ping
+    fired; already-decided producer → 409; non-producer → 403; unauth → 401;
+    over the 3/hour limit → 429.
+    """
+
+    def _producer_owner(self, db, status, email):
+        from conftest import make_user
+        p = make_producer(db, name="עסק בהמתנה", status=status)
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = p.id
+        db.commit()
+        return p, user
+
+    def test_pending_producer_fires_admin_ping(self, client, db, monkeypatch):
+        called = {}
+        import app.services.auth_notifications as an
+
+        def _fake(name, city):
+            called["args"] = (name, city)
+
+        monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
+        p, user = self._producer_owner(db, "pending", "resub1@example.com")
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+        # BackgroundTask runs within the TestClient call → the admin ping fired
+        # with the producer's own name + city, fail-open at the service layer.
+        assert called["args"] == (p.name, p.city)
+
+    def test_pending_whatsapp_producer_allowed(self, client, db):
+        _, user = self._producer_owner(db, "pending_whatsapp", "resub2@example.com")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_approved_producer_conflict(self, client, db):
+        # Re-review only makes sense in the pending queue (mirrors
+        # admin.request_producer_changes' 409 guard).
+        _, user = self._producer_owner(db, "approved", "resub3@example.com")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 409
+
+    def test_non_producer_forbidden(self, client, db):
+        from conftest import make_user
+        consumer = make_user(db, email="resubcons@example.com", role="consumer")
+        resp = client.post(
+            "/producers/me/request-review", headers=auth_header(consumer)
+        )
+        assert resp.status_code == 403
+
+    def test_requires_auth(self, client):
+        resp = client.post("/producers/me/request-review")
+        assert resp.status_code == 401
+
+    def test_rate_limited_after_three_per_hour(self, client, db):
+        _, user = self._producer_owner(db, "pending", "resub4@example.com")
+        headers = auth_header(user)
+        statuses = [
+            client.post("/producers/me/request-review", headers=headers).status_code
+            for _ in range(4)
+        ]
+        assert statuses[:3] == [200, 200, 200]
+        assert statuses[3] == 429
 
 
 # ---------- Contact ----------
@@ -1172,7 +1278,8 @@ class TestContact:
         assert row is not None
         assert row.name == "רות כהן"
         assert row.email == "ruth@example.com"
-        assert row.message == "היי, יש לכן אפשרות להוסיף יצרן חדש?"
+        # MEH-1113: no topic → "general" label prepended as the first line.
+        assert row.message == "נושא: שאלה כללית\n\nהיי, יש לכן אפשרות להוסיף יצרן חדש?"
 
     def test_submit_contact_trims_and_lowercases_email(self, client, db):
         resp = client.post(
@@ -1187,7 +1294,8 @@ class TestContact:
         row = db.query(ContactMessage).first()
         assert row.name == "רות כהן"
         assert row.email == "ruth@example.com"
-        assert row.message == "שלום"
+        # MEH-1113: message trimmed, then prefixed with the default topic label.
+        assert row.message == "נושא: שאלה כללית\n\nשלום"
 
     # ----- Validation -----
 
@@ -1226,6 +1334,49 @@ class TestContact:
         resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
+
+    # ----- Topic (MEH-1113 — unified inbound routing, no DB column) -----
+
+    def test_submit_contact_valid_topic_prepends_label_and_subject(
+        self, client, db, monkeypatch
+    ):
+        """A whitelisted topic prepends its Hebrew label to the stored message
+        and tags the email subject."""
+        from app import config
+        from unittest.mock import patch
+
+        monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
+        monkeypatch.setattr(config.settings, "contact_email", "inbox@example.com")
+
+        payload = dict(self.VALID_PAYLOAD)
+        payload["topic"] = "business"
+        with patch("app.routers.marketing.send_email") as mock_send:
+            resp = client.post("/contact", json=payload)
+
+        assert resp.status_code == 200
+        row = db.query(ContactMessage).first()
+        assert row.message.startswith("נושא: פנייה של בית עסק\n\n")
+        assert "להוסיף יצרן חדש" in row.message
+        _to, subject, _body = mock_send.call_args[0]
+        assert subject == "מהמקור — פנייה חדשה (פנייה של בית עסק) מ-רות כהן"
+
+    def test_submit_contact_invalid_topic_returns_422(self, client, db):
+        """An off-whitelist topic is rejected with a Hebrew 422 detail."""
+        payload = dict(self.VALID_PAYLOAD)
+        payload["topic"] = "spam"
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+        assert "נושא הפנייה אינו תקין" in resp.text
+        assert db.query(ContactMessage).count() == 0
+
+    def test_submit_contact_missing_topic_defaults_to_general(self, client, db):
+        """Missing/None topic is treated as the 'general' label."""
+        payload = dict(self.VALID_PAYLOAD)
+        payload.pop("topic", None)
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 200
+        row = db.query(ContactMessage).first()
+        assert row.message.startswith("נושא: שאלה כללית\n\n")
 
     # ----- Email delivery (Resend) -----
 
@@ -1506,6 +1657,46 @@ class TestAvatarUpload:
         assert resp.status_code == 401
 
 
+# ---------- MEH-1190: Profile phone field ----------
+
+class TestProfilePhone:
+    """PATCH /users/me phone — editable, optional, length-bounded (MEH-1190).
+
+    The users.phone column already existed and is read by the WhatsApp alert
+    fan-out (alerts.py); this covers the newly-wired ProfileUpdate.phone.
+    """
+
+    def test_patch_sets_phone(self, client, db):
+        user = make_user(db, email="phone-set@example.com")
+        resp = client.patch(
+            "/users/me",
+            json={"phone": "0501234567"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["phone"] == "0501234567"
+        db.expire_all()
+        assert db.query(User).filter(User.id == user.id).first().phone == "0501234567"
+
+    def test_patch_empty_phone_clears_to_none(self, client, db):
+        user = make_user(db, email="phone-clear@example.com")
+        client.patch("/users/me", json={"phone": "0501234567"}, headers=auth_header(user))
+        resp = client.patch("/users/me", json={"phone": ""}, headers=auth_header(user))
+        assert resp.status_code == 200
+        assert resp.json()["phone"] is None
+        db.expire_all()
+        assert db.query(User).filter(User.id == user.id).first().phone is None
+
+    def test_patch_phone_too_long_returns_422(self, client, db):
+        user = make_user(db, email="phone-long@example.com")
+        resp = client.patch(
+            "/users/me",
+            json={"phone": "0" * 21},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+
 # ---------- MEH-148: Reserved slug protection ----------
 
 class TestReservedSlugs:
@@ -1637,6 +1828,31 @@ class TestReservedSlugs:
         for route in ("about", "map", "login", "admin", "search", "api"):
             assert route in RESERVED_SLUGS
 
+    def test_reserved_slug_set_contains_meh_1324_live_routes(self, client, db):
+        """MEH-1324 §3 (dirs B+C): 13 live routes must be claim-blocked."""
+        from app.slug_utils import RESERVED_SLUGS
+        for route in (
+            "p", "rate", "upgrade", "messages", "discover", "publish",
+            "share", "join", "ref", "verify-email", "accessibility",
+            "dev", "newsletter",
+        ):
+            assert route in RESERVED_SLUGS, f"{route!r} missing from RESERVED_SLUGS"
+
+    def test_admin_create_meh_1324_reserved_slug_variants_rejected(self, client, db):
+        """A producer cannot claim any of the MEH-1324 live-route slugs."""
+        admin = make_user(db, role="admin")
+        for reserved in (
+            "p", "rate", "upgrade", "messages", "discover", "publish",
+            "share", "join", "ref", "verify-email", "accessibility",
+            "dev", "newsletter",
+        ):
+            resp = client.post(
+                "/admin/producers",
+                json={"name": "עסק", "slug": reserved, "city": "חיפה"},
+                headers=auth_header(admin),
+            )
+            assert resp.status_code == 400, f"Expected 400 for slug '{reserved}'"
+
 
 # ---------- MEH-146: double-submit idempotency ----------
 
@@ -1702,8 +1918,12 @@ class TestCloudinaryHebrewErrors:
         )
         assert resp.status_code == 403
         detail = resp.json()["detail"]
-        assert "חינם" in detail or "חינמי" in detail, f"Expected Hebrew, got: {detail}"
+        # MEH-1008: the cap copy dropped "חשבון החינם" (no tier framing while
+        # MEH-617 is undecided) — assert Hebrew via the stable cap phrase instead.
+        assert "עד 3 תמונות" in detail, f"Expected Hebrew cap message, got: {detail}"
         assert "Free plan" not in detail, "English error leaked to user"
+        # MEH-1008: no premium/upgrade promise in the cap error.
+        assert "פרמיום" not in detail and "שדרג" not in detail
 
     def test_oversized_image_returns_hebrew(self, client, db):
         """Files over 5 MB return a Hebrew 400 error."""
@@ -1734,6 +1954,179 @@ class TestCloudinaryHebrewErrors:
         detail = resp.json()["detail"]
         assert "JPG" in detail or "PNG" in detail or "תמונות" in detail
         assert "Upload failed" not in detail
+
+
+# ---------- MEH-1335: owner story fields (owner_bio + owner_photo_url) ----------
+
+class TestOwnerStoryFields:
+    """MEH-1335: owner story data path — owner write, PUBLIC read, dedicated
+    upload endpoint. The fields feed the OwnerCard "מאחורי העסק" variants
+    (dormant in PR #1936 / MEH-1334); absence must change nothing."""
+
+    def _producer_user(self, db, *, plan="free", images=None, email="owner_story@test.com"):
+        user = make_user(db, role="producer", email=email)
+        producer = make_producer(db, images=images)
+        producer.plan = plan
+        user.producer_id = producer.id
+        db.commit()
+        return user, producer
+
+    def test_owner_put_and_public_get_roundtrip(self, client, db):
+        """Owner PUT writes both fields; the PUBLIC detail GET returns them —
+        they are deliberately public, unlike address (MEH-829)."""
+        user, producer = self._producer_user(db)
+        resp = client.put(
+            "/producers/me",
+            json={
+                "owner_bio": "גדלתי בין העיזים.",
+                "owner_photo_url": "https://res.cloudinary.com/test/image/upload/owner/noa.jpg",
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        public = client.get(f"/producers/{producer.id}")
+        assert public.status_code == 200
+        body = public.json()
+        assert body["owner_bio"] == "גדלתי בין העיזים."
+        assert (
+            body["owner_photo_url"]
+            == "https://res.cloudinary.com/test/image/upload/owner/noa.jpg"
+        )
+        # MEH-829 regression guard: the same public payload still must NOT
+        # carry the street address.
+        assert "address" not in body
+
+    def test_absence_changes_nothing(self, client, db):
+        """Fields never set → public GET returns null for both (the dormant
+        OwnerCard contract: NULL = compact variant)."""
+        _, producer = self._producer_user(db, email="owner_absent@test.com")
+        body = client.get(f"/producers/{producer.id}").json()
+        assert body["owner_bio"] is None
+        assert body["owner_photo_url"] is None
+
+    def test_owner_bio_capped_at_300(self, client, db):
+        """Server-side cap: 400 chars in → ≤300 stored (sanitize_text truncation,
+        mirrors the short_description 200-cap pattern)."""
+        user, _ = self._producer_user(db, email="owner_bio_cap@test.com")
+        resp = client.put(
+            "/producers/me", json={"owner_bio": "א" * 400}, headers=auth_header(user)
+        )
+        assert resp.status_code == 200
+        assert len(resp.json()["owner_bio"]) <= 300
+
+    def test_owner_bio_html_stripped(self, client, db):
+        """Bleach strips tags at the input layer (ASVS V13 / MEH-329 pattern)."""
+        user, _ = self._producer_user(db, email="owner_bio_html@test.com")
+        resp = client.put(
+            "/producers/me",
+            json={"owner_bio": "<script>alert(1)</script>שלום"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert "<script>" not in (resp.json()["owner_bio"] or "")
+
+    def test_owner_photo_url_capped_at_500(self, client, db):
+        """Field(max_length=500) on ProducerUpdate → 422 for an over-long URL
+        (parallel to the bio cap test; column is VARCHAR(500))."""
+        user, _ = self._producer_user(db, email="owner_url_cap@test.com")
+        long_url = "https://res.cloudinary.com/test/" + "a" * 500 + ".jpg"
+        resp = client.put(
+            "/producers/me",
+            json={"owner_photo_url": long_url},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_owner_photo_url_rejects_bad_scheme(self, client, db):
+        """Non-http(s) URL → 422 (MEH-1222 image-URL guard)."""
+        user, _ = self._producer_user(db, email="owner_url_bad@test.com")
+        resp = client.put(
+            "/producers/me",
+            json={"owner_photo_url": "javascript:alert(1)"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_free_plan_full_gallery_can_upload_owner_photo(self, client, db):
+        """THE justification for /upload/owner-photo: the 3-image gallery cap
+        blocks /upload/image but must NOT block the owner photo."""
+        import io
+
+        user, producer = self._producer_user(
+            db,
+            plan="free",
+            images=[
+                "https://res.cloudinary.com/test/img/0.jpg",
+                "https://res.cloudinary.com/test/img/1.jpg",
+                "https://res.cloudinary.com/test/img/2.jpg",
+            ],
+            email="owner_upload_cap@test.com",
+        )
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        # Control: the gallery endpoint IS capped for this exact user…
+        blocked = client.post(
+            "/upload/image",
+            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert blocked.status_code == 403
+        # …but the owner-photo endpoint is not (no freemium gate).
+        resp = client.post(
+            "/upload/owner-photo",
+            files={"file": ("me.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        url = resp.json()["url"]
+        assert url
+        db.refresh(producer)
+        assert producer.owner_photo_url == url
+
+    def test_owner_photo_upload_requires_auth(self, client):
+        """POST /upload/owner-photo without JWT → 401 (schema-valid file body)."""
+        import io
+
+        resp = client.post(
+            "/upload/owner-photo",
+            files={
+                "file": (
+                    "me.jpg",
+                    io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100),
+                    "image/jpeg",
+                )
+            },
+        )
+        assert resp.status_code == 401
+
+    def test_owner_photo_upload_without_producer_403(self, client, db):
+        """A logged-in user with no producer attached cannot upload."""
+        import io
+
+        user = make_user(db, email="owner_no_producer@test.com")
+        resp = client.post(
+            "/upload/owner-photo",
+            files={
+                "file": (
+                    "me.jpg",
+                    io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100),
+                    "image/jpeg",
+                )
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 403
+
+    def test_owner_photo_rejects_non_image(self, client, db):
+        """Magic-byte sniff applies to the new endpoint too."""
+        import io
+
+        user, _ = self._producer_user(db, email="owner_bad_file@test.com")
+        resp = client.post(
+            "/upload/owner-photo",
+            files={"file": ("doc.pdf", io.BytesIO(b"%PDF-1.4 nope"), "application/pdf")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
 
 
 # ---------- MEH-155: Vacation badge auto-clear after return_date ----------
@@ -2374,9 +2767,6 @@ class TestGetProducersMeRouteOrder:
         # make_producer fixture is bypassed because its signature
         # (conftest.py:151-159) forces description="Test producer" + non-null
         # lat/lng, which would mask the NULL-field shape this test guards.
-        # is_verified is left at the SQLAlchemy column default (False) rather
-        # than the fixture's True, matching the register-flow handler which
-        # does not set the column.
         from app.models.models import Producer
         producer = Producer(
             name="חוות מה-321",
@@ -2969,16 +3359,12 @@ class TestSanitizationIntegration:
 
     def test_producer_description_sanitized(self, client, db):
         from app.models.models import Producer
-        payload = {
+        payload = valid_producer_register_payload() | {
             "email": "xss-producer@test.com",
             "name": "ניסוי",
-            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות הסקריפט",
             "description": "<script>alert(1)</script>טקסט נקי",
             "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         }
         resp = client.post("/auth/register/producer", json=payload)
         assert resp.status_code == 200, resp.text
@@ -2988,6 +3374,7 @@ class TestSanitizationIntegration:
         assert "</script>" not in (row.description or "")
         assert "טקסט נקי" in (row.description or "")
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_home_product_description_sanitized(self, client, db, monkeypatch):
         from app.models.models import HomeProduct
         # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
@@ -3334,6 +3721,40 @@ class TestAppleTokenVerification:
 # MEH-386: BOLA regression tests
 # ---------------------------------------------------------------------------
 
+class TestHomeProductsKillSwitch:
+    """MEH-1406: the home-products feature is unmounted (router not included,
+    admin endpoints removed). These POSITIVE assertions prove the public +
+    admin surfaces 404 — they encode the ticket's core acceptance criterion
+    ("all /home-products* endpoints return 404") as a runnable guard, and will
+    fail loudly if the router is ever re-mounted WITHOUT also un-skipping the
+    BOLA / sanitization tests below (silent-guard-loss guard).
+    """
+
+    def test_public_home_products_list_is_404(self, client):
+        assert client.get("/home-products").status_code == 404
+
+    def test_public_home_product_create_is_404(self, client, db):
+        # A verified-email user previously could POST here (the write hole
+        # MEH-1406 closed). The route no longer exists → 404 regardless of auth.
+        user = make_user(db, email="killswitch@example.com")
+        resp = client.post(
+            "/home-products",
+            json={"title": "עוגה", "description": "טעימה", "price": "25"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 404
+
+    def test_admin_home_products_flagged_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin@example.com", role="admin")
+        resp = client.get("/admin/home-products/flagged", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+    def test_admin_home_products_hidden_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin2@example.com", role="admin")
+        resp = client.get("/admin/home-products/hidden", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+
 class TestBOLA:
     """Regression suite for MEH-386 — Broken Object Level Authorization.
 
@@ -3342,6 +3763,7 @@ class TestBOLA:
       2. POST /category-requests accepted spoofed producer_id from anonymous callers.
     """
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
         from app.models.models import HomeProduct
@@ -3367,6 +3789,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}")
         assert resp.status_code == 404
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
         """Owner of a hidden listing can still view it."""
         from app.models.models import HomeProduct
@@ -3391,6 +3814,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
         assert resp.status_code == 200
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A deactivated listing (is_active=False) must 404 for anonymous callers."""
         monkeypatch.setattr(
@@ -3480,3 +3904,159 @@ class TestPublicStats:
         resp = client.get("/stats")
         body = resp.json()
         assert body["producers_count"] == 0
+
+
+class TestMeh1167KashrutCard:
+    """MEH-1167 — kashrut-request card backend: GET own requests + cert upload.
+
+    The POST /producers/me/kashrut-request already existed (MEH-51); this
+    ticket adds the read endpoint (dashboard status zone) + the dedicated
+    cert-upload endpoint (no freemium gate). Own-list is producer-isolated;
+    upload mirrors /upload/owner-photo's sniff + cap.
+    """
+
+    def _producer_owner(self, db, *, email, plan="free", images=None):
+        from conftest import make_user
+
+        producer = make_producer(db, images=images)
+        producer.plan = plan
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = producer.id
+        db.commit()
+        return user, producer
+
+    def _seed_request(self, db, producer, badge_code, status="pending"):
+        from app.models.models import KashrutBadgeRequest
+
+        req = KashrutBadgeRequest(
+            producer_id=producer.id, badge_code=badge_code, status=status
+        )
+        db.add(req)
+        db.commit()
+        return req
+
+    # ---- GET /producers/me/kashrut-requests ----
+
+    def test_own_requests_happy_newest_first(self, client, db):
+        user, producer = self._producer_owner(db, email="kr_happy@test.com")
+        self._seed_request(db, producer, "rabanut")
+        self._seed_request(db, producer, "badatz", status="rejected")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(user)
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 2
+        # newest first — badatz was inserted last.
+        assert body[0]["badge_code"] == "badatz"
+        assert {r["badge_code"] for r in body} == {"rabanut", "badatz"}
+
+    def test_own_requests_empty(self, client, db):
+        user, _ = self._producer_owner(db, email="kr_empty@test.com")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(user)
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_own_requests_producer_isolation(self, client, db):
+        """A producer sees only her OWN requests, never another producer's."""
+        mine, _ = self._producer_owner(db, email="kr_mine@test.com")
+        _, other_producer = self._producer_owner(db, email="kr_other@test.com")
+        self._seed_request(db, other_producer, "mehadrin")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(mine)
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_own_requests_non_producer_forbidden(self, client, db):
+        from conftest import make_user
+
+        consumer = make_user(db, email="kr_cons@test.com", role="consumer")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(consumer)
+        )
+        assert resp.status_code == 403
+
+    def test_own_requests_requires_auth(self, client):
+        assert client.get("/producers/me/kashrut-requests").status_code == 401
+
+    # ---- POST /upload/kashrut-cert ----
+
+    def test_cert_upload_happy(self, client, db):
+        import io
+
+        user, _ = self._producer_owner(db, email="cert_happy@test.com")
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("cert.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["url"]
+
+    def test_cert_upload_no_freemium_gate_full_gallery(self, client, db):
+        """A free-plan producer with a full 3-image gallery (blocked on
+        /upload/image) can still upload a cert — the whole reason this
+        endpoint exists, mirroring /upload/owner-photo."""
+        import io
+
+        user, _ = self._producer_owner(
+            db,
+            email="cert_cap@test.com",
+            images=[
+                "https://res.cloudinary.com/test/img/0.jpg",
+                "https://res.cloudinary.com/test/img/1.jpg",
+                "https://res.cloudinary.com/test/img/2.jpg",
+            ],
+        )
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        blocked = client.post(
+            "/upload/image",
+            files={"file": ("g.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert blocked.status_code == 403
+        ok = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("cert.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert ok.status_code == 200
+
+    def test_cert_upload_oversized(self, client, db):
+        import io
+
+        user, _ = self._producer_owner(db, email="cert_big@test.com")
+        big = b"\xff\xd8\xff" + b"\x00" * (5 * 1024 * 1024 + 1)
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("big.jpg", io.BytesIO(big), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+
+    def test_cert_upload_non_image(self, client, db):
+        import io
+
+        user, _ = self._producer_owner(db, email="cert_pdf@test.com")
+        fake_pdf = b"%PDF-1.4" + b"\x00" * 100
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("doc.pdf", io.BytesIO(fake_pdf), "application/pdf")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+
+    def test_cert_upload_requires_auth(self, client):
+        import io
+
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={
+                "file": ("c.jpg", io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100), "image/jpeg")
+            },
+        )
+        assert resp.status_code == 401

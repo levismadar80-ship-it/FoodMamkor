@@ -9,16 +9,13 @@ import ProducerCard from "@/components/ProducerCard";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values = {}) => {
     const flat = {
-      "producer.card.contact.phone": "טלפון",
-      "producer.card.contact.website": "אתר",
-      "producer.card.contact.email": "אימייל",
       "producer.card.favorites.saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
       "producer.card.favorites.login_cta": "התחברי",
       "error.generic": "משהו השתבש, נסו שוב",
       "producer.card.favorites.remove": "הסר ממועדפים",
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",
-      "producer.card.badges.delivery_only": "🚚 משלוחים בלבד",
+      "producer.card.badges.delivery_only": "משלוחים בלבד",
       "producer.card.badges.available_today": "🛒 מגיעה היום",
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
       verified_label: "מאומת",
@@ -29,13 +26,15 @@ vi.mock("next-intl", () => ({
     };
     if (flat[key]) return flat[key];
     if (key === "producer.card.aria.image_missing") return `${values.name} — תמונה חסרה`;
-    if (key === "producer.card.aria.primary_contact") return `ערוץ קשר עיקרי: ${values.method}`;
     if (key === "producer.card.favorites_count_short") {
       // Match the HE plural rendering for `{count} שמרו` (one/two/other).
       return `${values.count} שמרו`;
     }
     return key;
   },
+  // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
+  // ('ק"מ' on the Hebrew card). ExperienceCard.test.jsx precedent.
+  useLocale: () => "he",
 }));
 
 vi.mock("next/link", () => ({
@@ -47,10 +46,12 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt }) => <img src={src} alt={alt} />,
+  // MEH-1211: forward onError so the load-failure fallback can be exercised.
+  default: ({ src, alt, onError }) => <img src={src} alt={alt} onError={onError} />,
 }));
 
-vi.mock("@/lib/cloudinary", () => ({
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (url) => url || null,
 }));
 
@@ -106,6 +107,12 @@ vi.mock("@/lib/favorites-cache", () => ({
   subscribeFavorites: () => () => {},
 }));
 
+// MEH-1334: BadgeRow (a real child) now imports the locale-aware Link for its
+// hero popover — mock the wrapper so the import chain stays jsdom-safe.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+
 // Phosphor icons — render as identifiable spans
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: (props) => <span data-testid="leaf-icon" {...props} />,
@@ -121,6 +128,8 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-76 chunk 4 — S12 tier badge glyphs rendered by BadgeRow.
   SealCheck: (props) => <span data-testid="icon-seal" {...props} />,
   Note: (props) => <span data-testid="icon-note" {...props} />,
+  // MEH-1459: Truck glyph in the "משלוחים בלבד" card badge (replaces 🚚).
+  Truck: (props) => <span data-testid="icon-truck" {...props} />,
 }));
 
 const fullProducer = {
@@ -187,6 +196,19 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.getByText("מהמקור")).toBeInTheDocument();
   });
 
+  // MEH-1211: a present-but-dead image URL must fall back to the canonical
+  // no-photo placeholder instead of the browser broken-glyph + alt overflow.
+  it("renders fallback when the image errors (present-but-dead URL)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    // Image is present at first paint — no placeholder wordmark yet.
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
+    const img = screen.getByAltText("חוות השקמה");
+    fireEvent.error(img);
+    // After the load failure the canonical placeholder (leaf + wordmark) shows.
+    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    expect(screen.queryByAltText("חוות השקמה")).not.toBeInTheDocument();
+  });
+
   it("never renders the premium image overlay", () => {
     render(<ProducerCard producer={fullProducer} />);
     expect(screen.queryByText("פרמיום")).not.toBeInTheDocument();
@@ -209,30 +231,35 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByText(/גלי עוד/)).not.toBeInTheDocument();
   });
 
-  it("renders a single primary-method hint icon on the footer end", () => {
+  // MEH-1142: the decorative primary-contact-method hint was removed from the
+  // card footer (it read as a broken button; live contact CTAs live on
+  // /producer). The footer now renders price only.
+  it("never renders the decorative primary-method hint", () => {
     render(<ProducerCard producer={fullProducer} />);
-    const hint = screen.getByTestId("primary-method-hint");
-    expect(hint).toHaveAttribute("data-method", "whatsapp");
-    expect(hint.querySelector('[data-testid="icon-whatsapp"]')).toBeTruthy();
+    expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
-  it("switches the primary-method icon when the method changes", () => {
+  it("keeps the hint absent regardless of primary_contact_method", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, primary_contact_method: "phone" }} />,
     );
-    const hint = screen.getByTestId("primary-method-hint");
-    expect(hint).toHaveAttribute("data-method", "phone");
-    expect(hint.querySelector('[data-testid="icon-phone"]')).toBeTruthy();
+    expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
-  it("truncates the price label (narrow max-width)", () => {
+  // MEH-1210: price removed from discovery cards ("מגזין, לא marketplace").
+  // Prices stay at product level inside /producer — never on the card.
+  it("does NOT render the price label on the card", () => {
     render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price.className).toMatch(/max-w-/);
+    expect(screen.queryByText("₪40-80")).not.toBeInTheDocument();
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
-  it("hides price when both price_range and starting_price_label are null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
+  it("renders no price even when both price fields are set", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, price_range: "₪40-80", starting_price_label: "מ-₪25" }}
+      />,
+    );
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
@@ -242,7 +269,8 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(rating).toHaveAttribute("dir", "ltr");
     // MEH-990: leading ★ glyph is now a Phosphor Star icon (no text node).
     expect(rating.querySelector('[data-testid="icon-star"]')).toBeInTheDocument();
-    expect(rating.textContent.replace(/\s+/g, " ").trim()).toBe("4.5 · 12");
+    // MEH-1243 (🔒 §7): unified Google format ★ X.X (N).
+    expect(rating.textContent.replace(/\s+/g, " ").trim()).toBe("4.5 (12)");
   });
 
   it("hides rating entirely when reviews_count < 3", () => {
@@ -313,8 +341,12 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ ממך$/);
-    expect(distance).toHaveAttribute("dir", "ltr");
+    // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
+    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).not.toContain("ממך");
+    expect(distance.textContent).not.toContain("km");
+    // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
+    expect(distance).not.toHaveAttribute("dir");
   });
 
   it("prefers short_description over top_product_name", () => {
@@ -368,14 +400,15 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
 
-  it("promotes organic/grass_fed/kosher into the unified pill row", () => {
+  it("promotes grass_fed into the unified pill row; organic never shows (MEH-1259)", () => {
     render(
       <ProducerCard
         producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
       />,
     );
-    expect(screen.getByRole("button", { name: /אורגני/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /גראס פד/ })).toBeInTheDocument();
+    // MEH-1259: organic_certified is set but the public organic badge is gone.
+    expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
 
   it("uses slug for href when available", () => {
@@ -403,9 +436,36 @@ describe("ProducerCard — Phase B anatomy", () => {
   it("calls onClick when the card body is tapped outside interactive children", () => {
     const onClick = vi.fn();
     render(<ProducerCard producer={fullProducer} onClick={onClick} active={false} />);
-    const desc = screen.getByTestId("card-description");
-    desc.click();
+    // MEH-1028: tap the location line — a non-interactive body element that stays
+    // visible on mobile (the description is now `hidden sm:block`, so it's not a
+    // representative mobile tap target).
+    const body = screen.getByTestId("location-line");
+    body.click();
     expect(onClick).toHaveBeenCalledWith(fullProducer);
+  });
+
+  // MEH-1459: the delivery-only badge renders the Phosphor Truck glyph
+  // (MEH-1418 set) instead of the 🚚 emoji; the label carries no emoji.
+  it("renders the Truck glyph (no 🚚 emoji) on the delivery-only badge", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, has_physical_location: false, offers_delivery: true }}
+      />,
+    );
+    const label = screen.getByText("משלוחים בלבד");
+    expect(label).toBeInTheDocument();
+    const badge = label.closest("span");
+    expect(badge.querySelector('[data-testid="icon-truck"]')).toBeInTheDocument();
+    expect(badge.textContent).not.toMatch(/🚚/);
+  });
+
+  it("does not render the delivery-only badge for a physical producer", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, has_physical_location: true, offers_delivery: true }}
+      />,
+    );
+    expect(screen.queryByText("משלוחים בלבד")).not.toBeInTheDocument();
   });
 
   it("applies active ring classes when active=true", () => {
@@ -498,5 +558,36 @@ describe("ProducerCard — heart (Phase C)", () => {
     render(<ProducerCard producer={fullProducer} onClick={onClick} />);
     fireEvent.click(screen.getByTestId("card-heart"));
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-991 (CARD-09): v4 LOCK — a third+ badge collapses to a "+N" overflow chip.
+describe("ProducerCard — badge overflow chip (MEH-991)", () => {
+  it("renders +N when the producer earns more than 2 badges", () => {
+    // MEH-1259: organic no longer earns a badge — swapped for kosher
+    // (kashrut_verified_at) so the fixture still earns 4 badges → "+2".
+    render(
+      <ProducerCard
+        producer={{
+          ...minimalProducer,
+          kashrut_verified_at: "2026-01-01T00:00:00Z",
+          grass_fed: true,
+          has_gluten_free_products: true,
+          has_delivery: true,
+        }}
+      />,
+    );
+    const chip = screen.getByTestId("badge-overflow");
+    expect(chip).toHaveTextContent("+2");
+    expect(chip).toHaveAttribute("dir", "ltr");
+  });
+
+  it("renders no overflow chip at 2 badges or fewer", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
+      />,
+    );
+    expect(screen.queryByTestId("badge-overflow")).not.toBeInTheDocument();
   });
 });

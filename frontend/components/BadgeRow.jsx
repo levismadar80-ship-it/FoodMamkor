@@ -2,7 +2,8 @@
 
 import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
-import { Note, SealCheck } from "@phosphor-icons/react";
+import { CaretLeft, SealCheck } from "@phosphor-icons/react";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges } from "@/lib/badges";
 import Popover from "@/components/ui/Popover";
 
@@ -17,11 +18,14 @@ import Popover from "@/components/ui/Popover";
  *   verified + cosmetics → gold seal chip, NO tooltip (key not yet locked —
  *                          MEH-758 micro; flip to verified_tooltip_registration
  *                          once Sapir locks it)
- *   declared             → calm chip + declared_explainer (hero surface only)
+ *   declared             → NO chip on any surface (MEH-1170: the S12 "מוצהר"
+ *                          chip contradicted ADR-022 "tier 2 = no badge"; the
+ *                          declared_explainer moved to ProducerHeader as quiet
+ *                          visible copy — ADR-022 gate 1 "affirmatively explained")
  *   null                 → no badge, no negative tag (ADR-022 gate 1)
  *
  * `surface` (S12 §04): "hero" (default — full chip with the word) or "card"
- * (icon-only seal; declared renders NOTHING on cards — no placeholder).
+ * (icon-only seal). Declared renders nothing on either surface.
  * {date} renders d.m.yyyy LTR-isolated (LRI/PDI) inside the RTL strings.
  *
  * Props:
@@ -33,12 +37,17 @@ import Popover from "@/components/ui/Popover";
  * Hebrew explainer. Outside click + Esc closes. Works on mobile
  * without requiring hover.
  */
-export default function BadgeRow({ producer, limit, surface = "hero" }) {
+export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
-  const badges = limit != null ? topBadges(producer, limit) : allBadges(producer);
-  const showDeclared = producer?.verification_tier === "declared" && surface === "hero";
-  if (badges.length === 0 && !showDeclared) return null;
+  const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
+  // MEH-1124 (MEH-1074 Task C): optional per-surface suppression. The producer
+  // detail header passes hideKeys={["products", "delivery"]} — the products
+  // badge is meaningless next to the page's own products section, and delivery
+  // is rendered once in the header's capability strip instead. Card surfaces
+  // omit the prop, so their badge set is byte-unchanged (lib/badges.js is SoT).
+  const badges = hideKeys?.length ? all.filter((b) => !hideKeys.includes(b.key)) : all;
+  if (badges.length === 0) return null;
 
   return (
     <div
@@ -53,7 +62,6 @@ export default function BadgeRow({ producer, limit, surface = "hero" }) {
           <Badge key={b.key} badge={b} />
         ),
       )}
-      {showDeclared && <DeclaredTierBadge t={tTier} />}
     </div>
   );
 }
@@ -133,6 +141,45 @@ function VerifiedTierBadge({ producer, surface, t }) {
     </button>
   );
 
+  // MEH-1334: the hero seal gets the richer verification popover — the manual
+  // approval + licensing story (DNA-LOCK differentiator) was invisible behind
+  // a date-only tooltip. Content = the LOCKED v3 copy exactly: title + body +
+  // link to /about#verification (placeholder target until MEH-1336 ships the
+  // section). The pre-existing MEH-762 doc-date line is intentionally dropped
+  // here — the locked copy is dateless (chunk-2 CLARIFY c). The verified SEAL
+  // itself only renders for verification_tier === "verified" (badges.js:140),
+  // so this popover can never make a false trust claim on a non-verified
+  // producer (CLARIFY a/b). Cards keep the compact date tooltip (surface
+  // unchanged) via the non-hero branch below.
+  if (surface === "hero") {
+    return (
+      <span role="listitem" className="inline-block">
+        <Popover
+          trigger={chip}
+          role="dialog"
+          sheetOnMobile
+          contentTestId="badge-tooltip-verified"
+          contentClassName="w-64 flex flex-col gap-1.5"
+          sheetContentClassName="flex flex-col gap-2"
+        >
+          <span className="flex items-center gap-1.5 font-bold text-sm text-text">
+            <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
+            {t("verified_popover_title")}
+          </span>
+          <span className="block text-[13px] leading-relaxed">{t("verified_popover_body")}</span>
+          <LocaleLink
+            href="/about#verification"
+            className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
+          >
+            {t("verified_popover_link")}
+            {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
+            <CaretLeft size={13} aria-hidden="true" />
+          </LocaleLink>
+        </Popover>
+      </span>
+    );
+  }
+
   return (
     <span role="listitem" className="inline-block">
       {tooltip ? (
@@ -151,38 +198,6 @@ function VerifiedTierBadge({ producer, surface, t }) {
           })}
         </span>
       )}
-    </span>
-  );
-}
-
-/**
- * S12 state 3 — declared. A calm affirmative chip (never a negative marker),
- * hero surface only; cards and map show nothing for declared businesses.
- */
-function DeclaredTierBadge({ t }) {
-  return (
-    <span role="listitem" className="inline-block">
-      <Popover
-        contentTestId="badge-tooltip-declared"
-        contentClassName="w-60"
-        trigger={
-          // MEH-813: outer button = ≥24×24 hit-area (WCAG 2.5.8 AA); visible
-          // pill in inner span keeps byte-identical bg/border/padding.
-          <button
-            type="button"
-            aria-label={t("aria_declared")}
-            data-badge="declared"
-            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
-          >
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-card text-primary-dark text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition">
-              <Note size={14} aria-hidden="true" />
-              {t("declared_label")}
-            </span>
-          </button>
-        }
-      >
-        {t("declared_explainer")}
-      </Popover>
     </span>
   );
 }

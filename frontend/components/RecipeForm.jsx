@@ -22,13 +22,17 @@
  *   producer can edit and retry.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { Leaf } from "@phosphor-icons/react";
+import Input from "@/components/ui/Input";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 
+// MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
+// for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
   "w-full border border-border rounded-[10px] px-3 py-2 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
 
@@ -54,12 +58,19 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).
   const tError = useTranslations("error");
+  // MEH-1096: per-instance id prefix so label↔control ids never collide if two
+  // RecipeForms ever mount on one page (modal + inline, etc.).
+  const uid = useId();
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
+  // Create-only concern (the edit PATCH is not verified-gated), but the flag is
+  // harmless in edit mode since that path never sets it.
+  const [unverified, setUnverified] = useState(false);
 
   // Producer's own products for the multi-select picker.
   useEffect(() => {
@@ -112,6 +123,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setUnverified(false);
     setSubmitting(true);
     try {
       const payload = {
@@ -136,7 +148,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       onSaved?.(res.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      if (detail?.error === "recipe_rejected") {
+      if (isUnverifiedEmailError(err)) {
+        setUnverified(true);
+      } else if (detail?.error === "recipe_rejected") {
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
         setError(detail);
@@ -157,24 +171,21 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          {t("title_label")} <span className="text-red-500">*</span>
-        </label>
-        <input
-          required
-          minLength={3}
-          maxLength={200}
-          value={form.title}
-          onChange={set("title")}
-          className={baseInput}
-          dir="rtl"
-        />
-      </div>
+      <Input
+        id={`${uid}recipe-title`}
+        label={<>{t("title_label")} <span className="text-red-500">*</span></>}
+        required
+        minLength={3}
+        maxLength={200}
+        value={form.title}
+        onChange={set("title")}
+        dir="rtl"
+      />
 
       <div>
-        <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
+        <label htmlFor={`${uid}recipe-description`} className="block text-sm font-medium mb-1">{t("description_label")}</label>
         <textarea
+          id={`${uid}recipe-description`}
           rows={2}
           value={form.description}
           onChange={set("description")}
@@ -184,10 +195,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-ingredients`} className="block text-sm font-medium mb-1">
           {t("ingredients_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
+          id={`${uid}recipe-ingredients`}
           required
           minLength={10}
           rows={6}
@@ -200,10 +212,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-instructions`} className="block text-sm font-medium mb-1">
           {t("instructions_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
+          id={`${uid}recipe-instructions`}
           required
           minLength={10}
           rows={8}
@@ -216,46 +229,48 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
-          <input
-            type="number"
-            min={0}
-            max={1440}
-            value={form.prep_time_min}
-            onChange={set("prep_time_min")}
-            className={baseInput}
-            dir="ltr"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
-          <input
-            type="number"
-            min={0}
-            max={1440}
-            value={form.cook_time_min}
-            onChange={set("cook_time_min")}
-            className={baseInput}
-            dir="ltr"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("servings_label")}</label>
-          <input
-            type="number"
-            min={1}
-            max={100}
-            value={form.servings}
-            onChange={set("servings")}
-            className={baseInput}
-            dir="ltr"
-          />
-        </div>
+        {/* text-end keeps the digit alignment of the old baseInput inside
+            these dir="ltr" fields (end resolves to the same side in LTR). */}
+        <Input
+          id={`${uid}recipe-prep-time`}
+          label={t("prep_time_label")}
+          type="number"
+          min={0}
+          max={1440}
+          value={form.prep_time_min}
+          onChange={set("prep_time_min")}
+          className="text-end"
+          dir="ltr"
+        />
+        <Input
+          id={`${uid}recipe-cook-time`}
+          label={t("cook_time_label")}
+          type="number"
+          min={0}
+          max={1440}
+          value={form.cook_time_min}
+          onChange={set("cook_time_min")}
+          className="text-end"
+          dir="ltr"
+        />
+        <Input
+          id={`${uid}recipe-servings`}
+          label={t("servings_label")}
+          type="number"
+          min={1}
+          max={100}
+          value={form.servings}
+          onChange={set("servings")}
+          className="text-end"
+          dir="ltr"
+        />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">{t("image_label")}</label>
+        {/* MEH-1096: group heading, not a control label — the file input below
+            is labelled by its own wrapping <label>, so this stays a <span> to
+            avoid an orphan-label / multiple-labels a11y violation. */}
+        <span className="block text-sm font-medium mb-1">{t("image_label")}</span>
         {form.image_url ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -287,12 +302,15 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        {/* MEH-1096: group heading for the checkbox list — each checkbox is
+            labelled by its own wrapping <label>, so this is a <span>, not an
+            orphan control label. */}
+        <span className="block text-sm font-medium mb-1">
           {t("related_products_label")}
           <span className="ms-2 text-xs text-fg-muted">
             {t("related_products_hint")}
           </span>
-        </label>
+        </span>
         {productsLoading ? (
           <p className="text-sm text-fg-muted">{t("products_loading")}</p>
         ) : products.length === 0 ? (
@@ -318,8 +336,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         )}
       </div>
 
+      {unverified && <UnverifiedEmailNotice />}
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-error" role="alert">
           {error}
         </p>
       )}

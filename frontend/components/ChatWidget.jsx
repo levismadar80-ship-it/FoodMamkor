@@ -5,16 +5,24 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 /**
- * ChatWidget — floating Q&A bot, all screen sizes.
+ * ChatWidget — floating Q&A bot, DESKTOP ONLY (≥768px).
+ *
+ * MEH-1410: the widget is gated on the `isDesktop` matchMedia state and
+ * returns null on mobile (< 768px) — the render never reaches the launcher
+ * there. The mobile-launcher positioning below (MOBILE_LAUNCHER_BOTTOM + the
+ * `isDesktop ? … : …` mobile branches) is kept but intentionally unreachable;
+ * see MEH-1410. Desktop behavior is unchanged.
  *
  * Launcher:
- *   Mobile: icon-only circle, pinned to the end/inline edge. MEH-850: bottom =
- *     safe-area + pill-clearance + var(--cookie-banner-h, 0) via calc() — it
- *     self-clears the cookie banner when shown and sits just above the BottomNav
- *     pill when dismissed. z-9999.
+ *   Mobile (disabled — MEH-1410, never renders): icon-only circle, pinned to
+ *     the end/inline edge. MEH-850: bottom = safe-area + pill-clearance +
+ *     var(--cookie-banner-h, 0) via calc() — it self-clears the cookie banner
+ *     when shown and sits just above the BottomNav pill when dismissed. z-9999.
  *   Desktop: pill with text on first visit, icon-only after user has opened
  *     once (chatWasOpened in localStorage). Inline style — 24px bottom, 24px
- *     inline-end. (rtl-ok: comment-only)
+ *     inline-end. MEH-1135: positioned with logical `insetInlineEnd` (was
+ *     physical `right`) so the FAB owns the bottom-END corner in every locale
+ *     (RTL → physical left, LTR → physical right).
  *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
  * Panel:
@@ -63,15 +71,15 @@ const SUGGESTED_PROMPTS = [
 // v2 rewrite (feature/chatbot-plain-hebrew-v2): plain everyday Hebrew,
 // active voice on approval ("הצוות שלנו בודק ומאשר" not "מאושר"),
 // explicit about WHAT is being approved ("העסק שלך" / "המוצר שלך"),
-// and specific timeframes ("תוך יום-יומיים" / "תוך שעות ספורות")
+// and specific timeframes ("עד 3 ימי עסקים" per MEH-1347 / "תוך שעות ספורות")
 // instead of vague "תוך זמן קצר". No tech jargon like "מודרציה" /
 // "פרופיל" — we say "העסק שלך" because that's what the user thinks
 // they're registering.
 const HARDCODED_ANSWERS = {
   "איך נרשמים כבית עסק?":
-    "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
+    "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nהצוות שלנו בודק את הפרטים ומאשר את העסק שלך בדרך כלל עד 3 ימי עסקים, ואז הוא מופיע באתר.",
   "איך מוצאים עסקים קרובים אליי?":
-    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשו לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בית העסק",
+    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשו לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר",
 };
 
 export default function ChatWidget() {
@@ -168,18 +176,27 @@ export default function ChatWidget() {
   // var(--cookie-banner-h, 0px). The var is published by CookieBanner while it's
   // shown, so the FAB self-clears the banner at ANY height and falls back to
   // sitting above the pill when the banner is gone — no fixed-px banner guess.
+  // MEH-1410: mobile intentionally disabled — the `if (!isDesktop) return null`
+  // gate above means this mobile value (and the `: MOBILE_LAUNCHER_BOTTOM`
+  // branch in launcherStyle) is never reached; retained for a clean revert.
   const MOBILE_LAUNCHER_BOTTOM =
     "calc(env(safe-area-inset-bottom) + 88px + var(--cookie-banner-h, 0px))";
+  // MEH-1135: logical inline-end (was physical `right`). Distances (16/24) and
+  // the MEH-850 vertical calc are unchanged — only the horizontal axis flips
+  // from physical to logical, so the FAB tracks the inline-END corner per locale.
   const launcherStyle = {
     position: "fixed", zIndex: 9999,
-    right: isDesktop ? 24 : 16,
+    insetInlineEnd: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
   };
+  // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
+  // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
+  // (both inline insets 0 → spans edge-to-edge in either direction).
   const panelStyle = {
     position: "fixed", zIndex: 9999,
     bottom: isDesktop ? 24 : 0,
-    right: isDesktop ? 24 : 0,
-    left: isDesktop ? "auto" : 0,
+    insetInlineEnd: isDesktop ? 24 : 0,
+    insetInlineStart: isDesktop ? "auto" : 0,
     width: isDesktop ? 360 : "100%",
     maxHeight: isDesktop ? "min(560px, 80vh)" : "80vh",
     borderRadius: isDesktop ? 16 : "16px 16px 0 0",
@@ -187,6 +204,15 @@ export default function ChatWidget() {
 
   // Desktop pill with text on first visit, icon-only after; mobile always icon-only.
   const showPillText = isDesktop && !wasOpened;
+
+  // MEH-1410: desktop-only. The chat widget is intentionally NOT rendered on
+  // mobile (< 768px) — return null below the matchMedia viewport. `isDesktop`
+  // is false during SSR + the first client render and flips true only on
+  // desktop viewports, so mobile never mounts the launcher/panel. Gate sits
+  // AFTER every hook above (rules of hooks) and before any JSX. All desktop
+  // behavior (pill text, chatWasOpened localStorage, panel, Esc, a11y) is
+  // unchanged. Reverts the earlier all-screen-sizes rollout.
+  if (!isDesktop) return null;
 
   return (
     <>

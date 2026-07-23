@@ -137,6 +137,7 @@ export default function CalendarView({ items, linkPrefix }) {
           const key = dateKey(d);
           const hasEvents = itemsByDate.has(key);
           const isToday = sameDay(d, today);
+          const isPast = key < dateKey(today);
           const isSelected = selectedDate && sameDay(d, selectedDate);
 
           return (
@@ -150,8 +151,10 @@ export default function CalendarView({ items, linkPrefix }) {
                 isSelected
                   ? "bg-primary text-white"
                   : isToday
-                    ? "ring-2 ring-primary text-text"
-                    : "text-text hover:bg-green-50"
+                    ? "ring-2 ring-accent text-text"
+                    : isPast
+                      ? "text-fg-muted hover:bg-green-50"
+                      : "text-text hover:bg-green-50"
               }`}
             >
               <span>{d.getDate()}</span>

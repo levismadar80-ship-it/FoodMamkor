@@ -30,6 +30,37 @@ import { showToast } from "./toast";
 // the Hebrew sentence renders clean instead of "Value error, <hebrew>".
 const PYDANTIC_VALUE_ERROR_PREFIX = "Value error, ";
 
+// MEH-1164 sub-chunk B: the backend's verified-email gate (auth.py
+// require_verified_email / require_verified_producer) raises a 403 whose
+// `detail` is {code: "email_unverified", message: <Hebrew>}. Mirrored here so
+// the four producer create forms can detect it and render the resend CTA
+// instead of a dead-end error string.
+export const EMAIL_UNVERIFIED_CODE = "email_unverified";
+// Transition fallback: before the code field existed the detail was this bare
+// Hebrew string. Matching it too keeps detection working against any endpoint
+// or cached client that still emits the old shape.
+const EMAIL_UNVERIFIED_MESSAGE = "יש לאמת את כתובת האימייל תחילה";
+
+/**
+ * True when an axios-shaped error is the verified-email 403 gate.
+ *
+ * Prefers the stable `detail.code` (locale-neutral); falls back to the legacy
+ * bare-string `detail` for transition safety. Any other error — including a
+ * non-403 or a different 403 (e.g. "Producer access required") — returns false
+ * so the caller keeps its existing error path untouched.
+ *
+ * @param {any} err  axios error (expects `err.response.status` + `.data.detail`)
+ * @returns {boolean}
+ */
+export function isUnverifiedEmailError(err) {
+  if (err?.response?.status !== 403) return false;
+  const detail = err.response.data?.detail;
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    return detail.code === EMAIL_UNVERIFIED_CODE;
+  }
+  return detail === EMAIL_UNVERIFIED_MESSAGE;
+}
+
 /**
  * MEH-957 — normalise a FastAPI `detail` payload to a single display string.
  *

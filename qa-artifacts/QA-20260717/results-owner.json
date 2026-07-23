@@ -1,0 +1,40 @@
+[
+  {
+    "id": "3",
+    "status": "PASS",
+    "detail": "after save GET /producers/me: top_product_name=\"מוצר בדיקה QA\", price_range=\"מ-₪42\", whatsapp_group=\"https://chat.whatsapp.com/QAlocaltest123\" (expected {\"top\":\"מוצר בדיקה QA\",\"price\":\"מ-₪42\",\"wa\":\"https://chat.whatsapp.com/QAlocaltest123\"})",
+    "shots": [
+      "qa-artifacts/QA-20260717/check3-pricing-whatsapp-saved.png"
+    ]
+  },
+  {
+    "id": "4",
+    "status": "PASS",
+    "detail": "GET /producers/me opening_hours=\"Sun-Thu 08:00-16:00\", UI value after reload=\"Sun-Thu 08:00-16:00\" (expected \"Sun-Thu 08:00-16:00\")",
+    "shots": [
+      "qa-artifacts/QA-20260717/check4-hours-saved.png"
+    ]
+  },
+  {
+    "id": "5",
+    "status": "PASS",
+    "detail": "both toggles OFF → visible Hebrew error=true; persisted has_physical_location=true, offers_delivery=false (must NOT be both-false). before: phys=true",
+    "shots": [
+      "qa-artifacts/QA-20260717/check5-delivery-both-off.png"
+    ]
+  },
+  {
+    "id": "5-restore",
+    "status": "INFO",
+    "detail": "restored has_physical_location=true",
+    "shots": []
+  },
+  {
+    "id": "3/4-public",
+    "status": "PASS",
+    "detail": "public /producer page — top_product visible=true, hours visible=false",
+    "shots": [
+      "qa-artifacts/QA-20260717/check34-public-producer.png"
+    ]
+  }
+]

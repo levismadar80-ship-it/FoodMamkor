@@ -61,6 +61,8 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 
 **`mcp__github__list_branches` is reliable for positive claims, NOT negative ones.** A returned branch + SHA can be trusted; a *missing* branch cannot — pagination defaults or filter state can hide branches without an error. Before acting on "branch X doesn't exist" (creating it, opening an alternate PR, treating prior work as lost), cross-verify with `git ls-remote origin | grep <branch>`. Same rule applies to `list_pull_requests` / `list_issues` for missing entries. **Source:** 2026-05-07 MEH-293 PR #1 follow-up — list_branches returned 12 branches without `staging`; `git ls-remote` confirmed it existed; false-positive recovery path narrowly avoided. Documented under MEH-478.
 
+**VRT-baseline regen (MEH-991 flow) needs a manual re-trigger push.** After the vrt-update bot commits regenerated baselines, GitHub does NOT fire pr-checks/deploy/e2e on it — pushes made with `GITHUB_TOKEN` never trigger workflows. Push a follow-up commit (or re-merge staging) *as yourself* to run the required gates against the fresh baselines. Also: rapid staging merges conflict the append-only logs (CHANGELOG/HANDOFF) — fetch + merge `origin/staging` (Accept-Both) immediately before every push. Source: MEH-1112/1113 batch (2026-07-11).
+
 ## How to update this file
 - Cap: **≤ 80 lines**. Need more space → domain rule in `.claude/rules/`; long-form context in `docs/`. Never back here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (commits / [docs/CHANGELOG.md](./docs/CHANGELOG.md)).

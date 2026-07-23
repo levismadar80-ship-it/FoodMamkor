@@ -6,13 +6,13 @@
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/env", () => ({
-  SITE_URL: "https://mehamakor.online",
+  SITE_URL: "https://mehamakor.co.il",
   API_URL: "https://api.example.test",
 }));
 
 import { buildHomeJsonLd } from "@/lib/seo";
 
-const SITE = "https://mehamakor.online";
+const SITE = "https://mehamakor.co.il";
 const webNode = (locale) =>
   buildHomeJsonLd(locale)["@graph"].find((n) => n["@type"] === "WebSite");
 

@@ -6,6 +6,8 @@ import { ShoppingCart } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
@@ -59,10 +61,10 @@ function GroupBuyCard({ gb }) {
             correctly in the RTL context (mirrors ExperienceCard's price span). */}
         <div className="flex items-baseline gap-2">
           <span dir="ltr" className="text-2xl font-bold text-primary">
-            ₪{Number(gb.price_per_unit_group).toFixed(0)}
+            {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
           </span>
           <span dir="ltr" className="text-sm text-fg-muted line-through">
-            ₪{Number(gb.price_per_unit_regular).toFixed(0)}
+            {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
           </span>
           {gb.unit && <span className="text-xs text-fg-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
         </div>

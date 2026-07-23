@@ -1,0 +1,31 @@
+/*
+ * MEH-991 Chunk 3 — VRT determinism stylesheet, injected per-screenshot via
+ * toHaveScreenshot({ stylePath }). NOT shipped to users.
+ *
+ * Rule of thumb: MASK regions whose *content* varies (live data — handled in
+ * parity.spec.ts), HIDE regions whose *presence* varies (calendar-dependent
+ * banners) — a mask can't compensate for the layout shift of a section that
+ * appears and disappears with the date.
+ */
+
+/* Date/weekday-dependent surfaces — presence varies by calendar day. */
+[data-testid="holiday-banner"],
+[data-testid="friday-delivery-strip"] {
+  display: none !important;
+}
+
+/* Cookie-consent banner overlays the bottom of the viewport until it gets a
+ * localStorage flag; the spec pre-seeds consent, this is belt-and-braces. */
+.cookie-banner {
+  display: none !important;
+}
+
+/* Kill residual CSS animation/transition frames beyond reducedMotion. */
+*,
+*::before,
+*::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}

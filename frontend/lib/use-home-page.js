@@ -9,21 +9,35 @@ import { useTranslations } from "next-intl";
 import { mapKey } from "@/lib/i18n-key-map";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
+import { getUserLocation, setUserLocation } from "@/lib/user-location";
+import { showToast } from "@/lib/toast";
 import { buildChipParams } from "@/lib/producer-filters";
 import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
+import { findRegionForCity } from "@/data/regions";
 import {
   CategoriesResponseSchema,
   StatsSchema,
   ProducerSchema,
   ProducersResponseSchema,
+  RandomProducerSchema,
 } from "@/lib/api-schemas";
 
 const PAGE_SIZE = 8;
+// MEH-1387: cap the home grid at ONE "עוד בתי עסק" expansion. Once
+// visibleCount hits the cap the grid swaps the load-more button for a
+// link to /producers (the full listing owns deep browsing, not home).
+// Exported so HomeProducersGrid can compare against visibleCount.
+export const LOAD_MORE_CAP = PAGE_SIZE * 2;
 // MEH-521: minimum approved count before showing numeric stats.
 const STATS_DISPLAY_THRESHOLD = 5;
+// MEH-1269: "קרוב אליי" geo radius (km). First pass at 15; the empty-guard
+// widens to 30 once before giving up and showing all (mirrors the MEH-970
+// never-blank philosophy on /map).
+const GEO_RADIUS_KM = 15;
+const GEO_RADIUS_KM_RETRY = 30;
 
 /**
  * Custom hook owning the homepage's state, effects, handlers, and
@@ -33,10 +47,12 @@ const STATS_DISPLAY_THRESHOLD = 5;
  * Behavior is bit-identical to the prior inline implementation:
  *   - 13 useState calls in declaration order
  *   - 7 useEffect blocks in declaration order
- *   - 7 handlers (updateURL, loadProducers, handleCategoryCardClick,
- *     handleWhatsAppClick, scrollToProducers, toggleChip, handleNearMe,
- *     handleCitySelected) close over the same state via the same
- *     reference identities they did before extraction
+ *   - handlers (updateURL, loadProducers, handleWhatsAppClick,
+ *     scrollToProducers, toggleChip, handleNearMe, handleCitySelected)
+ *     close over the same state via the same reference identities they
+ *     did before extraction. handleCategoryCardClick was removed in
+ *     MEH-1080 — category cards are real links to /producers?category=
+ *     now; the ?category= deep-link path below stays for old shared URLs.
  *   - 7 derived values (visibleProducers, hasMore, categoryCards,
  *     statsProducersCount, statsCategoriesCount, statsLoaded,
  *     newestProducers)
@@ -47,13 +63,19 @@ const STATS_DISPLAY_THRESHOLD = 5;
  */
 export function useHomePage() {
   const { user } = useAuth();
+  // MEH-1288: real navigation to a random producer page (a page change, unlike
+  // the MEH-1293 same-URL History-API mirroring below — push is correct here).
+  const router = useRouter();
   // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
   // old flat keys ("hero_title"). Wave 2 migrates those call sites and
   // this wrap is removed.
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
-  const router = useRouter();
   const [producers, setProducers] = useState([]);
+  // MEH-1487: region fallback — { regionName, producers } when a delivery_city
+  // filter returned 0 AND the city belongs to a region in data/regions.js;
+  // null otherwise. Drives the "בתי עסק שמגיעים לאזור" section in the empty state.
+  const [regionFallback, setRegionFallback] = useState(null);
   const [categories, setCategories] = useState([]);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
   // sessionStorage) are read in the initial useEffect below to avoid React
@@ -72,8 +94,24 @@ export function useHomePage() {
   // fallback/hidden (loaded + below threshold).
   const [stats, setStats] = useState(null);
   const [producersLoading, setProducersLoading] = useState(true);
-  const [geoLoading] = useState(false);
-  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  // MEH-1269: geoLoading is now real — true while getCurrentPosition + the geo
+  // fetch are in flight, so the HomeHero home.hero.searching ("בחיפוש...")
+  // spinner actually shows (previously a dead const with no setter).
+  const [geoLoading, setGeoLoading] = useState(false);
+  // MEH-1269: {lat, lng} while a geographic "קרוב אליי" filter is active, else
+  // null. Drives the dismissible ActiveFilterChip above the grid. Mutually
+  // exclusive with filters.delivery_city (the explicit city-choice mode).
+  const [geoFilter, setGeoFilter] = useState(null);
+  // MEH-1282 (GAP A): persistent flag set when a "קרוב אליי" search finds nothing
+  // at either radius and falls back to the full list. The MEH-1269 toast alone
+  // was too transient — its final state (chip cleared, full list shown) read as
+  // "nothing happened". This drives a persistent inline notice in the grid.
+  // Cleared on the next successful geo search, city choice, or any chip/category
+  // /location filter action.
+  const [geoEmptyNotice, setGeoEmptyNotice] = useState(false);
+  // MEH-1259: organic chip removed from the home filter row (self-declared
+  // organic is no longer a public filter — חוק תוצרת אורגנית 2005).
+  const [chips, setChips] = useState({ kosher: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -117,14 +155,25 @@ export function useHomePage() {
       delivery_city: p.get("city") || "",
       has_delivery: p.get("delivery") === "1",
     };
+    // MEH-1083: hydrate all 7 CHIPS_CONFIG keys — gluten_free/vegan/
+    // lactose_free filtered results without surviving refresh/share
+    // (MEH-1077 DISC-02).
     const initChips = {
       kosher: p.get("kosher") === "1",
-      organic: p.get("organic") === "1",
+      // MEH-1259: organic no longer hydrated — chip + filter removed.
+      gluten_free: p.get("gluten_free") === "1",
+      vegan: p.get("vegan") === "1",
+      vegetarian: p.get("vegetarian") === "1",  // MEH-1438
+      lactose_free: p.get("lactose_free") === "1",
       has_delivery: p.get("delivery") === "1",
       verified: p.get("verified") === "1",
     };
     const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
-    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) setVisibleCount(savedCount);
+    // MEH-1387: clamp a restored count to the cap — sessions saved before the
+    // cap existed (or tampered values) must not restore an over-cap grid.
+    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) {
+      setVisibleCount(Math.min(savedCount, LOAD_MORE_CAP));
+    }
     setFilters(initFilters);
     setChips(initChips);
 
@@ -227,11 +276,28 @@ export function useHomePage() {
     if (f.category) p.set("category", f.category);
     if (f.delivery_city) p.set("city", f.delivery_city);
     if (c.kosher) p.set("kosher", "1");
-    if (c.organic) p.set("organic", "1");
+    // MEH-1259: organic param no longer written — chip + filter removed.
+    // MEH-1083: diet keys were missing from the serializer — param names
+    // match the chip keys (delivery stays the legacy short name).
+    if (c.gluten_free) p.set("gluten_free", "1");
+    if (c.vegan) p.set("vegan", "1");
+    if (c.vegetarian) p.set("vegetarian", "1");  // MEH-1438
+    if (c.lactose_free) p.set("lactose_free", "1");
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
     const qs = p.toString();
-    router.replace(qs ? `?${qs}` : "/", { scroll: false });
+    // MEH-1293: mirror to the URL via the shallow History API, NOT router.replace.
+    // A router.replace — even to the SAME URL (geo lat/lng are intentionally NOT
+    // persisted, so a geo apply produces an identical qs) — issues an RSC
+    // round-trip that invalidates the router cache and lands mid-scroll, killing
+    // the near-me smooth scroll (Phase 0: 1 ?_rsc per click; ×5 mash → scroll
+    // interrupted, grid left the viewport). Same-URL guard + window.location
+    // (locale-safe on /en, fixes the old hardcoded "/" locale drop).
+    // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170 (MEH-1085 DISC-08).
+    const current = window.location.search.replace(/^\?/, "");
+    if (qs === current) return;
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
   };
 
   const loadProducers = (params = {}) => {
@@ -255,15 +321,48 @@ export function useHomePage() {
       .finally(() => setProducersLoading(false));
   };
 
-  const handleCategoryCardClick = (card) => {
-    if (!card.categoryId) return;
-    const newCat = String(card.categoryId);
-    const newFilters = { ...filters, category: newCat };
-    setFilters(newFilters);
-    updateURL(newFilters);
-    loadProducers({ category: newCat, ...buildChipParams(chips) });
-    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
-  };
+  // MEH-1487: region fallback. When an explicit delivery_city filter returns
+  // zero results AND the city belongs to a region, fetch the businesses that
+  // deliver anywhere in that region (delivery_cities=<region cities>) and
+  // surface them as an editorial discovery section in the empty state.
+  // Editorial framing only — NOT a delivery-eligibility check.
+  useEffect(() => {
+    const city = filters.delivery_city;
+    if (producersLoading) return;
+    if (!city || producers.length > 0) {
+      setRegionFallback(null);
+      return;
+    }
+    const region = findRegionForCity(city);
+    if (!region) {
+      setRegionFallback(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get("/producers", { params: { delivery_cities: region.cities } })
+      .then((r) => {
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        const list = parsed.success ? parsed.data : [];
+        if (!cancelled) {
+          setRegionFallback(
+            list.length ? { regionName: region.name, producers: list } : null,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRegionFallback(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [producers, producersLoading, filters.delivery_city]);
+
+  // MEH-1080: handleCategoryCardClick removed — homepage category cards are
+  // real <Link>s to /producers?category=<id> (HomeCategoryGrid.jsx); no
+  // in-place category filtering is triggered from the cards anymore. The
+  // ?category= deep-link support (initFilters + updateURL + the grid's
+  // active pill/clear) is kept for backward compat with old shared URLs.
 
   const handleWhatsAppClick = async (productId) => {
     if (!user) return;
@@ -279,6 +378,8 @@ export function useHomePage() {
   };
 
   const toggleChip = (key) => {
+    // MEH-1282: any chip toggle is a fresh filter action — clear the geo-empty notice.
+    setGeoEmptyNotice(false);
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
     const params = buildChipParams(next);
@@ -292,20 +393,114 @@ export function useHomePage() {
     loadProducers(params);
   };
 
+  // MEH-1269: geographic listing fetch with a one-shot empty-guard. Runs the
+  // GEO_RADIUS_KM query; on zero rows it widens ONCE to GEO_RADIUS_KM_RETRY; if
+  // STILL empty it drops the geo filter and reloads the full (non-geo) listing
+  // with a toast — the grid is never left blank without a message (mirrors the
+  // MapClient.jsx MEH-970 never-blank philosophy). Owns producersLoading +
+  // geoLoading for the whole sequence.
+  const loadProducersGeo = (lat, lng) => {
+    setGeoLoading(true);
+    setProducersLoading(true);
+    const chipParams = buildChipParams(chips);
+    const catParam = filters.category ? { category: filters.category } : {};
+    const fetchAtRadius = (radius) =>
+      api
+        .get("/producers", {
+          params: { lat, lng, radius_km: radius, ...catParam, ...chipParams },
+        })
+        .then((r) => {
+          const parsed = ProducersResponseSchema.safeParse(r.data);
+          return parsed.success ? parsed.data : [];
+        });
+    fetchAtRadius(GEO_RADIUS_KM)
+      .then((rows) => (rows.length > 0 ? rows : fetchAtRadius(GEO_RADIUS_KM_RETRY)))
+      .then((rows) => {
+        if (rows.length > 0) {
+          // MEH-1282: a successful geo search clears any prior empty notice.
+          setGeoEmptyNotice(false);
+          setProducers(rows);
+          setVisibleCount(PAGE_SIZE);
+          return;
+        }
+        // Empty even at the widened radius → abandon geo, show everything.
+        setGeoFilter(null);
+        loadProducers({ ...catParam, ...chipParams });
+        showToast.info(t("home.producers.geo_empty"));
+        // MEH-1282 (GAP A): persist the outcome inline — the toast alone left
+        // the final state indistinguishable from "nothing happened".
+        setGeoEmptyNotice(true);
+      })
+      .catch(() => {})
+      .finally(() => {
+        setProducersLoading(false);
+        setGeoLoading(false);
+      });
+  };
+
+  // MEH-1269: apply the geo filter's shared side effects — clear the (mutually
+  // exclusive) city filter, stash {lat,lng} for the chip, refresh the URL
+  // (lat/lng are intentionally NOT persisted — over-engineering guard), and
+  // scroll to the grid.
+  const applyGeoFilter = ({ lat, lng }) => {
+    const newFilters = { ...filters, delivery_city: "" };
+    setFilters(newFilters);
+    setGeoFilter({ lat, lng });
+    updateURL(newFilters);
+    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // MEH-1269: "קרוב אליי" is real geolocation now (was an invisible
+  // delivery_city localStorage filter). A cached sessionStorage fix filters
+  // immediately; otherwise the click IS explicit consent, so we prompt the
+  // browser directly. PERMISSION_DENIED (code 1) falls back to the existing
+  // city modal; technical failures (codes 2/3) toast and stay put.
   const handleNearMe = () => {
-    if (userCity) {
-      const newFilters = { ...filters, delivery_city: userCity };
-      setFilters(newFilters);
-      updateURL(newFilters);
-      loadProducers({ delivery_city: userCity, ...buildChipParams(chips) });
-      document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+    // MEH-1293: idempotence guard — if a geo filter is already active, another
+    // near-me click must NOT re-fetch or re-write history (that was the
+    // multi-click storm). Just re-scroll to the already-filtered grid. The
+    // chip ✕ (handleClearLocation) stays the only reset path.
+    if (geoFilter) {
+      scrollToProducers();
       return;
     }
-    setLocationModalOpen(true);
+    const cached = getUserLocation();
+    if (cached) {
+      applyGeoFilter(cached);
+      loadProducersGeo(cached.lat, cached.lng);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationModalOpen(true);
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        // Persist the GPS fix → card distance labels light up (ProducerCard.jsx
+        // reads it via useUserLocation), same contract as LocationModal.
+        setUserLocation(latitude, longitude);
+        applyGeoFilter({ lat: latitude, lng: longitude });
+        loadProducersGeo(latitude, longitude);
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err?.code === 1) {
+          setLocationModalOpen(true);
+        } else {
+          showToast.info(t("home.hero.geo_failure"));
+        }
+      },
+    );
   };
 
   const handleCitySelected = (city) => {
     setUserCity(city);
+    // MEH-1269: an explicit city choice exits geo mode (chip swaps geo → city).
+    setGeoFilter(null);
+    // MEH-1282: a city choice supersedes the empty-near-me notice.
+    setGeoEmptyNotice(false);
     const newFilters = { ...filters, delivery_city: city };
     setFilters(newFilters);
     updateURL(newFilters);
@@ -313,16 +508,52 @@ export function useHomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // MEH-1269: dismiss the active location filter (geo OR city) from the chip's
+  // ✕. Clears both modes (mutually exclusive, so at most one is set) and
+  // reloads keeping any category + chip filters intact.
+  const handleClearLocation = () => {
+    setGeoFilter(null);
+    // MEH-1282: clearing the location filter also clears the empty-near-me notice.
+    setGeoEmptyNotice(false);
+    const newFilters = { ...filters, delivery_city: "" };
+    setFilters(newFilters);
+    updateURL(newFilters);
+    const params = buildChipParams(chips);
+    if (newFilters.category) params.category = newFilters.category;
+    loadProducers(params);
+  };
+
   // Adapters for the producers-grid component (avoids passing the full
   // setFilters/updateURL/loadProducers/buildChipParams quartet).
   const handleClearCategory = () => {
+    // MEH-1282: clearing the category is a filter action — clear the geo-empty notice.
+    setGeoEmptyNotice(false);
     const newFilters = { ...filters, category: "" };
     setFilters(newFilters);
     updateURL(newFilters);
     loadProducers(buildChipParams(chips));
   };
 
-  const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
+  // MEH-1387: never grow past the cap — one expansion, then the grid shows
+  // the /producers link instead of the button.
+  const handleLoadMore = () => setVisibleCount((c) => Math.min(c + PAGE_SIZE, LOAD_MORE_CAP));
+
+  // MEH-1288: "הפתיעו אותי" — fetch one random approved producer from the
+  // backend (ORDER BY random(), full catalog — not just the loaded page) and
+  // navigate to its page. Best-effort: a network error or malformed payload is
+  // a silent no-op (the button stays, the user can tap again). Mirrors
+  // ProducerCard's href rule (slug preferred, id fallback).
+  const handleSurprise = useCallback(async () => {
+    try {
+      const r = await api.get("/producers/random");
+      const parsed = RandomProducerSchema.safeParse(r.data);
+      if (!parsed.success) return;
+      const { slug, id } = parsed.data;
+      router.push(slug ? `/${slug}` : `/producer/${id}`);
+    } catch {
+      // no-op — best-effort surprise
+    }
+  }, [router]);
 
   // Advance from Step 0 onboarding tip. Resets the local 2s-delay gate
   // so a future return to step 0 re-arms the delay (matches the original
@@ -355,12 +586,18 @@ export function useHomePage() {
   // null ⇒ §10 self-hides (HomeStaticBlocks.jsx:199), no fictional content.
   const featuredProducer = selectFeaturedProducer(producers);
 
+  // MEH-1269: location-filter chip state — geo and city are mutually exclusive,
+  // so at most one is truthy. cityActive carries the city name for the label.
+  const geoActive = geoFilter !== null;
+  const cityActive = filters.delivery_city || null;
+
   return {
     // i18n + auth
     t,
     user,
     // raw state
     producers,
+    regionFallback,
     categories,
     filters,
     chips,
@@ -388,10 +625,14 @@ export function useHomePage() {
     showStatsCounter,
     newestProducers,
     featuredProducer,
+    geoActive,
+    cityActive,
+    geoEmptyNotice,
     // handlers
     handleNearMe,
+    handleSurprise,
     handleCitySelected,
-    handleCategoryCardClick,
+    handleClearLocation,
     handleWhatsAppClick,
     scrollToProducers,
     toggleChip,

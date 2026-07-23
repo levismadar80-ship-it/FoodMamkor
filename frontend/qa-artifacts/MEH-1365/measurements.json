@@ -1,0 +1,55 @@
+{
+  "mobile-peek": {
+    "sheetVar": "14vh",
+    "attr": {
+      "top": 678.328125,
+      "bottom": 692.328125,
+      "left": 233.25,
+      "right": 375
+    },
+    "sheet": {
+      "top": 698.328125
+    },
+    "viewportH": 812
+  },
+  "mobile-mid-drag": {
+    "sheetVar": "28.408866995073893vh",
+    "attr": {
+      "top": 481.328125,
+      "bottom": 495.328125,
+      "left": 233.25,
+      "right": 375
+    },
+    "sheet": {
+      "top": 581.328125
+    },
+    "viewportH": 812
+  },
+  "mobile-half": {
+    "sheetVar": "45vh",
+    "attr": {
+      "top": 346.609375,
+      "bottom": 360.609375,
+      "left": 233.25,
+      "right": 375
+    },
+    "sheet": {
+      "top": 446.609375
+    },
+    "viewportH": 812
+  },
+  "assertion": "PASS",
+  "desktop": {
+    "sheetVar": "14vh",
+    "attr": {
+      "top": 886,
+      "bottom": 900,
+      "left": 722.25,
+      "right": 864
+    },
+    "sheet": {
+      "top": 0
+    },
+    "viewportH": 900
+  }
+}

@@ -2,7 +2,14 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: ["e2e/flows/**/*.spec.ts"],
+  // MEH-1241: provision authenticated storageState for the seeded staging QA
+  // accounts (demo-owner / demo-consumer). No-ops on a local baseURL; specs
+  // opt in via test.use({ storageState: "e2e/.auth/<role>.json" }). The admin
+  // fixture (SMOKE_ADMIN_* in flows/19,20) is separate and untouched.
+  globalSetup: "./e2e/global-setup.ts",
+  // MEH-991 Chunk 3: e2e/visual holds the VRT parity specs; baselines are
+  // runner-generated via .github/workflows/vrt-update.yml (workflow_dispatch).
+  testMatch: ["e2e/flows/**/*.spec.ts", "e2e/visual/**/*.spec.ts"],
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
@@ -18,9 +25,23 @@ export default defineConfig({
   timeout: 45_000,
   expect: {
     timeout: 20_000,
+    // MEH-991 Chunk 3 — VRT comparison budget. 2% pixel tolerance absorbs
+    // sub-pixel AA jitter between runs on the same runner image; animations
+    // disabled + caret hidden so screenshots are frame-stable.
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+      animations: "disabled",
+      caret: "hide",
+    },
   },
   use: {
-    baseURL: process.env.TEST_URL || "http://localhost:3000",
+    // MEH-1044 — CI runs E2E against a local `next start` (zero Vercel edge
+    // requests). PLAYWRIGHT_BASE_URL is the explicit override; TEST_URL is
+    // kept for manual runs against staging/preview URLs (testing.md TLS note).
+    baseURL:
+      process.env.PLAYWRIGHT_BASE_URL ||
+      process.env.TEST_URL ||
+      "http://localhost:3000",
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
     actionTimeout: 20_000, // MEH-728: 10s→20s for preview cold-start headroom
@@ -34,17 +55,20 @@ export default defineConfig({
     video: "retain-on-failure",
     // MEH-264 — Vercel Deployment Protection returns 403 "host_not_allowed"
     // on every preview URL until requests present this bypass header.
-    // Secret lives in GitHub Actions → Secrets as
-    // VERCEL_AUTOMATION_BYPASS_SECRET and is exported to the job env as
-    // VERCEL_BYPASS_SECRET. When unset (local runs), we send an empty
-    // string which Vercel ignores for non-protected environments.
+    // MEH-1241 — canonical env name is VERCEL_AUTOMATION_BYPASS_SECRET (the
+    // Vercel system env / GitHub secret name); the legacy job-export alias
+    // VERCEL_BYPASS_SECRET is kept only as a fallback. Same precedence as
+    // global-setup.ts so both surfaces read the same value. When unset (local
+    // runs), we send an empty string which Vercel ignores for non-protected
+    // environments.
     //
     // MEH-306 sub-B — `x-vercel-skip-toolbar=1` removes the
     // <vercel-live-feedback> widget from preview pages so its overlay
     // doesn't intercept pointer events during tests (per
     // https://vercel.com/docs/vercel-toolbar/managing-toolbar).
     extraHTTPHeaders: {
-      "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET || "",
+      "x-vercel-protection-bypass":
+        process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "",
       "x-vercel-skip-toolbar": "1",
     },
   },

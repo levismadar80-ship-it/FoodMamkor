@@ -2,25 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  HeartStraight,
-  Leaf,
-  WhatsappLogo,
-  Phone,
-  Globe,
-  EnvelopeSimple,
-  Star,
-} from "@phosphor-icons/react";
+import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
-import { getPrimaryMethod } from "@/lib/contact-method";
+import { badgeCount } from "@/lib/badges";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { BRAND_NAME } from "@/lib/constants";
@@ -32,22 +24,6 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
-
-// Decorative footer hint for the producer's preferred contact channel.
-const METHOD_ICON = {
-  whatsapp: WhatsappLogo,
-  phone: Phone,
-  website: Globe,
-  email: EnvelopeSimple,
-};
-
-// MEH-473: METHOD_LABEL maps to translation keys so the labels resolve per locale.
-const METHOD_LABEL_KEY = {
-  whatsapp: null, // literal "WhatsApp"
-  phone: "producer.card.contact.phone",
-  website: "producer.card.contact.website",
-  email: "producer.card.contact.email",
-};
 
 // MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
 // available_today → primary (brand green); on_vacation / full_this_week →
@@ -153,6 +129,10 @@ function CardHeart({ producer, onCountChange }) {
   };
 
   // MEH-643/MEH-472: single gerund aria "שמירה" (matches the "טעינה" pattern).
+  // MEH-991 (CARD-05): cream circle per Populated frame.
+  // MEH-1028 (CARD-27): mobile density variant — 34px box + 8px inset on <640px;
+  // desktop keeps the 44px touch-target box + 12px inset (sm: up). The mobile 34px
+  // is below the 44px WCAG touch floor per the v4 design lock (deliberate trade-off).
   return (
     <button
       type="button"
@@ -161,7 +141,7 @@ function CardHeart({ producer, onCountChange }) {
       aria-pressed={filled}
       title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-3 start-3 z-10 w-11 h-11 bg-surface-card/95 hover:bg-surface-card rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
+      className="absolute top-2 start-2 sm:top-3 sm:start-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
@@ -181,19 +161,29 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
-  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
+  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-1211: a present-but-dead image URL renders the browser broken-glyph +
+  // overflowing alt. Track load failure and fall back to the canonical no-photo
+  // placeholder below (the same else-branch used when imgSrc is absent).
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [imgSrc]);
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const priceLabel = producer.price_range || producer.starting_price_label;
   const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
+  const locale = useLocale();
   const distanceLabel =
     userLoc && producer.lat != null && producer.lng != null
       ? formatDistance(
           haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+          { unit: locale === "he" ? "he" : "latin" },
         )
       : null;
 
@@ -212,8 +202,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       : rawDescription;
 
   const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
-  const primaryMethod = getPrimaryMethod(producer);
-  const MethodIcon = METHOD_ICON[primaryMethod];
 
   const handleRootClick = (e) => {
     if (e.target.closest("a, button")) return;
@@ -231,30 +219,40 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       className={[
         // MEH-643 (Assembly v2): flat surface-card, 1px border, sharp corners,
         // NO shadow-lift on hover — hover = border color shift only.
-        "bg-surface-card overflow-hidden border flex flex-col rounded-none group transition-colors duration-base ease-quart",
+        // MEH-991 (CARD-22): pressed feedback per v4 spec — opacity .95 + scale .98.
+        "bg-surface-card overflow-hidden border flex flex-col h-full rounded-none group transition-colors duration-base ease-quart active:opacity-95 active:scale-[0.98]",
         active ? "border-primary ring-2 ring-primary" : "border-border hover:border-primary",
         onClick ? "cursor-pointer" : "",
       ].join(" ")}
     >
       <div className="relative">
-        <Link href={producerHref} className="block">
+        {/* MEH-991 (CARD-23): inset ring — the card's overflow-hidden clips the
+            outward .focus-ring box-shadow on this edge-flush link (ImageGallery.jsx:100 idiom). */}
+        <Link
+          href={producerHref}
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+        >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
-            {imgSrc ? (
+            {imgSrc && !imgError ? (
               <Image
                 src={imgSrc}
                 alt={producer.name}
                 fill
                 className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                onError={() => setImgError(true)}
               />
             ) : (
-              // MEH-643: canonical no-photo state — cream surface + leaf glyph + brand name.
+              // MEH-643: canonical no-photo state — green-50 tile + leaf glyph + brand name.
+              // MEH-1400: bg-background (cream) read as an empty hole on the cream page;
+              // aligned to the MEH-1243 locked #EAF3DE (green-50) tile + 70% glyph precedent.
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 gap-2"
+                role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
-                <Leaf size={40} weight="light" className="text-primary/70" data-testid="leaf-icon" aria-hidden="true" />
-                <span className="font-headline-md text-sm font-bold text-primary/80">
+                <Leaf size={60} weight="light" className="text-primary/70" data-testid="leaf-icon" aria-hidden="true" />
+                <span className="font-headline-md text-base font-bold text-primary/80">
                   {BRAND_NAME}
                 </span>
               </div>
@@ -267,11 +265,31 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             icon-only seal; declared shows nothing (no placeholder). */}
         <div className="absolute bottom-3 start-3 z-[2] flex flex-wrap items-center gap-1.5">
           <BadgeRow producer={producer} limit={2} surface="card" />
-          {(producer.trust_tier ?? 1) >= 3 && (
+          {badgeCount(producer) > 2 && (
+            // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
+            <span
+              className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-[11px] font-medium"
+              data-testid="badge-overflow"
+              dir="ltr"
+            >
+              +{badgeCount(producer) - 2}
+            </span>
+          )}
+          {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
+              (2 phone / 3 business) are owned by the BadgeRow seal above
+              (verification_tier / ADR-022) — TrustBadge now only carries the
+              recognition tiers (4 community-leader, 5 ambassador), so it no
+              longer duplicates the "מאומת" seal on the card. */}
+          {(producer.trust_tier ?? 1) >= 4 && (
             <TrustBadge tier={producer.trust_tier} compact />
           )}
           {producer.has_physical_location === false && producer.offers_delivery && (
-            <span className="inline-flex items-center rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+            // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string
+            // is replaced by the MEH-1418 delivery glyph (Phosphor Truck, currentColor via the
+            // pill's text-text) so it matches the delivery toggle chip. size 14
+            // keeps the pill height in line with the sibling text badges.
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+              <Truck size={14} className="shrink-0" aria-hidden="true" />
               {t("producer.card.badges.delivery_only")}
             </span>
           )}
@@ -281,16 +299,18 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       </div>
 
       <div className="p-4 flex flex-col gap-2">
-        {/* Eyebrow = CATEGORY (uppercase, tracked) — Assembly v2. */}
+        {/* Eyebrow = CATEGORY. MEH-1073 T10 / MEH-867: no uppercase, no
+            letter-spacing — harms RTL legibility and Hebrew has no case. */}
         {category && (
-          <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-fg-muted truncate">
+          <p className="text-[11px] font-medium text-fg-muted truncate">
             {category}
           </p>
         )}
 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
-          <Link href={producerHref} className="block min-w-0">
-            <h3 className="font-headline-md font-bold text-[20px] text-text hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+          <Link href={producerHref} className="block min-w-0 focus-ring">
+            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
+            <h3 className="font-headline-md font-bold text-[16px] sm:text-[20px] text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}
@@ -302,7 +322,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               dir="ltr"
               data-testid="card-rating"
             >
-              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} · {producer.reviews_count}
+              {/* MEH-1243 (🔒 §7): unify to Google format ★ X.X (N) across surfaces. */}
+              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
             </span>
           )}
         </div>
@@ -324,17 +345,17 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {distanceLabel && (
               <>
                 {" · "}
-                <span dir="ltr" data-testid="distance-pill">
-                  {distanceLabel}
-                </span>
+                <span data-testid="distance-pill">{distanceLabel}</span>
               </>
             )}
           </span>
         </p>
 
         {descriptionText && (
+          // MEH-1028 (CARD-27): one-line description hidden on mobile (<640px),
+          // visible sm: up — part of the mobile density variant.
           <p
-            className="text-sm text-text/85 line-clamp-1"
+            className="hidden sm:block text-sm text-text/85 line-clamp-1"
             data-testid="card-description"
           >
             {descriptionText}
@@ -355,26 +376,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
-          {priceLabel ? (
-            <span className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]">
-              {priceLabel}
-            </span>
-          ) : (
-            <span />
-          )}
-          {MethodIcon && (
-            <span
-              role="img"
-              className="inline-flex items-center text-primary shrink-0"
-              aria-label={t("producer.card.aria.primary_contact", { method: METHOD_LABEL_KEY[primaryMethod] ? t(METHOD_LABEL_KEY[primaryMethod]) : "WhatsApp" })}
-              data-testid="primary-method-hint"
-              data-method={primaryMethod}
-            >
-              <MethodIcon size={18} aria-hidden="true" />
-            </span>
-          )}
-        </div>
+        {/* MEH-1210: price removed from discovery cards ("מגזין, לא marketplace")
+            — exact prices are a marketplace signal; they stay at product level
+            inside /producer. The prior MEH-1142 price-only footer (mt-auto span)
+            is gone; p-4 supplies the card's bottom padding. */}
       </div>
     </article>
   );

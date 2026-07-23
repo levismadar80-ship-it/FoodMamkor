@@ -12,16 +12,23 @@
  *   5. Instructions (split by newline → numbered list)
  *   6. Related products (links to existing product surfaces) — hidden
  *      entirely when no products are linked (silent, per spec).
- *   7. Back link to the producer page
+ *   7. Producer contact CTA — PrimaryContactButton + profile link.
+ *   8. Back link to the producer page
  *
  * Pure render — no fetching. The parent page does both fetches and
  * passes hydrated objects.
+ *
+ * History: MEH-591 (creation); MEH-1149 (contact CTA — closes the
+ * conversion dead-end found in audit MEH-1144 G7).
  */
 
 import Link from "next/link";
 import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import ImageWithFallback from "@/components/ImageWithFallback";
+import PrimaryContactButton from "@/components/PrimaryContactButton";
 
 function splitLines(text) {
   if (!text) return [];
@@ -45,7 +52,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         className="text-sm text-fg-muted mb-6"
         aria-label={t("breadcrumb_aria")}
       >
-        <Link href={`/${producer.slug}`} className="hover:underline">
+        <Link href={`/${producer.slug}`} className="hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           {producer.name}
         </Link>
         <span className="mx-2" aria-hidden="true">
@@ -53,7 +60,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </span>
         <Link
           href={`/${producer.slug}#recipes`}
-          className="hover:underline"
+          className="hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("breadcrumb_recipes")}
         </Link>
@@ -67,7 +74,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {recipe.image_url && (
         <div className="relative aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
           <Image
-            src={recipe.image_url}
+            src={optimizeCloudinary(recipe.image_url)}
             alt={recipe.title}
             fill
             sizes="(max-width: 768px) 100vw, 768px"
@@ -76,7 +83,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </div>
       )}
 
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
+      <h1 className="font-headline-lg text-3xl font-black text-text mb-3">
         {recipe.title}
       </h1>
 
@@ -157,9 +164,15 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 className="bg-white rounded-[12px] border border-border p-3 flex items-center gap-3"
               >
                 {p.image_url ? (
-                  <Image
+                  // MEH-1229: was a raw <Image src={p.image_url}> that bypassed the
+                  // helper. Now helper-routed (square crop + f_auto,q_auto) with a
+                  // graceful fallback so a broken related-product URL degrades to
+                  // the placeholder instead of a _next/image 404.
+                  <ImageWithFallback
                     src={p.image_url}
                     alt=""
+                    aspectRatio={IMAGE_RATIOS.square}
+                    optimizeWidth={112}
                     width={56}
                     height={56}
                     className="w-14 h-14 object-cover rounded-[8px]"
@@ -186,10 +199,30 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </section>
       )}
 
+      {/* Producer contact CTA (MEH-1149; audit MEH-1144 G7) — closes the
+          recipe conversion dead-end. PrimaryContactButton self-collapses to
+          null for a contactless producer, so the profile link renders alone. */}
+      <section className="mt-8 border-t border-border pt-8">
+        <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+          {t("producer_cta_heading", { name: producer.name })}
+        </h2>
+        <div className="flex flex-col items-start gap-1 w-full sm:max-w-xs">
+          <div className="w-full">
+            <PrimaryContactButton producer={producer} />
+          </div>
+          <Link
+            href={`/${producer.slug}`}
+            className="text-sm text-primary hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {t("producer_cta_link", { name: producer.name })}
+          </Link>
+        </div>
+      </section>
+
       {/* Back link */}
       <Link
         href={`/${producer.slug}`}
-        className="text-sm text-primary hover:underline"
+        className="mt-8 inline-block text-sm text-primary hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         {t("back_to_producer")}
       </Link>

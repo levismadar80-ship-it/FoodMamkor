@@ -542,7 +542,8 @@ class TestExperienceEdit:
             json={"title": "hijacked"},
             headers=auth_header(other),
         )
-        assert resp.status_code == 403
+        # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
+        assert resp.status_code == 404
 
     def test_non_owner_cannot_delete(self, client, db):
         host = make_user(db, email="a@t.com")
@@ -552,7 +553,8 @@ class TestExperienceEdit:
         resp = client.delete(
             f"/experiences/{ex.id}", headers=auth_header(other)
         )
-        assert resp.status_code == 403
+        # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
+        assert resp.status_code == 404
 
     def test_owner_can_delete(self, client, db):
         host = make_user(db)
@@ -583,6 +585,172 @@ class TestExperienceEdit:
 
     def test_mine_requires_auth(self, client):
         assert client.get("/experiences/mine").status_code == 401
+
+
+# ---------- Reversible cancel (is_active) — MEH-1419 ----------
+
+
+class TestExperienceCancelToggle:
+    """MEH-1419 — a host can reversibly cancel/reactivate an approved
+    experience via PUT {is_active}. Mirrors Event.is_active: cancelled drops
+    from the public feed, stays on /mine, and a pure toggle must NOT re-run
+    moderation (an approved experience stays approved)."""
+
+    def test_public_list_hides_cancelled(self, client, db):
+        host = make_user(db)
+        _make_experience(db, host, title="Live", status="approved", is_active=True)
+        _make_experience(db, host, title="Off", status="approved", is_active=False)
+        resp = client.get("/experiences")
+        assert resp.status_code == 200
+        assert [e["title"] for e in resp.json()] == ["Live"]
+
+    def test_mine_includes_cancelled_with_flag(self, client, db):
+        host = make_user(db)
+        _make_experience(db, host, title="Live", status="approved", is_active=True)
+        _make_experience(db, host, title="Off", status="approved", is_active=False)
+        resp = client.get("/experiences/mine", headers=auth_header(host))
+        assert resp.status_code == 200
+        by_title = {e["title"]: e for e in resp.json()}
+        assert by_title["Off"]["is_active"] is False
+        assert by_title["Live"]["is_active"] is True
+
+    def test_owner_can_cancel_and_reactivate(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db)
+        ex = _make_experience(db, host, title="Toggle", status="approved")
+
+        # Cancel → drops from public feed
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["is_active"] is False
+        assert [e["title"] for e in client.get("/experiences").json()] == []
+
+        # Reactivate → returns to the public feed
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": True},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["is_active"] is True
+        assert [e["title"] for e in client.get("/experiences").json()] == ["Toggle"]
+
+    def test_pure_toggle_does_not_re_moderate_approved(self, client, db, monkeypatch):
+        """A cancel that only flips is_active must keep status=approved —
+        it must NOT reset to pending like a content edit does."""
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db)
+        ex = _make_experience(db, host, status="approved")
+
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.status == "approved"  # not bumped back to pending
+        assert ex.is_active is False
+
+    def test_content_edit_still_re_moderates(self, client, db, monkeypatch):
+        """Guard is scoped: a real content edit on an approved experience
+        still resets it to pending (existing behaviour preserved)."""
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db)
+        ex = _make_experience(db, host, status="approved")
+
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={
+                "description": (
+                    "תיאור חדש וארוך דיו שמכיל יותר מעשרים תווים אמיתיים."
+                )
+            },
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.status == "pending"
+
+
+# ---------- Location-pin privacy (MEH-1417) ----------
+
+
+class TestExperiencePinPrivacy:
+    """A home experience hides its street address from strangers; the
+    lat/lng must be hidden too, or MEH-1404's MiniMap redraws the exact
+    residence as a pin. Public (commercial) venues keep their pin."""
+
+    def test_stranger_home_experience_hides_coords_and_address(
+        self, client, db
+    ):
+        host = make_user(db)
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="home",
+            address="רחוב מגורים פרטי 42",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(f"/experiences/{ex.id}").json()
+        assert body["address"] is None
+        assert body["lat"] is None
+        assert body["lng"] is None
+
+    def test_stranger_public_experience_keeps_coords(self, client, db):
+        host = make_user(db)
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="public",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(f"/experiences/{ex.id}").json()
+        assert body["lat"] is not None
+        assert body["lng"] is not None
+
+    def test_owner_home_experience_keeps_coords(self, client, db):
+        host = make_user(db)
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="home",
+            address="רחוב הגפן 5",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(
+            f"/experiences/{ex.id}", headers=auth_header(host)
+        ).json()
+        assert body["address"] == "רחוב הגפן 5"
+        assert body["lat"] is not None
+        assert body["lng"] is not None
+
+    def test_admin_home_experience_keeps_coords(self, client, db):
+        host = make_user(db, email="h@example.com")
+        admin = make_user(db, role="admin", email="a@example.com")
+        ex = _make_experience(
+            db,
+            host,
+            status="approved",
+            location_type="home",
+            lat=32.0853,
+            lng=34.7818,
+        )
+        body = client.get(
+            f"/experiences/{ex.id}", headers=auth_header(admin)
+        ).json()
+        assert body["lat"] is not None
+        assert body["lng"] is not None
 
 
 # ---------- Cross-feature: existing /events is untouched ----------

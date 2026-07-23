@@ -84,7 +84,7 @@ const securityHeaders = [
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
       `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com${vercelLiveStyle}`,
       `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
-      `connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io${vercelLiveConnect}`,
+      `connect-src 'self' https://accounts.google.com https://places.googleapis.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,
       "object-src 'none'",
       "base-uri 'self'",
@@ -106,6 +106,11 @@ const nextConfig = {
   // it. framer-motion benefits similarly. App-wide First-Load-JS reduction.
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react", "framer-motion"],
+    // MEH-918: enable app/global-not-found.js so unmatched/notFound() routes
+    // return a real HTTP 404 (the [locale] root-layout-in-dynamic-segment
+    // soft-404). Official Next mechanism for a root layout nested under a
+    // top-level dynamic segment; Next also injects noindex on the 404.
+    globalNotFound: true,
   },
   images: {
     remotePatterns: [
@@ -119,6 +124,16 @@ const nextConfig = {
         source: "/(.*)",
         headers: securityHeaders,
       },
+    ];
+  },
+  async redirects() {
+    // MEH-1176 F7: /neighbor was hidden pre-launch (MEH-598, PR #684) with the
+    // INTENT of a quiet redirect home — but no rule was ever added, so stale
+    // links 404'd. `:path*` matches zero+ segments (covers bare + deep links).
+    // permanent: false — the surface may revive (MEH-543).
+    return [
+      { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
+      { source: "/neighbor/:path*", destination: "/", permanent: false },
     ];
   },
   async rewrites() {

@@ -68,6 +68,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
     <div
       role="region"
       aria-label={t("aria")}
+      // MEH-991: VRT hides this date-dependent banner via injected CSS (e2e/visual/parity.css)
+      data-testid="holiday-banner"
       className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
@@ -76,9 +78,11 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
         <p className="font-semibold text-text text-sm leading-snug">{label}</p>
         <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>
       </div>
+      {/* MEH-1103: text-xs py-1.5 → text-sm py-2 (DESIGN.md interactive
+          sizing minimums); dismiss gains a 44px hit area. */}
       <Link
         href={searchHref}
-        className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full text-white transition hover:opacity-90"
+        className="shrink-0 text-sm font-semibold px-3 py-2 rounded-full text-white transition hover:opacity-90"
         style={{ backgroundColor: holiday.color }}
       >
         {holiday.cta}
@@ -86,7 +90,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       <button
         onClick={dismiss}
         aria-label={t("close_aria")}
-        className="shrink-0 text-fg-muted hover:text-text transition p-1 rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-text transition min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

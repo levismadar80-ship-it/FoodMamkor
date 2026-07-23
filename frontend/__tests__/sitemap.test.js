@@ -6,13 +6,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/env", () => ({
-  SITE_URL: "https://mehamakor.online",
+  SITE_URL: "https://mehamakor.co.il",
   API_URL: "https://api.example.test",
 }));
 
 import sitemap from "@/app/sitemap";
 
-const BASE = "https://mehamakor.online";
+const BASE = "https://mehamakor.co.il";
 const NOINDEX_PATHS = ["/register", "/login", "/contact", "/search"];
 
 describe("sitemap noindex exclusion (MEH-803)", () => {

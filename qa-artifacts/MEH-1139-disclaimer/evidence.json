@@ -1,0 +1,14 @@
+[
+  {
+    "locale": "he",
+    "text": "מהמקור היא פלטפורמה בלבד. האחריות על המוצרים והרישוי חלה על בית העסק בלבד. המחירים נקבעים על ידי בתי העסק.",
+    "matchesApproved": true,
+    "oldPhraseGone": true
+  },
+  {
+    "locale": "en",
+    "text": "מהמקור presents business information only. The business bears full responsibility for products and licensing. Prices are set by the businesses themselves.",
+    "matchesApproved": false,
+    "oldPhraseGone": true
+  }
+]

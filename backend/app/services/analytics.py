@@ -1,7 +1,7 @@
 """
 Analytics tracking + metrics helpers for feature/producer-analytics.
 
-This module owns three pieces of infrastructure:
+This module owns two pieces of infrastructure:
 
 1. **View tracking** — `track_producer_view()` inserts a row into
    `producer_page_views` after a successful `GET /producers/{id}` hit.
@@ -18,9 +18,10 @@ This module owns three pieces of infrastructure:
    Good enough for a single-operator admin dashboard; flagged in
    docs/SECURITY.md as v1 limitation.
 
-3. **`last_active_at` updater** — `bump_user_last_active()` is called from
-   a tiny middleware in main.py on every authenticated request so the
-   admin's DAU chart has something to chart.
+Does NOT own `users.last_active_at` — that column's sole updater is
+`_maybe_bump_last_active()` in `app/auth.py` (5-minute throttle on
+authenticated requests). A dead `bump_user_last_active()` twin lived
+here until MEH-1317 removed it (two-parallel-mechanisms smell).
 
 The design deliberately avoids external dependencies (no MaxMind, no
 Prometheus) — everything is pure Python + SQLAlchemy, keeping the image
@@ -32,7 +33,6 @@ import logging
 import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime
 from threading import Lock
 from typing import Optional
 from uuid import UUID
@@ -195,37 +195,10 @@ def server_health() -> dict:
     }
 
 
-# ============================================================
-# last_active_at updater
-# ============================================================
-
-
-def bump_user_last_active(db: Session, user_id: UUID) -> None:
-    """Update `users.last_active_at = NOW()` for the given user.
-
-    Called from a middleware in main.py on every authenticated request.
-    Kept super-cheap: one UPDATE, no SELECT, swallows exceptions so the
-    request never fails because of bookkeeping.
-    """
-    try:
-        now = datetime.utcnow()
-        db.query(User).filter(User.id == user_id).update(
-            {"last_active_at": now}, synchronize_session=False
-        )
-        db.commit()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("[ANALYTICS] bump_user_last_active failed: %s", exc)
-        try:
-            db.rollback()
-        except Exception:
-            pass
-
-
 __all__ = [
     "track_producer_view",
     "record_request",
     "server_health",
-    "bump_user_last_active",
     "hash_ip",
     "is_bot_user_agent",
 ]

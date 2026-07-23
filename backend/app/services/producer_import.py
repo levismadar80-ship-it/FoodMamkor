@@ -250,7 +250,12 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
 
         cat = _get_or_create_category(db, parsed.data["category_name"])
         if cat:
-            db.add(ProducerCategory(producer_id=producer.id, category_id=cat.id))
+            # MEH-1297: import assigns exactly one category → primary (position 0).
+            db.add(
+                ProducerCategory(
+                    producer_id=producer.id, category_id=cat.id, position=0
+                )
+            )
 
         for city in parsed.data["delivery_area_cities"]:
             db.add(DeliveryArea(producer_id=producer.id, city=city))

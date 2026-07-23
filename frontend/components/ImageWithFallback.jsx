@@ -22,9 +22,11 @@ export default function ImageWithFallback({
   className = "",
   style,
   priority,
+  aspectRatio, // MEH-1229: optional per-surface crop ratio (from IMAGE_RATIOS)
+  optimizeWidth, // MEH-1229: optional Cloudinary width cap (distinct from layout `width`)
   ...rest
 }) {
-  const optimized = optimizeCloudinary(src);
+  const optimized = optimizeCloudinary(src, { aspectRatio, width: optimizeWidth });
   const [error, setError] = useState(!optimized);
 
   // Reset error state when src prop changes (gallery navigation etc.)
@@ -39,7 +41,8 @@ export default function ImageWithFallback({
         role="img"
         className={`flex items-center justify-center ${className}`}
         style={{
-          background: "#F5F0E8",
+          // MEH-1400: cream #F5F0E8 → green-50 #EAF3DE (MEH-1243 locked no-photo tile).
+          background: "#EAF3DE",
           width: fill ? "100%" : width,
           height: fill ? "100%" : height,
           position: fill ? "absolute" : "relative",

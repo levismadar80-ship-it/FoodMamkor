@@ -50,3 +50,21 @@ backend/tests
 # --- OS / editor ---
 .DS_Store
 Thumbs.db
+
+# AI dev artifacts — never ship to production (MEH-449)
+# Canonical pattern list: .claude/hooks/check-artifact-location.sh
+# Redundant with the broader globs above BY DESIGN — this explicit list
+# survives future refactors of *.md / docs / .claude. No new blanket globs.
+.aider.conf.yml
+.claude
+.cursor
+AGENTS.md
+CHANGELOG.md
+CLAUDE.local.md
+CLAUDE.md
+HANDOFF.md
+ROADMAP.md
+docs/DEPLOYMENT.md
+docs/MANUAL_TESTING.md
+docs/MIGRATIONS.md
+docs/SECURITY.md

@@ -3,10 +3,47 @@
 import { useTranslations } from "next-intl";
 
 /**
- * Shimmer skeleton placeholder. Use in place of a spinner while fetching
- * lists of cards. The shimmer animation is keyframed inline so we don't
- * depend on tailwind config edits.
+ * Skeleton placeholder. Use in place of a spinner while fetching lists of
+ * cards. MEH-991 (CARD-26): 1.8s opacity pulse on fg-muted@0.15 bars per the
+ * ProducerCard v4 skeleton spec (was a gradient shimmer). Keyframed inline so
+ * we don't depend on tailwind config edits.
  */
+
+/**
+ * MEH-1054: the `.skeleton-box` pulse rules, extracted from
+ * SkeletonProducerGrid so other skeleton consumers (MapBottomSheet's MAP-16
+ * list skeleton) can mount them without duplicating the keyframes (single
+ * owner, MEH-271). styled-jsx dedupes identical global blocks, so rendering
+ * this in several mounted components is safe. NOTE: SkeletonCard/SkeletonLine
+ * alone do NOT inject styles — a page using them must render <SkeletonStyles/>
+ * (or SkeletonProducerGrid) once.
+ */
+export function SkeletonStyles() {
+  return (
+    <style jsx global>{`
+      .skeleton-box {
+        /* fg-muted (#5c584f) @ 0.15 — ProducerCard v4 skeleton spec */
+        background: rgba(92, 88, 79, 0.15);
+        animation: skeleton-pulse 1.8s infinite ease-in-out;
+      }
+      @keyframes skeleton-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .skeleton-box {
+          animation: none;
+        }
+      }
+    `}</style>
+  );
+}
+
 export function SkeletonCard({ className = "" }) {
   return (
     <div
@@ -35,10 +72,10 @@ export function SkeletonLine({ width = "100%", height = "14px", className = "" }
 function SkeletonProducerCard() {
   return (
     <div
-      className="bg-background border border-border rounded-2xl overflow-hidden flex flex-col"
+      className="bg-surface-card border border-border rounded-none overflow-hidden flex flex-col"
       aria-hidden="true"
     >
-      <div className="skeleton-box w-full aspect-square lg:aspect-[4/3]" />
+      <div className="bg-background w-full aspect-square lg:aspect-[4/3]" />
       <div className="p-4 flex-1 flex flex-col gap-2">
         <div className="skeleton-box rounded-lg h-[20px] w-[80%]" />
         <div className="skeleton-box rounded-lg h-[13px] w-[55%]" />
@@ -70,32 +107,8 @@ export function SkeletonProducerGrid({ count = 8 }) {
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonProducerCard key={i} />
       ))}
-      <style jsx global>{`
-        .skeleton-box {
-          background: linear-gradient(
-            90deg,
-            #e8e0d0 25%,
-            #f5f0e8 50%,
-            #e8e0d0 75%
-          );
-          background-size: 200% 100%;
-          animation: shimmer 1.5s infinite ease-in-out;
-        }
-        @keyframes shimmer {
-          0% {
-            background-position: 200% 0;
-          }
-          100% {
-            background-position: -200% 0;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .skeleton-box {
-            animation: none;
-            background: #e8e0d0;
-          }
-        }
-      `}</style>
+      {/* MEH-1054: rules extracted to SkeletonStyles (shared with MapBottomSheet) */}
+      <SkeletonStyles />
     </div>
   );
 }

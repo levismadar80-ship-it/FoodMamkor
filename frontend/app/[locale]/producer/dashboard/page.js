@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sparkle, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Eye, LockSimple, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -10,15 +10,21 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
+import { clampPercent } from "@/lib/percent";
+// MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
+// staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
+import { SITE_URL, env } from "@/lib/env";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
-  const url = `https://mehamakor.online/p/${slug}`;
+  const url = `${SITE_URL}/p/${slug}`;
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -72,8 +78,82 @@ function VanityLinkCard({ slug }) {
  * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
  *           insights/page.js (deep analytics); backend producer_me.py:489.
  * History:  MEH-57 (analytics); MEH-288 (completeness); MEH-291 (availability);
- *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split).
+ *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split);
+ *           MEH-964 1C (anonymous activity pulse, §5 final spec).
  */
+// MEH-1261 F2: shared inline error card for an Overview section whose fetch
+// failed — visible message + retry, never a frozen loading line or a silently
+// missing card. Kept quiet (bordered card, no red wash) — a section-level
+// hiccup, not a page-level failure.
+function SectionFetchError({ message, retryLabel, onRetry, testid }) {
+  return (
+    <div
+      role="alert"
+      data-testid={testid}
+      className="bg-white border border-border rounded-[16px] p-4 mb-6 flex items-center justify-between gap-3"
+    >
+      <p className="text-sm text-fg-muted">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="text-sm text-primary font-medium hover:underline shrink-0"
+      >
+        {retryLabel}
+      </button>
+    </div>
+  );
+}
+
+// MEH-1355: support contact surface migrated from the removed /settings
+// business tab (SupportModal). Reachable from the rejected + inactive status
+// banners below — wa.me + mailto, same two-channel layout as the original.
+function StatusSupportModal({ onClose }) {
+  const t = useTranslations("dashboard.producer.status.support");
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("section_aria")}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
+        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
+        <p className="text-sm text-fg-muted">{t("body")}</p>
+        <a
+          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+        >
+          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
+          <div>
+            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
+            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
+          </div>
+        </a>
+        <a
+          href="mailto:support@mehamakor.online"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+        >
+          <EnvelopeSimple size={22} className="text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-medium">{t("email_label")}</p>
+            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
+          </div>
+        </a>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+        >
+          {t("close_cta")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
@@ -84,7 +164,22 @@ export default function ProducerDashboardPage() {
   const [loadError, setLoadError] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
+  // MEH-1261 F2: analytics/profile fetch failures used to collapse into their
+  // `null` loading states — analytics froze on "טעינת סטטיסטיקות..." forever
+  // and the completeness card silently unmounted. Each section now tracks its
+  // own error + retry attempt-counter and fails independently of the others.
+  const [analyticsError, setAnalyticsError] = useState(false);
+  const [analyticsAttempt, setAnalyticsAttempt] = useState(0);
+  const [profileError, setProfileError] = useState(false);
+  const [profileAttempt, setProfileAttempt] = useState(0);
   const [vacationUntil, setVacationUntil] = useState("");
+  // MEH-999: reveal the return-date field the moment vacation is *selected*
+  // (before the POST), breaking the chicken-and-egg where the field only
+  // rendered once the server already carried state === "on_vacation".
+  const [vacationSelected, setVacationSelected] = useState(false);
+  const [vacationDateError, setVacationDateError] = useState("");
+  // MEH-1355: support-contact modal, opened from the rejected + inactive banners.
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const AVAILABILITY_TOOLTIP = (
     <>
@@ -112,15 +207,40 @@ export default function ProducerDashboardPage() {
       setData(r.data);
       setVacationUntil(r.data?.producer?.vacation_until || "");
     }).catch(() => setLoadError(true));
-    api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
-    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
+
+  // MEH-1261 F2: analytics + profile fetch in their own effects so each can be
+  // retried independently (attempt counter) and a failure in one never hides
+  // the other's data. Same auth guards as the dashboard fetch above.
+  useEffect(() => {
+    if (authLoading || !user || user.role !== "producer") return;
+    setAnalyticsError(false);
+    api.get("/producers/me/analytics")
+      .then((r) => setAnalytics(r.data))
+      .catch(() => { setAnalytics(null); setAnalyticsError(true); });
+  }, [user, authLoading, analyticsAttempt]);
+
+  useEffect(() => {
+    if (authLoading || !user || user.role !== "producer") return;
+    setProfileError(false);
+    api.get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch(() => { setProfile(null); setProfileError(true); });
+  }, [user, authLoading, profileAttempt]);
 
   // MEH-291 Phase 3 — unified 4-value availability enum. Replaces the
   // old toggleAvailability + setAvailabilityStatus pair. Backend
   // dual-writes to the legacy is_available_today + availability_status
   // columns during the 7-day overlap; Phase 4 drops them.
   const setAvailabilityState = async (state) => {
+    // MEH-999: client guard — on_vacation must carry a return date. Block the
+    // POST here and surface an inline message instead of a 422 round-trip
+    // (mirrors availability_validation.resolve_vacation_until:85-86 intent).
+    if (state === "on_vacation" && !vacationUntil) {
+      setVacationDateError(t("availability.vacation_date_required"));
+      return;
+    }
+    setVacationDateError("");
     // Optimistic update so the radio lights up immediately on click.
     setData((prev) =>
       prev
@@ -134,13 +254,27 @@ export default function ProducerDashboardPage() {
       const body = { state };
       if (state === "on_vacation" && vacationUntil) body.vacation_until = vacationUntil;
       await api.post("/producers/me/availability-state", body);
+      // MEH-1445: confirm the successful write with a toast (mirrors the
+      // error-path showToast.error below). Vacation carries the return date.
+      if (state === "on_vacation") {
+        showToast.success(t("availability.saved_vacation", { date: vacationUntil }));
+      } else {
+        showToast.success(t("availability.saved"));
+      }
+      // MEH-999: the write is committed — drop the "selected-but-unconfirmed"
+      // flag so the mini-form is now driven purely by the saved server state
+      // (on failure we intentionally keep it set below, so the form stays open
+      // for the producer to correct the date rather than vanishing).
+      setVacationSelected(false);
       if (state !== "on_vacation") setVacationUntil("");
     } catch (err) {
       // MEH-989: surface the backend's Hebrew detail (e.g. missing vacation
       // date → 422, rate limit → 429); fall back to generic only when absent.
       // detailToMessage (MEH-957) normalises the FastAPI 422 array shape so a
-      // validation error never renders as "[object Object]" via alert().
-      alert(detailToMessage(err?.response?.data?.detail) || t("error_availability_update"));
+      // validation error never renders as "[object Object]".
+      // MEH-1092: native alert() → toast (matches recipes/page.js; anti-pattern
+      // retired for admin in MEH-1023/1040).
+      showToast.error(detailToMessage(err?.response?.data?.detail) || t("error_availability_update"));
       // Refetch on failure so the UI doesn't stay out of sync.
       api
         .get("/producers/me/dashboard")
@@ -204,6 +338,14 @@ export default function ProducerDashboardPage() {
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
   const isApproved = producer.status === "approved";
 
+  // MEH-1134: state-aware card order. While the business is pending OR the
+  // completeness heuristic still reports missing fields, the completeness
+  // card is the owner's only actionable surface — it mounts directly below
+  // the status banners, ABOVE the (pre-approval disabled) availability card
+  // (GBP Profile Strength pattern). Once approved AND complete, today's
+  // order stands — availability first, the daily action of a live business.
+  const completenessFirst = !isApproved || !isComplete;
+
   return (
     <div
       className="max-w-5xl mx-auto px-4 py-12"
@@ -215,39 +357,111 @@ export default function ProducerDashboardPage() {
       <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">
         {t("greeting", { name: user.name })}
       </h1>
-      <p className="text-fg-muted mb-8">
-        {t.rich("welcome_subtitle", {
-          business: () => <span className="font-semibold">{producer.name}</span>,
-        })}
+      <p className="text-fg-muted mb-3">
+        {/* MEH-1347: the message uses a <business> RICH TAG, not a {business}
+            ICU argument — passing a render function for an argument placeholder
+            is silently dropped by next-intl/React, which left the subtitle
+            dangling at "…העסק של". Generic fallback when the name is absent. */}
+        {producer.name
+          ? t.rich("welcome_subtitle", {
+              business: (chunks) => <span className="font-semibold">{chunks}</span>,
+              name: producer.name,
+            })
+          : t("welcome_subtitle_generic")}
       </p>
 
-      {producer.status === "pending" && (
+      {/* MEH-964 1D: one-tap view-public. LocaleLink keeps the active locale
+          (MEH-956) on /[slug]; target=_blank so the owner previews the live
+          page without losing the dashboard. */}
+      {producer.slug && (
+        <LocaleLink
+          href={`/${producer.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="view-public-link"
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-8"
+        >
+          <Eye size={16} aria-hidden="true" />
+          {t("states.view_public")}
+        </LocaleLink>
+      )}
+
+      {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
+          requested_changes is set; the CTA routes to the edit tab. */}
+      <ChangesRequestedBanner profile={profile} />
+
+      {/* MEH-1025 Chunk B: suppress the generic "ממתין לאישור" notice when a
+          request-changes is pending — the specific "נשאר להשלים" banner above
+          IS the message, and "awaiting approval" would contradict it (the ball
+          is in the owner's court). Both otherwise stack on a pending producer. */}
+      {producer.status === "pending" && !profile?.requested_changes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
-          <p className="text-yellow-700 mb-3">
+          {/* MEH-1347: informational only — the completeness card below owns
+              the single "השלימו פרופיל" CTA (audit found two clashing CTAs
+              with opposite arrows on one screen). */}
+          <p className="text-yellow-700">
             {t("status.pending.body")}
           </p>
-          <Link
-            href="/settings"
-            className="inline-block bg-yellow-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-yellow-800 transition"
-          >
-            {t("status.pending.cta")}
-          </Link>
         </div>
       )}
 
+      {/* MEH-1355: rejected banner absorbs the deltas from the removed /settings
+          business tab — the admin rejection_reason (from /auth/me, rendered as-is
+          like ChangesRequestedBanner's requested_changes) plus the 3 fix-it tips,
+          and a support entry (wa.me + mailto) in place of the bare /contact link. */}
       {producer.status === "rejected" && (
-        <div className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm" role="alert">
-          <p className="font-semibold text-red-800 mb-1">{t("status.rejected.title")}</p>
-          <p className="text-red-700 mb-3">
-            {t("status.rejected.body")}
-          </p>
-          <Link
-            href="/contact"
-            className="inline-block bg-red-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-red-800 transition"
+        <div
+          className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+          role="alert"
+          data-testid="status-rejected-banner"
+        >
+          <p className="font-semibold text-red-800">{t("status.rejected.title")}</p>
+          {user.producer_rejection_reason && (
+            <p className="text-red-600" data-testid="status-rejected-reason">
+              {user.producer_rejection_reason}
+            </p>
+          )}
+          <p className="text-red-700">{t("status.rejected.body")}</p>
+          <ul className="space-y-1 text-red-700">
+            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_details")}</span></li>
+            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_photos")}</span></li>
+            <li className="flex items-start gap-2"><span aria-hidden="true">•</span><span>{t("status.rejected.tip_address")}</span></li>
+          </ul>
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="text-primary hover:underline font-medium"
+            data-testid="status-rejected-support"
           >
-            {t("status.rejected.cta")}
-          </Link>
+            {t("status.rejected.support_cta")}
+          </button>
+        </div>
+      )}
+
+      {/* MEH-1355: inactive banner migrated from the removed /settings business
+          tab. Matches the literal "inactive" the admin toggle emits
+          (admin.py:332) — the old settings tab checked a status the backend
+          never emits, so its banner was dead code. */}
+      {producer.status === "inactive" && (
+        <div
+          className="bg-amber-50 border border-amber-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+          role="alert"
+          data-testid="status-inactive-banner"
+        >
+          <p className="font-semibold text-amber-800 flex items-center gap-2">
+            <Warning size={18} weight="fill" aria-hidden="true" />
+            {t("status.inactive.title")}
+          </p>
+          <p className="text-amber-700">{t("status.inactive.body")}</p>
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="text-primary hover:underline font-medium"
+            data-testid="status-inactive-support"
+          >
+            {t("status.inactive.support_cta")}
+          </button>
         </div>
       )}
 
@@ -269,6 +483,21 @@ export default function ProducerDashboardPage() {
             }
           />
         </div>
+      )}
+
+      {/* MEH-1134: completeness-first while pending/incomplete — the single
+          mount for that state (the mirror-gated mount below covers the
+          approved+complete state, so the card renders exactly once). */}
+      {completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
+      {/* MEH-1261 F2: profile fetch failed → say so where the completeness
+          card would render (completenessFirst is true when profile is null). */}
+      {completenessFirst && !profile && profileError && (
+        <SectionFetchError
+          message={t("section_errors.profile")}
+          retryLabel={t("section_errors.retry_cta")}
+          onRetry={() => setProfileAttempt((n) => n + 1)}
+          testid="dashboard-profile-error"
+        />
       )}
 
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
@@ -295,10 +524,21 @@ export default function ProducerDashboardPage() {
         );
       })()}
 
-      {/* MEH-53: Vanity URL card */}
-      {producer.slug && (
+      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
+          surfaces ONLY when the profile is complete AND approved — sharing an
+          unpublished/incomplete page sends visitors to a dead listing. When
+          locked, a warm why-locked hint takes its place (not silent hiding). */}
+      {producer.slug && isComplete && isApproved ? (
         <VanityLinkCard slug={producer.slug} />
-      )}
+      ) : producer.slug ? (
+        <div
+          data-testid="share-locked-hint"
+          className="bg-white border border-border rounded-[16px] p-5 mb-6 flex items-center gap-3"
+        >
+          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
+        </div>
+      ) : null}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
@@ -312,26 +552,57 @@ export default function ProducerDashboardPage() {
         <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
-        <div role="radiogroup" aria-label={t("availability.group_aria")} className="flex flex-wrap gap-2">
+        <div
+          role="radiogroup"
+          aria-label={t("availability.group_aria")}
+          aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
+          className="flex flex-wrap gap-2"
+        >
           {[
             { value: "accepting_orders", color: "#22c55e" },
             { value: "available_today",  color: "#2e6853" },
             { value: "full_this_week",   color: "#f97316" },
             { value: "on_vacation",      color: "#9ca3af" },
           ].map((opt) => {
-            const active = (producer.availability_state || "accepting_orders") === opt.value;
+            const savedState = producer.availability_state || "accepting_orders";
+            const isVacation = opt.value === "on_vacation";
+            // MEH-999: while vacation is selected-but-not-yet-confirmed, only the
+            // vacation radio reads active so the group never lights up two.
+            const active = isVacation
+              ? vacationSelected || savedState === "on_vacation"
+              : !vacationSelected && savedState === opt.value;
+            // MEH-1092 F4: pre-approval the pills are already disabled, but the
+            // saved state still read as "live" (bg-primary active fill). Show the
+            // pills NEUTRAL (no active highlight, aria-checked=false) until the
+            // business is approved, so a locked block never reads as an active
+            // status in the air. Post-approval is unchanged.
+            const showActive = active && isApproved;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
-                aria-checked={active}
-                onClick={() => setAvailabilityState(opt.value)}
+                aria-checked={showActive}
+                // MEH-964 1D: availability is disabled until the business is
+                // published (approved) — an unpublished listing has no public
+                // surface for the state to affect. Hint below carries the why.
+                disabled={!isApproved}
+                onClick={() => {
+                  if (isVacation) {
+                    // Reveal the date field first; defer the POST to the
+                    // combined mini-form below so it always carries a date.
+                    setVacationSelected(true);
+                    setVacationDateError("");
+                  } else {
+                    setVacationSelected(false);
+                    setAvailabilityState(opt.value);
+                  }
+                }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                  active
+                  showActive
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-text border-border hover:bg-green-50"
-                }`}
+                } ${!isApproved ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <span
                   aria-hidden="true"
@@ -349,30 +620,55 @@ export default function ProducerDashboardPage() {
             );
           })}
         </div>
-        {(producer.availability_state || "accepting_orders") === "on_vacation" && (
-          <div className="mt-4 flex items-center gap-3">
-            <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
-              {t("availability.vacation_return_label")}
-            </label>
-            <input
-              id="vacation-until"
-              type="date"
-              value={vacationUntil}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setVacationUntil(e.target.value)}
-              onBlur={() => { if (vacationUntil) setAvailabilityState("on_vacation"); }}
-              className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-              dir="ltr"
-            />
-            {vacationUntil && (
+        {/* MEH-964 1D: why-locked hint, associated with the radiogroup via
+            aria-describedby so it's announced (not colour/opacity-only). */}
+        {!isApproved && (
+          <p id="availability-disabled-hint" data-testid="availability-disabled-hint" className="text-xs text-fg-muted mt-3">
+            {t("states.availability_disabled")}
+          </p>
+        )}
+        {/* MEH-999: reachable as soon as vacation is selected — not gated on the
+            server already being on_vacation — so the return date can be picked
+            and submitted together (combined mini-form). */}
+        {(vacationSelected || (producer.availability_state || "accepting_orders") === "on_vacation") && (
+          <div className="mt-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
+                {t("availability.vacation_return_label")}
+              </label>
+              <input
+                id="vacation-until"
+                type="date"
+                value={vacationUntil}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
+                className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                dir="ltr"
+                aria-invalid={vacationDateError ? "true" : undefined}
+                aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
+              />
+              {vacationUntil && (
+                <button
+                  type="button"
+                  onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
+                  className="text-fg-muted hover:text-red-600 transition inline-flex"
+                  aria-label={t("availability.remove_vacation_date_aria")}
+                >
+                  <X size={14} weight="bold" aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => { setVacationUntil(""); setAvailabilityState("on_vacation"); }}
-                className="text-fg-muted hover:text-red-600 transition inline-flex"
-                aria-label={t("availability.remove_vacation_date_aria")}
+                onClick={() => setAvailabilityState("on_vacation")}
+                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <X size={14} weight="bold" aria-hidden="true" />
+                {t("availability.vacation_confirm")}
               </button>
+            </div>
+            {vacationDateError && (
+              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-red-600">
+                {vacationDateError}
+              </p>
             )}
           </div>
         )}
@@ -381,24 +677,67 @@ export default function ProducerDashboardPage() {
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics
           stats. Guarded on `profile` (the full /producers/me record carries
-          the fields the heuristic reads). */}
-      {profile && <ProfileCompletenessCard producer={profile} />}
+          the fields the heuristic reads). MEH-1134: this slot served the
+          approved+complete state; MEH-1397 removes it — once the business is
+          approved AND complete the collapsed "הפרופיל מלא ✓" card is noise with
+          no action (reverses MEH-288's "never fully disappears", per Sapir
+          21/07). The card now mounts ONLY in the completenessFirst slot above
+          (pending OR incomplete), where the green collapse still gives value
+          ("סיימת הכל, מחכים לאישור" while complete-but-pending). */}
 
       {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
           Deep analytics (windowed cards + charts) live in the insights tab
           (dashboard/insights); these KPIs render only here (FLAG-1 — never
-          duplicated in insights/). */}
-      {analytics ? (
+          duplicated in insights/).
+          MEH-964 1D: when there's no activity yet (data-state-active=false),
+          a warm zero-state replaces the 2×2 wall-of-zeros so a brand-new owner
+          sees an invitation, not four zeros. hasActivity per the 1A definition
+          (views||whatsapp, rating excluded). */}
+      {!analytics ? (
+        analyticsError ? (
+          // MEH-1261 F2: a failed analytics fetch used to leave the loading
+          // line up forever — surface it + retry instead.
+          <SectionFetchError
+            message={t("section_errors.analytics")}
+            retryLabel={t("section_errors.retry_cta")}
+            onRetry={() => setAnalyticsAttempt((n) => n + 1)}
+            testid="dashboard-analytics-error"
+          />
+        ) : (
+          <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        )
+      ) : hasActivity ? (
         <OverviewStatsHero analytics={analytics} />
       ) : (
-        <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
+        // title-less copy — two identical anonymous cards on a fresh
+        // dashboard. Each now carries its own visible title + purpose-
+        // specific copy.
+        <div
+          data-testid="overview-zero-state"
+          className="bg-white border border-border rounded-[16px] p-6 mb-8"
+        >
+          <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
+          <div className="flex items-center gap-3">
+            <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+            <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
+          </div>
+        </div>
       )}
+
+      {/* MEH-964 1C: anonymous activity pulse (§5 final spec) — renders only
+          once analytics resolved (no separate loading line; the strip above
+          already narrates the in-flight state). */}
+      {analytics && <ActivityPulse analytics={analytics} />}
 
       {/* MEH-964 1A: quick-links grid relocated to the tools tab
           (dashboard/tools); the bio / custom-questions / contact-channels
           edit forms relocated to the edit tab (dashboard/edit). 1B swapped the
           Overview analytics for the lean KPI strip and moved the deep charts
           to the insights tab. */}
+
+      {/* MEH-1355: shared support modal for the rejected + inactive banners. */}
+      {supportOpen && <StatusSupportModal onClose={() => setSupportOpen(false)} />}
     </div>
   );
 }
@@ -415,6 +754,92 @@ export default function ProducerDashboardPage() {
 // (FLAG-1 — never duplicated in insights/). The eligibility badge is kept
 // here (status/recognition signal, belongs on the at-a-glance Overview).
 // ============================================================
+
+// ============================================================
+// MEH-964 1C: anonymous activity pulse (§5 FINAL SPEC, design round-4).
+// Aggregate counts from /producers/me/analytics ONLY — no names, no message
+// text, no per-row city, no per-row CTA/handled state (the conversation lives
+// off-platform in WhatsApp; a named inbox has no data source).
+// Rulings (Sapir, 03/07):
+//   - Reviews row DROPPED — the payload has only lifetime total_reviews (no
+//     windowed count), so a "new review" row would be a false recency claim
+//     (§5 honesty clause) and a lifetime row duplicates the rating KPI
+//     (FLAG-1). Returns with MEH-966 (per-event feed).
+//   - Rows = 2 event types in fixed locked order (whatsapp -> view), each
+//     gated on its own last_7d > 0. NO per-row relative times (never
+//     rendered) — the payload has no per-event timestamps. Uniform 7-day frame.
+//   - Hero binds to whatsapp_clicks.last_7d, NOT .total — the "new" claim
+//     must be truthful. last_7d == 0 -> no hero; both metrics 0 -> zero-state.
+// Card sizes to rows.length (0/1/2 collapse — no fixed-count padding). ONE
+// section-level CTA -> wa.me (gated with the hero on whatsapp last_7d > 0:
+// a reply CTA with zero inquiries would be the same false claim).
+// ============================================================
+
+function ActivityPulse({ analytics }) {
+  const t = useTranslations("dashboard.producer.pulse");
+  const waCount = analytics.whatsapp_clicks?.last_7d ?? 0;
+  const viewCount = analytics.profile_views?.last_7d ?? 0;
+
+  // Fixed locked order: whatsapp -> view. Each row is an anonymous event-TYPE
+  // presence signal, not a count — counts live in the KPI strip (FLAG-1).
+  const rows = [
+    { key: "whatsapp", count: waCount, Icon: WhatsappLogo },
+    { key: "view", count: viewCount, Icon: Eye },
+  ].filter((row) => row.count > 0);
+
+  return (
+    <section
+      data-testid="activity-pulse"
+      aria-label={t("section_aria")}
+      className="bg-white border border-border rounded-[16px] p-6"
+    >
+      {rows.length === 0 ? (
+        // MEH-1345: visible title so the empty pulse card is identifiable
+        // (was an anonymous line identical to the stats zero-state above).
+        <div data-testid="activity-pulse-empty">
+          <p className="font-semibold text-text mb-1">{t("title")}</p>
+          <p className="text-sm text-fg-muted">{t("zero_state")}</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {waCount > 0 && (
+            <p
+              data-testid="activity-pulse-hero"
+              className="font-headline-md text-lg font-bold text-text"
+            >
+              {t("hero", { count: waCount })}
+            </p>
+          )}
+          <ul className="space-y-2">
+            {rows.map(({ key, Icon }) => (
+              <li
+                key={key}
+                data-testid={`activity-pulse-row-${key}`}
+                className="flex items-center gap-3 text-sm text-text"
+              >
+                <Icon size={18} className="text-primary shrink-0" aria-hidden="true" />
+                {t(`rows.${key}`)}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-fg-muted">{t("window_7d")}</p>
+          {waCount > 0 && (
+            <a
+              href="https://wa.me/"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="activity-pulse-cta"
+              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full text-sm font-medium"
+            >
+              <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
+              {t("cta")}
+            </a>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function OverviewStatsHero({ analytics }) {
   const t = useTranslations("dashboard.producer.analytics");
@@ -458,7 +883,10 @@ function OverviewStatsHero({ analytics }) {
           conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
           tinted, not a card. */}
       <p className="text-sm text-fg-muted text-center">
-        {t("kpi.conversion_line", { rate: conversion_rate })}
+        {/* MEH-1118: clamp to ≤100% — WhatsApp clicks aren't a strict subset of
+            page views (card/map CTAs count without a view), so the raw ratio
+            could read "133.3% מהצופות פנו אלייך". */}
+        {t("kpi.conversion_line", { rate: clampPercent(conversion_rate) })}
       </p>
 
       {/* "Business of the week" eligibility badge — kept on the Overview

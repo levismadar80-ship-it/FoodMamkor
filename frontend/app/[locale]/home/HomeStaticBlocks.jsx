@@ -5,30 +5,41 @@ import Image from "next/image";
 import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
  * the user opened recently (7-day TTL applied by the hook). Hidden
- * when the list is empty.
+ * when the list is empty. MEH-1391: desktop scroll arrows via the
+ * shared useScrollAffordance hook.
  */
 export function HomeRecentlyViewed({ items }) {
   const t = useTranslations();
+  // Hook must run unconditionally (rules of hooks) — before the empty-list return.
+  const affordance = useScrollAffordance();
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
-      <h2 className="font-headline-md font-bold text-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+      <h2 className="font-headline-md text-headline-md text-text mb-4">
         {t("home.recent.heading")}
       </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
-        {items.map((p) => {
+      {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
+      <div className="relative">
+        <ScrollArrows affordance={affordance} />
+        <div
+          ref={affordance.scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
+        >
+          {items.map((p) => {
           const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-          const imgSrc = p.images?.[0];
+          const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
           return (
             <Link
               key={p.id}
               href={href}
-              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group"
+              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
@@ -51,7 +62,8 @@ export function HomeRecentlyViewed({ items }) {
               </div>
             </Link>
           );
-        })}
+          })}
+        </div>
       </div>
     </section>
   );
@@ -85,7 +97,7 @@ export function HomeFeaturedProducer({ featured }) {
   const t = useTranslations("home.featured");
   if (!featured) return null;
   const photo = featured.photo
-    ? optimizeCloudinary(featured.photo, { aspectRatio: "5:6", width: 900 })
+    ? optimizeCloudinary(featured.photo, { aspectRatio: IMAGE_RATIOS.featured, width: 900 })
     : null;
   const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
     .filter(Boolean)
@@ -93,33 +105,42 @@ export function HomeFeaturedProducer({ featured }) {
   return (
     <section className="max-w-6xl mx-auto px-4 md:px-12 section-y">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
-        {/* photo — leading/start column (Direction A: image leads, 5:6) */}
+        {/* photo — leading/start column (Direction A: image leads, 4:5) */}
         <FadeInSection className="md:col-span-5">
-          <figure className="relative m-0 rounded-lg bg-surface-card border border-border p-2">
+          {/* MEH-991 (HOME-23): FREEZE §10 — framed 4:5, radius 16, --light loading
+              fill, SOLID caption chip bottom/inline-start (blur dropped per FREEZE §10.4). */}
+          <figure className="relative m-0 rounded-2xl bg-surface-card border border-border p-2">
             {photo ? (
               <Image
                 src={photo}
                 alt={featured.name}
                 width={500}
-                height={600}
+                height={625}
                 sizes="(max-width: 768px) 100vw, 42vw"
-                className="aspect-[5/6] w-full rounded-md object-cover"
+                className="aspect-[4/5] w-full rounded-xl object-cover"
               />
             ) : (
               // tonal plate fallback — never a broken <img> (IMG-01 pattern)
-              <div className="aspect-[5/6] rounded-md bg-background-alt" aria-hidden="true" />
+              <div className="aspect-[4/5] rounded-xl bg-green-50" aria-hidden="true" />
+            )}
+            {meta && (
+              <figcaption className="absolute bottom-4 start-4 max-w-[85%] truncate bg-surface-card border border-border rounded-full px-3 py-1 text-[12px] text-text">
+                {meta}
+              </figcaption>
             )}
           </figure>
         </FadeInSection>
 
         {/* editorial text — end column */}
         <FadeInSection className="md:col-span-7" delay={0.1}>
-          <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-1">{t("eyebrow")}</p>
+          <p className="flex items-center gap-3 text-sm font-medium text-accent mb-1">
+            {t("eyebrow")}
+            <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
+          </p>
           <h2 className="font-headline-md text-xl font-bold text-text mb-4">{t("heading")}</h2>
-          {meta && <p className="text-sm text-fg-muted mb-3">{meta}</p>}
+          {/* MEH-991 (HOME-23): meta moved into the on-image caption chip per FREEZE §10. */}
           <p
-            className="font-headline-lg font-bold text-text leading-snug mb-4"
-            style={{ fontSize: "clamp(24px, 3vw, 36px)" }}
+            className="font-headline-lg text-headline-lg text-text leading-snug mb-4"
           >
             {featured.quote}
           </p>
@@ -133,7 +154,7 @@ export function HomeFeaturedProducer({ featured }) {
             {featured.href && (
               <Link
                 href={featured.href}
-                className="inline-block bg-primary text-white px-6 py-2.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
+                className="inline-block bg-primary text-white px-6 py-2.5 rounded-sm hover:bg-primary-dark transition font-medium"
               >
                 {t("cta_meet", { name: featured.name })}
               </Link>
@@ -166,10 +187,10 @@ export function HomeHowItWorks() {
       <FadeInSection>
         {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
             ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
-        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+        <p className="text-sm font-medium text-fg-muted text-center mb-2">
           {t("home.how_it_works.eyebrow")}
         </p>
-        <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg text-headline-lg text-text text-center mb-10">
           {t("home.how_it_works.heading")}
         </h2>
       </FadeInSection>
@@ -201,12 +222,11 @@ export function HomeComparisonTeaser() {
   return (
     <section className="max-w-3xl mx-auto px-4 section-y text-center">
       <FadeInSection>
-        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-2">
+        <p className="text-sm font-medium text-fg-muted mb-2">
           {t("eyebrow")}
         </p>
         <h2
-          className="font-headline-lg font-bold text-text mb-5"
-          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+          className="font-headline-lg text-headline-lg text-text mb-5"
         >
           {t("heading")}
         </h2>
@@ -227,29 +247,31 @@ export function HomeComparisonTeaser() {
  */
 export function HomeCTA() {
   const t = useTranslations();
+  // MEH-1041: HOME-28 light-warm treatment — cream surface, gold rule + green-pill CTA (was dark band + white button).
   return (
-    <section className="bg-primary-dark text-white py-20">
+    <section className="bg-background text-text py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
-        <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
+        <h2 className="font-headline-display text-headline-display mb-4">
           {t("home.cta.heading")}
         </h2>
         {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,
             then curation, then the closing nudge) — body prose keeps periods. */}
-        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+        <p className="text-fg-muted text-lg mb-2 max-w-xl mx-auto">
           {t("home.cta.body_l1")}
         </p>
-        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+        <p className="text-fg-muted text-lg mb-2 max-w-xl mx-auto">
           {t("home.cta.body_l2")}
         </p>
-        <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
+        <p className="text-fg-muted text-lg mb-8 max-w-xl mx-auto">
           {t("home.cta.body_l3")}
         </p>
-        <Link
+        {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+        <BusinessCtaLink
           href="/register/producer"
-          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-green-50 transition font-medium"
+          className="inline-block bg-primary text-white px-8 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
         >
           {t("home.cta.button")}
-        </Link>
+        </BusinessCtaLink>
       </div>
     </section>
   );

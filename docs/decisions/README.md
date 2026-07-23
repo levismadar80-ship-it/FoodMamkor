@@ -45,6 +45,10 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [022](./ADR-022-two-tier-licensing-model.md) | Two-tier licensing model — מאומת / מוצהר | Accepted | 2026-06-05 | MEH-742 |
 | [023](./ADR-023-motion-nav-indicator-spring.md) | Motion — restrained spring for bottom-nav indicator | Accepted | 2026-06-16 | MEH-789 |
 | [024](./ADR-024-voice-surface-function.md) | Voice — surface-function taxonomy + owner-noun gender (refines ADR-014) | Accepted | 2026-06-25 | MEH-944 |
+| [025](./ADR-025-loop-tiers.md) | Loop-primitive authority by risk tier — /goal, /loop, /schedule (extends ADR-016) | Accepted | 2026-07-09 | MEH-1052 |
+| [026](./ADR-026-error-color-token.md) | Error color token — AA-passing cream + on-dark pair (narrows ADR-019) | Accepted | 2026-07-09 | MEH-1073 |
+| [027](./ADR-027-revenue-model.md) | Revenue model — base free forever, no transaction fees, trigger-gated premium | Accepted | 2026-07-12 | MEH-1147 |
+| [028](./ADR-028-qa-gates-per-tier.md) | QA gates per-tier — CI replaces manual mobile QA for GREEN/YELLOW (amends ADR-016 DoD) | Accepted | 2026-07-13 | MEH-1185 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

@@ -617,7 +617,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
 | **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
 | **i18n key** | `producer.badge.declared_explainer` |
-| **Status** | 🕐 key-only — badge UI port consumes |
+| **Status** | ✅ MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
 ### Gate 3 — /terms §5 two-tier (MEH-760)
@@ -721,3 +721,78 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 ### Status
 
 🕐 Guardrail only — no testimonial copy locked yet. Each published testimonial gets its own row here (quote · attribution · i18n key · speaker-approval date) when it goes live.
+
+---
+
+## Section 9 — /join landing (MEH-995, positioning-FINAL)
+
+> **Source:** MEH-995 §positioning-FINAL (locked in-ticket after 5 design rounds) + Sapir-approved drafts (session 2026-07-07). /join applies existing brand rules — no new brand decision (BRAND.md §8 untouched by design). All keys under `join.*` + `seo.join.*` (he + en twins, MEH-978/840).
+
+### Hero
+| Field | Value |
+|---|---|
+| **Eyebrow** | `לבתי עסק מקומיים` — aligned with the approved footer tagline; zero partial-category |
+| **H1** | `העסק שלכם. עמוד משלו.` — why-first, editorial through what-you-get |
+| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה ב-WhatsApp — לקוחות מקומיים פוגשים את הסיפור שלכם.` — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
+| **CTA** | `מצטרפים` → `/register/producer` — the page's single CTA |
+| **Trust hint** | `חינם להצטרף` — NOT "חינם לעולם"; zero premium mention anywhere on the page (MEH-617 model undecided) |
+| **i18n keys** | `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` |
+| **Status** | ⏳ MEH-995 |
+
+### How it works (4 steps)
+| Step | Title | Body | Derived from |
+|---|---|---|---|
+| 01 | `נרשמים` | `טופס קצר על העסק — סיפור, תמונות ופרטי קשר. בערך 10 דקות.` | MEH-994b locked duration |
+| 02 | `שיחה אישית` | `הצוות שלנו יוצר קשר לשיחה קצרה — היכרות עם העסק והסיפור.` | MEH-994 after_body |
+| 03 | `העמוד עולה` | `בדרך כלל תוך יום-יומיים העסק שלכם מופיע באתר.` | chat.py approval timeframe |
+| 04 | `לקוחות פונים ישירות` | `כפתור WhatsApp בעמוד פותח שיחה ישירה אתכם. הקשר והתשלום — ביניכם ובין הלקוחות בלבד.` | MEH-1003 neutral no-fees copy (avoids forbidden "מתווכים") |
+
+Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/process`.
+
+### Checklist / card / FAQ teaser
+| Field | Value |
+|---|---|
+| **Checklist** | mirrors the MEH-994 pre-flight items verbatim (`join.prepare.*`) — keep the two surfaces in sync on any copy change |
+| **Card title** | `כל בית עסק עובר שיחה אישית` — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
+| **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
+| **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` — the no-fees LOCK lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
+| **Status** | ⏳ MEH-995 |
+
+### Testimonial slot — placeholder ONLY (Section 8 guardrail applies)
+The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה.` + eyebrow `בקרוב — עדות ראשונה`. **Do NOT replace with invented business copy** — the real quote arrives via Template 10 verbatim intake (MEH-931) pre-launch and gets its own Section-8 row.
+
+## Section 10 — /share "ספרו עלינו" (MEH-1160)
+
+> **Source:** MEH-1160 in-ticket Hebrew copy draft (dispatched 13/07/2026), shipped as drafted — no rewording needed. Share only, zero donation/payment copy (MEH-1159 track is separate). All keys under `share_page.*` + `seo.share.*` (he + en twins, MEH-978/840). Voice per ADR-024: functional UI = gender-neutral plural; intro narrative = brand-we.
+
+| Field | Value |
+|---|---|
+| **H1** | `ספרו עלינו` |
+| **Intro** | `מהמקור גדל מפה לאוזן. כל שיתוף עוזר לעוד קוראת לגלות בתי עסק שנבדקו אישית — ולעוד בעלת עסק למצוא את הבית שלה.` |
+| **WhatsApp** | `שתפו בוואטסאפ` |
+| **Copy** | `העתיקו קישור` · Toast: `הקישור הועתק` |
+| **Native** | `עוד דרכים לשתף` |
+| **Email** | `שתפו במייל` · Subject: `מכירים את מהמקור?` |
+| **Prefilled message (WA + email body)** | `הכירו את מהמקור — בתי עסק מקומיים לאוכל, כולם עברו היכרות אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`). _MEH-1170: dropped "מגזין" (forbidden in UI surfaces) + "נבדקו אישית" over-claim → "עברו היכרות אישית" (ADR-022 / MEH-758 locked language)._ |
+| **Footer link** | `ספרו עלינו` (`share_page.footer_link`) |
+| **seo.share.title** | `ספרו עלינו — מהמקור` |
+| **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
+| **Status** | ✅ MEH-1160 |
+
+## Section 11 — /about/why-local "למה מקומי?" (MEH-1289)
+
+> **Source:** MEH-1289 locked copy (Sapir, 17/07/2026) — shipped verbatim, no rewording. Reader-facing editorial page (magazine prose, no bullets). All keys under `about_why_local.*` (he + en twins, MEH-978/840). Voice per ADR-024. Two external sources cited as live links; the "מחקר בריטי של New Economics Foundation" phrase links inline. No licensing/verification claims (legal-gated, MEH-1285 follow-up).
+
+| Field | Value |
+|---|---|
+| **H1** | `למה מקומי?` |
+| **Intro** | `"מקומי" זה דבר פשוט. אוכל שגדל, נאפה או נעשה קרוב לבית. בעונה שלו. מאנשים עם שם ופנים, לא ממערכות. הנה חמש סיבות טובות לבחור בו — ובסוף, איך מוצאים אותו.` |
+| **H2 — טעם של עכשיו** | `יש הבדל בין עגבנייה שנקטפה הבוקר במושב הסמוך, לבין עגבנייה שנקטפה ירוקה כדי שתשרוד שבועיים בדרכים. אחת הבשילה בשמש, השנייה במחסן — ומרגישים את זה כבר בביס הראשון. ויש עוד סיבה, מפתיעה: הזן. רשתות שיווק מוכרות זנים שנבחרו כי הם שורדים משלוח ונראים טוב על המדף; מגדל מקומי בוחר זן בגלל הטעם. לפעמים זה פשוט לא אותו פרי.` |
+| **H2 — הכסף נשאר קרוב** | `שקל שמוציאים אצל בית עסק מקומי ממשיך להסתובב באזור: הופך למשכורת, לקנייה אצל ספק מהמושב ליד, לערב בעסק אחר קרוב. שקל שהולך לרשת גדולה — רובו עוזב. מחקר בריטי של New Economics Foundation מצא שסלי ירקות מעסקים מקומיים השאירו לכלכלה המקומית בערך כפליים לעומת קנייה ברשתות.` — the phrase `מחקר בריטי של New Economics Foundation` links to `https://www.sustainweb.org/blogs/jul25-what-is-local-food/` (target=_blank rel=noopener). |
+| **H2 — הוגנות למי שעושה את העבודה** | `בלי מתווכים ובלי עמלות, הכסף מגיע למי שגידל, אפה, בישל או יצר — לא למי שעמד באמצע.` |
+| **H2 — לדעת מאיפה זה בא** | `לאוכל מקומי יש כתובת ויש שם. אפשר לשאול מי גידל, איך ומתי — ולקבל תשובה מבן אדם, לא ממדבקה. עם הזמן זה הופך להיכרות: מי שמוכר לכם כבר יודע מה אתם אוהבים, ויגיד לכם מתי זה חוזר. הידיעה הזאת היא סוג של שקט.` |
+| **H2 — טוב לסביבה, טוב לכולנו** | `פחות קילומטרים בדרך, פחות אריזות, פחות ימים בקירור. ומשהו שקל לשכוח: אזור שיודע להאכיל את עצמו הוא אזור חזק יותר — בכל מצב.` |
+| **H2 — איפה מתחילים** | `בשביל זה מהמקור קיים: מקום אחד שמרכז בתי עסק מקומיים — כל אחד נבחר ואושר ידנית, לכל אחד עמוד עם הסיפור שלו, והקשר איתו ישיר. בלי עמלות, בלי מתווכים.` |
+| **CTA** | `גלו בתי עסק באזור שלכם` → `/producers` (locale-aware) |
+| **Sources line** | `מקורות: Sustain UK — What is local food and why does it matter? (2025) · CollectiveCrop — Fresh-Picked vs Supermarket Produce (2026)` — both titles are live links: Sustain → `https://www.sustainweb.org/blogs/jul25-what-is-local-food/`; CollectiveCrop → `https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter` |
+| **Status** | ✅ MEH-1289 |

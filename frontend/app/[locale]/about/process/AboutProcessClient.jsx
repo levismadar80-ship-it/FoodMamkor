@@ -14,7 +14,6 @@
  * History: MEH-534 (S11 Direction D port).
  */
 
-import Link from "next/link";
 import {
   Path,
   PaperPlaneTilt,
@@ -33,6 +32,7 @@ import {
   ArrowLeft,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
 
 // Illustrative tooltip date — this page has NO producer object, so the badge
 // is editorial chrome (refchip in the S11 design). Reuses the live tier-1
@@ -84,7 +84,7 @@ export default function AboutProcessClient() {
       <span aria-hidden className="numeric font-english italic font-semibold text-accent text-[21px]">
         {n}
       </span>
-      <span className="font-body-md font-medium text-[11px] tracking-[0.18em] text-fg-muted uppercase">
+      <span className="font-body-md font-medium text-[11px] text-fg-muted">
         {children}
       </span>
     </div>
@@ -392,13 +392,14 @@ export default function AboutProcessClient() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3.5 md:mt-1.5">
-              <Link
+              {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+              <BusinessCtaLink
                 href="/register/producer"
                 className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-primary text-white rounded-2xl font-body-md font-semibold text-base hover:bg-primary-dark transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 whitespace-nowrap"
               >
                 {t("cta.submit")}
                 <ArrowLeft size={19} aria-hidden />
-              </Link>
+              </BusinessCtaLink>
               <span className="font-body-md text-[13px] text-fg-muted">{t("cta.secondary")}</span>
             </div>
           </div>

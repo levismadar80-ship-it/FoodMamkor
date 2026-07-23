@@ -13,9 +13,13 @@
  *      with optional bearer token. Used by the four ContactSidebar tiles
  *      (phone / instagram / website / email).
  *
- *   2. pingWhatsAppBeacon(producerId) — sendBeacon to .../whatsapp-click.
- *      Called from primary-CTA sites: ProducerDetail inline + sidebar +
- *      sticky bar; /map DesktopMiniPopup + mobile-sheet pinned card.
+ *   2. pingWhatsAppBeacon(producerId) — POST to .../whatsapp-click. When a
+ *      bearer token is present it uses fetch(keepalive:true) with the
+ *      Authorization header so the click is attributed to the logged-in user
+ *      (MEH-1426); with no token it falls back to sendBeacon (anonymous click,
+ *      user_id=NULL). Called from the primary-CTA sites: ProducerDetail inline
+ *      + sidebar (ContactCard) and the mobile sticky bar. (The /map
+ *      DesktopMiniPopup was retired in MEH-1010 — no map WhatsApp CTA exists.)
  *
  *   3. markWhatsAppClickedLocal(producerId) — localStorage write that
  *      unlocks the review form. Called from ProducerDetail's inline +
@@ -45,6 +49,28 @@ export function trackContactClick(producerId, method) {
 }
 
 export function pingWhatsAppBeacon(producerId) {
+  if (!producerId) return;
+  // MEH-1426: sendBeacon cannot attach an Authorization header, so a logged-in
+  // click landed with user_id=NULL and could never satisfy the reviews WA-gate
+  // (reviews.py guard 3). When a token is present, POST via fetch(keepalive:true)
+  // — same pattern as trackContactClick above — so the click is attributed to the
+  // user AND survives the wa.me navigation. The whatsapp-click endpoint takes no
+  // body (producer_id is the path param), so none is sent.
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+  if (token) {
+    try {
+      fetch(`/api/producers/${producerId}/whatsapp-click`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // tracking is best-effort
+    }
+    return;
+  }
+  // Anonymous fallback — no token to attach, so sendBeacon is fine (user_id stays
+  // NULL, a legitimate anonymous click).
   if (typeof navigator !== "undefined" && navigator.sendBeacon) {
     try {
       navigator.sendBeacon(`/api/producers/${producerId}/whatsapp-click`);

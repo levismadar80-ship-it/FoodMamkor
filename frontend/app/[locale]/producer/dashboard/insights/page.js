@@ -15,7 +15,9 @@
  * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
  *           app/[locale]/producer/dashboard/page.js (Overview — KPI strip);
  *           backend/app/routers/producer_me.py:489 (analytics endpoint).
- * History:  MEH-964 (relocation, chunk 1B).
+ * History:  MEH-964 (relocation, chunk 1B); MEH-1090 (chart Y-axis + tokens);
+ *           MEH-1101 (pre-publish zero-state + small-n cities list +
+ *           followers-zero CTA).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -23,8 +25,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -34,6 +37,13 @@ export default function ProducerDashboardInsightsPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
   const [analytics, setAnalytics] = useState(null);
+  // MEH-1101: the analytics payload has no approved/published flag — the
+  // status signal comes from /producers/me (same source as the Overview's
+  // isApproved, page.js). null = unknown → banner stays hidden (fail-quiet).
+  // profileSettled gates render so the banner doesn't pop in after an
+  // analytics-only first paint (layout shift on every pending producer).
+  const [profile, setProfile] = useState(null);
+  const [profileSettled, setProfileSettled] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -42,11 +52,16 @@ export default function ProducerDashboardInsightsPage() {
       return;
     }
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
+    api
+      .get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch(() => setProfile(null))
+      .finally(() => setProfileSettled(true));
   }, [user, authLoading, router]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
-  if (!analytics) {
+  if (!analytics || !profileSettled) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
         {t("loading_analytics")}
@@ -54,9 +69,32 @@ export default function ProducerDashboardInsightsPage() {
     );
   }
 
+  const isApproved = profile?.status === "approved";
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <DeepAnalyticsSection analytics={analytics} />
+      {/* MEH-1101: pre-publish zero-state — all-zero KPIs read as failure
+          without the context that data starts flowing after approval
+          (Site Kit hasZeroData pattern). KPI cards still render below. */}
+      {profile && !isApproved && (
+        <div
+          className="bg-white border border-border rounded-[16px] p-4 mb-6 text-sm"
+          role="status"
+          data-testid="insights-zero-state"
+        >
+          <p className="font-semibold text-text mb-1">{t("insights_zero_state.title")}</p>
+          <p className="text-fg-muted mb-3">{t("insights_zero_state.body")}</p>
+          {/* LocaleLink (not bare next/link): keeps the /en prefix under
+              as-needed locale routing (MEH-956 precedent). */}
+          <LocaleLink
+            href="/producer/dashboard/edit"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition"
+          >
+            {t("insights_zero_state.cta")}
+          </LocaleLink>
+        </div>
+      )}
+      <DeepAnalyticsSection analytics={analytics} profile={profile} />
     </div>
   );
 }
@@ -67,7 +105,7 @@ export default function ProducerDashboardInsightsPage() {
 // the Overview; the top-line KPI strip stays on the Overview (MEH-964 1B).
 // ============================================================
 
-function DeepAnalyticsSection({ analytics }) {
+function DeepAnalyticsSection({ analytics, profile }) {
   const t = useTranslations("dashboard.producer.analytics");
   const {
     profile_views,
@@ -117,6 +155,26 @@ function DeepAnalyticsSection({ analytics }) {
           icon={Leaf}
           value={follower_count}
           sub={t("simple_cards.followers_sub_template", { count: new_followers_this_week })}
+          // MEH-1101: 0 followers rendered "0 · 0+ השבוע" — a double-zero that
+          // reads as failure. Replace with a share invitation; the share text
+          // links to the public page when one exists (approved + slug).
+          empty={
+            follower_count === 0 ? (
+              <p className="text-sm text-fg-muted" data-testid="followers-zero-cta">
+                {t("simple_cards.followers_zero_prefix")}
+                {profile?.status === "approved" && profile?.slug ? (
+                  <LocaleLink
+                    href={`/${profile.slug}`}
+                    className="text-primary hover:underline"
+                  >
+                    {t("simple_cards.followers_zero_share")}
+                  </LocaleLink>
+                ) : (
+                  t("simple_cards.followers_zero_share")
+                )}
+              </p>
+            ) : null
+          }
         />
         <SimpleCard
           label={t("simple_cards.rating_label")}
@@ -144,8 +202,23 @@ function DeepAnalyticsSection({ analytics }) {
   );
 }
 
+// MEH-1433: 4-digit windowed values (e.g. 2540/2540/2540) overflowed the card
+// at fixed 4xl/2xl/xl sizes — in RTL the leading digit clipped on the start
+// side. Compact notation caps every magnitude at a bounded width ("2.5K"),
+// paired with min-w-0 on the flex row + tabular-nums so the trio always fits.
+// he-IL renders the "K" suffix with a trailing RLM (U+200F) — a known,
+// acceptable ICU behavior (the mark keeps the Latin suffix ordered correctly
+// in RTL). Unit-pinned in __tests__/formatCompact.test.js (MEH-1433 follow-up).
+export function formatCompact(n, locale) {
+  return new Intl.NumberFormat(locale, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n ?? 0);
+}
+
 function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
   const t = useTranslations("dashboard.producer.analytics");
+  const locale = useLocale();
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
@@ -156,32 +229,45 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
         {label}
         {tooltip && <InfoTooltip content={tooltip} />}
       </p>
-      <div className="flex items-baseline gap-3">
-        <span className="font-headline-lg text-4xl font-bold text-primary">
-          {windows?.last_7d ?? 0}
+      {/* MEH-1433: at lg the row is a 4-up grid inside max-w-5xl (~194px inner
+          per card) — three values at 4xl/2xl/xl + gap-3 need ~235px and clip
+          even for the reported 2540→"2.5K". Below lg (1-/2-col, wider cards)
+          the spec's 4xl/2xl/xl fit and are kept verbatim; only the lg tier
+          steps down one notch (hierarchy preserved) + gap tightens, so any
+          magnitude fits the narrowest card. */}
+      <div className="flex items-baseline gap-3 lg:gap-2 min-w-0">
+        <span className="font-headline-lg text-4xl lg:text-2xl font-bold text-primary tabular-nums">
+          {formatCompact(windows?.last_7d, locale)}
         </span>
-        <span className="text-lg text-text/60">/</span>
-        <span className="font-headline-md text-2xl font-semibold text-text">
-          {windows?.last_30d ?? 0}
+        <span className="text-lg lg:text-sm text-text/60">/</span>
+        <span className="font-headline-md text-2xl lg:text-xl font-semibold text-text tabular-nums">
+          {formatCompact(windows?.last_30d, locale)}
         </span>
-        <span className="text-lg text-text/60">/</span>
-        <span className="font-headline-md text-xl text-fg-muted">
-          {windows?.total ?? 0}
+        <span className="text-lg lg:text-sm text-text/60">/</span>
+        <span className="font-headline-md text-xl lg:text-base text-fg-muted tabular-nums">
+          {formatCompact(windows?.total, locale)}
         </span>
       </div>
     </div>
   );
 }
 
-function SimpleCard({ label, icon: Icon, value, sub }) {
+function SimpleCard({ label, icon: Icon, value, sub, empty }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>
       <p className="text-sm text-fg-muted mb-2">{label}</p>
-      <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>
-      <p className="text-xs text-fg-muted mt-1">{sub}</p>
+      {empty ? (
+        // MEH-1101: zero-state replacement — CTA line instead of value + sub.
+        empty
+      ) : (
+        <>
+          <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>
+          <p className="text-xs text-fg-muted mt-1">{sub}</p>
+        </>
+      )}
     </div>
   );
 }
@@ -198,17 +284,23 @@ function ViewsLineChart({ data }) {
   }
   const W = 320;
   const H = 120;
-  const pad = 8;
+  const padTop = 14; // clearance so the top Y-value label isn't clipped
+  const padLeft = 24; // room for the y-axis value labels
+  const padRight = 8;
+  const baseY = H - padTop; // count === 0 sits on the baseline
+  const plotH = baseY - padTop; // pixels available for the max value
+  const plotLeft = padLeft;
+  const plotRight = W - padRight;
   const maxV = Math.max(1, ...data.map((d) => d.count));
-  const stepX = data.length > 1 ? (W - pad * 2) / (data.length - 1) : 0;
+  const stepX = data.length > 1 ? (plotRight - plotLeft) / (data.length - 1) : 0;
+  const yFor = (count) => baseY - (count / maxV) * plotH;
   const points = data
-    .map((d, i) => {
-      const x = pad + i * stepX;
-      const y = H - pad - (d.count / maxV) * (H - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
+    .map((d, i) => `${(plotLeft + i * stepX).toFixed(1)},${yFor(d.count).toFixed(1)}`)
     .join(" ");
 
+  // MEH-1090: 3 readable Y ticks (0 / mid / max), de-duped for tiny ranges,
+  // so a peak reads as "= 12" instead of an unlabelled height.
+  const yTicks = [...new Set([0, Math.round(maxV / 2), maxV])];
   // Show labels for start / mid / end only to avoid x-axis clutter.
   const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
 
@@ -219,25 +311,61 @@ function ViewsLineChart({ data }) {
       role="img"
       aria-label={t("views_chart_aria")}
     >
+      {/* Y-axis gridlines + value ticks — token colors via currentColor. */}
+      {yTicks.map((v) => {
+        const y = yFor(v);
+        return (
+          <g key={`y-${v}`}>
+            <line
+              x1={plotLeft}
+              y1={y}
+              x2={plotRight}
+              y2={y}
+              className="text-fg-muted"
+              stroke="currentColor"
+              strokeWidth="1"
+              opacity="0.25"
+            />
+            <text
+              x={plotLeft - 4}
+              y={y + 3}
+              fontSize="9"
+              textAnchor="end"
+              className="text-fg-muted"
+              fill="currentColor"
+            >
+              {v}
+            </text>
+          </g>
+        );
+      })}
       <polyline
         fill="none"
-        stroke="#2e6853"
+        className="text-primary"
+        stroke="currentColor"
         strokeWidth="2"
         points={points}
       />
       {data.map((d, i) => {
-        const x = pad + i * stepX;
-        const y = H - pad - (d.count / maxV) * (H - pad * 2);
+        const x = plotLeft + i * stepX;
+        const y = yFor(d.count);
         return (
           <g key={d.date}>
-            <circle cx={x} cy={y} r={d.count > 0 ? 2.5 : 1.5} fill="#2e6853" />
+            <circle
+              cx={x}
+              cy={y}
+              r={d.count > 0 ? 2.5 : 1.5}
+              className="text-primary"
+              fill="currentColor"
+            />
             {labelIndexes.includes(i) && (
               <text
                 x={x}
                 y={H + 14}
                 fontSize="10"
                 textAnchor="middle"
-                fill="#6b6b6b"
+                className="text-fg-muted"
+                fill="currentColor"
               >
                 {d.date.slice(5)}
               </text>
@@ -263,6 +391,21 @@ function TopCitiesBarChart({ data }) {
       </p>
     );
   }
+  // MEH-1101: with fewer than 3 cities, maxV normalization renders the top
+  // city as a full-width bar — "100% of nothing". A plain text list carries
+  // the same information without the misleading proportion.
+  if (data.length < 3) {
+    return (
+      <ul className="space-y-2" data-testid="top-cities-list">
+        {data.map((row) => (
+          <li key={row.city} className="flex items-center justify-between text-sm">
+            <span className="text-text">{row.city}</span>
+            <span className="text-fg-muted">{row.count}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
   const maxV = Math.max(1, ...data.map((d) => d.count));
   return (
     <ul className="space-y-2">
@@ -274,7 +417,7 @@ function TopCitiesBarChart({ data }) {
               <span className="text-text">{row.city}</span>
               <span className="text-fg-muted">{row.count}</span>
             </div>
-            <div className="h-2 bg-green-50 rounded-full overflow-hidden">
+            <div data-testid="city-bar" className="h-2 bg-green-50 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full"
                 style={{ width: `${pct}%` }}

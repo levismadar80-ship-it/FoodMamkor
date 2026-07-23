@@ -19,11 +19,14 @@ import { useRouter, usePathname } from "@/i18n/navigation";
  *           that's a separate post-Wave-6 PR.
  * Related:  frontend/i18n/routing.js (locales + as-needed prefix),
  *           frontend/i18n/navigation.js (router/pathname exports),
- *           frontend/components/Header.jsx (consumer).
+ *           frontend/components/AccountSheet.jsx (sole live consumer —
+ *           embeds this via `variant="bare"`; Header dropped it in MEH-896).
  * History:  MEH-475 (creation, 2026-05-19; closes the language toggle
- *           UI deliverable of Wave 5).
+ *           UI deliverable of Wave 5);
+ *           MEH-1279 (variant="bare" — drops the 36px circle so the toggle
+ *           sits flush inside a menu row next to size-19 sibling icons).
  */
-export default function LanguageToggle({ className = "" }) {
+export default function LanguageToggle({ variant = "default", className = "", children }) {
   const t = useTranslations("nav");
   const locale = useLocale();
   const router = useRouter();
@@ -63,6 +66,16 @@ export default function LanguageToggle({ className = "" }) {
     router.replace(href, { locale: nextLocale });
   };
 
+  // MEH-1279: `variant="bare"` strips the standalone 36px circle chip so the
+  // toggle can live inside a menu row flush with sibling bare icons (size 19),
+  // with the caller owning the row layout via `className`. `children` render
+  // after the Globe (e.g. AccountSheet's "עב / EN" affordance label), making
+  // the whole row a single tap target. The default circular chip is unchanged.
+  const bare = variant === "bare";
+  const shellCls = bare
+    ? ""
+    : "flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+
   return (
     <button
       type="button"
@@ -70,9 +83,10 @@ export default function LanguageToggle({ className = "" }) {
       aria-label={ariaLabel}
       data-testid="language-toggle"
       data-current-locale={locale}
-      className={`flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition focus-visible:ring-2 focus-visible:ring-primary/40 ${className}`}
+      className={`${shellCls} ${className}`.trim()}
     >
-      <Globe size={20} weight="regular" aria-hidden="true" />
+      <Globe size={bare ? 19 : 20} weight="regular" aria-hidden="true" />
+      {children}
     </button>
   );
 }

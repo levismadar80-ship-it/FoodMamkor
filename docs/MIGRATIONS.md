@@ -2,6 +2,7 @@
 
 > **Baseline:** `ef8fb1858f5b` — 34 טבלאות (ללא `alembic_version`). מוטמע על staging ו-production.
 > **Alembic הוא הסמכות היחידה לשינויי סכמה.** `Base.metadata.create_all` הוסר מ-boot path ב-MEH-267.
+> **גיבוי ושחזור:** מיגרציות מתקנות סכמה; גיבויים מתקנים data. ל-runbook של גיבוי/שחזור Postgres ראו [docs/BACKUPS.md](./BACKUPS.md).
 
 ---
 

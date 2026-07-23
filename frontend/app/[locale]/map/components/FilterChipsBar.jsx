@@ -1,40 +1,111 @@
+import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Faders } from "@phosphor-icons/react";
 
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
+import FilterSheet from "@/components/FilterSheet";
 
 /**
- * Two rows of filter chips + active-filter tag list. Verbatim
- * extraction from MapClient.jsx:527-574 (the `filterChipsBar`
- * JSX const that the source rendered in both desktop and mobile
- * shells).
+ * The /map filter bar: one category chip row + a "סינון" button + a
+ * conditional active-filter tag list. MEH-1368 consolidated the prior TWO
+ * chip rows into one — the inline quick-chip toggle row (verified /
+ * has_delivery) was removed because those attributes already live in
+ * FilterSheet, so the row was pure duplication (both surfaces rendered
+ * them). The "סינון" button opens FilterSheet (mobile bottom sheet / lg+
+ * panel anchored to this button's `relative` wrapper); sheet state is
+ * per-instance, and the desktop and mobile shells each mount their own bar
+ * (only one displayed at a time).
  *
- * Props are state and handlers from useMapFilters.
+ * Props are state and handlers from useMapFilters. `onToggleChipClick` is
+ * retained for the active-attribute tag row's per-tag removal (no longer
+ * for an inline quick-chip row).
  */
 export default function FilterChipsBar({
   visibleCategoryChips,
   chipState,
   onCategoryChipClick,
   onToggleChipClick,
+  onSheetToggleChip,
+  clearSheetFilters,
+  resultCount,
   activeFilterTags,
   resetAllFilters,
+  activeAttributeCount,
 }) {
   const t = useTranslations();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // MEH-1441: attach a 16px CATEGORY_ICONS glyph (via the chip's `iconName`) to
+  // each category chip at the render site — map-chips.js stays React-free (only
+  // the string key lives there). "כל" has no iconName → text-only (reset). Memo
+  // keyed on visibleCategoryChips (stable ref from useMapFilters) so a chipState
+  // toggle re-render doesn't rebuild the glyph elements.
+  // Category-tint: the chip's `iconColor` (declared in map-chips.js) flows
+  // through the `{ ...chip }` spread to ChipScrollRow, which tints the glyph
+  // only while the chip is INACTIVE (active stays white). No handling needed
+  // here — it rides the spread.
+  const categoryChipsWithIcons = useMemo(
+    () =>
+      visibleCategoryChips.map((chip) => {
+        const Glyph = chip.iconName ? CATEGORY_ICONS[chip.iconName] : null;
+        return Glyph ? { ...chip, icon: <Glyph size={16} /> } : chip;
+      }),
+    [visibleCategoryChips],
+  );
+  // Stable ref (PR #1565 review): an inline arrow would retrigger the sheet's
+  // [open, onClose] keydown effect on every chipState re-render.
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
   return (
     <div dir="rtl" className="min-w-0">
-      <ChipScrollRow
-        variant="category"
-        chips={visibleCategoryChips}
-        activeKey={chipState.categoryKey}
-        onChipClick={onCategoryChipClick}
-      />
-      <ChipScrollRow
-        variant="toggle"
-        chips={TOGGLE_CHIPS}
-        activeKeys={chipState}
-        onChipClick={onToggleChipClick}
-        className="mt-2"
-      />
+      {/* MEH-1368: consolidated to ONE row — the scrollable category chips
+          (flex-1) share the line with the "סינון" button (pinned inline-end).
+          The old second row (inline quick-chip toggles [מאומתים] [משלוח]) is
+          gone; every attribute filter now lives only in FilterSheet. */}
+      <div className="flex items-center gap-2 min-w-0">
+        <ChipScrollRow
+          variant="category"
+          chips={categoryChipsWithIcons}
+          // MEH-1465: multi-select — pass the selected keys as a Set (ChipScrollRow
+          // renders a Direction A ring per selected chip; "כל" ghosts when ≥1 active).
+          activeKeys={new Set(chipState.categoryKeys)}
+          onChipClick={onCategoryChipClick}
+          className="flex-1"
+          // MEH-1108: ChipScrollRow's default fadeBg is #ffffff, which smears
+          // white at the scroll edges on the cream /map surface (#F5F0E8).
+          fadeBg="#F5F0E8"
+        />
+        {/* Anchor wrapper — FilterSheet's md+ panel positions off this
+            `relative` wrapper. */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setSheetOpen((v) => !v)}
+            aria-expanded={sheetOpen}
+            aria-controls="filter-sheet-panel"
+            // REUSES: frontend/components/ChipScrollRow.jsx:118-122 — chip
+            // visuals, inactive variant (the button itself is not a filter).
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+          >
+            <Faders size={16} aria-hidden="true" />
+            {t("filters.button")}
+            {/* MEH-1368: inline "· N" count of active attribute filters, replacing
+                the old corner badge. N now counts ALL active toggles (the inline
+                quick-chip row is gone). `.numeric` = tabular/LTR digit in the RTL
+                button, matching the corner badge's prior digit treatment. */}
+            {activeAttributeCount > 0 && (
+              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            )}
+          </button>
+          <FilterSheet
+            open={sheetOpen}
+            onClose={closeSheet}
+            chipState={chipState}
+            onToggleChip={onSheetToggleChip}
+            resultCount={resultCount}
+            onClearAll={clearSheetFilters}
+          />
+        </div>
+      </div>
       {activeFilterTags.length > 0 && (
         <div
           dir="rtl"
@@ -48,11 +119,10 @@ export default function FilterChipsBar({
             <button
               key={`${tag.kind}:${tag.key}`}
               type="button"
-              onClick={() =>
-                tag.kind === "category"
-                  ? onCategoryChipClick("all")
-                  : onToggleChipClick(tag.key)
-              }
+              // MEH-1368: the tag strip is attributes-only now (a category
+              // selection is exited via the "כל" chip, never shown as a tag),
+              // so every removable tag is a toggle-off.
+              onClick={() => onToggleChipClick(tag.key)}
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
               className="group inline-flex items-center min-h-[44px] -my-2.5"
             >

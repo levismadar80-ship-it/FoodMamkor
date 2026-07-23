@@ -1,25 +1,15 @@
 "use client";
 
-import { forwardRef, Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
   UserCircle,
   Lock,
-  Storefront,
   Eye,
   EyeSlash,
-  WhatsappLogo,
-  EnvelopeSimple,
-  Plus,
-  Package,
-  Trash,
-  Pencil,
-  X,
   Camera,
-  Carrot,
-  Warning,
   CheckCircle,
   HourglassSimple,
 } from "@phosphor-icons/react";
@@ -27,11 +17,12 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { useUserCity } from "@/lib/use-user-city";
 import CitySearch from "@/components/CitySearch";
+import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
-import { env } from "@/lib/env";
-import EmptyState from "@/components/ui/EmptyState";
+import { validateIsraeliPhone } from "@/lib/validators";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -57,36 +48,31 @@ function SettingsPageBody() {
   const params = useSearchParams();
 
   const urlTab = params.get("tab");
-  const validTabs = ["profile", "security", "business"];
+  // MEH-1355: the "business" tab was removed — its status/support surface is
+  // now the canonical /producer/dashboard (per MEH-963). ?tab=business falls
+  // back to profile.
+  const validTabs = ["profile", "security"];
   const initialTab = validTabs.includes(urlTab) ? urlTab : "profile";
   const [tab, setTab] = useState(initialTab);
-
-  const businessTabRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
   }, [authLoading, user, router]);
 
-  // Scroll business tab into view at 375px where 3 tabs may overflow
-  useEffect(() => {
-    if (tab === "business" && businessTabRef.current) {
-      businessTabRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "nearest",
-      });
-    }
-  }, [tab]);
-
   if (authLoading || !user) return null;
-
-  const isProducer = user.is_producer || user.role === "producer";
 
   const selectTab = (next) => {
     setTab(next);
     const qp = new URLSearchParams(params.toString());
     qp.set("tab", next);
-    router.replace(`/settings?${qp.toString()}`);
+    // MEH-1294: shallow History API, not router.replace — a tab switch should not
+    // trigger an RSC navigation. window.location.pathname keeps the locale prefix
+    // on /en/settings (the old hardcoded "/settings" dropped it). Same-URL guard.
+    // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170.
+    const qs = qp.toString();
+    if (typeof window === "undefined") return;
+    if (qs === window.location.search.replace(/^\?/, "")) return;
+    window.history.replaceState(null, "", `${window.location.pathname}?${qs}`);
   };
 
   return (
@@ -95,7 +81,7 @@ function SettingsPageBody() {
         {tCommon("page_heading")}
       </h1>
 
-      {/* Tab bar — overflow-x-auto so business tab stays reachable at 375px */}
+      {/* Tab bar */}
       <div
         role="tablist"
         aria-label={tCommon("tabs_aria")}
@@ -122,38 +108,17 @@ function SettingsPageBody() {
         >
           {tCommon("tab_security")}
         </TabButton>
-        {isProducer && (
-          <TabButton
-            ref={businessTabRef}
-            active={tab === "business"}
-            onClick={() => selectTab("business")}
-            icon={
-              <Storefront
-                size={16}
-                weight={tab === "business" ? "fill" : "regular"}
-              />
-            }
-          >
-            {tCommon("tab_business")}
-          </TabButton>
-        )}
       </div>
 
       {tab === "profile" && <ProfileTab />}
       {tab === "security" && <SecurityTab />}
-      {tab === "business" && isProducer && <BusinessTab />}
     </div>
   );
 }
 
-// TabButton forwards ref so SettingsPageBody can scrollIntoView the business tab
-const TabButton = forwardRef(function TabButton(
-  { active, onClick, icon, children },
-  ref
-) {
+function TabButton({ active, onClick, icon, children }) {
   return (
     <button
-      ref={ref}
       type="button"
       role="tab"
       aria-selected={active}
@@ -168,28 +133,50 @@ const TabButton = forwardRef(function TabButton(
       {children}
     </button>
   );
-});
+}
 
 // ---------------------------------------------------------------------------
 // פרופיל
 // ---------------------------------------------------------------------------
 
-function ProfileTab() {
+// Exported for isolation tests (SettingsPhoneDisabledReason.test.jsx) — the
+// full-page mount is skipped in vitest (stale mock drift, see
+// SettingsPage.test.jsx), so the phone-validation UX is asserted directly.
+export function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
+  // MEH-1485: mirror a saved profile city into localStorage user_city so the
+  // consumer filters (home/map/FridayDeliveryStrip) update in the same
+  // session — reuses the mehamakor:city-changed event via setCity.
+  const { setCity: setUserCity } = useUserCity();
   const tCommon = useTranslations("settings.common");
   const t = useTranslations("settings.profile");
   const [name, setName] = useState(user.name || "");
   const [city, setCity] = useState(user.city || "");
   const [phone, setPhone] = useState(user.phone || "");
+  // MEH-1190: track blur so the invalid-phone message shows only after the
+  // user leaves the field (mirrors the /register onBlur pattern), not on
+  // every keystroke — but canSave is gated on validity regardless of touch.
+  // MEH-1261 F4: seed `touched` when the SAVED phone is already invalid (a
+  // value stored before MEH-1190's validation existed) — otherwise Save is
+  // disabled on mount with no visible reason until the field is blurred.
+  // The paste path is covered by onPaste below for the same reason.
+  const [phoneTouched, setPhoneTouched] = useState(
+    () => !!(user.phone || "").trim() && !validateIsraeliPhone(user.phone),
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
   const trimmedName = name.trim();
+  // MEH-1190: empty phone is allowed (optional field); a non-empty value must
+  // pass validateIsraeliPhone (reused from lib/validators — no new regex).
+  const phoneValid = !phone.trim() || validateIsraeliPhone(phone);
   const dirty =
-    trimmedName !== (user.name || "") || city.trim() !== (user.city || "");
-  const canSave = dirty && !!trimmedName;
+    trimmedName !== (user.name || "") ||
+    city.trim() !== (user.city || "") ||
+    phone.trim() !== (user.phone || "");
+  const canSave = dirty && !!trimmedName && phoneValid;
 
   const isOAuth = !!user.is_oauth;
   const oAuthProvider = user.google_id ? "Google" : user.apple_id ? "Apple" : null;
@@ -204,7 +191,14 @@ function ProfileTab() {
       const patch = {};
       if (trimmedName !== user.name) patch.name = trimmedName;
       if (city.trim() !== (user.city || "")) patch.city = city.trim();
+      if (phone.trim() !== (user.phone || "")) patch.phone = phone.trim();
       await updateProfile(patch);
+      // MEH-1485: when the city changed, push it to localStorage so the
+      // filters reflect it this session (setCity dispatches the shared
+      // city-changed event; the auth-context write-back skips it as a no-op).
+      if (Object.prototype.hasOwnProperty.call(patch, "city")) {
+        setUserCity(patch.city || null);
+      }
       setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
@@ -289,18 +283,18 @@ function ProfileTab() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="profile-name" className="block text-sm font-medium mb-1">{t("field_name_label")} *</label>
-          <input
-            id="profile-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
-            dir="rtl"
-          />
-        </div>
+        {/* MEH-1145 Wave E3: plain labeled field → ui/Input (canon; text-align
+            via className, dir via ...rest — both pass through unchanged). */}
+        <Input
+          id="profile-name"
+          type="text"
+          label={`${t("field_name_label")} *`}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="text-right"
+          dir="rtl"
+        />
         <div>
           <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
             {t("field_city_label")} <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
@@ -332,23 +326,30 @@ function ProfileTab() {
               : t("email_change_hint")}
           </p>
         </div>
-        <div>
-          <label htmlFor="profile-phone" className="block text-sm font-medium mb-1">
-            {t("field_phone_label")} <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
-          </label>
-          <input
-            id="profile-phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="050-1234567"
-            className="w-full border border-border rounded-[12px] px-3 py-2"
-            dir="ltr"
-          />
-          <p className="text-xs text-fg-muted mt-1 text-right">
-            {t("field_phone_hint")}
-          </p>
-        </div>
+        {/* MEH-1145 Wave E3: plain tel field → ui/Input; the optional-suffix
+            label passes as a node and the hint folds into helperText (wired to
+            aria-describedby, start-aligned = right in RTL — same as before). */}
+        <Input
+          id="profile-phone"
+          type="tel"
+          label={
+            <>
+              {t("field_phone_label")}{" "}
+              <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
+            </>
+          }
+          helperText={t("field_phone_hint")}
+          error={phoneTouched && !phoneValid ? t("field_phone_error") : undefined}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          onBlur={() => setPhoneTouched(true)}
+          // MEH-1261 F4: a pasted value is a completed entry, not typing in
+          // progress — surface the invalid-phone reason immediately instead of
+          // leaving the Save button dead with no message until blur.
+          onPaste={() => setPhoneTouched(true)}
+          placeholder="050-1234567"
+          dir="ltr"
+        />
 
         {message && (
           <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
@@ -736,650 +737,5 @@ function DangerZoneCard() {
         </form>
       )}
     </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// העסק שלי
-// ---------------------------------------------------------------------------
-
-function BusinessTab() {
-  const { user } = useAuth();
-  const t = useTranslations("settings.business");
-  const [supportOpen, setSupportOpen] = useState(false);
-
-  const status = user.producer_status || "pending";
-  const rejectionReason = user.producer_rejection_reason;
-
-  return (
-    <div className="space-y-6">
-      {/* Status banner */}
-      {status === "pending" && (
-        <div className="rounded-[12px] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
-          {t("status_pending")}
-        </div>
-      )}
-      {status === "rejected" && (
-        <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-4 space-y-3">
-          <p className="text-sm font-semibold text-red-700">{t("status_rejected_title")}</p>
-          {rejectionReason && (
-            <p className="text-sm text-red-600">{rejectionReason}</p>
-          )}
-          <ul className="space-y-1 text-sm text-red-700">
-            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_details")}</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_photos")}</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_address")}</span></li>
-          </ul>
-          <button
-            type="button"
-            onClick={() => setSupportOpen(true)}
-            className="text-sm text-primary hover:underline"
-          >
-            {t("support_cta")}
-          </button>
-        </div>
-      )}
-      {status === "suspended" && (
-        <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
-          <Warning size={18} weight="fill" aria-hidden="true" />
-          <span className="font-medium">{t("status_suspended")}</span>
-          <button
-            type="button"
-            onClick={() => setSupportOpen(true)}
-            className="ms-auto text-primary hover:underline text-xs"
-          >
-            {t("support_cta_short")}
-          </button>
-        </div>
-      )}
-
-      {/* MEH-963: the canonical analytics + profile-management surface is
-          /producer/dashboard. The old statistics grid here read fields the
-          /producers/me/dashboard endpoint never returns (views / reviews /
-          products / orders / avg_rating), so it rendered a permanent 0/- wall
-          for every owner — new or established. Removed in favor of an
-          always-visible pointer to the real dashboard (un-gated from
-          status === "approved" — owners need it while pending too). */}
-      <div className="text-center">
-        <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-          {t("edit_profile_link")}
-        </Link>
-      </div>
-
-      {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
-    </div>
-  );
-}
-
-function ProductsSection() {
-  const t = useTranslations("settings.products");
-  const tForm = useTranslations("settings.products.form");
-  const tErr = useTranslations("settings.products.errors");
-  const tCommon = useTranslations("settings.common");
-  const [products, setProducts] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [savingEdit, setSavingEdit] = useState(false);
-  // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
-  // double-delete of the same product and disables the row's trash button.
-  const [deletingId, setDeletingId] = useState(null);
-  const [editUploading, setEditUploading] = useState(false);
-
-  useEffect(() => {
-    api.get("/producers/me/products")
-      .then((r) => setProducts(r.data))
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!ALLOWED.includes(file.type)) {
-      setError(tErr("upload_type"));
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError(tErr("upload_size"));
-      e.target.value = "";
-      return;
-    }
-    setUploading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      setForm((f) => ({ ...f, image_url: r.data.url }));
-    } catch (err) {
-      setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) { setError(tErr("name_required")); return; }
-    if (form.price_min === "") { setError(tErr("price_required")); return; }
-    const minNum = Number(form.price_min);
-    const maxNum = form.price_max === "" ? null : Number(form.price_max);
-    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
-    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
-    setSaving(true);
-    setError("");
-    try {
-      const body = {
-        name: form.name.trim(),
-        description: form.description || null,
-        image_url: form.image_url || null,
-        price_min: minNum,
-        price_max: maxNum,
-        is_gluten_free: form.is_gluten_free,
-        is_vegan: form.is_vegan,
-        is_lactose_free: form.is_lactose_free,
-      };
-      const r = await api.post("/producers/me/products", body);
-      setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
-      setAdding(false);
-    } catch {
-      setError(tErr("save_failed"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const startEdit = (product) => {
-    setEditingId(product.id);
-    setEditForm({
-      name: product.name,
-      description: product.description || "",
-      image_url: product.image_url || "",
-      price_min: product.price_min != null ? String(Number(product.price_min)) : "",
-      price_max: product.price_max != null ? String(Number(product.price_max)) : "",
-      is_gluten_free: !!product.is_gluten_free,
-      is_vegan: !!product.is_vegan,
-      is_lactose_free: !!product.is_lactose_free,
-    });
-    setError("");
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setError("");
-  };
-
-  const handleEditImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!ALLOWED.includes(file.type)) {
-      setError(tErr("upload_type"));
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError(tErr("upload_size"));
-      e.target.value = "";
-      return;
-    }
-    setEditUploading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      setEditForm((f) => ({ ...f, image_url: r.data.url }));
-    } catch (err) {
-      setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
-    } finally {
-      setEditUploading(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleEdit = async (productId, e) => {
-    e.preventDefault();
-    if (!editForm.name?.trim()) { setError(tErr("name_required")); return; }
-    if (editForm.price_min === "") { setError(tErr("price_required")); return; }
-    const minNum = Number(editForm.price_min);
-    const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
-    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
-    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
-    setSavingEdit(true);
-    setError("");
-    try {
-      const body = {
-        name: editForm.name.trim(),
-        description: editForm.description || null,
-        image_url: editForm.image_url || null,
-        price_min: minNum,
-        price_max: maxNum,
-        is_gluten_free: !!editForm.is_gluten_free,
-        is_vegan: !!editForm.is_vegan,
-        is_lactose_free: !!editForm.is_lactose_free,
-      };
-      const r = await api.put(`/producers/me/products/${productId}`, body);
-      setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
-      setEditingId(null);
-    } catch {
-      setError(tErr("save_failed"));
-    } finally {
-      setSavingEdit(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (deletingId) return; // UIS-026: drop overlapping delete clicks
-    setDeletingId(id);
-    setError("");
-    try {
-      await api.delete(`/producers/me/products/${id}`);
-      setProducts((p) => p.filter((pr) => pr.id !== id));
-    } catch {
-      setError(tErr("delete_failed"));
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  if (loading) return null;
-
-  return (
-    <div className="bg-white border border-border rounded-[16px] p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
-        {!adding && (
-          <button
-            onClick={() => { setAdding(true); setError(""); }}
-            className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
-          >
-            <Plus size={14} aria-hidden="true" />
-            {t("add_cta")}
-          </button>
-        )}
-      </div>
-
-      {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
-
-      {products?.length === 0 && !adding && (
-        <EmptyState
-          icon={Carrot}
-          title={t("empty.title")}
-          description={t("empty.description")}
-          ctaLabel={t("empty.cta")}
-          ctaOnClick={() => { setAdding(true); setError(""); }}
-        />
-      )}
-
-      <div className="space-y-3 mb-4">
-        {products?.map((product) => (
-          editingId === product.id ? (
-            <form
-              key={product.id}
-              onSubmit={(e) => handleEdit(product.id, e)}
-              className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-text">{t("edit_heading")}</p>
-                <button type="button" onClick={cancelEdit} aria-label={t("cancel_aria")}>
-                  <X size={16} className="text-fg-muted" aria-hidden="true" />
-                </button>
-              </div>
-              {product.price_min == null && product.price_range && (
-                <p className="text-xs text-fg-muted mb-2">
-                  {t("edit_legacy_price_note", { range: product.price_range })}
-                </p>
-              )}
-              <div>
-                <label className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-                <input
-                  required
-                  value={editForm.name || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-                <input
-                  value={editForm.description || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
-                  <input
-                    required
-                    type="number"
-                    min={1}
-                    max={10000}
-                    step={0.5}
-                    value={editForm.price_min || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, price_min: e.target.value }))}
-                    className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10000}
-                    step={0.5}
-                    value={editForm.price_max || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
-                    className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.is_gluten_free}
-                      onChange={(e) => setEditForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span>{tForm("diet_gluten_free")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.is_vegan}
-                      onChange={(e) => setEditForm((f) => ({ ...f, is_vegan: e.target.checked }))}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span>{tForm("diet_vegan")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.is_lactose_free}
-                      onChange={(e) => setEditForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span>{tForm("diet_lactose_free")}</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</label>
-                {editForm.image_url ? (
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
-                      <Image src={editForm.image_url} alt={tForm("image_alt")} fill className="object-cover" sizes="48px" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setEditForm((f) => ({ ...f, image_url: "" }))}
-                      className="text-xs text-red-500 hover:underline"
-                    >
-                      {tForm("image_remove")}
-                    </button>
-                  </div>
-                ) : (
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
-                    <Package size={14} aria-hidden="true" />
-                    {editUploading ? tForm("image_uploading") : tForm("image_upload_cta")}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleEditImageUpload}
-                      disabled={editUploading}
-                    />
-                  </label>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
-                >
-                  {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
-                >
-                  {t("cancel_edit_cta")}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
-              {product.image_url ? (
-                <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
-                  <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="48px" />
-                </div>
-              ) : (
-                <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
-                  <Package size={20} className="text-fg-muted/60" aria-hidden="true" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-text truncate">{product.name}</p>
-                {(() => {
-                  if (product.price_min != null && product.price_max != null)
-                    return <p className="text-xs text-accent">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
-                  if (product.price_min != null)
-                    return <p className="text-xs text-accent">₪{Number(product.price_min)}</p>;
-                  if (product.price_range)
-                    return <p className="text-xs text-accent">{product.price_range}</p>;
-                  return null;
-                })()}
-              </div>
-              <button
-                onClick={() => startEdit(product)}
-                aria-label={t("card.edit_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-primary hover:bg-primary/5 transition"
-              >
-                <Pencil size={16} aria-hidden="true" />
-              </button>
-              <button
-                onClick={() => handleDelete(product.id)}
-                disabled={deletingId === product.id}
-                aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
-              >
-                <Trash size={16} aria-hidden="true" />
-              </button>
-            </div>
-          )
-        ))}
-      </div>
-
-      {adding && (
-        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-text">{t("add_heading")}</p>
-            <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
-              <X size={16} className="text-fg-muted" aria-hidden="true" />
-            </button>
-          </div>
-          <div>
-            <label className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-            <input
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
-              <input
-                required
-                type="number"
-                min={1}
-                max={10000}
-                step={0.5}
-                value={form.price_min}
-                onChange={(e) => setForm((f) => ({ ...f, price_min: e.target.value }))}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
-              <input
-                type="number"
-                min={1}
-                max={10000}
-                step={0.5}
-                value={form.price_max}
-                onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-              />
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_gluten_free}
-                  onChange={(e) => setForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span>{tForm("diet_gluten_free")}</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_vegan}
-                  onChange={(e) => setForm((f) => ({ ...f, is_vegan: e.target.checked }))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span>{tForm("diet_vegan")}</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_lactose_free}
-                  onChange={(e) => setForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span>{tForm("diet_lactose_free")}</span>
-              </label>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</label>
-            {form.image_url ? (
-              <div className="flex items-center gap-2">
-                <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
-                  <Image src={form.image_url} alt={tForm("image_alt")} fill className="object-cover" sizes="48px" />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
-                  className="text-xs text-red-500 hover:underline"
-                >
-                  {tForm("image_remove")}
-                </button>
-              </div>
-            ) : (
-              <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
-                <Package size={14} aria-hidden="true" />
-                {uploading ? tForm("image_uploading") : tForm("image_upload_cta")}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  disabled={uploading}
-                />
-              </label>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
-            >
-              {saving ? t("add_submitting") : t("add_submit_cta")}
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-}
-
-function SupportModal({ onClose }) {
-  // MEH-652: SupportModal i18n — final settings/page.jsx residual.
-  const t = useTranslations("settings.support_modal");
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("section_aria")}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
-        <p className="text-sm text-fg-muted">{t("body")}</p>
-        <a
-          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
-            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
-          </div>
-        </a>
-        <a
-          href="mailto:support@mehamakor.online"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
-        >
-          <EnvelopeSimple size={22} className="text-primary shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
-          </div>
-        </a>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
-        >
-          {t("close_cta")}
-        </button>
-      </div>
-    </div>
   );
 }

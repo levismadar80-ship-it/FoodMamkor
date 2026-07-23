@@ -9,6 +9,7 @@
 >   - 🌐 = public (no token)
 >   - 🔑 = any authenticated user (`get_current_user`)
 >   - 👤 = producer role (`require_producer`)
+>   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /producers/me/recipes`, `POST /group-buys`.
 >   - 🛡️ = admin role (`require_admin`)
 
 ## 1. Registered routers at a glance
@@ -39,13 +40,14 @@ graph LR
 
 ```mermaid
 graph TD
-    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km<br/>category, delivery_city, q, verified]
+    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified<br/>sort=newest default | rating MEH-1483]
     GProducers --> LProducers[Haversine distance,<br/>status=approved only]
 
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
     Home --> GProducerCities[GET /producers/cities<br/>🌐 MEH-970: per-city approved counts<br/>GROUP BY city, NULL/blank omitted]
+    Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
@@ -53,6 +55,7 @@ graph TD
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
+    GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist]
 ```
 
 ## 3. Auth + account self-service
@@ -90,6 +93,8 @@ graph TD
     Dashboard --> Avail[POST /producers/me/availability<br/>👤 toggle is_available_today]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
+    Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
+    Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending-only 409, 3/hr,<br/>notification-only, no DB write]
 
     NeighborList[/neighbor + create home product] --> HPCreate[POST /home-products<br/>🔑 Claude Opus moderation on write]
     NeighborList --> HPList[GET /home-products<br/>🌐 city/category filter]
@@ -97,7 +102,9 @@ graph TD
     NeighborList --> HPClick[POST /home-products/{id}/whatsapp-click<br/>🔑 schedules Twilio follow-up]
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
-    Events[/events + /experiences] --> EventCreate[POST /events<br/>👤]
+    Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
+    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
+    Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
 ```
 
@@ -110,6 +117,7 @@ graph TD
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
     Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️]
+    Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
@@ -123,8 +131,9 @@ graph TD
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]
 
-    Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ sorted by urgency]
-    Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️]
+    Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ >=1 open report; auto_flagged >=3]
+    Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
+    Reports --> Dismiss[POST /admin/reports/{id}/dismiss<br/>🛡️ 409 if closed]
 
     Analytics[/admin/analytics page] --> AdminAnalytics[GET /admin/analytics<br/>🛡️ charts + heatmap + top producers]
 
@@ -132,6 +141,11 @@ graph TD
     ExperiencesAdmin --> ExpApprove[POST /admin/experiences/{id}/approve<br/>🛡️]
     ExperiencesAdmin --> ExpReject[POST /admin/experiences/{id}/reject<br/>🛡️ host notification email]
     ExperiencesAdmin --> ExpChanges[POST /admin/experiences/{id}/request-changes<br/>🛡️ host notification email]
+
+    RecipesAdmin[/admin/recipes page<br/>MEH-997 — mirrors experiences queue] --> AdminRecList[GET /admin/recipes?moderation_status=<br/>🛡️ 5-tab queue MEH-589<br/>queue entry pings admin — MEH-1000<br/>WhatsApp+email on submit/resubmit]
+    RecipesAdmin --> RecApprove[POST /admin/recipes/{id}/approve<br/>🛡️ publishes]
+    RecipesAdmin --> RecReject[POST /admin/recipes/{id}/reject<br/>🛡️ no producer notification — notes shown in dashboard]
+    RecipesAdmin --> RecChanges[POST /admin/recipes/{id}/request-changes<br/>🛡️ feedback required — notes shown in dashboard]
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]

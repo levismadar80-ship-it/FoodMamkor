@@ -54,14 +54,15 @@ import { BRAND_NAME } from "@/lib/constants";
  *     stays the lighter member of the rounded-white family (Gestalt: same
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
- *     [logo + links] · inter-group gap · action cluster. MEH-899: at top of
- *     ANY page the pill is WIDER, with the extra width DISTRIBUTED (end-cap
- *     px-11, inter-group gap-14, lead-group intra-gap gap-11) so the middle
- *     gap isn't the only thing growing (MEH-890 void trap). All SNAP compact
- *     (px-4 / gap-8 / gap-9) at the y=60 scroll threshold — not animated
- *     (gap/px stay out of the transition allowlist, MEH-732 guardrail).
- *     Width keys off `!scrolled` (DECOUPLED from `transparent`) so inner
- *     pages get the wide rest too — consistent nav size on every page.
+ *     [logo + links] · inter-group gap · action cluster. MEH-1072: pill
+ *     geometry is now FIXED (end-cap px-6 since MEH-1103, was px-4;
+ *     inter-group gap-8, lead-group
+ *     intra-gap gap-9) at every scroll position — supersedes MEH-899's
+ *     rest-wide→compact width switching (was px-11/gap-14/gap-11 at rest,
+ *     snapping to px-4/gap-8/gap-9 at y=60) per Sapir 09/07 + NAV-01. Geometry
+ *     is scroll-independent; only the SURFACE still varies (MEH-890/896/947
+ *     branch below). Still not animated (gap/px stay out of the transition
+ *     allowlist, MEH-732 guardrail).
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = MEH-896 chunk 2 soft green-tint chip (was the MEH-643 gold
@@ -87,6 +88,29 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
+  const headerRef = useRef(null);
+
+  // MEH-1202: publish the sticky header's LIVE-measured height as the
+  // `--chrome-top` CSS var on :root, so downstream sticky chrome (the
+  // /producer section tab bar) offsets off the real header height instead of a
+  // hardcoded `top-[82px]`. Write-only — reads the header's own box and sets a
+  // custom property; it changes NOTHING about the header's own rendering
+  // (no state, no class, no layout). ResizeObserver covers the trust-strip
+  // toggle, responsive pill height, and font-driven reflow. The header lives in
+  // the root layout (never unmounts during SPA nav); disconnect on teardown.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--chrome-top",
+        `${Math.round(el.getBoundingClientRect().height)}px`,
+      );
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // MEH-39: close the avatar dropdown when the user clicks outside it.
   useEffect(() => {
@@ -205,18 +229,46 @@ export default function Header() {
         </div>
       )}
       <header
+        ref={headerRef}
         // MEH-896: sticky lives on the pill <header> only. The trust strip
         // above is a normal-flow sibling so it scrolls away with the page.
         // MEH-890 chunk 2: the black hero scrim was REMOVED. The pill carries
         // its own glass surface at rest (dark ink, no scrim).
-        className="sticky top-0 z-[1000]"
+        // MEH-1109: z-[1050] (not 1000) — `sticky` + z-index makes this a
+        // stacking context, so the UserMenu dropdown's own z-[1001] is capped
+        // relative to the page at the header's level. At 1000 (== map
+        // controls) the later-in-DOM "חפש באזור זה" pill won on tie-break and
+        // covered the open dropdown (truncating "לוח הבקרה שלי"). 1050 sits
+        // above map controls:1000 and below cookie:1100 — see the /map z-token
+        // ledger in .claude/rules/rtl.md.
+        // MEH-1251: pointer-events-none — the full-width sticky band was a
+        // click-SHIELD over the transparent area beside the pill, swallowing
+        // clicks on page content under it at the top of the viewport (reported:
+        // the admin toolbar "פרטים חסרים" button was dead). It's set on the
+        // <header> (not only the inner shell) because a pointer-events-none
+        // child still lets its `auto` parent hit-test the click — so the shell
+        // alone wouldn't pass clicks THROUGH to the page. The <nav> pill below
+        // re-enables events (pointer-events-auto). pointer-events ONLY — no
+        // visual/layout/z-index change (MEH-732/MEH-1072/MEH-1109 untouched).
+        // MEH-1195: + gated bg-background — MEH-947 made the PILL opaque on
+        // inner pages but the sticky SHELL around it (px-5 gutters + pt-4/pb-2
+        // strips) stayed transparent, so page content scrolling under the header
+        // bled through beside/above the pill (single Hebrew letters reading as a
+        // render glitch). Give the shell the same cream surface on inner pages
+        // (!isHomepage); the homepage keeps its float-over-hero transparency
+        // (MEH-947-approved) — so the token is gated, not unconditional. Surface
+        // only: no geometry / z / blur. Both concerns coexist on this one line.
+        className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
             avoid doubling (mobile + non-strip pages keep pt-4). */}
+        {/* MEH-1251: pointer-events-none — this full-width wrapper is the click
+            shield (inherits from the <header> too); the <nav> pill re-enables
+            events. pointer-events only, no visual/layout change. */}
         <div
           className={[
-            "relative flex flex-col items-center px-5 sm:px-6 pb-2",
+            "relative flex flex-col items-center px-5 sm:px-6 pb-2 pointer-events-none",
             showStrip ? "pt-4 md:pt-0" : "pt-4",
           ].join(" ")}
         >
@@ -229,21 +281,33 @@ export default function Header() {
             // together with the inter-group air gap — no central void.
             // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
             // spread (itself a replacement for the MEH-643 grid layout).
-            // MEH-899: the gap is now state-dependent (gap-14 at rest, gap-8
-            // scrolled) — see the branch classes below; pill stays w-auto.
-            "w-auto max-w-[92vw] flex items-center rounded-full border",
+            // MEH-1072: the gap/px are FIXED (gap-8 px-6 since MEH-1103) — see the geometry
+            // note below; pill stays w-auto. (MEH-899's state-dependent gap-14
+            // at rest / gap-8 scrolled is retired per Sapir 09/07 + NAV-01.)
+            // MOBILE-WIDTH FIX (Sapir direction A): on mobile the only pill
+            // occupants are the logo + the search circle (nav links, UserMenu &
+            // LoginAccount are all `md:`-gated), so `w-auto` hugged them into an
+            // undersized pill. Below md the pill now spans the shell gutters
+            // (`w-full`, still capped by max-w-[92vw]) with `justify-between` so
+            // logo sits at the start and search at the end — a balanced app-bar
+            // spread. This intentionally REVERSES MEH-890's mobile content-hug
+            // for mobile ONLY. Desktop keeps `md:w-auto md:justify-normal` →
+            // the MEH-890/MEH-1072 content-hug geometry is untouched at md+.
+            // MEH-1251: pointer-events-auto re-enables events on the pill (and
+            // all its descendants — logo, nav links, search, UserMenu + its
+            // dropdown, which render inside this <nav> subtree) after the
+            // <header>/shell shield set pointer-events-none. Everything
+            // interactive in the header lives inside this <nav>.
+            "pointer-events-auto w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart motion-reduce:transition-none",
-            // MEH-899 (revised): the SURFACE branch (transparent vs solid
-            // glass) stays keyed off `transparent` — that's homepage-hero
-            // specific. The WIDTH (gap/px) is decoupled and keyed off
-            // `!scrolled` so the rest-wide pill is CONSISTENT across all
-            // pages at top (homepage + inner), snapping compact at y=60 on
-            // every page. Surface and width snap on the same threshold
-            // (scrollY>=60), just with different conditions: surface keys
-            // off (isHomepage && !scrolled), width keys off (!scrolled).
+            // The SURFACE branch (transparent vs solid glass) is keyed off
+            // `transparent` — that's homepage-hero specific — and snaps on the
+            // scrollY>=60 threshold. MEH-1072: the WIDTH (gap/px) no longer
+            // switches on scroll (it was keyed off `!scrolled` pre-MEH-1072);
+            // it is now FIXED — see the geometry note below.
             // MEH-947: surface is now THREE-way. The homepage keeps its
             // float-over-hero glass verbatim (at-rest /85, scrolled /60) — that
             // translucency is intentional there. INNER pages (!isHomepage) get a
@@ -253,27 +317,33 @@ export default function Header() {
             // were the reported victims — they read as "clipped behind the
             // header"). Opaque bg-background blocks the bleed-through; backdrop-
             // blur is dropped on this branch since nothing shows through to blur.
+            // MEH-1103: py-0.5 → py-1.5 on all three surface branches — grows
+            // the pill toward the ~58px reach target. Padding is NOT animated
+            // (stays out of the transition allowlist — MEH-732 guardrail).
             !isHomepage
-              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
+              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
               : transparent
-                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
-                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
-            // MEH-899 (revised): WIDTH — wide at rest (any page at top),
-            // compact when scrolled. Distributed: end-cap px-11, inter-group
-            // gap-14, lead-group intra-gap gap-11 (see :247). Snaps to
-            // px-4 + gap-8 + lead gap-9 at y=60. Still NOT animated —
-            // gap/px stay out of the transition allowlist (MEH-732 upheld).
-            !scrolled ? "gap-14 px-11" : "gap-8 px-4",
+                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
+                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5",
+            // MEH-1072: WIDTH is now FIXED geometry (gap-8, end-cap px-6 since MEH-1103) at every
+            // scroll position — supersedes MEH-899 width switching per Sapir
+            // 09/07 + NAV-01. The rest-wide→compact snap (gap-14/px-11 →
+            // gap-8/px-4 at y=60) is retired; the pill reads at one consistent
+            // compact size on every page, at rest and scrolled. Still NOT
+            // animated — gap/px stay out of the transition allowlist above
+            // (MEH-732 guardrail upheld). Surface still varies on scroll
+            // (MEH-890/896/947 branch above) — only the geometry is frozen.
+            // MEH-1103: end-cap padding px-4 → px-6 (still FIXED geometry, not
+            // animated — the MEH-1072 frozen-geometry lock is preserved).
+            "gap-8 px-6",
           ].join(" ")}
         >
-          {/* LEAD GROUP — logo + nav links together. MEH-899: the intra-group
-              gap (logo ↔ links) widens at rest (gap-11) and snaps compact
-              (gap-9) at y=60 — distributes the rest widening so the middle
-              inter-group gap isn't the only thing growing (MEH-890 void trap).
-              Keyed off `!scrolled` (NOT `transparent`) so the wide rest
-              applies on inner pages too — consistent nav size on every page.
-              start of the row (visual right in RTL). */}
-          <div className={["flex items-center", !scrolled ? "gap-11" : "gap-9"].join(" ")}>
+          {/* LEAD GROUP — logo + nav links together. MEH-1072: the intra-group
+              gap (logo ↔ links) is FIXED at gap-9 — supersedes MEH-899 width
+              switching (was gap-11 at rest → gap-9 at y=60) per Sapir 09/07 +
+              NAV-01. Fixed compact geometry, scroll-independent, matches the
+              frozen end-cap/gap above. start of the row (visual right in RTL). */}
+          <div className="flex items-center gap-9">
             <Link href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
@@ -282,8 +352,11 @@ export default function Header() {
                 // 2.652 → 2.658, ~0.2% off — visually identical). Pairs with
                 // the slim pill (~50px); tap target preserved by the wrapper
                 // Link's min-h-[44px] above.
-                width={101}
-                height={38}
+                // MEH-1103: 101×38 → 111×42 for legibility (aspect 2.643,
+                // ~0.4% off — visually identical); pairs with the taller
+                // py-1.5 pill.
+                width={111}
+                height={42}
                 priority
               />{/* MEH-890 chunk 2: logo no longer inverted — it sits on the
                    at-rest glass pill now, not a bare/scrimmed hero. */}
@@ -374,7 +447,7 @@ function NavLink({ href, label, active, onClick }) {
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[
-        "inline-flex items-center min-h-[44px] px-3 rounded-full text-sm transition-colors duration-fast ease-quart focus-ring",
+        "inline-flex items-center min-h-[44px] px-3 rounded-full text-base transition-colors duration-fast ease-quart focus-ring",
         active
           // MEH-896 polish: neutral warm tint (text-token at 7%) instead of
           // green so the active chip no longer echoes the green CTA. Text
@@ -400,7 +473,7 @@ function LoginAccount({ label }) {
   return (
     <Link
       href="/login"
-      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-sm font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
+      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}
     </Link>
@@ -420,10 +493,31 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const isProducer = user.role === "producer";
   const isAdmin = user.role === "admin";
 
+  // MEH-1226: align with the "profile = public page, settings = config"
+  // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
+  // then the profile row points at the PUBLIC business page (/producer/[id],
+  // from user.producer_id — set together with role==="producer" at
+  // auth.py:522-523); guarded so a producer without a linked id never
+  // renders /producer/undefined. Non-producers have no public page, so the
+  // profile row is dropped entirely — their menu is settings → logout.
+  // Settings drops the ?tab param to land on the same /settings as the
+  // mobile AccountSheet.
   const items = [
-    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: t("account.menu.profile") },
-    { href: "/settings?tab=security", label: t("account.menu.settings") },
-    ...(isProducer ? [{ href: "/producer/dashboard", label: t("account.menu.dashboard") }] : []),
+    ...(isProducer
+      ? [
+          { href: "/producer/dashboard", label: t("account.menu.dashboard") },
+          ...(user.producer_id
+            ? [{ href: `/producer/${user.producer_id}`, label: t("account.menu.profile") }]
+            : []),
+        ]
+      : []),
+    // MEH-1310: favorites row for EVERY logged-in role — desktop parity with
+    // the mobile AccountSheet, which already links /favorites via the SAME
+    // nav.favorites key (AccountSheet.jsx:148-151). Without it /favorites was
+    // orphaned on desktop (reachable only by typing the URL). No icon — the
+    // existing dropdown rows are text-only, so this matches their anatomy.
+    { href: "/favorites", label: t("nav.favorites") },
+    { href: "/settings", label: t("account.menu.settings") },
     ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
   ];
 
@@ -470,7 +564,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
             type="button"
             role="menuitem"
             onClick={() => { setOpen(false); logout(); }}
-            className="w-full text-start px-4 py-2 text-sm text-red-700 hover:bg-background transition-colors duration-fast ease-quart"
+            className="w-full text-start px-4 py-2 text-sm text-error hover:bg-background transition-colors duration-fast ease-quart"
           >
             {t("account.menu.logout")}
           </button>

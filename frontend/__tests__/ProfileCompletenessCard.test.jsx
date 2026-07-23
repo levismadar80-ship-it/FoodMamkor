@@ -1,48 +1,31 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
-// MEH-288: mock next-intl per the established precedent (AvailabilityBadge).
-// The card resolves copy from dashboard.producer.completeness.*; the mock
-// returns the Hebrew strings + supports {percent}/{count} ICU interpolation.
-// MEH-897: locale is mutable (vi.hoisted) so a test can exercise the /en gate.
-const { mockLocale } = vi.hoisted(() => ({ mockLocale: { current: "he" } }));
+// MEH-288/MEH-1106: mock next-intl per the established precedent. The card
+// resolves copy from dashboard.producer.completeness.*; the mock returns the
+// Hebrew strings + supports {percent} ICU interpolation. The 4-step model
+// (MEH-1106) no longer branches on locale, so no useLocale mock is needed.
 vi.mock("next-intl", () => ({
-  useLocale: () => mockLocale.current,
   useTranslations: () => (key, vars = {}) => {
     const flat = {
-      red_headline: "הפרופיל שלך חסר פרטים קריטיים",
-      red_sub: "בלעדיהם לקוחות לא יראו אותך במפה ובחיפוש",
       yellow_low_headline: "הפרופיל שלך {percent}% מוכן",
-      yellow_low_sub: "עוד כמה פרטים ותוכלי להתחיל לקבל לקוחות",
       yellow_high_headline: "כמעט שם — {percent}% מוכן",
-      yellow_high_sub: "רק {count, plural, one {פרט אחד} two {שני פרטים} other {# פרטים}} עד שהפרופיל מלא",
       green_headline: "הפרופיל מלא",
       next_step_prefix: "השלב הבא:",
-      cta: "השלימי פרופיל",
-      cta_aria: "השלימי את הפרופיל שלך",
+      checklist_sub: "עוד כמה צעדים והפרופיל שלכם מוכן לקבל פניות",
+      cta: "השלימו פרופיל",
+      cta_aria: "השלימו את הפרופיל שלך",
       ring_aria: "השלמת פרופיל: {percent}%",
       checklist_aria: "התקדמות השלמת הפרופיל",
       checklist_done: "הושלם",
       checklist_todo: "עדיין חסר",
-      "fields.city": "עיר",
-      "fields.coords": "מיקום על המפה",
-      "fields.delivery": "אזורי משלוח",
-      "fields.contact": "פרטי קשר (טלפון/אינסטגרם)",
-      "fields.category": "קטגוריה",
-      "fields.image": "תמונה ראשית",
+      "steps.image": "תמונה ראשית",
+      "steps.location": "קטגוריות ומיקום",
+      "steps.products": "מוצר ראשון בקטלוג",
+      "steps.contact": "פרטי קשר",
     };
     const raw = flat[key] ?? key;
-    // Resolve {var, plural, one {…} other {…}} (mirrors next-intl ICU) before
-    // simple {var} interpolation, so plural-aware copy is tested faithfully.
-    const withPlurals = raw.replace(
-      /\{(\w+), plural, one \{([^}]*)\} two \{([^}]*)\} other \{([^}]*)\}\}/g,
-      (_, k, one, two, other) => {
-        const n = vars[k];
-        const branch = n === 1 ? one : n === 2 ? two : other;
-        return branch.replace(/#/g, String(n));
-      },
-    );
-    return withPlurals.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
+    return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
   },
 }));
 
@@ -50,7 +33,8 @@ import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 
 // Minimal producer shapes that drive each state through the REAL heuristic
 // (lib/producer-completeness.js) — no mock of the engine, so the test also
-// guards the percent math + state mapping end-to-end.
+// guards the step-mapping end-to-end. `products` is card-only (MEH-1106 B1):
+// 3+ items satisfies step ③ without touching the shared heuristic.
 const base = {
   city: "תל אביב",
   lat: 32.07,
@@ -59,104 +43,125 @@ const base = {
   categories: ["dairy"],
   images: ["img1"],
   has_physical_location: true,
+  short_description: "גבינות עיזים מהחווה",
+  products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
 };
 
-describe("ProfileCompletenessCard", () => {
+const EDIT = "/producer/dashboard/edit";
+
+function hrefs(container) {
+  return Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+}
+
+describe("ProfileCompletenessCard (MEH-1106 4-step checklist)", () => {
   it("renders nothing when producer is null", () => {
     const { container } = render(<ProfileCompletenessCard producer={null} />);
     expect(container.innerHTML).toBe("");
   });
 
-  it("green/complete → collapses to a single confirmation line, no CTA", () => {
+  it("all 4 steps done → collapses to a single confirmation line, no CTA/ring", () => {
     render(<ProfileCompletenessCard producer={base} />);
     expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
-    expect(screen.queryByText("השלימי פרופיל")).not.toBeInTheDocument();
+    expect(screen.queryByText("השלימו פרופיל")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
-  it("red → critical-missing headline + progressbar + CTA", () => {
-    // Missing city → red. 1 of 5 missing → 80% filled, but the red copy wins.
-    render(<ProfileCompletenessCard producer={{ ...base, city: null }} />);
-    expect(
-      screen.getByText("הפרופיל שלך חסר פרטים קריטיים"),
-    ).toBeInTheDocument();
-    const ring = screen.getByRole("progressbar");
-    expect(ring).toHaveAttribute("aria-valuenow", "80");
-    const cta = screen.getByRole("link", { name: "השלימי את הפרופיל שלך" });
-    expect(cta).toHaveAttribute("href", "/settings");
-  });
-
-  it("yellow low (≤70%) → percent headline + names the next missing field", () => {
-    // city/coords/contact present, category + image missing → 60%, yellow-low.
+  it("shared heuristic is untouched by the card-only products step: short_description missing does NOT block completion", () => {
+    // short_desc is in the heuristic (admin) but not one of the 4 card steps —
+    // a producer missing only the description still shows the card complete.
     render(
       <ProfileCompletenessCard
-        producer={{ ...base, categories: [], images: [] }}
+        producer={{ ...base, short_description: null, description: null }}
       />,
     );
-    expect(screen.getByText("הפרופיל שלך 60% מוכן")).toBeInTheDocument();
-    // missing[0] === "קטגוריה" → next step label rendered.
-    expect(screen.getByText("קטגוריה")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute(
-      "aria-valuenow",
-      "60",
+    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+  });
+
+  it("missing photo → 3/4 = 75% (yellow-high), 4-row checklist, deep-links to #profile-images", () => {
+    const { container } = render(
+      <ProfileCompletenessCard producer={{ ...base, images: [] }} />,
+    );
+    expect(screen.getByText("כמעט שם — 75% מוכן")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "75");
+
+    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(list).getAllByText("הושלם")).toHaveLength(3);
+    expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
+
+    // Photo is the top-remaining step → echoed in the next-step box + CTA target.
+    expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
+    expect(screen.getAllByText("תמונה ראשית").length).toBeGreaterThanOrEqual(2);
+    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    expect(cta).toHaveAttribute("href", `${EDIT}#profile-images`);
+  });
+
+  it("missing 2 steps → 50% (yellow-low, calm progress headline)", () => {
+    // images + contact missing → 2 of 4 done → 50%.
+    render(
+      <ProfileCompletenessCard
+        producer={{ ...base, images: [], phone: null, instagram: null }}
+      />,
+    );
+    expect(screen.getByText("הפרופיל שלך 50% מוכן")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
+  });
+
+  // MEH-1238: one product now completes the checklist step (badge still needs 3).
+  it("one product → products step done → 100% complete", () => {
+    render(
+      <ProfileCompletenessCard producer={{ ...base, products: [{ id: "p1" }] }} />,
+    );
+    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("products step is card-only: zero products → step todo, CTA → #profile-products", () => {
+    const { container } = render(
+      <ProfileCompletenessCard producer={{ ...base, products: [] }} />,
+    );
+    // image/location/contact done, products todo → 75%.
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "75");
+    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    expect(cta).toHaveAttribute("href", `${EDIT}#profile-products`);
+    // Every checklist row is a deep-link to an editor section.
+    expect(hrefs(container)).toEqual(
+      expect.arrayContaining([
+        `${EDIT}#profile-images`,
+        // MEH-1165 item 4: the location row lands on the location card.
+        `${EDIT}#location`,
+        `${EDIT}#profile-products`,
+        `${EDIT}#profile-contact`,
+      ]),
     );
   });
 
-  it("yellow high (>70%) → 'almost there' headline + remaining count", () => {
-    // Only image missing → 80%, yellow-high.
-    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
-    expect(screen.getByText("כמעט שם — 80% מוכן")).toBeInTheDocument();
-    // count=1 (only image missing) → ICU singular grammar, not "רק 1 פרטים".
-    expect(
-      screen.getByText("רק פרט אחד עד שהפרופיל מלא"),
-    ).toBeInTheDocument();
+  it("products signal falls back to products_count scalar when the array is absent", () => {
+    // No `products` array (e.g. a slimmer payload) but products_count present.
+    const { products, ...noArray } = base;
+    void products;
+    render(<ProfileCompletenessCard producer={{ ...noArray, products_count: 5 }} />);
+    // 4/4 → complete.
+    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
   });
 
-  // MEH-897: yellow >70 swaps the single next-step line for a 5-row checklist.
-  it("yellow high (>70%) → 5-row checklist (4 done + 1 remaining) + next-step box", () => {
-    // Only image missing → 80%. Physical-location producer → coords row applies.
-    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
-
-    const list = screen.getByRole("list", {
-      name: "התקדמות השלמת הפרופיל",
-    });
-    expect(list).toBeInTheDocument();
-    expect(within(list).getAllByRole("listitem")).toHaveLength(5);
-
-    // 4 completed + 1 remaining, exposed to AT via per-row sr-only state.
-    expect(within(list).getAllByText("הושלם")).toHaveLength(4);
-    expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
-
-    // The remaining row is the missing field (image → "תמונה ראשית"), and the
-    // top-remaining field is also echoed in the emphasized next-step box, so the
-    // label appears twice (checklist row + box) while the prefix appears once.
-    expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
-    expect(screen.getAllByText("תמונה ראשית").length).toBeGreaterThanOrEqual(2);
-    // CTA still present below the box.
-    expect(
-      screen.getByRole("link", { name: "השלימי את הפרופיל שלך" }),
-    ).toBeInTheDocument();
+  it("no products at all → products step todo (not complete)", () => {
+    const { products, ...noArray } = base;
+    void products;
+    render(<ProfileCompletenessCard producer={noArray} />);
+    expect(screen.queryByText("הפרופיל מלא")).not.toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "75");
   });
 
-  // MEH-897: he-only gate — /en falls back to the inline next-step (the
-  // checklist a11y keys live in he.json only until MEH-472). Mirrors MEH-884.
-  it("yellow high on /en → no checklist, falls back to inline next-step", () => {
-    mockLocale.current = "en";
-    try {
-      render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
-      // Headline still renders (key present in both locales)…
-      expect(screen.getByText("כמעט שם — 80% מוכן")).toBeInTheDocument();
-      // …but the checklist <ul> is gated out, and the inline next-step remains.
-      expect(screen.queryByRole("list")).not.toBeInTheDocument();
-      expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
-    } finally {
-      mockLocale.current = "he";
-    }
+  it("missing contact → contact step todo, CTA → #profile-contact", () => {
+    render(
+      <ProfileCompletenessCard producer={{ ...base, phone: null, instagram: null }} />,
+    );
+    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    expect(cta).toHaveAttribute("href", `${EDIT}#profile-contact`);
   });
 
-  it("yellow high checklist honors coords XOR delivery (delivery-only producer)", () => {
-    // Delivery-only, only image missing → 80%, yellow-high. Heuristic flags
-    // `delivery` not `coords`, so the checklist must show the delivery row.
+  it("location step honours coords XOR delivery: delivery-only + areas set → step done", () => {
     render(
       <ProfileCompletenessCard
         producer={{
@@ -166,15 +171,34 @@ describe("ProfileCompletenessCard", () => {
           delivery_areas: [{ city: "חיפה" }],
           phone: "0500000000",
           categories: ["dairy"],
-          images: [],
+          images: ["img1"],
+          products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
         }}
       />,
     );
-    const list = screen.getByRole("list", {
-      name: "התקדמות השלמת הפרופיל",
-    });
-    expect(within(list).getByText("אזורי משלוח")).toBeInTheDocument();
-    expect(within(list).queryByText("מיקום על המפה")).not.toBeInTheDocument();
-    expect(within(list).getAllByRole("listitem")).toHaveLength(5);
+    // delivery satisfies location (no coords needed) → 4/4 complete.
+    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+  });
+
+  it("delivery-only without areas → location step todo", () => {
+    render(
+      <ProfileCompletenessCard
+        producer={{
+          city: "תל אביב",
+          has_physical_location: false,
+          offers_delivery: true,
+          delivery_areas: [],
+          phone: "0500000000",
+          categories: ["dairy"],
+          images: ["img1"],
+          products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
+        }}
+      />,
+    );
+    // location todo → 3/4 → 75%, and the location step is the top remaining.
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "75");
+    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    // MEH-1165 item 4: the location step's CTA lands on the location card.
+    expect(cta).toHaveAttribute("href", `${EDIT}#location`);
   });
 });

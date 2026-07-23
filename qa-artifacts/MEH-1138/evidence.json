@@ -1,0 +1,14 @@
+[
+  {
+    "viewport": "375",
+    "leafPlaceholders": 3,
+    "brandNameInCards": 3,
+    "legacyGreenBoxes": 1
+  },
+  {
+    "viewport": "1280",
+    "leafPlaceholders": 3,
+    "brandNameInCards": 3,
+    "legacyGreenBoxes": 1
+  }
+]

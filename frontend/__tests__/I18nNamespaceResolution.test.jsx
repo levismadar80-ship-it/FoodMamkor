@@ -3,15 +3,14 @@ import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
-// MEH-996 audit finding: DeliveryBlock / FollowButton / HolidayBanner read
-// the `producer.delivery` / `producer.follow` / `producer.holiday_banner`
-// namespaces, but the keys live under `group_buys.*` in BOTH locales
-// (he.json + en.json). next-intl then renders the raw key path (its
-// MISSING_MESSAGE fallback) instead of the Hebrew copy — e.g. the follow
-// button label showed "producer.follow.follow_aria" for every signed-in
-// user on a producer page. Same trap FridayDeliveryStrip already dodged
-// (see its comment: "the prior producer.friday_delivery namespace never
-// existed in the JSONs").
+// MEH-996 audit finding: DeliveryBlock / HolidayBanner read the
+// `producer.delivery` / `producer.holiday_banner` namespaces, but the keys
+// live under `group_buys.*` in BOTH locales (he.json + en.json). next-intl
+// then renders the raw key path (its MISSING_MESSAGE fallback) instead of
+// the Hebrew copy. Same trap FridayDeliveryStrip already dodged (see its
+// comment: "the prior producer.friday_delivery namespace never existed in
+// the JSONs"). FollowButton was the third case here until MEH-1363
+// removed the component (decision A, MEH-1362).
 //
 // Unlike the rest of the suite (which mocks next-intl per PR-A1/B
 // precedent), these tests deliberately use the REAL provider + REAL
@@ -38,11 +37,9 @@ vi.mock("@/lib/toast", () => {
   return { showToast, default: showToast };
 });
 
-// WhatsAppButton drags in schemas/tracking — out of scope for ns resolution.
-vi.mock("@/components/WhatsAppButton", () => ({
-  default: () => <div data-testid="wa-stub" />,
-}));
-
+// MEH-1467: the WhatsAppButton mock was removed — DeliveryBlock no longer
+// imports WhatsAppButton (MEH-1466 dropped it from the delivery CTA), and the
+// component itself is deleted, so the mock is a dead no-op.
 vi.mock("@/lib/holidays", () => ({
   getActiveHoliday: () => ({
     key: "sukkot",
@@ -55,7 +52,6 @@ vi.mock("@/lib/holidays", () => ({
   }),
 }));
 
-import FollowButton from "@/components/FollowButton";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import HolidayBanner from "@/components/HolidayBanner";
 
@@ -69,12 +65,8 @@ const renderHe = (ui) =>
   );
 
 describe("i18n namespace resolution (MEH-996 audit — misnested group_buys.* blocks)", () => {
-  it("FollowButton renders the Hebrew follow label, not a raw key path", () => {
-    renderHe(<FollowButton producerId="p1" />);
-    const btn = screen.getByRole("button");
-    expect(btn.textContent).not.toMatch(/producer\.follow/);
-    expect(btn.textContent).toContain(he.group_buys.follow.follow_aria);
-  });
+  // MEH-1363: the FollowButton case was removed with the component itself
+  // (decision A, MEH-1362 — the heart is the single interest control).
 
   it("DeliveryBlock renders the Hebrew heading + nationwide badge, not raw key paths", () => {
     renderHe(

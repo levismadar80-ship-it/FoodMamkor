@@ -5,7 +5,8 @@ Coverage:
 - GET /cities?q= returns prefix-matched results
 - PUT /admin/producers/:id rejects both-false location mode → 422
 - PUT /admin/producers/:id rejects nationwide + cities together → 422
-- GET /producers with lat/lng/radius_km excludes delivery-only producers
+- GET /producers with lat/lng/radius_km includes delivery-only producers by
+  default; excludes them only with ?require_physical=true (MEH-1282)
 """
 import pytest
 
@@ -103,9 +104,11 @@ class TestNationwideXorCities:
         resp = client.put(
             f"/admin/producers/{p.id}",
             json={
+                # MEH-903 A: XOR now guards delivery_area_cities (delivery_areas
+                # store), not the legacy delivery_cities column.
                 "offers_delivery": True,
                 "delivery_nationwide": True,
-                "delivery_cities": ["תל אביב", "חיפה"],
+                "delivery_area_cities": ["תל אביב", "חיפה"],
             },
             headers=auth_header(admin),
         )
@@ -115,7 +118,7 @@ class TestNationwideXorCities:
         p = make_producer(db)
         resp = client.put(
             f"/admin/producers/{p.id}",
-            json={"offers_delivery": True, "delivery_nationwide": True, "delivery_cities": []},
+            json={"offers_delivery": True, "delivery_nationwide": True, "delivery_area_cities": []},
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
@@ -126,19 +129,28 @@ class TestNationwideXorCities:
         resp = client.put(
             f"/admin/producers/{p.id}",
             json={
+                # MEH-903 A: cities now flow through delivery_area_cities into the
+                # delivery_areas relation; the response exposes them under
+                # delivery_areas[].city (the flat delivery_cities column is inert).
                 "offers_delivery": True,
                 "delivery_nationwide": False,
-                "delivery_cities": ["ירושלים"],
+                "delivery_area_cities": ["ירושלים"],
             },
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
-        assert "ירושלים" in resp.json()["delivery_cities"]
+        assert "ירושלים" in [da["city"] for da in resp.json()["delivery_areas"]]
 
 
-# ---------- Geo-search excludes delivery-only ----------
+# ---------- Geo-search + delivery-only (MEH-1282) ----------
 
-class TestGeoSearchExcludesDeliveryOnly:
+class TestGeoSearchDeliveryOnly:
+    """MEH-1282: geo results include delivery-only producers by default; the
+    has_physical_location filter is opt-in via ?require_physical=true (map-pin
+    semantics). Supersedes the MEH-213 always-exclude behavior — delivery-only
+    businesses in range were permanently invisible to the home "קרוב אליי" flow.
+    """
+
     def _make_delivery_only(self, db):
         p = Producer(
             name="משלוחים בלבד",
@@ -147,7 +159,6 @@ class TestGeoSearchExcludesDeliveryOnly:
             lat=32.0853,
             lng=34.7818,
             status="approved",
-            is_verified=True,
             has_physical_location=False,
             offers_delivery=True,
             delivery_nationwide=True,
@@ -157,7 +168,7 @@ class TestGeoSearchExcludesDeliveryOnly:
         db.refresh(p)
         return p
 
-    def test_delivery_only_excluded_from_geo_results(self, client, db):
+    def test_delivery_only_included_in_geo_results_by_default(self, client, db):
         physical = make_producer(db, name="חנות פיזית", city="תל אביב")
         delivery = self._make_delivery_only(db)
 
@@ -169,7 +180,31 @@ class TestGeoSearchExcludesDeliveryOnly:
         assert resp.status_code == 200
         ids = [p["id"] for p in resp.json()]
         assert str(physical.id) in ids, "Physical producer should appear in geo results"
-        assert str(delivery.id) not in ids, "Delivery-only producer must be excluded from geo results"
+        assert str(delivery.id) in ids, (
+            "Delivery-only producer with coords in range must appear in geo "
+            "results by default (MEH-1282)"
+        )
+
+    def test_delivery_only_excluded_from_geo_with_require_physical(self, client, db):
+        physical = make_producer(db, name="חנות פיזית", city="תל אביב")
+        delivery = self._make_delivery_only(db)
+
+        # Same geo query, but with require_physical=true → map-pin semantics.
+        resp = client.get(
+            "/producers",
+            params={
+                "lat": 32.0853,
+                "lng": 34.7818,
+                "radius_km": 10,
+                "require_physical": "true",
+            },
+        )
+        assert resp.status_code == 200
+        ids = [p["id"] for p in resp.json()]
+        assert str(physical.id) in ids, "Physical producer should still appear"
+        assert str(delivery.id) not in ids, (
+            "Delivery-only producer must be excluded when require_physical=true"
+        )
 
     def test_delivery_only_appears_in_non_geo_list(self, client, db):
         self._make_delivery_only(db)

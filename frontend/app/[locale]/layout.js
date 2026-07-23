@@ -30,6 +30,9 @@ const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום ה�
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד. כל בית עסק נבחר אישית.";
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
+// MEH-1060 (SEO-11): og-image-en.png exists but was unreferenced — /en/* pages
+// shared the Hebrew-text og-image.png. Select the EN artwork for the en locale.
+const OG_IMAGE_EN = `${SITE_URL}/og-image-en.png`;
 
 // MEH-476 PR 3b1: ACTIVE for all locale-stable routes (no headers() reads).
 // PR 3b2: every public route has per-page generateMetadata; this layout-level
@@ -108,6 +111,8 @@ export async function generateMetadata({ params }) {
 
   const title = t("title");
   const description = t("description");
+  // MEH-1060 (SEO-11): locale-conditional OG/Twitter artwork.
+  const ogImageUrl = locale === "en" ? OG_IMAGE_EN : OG_IMAGE;
 
   // Self-referencing canonical per locale. Linear MEH-476 <spec> says
   // "canonical = he_url (canonical to default locale)" but that's incorrect
@@ -142,6 +147,7 @@ export async function generateMetadata({ params }) {
       images: [
         {
           ...BASE_METADATA.openGraph.images[0],
+          url: ogImageUrl,
           alt: title,
         },
       ],
@@ -150,6 +156,7 @@ export async function generateMetadata({ params }) {
       ...BASE_METADATA.twitter,
       title: t("twitter_title"),
       description: t("twitter_description"),
+      images: [ogImageUrl],
     },
     alternates: buildAlternates("/", locale),
   };
@@ -191,7 +198,7 @@ export default async function LocaleLayout({ children, params }) {
         <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>

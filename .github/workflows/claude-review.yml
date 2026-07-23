@@ -15,7 +15,10 @@ name: Claude PR Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    # MEH-925: `ready_for_review` is required so a PR opened as a draft still
+    # gets reviewed the moment it flips to ready — without it the draft→ready
+    # transition emits no event the `draft == false` job guard would let run.
+    types: [opened, synchronize, ready_for_review]
     # F3 cost sweep (May 2026): skip Claude review on docs-only PRs. File
     # classes mirror e2e.yml:56-59 (MEH-424/499); native paths-ignore syntax
     # (no '!' prefix — that's a dorny-filter operator, not valid here). Safe
@@ -42,6 +45,11 @@ jobs:
     name: Adversarial review (calibration)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # MEH-925: never run on a draft PR — only on ready-for-review. Every push
+    # to an open draft otherwise re-runs the Anthropic action (~11% of monthly
+    # Actions minutes + API$). Safe because `review` is NOT a required check
+    # (continue-on-error below) → skipping it on drafts can't block a merge.
+    if: github.event.pull_request.draft == false
     # Calibration: never blocks merge while we measure signal:noise.
     # Flip to false via a follow-up PR after the calibration tally
     # crosses the >70% useful threshold (see docs/CLAUDE-REVIEW.md).

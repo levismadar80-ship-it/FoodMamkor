@@ -173,7 +173,10 @@ describe.skip("SettingsPage", () => {
     userRef.current = consumer;
   });
 
-  it("renders the three tabs for producers and only two for consumers", () => {
+  // MEH-1355: the business tab was removed — producers and consumers now see
+  // the same two tabs (profile, security). The status/support surface moved to
+  // /producer/dashboard (ProducerStatusBanners.test.jsx).
+  it("renders exactly two tabs (profile, security) for consumers and producers", () => {
     userRef.current = consumer;
     const { rerender } = render(<SettingsPage />);
     expect(screen.getByRole("tab", { name: /פרופיל/ })).toBeInTheDocument();
@@ -182,7 +185,8 @@ describe.skip("SettingsPage", () => {
 
     userRef.current = producerUser;
     rerender(<SettingsPage />);
-    expect(screen.getByRole("tab", { name: /העסק שלי/ })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /העסק שלי/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
   });
 
   it("defaults to the profile tab", () => {
@@ -284,21 +288,7 @@ describe.skip("SettingsPage", () => {
     await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalled());
   });
 
-  // ----- Business tab -----
-
-  it("business: renders status + availability + stat cards for producers", async () => {
-    userRef.current = producerUser;
-    paramsRef.current = new URLSearchParams("tab=business");
-    render(<SettingsPage />);
-    await waitFor(() => screen.getByText("חוות השקמה"));
-    expect(screen.getByText(/סטטוס: מאושר/)).toBeInTheDocument();
-    expect(screen.getByText(/זמינות: עמוס כרגע/)).toBeInTheDocument();
-    expect(screen.getByText("7")).toBeInTheDocument(); // favorites
-    expect(screen.getByText("42")).toBeInTheDocument(); // views
-    expect(screen.getByText("3")).toBeInTheDocument(); // whatsapp
-    expect(screen.getByRole("link", { name: /ניהול מלא/ })).toHaveAttribute(
-      "href",
-      "/producer/dashboard",
-    );
-  });
+  // MEH-1355: the "business" tab was removed — its status/support surface is
+  // now the canonical /producer/dashboard (covered by ProducerStatusBanners.test.jsx).
+  // The old `business:` test (stats grid, ?tab=business) was deleted with it.
 });

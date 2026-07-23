@@ -47,7 +47,6 @@ erDiagram
         float lat "indexed with lng"
         float lng
         string status "pending|approved|rejected"
-        boolean is_verified
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — preserved during MEH-291 overlap"
@@ -66,7 +65,12 @@ erDiagram
         string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
         timestamp verified_at "nullable — MEH-762, tz-aware; admin tier-1 document-check timestamp (public at date granularity)"
         string verification_doc_type "nullable — MEH-762, VARCHAR(20); license|exemption|cosmetics (S12 badge source)"
+        text requested_changes "nullable — MEH-1011, admin completion-request feedback (non-terminal, status stays pending; cleared on approve)"
+        timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
         timestamp created_at
+        timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
+        text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
+        string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
     }
 
     categories {
@@ -86,6 +90,7 @@ erDiagram
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
+        boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
     }
 
@@ -106,6 +111,7 @@ erDiagram
     producer_categories {
         uuid producer_id FK "composite PK"
         int category_id FK "composite PK"
+        int position "MEH-1297: 0 = primary (first selected)"
     }
 ```
 
@@ -181,6 +187,7 @@ erDiagram
         numeric price
         int capacity
         string status "pending|changes_requested|approved|rejected"
+        boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
         timestamp created_at
     }
@@ -202,7 +209,9 @@ erDiagram
         uuid producer_id FK
         uuid user_id FK "reporter"
         string reason
-        string status "open|resolved|dismissed"
+        string status "open|resolved|dismissed (MEH-1266)"
+        timestamp resolved_at "MEH-1266"
+        uuid resolved_by FK "users, ON DELETE SET NULL (MEH-1266)"
         timestamp created_at
     }
 
@@ -233,6 +242,28 @@ erDiagram
 > `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
 > `passive_deletes=True`, so deleting a producer cascades children at the DB
 > layer instead of the ORM nullifying a NOT-NULL column.
+
+> **MEH-272 producer CHECK constraints (migration `f9a2c7d41b83` + ORM
+> `__table_args__`):** `producers` carries two CHECK constraints — a producer
+> must be reachable (`producer_location_mode`: `has_physical_location OR
+> offers_delivery`) and nationwide-delivery excludes an explicit city list
+> (`delivery_nationwide_xor_cities`: `NOT (delivery_nationwide AND
+> array_length(delivery_cities, 1) > 0)`). Both already lived on prod/staging
+> from the removed `_migrate_columns` (MEH-267) but were absent from the ORM +
+> baseline, so fresh DBs lacked them; MEH-272 declares them in the model and
+> re-adds them idempotently (`IF NOT EXISTS`). Pydantic `model_validator`
+> guards the API layer; these protect direct-SQL paths (seeds, imports, psql).
+
+> **MEH-1255 delivery-exclusion (migration `e7c4b1f95a2d` + ORM
+> `__table_args__`):** `producers.delivery_excluded_cities` (`TEXT[] NOT NULL
+> DEFAULT '{}'`) lists the cities a nationwide producer does NOT deliver to.
+> Third CHECK on `producers` — `delivery_excluded_requires_nationwide`
+> (`delivery_nationwide OR delivery_excluded_cities = '{}'::text[]`) — keeps it
+> empty unless nationwide (sibling of `delivery_nationwide_xor_cities`; the
+> NOT-NULL column lets it use the NULL-free equality form). New column, no new
+> table (`EXPECTED_TABLES` unchanged). Public on `ProducerListOut`; the
+> `?delivery_city=` consumer filter now returns nationwide producers minus
+> their exclusions.
 
 ## 4. Analytics + marketing
 
@@ -294,7 +325,23 @@ erDiagram
         string bot_template_sent "audit-trail: NULL = tried + failed"
         boolean human_replied
     }
+
+    alert_log {
+        uuid id PK
+        uuid user_id FK "CASCADE"
+        uuid producer_id FK "CASCADE"
+        string channel "push|whatsapp (16)"
+        string alert_type "new_event|new_product|delivery_area (32)"
+        timestamp sent_at "indexed (user,producer,channel,sent_at)"
+    }
 ```
+
+> **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
+> `fire_alerts` cap (≤1 message per `(user, producer, channel)` per rolling 24h;
+> `alert_type` recorded but not part of the cap key). Composite index
+> `ix_alert_log_cap_lookup(user_id, producer_id, channel, sent_at)` serves the
+> EXISTS check. Adds one table → **`EXPECTED_TABLES` 36 → 37** (`pr-checks.yml`).
+> No retention/purge job yet (rows CASCADE-delete with their user/producer).
 
 ## Locked invariants (do not drift)
 

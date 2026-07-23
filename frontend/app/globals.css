@@ -217,6 +217,27 @@ body.sheet-open .cookie-banner {
   font-size: 10px;
   z-index: 1001 !important;
   color: #5c584f;
+  /* MEH-1365: ride ABOVE the /map bottom sheet's live top edge instead of
+     painting over its content (z-1001 > sheet z-600, and both z values are
+     locked by history: 1 → header covered it (MEH-15/30), 600 is the sheet
+     token). Spatial fix, not another z-index round: MapBottomSheet publishes
+     --map-sheet-h every drag frame / snap (MEH-970, NearMePill precedent);
+     fallback 0vh = no sheet mounted (desktop, other map surfaces) → the 10px
+     floor below IS Leaflet's own default margin, so those surfaces are
+     byte-identical. !important because Leaflet's
+     `.leaflet-bottom .leaflet-control { margin-bottom: 10px }` outranks this
+     single-class selector (measured: without it the margin never applies).
+     Mobile-only: the sheet is a <lg surface but it publishes --map-sheet-h
+     whenever mounted, so an unscoped rule would lift the DESKTOP attribution
+     too (measured 78px). +6px clears the sheet's rounded top edge; the 10px
+     floor IS Leaflet's default margin (sheet-closed state = byte-identical).
+     --map-sheet-anim keeps snap smooth (300ms), drag 1:1 (0ms). */
+}
+@media (max-width: 1023.98px) {
+  .leaflet-control-attribution {
+    margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px), 10px) !important;
+    transition: margin-bottom var(--map-sheet-anim, 0ms) ease-out;
+  }
 }
 .leaflet-control-attribution a {
   color: inherit;
@@ -321,15 +342,15 @@ body.sheet-open .cookie-banner {
    drift in lock-step. Disabled for prefers-reduced-motion. */
 @keyframes kenburns-right {
   0%   { transform: scale(1) translate(0%, 0%); }
-  100% { transform: scale(1.08) translate(-2%, -1%); }
+  100% { transform: scale(1.06) translate(-2%, -1%); }
 }
 @keyframes kenburns-left {
   0%   { transform: scale(1) translate(0%, 0%); }
-  100% { transform: scale(1.08) translate(2%, -1%); }
+  100% { transform: scale(1.06) translate(2%, -1%); }
 }
 
 .kenburns-right {
-  animation: kenburns-right 20s ease-in-out infinite alternate;
+  animation: kenburns-right 22s ease-in-out infinite alternate;
   will-change: transform;
 }
 .kenburns-left {

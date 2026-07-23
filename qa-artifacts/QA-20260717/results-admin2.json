@@ -1,0 +1,18 @@
+[
+  {
+    "id": "8",
+    "status": "PASS",
+    "detail": "@scrollY140: toggle found=1, clicked=true, label flipped to הצג הכל=true, rows 6→6 (filter applied)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check8-toolbar-sticky.png"
+    ]
+  },
+  {
+    "id": "9b",
+    "status": "PASS",
+    "detail": "UserMenu opened: dropdown detected=true, links=[], interactive-link present=false",
+    "shots": [
+      "qa-artifacts/QA-20260717/check9b-usermenu.png"
+    ]
+  }
+]

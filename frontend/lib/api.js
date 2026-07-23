@@ -4,6 +4,11 @@ import * as Sentry from "@sentry/nextjs";
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true,
+  // MEH-1465: render array query params as repeated keys (?category=1&category=2),
+  // NOT axios's default bracket form (?category[]=1). FastAPI's `list[int]` query
+  // parsing reads repeated bare keys; the bracketed form is silently ignored,
+  // which would drop a multi-id category filter. Applies to every array param.
+  paramsSerializer: { indexes: null },
 });
 
 // Attach JWT token to requests
@@ -52,6 +57,14 @@ api.interceptors.response.use(
       typeof window !== "undefined" &&
       !SKIP_REFRESH.some((prefix) => url.startsWith(prefix))
     ) {
+      // MEH-1315: retry-once guard — a request that already retried after a
+      // successful refresh must not trigger a second refresh (infinite
+      // refresh→retry→401 loop when the retry keeps failing, e.g. corrupt
+      // fingerprint cookie / clock skew).
+      if (error.config?._retry) {
+        _expireSession();
+        return Promise.reject(error);
+      }
       try {
         if (!refreshPromise) {
           refreshPromise = api.post("/auth/refresh");
@@ -61,6 +74,7 @@ api.interceptors.response.use(
         // Retry the original request — config already has the old Bearer
         // header; the request interceptor will overwrite it with the new
         // token on the retry because it reads localStorage fresh each time.
+        error.config._retry = true;
         return api(error.config);
       } catch {
         _expireSession();

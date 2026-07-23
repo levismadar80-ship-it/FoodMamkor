@@ -3,17 +3,28 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
+import { useAdminAction } from "@/lib/use-admin-action";
+import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
+import Input from "@/components/ui/Input";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
+
+// MEH-1297: a producer may hold at most 3 categories; the first-selected is the
+// primary (drives categories[0] on the card/map pin). Mirrors the backend cap
+// (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
+const MAX_CATEGORIES = 3;
 
 // MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
 const KOSHER_LABEL_KEYS = {
@@ -34,7 +45,7 @@ const KOSHER_LABEL_KEYS = {
  * Format check is inline + non-blocking — backend deliberately doesn't
  * enforce the regex (manual-approval flow per MEH-530 spec).
  */
-function ProducerLicenseField({ form, categories, update, inputClass }) {
+function ProducerLicenseField({ form, categories, update }) {
   const t = useTranslations("admin");
   const [optionalExpanded, setOptionalExpanded] = useState(false);
   const required = requiresProducerLicense(categories, form.category_ids);
@@ -72,13 +83,14 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
           {t("producers.form.fields.license_required_hint")}
         </p>
       )}
-      <input
+      {/* label-less Input — the htmlFor label + hint above keep their
+          layout (Input's own label slot would move the hint below). */}
+      <Input
         id="admin-producer-license"
         value={form.producer_license_number}
         onChange={(e) => update("producer_license_number", e.target.value)}
         maxLength={20}
         inputMode="numeric"
-        className={inputClass}
         dir="ltr"
       />
       {warning && (
@@ -86,6 +98,17 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
           {t("producers.form.fields.license_format_warning")}
         </p>
       )}
+      {/* MEH-1271: manual cross-check against the Ministry of Health food
+          manufacturers registry (by business name / license number). */}
+      <a
+        href={HEALTH_MINISTRY_FOOD_REGISTRY_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+      >
+        <ArrowSquareOut size={14} weight="bold" aria-hidden="true" />
+        {t("producers.form.fields.license_registry_link")}
+      </a>
     </div>
   );
 }
@@ -115,7 +138,6 @@ const EMPTY = {
   category_ids: [],
   has_delivery: false,
   pickup_points: false,
-  delivery_area_cities: "",
   kosher: "",
   grass_fed: false,
   organic_certified: false,
@@ -133,21 +155,47 @@ const EMPTY = {
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
+  // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
+  delivery_excluded_cities: [],
   // MEH-291 — unified 4-state availability. Backend dual-writes to legacy
   // availability_status during the 7-day overlap; Phase 4 drops the legacy.
   availability_state: "accepting_orders",
   vacation_until: "",
 };
 
+// Focus-retention fix: Section + Field live at MODULE scope. Defining them
+// inside ProducerForm recreated their component identity on every render, so
+// React remounted the whole subtree and dropped input focus mid-typing.
+function Section({ title, children }) {
+  return (
+    <div className="bg-white rounded-[12px] border border-border p-6">
+      <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children, full = false }) {
+  return (
+    <label className={`block ${full ? "md:col-span-2" : ""}`}>
+      <span className="block text-sm text-muted mb-1">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export default function ProducerForm({ initial = null, producerId = null }) {
   const t = useTranslations("admin");
+  // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
+  // address search — no new i18n keys (see dashboard.producer.location).
+  const tLoc = useTranslations("dashboard.producer.location");
   const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
+  const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
   const [categories, setCategories] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
+  // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
+  const [addressText, setAddressText] = useState("");
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -162,8 +210,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         lng: initial.lng ?? "",
         slug: initial.slug ?? "",
         category_ids: initial.categories?.map((c) => c.id) ?? [],
-        delivery_area_cities:
-          initial.delivery_areas?.map((d) => d.city).join(", ") ?? "",
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
         // MEH-530: admin GET /admin/producers/{id} returns ProducerAdminOut
@@ -186,7 +232,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         has_physical_location: initial.has_physical_location ?? true,
         offers_delivery: initial.offers_delivery ?? false,
         delivery_nationwide: initial.delivery_nationwide ?? false,
-        delivery_cities: initial.delivery_cities ?? [],
+        // MEH-903 A: the single cities input is populated from the delivery_areas
+        // relation (the store), not the legacy delivery_cities column.
+        delivery_cities: initial.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+        // MEH-1255: nationwide exclusion list.
+        delivery_excluded_cities: initial.delivery_excluded_cities ?? [],
         // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
         availability_state:
           initial.availability_state ??
@@ -204,6 +254,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // MEH-1242 PR2: Nominatim address pick → fill lat/lng/city. Never clobber an
+  // existing city when the result lacks one. REUSES edit/cards.jsx LocationCard.
+  const handleAddressSelect = (picked) => {
+    setForm((f) => ({
+      ...f,
+      lat: picked.lat ?? f.lat,
+      lng: picked.lng ?? f.lng,
+      city: picked.city || f.city,
+    }));
+  };
+
   const toggleCategory = (id) => {
     setForm((f) => {
       const exists = f.category_ids.includes(id);
@@ -216,139 +277,159 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     });
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setUploading(true);
-    try {
-      const uploaded = [];
-      for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const r = await api.post("/upload/image", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        uploaded.push(r.data.url);
-      }
-      setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
-    } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.image_upload"));
-    } finally {
-      setUploading(false);
-    }
+    // MEH-228 pattern: image upload routes through useAdminAction — per-key
+    // in-flight lock + central error toast (no more swallowed failures).
+    run(
+      "producer-images",
+      async () => {
+        const uploaded = [];
+        for (const file of files) {
+          const fd = new FormData();
+          fd.append("file", file);
+          const r = await api.post("/upload/image", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          uploaded.push(r.data.url);
+        }
+        setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
+      },
+      (err) =>
+        showToast.error(
+          detailToMessage(err.response?.data?.detail) ||
+            t("producers.form.errors.image_upload"),
+        ),
+    );
   };
 
   const removeImage = (url) => {
     setForm((f) => ({ ...f, images: f.images.filter((u) => u !== url) }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError("");
-    setSaving(true);
-
+    // Explicit field list (no {...form} spread): the legacy delivery_cities
+    // column is never sent — delivery_area_cities is the sole cities channel
+    // (MEH-903). Save routes through useAdminAction (MEH-228): per-key
+    // in-flight lock + central error toast (no swallowed failures).
     const payload = {
-      ...form,
-      lat: form.lat === "" ? null : parseFloat(form.lat),
-      lng: form.lng === "" ? null : parseFloat(form.lng),
+      name: form.name,
+      contact_name: form.contact_name,
+      opening_hours: form.opening_hours,
+      phone: form.phone,
+      instagram: form.instagram,
+      website: form.website,
+      whatsapp_group: form.whatsapp_group,
+      primary_contact_method: form.primary_contact_method,
       // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
       contact_email: form.contact_email?.trim() || null,
-      delivery_area_cities: form.delivery_area_cities
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean),
-      // MEH-291 — clear vacation_until when not on vacation
-      vacation_until: form.availability_state === "on_vacation" && form.vacation_until ? form.vacation_until : null,
+      facebook: form.facebook,
+      external_order_form: form.external_order_form,
+      city: form.city,
+      lat: form.lat === "" ? null : parseFloat(form.lat),
+      lng: form.lng === "" ? null : parseFloat(form.lng),
+      slug: form.slug,
+      description: form.description,
+      short_description: form.short_description,
+      top_product_name: form.top_product_name,
+      price_range: form.price_range,
+      category_ids: form.category_ids,
+      has_delivery: form.has_delivery,
+      pickup_points: form.pickup_points,
+      kosher: form.kosher,
+      grass_fed: form.grass_fed,
+      organic_certified: form.organic_certified,
+      is_recommended: form.is_recommended,
+      producer_license_number: form.producer_license_number,
+      admin_notes: form.admin_notes,
+      images: form.images,
+      // MEH-213 — location mode
+      has_physical_location: form.has_physical_location,
+      offers_delivery: form.offers_delivery,
+      delivery_nationwide: form.delivery_nationwide,
+      // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
+      // the legacy delivery_cities column is intentionally omitted.
+      delivery_area_cities: form.delivery_cities,
+      // MEH-1255: exclusion list only meaningful in nationwide mode; the
+      // toggle already clears it otherwise, and the backend guard enforces it.
+      delivery_excluded_cities: form.delivery_nationwide
+        ? form.delivery_excluded_cities
+        : [],
+      // MEH-291 — unified availability; clear vacation_until when not on vacation.
+      availability_state: form.availability_state,
+      vacation_until:
+        form.availability_state === "on_vacation" && form.vacation_until
+          ? form.vacation_until
+          : null,
     };
 
-    try {
-      if (producerId) {
-        await api.put(`/admin/producers/${producerId}`, payload);
-      } else {
-        await api.post("/admin/producers", payload);
-      }
-      router.push("/admin?tab=producers");
-    } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.save"));
-    } finally {
-      setSaving(false);
-    }
+    run(
+      "producer-save",
+      async () => {
+        if (producerId) {
+          await api.put(`/admin/producers/${producerId}`, payload);
+        } else {
+          await api.post("/admin/producers", payload);
+        }
+        router.push("/admin?tab=producers");
+      },
+      (err) =>
+        showToast.error(
+          detailToMessage(err.response?.data?.detail) ||
+            t("producers.form.errors.save"),
+        ),
+    );
   };
 
-  const Section = ({ title, children }) => (
-    <div className="bg-white rounded-[12px] border border-border p-6">
-      <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
-      {children}
-    </div>
-  );
-
-  const Field = ({ label, children, full = false }) => (
-    <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="block text-sm text-muted mb-1">{label}</span>
-      {children}
-    </label>
-  );
-
+  // MEH-1128 Wave C: single-line inputs migrated to ui/Input — this recipe
+  // now feeds ONLY the selects + textareas (no primitive for them until the
+  // epic's later waves). Delete when those migrate.
   const inputClass =
     "w-full border border-border rounded-[12px] px-3 py-2 focus:outline-none focus:border-primary bg-white";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">
-          {error}
-        </div>
-      )}
-
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("producers.form.fields.name")}>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.contact_name")}>
-            <input
-              value={form.contact_name}
-              onChange={(e) => update("contact_name", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.phone")}>
-            <input
-              value={form.phone}
-              onChange={(e) => update("phone", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.phone_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.instagram")}>
-            <input
-              value={form.instagram}
-              onChange={(e) => update("instagram", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.instagram_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.website")}>
-            <input
-              value={form.website}
-              onChange={(e) => update("website", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.website_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.whatsapp_group")}>
-            <input
-              value={form.whatsapp_group}
-              onChange={(e) => update("whatsapp_group", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
-            />
-          </Field>
+          {/* MEH-1128 Wave C: single-line fields via ui/Input (labels move to
+              the primitive's htmlFor slot). Field stays for the selects. */}
+          <Input
+            label={t("producers.form.fields.name")}
+            required
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.contact_name")}
+            value={form.contact_name}
+            onChange={(e) => update("contact_name", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.phone")}
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+            placeholder={t("producers.form.fields.phone_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.instagram")}
+            value={form.instagram}
+            onChange={(e) => update("instagram", e.target.value)}
+            placeholder={t("producers.form.fields.instagram_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.website")}
+            value={form.website}
+            onChange={(e) => update("website", e.target.value)}
+            placeholder={t("producers.form.fields.website_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.whatsapp_group")}
+            value={form.whatsapp_group}
+            onChange={(e) => update("whatsapp_group", e.target.value)}
+            placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
+          />
           {/* MEH-17 — primary contact method + business email. */}
           <Field label={t("producers.form.fields.primary_contact")}>
             <select
@@ -365,89 +446,128 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               <option value="external_order">{t("producers.form.fields.primary_contact_external_order")}</option>
             </select>
           </Field>
-          <Field label={t("producers.form.fields.contact_email")}>
-            <input
-              type="email"
-              value={form.contact_email}
-              onChange={(e) => update("contact_email", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.contact_email_placeholder")}
-              dir="ltr"
-            />
-          </Field>
+          <Input
+            type="email"
+            label={t("producers.form.fields.contact_email")}
+            value={form.contact_email}
+            onChange={(e) => update("contact_email", e.target.value)}
+            placeholder={t("producers.form.fields.contact_email_placeholder")}
+            dir="ltr"
+          />
           {/* MEH-296 3d — new contact channels */}
-          <Field label={t("producers.form.fields.facebook")}>
-            <input
-              value={form.facebook}
-              onChange={(e) => update("facebook", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.facebook_placeholder")}
-              dir="ltr"
+          <Input
+            label={t("producers.form.fields.facebook")}
+            value={form.facebook}
+            onChange={(e) => update("facebook", e.target.value)}
+            placeholder={t("producers.form.fields.facebook_placeholder")}
+            dir="ltr"
+          />
+          <Input
+            label={t("producers.form.fields.external_order_form")}
+            value={form.external_order_form}
+            onChange={(e) => update("external_order_form", e.target.value)}
+            placeholder={t("producers.form.fields.external_order_form_placeholder")}
+            dir="ltr"
+          />
+          <Input
+            label={t("producers.form.fields.city")}
+            value={form.city}
+            onChange={(e) => update("city", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.slug")}
+            value={form.slug}
+            onChange={(e) => update("slug", e.target.value)}
+            placeholder={t("producers.form.fields.slug_placeholder")}
+          />
+          {/* MEH-1242 PR2: raw lat/lng inputs replaced by AddressSearch
+              (Nominatim geocode) — onSelect fills lat/lng/city. Raw coords
+              stay editable behind the collapsed manual-edit disclosure below
+              (admin escape hatch). REUSES: components/AddressSearch.jsx +
+              edit/cards.jsx LocationCard. */}
+          <div className="md:col-span-2">
+            <label htmlFor="admin-producer-address" className="block text-sm text-muted mb-1">
+              {tLoc("heading")}
+            </label>
+            <AddressSearch
+              id="admin-producer-address"
+              value={addressText}
+              onChange={setAddressText}
+              onSelect={handleAddressSelect}
             />
-          </Field>
-          <Field label={t("producers.form.fields.external_order_form")}>
-            <input
-              value={form.external_order_form}
-              onChange={(e) => update("external_order_form", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.external_order_form_placeholder")}
-              dir="ltr"
-            />
-          </Field>
-          <Field label={t("producers.form.fields.city")}>
-            <input
-              value={form.city}
-              onChange={(e) => update("city", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.slug")}>
-            <input
-              value={form.slug}
-              onChange={(e) => update("slug", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.slug_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.lat")}>
-            <input
-              type="number"
-              step="any"
-              value={form.lat}
-              onChange={(e) => update("lat", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.lng")}>
-            <input
-              type="number"
-              step="any"
-              value={form.lng}
-              onChange={(e) => update("lng", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
+            <p className="text-xs text-muted mt-1">{tLoc("subtitle")}</p>
+            {form.lat !== "" && form.lng !== "" && (
+              <p className="text-xs text-muted mt-2">
+                {tLoc("current_prefix")}{" "}
+                <span className="text-text">
+                  {form.city ? `${form.city} · ` : ""}
+                  <span dir="ltr">{form.lat}, {form.lng}</span>
+                </span>
+              </p>
+            )}
+            <details className="mt-3">
+              <summary className="text-xs text-primary underline cursor-pointer w-fit">
+                {t("common.edit")}
+              </summary>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <Input
+                  type="number"
+                  step="any"
+                  label={t("producers.form.fields.lat")}
+                  value={form.lat}
+                  onChange={(e) => update("lat", e.target.value)}
+                />
+                <Input
+                  type="number"
+                  step="any"
+                  label={t("producers.form.fields.lng")}
+                  value={form.lng}
+                  onChange={(e) => update("lng", e.target.value)}
+                />
+              </div>
+            </details>
+          </div>
         </div>
       </Section>
 
       <Section title={t("producers.form.sections.categories_tags")}>
+        {/* MEH-1297: primary-first + ≤3 cap hint (parity with the register CategorySelector) */}
+        <p className="text-[11px] text-fg-muted mb-2">
+          {t("producers.form.category_cap_hint")}
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-          {categories.map((c) => (
-            <label
-              key={c.id}
-              className="flex items-center gap-2 text-sm cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={form.category_ids.includes(c.id)}
-                onChange={() => toggleCategory(c.id)}
-                className="w-4 h-4 accent-primary"
-              />
-              <span>
-                {c.emoji} {c.name}
-              </span>
-            </label>
-          ))}
+          {categories.map((c) => {
+            // MEH-1297: first-selected = primary; cap blocks new picks at 3.
+            const checked = form.category_ids.includes(c.id);
+            const isPrimary = form.category_ids[0] === c.id;
+            const capDisabled =
+              !checked && form.category_ids.length >= MAX_CATEGORIES;
+            return (
+              <label
+                key={c.id}
+                className={`flex items-center gap-2 text-sm ${
+                  capDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={capDisabled}
+                  onChange={() => toggleCategory(c.id)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>{c.name}</span>
+                {isPrimary && (
+                  <span
+                    data-testid="admin-primary-badge"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                  >
+                    {t("producers.form.primary_badge")}
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-border">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -502,7 +622,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           form={form}
           categories={categories}
           update={update}
-          inputClass={inputClass}
         />
       </Section>
 
@@ -538,7 +657,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   checked={form.delivery_nationwide}
                   onChange={(e) => {
                     update("delivery_nationwide", e.target.checked);
+                    // Clear cities entering nationwide; clear exclusions leaving it.
                     if (e.target.checked) update("delivery_cities", []);
+                    else update("delivery_excluded_cities", []);
                   }}
                   className="w-4 h-4 accent-primary"
                 />
@@ -550,10 +671,23 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   <CitiesAutocomplete
                     value={form.delivery_cities}
                     onChange={(cities) => update("delivery_cities", cities)}
+                    showRegionChips
                   />
                   {form.delivery_cities.length === 0 && (
                     <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
                   )}
+                </div>
+              )}
+              {/* MEH-1255: nationwide exclusion list — "לכל הארץ חוץ מ:" */}
+              {form.delivery_nationwide && (
+                <div>
+                  <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_excluded_label")}</span>
+                  <p className="text-xs text-fg-muted mb-1">{t("producers.form.fields.delivery_excluded_hint")}</p>
+                  <CitiesAutocomplete
+                    value={form.delivery_excluded_cities}
+                    onChange={(cities) => update("delivery_excluded_cities", cities)}
+                    showRegionChips
+                  />
                 </div>
               )}
             </div>
@@ -581,26 +715,21 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.pickup_points")}
           </label>
-          <Field label={t("producers.form.fields.delivery_area_cities")} full>
-            <input
-              value={form.delivery_area_cities}
-              onChange={(e) => update("delivery_area_cities", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.delivery_area_cities_placeholder")}
-            />
-          </Field>
+          {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
+              removed — cities are now entered once via the CitiesAutocomplete in
+              the location-mode block above (single store: delivery_areas). */}
         </div>
       </Section>
 
       <Section title={t("producers.form.sections.description_price")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("producers.form.fields.short_description")} full>
-            <input
+          <div className="md:col-span-2">
+            <Input
+              label={t("producers.form.fields.short_description")}
               value={form.short_description}
               onChange={(e) => update("short_description", e.target.value)}
-              className={inputClass}
             />
-          </Field>
+          </div>
           <Field label={t("producers.form.fields.description_full")} full>
             <textarea
               value={form.description}
@@ -608,22 +737,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={`${inputClass} h-28 resize-none`}
             />
           </Field>
-          <Field label={t("producers.form.fields.top_product")}>
-            <input
-              value={form.top_product_name}
-              onChange={(e) => update("top_product_name", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.top_product_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.price_range")}>
-            <input
-              value={form.price_range}
-              onChange={(e) => update("price_range", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.price_range_placeholder")}
-            />
-          </Field>
+          <Input
+            label={t("producers.form.fields.top_product")}
+            value={form.top_product_name}
+            onChange={(e) => update("top_product_name", e.target.value)}
+            placeholder={t("producers.form.fields.top_product_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.price_range")}
+            value={form.price_range}
+            onChange={(e) => update("price_range", e.target.value)}
+            placeholder={t("producers.form.fields.price_range_placeholder")}
+          />
         </div>
       </Section>
 
@@ -633,17 +758,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           accept="image/*"
           multiple
           onChange={handleImageUpload}
-          disabled={uploading}
+          disabled={isBusy("producer-images")}
           className="text-sm"
         />
-        {uploading && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
               <div key={url} className="relative group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={optimizeCloudinary(url)}
                   alt=""
                   className="w-full h-24 object-cover rounded-[8px] border border-border"
                 />
@@ -662,15 +787,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       <Section title={t("producers.form.sections.hours")}>
-        <Field label={t("producers.form.fields.opening_hours_label")} full>
-          <input
-            value={form.opening_hours}
-            onChange={(e) => update("opening_hours", e.target.value)}
-            className={inputClass}
-            placeholder={t("producers.form.fields.opening_hours_placeholder")}
-            dir="ltr"
-          />
-        </Field>
+        <Input
+          label={t("producers.form.fields.opening_hours_label")}
+          value={form.opening_hours}
+          onChange={(e) => update("opening_hours", e.target.value)}
+          placeholder={t("producers.form.fields.opening_hours_placeholder")}
+          dir="ltr"
+        />
       </Section>
 
       <Section title={<>{t("producers.form.sections.availability")} <InfoTooltip content={t("producers.form.sections.availability_tooltip")} label={t("producers.form.sections.availability_tooltip_label")} position="bottom" /></>}>
@@ -696,16 +819,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           ))}
         </div>
         {form.availability_state === "on_vacation" && (
-          <Field label={t("producers.form.fields.vacation_until")}>
-            <input
-              type="date"
-              value={form.vacation_until}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => update("vacation_until", e.target.value)}
-              className={inputClass}
-              dir="ltr"
-            />
-          </Field>
+          <Input
+            type="date"
+            label={t("producers.form.fields.vacation_until")}
+            value={form.vacation_until}
+            min={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => update("vacation_until", e.target.value)}
+            dir="ltr"
+          />
         )}
       </Section>
 
@@ -721,13 +842,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         <button
           type="submit"
           disabled={
-            saving ||
+            isBusy("producer-save") ||
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
           className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
-          {saving ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
+          {isBusy("producer-save") ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>
         <button
           type="button"

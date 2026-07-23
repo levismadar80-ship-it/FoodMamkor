@@ -124,6 +124,24 @@ class TestProducerSearch:
         assert resp.headers.get("x-total-count") == "2"
 
 
+class TestSearchMatchesDeliveryCity:
+    """MEH-1488 — q= also matches a business's delivery_areas.city, so a
+    producer that DELIVERS to the searched city surfaces even when its own
+    Producer.city differs."""
+
+    def test_matches_delivery_city_when_own_city_differs(self, client, db):
+        make_producer(
+            db, name="מאפיית הבוקר", city="חיפה", delivery_cities=["אשדוד"]
+        )
+        make_producer(db, name="עסק ללא כיסוי", city="נהריה")
+
+        resp = client.get("/producers?q=אשדוד")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "מאפיית הבוקר" in names
+        assert "עסק ללא כיסוי" not in names
+
+
 class TestSmartSearchAutocomplete:
     """Regression: /search?q= autocomplete still returns grouped results."""
 

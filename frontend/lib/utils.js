@@ -81,3 +81,46 @@ export function normalizePhone(phone) {
   if (!/^972[5-9]\d{8}$/.test(normalized)) return "";
   return normalized;
 }
+
+/**
+ * MEH-1140: single canonical shekel price format for every display surface.
+ *
+ * Canon (DECIDED in the ticket — do not re-litigate per surface):
+ *   formatPrice(35)                       → "35₪"        (amount then shekel, no space)
+ *   formatPrice(35, { from: true })       → "מ-35₪"
+ *   formatPrice(35, { unit: "יחידה" })    → "35₪ / יחידה"
+ *   formatPrice(0)                        → "0₪"          (gift/free semantics stay at
+ *                                                          the call site — e.g. events
+ *                                                          gate price===0 → "free" label
+ *                                                          BEFORE calling this)
+ *   formatPrice(null | undefined | "")    → null           (caller renders nothing)
+ *   formatPrice(1234.5)                   → "1,234.5₪"     (he-IL grouping, ≤2 decimals)
+ *
+ * dir="ltr" wrapping stays at the call site where the surface already does it
+ * (the ₪ is a bidi European Terminator, so "35₪" holds together either way).
+ * Free-text DB labels (starting_price_label / price_range) are DATA, not
+ * formatting — never routed through here.
+ *
+ * @param {number|string|null|undefined} amount
+ * @param {{ from?: boolean, unit?: string|null }} [opts]
+ * @returns {string|null}
+ */
+export function formatPrice(amount, { from = false, unit = null } = {}) {
+  if (amount == null || amount === "") return null;
+  const n = Number(amount);
+  if (Number.isNaN(n)) return null;
+  const digits = n.toLocaleString("he-IL", { maximumFractionDigits: 2 });
+  const base = `${from ? "מ-" : ""}${digits}₪`;
+  return unit ? `${base} / ${unit}` : base;
+}
+
+/**
+ * MEH-1140: min–max range in the same canon: "35₪–60₪".
+ * min only → "35₪" · both equal → "35₪" · neither → null.
+ */
+export function formatPriceRange(min, max) {
+  const lo = formatPrice(min);
+  const hi = formatPrice(max);
+  if (lo && hi && lo !== hi) return `${lo}–${hi}`;
+  return lo || hi;
+}

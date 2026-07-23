@@ -66,15 +66,29 @@ export default function Footer() {
     }
   };
 
-  const navLinks = [
+  // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
+  // producers). NN/g "Footers 101" — group links by secondary audience rather
+  // than dumping them in one column. Two labelled groups: readers ("גלו") +
+  // producers ("לבתי עסק"). Copy locked by Sapir 13/07.
+  const discoverLinks = [
     { href: "/", label: t("nav.footer.nav_discover") },
+    // MEH-1060 (SEO-09): link to the /producers index — the crawlable catalog
+    // walk was previously reachable only via sitemap/pagination, not the footer.
+    { href: "/producers", label: t("nav.footer.producers") },
     { href: "/map", label: t("nav.map") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },
+    // MEH-1289: reader-facing "why local" editorial page.
+    { href: "/about/why-local", label: t("nav.footer.why_local") },
+    // MEH-1160: reader-facing share page — the site-level viral loop.
+    { href: "/share", label: t("share_page.footer_link") },
+  ];
+  const businessLinks = [
+    // MEH-721/995: the canonical recruitment door; the wizard stays one tap
+    // away via /join's single CTA.
+    { href: "/join", label: t("nav.footer.add_business") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
-    // MEH-721: quiet replacement for the removed global-footer pitch CTA.
-    { href: "/register/producer", label: t("nav.footer.add_business") },
   ];
 
   return (
@@ -90,14 +104,21 @@ export default function Footer() {
               <h3>s nest cleanly (no h2→h3 skip) and every column is titled. */}
           <div>
             <h2 className="sr-only">{BRAND_NAME}</h2>
-            <Link href="/" aria-label={t("nav.footer.brand_aria")}>
+            {/* MEH-991 (NAV-18): the css-invert on logo-footer.png flattened the
+                5-color petal mark to flat white. Use the purpose-built graded-cream
+                dark-surface mark (logo-on-warm-dark.svg — square mark, no lockup
+                asset exists) + wordmark text, per the P6 light-lockup treatment. */}
+            <Link href="/" aria-label={t("nav.footer.brand_aria")} className="mb-4 inline-flex items-center gap-3">
               <Image
-                src="/logo-footer.png"
-                alt={BRAND_NAME}
-                width={140}
-                height={52}
-                className="mb-4 brightness-0 invert"
+                src="/logo-on-warm-dark.svg"
+                alt=""
+                width={48}
+                height={48}
+                aria-hidden="true"
               />
+              <span className="font-headline-md font-bold text-xl text-background">
+                {BRAND_NAME}
+              </span>
             </Link>
             <p className="text-sm leading-relaxed max-w-xs mb-4 text-green-50">
               {t("nav.footer.brand_tagline")}
@@ -115,26 +136,47 @@ export default function Footer() {
             </a>
           </div>
 
-          {/* Column 2 — Navigation */}
-          <nav aria-label={t("nav.footer.nav_aria")}>
-            {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
-                uppercase, and letter-spacing harms RTL legibility. */}
-            <h3 className="mb-3 text-green-100" style={{ fontSize: "11px" }}>
-              {t("nav.footer.nav_heading")}
-            </h3>
-            <ul className="flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <li key={link.href + link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-green-100 hover:text-white transition"
-                    style={{ fontSize: "13px" }}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
+              each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
+              brand → h3 sections). MEH-1278: on mobile the two groups sit
+              side-by-side in a 2-col grid (start-aligned, first group "גלו" at
+              the start side) instead of stacking — the stacked layout wasted
+              ~340px of height and read poorly (Baymard: mobile footers rely on
+              scannable start-aligned lists). Desktop (md:) reverts to the
+              original flex-col stack inside the narrow nav column. */}
+          <nav
+            aria-label={t("nav.footer.nav_aria")}
+            className="grid grid-cols-2 gap-6 md:flex md:flex-col"
+          >
+            {[
+              { heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
+              { heading: t("nav.footer.group_business_heading"), links: businessLinks },
+            ].map((group) => (
+              <div key={group.heading}>
+                {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
+                    uppercase, and letter-spacing harms RTL legibility.
+                    MEH-1281: 11px → 13px (text-[13px] utility, matching the
+                    MEH-1103 nav-link treatment — no inline font sizing) +
+                    font-semibold so the group heading outweighs its links. */}
+                <h3 className="mb-3 text-[13px] font-semibold text-green-100">
+                  {group.heading}
+                </h3>
+                <ul className="flex flex-col gap-2">
+                  {group.links.map((link) => (
+                    <li key={link.href + link.label}>
+                      {/* MEH-1103: inline fontSize → utility class (13px unchanged)
+                          — interactive text carries no inline font sizing. */}
+                      <Link
+                        href={link.href}
+                        className="text-[13px] text-green-100 hover:text-white transition"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </nav>
 
           {/* Column 3 — Newsletter */}
@@ -180,7 +222,7 @@ export default function Footer() {
               <p
                 role="status"
                 aria-live="polite"
-                className={`text-sm mt-3 ${status === "success" ? "text-green-50" : "text-red-200"}`}
+                className={`text-sm mt-3 ${status === "success" ? "text-green-50" : "text-error-on-dark"}`}
               >
                 {message}
               </p>
@@ -210,12 +252,20 @@ export default function Footer() {
               // MEH-867: IL IS 5568 — accessibility statement must be reachable
               // from the global footer.
               { href: "/accessibility", label: t("nav.footer.accessibility") },
+              // MEH-1312: "צרו קשר" → contact-form anchor on /about (id="contact",
+              // AboutClient.jsx:388). Sapir-approved ADR-024 exception (18/07) —
+              // contact is a top-3 expected footer utility link.
+              { href: "/about#contact", label: t("nav.footer.contact") },
             ].map((link) => (
               <li key={link.href}>
+                {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px
+                    default-16px; 13px is the footer-utility compromise Sapir
+                    locked in the sweep spec) + min-h-[44px] inline-flex so the
+                    tap target meets WCAG 2.5.5 without growing the visual bar
+                    (the extra hit area is vertical padding, not layout). */}
                 <Link
                   href={link.href}
-                  className="text-green-100 hover:text-white transition"
-                  style={{ fontSize: "11px" }}
+                  className="inline-flex items-center min-h-[44px] text-[13px] text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>

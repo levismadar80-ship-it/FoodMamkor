@@ -13,14 +13,34 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+// MEH-1113: prefill the contact-form topic from ?topic= (whitelist-guarded).
+import { useSearchParams } from "next/navigation";
 import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import Input from "@/components/ui/Input";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1112: visible email fallback next to the contact form (NN/g Contact-Us
+// guideline #1). CONTACT_EMAIL = NEXT_PUBLIC_CONTACT_EMAIL w/ fallback (MEH-653).
+import { CONTACT_EMAIL } from "@/lib/env.client";
 import ButtonSpinner from "@/components/ButtonSpinner";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+
+// MEH-1112: testimonials section render-gated OFF until real testimonials
+// exist (NN/g: real social proof or nothing — no empty-shelf placeholder).
+// JSX + i18n keys kept intact for revival; flip to true when content lands.
+const SHOW_TESTIMONIALS = false;
+
+// MEH-1336: "איך אנחנו מאמתים" — live since the copy-approval PR (Sapir-approved
+// body in he.json/en.json). The #verification anchor is the target of the
+// verified-badge popover link (MEH-1334, PR #1936).
+const SHOW_VERIFICATION = true;
+
+// MEH-1113: contact-form topic whitelist (mirrors backend CONTACT_TOPIC_LABELS
+// keys). "general" is the default; labels resolve from contact.topic_options.*.
+const CONTACT_TOPICS = ["general", "business", "correction", "other"];
 
 const TIP_KEYS = ["eggs", "grass_fed", "honey"];
 // gold Cormorant numerals — decorative, aria-hidden
@@ -47,7 +67,16 @@ export default function AboutPage() {
   const tCompare = useTranslations("about.comparison");
   // MEH-848: shared generic error copy (collapsed from about.consumer.contact.error_toast).
   const tError = useTranslations("error");
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", message: "", topic: "general" });
+  // MEH-1113: prefill topic from ?topic= when it's a whitelisted value
+  // (e.g. the /about/for-businesses "טופס יצירת הקשר" link → ?topic=business).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const urlTopic = searchParams.get("topic");
+    if (urlTopic && CONTACT_TOPICS.includes(urlTopic)) {
+      setForm((prev) => ({ ...prev, topic: urlTopic }));
+    }
+  }, [searchParams]);
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
   // MEH-855: per-submit counter so the status live region remounts on every
@@ -66,7 +95,7 @@ export default function AboutPage() {
       await api.post("/contact", form);
       setContactStatus("success");
       setContactMsg(t("contact.success_toast"));
-      setForm({ name: "", email: "", message: "" });
+      setForm({ name: "", email: "", message: "", topic: "general" });
     } catch (error) {
       setContactStatus("error");
       setContactMsg(detailToMessage(error.response?.data?.detail) || tError("generic"));
@@ -79,7 +108,7 @@ export default function AboutPage() {
   // <p> by default so it never outranks the section h2; pass as="h2" where the
   // label IS the section heading (Benefits).
   const Eyebrow = ({ children, as: Tag = "p" }) => (
-    <Tag className="block font-body-md text-[13px] font-semibold tracking-[0.15em] text-fg-muted uppercase mb-3 md:mb-4">
+    <Tag className="block font-body-md text-[13px] font-semibold text-fg-muted mb-3 md:mb-4">
       {children}
     </Tag>
   );
@@ -162,8 +191,10 @@ export default function AboutPage() {
       </FadeInSection>
 
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
+      {/* MEH-1112: container narrowed max-w-6xl → max-w-3xl (matches the comparison
+          block below) so the offset blockquote no longer leaves >50% empty cream at 1440px. */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-6xl mx-auto px-4 md:px-12">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
           </blockquote>
@@ -249,6 +280,22 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
+      {/* ======== Verification — "איך אנחנו מאמתים" (MEH-1336 · render-gated until copy ✓) ========
+          id="verification" is the anchor target of /about#verification (verified-badge
+          popover, MEH-1334). scroll-mt-24 offsets the sticky header (same as #contact). */}
+      {SHOW_VERIFICATION && (
+        <FadeInSection id="verification" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+          <div className="max-w-3xl mx-auto px-4 md:px-12">
+            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+              {t("verification.heading")}
+            </h2>
+            <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
+              {t("verification.body")}
+            </p>
+          </div>
+        </FadeInSection>
+      )}
+
       {/* ======== 05 — Tips accordion ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
@@ -289,26 +336,28 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== 06 — Testimonials (slim invitation band) ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
-          <div className="border-y border-border py-12 md:py-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
-              {t("testimonials.heading")}
-            </h2>
-            <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
-              {t("testimonials.subtitle")}
-            </p>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 mt-6 text-primary font-semibold hover:underline"
-            >
-              {t("testimonials.cta")}
-              <ArrowLeft size={18} aria-hidden="true" />
-            </Link>
+      {/* ======== 06 — Testimonials (slim invitation band) — MEH-1112 render-gated ======== */}
+      {SHOW_TESTIMONIALS && (
+        <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+          <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
+            <div className="border-y border-border py-12 md:py-14">
+              <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
+                {t("testimonials.heading")}
+              </h2>
+              <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
+                {t("testimonials.subtitle")}
+              </p>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 mt-6 text-primary font-semibold hover:underline"
+              >
+                {t("testimonials.cta")}
+                <ArrowLeft size={18} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
-        </div>
-      </FadeInSection>
+        </FadeInSection>
+      )}
 
       {/* ======== 07 — Close (consumer-primary CTA · business demoted) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-green-50 border-y border-border py-9 md:py-14 scroll-mt-24">
@@ -321,31 +370,43 @@ export default function AboutPage() {
             {t("cta.explore")}
             <ArrowLeft size={20} aria-hidden="true" />
           </Link>
-          {/* demoted business action → business hub (cta.heading kept verbatim) */}
+          {/* business pitch line — muted lead-in for the demoted actions (cta.heading verbatim) */}
           <p className="mt-6 font-body-md text-sm text-fg-muted max-w-[44ch] mx-auto leading-relaxed">
-            {t("cta.heading")}{" "}
+            {t("cta.heading")}
+          </p>
+          {/* MEH-1112: two secondary actions (business hub + MEH-534 acceptance-process
+              cross-link) demoted to one quiet muted row — small, underlined, non-bold —
+              so only "גלו עסקים קרובים" reads as the primary CTA (per MEH-1049/MEH-907). */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 font-body-md text-sm text-fg-muted">
             <Link
               href="/about/for-businesses"
-              className="text-primary font-semibold underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("cta.register")}
             </Link>
-          </p>
-          {/* MEH-534: cross-link to the S11 acceptance-process page */}
-          <p className="mt-4">
+            <span aria-hidden="true" className="text-border">·</span>
             <Link
               href="/about/process"
-              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {tProcess("crosslink_from_about")}
-              <ArrowLeft size={18} aria-hidden="true" />
             </Link>
-          </p>
+            {/* MEH-1289: reader-facing "why local" editorial cross-link. */}
+            <span aria-hidden="true" className="text-border">·</span>
+            <Link
+              href="/about/why-local"
+              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {t("cta.why_local_link")}
+            </Link>
+          </div>
         </div>
       </FadeInSection>
 
       {/* ======== 08 — Contact form ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+      {/* MEH-1113: id="contact" — anchor target for /about?topic=business#contact
+          (the for-businesses "טופס יצירת הקשר" link). scroll-mt-24 offsets the sticky header. */}
+      <FadeInSection id="contact" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("contact.heading")}
@@ -353,38 +414,60 @@ export default function AboutPage() {
           <p className="font-body-md text-fg-muted text-lg mt-3 max-w-[48ch] leading-relaxed">
             {t("contact.subtitle")}
           </p>
+          {/* MEH-1323: quiet cross-link to /messages ("how contacting businesses
+              works") — closes the desktop ORPHAN from the MEH-1311 route audit.
+              Mirrors the testimonials-CTA link treatment. */}
+          <Link
+            href="/messages"
+            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          >
+            {t("messages_link")}
+            <ArrowLeft size={18} aria-hidden="true" />
+          </Link>
 
           <form onSubmit={handleContact} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-x-6 max-w-[560px]">
-            <div className="grid gap-2">
-              <label htmlFor="contact-name" className="text-sm font-semibold text-text">
-                {t("contact.name_label")}
+            {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon). Each
+                Input's flex-col root replaces the grid cell; label weight lands
+                on the canon font-medium, matching /contact's form. */}
+            <Input
+              id="contact-name"
+              type="text"
+              label={t("contact.name_label")}
+              autoComplete="name"
+              required
+              placeholder={t("contact.name_placeholder")}
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+            <Input
+              id="contact-email"
+              type="email"
+              label={t("contact.email_label")}
+              autoComplete="email"
+              required
+              placeholder={t("contact.email_placeholder")}
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              dir="ltr"
+            />
+            {/* MEH-1113: topic select — whitelisted, prefillable via ?topic=. Sent
+                in the POST body; backend prepends the Hebrew label + tags the subject. */}
+            <div className="grid gap-2 md:col-span-2">
+              <label htmlFor="contact-topic" className="text-sm font-semibold text-text">
+                {t("contact.topic_label")}
               </label>
-              <input
-                id="contact-name"
-                type="text"
-                autoComplete="name"
-                required
-                placeholder={t("contact.name_placeholder")}
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
+              <select
+                id="contact-topic"
+                value={form.topic}
+                onChange={(event) => setForm({ ...form, topic: event.target.value })}
                 className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="contact-email" className="text-sm font-semibold text-text">
-                {t("contact.email_label")}
-              </label>
-              <input
-                id="contact-email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder={t("contact.email_placeholder")}
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
-                dir="ltr"
-              />
+              >
+                {CONTACT_TOPICS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`contact.topic_options.${key}`)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid gap-2 md:col-span-2">
               <label htmlFor="contact-message" className="text-sm font-semibold text-text">
@@ -427,13 +510,27 @@ export default function AboutPage() {
                 role={contactStatus === "error" ? "alert" : "status"}
                 aria-live={contactStatus === "error" ? "assertive" : "polite"}
                 className={`md:col-span-2 text-sm ${
-                  contactStatus === "success" ? "text-primary" : "text-red-600"
+                  contactStatus === "success" ? "text-primary" : "text-error"
                 }`}
               >
                 {contactMsg}
               </p>
             )}
           </form>
+
+          {/* MEH-1112: visible email fallback (NN/g Contact-Us guideline #1 — a
+              form-only surface reads as unreachable). break-all + dir="ltr" per the
+              MEH-905 render pattern (ForgotPasswordClient / ContactClient). */}
+          <p className="mt-6 font-body-md text-sm text-fg-muted">
+            {t("contact.email_direct")}{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-primary hover:underline break-all"
+              dir="ltr"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </p>
         </div>
       </FadeInSection>
 

@@ -44,6 +44,8 @@ or `backend/app/auth.py`:
 > table. CC may now author hand-written revision files under
 > `backend/alembic/versions/**`; apply stays automatic on Dockerfile boot.
 
+חריג merge-revision ריק — ראו ADR-025 Amendment 18/07/2026.
+
 ---
 
 ## Architectural smell — two parallel mechanisms
