@@ -82,6 +82,10 @@ if [ "$RTL_RC" -eq 2 ]; then
 elif [ "$RTL_RC" -eq 1 ]; then
   fail "RTL scan — frontend/app or frontend/components missing"
 else
+  # MEH-1515: rtl-scan.sh now honors the PATH EXCEPTIONS correctly (its filter
+  # uses `grep -vFf`, so `[locale]` paths match literally). Delegate fully — one
+  # authority per job (MEH-271); the local re-application added under MEH-1513's
+  # single-file scope is removed. Line 1 = count, lines 2..N = violations.
   RTL_COUNT="$(printf '%s\n' "$RTL_OUT" | head -n1)"
   if [ "$RTL_COUNT" = "0" ]; then
     pass "RTL scan (0 physical-prop violations)"

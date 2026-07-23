@@ -72,6 +72,8 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
+        string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
     }
 
     categories {
