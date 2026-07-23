@@ -214,6 +214,12 @@
       "producer": {
         "heading": "Give your business a home",
         "subtitle": "10 minutes. No commissions. The customer comes straight to you",
+        "gate": {
+          "producer_heading": "You already have a business page on Mehamakor",
+          "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
+          "admin_heading": "An admin account can't register as a business",
+          "admin_body": "To open a business page, create a separate account with a different email address."
+        },
         "preflight": {
           "title": "Before you start",
           "prepare_title": "Good to have ready",

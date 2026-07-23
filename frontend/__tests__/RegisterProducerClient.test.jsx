@@ -420,3 +420,39 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
+
+// MEH-1489 chunk A — early auth-state gate. A logged-in producer/admin can never
+// complete the wizard (409 already_has_producer / 403 admin at submit), so they
+// see a terminal screen instead of the preflight+wizard. Guests + logged-in
+// consumers (MEH-143 upgrade path) are unchanged — the two upgrade-path tests
+// above (user without a role) already pin that the preflight still renders.
+describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", () => {
+  it("producer sees the gate (dashboard CTA), never the preflight or wizard", async () => {
+    authState.user = { email: "p@example.com", role: "producer" };
+    render(<RegisterProducerClient />);
+    expect(await screen.findByTestId("register-producer-gate")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.gate.producer_heading`)).toBeInTheDocument();
+    // CTA reuses the account-menu dashboard label (no new i18n key).
+    expect(screen.getByText("account.menu.dashboard")).toBeInTheDocument();
+    // No wizard entry surfaces leak past the gate.
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-account")).not.toBeInTheDocument();
+  });
+
+  it("admin sees the gate with NO dashboard CTA (separate-account message)", async () => {
+    authState.user = { email: "a@example.com", role: "admin" };
+    render(<RegisterProducerClient />);
+    expect(await screen.findByTestId("register-producer-gate-admin")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.gate.admin_heading`)).toBeInTheDocument();
+    expect(screen.queryByText("account.menu.dashboard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+  });
+
+  it("logged-in consumer (role consumer) still sees the preflight — no gate", async () => {
+    authState.user = { email: "c@example.com", role: "consumer" };
+    render(<RegisterProducerClient />);
+    expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-producer-gate-admin")).not.toBeInTheDocument();
+  });
+});
