@@ -1,7 +1,7 @@
 """meh1471_add_referral_source_to_producers
 
 Revision ID: d7b2f4a9c6e1
-Revises: b3f1a9c7e2d4
+Revises: a9f2c7d41b6e
 Create Date: 2026-07-22 14:00:00.000000+00:00
 
 MEH-1471 (self-reported attribution — "מאיפה שמעת עלינו?"): adds two nullable
@@ -41,9 +41,12 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "d7b2f4a9c6e1"
-# MEH-1471: chains onto the current head b3f1a9c7e2d4 (MEH-1457 group_buy
-# fulfillment_note).
-down_revision: Union[str, None] = "b3f1a9c7e2d4"
+# MEH-1471: originally chained onto b3f1a9c7e2d4 (MEH-1457), but MEH-1490
+# (a9f2c7d41b6e, producer_google_place_id) merged to staging off the same
+# parent, forking the tree into two heads. Rebased onto a9f2c7d41b6e to restore
+# a single linear head (MEH-1105 single-head discipline). The two migrations are
+# independent additive columns on `producers`; order is immaterial.
+down_revision: Union[str, None] = "a9f2c7d41b6e"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
