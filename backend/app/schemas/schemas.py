@@ -232,6 +232,15 @@ class ProducerRegister(BaseModel):
     # status=="approved" (producer_listing.py). Default False = unchanged for
     # every existing caller.
     license_pending: bool = False
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Optional at the
+    # Pydantic layer — the DB column is nullable and the required-ness is a
+    # front-end registration gate only, so an ABSENT value keeps the MEH-143
+    # upgrade path and every existing register test working. A PROVIDED
+    # referral_source must be one of constants.REFERRAL_SOURCE_KEYS (validator
+    # below 422s an unknown key). referral_source_other is the optional free-text
+    # answer for the "other" choice, bleach-sanitised + capped at the DB width.
+    referral_source: str | None = Field(default=None, max_length=40)
+    referral_source_other: str | None = Field(default=None, max_length=120)
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -294,6 +303,32 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    # MEH-1471: reject any non-null referral_source outside the allowed key set
+    # (422). None / empty / whitespace-only normalise to None (nullable column;
+    # existing producers + the MEH-143 upgrade path never send it). Inline import
+    # mirrors the ProducerAdminOut._compute_* validators — keeps the constants
+    # dependency out of the module-top imports.
+    @field_validator("referral_source")
+    @classmethod
+    def _validate_referral_source(cls, v):
+        from app.constants import REFERRAL_SOURCE_KEYS
+
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return None
+        if v not in REFERRAL_SOURCE_KEYS:
+            raise ValueError("referral_source לא חוקי")
+        return v
+
+    # MEH-1471: bleach/XSS strip on the free-text "other" answer, same defense as
+    # short_description/address above. Cap mirrors the DB column (120).
+    @field_validator("referral_source_other")
+    @classmethod
+    def _sanitize_referral_source_other(cls, v):
+        return sanitize_text(v, max_length=120)
 
     @field_validator("category_ids")
     @classmethod
@@ -420,13 +455,17 @@ class ProducerLocationOut(BaseModel):
     this array). `precision` is emitted from the ORM's `location_precision`
     column (serialization_alias) to match the epic's map contract shape.
     Street `address` is intentionally NOT exposed here — MEH-829 keeps the
-    exact address admin/owner-only; the map pins on lat/lng + city.
+    exact address admin/owner-only; the map pins on lat/lng + city and
+    navigation is built from lat/lng.
 
-    Field set is exactly the epic's locked `locations[]` contract (kind, label,
-    city, lat, lng, is_primary, precision). The ORM `ProducerLocation` also has
-    `opening_hours` + `phone` (chunk 1) — deliberately NOT serialized here to
-    keep chunk 2 to the locked shape; chunk 3 (map popup / click-to-call) adds
-    them if the pin UI needs them.
+    Field set: kind, label, city, lat, lng, is_primary, precision (the epic's
+    locked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1
+    backend) added the latter two so the public business page can render real
+    pickup / market_stand rows — "where and when" (opening_hours) and
+    click-to-call (phone) — instead of a single generic boolean line. The
+    columns already existed on the ORM `ProducerLocation` (models.py; revision
+    a9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders
+    them in DeliveryBlock.) Street `address` stays OFF this public shape.
     """
 
     kind: str
@@ -435,6 +474,10 @@ class ProducerLocationOut(BaseModel):
     lat: float | None = None
     lng: float | None = None
     is_primary: bool = False
+    # MEH-1509 (MEH-1388, chunk-1 backend): serialized so the business page can
+    # show a pickup point's hours + phone. address stays off (MEH-829).
+    opening_hours: str | None = None
+    phone: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
     # serialization_alias emits the epic's contract key `precision` on the wire
     # (FastAPI dumps response models with by_alias=True).
@@ -1260,6 +1303,13 @@ class ProducerAdminOut(ProducerDetailOut):
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only —
+    # NOT on the public ProducerDetailOut/ListOut (internal supply-side data,
+    # MEH-530 privacy precedent). NULL for producers who registered before the
+    # field existed (admin renders "—"). `referral_source` is the English key;
+    # the Hebrew label + "אחר: <text>" rendering happen in AdminProducersTable.
+    referral_source: str | None = None
+    referral_source_other: str | None = None
     # MEH-829: street address submitted at registration — admin-visible (+ owner
     # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
     # the producer_license_number privacy precedent.
