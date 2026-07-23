@@ -1,5 +1,20 @@
 import { test, expect, type Page } from "@playwright/test";
+import * as fs from "fs";
 import * as path from "path";
+
+// MEH-1497: fixed producer-detail payload for the network-mocked shot (below).
+// Read from disk (not `import ... json`) so it works regardless of the spec
+// tsconfig's resolveJsonModule setting.
+const PRODUCER_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-detail.json"),
+  "utf-8"
+);
+// Matches ONLY the detail call GET /api/producers/{uuid} — not the collection
+// (`/api/producers?…`, no id segment), the `…/reviews` sub-resource, or the
+// non-UUID siblings (`/count`, `/cities`, `/random`, `/by-slug/*`). Producer
+// ids are UUIDs (schemas.py ProducerListOut.id: UUID); the `(?:\?|$)` tail
+// stops it swallowing `/api/producers/{uuid}/reviews`.
+const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
@@ -204,38 +219,88 @@ test.describe("Visual parity — MEH-991", () => {
   // ("staging-data drift ... is refreshed the same way"), pending the
   // old-vs-new baseline diff review on the bot commit. This touch re-fires
   // vrt-update.yml to regenerate producer-detail-{desktop,mobile}-linux.
+  // MEH-1497 (2026-07-23): APPROACH CHANGE — the shot no longer renders from
+  // whichever business was approved most recently on live staging (the
+  // /producers sort is created_at DESC, so the first card, and thus this
+  // baseline, drifted on every new approval — ticket §2.1). The producer-detail
+  // API call is intercepted with page.route() and fulfilled from a fixed
+  // fixture, so a newly approved business can no longer move this baseline.
+  // PIN-to-seed and masking were both investigated and rejected (§2.2/§2.3).
+  // Mechanism note (resolved from the app, see the in-test file:line trail):
+  // the shot must land on the /producer/[id] route (client-fetches → mockable),
+  // reached with a REAL borrowed id because middleware.js existence-checks the
+  // id against the backend; the /[slug] route SSR-seeds the producer and can't
+  // be mocked. The borrowed id only unlocks the page — the pixels are the
+  // fixture's.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
-    await page.goto("/producers");
-    const firstCard = page.locator('[data-testid="producer-card"]').first();
-    await page.waitForLoadState("domcontentloaded");
-    if ((await firstCard.count()) === 0) {
-      // Same graceful skip as flows/03 — an empty staging DB is a data
-      // problem, not a layout regression.
-      test.skip(true, "No producer cards found — staging DB may be empty");
+
+    // ── MEH-417 no-mocks EXCEPTION — scoped to VRT specs only (ticket §2.4) ──
+    // frontend/e2e/CLAUDE.md:25 forbids mocks ("mocks hid real backend bugs for
+    // 8 CI cycles"). This spec is a DELIBERATE, NARROW exception: the subject
+    // under test here is layout/pixels, and the producer data is noise. The
+    // exception is bounded to e2e/visual/** — the functional specs under
+    // e2e/flows/ stay unmocked and keep catching real backend contract breaks.
+    // DO NOT copy this pattern into e2e/flows/ — that reintroduces MEH-417.
+    // If e2e/CLAUDE.md's no-mocks policy is ever updated, record this exception
+    // there too (ticket §2.4).
+    //
+    // Fulfil the producer-detail API call from the fixed fixture so the shot no
+    // longer renders whichever business was approved most recently on live
+    // staging (ticket §2.1). Registered BEFORE any navigation so the first
+    // request is intercepted (acceptance criterion).
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: PRODUCER_FIXTURE,
+      });
+    });
+
+    // Borrow ANY real producer id from the live listing. This is NOT a demo /
+    // seed dependency (ticket §2.3): any producer works, and the id is used
+    // ONLY to satisfy two backend gates on the way to the page — the rendered
+    // content is always the fixture, so a newly approved business can't move
+    // this baseline. `page.request` bypasses page.route (separate context), so
+    // this call hits live staging, not the mock. Same graceful skip-on-empty as
+    // the pre-1497 spec (an empty staging DB is a data problem, not a
+    // regression).
+    const listRes = await page.request.get("/api/producers", {
+      params: { limit: 1 },
+    });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
       return;
     }
-    await expect(firstCard).toBeVisible({ timeout: 20_000 });
-    // MEH-1369: click the card's inner navigation anchor (image/name Link — a
-    // real <a href> that navigates natively regardless of hydration), not the
-    // <article> wrapper. See the describe-level note above for the root cause.
-    await firstCard.locator('a[href^="/"]').first().click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), {
-      timeout: 20_000,
-    });
-    await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
+
+    // Navigate to the /producer/[id] route with the borrowed real id — NOT via
+    // a /producers card and NOT to /[slug]. Two reasons this exact path is
+    // required (both resolved from the app, not guessed):
+    //   1. middleware.js:67-71 rewrites /producer/{id} to a real 404 unless the
+    //      backend confirms the id exists (fails OPEN only on a thrown error,
+    //      not on a 404 response) — so a synthetic id can't reach the page.
+    //      The borrowed real id passes this edge check.
+    //   2. The /[slug] route SSR-seeds initialProducer
+    //      (app/[locale]/[slug]/page.js:96), which short-circuits the client
+    //      fetch (useProducerData.js:33 `if (initialProducer) return`) — the
+    //      mock could never intercept it. The /producer/[id] route renders
+    //      <ProducerDetail/> with no initialProducer (producer/[id]/page.js:73),
+    //      so it CLIENT-fetches /api/producers/{id} (useProducerData.js:32-40),
+    //      which the mock above fulfils with the fixture.
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail.png", {
       ...SHOT,
-      // The producer itself is live data: name, photos, rating counts and the
-      // review excerpt all vary. Layout chrome (gallery grid geometry, trust
-      // strip, CTA hierarchy, sticky bar) is the subject.
-      mask: [
-        page.locator("main h1"),
-        page.locator("main img"),
-        page.locator('a[href="#reviews"]'),
-        page.locator(".leaflet-container"),
-      ],
+      // With the fixture, the name, one-liner, meta line and gallery grid
+      // geometry are all deterministic, so the former h1 / #reviews masks are
+      // dropped (the shot now verifies that header layout — the actual drift
+      // per §2.2). Only genuinely external assets stay masked: the Cloudinary
+      // photos (pixel bytes vary; the gallery *grid* geometry is locked by the
+      // fixed 3-image count, ImageGallery.jsx:179) and any Leaflet tiles.
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
   });
 
