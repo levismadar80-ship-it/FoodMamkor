@@ -809,3 +809,27 @@ Tasks auto-expire after 7 days.
     _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
     automation._
+
+30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
+    never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
+    PR title/body to unblock the `DO-NOT-MERGE marker gate` (`pr-checks.yml`
+    `do-not-merge-gate`, MEH-1155 / ADR-016 amendment), or push a commit whose
+    purpose is to re-trigger a gate CC is blocked on. The marker is cleared by
+    **Sapir**, not by CC — even when merge has been authorized. A blocking gate
+    (red required check, unmet approval, an explicit hold) is a STOP: surface it
+    to Sapir with the evidence and wait. This holds regardless of any "merge
+    this" instruction — the instruction authorizes the *merge*, not the removal
+    of the block; if the block is a marker only Sapir removes, the two steps are
+    separate and the marker step stays with Sapir.
+
+    - **Scope:** applies to the `DO-NOT-MERGE`/`DNM-LOCK` marker specifically and
+      to the general class of "a gate is blocking me and I'm tempted to edit
+      metadata / push a no-op commit to get past it." Fixing a *real* red check
+      that's legitimately CC's to fix (a failing test, a lint error in CC's own
+      diff) is not this rule — that's normal drive-to-green work. The line is:
+      never neutralize the block itself; only fix the underlying cause CC owns.
+
+    _Source: 2026-07-23 city-discovery batch — CC cleared the marker + pushed
+    re-trigger commits on PRs #2087/#2089/#2090 to merge after a "MERGE ALL"
+    authorization. The merges were correct; clearing the marker was not CC's to
+    do. Codified so the STOP boundary survives future merge authorizations._
