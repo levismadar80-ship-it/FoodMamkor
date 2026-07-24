@@ -136,6 +136,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
+   | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
    | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
    | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain (`mehamakor.online`) is verified (SPF+DKIM). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
@@ -381,6 +382,48 @@ If both IPs land in the same bucket, `TRUSTED_PROXY` is unset or mis-typed
 Assumes exactly one trusted proxy hop (Railway edge). If Cloudflare
 is ever added in front of Railway, revisit the XFF fallback path
 (`X-Real-IP` primary stays correct — Railway still sets it).
+
+
+### D-bis. Single-replica invariant (MEH-1319) — **keep workers at 1**
+
+The backend is designed to run as a **single Railway replica with a
+single Uvicorn worker.** Several mechanisms live in process memory with
+no cross-worker coordination and would misbehave if a second worker
+were ever started:
+
+| Mechanism | Second worker breaks it by… |
+|---|---|
+| APScheduler jobs — onboarding follow-ups (MEH-539) + auto-reply watchdog | Each worker runs its own scheduler → **duplicate emails** and double watchdog runs |
+| slowapi rate limiter (in-memory store) | Per-worker counters → effective limit multiplied by the worker count (login/abuse limits weaken ×N) |
+| Analytics request-metrics deque + trending cache | Fragmented per worker → the admin dashboard sees only one worker's slice |
+| JWKS cache | Redundant fetches; no correctness break, but wasted work |
+
+Because Railway's worker/replica count is a platform setting (Sapir
+domain), the app does **not** crash on a misconfiguration — instead a
+boot-time guard (`_check_single_replica` in
+[`backend/app/startup.py`](../backend/app/startup.py)) reads
+`WEB_CONCURRENCY` / `UVICORN_WORKERS` and logs a loud **ERROR** naming
+these consequences whenever the count parses to `>1`. It fail-opens on
+unset/garbage values (the platform default is one worker). If you ever
+genuinely need horizontal scale, move the scheduler to a leader-elected
+/ locked job and the rate limiter + metrics to a shared store (Redis)
+**before** raising the worker count — do not silence the guard.
+
+
+### D-ter. Cities dataset seed (MEH-1343) — one-time per environment
+
+The `cities` table exists everywhere (Alembic baseline `ef8fb1858f5b`) but
+starts **empty**; the official ~1,270 data.gov.il localities are loaded by a
+one-time, idempotent seed (`ON CONFLICT DO NOTHING` — safe to re-run):
+
+- **From the admin panel / API:** `POST /admin/seed-cities` (admin JWT).
+- **From a shell with `DATABASE_URL`:** `cd backend && python scripts/seed_cities.py`.
+
+Run it once on **staging** and once on **production**. Until an env is
+seeded, `GET /cities` falls back to the ~100-entry static list
+(`backend/app/data/cities.py`), so autocomplete works but small localities
+(מושבים/כפרים) are missing. Verify: `GET /cities?q=פוריידיס` returns a result
+on a seeded env. Local dev: same script against the local DB.
 
 
 ### E. Verify deploys actually ran (MEH-260)

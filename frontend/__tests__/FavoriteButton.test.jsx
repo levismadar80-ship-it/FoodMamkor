@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
 // FavoriteButton mounts LoginPromptModal as a child; modal needs the mock too.
@@ -27,6 +27,14 @@ vi.mock("next-intl", () => ({
 }));
 
 import FavoriteButton from "@/components/FavoriteButton";
+// MEH-1325: favorites-cache is intentionally NOT mocked here — the regression
+// tests assert FavoriteButton writes through to the real shared store so card
+// hearts stay in sync. api (its data source) is mocked below.
+import {
+  isFavorited,
+  subscribeFavorites,
+  resetFavoritesCache,
+} from "@/lib/favorites-cache";
 
 // Mock auth context — default: no user (logged out)
 const mockUser = { current: null };
@@ -53,15 +61,29 @@ vi.mock("@/lib/toast", () => {
   return { showToast };
 });
 
-// Mock Phosphor HeartStraight — rendered as a span so we can assert presence
+// Mock Phosphor icons as spans so we can assert presence. HeartStraight/X keep
+// stable test-ids; the rest (MEH-1325: the default/inline save path mounts
+// AlertPrefsPanel, which pulls in Bell/Truck/…) render as generic spans.
 vi.mock("@phosphor-icons/react", () => ({
   HeartStraight: (props) => <span data-testid="heart-icon" {...props} />,
   X: (props) => <span data-testid="x-icon" {...props} />,
+  Bell: (props) => <span data-testid="phosphor-icon" {...props} />,
+  BellSlash: (props) => <span data-testid="phosphor-icon" {...props} />,
+  Check: (props) => <span data-testid="phosphor-icon" {...props} />,
+  Confetti: (props) => <span data-testid="phosphor-icon" {...props} />,
+  Handbag: (props) => <span data-testid="phosphor-icon" {...props} />,
+  Truck: (props) => <span data-testid="phosphor-icon" {...props} />,
+  // MEH-1361: the new_recipe toggle row's icon.
+  CookingPot: (props) => <span data-testid="phosphor-icon" {...props} />,
+  ChatCircle: (props) => <span data-testid="phosphor-icon" {...props} />,
 }));
 
 describe("FavoriteButton", () => {
   beforeEach(() => {
     mockUser.current = null;
+    // MEH-1325: reset the shared favorites-cache singleton between tests so
+    // the `loaded` flag + ids set don't leak across cases.
+    resetFavoritesCache();
   });
 
   // ------------------------------------------------------------------
@@ -160,5 +182,115 @@ describe("FavoriteButton", () => {
 
     rerender(<FavoriteButton producerId={1} variant="inline" />);
     expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  // ------------------------------------------------------------------
+  // MEH-1325 — favorites-cache sync + green ink (no red)
+  // ------------------------------------------------------------------
+
+  // A distinct producer id for the cache-sync cases (kept off the id=1 the
+  // guest/logged-in cases above use, so the shared cache never overlaps).
+  const PID = 42;
+
+  it("does NOT fetch /users/me/favorites directly (reads via favorites-cache)", async () => {
+    const api = (await import("@/lib/api")).default;
+    api.get.mockClear();
+    mockUser.current = { id: 1, name: "Test" };
+    render(<FavoriteButton producerId={PID} />);
+    // The single GET that happens comes from favorites-cache's ensureFavoritesLoaded,
+    // hydrated once per session — not a per-mount fetch owned by this component.
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+    expect(api.get).toHaveBeenCalledWith("/users/me/favorites");
+  });
+
+  it("toggling on writes through to favorites-cache and notifies subscribers", async () => {
+    const api = (await import("@/lib/api")).default;
+    mockUser.current = { id: 1, name: "Test" };
+    const listener = vi.fn();
+    const unsub = subscribeFavorites(listener);
+
+    render(<FavoriteButton producerId={PID} />);
+    await waitFor(() => expect(isFavorited(PID)).toBe(false));
+
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+
+    // Optimistic cache write happens before/independent of the POST resolving.
+    await waitFor(() => expect(isFavorited(PID)).toBe(true));
+    expect(listener).toHaveBeenCalled(); // a subscribed CardHeart would re-read + fill
+    expect(api.post).toHaveBeenCalledWith("/users/me/favorites/42");
+    expect(api.delete).not.toHaveBeenCalled();
+    unsub();
+  });
+
+  it("toggling off writes through to favorites-cache (removes the id)", async () => {
+    const api = (await import("@/lib/api")).default;
+    api.get.mockResolvedValueOnce({ data: [{ producer_id: PID }] });
+    mockUser.current = { id: 1, name: "Test" };
+
+    render(<FavoriteButton producerId={PID} />);
+    // hydrated as already-favorited from the cache
+    await waitFor(() => expect(isFavorited(PID)).toBe(true));
+
+    fireEvent.click(screen.getByRole("button", { name: "הסר ממועדפים" }));
+
+    await waitFor(() => expect(isFavorited(PID)).toBe(false));
+    expect(api.delete).toHaveBeenCalledWith("/users/me/favorites/42");
+  });
+
+  it("reverts the cache write when the POST fails", async () => {
+    const api = (await import("@/lib/api")).default;
+    api.post.mockRejectedValueOnce(new Error("network"));
+    mockUser.current = { id: 1, name: "Test" };
+
+    render(<FavoriteButton producerId={PID} />);
+    await waitFor(() => expect(isFavorited(PID)).toBe(false));
+
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+
+    // optimistic add, then revert on failure → back to not-favorited
+    await waitFor(() => expect(isFavorited(PID)).toBe(false));
+  });
+
+  it("DELETE-404 is idempotent — heart stays un-filled, no revert (MEH-730)", async () => {
+    const api = (await import("@/lib/api")).default;
+    api.get.mockResolvedValueOnce({ data: [{ producer_id: PID }] });
+    api.delete.mockRejectedValueOnce({ response: { status: 404 } });
+    mockUser.current = { id: 1, name: "Test" };
+
+    render(<FavoriteButton producerId={PID} />);
+    await waitFor(() => expect(isFavorited(PID)).toBe(true));
+
+    fireEvent.click(screen.getByRole("button", { name: "הסר ממועדפים" }));
+
+    // 404 = already gone server-side → stays removed, not reverted back to filled
+    await waitFor(() => expect(isFavorited(PID)).toBe(false));
+  });
+
+  it("saved ink is primary green (never red) in all 3 variants", async () => {
+    mockUser.current = { id: 1, name: "Test" };
+    // hydrate favorited so the saved treatment renders on mount
+    const api = (await import("@/lib/api")).default;
+    api.get.mockResolvedValue({ data: [{ producer_id: PID }] });
+
+    for (const variant of ["default", "gallery", "inline"]) {
+      resetFavoritesCache();
+      const { unmount } = render(
+        <FavoriteButton producerId={PID} variant={variant} />,
+      );
+      // Cache hydrates async → wait for the saved state to render.
+      await waitFor(() =>
+        expect(screen.getByRole("button")).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        ),
+      );
+      const btn = screen.getByRole("button");
+      // The saved className lives on the button (inline) or the heart icon.
+      const heart = screen.getByTestId("heart-icon");
+      const savedMarkup = `${btn.className} ${heart.getAttribute("class") ?? ""}`;
+      expect(savedMarkup).toContain("text-primary"); // green ink
+      expect(savedMarkup).not.toContain("red");
+      unmount();
+    }
   });
 });

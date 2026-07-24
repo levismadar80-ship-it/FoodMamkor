@@ -1,11 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import {
+  ensureFavoritesLoaded,
+  isFavorited as isFavoritedCache,
+  setFavoritedLocal,
+  subscribeFavorites,
+} from "@/lib/favorites-cache";
+// MEH-1334: post-login auto-complete — a guest's save intent survives the
+// login round-trip and finishes automatically (revision-2 #7).
+import {
+  clearPendingAction,
+  consumePendingAction,
+  setPendingAction,
+} from "@/lib/pending-action";
 import LoginPromptModal from "./LoginPromptModal";
 import AlertPrefsPanel from "./AlertPrefsPanel";
 
@@ -19,11 +32,18 @@ import AlertPrefsPanel from "./AlertPrefsPanel";
  *   - "gallery" (absolute overlay on ImageGallery) — white circle 44px, HeartStraight icon
  *   - "inline"  (next to <h1> in producer header)  — small heart + "שמור" text
  *
- * Shared behavior: load-once of /users/me/favorites (logged-in only),
- * POST/DELETE toggle (logged-in only), toast, disabled:opacity-60
- * while loading, aria-pressed + aria-label for accessibility.
+ * Shared behavior: reads favorited state from the shared favorites-cache
+ * (hydrated once per session, no per-mount fetch), optimistic POST/DELETE
+ * toggle (logged-in only) that writes setFavoritedLocal so card hearts stay
+ * in sync, toast, disabled:opacity-60 while loading, aria-pressed +
+ * aria-label for accessibility.
  *
  * MEH-54: after favoriting, shows AlertPrefsPanel inline (default + inline variants).
+ * MEH-643/MEH-636: saved ink is primary green, NEVER red (matches CardHeart).
+ * MEH-1325: migrated off the per-mount GET + local state onto favorites-cache
+ * (ensureFavoritesLoaded / subscribeFavorites / setFavoritedLocal) — a save on
+ * /producer now reflects in every subscribed CardHeart in the same session
+ * (and vice-versa), and the saved ink turned green.
  */
 export default function FavoriteButton({ producerId, producerName = "", variant = "default" }) {
   const t = useTranslations("favorites.button");
@@ -37,32 +57,59 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
 
   useEffect(() => {
     if (!user) return;
-    api
-      .get("/users/me/favorites")
-      .then((res) => {
-        const ids = res.data.map((f) => f.producer_id);
-        setFavorited(ids.includes(producerId));
-      })
-      .catch(() => {});
+    // MEH-1325: read from the shared favorites-cache instead of a per-mount
+    // GET /users/me/favorites — mirrors CardHeart (ProducerCard.jsx). The cache
+    // hydrates once; subscribing keeps this button in sync with card hearts.
+    let alive = true;
+    ensureFavoritesLoaded().then(() => {
+      if (alive) setFavorited(isFavoritedCache(producerId));
+    });
+    const unsub = subscribeFavorites(() => {
+      if (alive) setFavorited(isFavoritedCache(producerId));
+    });
+    return () => {
+      alive = false;
+      unsub();
+    };
+  }, [user, producerId]);
+
+  // MEH-1334 (revision-2 #7): finish a guest's save intent after sign-in.
+  // consumePendingAction is one-shot (key removed on first match), so a
+  // StrictMode double-effect or re-mount can't save twice; scroll restores
+  // to where the guest tapped — no dead-end at the login screen.
+  const toggleRef = useRef(null);
+  useEffect(() => {
+    if (!user) return;
+    const intent = consumePendingAction("favorite", producerId);
+    if (!intent) return;
+    ensureFavoritesLoaded().then(() => {
+      if (!isFavoritedCache(producerId)) toggleRef.current?.();
+    });
+    window.scrollTo({ top: intent.scrollY });
   }, [user, producerId]);
 
   const toggle = async () => {
-    // Guest: open the login modal and stop — don't hit the API.
+    // Guest: open the login modal and stop — don't hit the API. The intent is
+    // stored so the save completes automatically after sign-in (MEH-1334).
     if (!user) {
+      setPendingAction("favorite", producerId);
       setShowLoginModal(true);
       return;
     }
+    const next = !favorited;
     setLoading(true);
+    // MEH-1325: optimistic — flip local state AND the shared cache before the
+    // network round-trip so subscribed card hearts update immediately; revert
+    // both on failure. Mirrors CardHeart (ProducerCard.jsx).
+    setFavorited(next);
+    setFavoritedLocal(producerId, next);
     try {
-      if (favorited) {
-        await api.delete(`/users/me/favorites/${producerId}`);
-        setFavorited(false);
-        setShowAlertPanel(false);
-        showToast.success(t("removed_toast"));
-      } else {
+      if (next) {
         await api.post(`/users/me/favorites/${producerId}`);
-        setFavorited(true);
-        if (variant !== "gallery") setShowAlertPanel(true);
+        // MEH-1334: quiet (header actions row) suppresses the inline panel
+        // like gallery — a block panel inside the flex row breaks the layout,
+        // and this page never showed it before (its only mount was gallery).
+        if (variant !== "gallery" && variant !== "quiet") setShowAlertPanel(true);
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
           showToast.success(t("saved_toast_first_time"), {
@@ -74,12 +121,28 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
             icon: <HeartStraight size={18} weight="fill" />,
           });
         }
+      } else {
+        await api.delete(`/users/me/favorites/${producerId}`);
+        setShowAlertPanel(false);
+        showToast.success(t("removed_toast"));
       }
-    } catch {
+    } catch (err) {
+      // MEH-730 idempotent DELETE-404: the favorite was already gone
+      // server-side — keep the heart un-filled (don't revert), matching
+      // CardHeart's handling.
+      if (!next && err?.response?.status === 404) {
+        setShowAlertPanel(false);
+        setLoading(false);
+        return;
+      }
+      setFavorited(!next);
+      setFavoritedLocal(producerId, !next);
       showToast.error(tError("generic"));
     }
     setLoading(false);
   };
+
+  toggleRef.current = toggle;
 
   const label = favorited ? t("remove_aria") : t("add_aria");
   const commonProps = {
@@ -108,9 +171,29 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         <HeartStraight
           size={22}
           weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-red-500" : "text-text"}
+          className={favorited ? "text-primary" : "text-text"}
           aria-hidden="true"
         />
+      </button>
+    );
+  } else if (variant === "quiet") {
+    // MEH-1334: header quiet-actions row — borderless icon + locked label
+    // "שמירה"; ≥44px hit-area via min-h + transparent padding (visual size
+    // unchanged, revision-2 #5). Saved state = filled primary heart.
+    button = (
+      <button
+        {...commonProps}
+        className={`inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          favorited ? "text-primary" : "text-text hover:text-primary"
+        }`}
+      >
+        <HeartStraight
+          size={17}
+          weight={favorited ? "fill" : "regular"}
+          className={favorited ? "text-primary" : "text-primary-dark"}
+          aria-hidden="true"
+        />
+        {t("quiet_label")}
       </button>
     );
   } else if (variant === "inline") {
@@ -119,7 +202,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         {...commonProps}
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited
-            ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
             : "bg-white text-text border-border hover:bg-green-50"
         }`}
       >
@@ -141,7 +224,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         <HeartStraight
           size={24}
           weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-red-500" : "text-fg-muted"}
+          className={favorited ? "text-primary" : "text-fg-muted"}
           aria-hidden="true"
         />
       </button>
@@ -162,7 +245,12 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
       )}
       <LoginPromptModal
         open={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
+        onClose={() => {
+          // Dismissed without signing in — drop the stored intent so a later
+          // unrelated login doesn't surprise-save (MEH-1334).
+          clearPendingAction();
+          setShowLoginModal(false);
+        }}
         message={t("login_prompt_message")}
         nextPath={nextPath}
       />

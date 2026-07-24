@@ -2,7 +2,8 @@
 
 import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
-import { SealCheck } from "@phosphor-icons/react";
+import { CaretLeft, SealCheck } from "@phosphor-icons/react";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges } from "@/lib/badges";
 import Popover from "@/components/ui/Popover";
 
@@ -58,7 +59,7 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }
         b.key === "verified" ? (
           <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} />
         ) : (
-          <Badge key={b.key} badge={b} />
+          <Badge key={b.key} badge={b} surface={surface} />
         ),
       )}
     </div>
@@ -140,6 +141,45 @@ function VerifiedTierBadge({ producer, surface, t }) {
     </button>
   );
 
+  // MEH-1334: the hero seal gets the richer verification popover — the manual
+  // approval + licensing story (DNA-LOCK differentiator) was invisible behind
+  // a date-only tooltip. Content = the LOCKED v3 copy exactly: title + body +
+  // link to /about#verification (placeholder target until MEH-1336 ships the
+  // section). The pre-existing MEH-762 doc-date line is intentionally dropped
+  // here — the locked copy is dateless (chunk-2 CLARIFY c). The verified SEAL
+  // itself only renders for verification_tier === "verified" (badges.js:140),
+  // so this popover can never make a false trust claim on a non-verified
+  // producer (CLARIFY a/b). Cards keep the compact date tooltip (surface
+  // unchanged) via the non-hero branch below.
+  if (surface === "hero") {
+    return (
+      <span role="listitem" className="inline-block">
+        <Popover
+          trigger={chip}
+          role="dialog"
+          sheetOnMobile
+          contentTestId="badge-tooltip-verified"
+          contentClassName="w-64 flex flex-col gap-1.5"
+          sheetContentClassName="flex flex-col gap-2"
+        >
+          <span className="flex items-center gap-1.5 font-bold text-sm text-text">
+            <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
+            {t("verified_popover_title")}
+          </span>
+          <span className="block text-[13px] leading-relaxed">{t("verified_popover_body")}</span>
+          <LocaleLink
+            href="/about#verification"
+            className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
+          >
+            {t("verified_popover_link")}
+            {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
+            <CaretLeft size={13} aria-hidden="true" />
+          </LocaleLink>
+        </Popover>
+      </span>
+    );
+  }
+
   return (
     <span role="listitem" className="inline-block">
       {tooltip ? (
@@ -162,8 +202,28 @@ function VerifiedTierBadge({ producer, surface, t }) {
   );
 }
 
-function Badge({ badge }) {
+function Badge({ badge, surface = "hero" }) {
   const colorClass = COLOR_CLASSES[badge.color] || COLOR_CLASSES.muted;
+
+  // MEH-1492: on the HERO surface (producer detail), a badge with an aboutHref
+  // (recommended → /about#editors-pick) turns its popover body into a link — the
+  // locked tooltip copy becomes the clickable explainer to the criteria + the
+  // ADR-030 "can't be bought" promise. Mirrors the verified seal's hero-only
+  // popover → /about#verification (MEH-1336); no new copy. Card surfaces keep the
+  // compact plain-text tooltip (and never mount a locale link).
+  const linkOut = badge.aboutHref && surface === "hero";
+  const popoverBody = linkOut ? (
+    <LocaleLink
+      href={badge.aboutHref}
+      className="inline-flex items-start gap-1 font-medium text-primary hover:text-primary-dark"
+    >
+      <span>{badge.tooltip}</span>
+      {/* Forward chevron points LEFT in RTL (mirrors the verified popover). */}
+      <CaretLeft size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+    </LocaleLink>
+  ) : (
+    badge.tooltip
+  );
 
   // MEH-800: click-popover routed through ui/Popover — the primitive owns
   // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
@@ -188,7 +248,7 @@ function Badge({ badge }) {
           </button>
         }
       >
-        {badge.tooltip}
+        {popoverBody}
       </Popover>
     </span>
   );

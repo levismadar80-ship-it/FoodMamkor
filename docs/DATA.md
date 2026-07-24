@@ -44,6 +44,9 @@
 | 22 | `producer_recipe_products` | Many-to-many recipe ↔ product link (same-producer enforced in router) | _(association `Table`)_ |
 | 23 | `inbound_messages` | Inbound WhatsApp messages — populated by future PR2c receiver, consumed by MEH-509 PR2b watchdog | `InboundMessage` |
 | 24 | `outbound_messages` | Outbound WhatsApp sends — one row per real send written by the send layer (MEH-771 Chunk A); `status` lifecycle `accepted`→`delivered`/`failed` reconciled via the Chunk B delivery webhook; `meta_message_id` (wamid) UNIQUE for idempotency. Mirrors `inbound_messages` phone-key pattern (no FK) | `OutboundMessage` |
+| 25 | `producer_locations` | Physical presence points of a producer — branch / pickup / market_stand (a business can have many; e.g. 10 pickup points). Multi-location model (epic MEH-1388) | `ProducerLocation` |
+
+> **MEH-1388 — `producer_locations` (multi-location, 2026-07-21):** moves the map from one-pin-per-business to one-marker-per-location. Columns: `id` · `producer_id` (FK CASCADE) · `kind` (`branch`\|`pickup`\|`market_stand`, CHECK) · `label` · `city` · `address` · `lat` · `lng` · `opening_hours` · `phone` · `is_primary` · `location_precision` (`exact`\|`approximate`, CHECK) · `created_at`/`updated_at`. **Expand-Contract** (ADR-007, chunk 1 `MEH-1395`): a `primary` row is backfilled from `Producer.lat/lng/city`; the old producer columns stay as a mirror during overlap. **Serialization (chunk 2 `MEH-1402`):** `ProducerListOut.locations[]` / `ProducerDetailOut.locations[]` emit `{kind, label, city, lat, lng, is_primary, precision}` (public — street `address`/`phone`/`hours` withheld per MEH-829; the owner-facing `ProducerLocationOwnerOut` on the CRUD includes them). **Geo (chunk 2):** "near me" distance = `MIN(Haversine)` over a correlated scalar subquery on `producer_locations`, with a `COALESCE` fallback to the producer's own `lat/lng` during the Expand overlap; BOTH the list query and the count query stay `DISTINCT` on `producer.id` so a multi-location business counts as **one** result, not N (the historic `_build_base_queries` trap). A delivery-only producer that has a `pickup` location now reappears on the map (controlled reversal of the MEH-213 delivery-only filter); a zero-location delivery-only producer stays hidden. **Map (chunk 3 `MEH-1412`):** per-location markers (pickup/market_stand = a secondary outline), a pickup-layer toggle, a location-label tooltip, and a cluster badge that counts **unique businesses** (dedup by `producerId`), not markers. **Owner CRUD (chunk 4a `MEH-1421`):** `GET/POST/PUT/DELETE /producers/me/locations` (see the API section) with an IDOR ownership 403, a single-primary invariant, and a same-city-label rule. Admin sees a read-only name/city dedup badge on `/admin/producers`. No PostGIS (Haversine in raw SQL, per DEPLOYMENT.md).
 
 > **MEH-509 PR3 (2026-05-22):** `producers.risk_score` (Integer nullable) + `producers.risk_reasoning` (Text nullable) added by migration `92afa3cb76e2`. Populated asynchronously by `app/services/producer_risk.py` via FastAPI BackgroundTasks after producer signup using Claude Haiku 4.5. NULL on both = "not scored yet OR Anthropic call failed (fail-open)". Admin-only — `ProducerAdminOut` schema surfaces them; `ProducerDetailOut` (public) intentionally does not. New endpoint: `GET /admin/producers/{id}/risk-score` returns `{score, reasoning}`.
 
@@ -58,6 +61,8 @@
 > **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s (`ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ`) instead of a DB CHECK 500. **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
 
 > **MEH-1291 (2026-07-18):** producer freshness signal. `producers.updated_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `a3f1c9d2e4b7`, Chunk A) is stamped by the model-level `onupdate=func.now()` (`models.py`) on every real producer UPDATE — owner edits (`producer_me.py:update_my_producer`) and admin edits (`admin.py:admin_update_producer`), both of which load the ORM object + `setattr` + `commit` (a bulk `update()` execute would skip the stamp — no such path exists on producers). **No `server_default`, NO backfill** (ADR-007 Expand-only): the column stays NULL for producers never edited since the migration, so the public "עודכן לאחרונה: {חודש שנה}" line renders nothing for them (honest signal). **Public** — `ProducerDetailOut` (Chunk B) carries `updated_at` read-only; `ProducerListOut`/map do NOT (detail-page-only). Rendered as a modest month-year footnote at the page end (`ProducerSections.jsx`, `frontend/lib/format-date.js` → he-IL/en-US).
+
+> **MEH-1471 (2026-07-22):** self-reported attribution ("מאיפה שמעת עלינו?"). `producers.referral_source` (`VARCHAR(40)`, **nullable**) + `producers.referral_source_other` (`VARCHAR(120)`, **nullable**), migration `d7b2f4a9c6e1`. `referral_source` stores an **English key** from `constants.REFERRAL_SOURCE_KEYS` (`business_referral`\|`friends_family`\|`instagram`\|`facebook`\|`google`\|`whatsapp_group`\|`other`\|`prefer_not_to_say`) chosen at the final registration step; Hebrew labels are rendered from i18n. `referral_source_other` holds the optional free-text answer, revealed only when the key is `other`. Validated at the API boundary (`ProducerRegister._validate_referral_source` → **422** on an unknown key; `referral_source_other` bleach-sanitised) — **no DB CHECK/enum** (app-layer, like `availability_state`/`verification_doc_type`). Field is optional at the Pydantic layer (nullable column, MEH-143 upgrade path); required-ness is a **front-end** registration gate only. **No `server_default`, NO backfill** (ADR-007 Expand-only) — existing rows stay NULL (admin renders "—"). **Admin-only** — `ProducerAdminOut` surfaces both; public `ProducerListOut`/`ProducerDetailOut` do NOT (internal supply-side data, MEH-530 privacy precedent). Displayed read-only under the producer name in the `/admin/producers` table (`AdminProducersTable.jsx`, `"אחר: <text>"` for the `other` case).
 
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
@@ -89,7 +94,14 @@ producers (
   images text[],
   plan: free|premium,
   slug text unique,
+  -- MEH-1490: admin-mapped Google Maps Place ID. The ONLY Google datum stored —
+  -- rating/userRatingCount are live-fetched (never persisted; ToS §3.2.3(b)).
+  google_place_id varchar(300) nullable,
   contact_name, top_product_name,
+  -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
+  owner_bio text nullable, owner_photo_url varchar(500) nullable,
+  -- MEH-1471: self-reported attribution (admin-only; English key + free-text "other")
+  referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   starting_price_label, price_range,
   grass_fed bool, organic_certified bool, kosher,
   has_delivery bool, pickup_points bool,
@@ -145,7 +157,8 @@ products       (id, producer_id FK, name, description,
                 price_max Numeric(10,2) NULL,       -- MEH-295: canonical max, optional, validator: >= price_min
                 is_gluten_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: single source of truth post column drop. EXISTS subquery powers /producers?gluten_free=true
                 is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293/MEH-479: same
-                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE
+                is_vegetarian Boolean NOT NULL DEFAULT FALSE,    -- MEH-1438: 4th dietary axis. ?vegetarian filter matches is_vegetarian OR is_vegan (a vegan product is vegetarian by definition); migration c5d9f3a1b2e8 seeded TRUE for existing vegan rows
+                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE (predicate extended with is_vegetarian in MEH-1438)
 delivery_areas (id, producer_id FK, city, min_order int, delivery_day)
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
@@ -249,6 +262,8 @@ experiences (
   max_participants int, participants_count int,
   price_per_person numeric(10,2),    -- NULL/0 = free
   requirements text,                 -- "what to bring / prerequisites"
+
+  is_active bool NOT NULL DEFAULT true,  -- MEH-1419: reversible host cancel (mirrors Event.is_active). Public list filters is_active IS TRUE; /mine returns inactive too.
 
   -- Moderation
   status: pending|approved|rejected|changes_requested,
@@ -411,7 +426,14 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
                                                has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
-                                               sort: newest (default) | rating
+                                               sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
+                                               (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
+                                               reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
+                                               Non-geo only (geo results always order by distance). Drives the /producers sort select.
+                                               MEH-1465: ?category is REPEATABLE (list[int]) — ?category=1&category=2 ORs over the
+                                               ids (a producer in any selected category matches). A single ?category=5 still works
+                                               (parses to [5]). Filtered via EXISTS on producer_categories (Producer.categories.any),
+                                               so a producer in two selected categories appears once; X-Total-Count stays consistent.
                                                MEH-1282: ?require_physical (geo-only, default false). Geo results include
                                                delivery-only producers (has_physical_location=false) by default so the home
                                                "קרוב אליי" flow surfaces every nearby business; require_physical=true keeps
@@ -425,6 +447,13 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                self-declared organic_certified boolean (unverified). Re-add only behind an
                                                admin-verified flow. Column + owner toggle + admin checkbox kept.
 GET    /producers/{producer_id}                   public
+GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Google-rating trust line. Read-only
+                                               server-side proxy to Places API (New) (X-Goog-FieldMask:
+                                               rating,userRatingCount,googleMapsUri). NEVER persists any value
+                                               (ToS §3.2.3(b) No Caching). 200 → { rating, user_rating_count,
+                                               google_maps_uri } only when a place_id is mapped AND count ≥ 20;
+                                               204 (fail-quiet) on no place_id / count<20 / API error / no
+                                               GOOGLE_PLACES_API_KEY; 404 only for an unknown producer. 60/min.
 GET    /producers/by-slug/{slug}                  public
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
@@ -459,11 +488,24 @@ POST   /producers/me/availability-state            producer  — MEH-291 unified
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
                                                               dual-writes to is_available_today + availability_status during 7-day overlap
                                                               GET /producers supports ?availability_state= filter (opt-in; default listing unchanged in Phase 2)
+GET    /producers/me/locations                    producer  — MEH-1421 (MEH-1388 chunk 4a): owner's producer_locations
+                                                              rows (ProducerLocationOwnerOut — full, incl. address/hours/phone),
+                                                              ordered primary-first then created_at
+POST   /producers/me/locations                    producer  — create a location (60/hr). ProducerLocationCreate.
+                                                              First location forced is_primary; is_primary=true clears others.
+                                                              same-city label rule → 422 "כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה"
+PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
+                                                              (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
+                                                              same-city check only when city/label in the patch.
+DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the primary promotes
+                                                              the oldest survivor so exactly one primary remains.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +
-                                                              new_followers_this_week; average_rating + total_reviews;
+                                                              new_followers_this_week (MEH-1364: counted from
+                                                              favorites, the canonical interest record — decision A);
+                                                              average_rating + total_reviews;
                                                               home_products_count; views_by_day (30-entry zero-filled
                                                               series); top_cities (top 5, excludes NULL city)
 
@@ -505,6 +547,7 @@ POST   /home-products/rate/{token}        public — submit rating
 ```
 GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all)
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
+GET    /events/mine                producer — owner's own events, ALL states incl. inactive (MEH-1405; dashboard manage list). Declared before /events/{id} so "mine" isn't a UUID path.
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
 POST   /events                     producer — require_verified_producer (MEH-1164 F5): producer role + verified email — unverified → 403 "יש לאמת את כתובת האימייל תחילה"; non-producer → "Producer access required" (role checked first). A pending producer's event stays hidden until the business is approved — MEH-1161
 PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
@@ -526,11 +569,11 @@ its admin-override, so an admin still deletes (→ 200).
 
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
-GET    /experiences                    public  — filter: category, city. Only approved+upcoming.
-GET    /experiences/mine               auth    — owner's submissions, any status
+GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
 POST   /experiences                    auth    — require_verified_email (already gated pre-MEH-1164 — left unchanged by Chunk 2A). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
-PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). Any edit resets to status=pending + re-runs Claude.
+PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate.
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
 
@@ -689,6 +732,15 @@ POST /admin/reports/{report_id}/resolve    admin — status→resolved + resolve
 POST /admin/reports/{report_id}/dismiss    admin — status→dismissed + resolved_at/by; 409 if already closed (MEH-1266)
 ```
 
+### Info-report — "מצאתן טעות בפרטים?" (`app/routers/report_info.py`)
+
+```
+POST /reports/producer-info    🌐 public, rate-limited 5/day/IP — visitor reports wrong info on a producer page.
+                               Body {producer_slug, message(1..1000), reporter_email?}. Resolves producer by slug
+                               OR uuid id (else 404). Emails admin (RTL HTML, message escaped); NO DB persist. 204.
+                               MEH-1443. Distinct from the DB-backed abuse reports above.
+```
+
 ### Marketing (`app/routers/marketing.py`)
 
 ```
@@ -706,7 +758,9 @@ POST /contact                    public — { name, email, message, topic? } →
                                  the Hebrew label is prepended to the stored message
                                  ("נושא: <label>") and to the email subject. Single source:
                                  CONTACT_TOPIC_LABELS in schemas.py:2074.
-GET  /cities                     public — deduped producer+listing city list
+GET  /cities                     public — canonical cities table (data.gov.il seed,
+                                 MEH-1343) ∪ live producer/delivery cities; static
+                                 list only as unseeded-env fallback (MEH-1349)
 ```
 
 ### Search (`app/routers/search.py` — MEH-99)
@@ -729,6 +783,9 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
 
 ```
 POST /upload/image               auth — Cloudinary direct upload with magic-byte validation
+POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
+                                 folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
+                                 writes producers.owner_photo_url atomically
 ```
 
 ---

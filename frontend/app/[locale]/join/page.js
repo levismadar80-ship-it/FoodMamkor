@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import Link from "next/link";
 import { ArrowLeft, ChatCircleDots, ListChecks, Quotes } from "@phosphor-icons/react/ssr";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
@@ -72,13 +73,15 @@ export default async function JoinPage({ params }) {
             {t("h1")}
           </h1>
           <p className="text-text/85 leading-relaxed max-w-xl mx-auto mb-8">{t("subhead")}</p>
-          <Link
+          {/* MEH-1489: auth-state-aware — producer sees a dashboard link,
+              admin sees nothing; guest keeps the join-cta testid. */}
+          <BusinessCtaLink
             href="/register/producer"
             data-testid="join-cta"
             className="inline-flex items-center gap-2 bg-primary text-white rounded-lg px-8 py-3.5 font-medium transition hover:bg-primary-dark"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
           <p className="text-sm text-fg-muted mt-3">{t("trust_hint")}</p>
         </header>
 

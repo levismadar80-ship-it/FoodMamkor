@@ -18,8 +18,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+// MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
+// currentColor, aria-hidden) instead of a baked-in emoji — same source the
+// FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
+// exactly as it renders in FilterSheet.
+import { chipIcon } from "@/lib/chip-icons";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
@@ -36,7 +42,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -46,6 +52,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // MEH-1447: { id, name } | null
   const [editUploading, setEditUploading] = useState(false);
   // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
   // renders a distinct error card + retry instead of the "no products yet"
@@ -119,12 +126,14 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         price_max: maxNum,
         is_gluten_free: form.is_gluten_free,
         is_vegan: form.is_vegan,
+        is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
       setAdding(false);
+      showToast.success(t("toast_added")); // MEH-1446
     } catch {
       setError(tErr("save_failed"));
     } finally {
@@ -142,6 +151,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       price_max: product.price_max != null ? String(Number(product.price_max)) : "",
       is_gluten_free: !!product.is_gluten_free,
       is_vegan: !!product.is_vegan,
+      is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
     });
     setError("");
@@ -217,11 +227,13 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         price_max: maxNum,
         is_gluten_free: !!editForm.is_gluten_free,
         is_vegan: !!editForm.is_vegan,
+        is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
       setEditingId(null);
+      showToast.success(t("toast_updated")); // MEH-1446
     } catch {
       setError(tErr("save_failed"));
     } finally {
@@ -236,12 +248,25 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
     try {
       await api.delete(`/producers/me/products/${id}`);
       setProducts((p) => p.filter((pr) => pr.id !== id));
+      showToast.success(t("toast_deleted")); // MEH-1446
+      setConfirmDelete(null); // MEH-1447: close the dialog only on a successful DELETE
     } catch {
-      setError(tErr("delete_failed"));
+      setError(tErr("delete_failed")); // MEH-1447: failure keeps the dialog open
     } finally {
       setDeletingId(null);
     }
   };
+
+  // MEH-1447: Escape closes the delete-confirm dialog unless a delete is in
+  // flight. Mirrors admin/producers DeleteConfirmDialog (MEH-1023/1027).
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && deletingId == null) setConfirmDelete(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deletingId]);
 
   if (loading) return null;
 
@@ -376,10 +401,14 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <div>
                   <p id={`edit-diet-heading-${product.id}`} className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
                   <div role="group" aria-labelledby={`edit-diet-heading-${product.id}`} className="flex flex-wrap gap-2">
-                    <DietChip label={tForm("diet_gluten_free")} pressed={!!editForm.is_gluten_free} onToggle={() => setEditForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
-                    <DietChip label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
-                    <DietChip label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                    <DietChip iconKey="gluten_free" label={tForm("diet_gluten_free")} pressed={!!editForm.is_gluten_free} onToggle={() => setEditForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
+                    <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                    <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={!!editForm.is_vegetarian} onToggle={() => setEditForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
+                    <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                   </div>
+                  {/* MEH-1439: tell the owner what marking a diet flag does — it
+                      surfaces the business in the matching public filter. */}
+                  <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
                 </div>
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
@@ -440,7 +469,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <Pencil size={16} aria-hidden="true" />
               </button>
               <button
-                onClick={() => handleDelete(product.id)}
+                onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
                 className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
@@ -512,10 +541,14 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             <div>
               <p id="add-diet-heading" className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
               <div role="group" aria-labelledby="add-diet-heading" className="flex flex-wrap gap-2">
-                <DietChip label={tForm("diet_gluten_free")} pressed={form.is_gluten_free} onToggle={() => setForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
-                <DietChip label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
-                <DietChip label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                <DietChip iconKey="gluten_free" label={tForm("diet_gluten_free")} pressed={form.is_gluten_free} onToggle={() => setForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
+                <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={form.is_vegetarian} onToggle={() => setForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
+                <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
               </div>
+              {/* MEH-1439: tell the owner what marking a diet flag does — it
+                  surfaces the business in the matching public filter. */}
+              <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
             </div>
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its
@@ -540,6 +573,45 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             </button>
           </div>
         </form>
+      )}
+
+      {/* MEH-1447: confirm before DELETE (replaces one-click delete). Contract
+          copied from admin/producers DeleteConfirmDialog (MEH-1023/1027):
+          aria-modal, Escape closes, buttons disabled while busy, failure keeps
+          the dialog open with the error shown. */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-delete-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+          >
+            <p id="product-delete-title" className="font-medium text-base text-text">
+              {t("delete_confirm.title", { name: confirmDelete.name })}
+            </p>
+            <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="flex gap-3 justify-start pt-1">
+              <button
+                type="button"
+                disabled={deletingId != null}
+                onClick={() => handleDelete(confirmDelete.id)}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {t("delete_confirm.confirm")}
+              </button>
+              <button
+                type="button"
+                disabled={deletingId != null}
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("delete_confirm.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -587,19 +659,24 @@ function PriceField({ id, label, optionalSuffix, value, onChange, required = fal
 // REUSES: components/CategorySelector.jsx:163-200 selected idiom
 // (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
 // states via the primary/cream family, no new state token.
-function DietChip({ label, pressed, onToggle }) {
+function DietChip({ label, pressed, onToggle, iconKey }) {
+  // MEH-1472: leading Phosphor glyph from the canonical chip-icon map. null for
+  // keys without an icon (e.g. vegetarian) → the chip stays text-only, matching
+  // FilterSheet. Wrapped aria-hidden so the label remains the accessible name.
+  const icon = iconKey ? chipIcon(iconKey) : null;
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={pressed}
       className={[
-        "min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        "inline-flex items-center gap-1.5 min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
           : "border-border bg-white text-text hover:border-primary",
       ].join(" ")}
     >
+      {icon && <span aria-hidden="true">{icon}</span>}
       {label}
     </button>
   );

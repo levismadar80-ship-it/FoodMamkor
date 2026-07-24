@@ -41,6 +41,7 @@ erDiagram
         uuid id PK
         string name
         string slug UK "nullable"
+        string google_place_id "nullable — MEH-1490 admin map; only Google datum stored"
         string description
         string city
         string address "nullable — MEH-829, VARCHAR(255); collected at register"
@@ -69,6 +70,10 @@ erDiagram
         timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
+        text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
+        string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
+        string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
     }
 
     categories {
@@ -88,6 +93,7 @@ erDiagram
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
+        boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
     }
 
@@ -184,6 +190,7 @@ erDiagram
         numeric price
         int capacity
         string status "pending|changes_requested|approved|rejected"
+        boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
         timestamp created_at
     }
@@ -321,7 +328,23 @@ erDiagram
         string bot_template_sent "audit-trail: NULL = tried + failed"
         boolean human_replied
     }
+
+    alert_log {
+        uuid id PK
+        uuid user_id FK "CASCADE"
+        uuid producer_id FK "CASCADE"
+        string channel "push|whatsapp (16)"
+        string alert_type "new_event|new_product|delivery_area (32)"
+        timestamp sent_at "indexed (user,producer,channel,sent_at)"
+    }
 ```
+
+> **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
+> `fire_alerts` cap (≤1 message per `(user, producer, channel)` per rolling 24h;
+> `alert_type` recorded but not part of the cap key). Composite index
+> `ix_alert_log_cap_lookup(user_id, producer_id, channel, sent_at)` serves the
+> EXISTS check. Adds one table → **`EXPECTED_TABLES` 36 → 37** (`pr-checks.yml`).
+> No retention/purge job yet (rows CASCADE-delete with their user/producer).
 
 ## Locked invariants (do not drift)
 

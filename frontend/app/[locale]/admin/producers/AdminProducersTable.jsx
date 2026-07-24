@@ -8,6 +8,7 @@ import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import AdminReviewChecklist from "./AdminReviewChecklist";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
@@ -138,6 +139,49 @@ function ProducerTags({ producer }) {
           {t("producers.table.tags.license_pending")}
         </span>
       )}
+      {/* MEH-1421 (MEH-1388 chunk 4a): read-only dedup signal — likely-duplicate
+          producer (shared name/city). Signal only; approval is never blocked. */}
+      {(producer._dup?.name || producer._dup?.city) && (
+        <span
+          title={t(
+            producer._dup.name && producer._dup.city
+              ? "producers.table.tags.dedup_both_title"
+              : producer._dup.name
+                ? "producers.table.tags.dedup_name_title"
+                : "producers.table.tags.dedup_city_title",
+          )}
+          aria-label={t("producers.table.tags.dedup")}
+          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-[10px] font-medium"
+        >
+          <Warning size={ICON_SIZE_SM} weight="fill" aria-hidden="true" />
+          {t("producers.table.tags.dedup")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// MEH-1471: read-only self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only
+// (ProducerAdminOut). Renders the Hebrew option label, "אחר: <text>" for the
+// free-text case, and "—" for producers who registered before the field existed.
+// Option labels come from the auth namespace (single source of the Hebrew copy)
+// so the strings aren't duplicated in the admin namespace.
+function ReferralSource({ producer }) {
+  const t = useTranslations("admin");
+  const tOpt = useTranslations(
+    "auth.register.producer.fields.referral_source.options",
+  );
+  const key = producer.referral_source;
+  let value = "—";
+  if (key === "other") {
+    const other = (producer.referral_source_other || "").trim();
+    value = other ? `${tOpt("other")}: ${other}` : tOpt("other");
+  } else if (key) {
+    value = tOpt(key);
+  }
+  return (
+    <div className="text-[11px] text-muted mt-0.5">
+      {t("producers.table.referral.label")}: {value}
     </div>
   );
 }
@@ -304,12 +348,16 @@ function PendingPhotoStrip({ producer }) {
   );
 }
 
-function AdminProducersRow({ producer, isStoryOpen, handlers }) {
+function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
   const p = producer;
   const { missing, priority } = p._completeness;
   // MEH-1232: pending rows carry a photo-preview sub-row iff they have images.
   const showPhotoPreview =
     PENDING_PHOTO_STATUSES.includes(p.status) && (p.images?.length || 0) > 0;
+  // MEH-1396: the same pending statuses carry the pre-approval review checklist
+  // (soft aid before "אשר"), independent of whether images exist.
+  const showReviewChecklist =
+    !!checklist && PENDING_PHOTO_STATUSES.includes(p.status);
   return (
     <React.Fragment>
       <tr className="border-t hover:bg-background/50">
@@ -318,6 +366,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
             <CompletenessBadge missing={missing} priority={priority} />
             <span>{p.name}</span>
           </div>
+          <ReferralSource producer={p} />
         </td>
         <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
@@ -337,6 +386,18 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
         <tr>
           <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pt-0 pb-4 bg-background/30">
             <PendingPhotoStrip producer={p} />
+          </td>
+        </tr>
+      )}
+      {showReviewChecklist && (
+        <tr>
+          <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pt-0 pb-4 bg-background/30">
+            <AdminReviewChecklist
+              open={checklist.openId === p.id}
+              onToggleOpen={() => checklist.toggleOpen(p.id)}
+              checkedIds={checklist.checked[p.id]}
+              onToggleItem={(itemId) => checklist.toggleItem(p.id, itemId)}
+            />
           </td>
         </tr>
       )}
@@ -400,7 +461,7 @@ function EmptyRow({ incompleteOnly }) {
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
   onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
-  onUploadStoryCard, isBusy,
+  onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
@@ -422,6 +483,7 @@ export default function AdminProducersTable({
                 producer={p}
                 isStoryOpen={storyCardOpenId === p.id}
                 handlers={handlers}
+                checklist={checklist}
               />
             ))}
           </tbody>

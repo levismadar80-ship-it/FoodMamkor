@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user_optional, require_verified_email
 from app.database import get_db
@@ -59,8 +59,17 @@ def list_producers(
     # "קרוב אליי" flow). Set true for map-pin semantics (physical location only).
     # No effect outside geo mode.
     require_physical: bool = False,
-    category: int | None = None,
+    # MEH-1465: OR over multiple categories — repeatable ?category=1&category=2.
+    # A single ?category=5 still parses (→ [5]), so existing deep-links are
+    # unchanged. The service filters via EXISTS on the whole list.
+    category: list[int] | None = Query(None),
     delivery_city: str | None = None,
+    # MEH-1487: region fallback — OR over several delivery cities
+    # (?delivery_cities=a&delivery_cities=b). Same per-city condition as
+    # delivery_city (delivery_areas ∪ nationwide-minus-excluded). Used by the
+    # home empty-result "בתי עסק שמגיעים לאזור" section. delivery_city (single)
+    # takes precedence when both are sent.
+    delivery_cities: list[str] | None = Query(None),
     has_delivery: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
@@ -76,8 +85,10 @@ def list_producers(
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
     vegan: bool | None = None,
+    vegetarian: bool | None = None,  # MEH-1438 — matches is_vegetarian OR is_vegan
     lactose_free: bool | None = None,
-    # Sort for non-geo results. "newest" (default) or "rating".
+    # MEH-1483: sort axis for non-geo results. "newest" (default) or "rating".
+    # Validated below — an unknown value 422s rather than silently defaulting.
     sort: str | None = None,
     # MEH-13 — free-text search over name + description, used by /search
     # results page. Aliased as `q` in the URL to match CLAUDE.md's
@@ -96,6 +107,12 @@ def list_producers(
     response: Response = None,
     db: Session = Depends(get_db),
 ):
+    # MEH-1483: validate the sort axis explicitly (the router's manual-422
+    # pattern, cf. record_contact_click). None/"newest" = default created_at
+    # DESC; "rating" = avg_rating DESC nulls-last. An unknown value 422s rather
+    # than silently falling back to newest.
+    if sort is not None and sort not in ("newest", "rating"):
+        raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
     results, total_count = build_producers_query(
         db,
         lat=lat,
@@ -104,6 +121,7 @@ def list_producers(
         require_physical=require_physical,
         category=category,
         delivery_city=delivery_city,
+        delivery_cities=delivery_cities,
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
@@ -116,6 +134,7 @@ def list_producers(
         grass_fed=grass_fed,
         gluten_free=gluten_free,
         vegan=vegan,
+        vegetarian=vegetarian,  # MEH-1438
         lactose_free=lactose_free,
         sort=sort,
         search_q=search_q,
@@ -197,6 +216,9 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
+            # so it doesn't widen the 3-way collection joinedload cartesian).
+            selectinload(Producer.locations),
         )
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
@@ -231,6 +253,9 @@ def get_producer(
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
+            # so it doesn't widen the 3-way collection joinedload cartesian).
+            selectinload(Producer.locations),
         )
         .filter(Producer.id == producer_id)
         .first()

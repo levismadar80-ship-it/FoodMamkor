@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Crosshair, Shuffle } from "@phosphor-icons/react";
+import { Crosshair } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -42,19 +42,18 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * kenburns-left dividers below; honors prefers-reduced-motion (animation:none).
  *
  * Does NOT: own search routing (HeroSearch), own the near-me handler
- * (onNearMe from use-home-page), the surprise handler (onSurprise), or
- * restyle the navbar (parallel track).
+ * (onNearMe from use-home-page), or restyle the navbar (parallel track).
  *
  * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2),
  * MEH-788 (#1055 Cloudinary+KB · #1063 scrim token · S14 capped-hero + cream
- * search/CTAs), MEH-1288 (surprise-me button beside near-me).
+ * search/CTAs), MEH-1288 (surprise-me button beside near-me),
+ * MEH-1476 (surprise-me relocated to the producers-grid end — hero now
+ * carries only the filled primary + near-me ghost + "how it works" link).
  */
 export function HomeHero({
   fridayMode,
   geoLoading,
   onNearMe,
-  onSurprise,
-  hasProducers,
   onScrollDown,
 }) {
   const t = useTranslations();
@@ -146,7 +145,10 @@ export function HomeHero({
           CTA (גלו עסקים) + near-me (MEH-41) + "how it works". MEH-1070: CTA row
           is centered at every breakpoint — supersedes HOME-06 alignment per
           Sapir 09/07 (the md:justify-start + md:px-12 start-geometry from #1476
-          is dropped; centered content needs neither). near-me keeps border-primary. */}
+          is dropped; centered content needs neither). MEH-1369: exactly ONE filled
+          primary — near-me is the single .action-ghost secondary; how-it-works is
+          a text link. MEH-1476: surprise-me left the hero — it now lives at the
+          producers-grid end beside "load more". */}
       <motion.div
         initial={{ y: 12 }}
         animate={{ y: 0 }}
@@ -161,30 +163,21 @@ export function HomeHero({
           {t("home.hero.cta_primary")}
         </button>
 
+        {/* MEH-1369: single ghost secondary — .action-ghost (globals.css:138)
+            demotes near-me below the filled primary; no longer a same-size twin. */}
         <button
           type="button"
           onClick={onNearMe}
           disabled={geoLoading}
-          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-primary px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
+          className="action-ghost inline-flex items-center gap-2 px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
         </button>
 
-        {/* MEH-1288: "הפתיעו אותי" — navigates to a random approved producer.
-            Render-gated on hasProducers (statsProducersCount > 0) so an empty
-            catalog shows no button. Secondary treatment mirrors near-me. */}
-        {hasProducers && (
-          <button
-            type="button"
-            onClick={onSurprise}
-            className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-primary px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm focus-ring"
-          >
-            <Shuffle size={18} weight="bold" aria-hidden="true" />
-            {t("home.hero.surprise_me")}
-          </button>
-        )}
-
+        {/* MEH-1476: "how it works" is now the sole secondary text link — the
+            surprise-me link that used to sit beside it (MEH-1369/MEH-1409) moved
+            to the producers-grid end. Same text-link weight, unchanged handler. */}
         <button
           type="button"
           onClick={scrollToHowItWorks}

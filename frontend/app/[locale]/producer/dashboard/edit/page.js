@@ -25,22 +25,32 @@
  *           cards.jsx for test export (MEH-1119 pattern);
  *           MEH-1158 — accordion headers gained content previews (thumbs /
  *           chips / first line / channel glyph) built from the same fetched
- *           profile, via EditAccordionCard's additive `preview` prop.
+ *           profile, via EditAccordionCard's additive `preview` prop;
+ *           MEH-1408 — hub-and-spoke: the flat accordion list became a hub of
+ *           4 group tiles (?group=…), shell-only — every card stays MOUNTED
+ *           (hidden-toggle at the group level) so unsaved state + the MEH-1100
+ *           aggregate survive hub↔group nav; card bodies are untouched.
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 // MEH-1157: locale-aware router — push("/login") lands on /{locale}/login
 // instead of dropping an /en session onto the default-locale page.
-import { useRouter } from "@/i18n/navigation";
+// MEH-1408: usePathname feeds router.push({pathname, query:{group}}) for the
+// hub↔group nav; useSearchParams (next/navigation) reads the active ?group.
+import { useRouter, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 // MEH-1158: MapPin + per-channel glyphs feed the header previews below.
+// MEH-1408: CaretLeft — the "back to all sections" link's inline-start indicator
+// (base points inline-start in LTR; rtl:rotate-180 flips it to inline-start in RTL).
 // (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.)
 import {
   Warning,
   MapPin,
+  CaretLeft,
   WhatsappLogo,
   Phone,
   InstagramLogo,
@@ -62,9 +72,11 @@ import EditAccordionCard, {
   PreviewChips,
   PreviewEmpty,
 } from "@/components/EditAccordionCard";
+import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
+import LocationsEditor from "./LocationsEditor";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -77,12 +89,17 @@ const ANCHOR_TO_KEY = {
   categories: "categories",
   // MEH-1258: license editor card (deep-linked from the "נשאר להשלים" banner).
   license: "license",
+  // MEH-1167: kashrut-request card (badge request + cert photo + status).
+  kashrut: "kashrut",
   images: "images",
   location: "location",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
+  // OwnerCard).
+  "owner-story": "ownerStory",
   // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
   // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
   // under the accordion they resolve to the same cards, auto-expanded.
@@ -126,6 +143,7 @@ const KEY_TO_ANCHOR = {
   contact: "contact-channels",
   categories: "categories",
   license: "license",
+  kashrut: "kashrut",
   images: "images",
   location: "location",
   products: "products",
@@ -134,12 +152,74 @@ const KEY_TO_ANCHOR = {
   hours: "hours",
 };
 
+// MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
+// keys and anchor contract above are UNCHANGED — this only assigns each card to
+// one of 4 groups. Membership per the 21/07 SYNC (Phase 0 STOP-a resolution):
+// pricing → profile; delivery + hours → location; license + kashrut → the one
+// unified "trust" card.
+const GROUP_KEYS = ["profile", "trust", "location", "contact"];
+
+// Card key → its group. Drives anchor→group deep-link resolution and the hub
+// status/next-step aggregation. license/kashrut both live in the trust group
+// (rendered as one card — see OPEN_KEY_FOR).
+const KEY_TO_GROUP = {
+  images: "profile",
+  categories: "profile",
+  bio: "profile",
+  products: "profile",
+  pricing: "profile",
+  ownerStory: "profile",
+  license: "trust",
+  kashrut: "trust",
+  location: "location",
+  delivery: "location",
+  hours: "location",
+  contact: "contact",
+  questions: "contact",
+};
+
+// The accordion open-state key a card key maps to. The trust group renders ONE
+// accordion card (anchorId "trust") composing the license + kashrut bodies, so
+// both card keys open that single card; scroll still targets the inner
+// #license / #kashrut sub-section (KEY_TO_ANCHOR unchanged).
+const OPEN_KEY_FOR = (key) =>
+  key === "license" || key === "kashrut" ? "trust" : key;
+
+// Ordered member card keys per group — for the hub completion count + the
+// next-step marker placement (location is filtered out below for delivery-only
+// profiles, whose location card isn't mounted).
+const GROUP_MEMBERS = {
+  profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
+  trust: ["license", "kashrut"],
+  location: ["location", "delivery", "hours"],
+  contact: ["contact", "questions"],
+};
+
+// MEH-1408: thin Suspense wrapper — EditPageInner reads useSearchParams (the
+// active ?group), which requires a Suspense boundary at build (Next CSR-bailout
+// rule; mirrors the ProducersClient pattern). The page renders null until auth
+// resolves anyway, so a null fallback is invisible.
 export default function ProducerDashboardEditPage() {
+  return (
+    <Suspense fallback={null}>
+      <EditPageInner />
+    </Suspense>
+  );
+}
+
+function EditPageInner() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // MEH-1408: the active group (hub when absent/unknown). Normalized so a bad
+  // ?group value falls back to the hub instead of hiding every view.
+  const rawGroup = searchParams.get("group");
+  const group = GROUP_KEYS.includes(rawGroup) ? rawGroup : null;
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
   const tProducts = useTranslations("settings.products");
+  const tLoc = useTranslations("settings.locations");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
 
@@ -149,6 +229,30 @@ export default function ProducerDashboardEditPage() {
     (key) => setOpenKey((k) => (k === key ? null : key)),
     []
   );
+
+  // MEH-1408: hub↔group navigation. push (NOT replace — MEH-1084) with
+  // scroll:false so mobile Back from a group returns to the hub, and the
+  // back-link push does the same. These are <button> actions (not <a>), so the
+  // MEH-1100 nav guard doesn't fire — correct, since every card stays mounted
+  // across hub↔group and no unsaved work is lost.
+  const enterGroup = useCallback(
+    (g) => router.push({ pathname, query: { group: g } }, { scroll: false }),
+    [router, pathname]
+  );
+  const backToHub = useCallback(
+    () => router.push({ pathname }, { scroll: false }),
+    [router, pathname]
+  );
+
+  // MEH-1408: carries the target card key across a group switch (router.push is
+  // async — the anchor scroll must run after the new group re-renders). Set by
+  // the hash/jump resolvers, drained by the group-change effect below.
+  const pendingAnchorRef = useRef(null);
+  // MEH-1408: fresh `group` for the hash resolver, whose effect deliberately
+  // does NOT depend on `group` (so a group change never re-reads a stale hash
+  // and bounces back into the group — the "back to hub" trap).
+  const groupRef = useRef(group);
+  groupRef.current = group;
   // Live product count for the products summary: seeded from the page profile
   // (/producers/me joins products), then kept live by ProductsSection's
   // onCountChange as the owner adds/removes inside the card.
@@ -168,14 +272,26 @@ export default function ProducerDashboardEditPage() {
   // MEH-1237: jump from an unsaved-banner card name to its accordion — reuses
   // the exact open+scroll path the URL-hash deep link uses below (setOpenKey +
   // KEY_TO_ANCHOR scrollIntoView), so there is one navigation mechanism.
-  const jumpToCard = useCallback((key) => {
-    setOpenKey(key);
-    requestAnimationFrame(() => {
-      document
-        .getElementById(KEY_TO_ANCHOR[key])
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, []);
+  // MEH-1408: a dirty card may sit in a non-active group — switch to its group
+  // first (via the pendingAnchorRef relay the hash effect drains after the
+  // re-render), otherwise open+scroll straight away.
+  const jumpToCard = useCallback(
+    (key) => {
+      const g = KEY_TO_GROUP[key];
+      setOpenKey(OPEN_KEY_FOR(key));
+      if (g && g !== group) {
+        pendingAnchorRef.current = key;
+        enterGroup(g);
+        return;
+      }
+      requestAnimationFrame(() => {
+        document
+          .getElementById(KEY_TO_ANCHOR[key])
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    },
+    [group, enterGroup]
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -234,17 +350,30 @@ export default function ProducerDashboardEditPage() {
     return () => document.removeEventListener("click", onClick, true);
   }, [anyDirty, t]);
 
-  // MEH-1116: URL-hash deep link — #<anchor> auto-expands its card and scrolls
-  // to it, on load (once the profile has rendered the sections) and on every
-  // hashchange. Unknown hashes are ignored; #location on a delivery-only
-  // profile (card not mounted) is a silent no-op.
+  // MEH-1116 + MEH-1408: URL-hash deep link — #<anchor> auto-selects the card's
+  // GROUP, expands the card, and scrolls to it; on load (once the profile has
+  // rendered) and on every hashchange. The anchor→group mapping is derived from
+  // KEY_TO_GROUP, so the MEH-1106 checklist deep links (#bio, #products…) keep
+  // working with zero change on the sender side. Unknown hashes are ignored;
+  // #location on a delivery-only profile (card not mounted) is a silent no-op.
+  // Deps deliberately EXCLUDE `group` (reads groupRef instead): a group change
+  // must NOT re-run this and re-resolve a stale hash — that bounced "back to
+  // all sections" straight back into the group.
   useEffect(() => {
     if (!profile) return;
     const applyHash = () => {
-      const anchor = window.location.hash.replace(/^#/, "");
-      const key = ANCHOR_TO_KEY[anchor];
+      const key = ANCHOR_TO_KEY[window.location.hash.replace(/^#/, "")];
       if (!key) return;
-      setOpenKey(key);
+      const g = KEY_TO_GROUP[key];
+      // Deep link arriving outside its group → switch first (replace, so the
+      // link doesn't leave a hub entry in history); the group-change effect
+      // below opens + scrolls once the target group renders.
+      if (g && g !== groupRef.current) {
+        pendingAnchorRef.current = key;
+        router.replace({ pathname, query: { group: g } }, { scroll: false });
+        return;
+      }
+      setOpenKey(OPEN_KEY_FOR(key));
       // Wait a frame so the panel un-hides before measuring scroll position.
       // Scroll to the canonical section id (alias hashes carry no element).
       requestAnimationFrame(() => {
@@ -256,7 +385,22 @@ export default function ProducerDashboardEditPage() {
     applyHash();
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
-  }, [profile]);
+  }, [profile, router, pathname]);
+
+  // MEH-1408: drain a pending anchor once its group has become active — the
+  // second half of a cross-group deep link / banner jump. Only fires when the
+  // target group is live, so returning to the hub (no pending) is a no-op.
+  useEffect(() => {
+    const key = pendingAnchorRef.current;
+    if (!key || KEY_TO_GROUP[key] !== group) return;
+    pendingAnchorRef.current = null;
+    setOpenKey(OPEN_KEY_FOR(key));
+    requestAnimationFrame(() => {
+      document
+        .getElementById(KEY_TO_ANCHOR[key])
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [group]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
@@ -400,6 +544,50 @@ export default function ProducerDashboardEditPage() {
       (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
   };
 
+  // MEH-1408: per-card "has content" signal — the SAME profile fields the
+  // summaries / next-step already read (no new fetch, not producer-completeness;
+  // deliberately card-local booleans). Feeds the hub per-group completion count.
+  const cardFilled = {
+    images: (profile.images?.length ?? 0) > 0,
+    categories: categoryNames.length > 0,
+    bio: realDescription !== "",
+    products: productsForMarker > 0,
+    pricing: Boolean(profile.top_product_name || profile.price_range),
+    ownerStory: Boolean(
+      (profile.owner_bio || "").trim() || profile.owner_photo_url
+    ),
+    license: Boolean(licenseRaw),
+    kashrut: (profile.kashrut_badges || []).length > 0,
+    location: Boolean((profile.city || "").trim()),
+    delivery:
+      profile.has_physical_location !== false ||
+      Boolean(profile.offers_delivery),
+    hours: Boolean((profile.opening_hours || "").trim()),
+    contact: contactFilled,
+    questions: (profile.custom_questions || []).length > 0,
+  };
+
+  // MEH-1408: hub-tile props per group — completion "{done}/{total}", the
+  // next-step dot when the next step lands in this group, and up to two of the
+  // group's existing filled previews (MEH-1158 peek). The location card drops
+  // out of the membership for delivery-only profiles (it isn't mounted).
+  const groupTile = (g) => {
+    const members = GROUP_MEMBERS[g].filter(
+      (k) => !(k === "location" && profile.has_physical_location === false)
+    );
+    const done = members.filter((k) => cardFilled[k]).length;
+    const groupPreviews = members
+      .filter((k) => cardFilled[k] && previews[k])
+      .map((k) => previews[k])
+      .slice(0, 2);
+    return {
+      statusLine: tAcc("hub_progress", { done, total: members.length }),
+      marker:
+        nextStepKey && KEY_TO_GROUP[nextStepKey] === g ? nextStepDot : undefined,
+      previews: groupPreviews,
+    };
+  };
+
   // MEH-1237: display name per dirty-card key — REUSES the exact heading
   // strings the accordion headers already render (no duplicated Hebrew). Keys
   // match the reportDirty keys the cards lift up.
@@ -421,6 +609,22 @@ export default function ProducerDashboardEditPage() {
     "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
+
+  // MEH-1408: "back to all sections" — a <button> (router.push, NOT an <a>), so
+  // the MEH-1100 nav guard doesn't intercept it: hub↔group keeps every card
+  // mounted, so returning to the hub never risks unsaved work. Reused across
+  // the 4 group wrappers.
+  const backLink = (
+    <button
+      type="button"
+      onClick={backToHub}
+      data-testid="hub-back"
+      className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+    >
+      <CaretLeft size={16} aria-hidden="true" className="rtl:rotate-180" />
+      {tAcc("hub_back")}
+    </button>
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
@@ -456,252 +660,361 @@ export default function ProducerDashboardEditPage() {
         </div>
       )}
 
-      {/* MEH-1116: each card collapses to an accordion row — header carries
-          the title + a live one-line status summary computed from the SAME
-          page profile the cards edit (no new API). Cards stay MOUNTED when
-          collapsed (hidden-toggle inside EditAccordionCard) so unsaved state
-          and the MEH-1100 guard survive collapse. One open at a time. */}
+      {/* MEH-1408 hub-and-spoke: every view below stays MOUNTED and toggles via
+          `hidden` (the same MEH-1116 idiom, lifted from per-card to per-group) —
+          so card-local unsaved state + the MEH-1100 dirty aggregate survive
+          hub↔group navigation. The accordion cards themselves are unchanged:
+          anchor ids, summaries, previews, and the MEH-1132 next-step marker all
+          carry over; only their grouping + render order moved. */}
 
-      {/* MEH-1132: accordion cards ordered by discovery/conversion funnel
-          (GBP + Airbnb pattern — photos/categories are the strongest levers;
-          advanced fields drop under "עוד אפשרויות" below). Order source:
-          ProfileCompletenessCard.jsx:140-155 (the 4-step checklist funnel).
-          Anchor ids are UNCHANGED — only the render order moved. */}
+      {/* ===== HUB (default — no ?group) ===== */}
+      <div hidden={group !== null} className="space-y-6" data-testid="edit-hub">
+        <h1 className="font-headline-lg text-xl font-bold text-text">
+          {tAcc("hub_title")}
+        </h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {GROUP_KEYS.map((g) => {
+            const tile = groupTile(g);
+            return (
+              <EditHubCard
+                key={g}
+                testId={`hub-card-${g}`}
+                title={tAcc(`hub_group_${g}`)}
+                marker={tile.marker}
+                statusLine={tile.statusLine}
+                previews={tile.previews}
+                onClick={() => enterGroup(g)}
+              />
+            );
+          })}
+        </div>
+      </div>
 
-      {/* ① Edit-tab chunk B — producer-facing gallery images editor */}
-      <EditAccordionCard
-        anchorId="images"
-        title={t("images.heading")}
-        summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
-        preview={previews.images}
-        marker={nextStepKey === "images" ? nextStepDot : undefined}
-        open={openKey === "images"}
-        onToggle={() => toggleKey("images")}
+      {/* ===== GROUP: profile — images, categories, bio, products, pricing,
+              owner-story ===== */}
+      <div
+        hidden={group !== "profile"}
+        className="space-y-6"
+        data-testid="group-profile"
       >
-        <ImagesCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
+        {backLink}
 
-      {/* ② Edit-tab chunk A — producer-facing categories editor */}
-      <EditAccordionCard
-        anchorId="categories"
-        title={t("categories.heading")}
-        summary={tAcc("categories_summary", {
-          count: profile.categories?.length ?? 0,
-        })}
-        preview={previews.categories}
-        marker={nextStepKey === "categories" ? nextStepDot : undefined}
-        open={openKey === "categories"}
-        onToggle={() => toggleKey("categories")}
-      >
-        <CategoriesCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
-
-      {/* ②b MEH-1258 — producer license editor. Sits right after Categories
-          (the requirement derives from the categories just picked; the spec's
-          "between Categories and Images" reads in ANCHOR_TO_KEY order — the
-          MEH-1132 funnel renders Images first, so "after Categories" is the
-          faithful placement). Closes the "נשאר להשלים: חסר מספר רישיון" loop. */}
-      <EditAccordionCard
-        anchorId="license"
-        title={t("license.heading")}
-        summary={licenseMasked || t("license.summary_empty")}
-        preview={previews.license}
-        open={openKey === "license"}
-        onToggle={() => toggleKey("license")}
-      >
-        <LicenseCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
-
-      {/* ③ Edit-tab chunk C — producer-facing location/coords editor.
-          MEH-213: only physical-location producers have a map pin; delivery-only
-          businesses intentionally have no lat/lng, so the card is hidden for
-          them (has_physical_location === false). */}
-      {profile.has_physical_location !== false && (
+        {/* ① Edit-tab chunk B — producer-facing gallery images editor */}
         <EditAccordionCard
-          anchorId="location"
-          title={t("location.heading")}
-          summary={profile.city || tAcc("location_missing")}
-          preview={previews.location}
-          marker={nextStepKey === "location" ? nextStepDot : undefined}
-          open={openKey === "location"}
-          onToggle={() => toggleKey("location")}
+          anchorId="images"
+          title={t("images.heading")}
+          summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
+          preview={previews.images}
+          marker={nextStepKey === "images" ? nextStepDot : undefined}
+          open={openKey === "images"}
+          onToggle={() => toggleKey("images")}
         >
-          <LocationCard
+          <ImagesCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
           />
         </EditAccordionCard>
-      )}
 
-      {/* ④ MEH-1173: business description card (hero description + tagline + AI assist) */}
-      <EditAccordionCard
-        anchorId="bio"
-        title={t("description_card.heading")}
-        summary={
-          (profile.description || "").trim() && !isDefaultDescription(profile.description)
-            ? tAcc("bio_present")
-            : tAcc("bio_missing")
-        }
-        preview={previews.bio}
-        marker={nextStepKey === "bio" ? nextStepDot : undefined}
-        open={openKey === "bio"}
-        onToggle={() => toggleKey("bio")}
-      >
-        <DescriptionCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
+        {/* ② Edit-tab chunk A — producer-facing categories editor */}
+        <EditAccordionCard
+          anchorId="categories"
+          title={t("categories.heading")}
+          summary={tAcc("categories_summary", {
+            count: profile.categories?.length ?? 0,
+          })}
+          preview={previews.categories}
+          marker={nextStepKey === "categories" ? nextStepDot : undefined}
+          open={openKey === "categories"}
+          onToggle={() => toggleKey("categories")}
+        >
+          <CategoriesCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
 
-      {/* ⑤ MEH-999 follow-up — producer-facing product-catalog editor. Self-
-          fetching (no profile prop): full CRUD against /producers/me/products.
-          Relocated from settings/page.jsx, where it was defined but never
-          mounted. MEH-1116: summary count seeds from the page profile's joined
-          products and goes live via onCountChange once the card has fetched. */}
-      <EditAccordionCard
-        anchorId="products"
-        title={tProducts("section_heading")}
-        summary={tAcc("products_summary", {
-          count: productsCount ?? profile.products?.length ?? 0,
-        })}
-        preview={previews.products}
-        marker={nextStepKey === "products" ? nextStepDot : undefined}
-        open={openKey === "products"}
-        onToggle={() => toggleKey("products")}
-      >
-        {/* MEH-1306: back-link to the public products section — lives in the
-            expanded body (the header is a <button>; no nested interactives). */}
-        <ViewOnPageLink producerId={profile.id} anchor="section-products" />
-        <ProductsSection embedded onCountChange={setProductsCount} />
-      </EditAccordionCard>
+        {/* ④ MEH-1173: business description card (hero description + tagline + AI assist) */}
+        <EditAccordionCard
+          anchorId="bio"
+          title={t("description_card.heading")}
+          summary={
+            (profile.description || "").trim() && !isDefaultDescription(profile.description)
+              ? tAcc("bio_present")
+              : tAcc("bio_missing")
+          }
+          preview={previews.bio}
+          marker={nextStepKey === "bio" ? nextStepDot : undefined}
+          open={openKey === "bio"}
+          onToggle={() => toggleKey("bio")}
+        >
+          <DescriptionCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
 
-      {/* ⑥ MEH-296 Chunk 3b — producer-facing contact-channel editor */}
-      <EditAccordionCard
-        anchorId="contact-channels"
-        title={t("contact_channels.heading")}
-        summary={[
-          profile.phone ? tAcc("contact_phone_ok") : null,
-          tAcc("contact_primary", {
-            channel: tAcc(
-              `channel_${profile.primary_contact_method || "whatsapp"}`
-            ),
-          }),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        preview={previews.contact}
-        marker={nextStepKey === "contact" ? nextStepDot : undefined}
-        open={openKey === "contact"}
-        onToggle={() => toggleKey("contact")}
-      >
-        <ContactChannelsCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
+        {/* ⑤ MEH-999 follow-up — producer-facing product-catalog editor. Self-
+            fetching (no profile prop): full CRUD against /producers/me/products.
+            Relocated from settings/page.jsx, where it was defined but never
+            mounted. MEH-1116: summary count seeds from the page profile's joined
+            products and goes live via onCountChange once the card has fetched. */}
+        <EditAccordionCard
+          anchorId="products"
+          title={tProducts("section_heading")}
+          summary={tAcc("products_summary", {
+            count: productsCount ?? profile.products?.length ?? 0,
+          })}
+          preview={previews.products}
+          marker={nextStepKey === "products" ? nextStepDot : undefined}
+          open={openKey === "products"}
+          onToggle={() => toggleKey("products")}
+        >
+          {/* MEH-1306: back-link to the public products section — lives in the
+              expanded body (the header is a <button>; no nested interactives). */}
+          <ViewOnPageLink producerId={profile.id} anchor="section-products" />
+          <ProductsSection embedded onCountChange={setProductsCount} />
+        </EditAccordionCard>
 
-      {/* MEH-1132: quiet "more options" group divider — presentational only
-          (muted label + hairline), NOT a nested accordion. Advanced/optional
-          fields (custom questions) live below the funnel-critical cards, the
-          GBP "More" idiom. */}
-      <div className="flex items-center gap-3 pt-2">
-        <span className="text-xs font-medium text-fg-muted">
-          {tAcc("more_group")}
-        </span>
-        <span className="flex-1 h-px bg-border" aria-hidden="true" />
+        {/* MEH-1242 PR3 — price range + top product editor. MEH-1408: moved into
+            the profile group (descriptive marketing info; the DNA carries no
+            transactions, so it belongs with the profile, not a checkout flow). */}
+        <EditAccordionCard
+          anchorId="pricing"
+          title={t("pricing.heading")}
+          summary={
+            [profile.top_product_name, profile.price_range]
+              .filter(Boolean)
+              .join(" · ") || tAcc("pricing_summary_empty")
+          }
+          preview={previews.pricing}
+          open={openKey === "pricing"}
+          onToggle={() => toggleKey("pricing")}
+        >
+          <PricingCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* ④b MEH-1335 chunk 3 — owner-story editor (bio + photo). The public
+            owner card (OwnerCard, MEH-1334 — heading key owner_story.heading)
+            wakes its bio/photo variants up on its own once these fields hold
+            data. */}
+        <EditAccordionCard
+          anchorId="owner-story"
+          title={t("owner_story.heading")}
+          summary={
+            (profile.owner_bio || "").trim() || profile.owner_photo_url
+              ? tAcc("owner_present")
+              : tAcc("owner_missing")
+          }
+          open={openKey === "ownerStory"}
+          onToggle={() => toggleKey("ownerStory")}
+        >
+          <OwnerStoryCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
       </div>
 
-      {/* MEH-1242 PR3 — price range + top product editor (optional marketing
-          info; lives under "more options", not in the completeness funnel). */}
-      <EditAccordionCard
-        anchorId="pricing"
-        title={t("pricing.heading")}
-        summary={
-          [profile.top_product_name, profile.price_range]
-            .filter(Boolean)
-            .join(" · ") || tAcc("pricing_summary_empty")
-        }
-        preview={previews.pricing}
-        open={openKey === "pricing"}
-        onToggle={() => toggleKey("pricing")}
+      {/* ===== GROUP: trust — one unified "אישורים ותעודות" card composing the
+              existing license + kashrut bodies as stacked sections (composition
+              only — the card internals are untouched; the #license / #kashrut
+              deep-link anchors move to the inner sub-sections). ===== */}
+      <div
+        hidden={group !== "trust"}
+        className="space-y-6"
+        data-testid="group-trust"
       >
-        <PricingCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
+        {backLink}
 
-      {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
-          has_physical_location / offers_delivery / delivery_nationwide + cities). */}
-      <EditAccordionCard
-        anchorId="delivery"
-        title={t("delivery.heading")}
-        summary={
-          [
-            profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
-            profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
+        <EditAccordionCard
+          anchorId="trust"
+          title={tAcc("hub_trust_card")}
+          summary={[
+            licenseMasked || t("license.summary_empty"),
+            (profile.kashrut_badges || []).length
+              ? tAcc("kashrut_has")
+              : tAcc("kashrut_none"),
+          ].join(" · ")}
+          preview={previews.license}
+          open={openKey === "trust"}
+          onToggle={() => toggleKey("trust")}
+        >
+          {/* ②b MEH-1258 — producer license editor (sub-section of the unified
+              trust card; heading reuses the prior accordion-header key). */}
+          <div id="license" className="scroll-mt-24">
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("license.heading")}
+            </h3>
+            <LicenseCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
+
+          {/* ②c MEH-1167 — kashrut-request card (second sub-section). Self-
+              fetches its request list; no onSave — badges land via admin
+              approval, not a producer profile write. */}
+          <div
+            id="kashrut"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("kashrut.heading")}
+            </h3>
+            <KashrutCard profile={profile} reportDirty={reportDirty} />
+          </div>
+        </EditAccordionCard>
+      </div>
+
+      {/* ===== GROUP: location — location, delivery, hours ===== */}
+      <div
+        hidden={group !== "location"}
+        className="space-y-6"
+        data-testid="group-location"
+      >
+        {backLink}
+
+        {/* ③ Edit-tab chunk C — producer-facing location/coords editor.
+            MEH-213: only physical-location producers have a map pin; delivery-only
+            businesses intentionally have no lat/lng, so the card is hidden for
+            them (has_physical_location === false). */}
+        {profile.has_physical_location !== false && (
+          <EditAccordionCard
+            anchorId="location"
+            title={t("location.heading")}
+            summary={profile.city || tAcc("location_missing")}
+            preview={previews.location}
+            marker={nextStepKey === "location" ? nextStepDot : undefined}
+            open={openKey === "location"}
+            onToggle={() => toggleKey("location")}
+          >
+            <LocationCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </EditAccordionCard>
+        )}
+
+        {/* MEH-1421 (MEH-1388 chunk 4a): multi-location editor (branch / pickup /
+            market_stand). NOT gated on has_physical_location — a delivery-only
+            producer may still run pickup points (chunk 2 reversed MEH-213 so
+            those appear on the map). Owner CRUD against /producers/me/locations;
+            the single-primary + same-city-label invariants live server-side. */}
+        <EditAccordionCard
+          anchorId="locations"
+          title={tLoc("section_heading")}
+          summary={
+            profile.locations?.length
+              ? String(profile.locations.length)
+              : tLoc("empty_title")
+          }
+          open={openKey === "locations"}
+          onToggle={() => toggleKey("locations")}
+        >
+          <LocationsEditor />
+        </EditAccordionCard>
+
+        {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
+            has_physical_location / offers_delivery / delivery_nationwide + cities). */}
+        <EditAccordionCard
+          anchorId="delivery"
+          title={t("delivery.heading")}
+          summary={
+            [
+              profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
+              profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || tAcc("delivery_none")
+          }
+          open={openKey === "delivery"}
+          onToggle={() => toggleKey("delivery")}
+        >
+          <DeliveryCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
+        <EditAccordionCard
+          anchorId="hours"
+          title={t("hours.heading")}
+          summary={profile.opening_hours || tAcc("hours_empty")}
+          open={openKey === "hours"}
+          onToggle={() => toggleKey("hours")}
+        >
+          <HoursCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+      </div>
+
+      {/* ===== GROUP: contact — contact-channels, questions ===== */}
+      <div
+        hidden={group !== "contact"}
+        className="space-y-6"
+        data-testid="group-contact"
+      >
+        {backLink}
+
+        {/* ⑥ MEH-296 Chunk 3b — producer-facing contact-channel editor */}
+        <EditAccordionCard
+          anchorId="contact-channels"
+          title={t("contact_channels.heading")}
+          summary={[
+            profile.phone ? tAcc("contact_phone_ok") : null,
+            tAcc("contact_primary", {
+              channel: tAcc(
+                `channel_${profile.primary_contact_method || "whatsapp"}`
+              ),
+            }),
           ]
             .filter(Boolean)
-            .join(" · ") || tAcc("delivery_none")
-        }
-        open={openKey === "delivery"}
-        onToggle={() => toggleKey("delivery")}
-      >
-        <DeliveryCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
+            .join(" · ")}
+          preview={previews.contact}
+          marker={nextStepKey === "contact" ? nextStepDot : undefined}
+          open={openKey === "contact"}
+          onToggle={() => toggleKey("contact")}
+        >
+          <ContactChannelsCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
 
-      {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
-      <EditAccordionCard
-        anchorId="hours"
-        title={t("hours.heading")}
-        summary={profile.opening_hours || tAcc("hours_empty")}
-        open={openKey === "hours"}
-        onToggle={() => toggleKey("hours")}
-      >
-        <HoursCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
-
-      {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
-      <EditAccordionCard
-        anchorId="questions"
-        title={t("custom_questions.heading")}
-        summary={tAcc("questions_summary", {
-          count: (profile.custom_questions || []).length,
-        })}
-        preview={previews.questions}
-        open={openKey === "questions"}
-        onToggle={() => toggleKey("questions")}
-      >
-        <CustomQuestionsCard
-          profile={profile}
-          onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
+        {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
+        <EditAccordionCard
+          anchorId="questions"
+          title={t("custom_questions.heading")}
+          summary={tAcc("questions_summary", {
+            count: (profile.custom_questions || []).length,
+          })}
+          preview={previews.questions}
+          open={openKey === "questions"}
+          onToggle={() => toggleKey("questions")}
+        >
+          <CustomQuestionsCard
+            profile={profile}
+            onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+      </div>
     </div>
   );
 }
@@ -761,6 +1074,12 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       </p>
       <p className="text-xs text-fg-muted mb-4">
         {t("context_line")}
+      </p>
+      {/* MEH-1477: content guidance — nudges owners toward the questions
+          customers actually ask before buying (stock / delivery / ordering),
+          reusing the MEH-1116 helper-text idiom. */}
+      <p className="text-xs text-fg-muted mb-4">
+        {t("guidance")}
       </p>
       <div className="space-y-2">
         {questions.map((q, i) => (

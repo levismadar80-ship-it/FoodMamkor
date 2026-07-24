@@ -36,6 +36,7 @@ Disallow: /
 User-agent: meta-externalagent
 Disallow: /
 
-# MEH-1045: host fixed — was mehamakor.co.il while the live site is
-# mehamakor.online (bots were sent to a sitemap on the wrong host).
-Sitemap: https://mehamakor.online/sitemap.xml
+# MEH-1322: canonical public domain is mehamakor.co.il (Sapir 18/07) — the
+# sitemap host now matches the SITE_URL origin that generates /sitemap.xml.
+# (Supersedes the MEH-1045 note that had set this to .online.)
+Sitemap: https://mehamakor.co.il/sitemap.xml

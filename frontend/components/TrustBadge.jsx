@@ -32,7 +32,12 @@ export default function TrustBadge({ tier, compact = false }) {
   // click) instead of the native `title` attr — title never surfaced on touch
   // devices. aria-label kept so the explainer still reaches screen readers.
   return (
-    <Tooltip content={tooltip} position="bottom">
+    // MEH-1459: position "bottom-start" (not centered) + the Tooltip primitive's
+    // responsive width keep the social-proof strip ("10+ ביקורות…") inside the
+    // narrow 2-col mobile card — a centered w-52 bubble was clipped horizontally
+    // by the card's overflow-hidden. Recognition-only render (tiers 4/5) is
+    // unchanged.
+    <Tooltip content={tooltip} position="bottom-start">
       <span
         className={[
           "inline-flex items-center rounded-full border font-medium",

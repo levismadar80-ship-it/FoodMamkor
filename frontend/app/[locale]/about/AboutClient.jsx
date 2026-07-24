@@ -33,6 +33,11 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 // JSX + i18n keys kept intact for revival; flip to true when content lands.
 const SHOW_TESTIMONIALS = false;
 
+// MEH-1336: "איך אנחנו מאמתים" — live since the copy-approval PR (Sapir-approved
+// body in he.json/en.json). The #verification anchor is the target of the
+// verified-badge popover link (MEH-1334, PR #1936).
+const SHOW_VERIFICATION = true;
+
 // MEH-1113: contact-form topic whitelist (mirrors backend CONTACT_TOPIC_LABELS
 // keys). "general" is the default; labels resolve from contact.topic_options.*.
 const CONTACT_TOPICS = ["general", "business", "correction", "other"];
@@ -275,6 +280,37 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
+      {/* ======== Verification — "איך אנחנו מאמתים" (MEH-1336 · render-gated until copy ✓) ========
+          id="verification" is the anchor target of /about#verification (verified-badge
+          popover, MEH-1334). scroll-mt-24 offsets the sticky header (same as #contact). */}
+      {SHOW_VERIFICATION && (
+        <FadeInSection id="verification" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+          <div className="max-w-3xl mx-auto px-4 md:px-12">
+            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+              {t("verification.heading")}
+            </h2>
+            <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
+              {t("verification.body")}
+            </p>
+          </div>
+        </FadeInSection>
+      )}
+
+      {/* ======== "בחירת העורכת" — MEH-1492 (editorial badge criteria + ADR-030 promise) ========
+          id="editors-pick" is the anchor target of /about#editors-pick (the recommended-
+          badge popover, BadgeRow.jsx). Mirrors the #verification section (MEH-1336); copy
+          is Sapir-locked in he.json/en.json, so it renders unconditionally. */}
+      <FadeInSection id="editors-pick" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+            {t("editors_pick.heading")}
+          </h2>
+          <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
+            {t("editors_pick.body")}
+          </p>
+        </div>
+      </FadeInSection>
+
       {/* ======== 05 — Tips accordion ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
@@ -393,6 +429,16 @@ export default function AboutPage() {
           <p className="font-body-md text-fg-muted text-lg mt-3 max-w-[48ch] leading-relaxed">
             {t("contact.subtitle")}
           </p>
+          {/* MEH-1323: quiet cross-link to /messages ("how contacting businesses
+              works") — closes the desktop ORPHAN from the MEH-1311 route audit.
+              Mirrors the testimonials-CTA link treatment. */}
+          <Link
+            href="/messages"
+            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          >
+            {t("messages_link")}
+            <ArrowLeft size={18} aria-hidden="true" />
+          </Link>
 
           <form onSubmit={handleContact} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-x-6 max-w-[560px]">
             {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon). Each

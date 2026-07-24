@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   EnvelopeSimple,
@@ -9,9 +10,7 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react";
 
-import FollowButton from "@/components/FollowButton";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-import ShareButton from "@/components/ShareButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -74,23 +73,21 @@ function armMailtoFallback(email, t) {
 /**
  * Module:   ContactCard
  * Purpose:  The single editorial contact card for the producer detail
- *           page — one status line, exactly one primary CTA, ready-made
- *           question links, a quiet secondary-channel icon row, and
- *           tertiary follow + share. Rendered twice by ProducerDetail:
- *           once inline on mobile/tablet (the IntersectionObserver target
- *           for the sticky bar) and once as the desktop sticky sidebar.
+ *           page — exactly one primary CTA, ready-made question links, and
+ *           a quiet secondary-channel icon row. Rendered twice by
+ *           ProducerDetail: once inline on mobile/tablet (the
+ *           IntersectionObserver target for the sticky bar) and once as
+ *           the desktop sticky sidebar.
  * Touches:  contact-tracking (WhatsApp beacon + per-channel click ping).
- * Does NOT: own the sticky-bar visibility (StickyContactBar +
- *           useStickyBar) or the header availability badge (ProducerHeader).
+ * Does NOT: own the sticky-bar visibility (StickyContactBar + useStickyBar),
+ *           the order-status line, or follow/save/share — status + quiet
+ *           actions moved to ProducerHeader (MEH-1334: one status home,
+ *           one home per action).
  * Related:  ContactSidebar.jsx (desktop wrapper), StickyContactBar.jsx.
  * History:  MEH-1146 chunk A (creation — action-hierarchy rebuild,
- *           consolidates the old ContactSidebar + ActionRow CTAs).
+ *           consolidates the old ContactSidebar + ActionRow CTAs);
+ *           MEH-1334 chunk 1 (status line + follow/share row removed).
  */
-
-// Availability states that honestly read as "open for orders" — the status
-// line (invention-fix 2) is suppressed for full/busy/vacation so it never
-// contradicts the header AvailabilityBadge.
-const OPEN_STATES = ["available", "accepting_orders", "available_today"];
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
 // resolves its own href from the producer with the trim/prefix guards the
@@ -129,12 +126,15 @@ function httpUrl(raw) {
   return v.startsWith("http") ? v : `https://${v}`;
 }
 
-export default function ContactCard({ producer, isVacation, primaryCategory, shareUrl }) {
+export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
 
-  const availState = producer.availability_state || producer.availability_status;
-  const showOpenStatus = !isVacation && (!availState || OPEN_STATES.includes(availState));
+  // MEH-1334 chunk 2: desktop phone tap reveals the number inline instead of
+  // dialing (there's no dialer on desktop) — mobile keeps the tel: dial. The
+  // device is read at click time via matchMedia so no unreliable UA sniff /
+  // render-time guess is needed.
+  const [phoneRevealed, setPhoneRevealed] = useState(false);
 
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
@@ -143,34 +143,35 @@ export default function ContactCard({ producer, isVacation, primaryCategory, sha
   return (
     <div className="bg-white rounded-lg p-6 border border-border">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
-        {/* Status line — invention-fix 2: "פתוח להזמנות" only, no
-            response-time claim; suppressed for full/busy/vacation. */}
-        {showOpenStatus && (
-          <p className="flex items-center gap-1.5 text-sm text-fg-muted mb-3">
-            <span className="inline-block w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
-            {t("producer.detail.contact_card.status_open")}
-          </p>
-        )}
+        {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
+            line (3 states, one status home per page — revision-2 #2). */}
 
         {/* The one primary CTA — color/label driven by primary_contact_method
             (WhatsApp green only on WhatsApp). */}
         <PrimaryContactButton
           producer={producer}
           onClick={() => {
+            // MEH-1426: attribution + unlock fire together, and ONLY on a
+            // WhatsApp primary CTA. Previously markWhatsAppClickedLocal ran
+            // unconditionally, so a phone/email/website primary still unlocked
+            // the review form — a click that never created an attributed WA row,
+            // so the reviews gate (reviews.py guard 3) would 403 anyway.
+            // Invariant: every WhatsApp click = attribution + unlock; non-WA = neither.
             if (primaryMethod === "whatsapp") {
               pingWhatsAppBeacon(producer.id);
+              markWhatsAppClickedLocal(producer.id);
             }
-            // Unlocks the review form (localStorage.wa_clicked_<id>).
-            markWhatsAppClickedLocal(producer.id);
           }}
         />
 
         {/* Ready-made questions as quiet text links under the CTA. */}
         <WhatsAppQuestionChips producer={producer} />
 
-        {/* Quiet secondary-channel icon row. */}
+        {/* Quiet secondary-channel icon row — MEH-1334 chunk 2: circular
+            hairline-bordered 44px targets on white, primary-dark glyph (the
+            approved mockup's .iconrow anatomy). */}
         {channels.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1 mb-1" role="list">
+          <div className="flex flex-wrap items-center gap-2 mt-3 mb-1" role="list">
             {channels.map(({ key, Icon, href, track }) => (
               <a
                 key={key}
@@ -181,39 +182,55 @@ export default function ContactCard({ producer, isVacation, primaryCategory, sha
                 role="listitem"
                 aria-label={t(`producer.detail.contact_card.aria.${key}`)}
                 title={t(`producer.detail.contact_card.aria.${key}`)}
-                onClick={
-                  track === false
-                    ? undefined
-                    : () => {
-                        // Fires exactly once per click (fallback must not double-track).
-                        trackContactClick(producer.id, key);
-                        // MEH-1221: email-only silent-mailto fallback.
-                        if (key === "email") {
-                          armMailtoFallback(producer.contact_email?.trim(), t);
-                        }
-                      }
-                }
-                className="inline-flex items-center justify-center w-11 h-11 rounded-md text-fg-muted hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={(e) => {
+                  // MEH-1334: on desktop a phone tap reveals the number inline
+                  // (no dialer) — swallow the tel: navigation and show the pill.
+                  if (
+                    key === "phone" &&
+                    typeof window !== "undefined" &&
+                    window.matchMedia("(min-width: 1024px)").matches
+                  ) {
+                    e.preventDefault();
+                    setPhoneRevealed(true);
+                  }
+                  if (track === false) return;
+                  // Fires exactly once per click (fallback must not double-track).
+                  trackContactClick(producer.id, key);
+                  // MEH-1221: email-only silent-mailto fallback.
+                  if (key === "email") {
+                    armMailtoFallback(producer.contact_email?.trim(), t);
+                  }
+                }}
+                className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white text-primary-dark hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <Icon size={20} aria-hidden="true" />
+                <Icon size={18} aria-hidden="true" />
               </a>
             ))}
           </div>
         )}
 
-        {/* Tertiary: follow (shared component, unchanged per fix 8) + share. */}
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-          <div className="flex-1">
-            <FollowButton producerId={producer.id} />
-          </div>
-          <ShareButton
-            url={shareUrl}
-            title={producer.name}
-            description={producer.description}
-            city={producer.city}
-            category={primaryCategory?.name}
-          />
-        </div>
+        {/* Desktop-revealed phone number pill (MEH-1334). Number is dir="ltr"
+            + .numeric so RTL can't reorder the digits; still a tel: link so a
+            desktop softphone / click-to-call extension can act on it. */}
+        {phoneRevealed && producer.phone && (
+          <a
+            href={`tel:${producer.phone}`}
+            dir="ltr"
+            data-testid="revealed-phone"
+            className="numeric inline-flex items-center gap-2 mt-2 px-3 min-h-[44px] rounded-full border border-border bg-white text-sm text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <Phone size={16} className="text-primary-dark" aria-hidden="true" />
+            {producer.phone}
+          </a>
+        )}
+
+        {/* MEH-1334: the tertiary follow + share row moved to the header's
+            quiet actions row (שמירה · מעקב · שיתוף) — one home per action. */}
+
+        {/* MEH-1460: the "טעות בפרטים?" correction link moved OUT of the
+            contact card to the page-end meta block (ProducerSections.jsx,
+            below ReportButton) — the conversion card no longer mixes a
+            site-directed action with the business-directed CTA. */}
       </div>
     </div>
   );

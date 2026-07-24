@@ -106,6 +106,11 @@ const nextConfig = {
   // it. framer-motion benefits similarly. App-wide First-Load-JS reduction.
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react", "framer-motion"],
+    // MEH-918: enable app/global-not-found.js so unmatched/notFound() routes
+    // return a real HTTP 404 (the [locale] root-layout-in-dynamic-segment
+    // soft-404). Official Next mechanism for a root layout nested under a
+    // top-level dynamic segment; Next also injects noindex on the 404.
+    globalNotFound: true,
   },
   images: {
     remotePatterns: [

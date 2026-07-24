@@ -161,6 +161,15 @@ export default function WhatsAppQuestionChips({ producer }) {
   const waHref = (q) =>
     digits ? getWhatsAppHref(digits, t("greeting_template", { name, q })) : null;
 
+  // MEH-1462: "יש לי רעיון למתכון" — routes the recipe-idea intent to the
+  // existing WhatsApp channel (research 22/07: no in-app suggestion box, no
+  // moderation). Uses its own Sapir-locked prefill (NOT the greeting_template
+  // that wraps the other questions), no in-page answer, gated on a phone like
+  // every other WhatsApp row.
+  const recipeIdeaHref = digits
+    ? getWhatsAppHref(digits, t("recipe_idea_message"))
+    : null;
+
   // Category-aware stock / custom questions stay WhatsApp — minus the two
   // canonical slots (delivery + ordering) handled above, to avoid duplicates.
   const waQuestions = getProducerQuestions(producer || {})
@@ -203,14 +212,53 @@ export default function WhatsAppQuestionChips({ producer }) {
   if (items.length === 0 && !digits) return null;
 
   return (
-    <div className="mb-4">
+    <QuestionList
+      items={items}
+      showEscalation={!!digits}
+      escalationHref={waHref(t("escalation"))}
+      recipeIdeaHref={recipeIdeaHref}
+      t={t}
+    />
+  );
+}
+
+// MEH-1334 chunk 2: progressive-disclosure wrapper — the first VISIBLE_MAX
+// ready-made questions render immediately; the rest hide behind one "עוד
+// שאלות" expander (single level, no pagination). MEH-1302's answer-first
+// behavior of each item is untouched — this only caps how many show at once.
+// The container was restyled to the quiet card idiom (hairline top rule,
+// tighter row rhythm) per the approved mockup.
+const VISIBLE_MAX = 3;
+
+function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, t }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMore = items.length > VISIBLE_MAX;
+  const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
+
+  return (
+    <div className="mb-4 border-t border-border pt-3">
       <p className="text-xs mb-1.5 font-body-md text-fg-muted">{t("common_questions")}:</p>
-      <ul className="flex flex-col">{items}</ul>
+      <ul className="flex flex-col">{visible}</ul>
+
+      {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
+          ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
+      {hasMore && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          data-testid="more-questions"
+          aria-expanded={false}
+          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
+          {t("more_questions")}
+        </button>
+      )}
 
       {/* Escalation — reuses the greeting template; only when a phone exists. */}
-      {digits && (
+      {showEscalation && (
         <a
-          href={waHref(t("escalation"))}
+          href={escalationHref}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="escalation-link"
@@ -218,6 +266,23 @@ export default function WhatsAppQuestionChips({ producer }) {
         >
           <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
           {t("escalation")}
+        </a>
+      )}
+
+      {/* MEH-1462: recipe-idea chip — always rendered LAST in the row (never
+          capped by the "עוד שאלות" expander), only when a WhatsApp channel
+          exists. No in-page disclosure: it always opens WhatsApp with the
+          Sapir-locked recipe-idea prefill. */}
+      {recipeIdeaHref && (
+        <a
+          href={recipeIdeaHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="recipe-idea-link"
+          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
+          {t("recipe_idea")}
         </a>
       )}
     </div>

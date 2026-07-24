@@ -20,13 +20,14 @@ from app.models.models import Product
 from tests.conftest import make_producer
 
 
-def _add_product(db, producer, *, name="מוצר", is_vegan=False, is_gluten_free=False, is_lactose_free=False):
+def _add_product(db, producer, *, name="מוצר", is_vegan=False, is_gluten_free=False, is_lactose_free=False, is_vegetarian=False):
     p = Product(
         producer_id=producer.id,
         name=name,
         is_vegan=is_vegan,
         is_gluten_free=is_gluten_free,
         is_lactose_free=is_lactose_free,
+        is_vegetarian=is_vegetarian,
     )
     db.add(p)
     db.commit()
@@ -107,3 +108,72 @@ def test_dietary_filters_independent_per_flag(client, db):
     names = [row["name"] for row in r.json()]
     assert "ללא לקטוז בלבד" in names
     assert "ללא גלוטן בלבד" not in names
+
+
+# --- MEH-1438: vegetarian axis (is_vegetarian OR is_vegan) --------------------
+
+
+def test_vegetarian_filter_returns_producer_with_vegetarian_product(client, db):
+    p_veg = make_producer(db, name="מטבח צמחוני")
+    _add_product(db, p_veg, name="קציצות עדשים", is_vegetarian=True)
+
+    p_none = make_producer(db, name="קצביית הכפר")
+    _add_product(db, p_none, name="שניצל עוף", is_vegetarian=False, is_vegan=False)
+
+    r = client.get("/producers", params={"vegetarian": "true"})
+    assert r.status_code == 200
+    names = [row["name"] for row in r.json()]
+    assert "מטבח צמחוני" in names
+    assert "קצביית הכפר" not in names
+
+
+def test_vegan_product_implies_vegetarian(client, db):
+    """A vegan product is vegetarian by definition — the ?vegetarian filter
+    matches `is_vegetarian OR is_vegan`, so a product marked vegan-only (the
+    migration-backfill scenario: is_vegan=TRUE, is_vegetarian never set) still
+    surfaces under ?vegetarian=true without the owner marking both."""
+    p_vegan_only = make_producer(db, name="חוות הטופו")
+    _add_product(db, p_vegan_only, name="טופו מעושן", is_vegan=True, is_vegetarian=False)
+
+    r = client.get("/producers", params={"vegetarian": "true"})
+    assert r.status_code == 200
+    names = [row["name"] for row in r.json()]
+    assert "חוות הטופו" in names
+
+
+def test_vegetarian_filter_false_excludes_vegetarian_and_vegan(client, db):
+    """?vegetarian=false is the complement — a producer with any vegetarian OR
+    vegan product is excluded; a producer with only non-veg products remains."""
+    p_veg = make_producer(db, name="פלאפל השכונה")
+    _add_product(db, p_veg, name="פלאפל", is_vegetarian=True)
+
+    p_vegan = make_producer(db, name="גלידה טבעונית")
+    _add_product(db, p_vegan, name="גלידת קוקוס", is_vegan=True)
+
+    p_meat = make_producer(db, name="גריל בשרים")
+    _add_product(db, p_meat, name="המבורגר", is_vegetarian=False, is_vegan=False)
+
+    r = client.get("/producers", params={"vegetarian": "false"})
+    assert r.status_code == 200
+    names = [row["name"] for row in r.json()]
+    assert "גריל בשרים" in names
+    assert "פלאפל השכונה" not in names
+    assert "גלידה טבעונית" not in names
+
+
+def test_aggregated_has_vegetarian_products_counts_vegan_too(client, db):
+    p_veg = make_producer(db, name="עם צמחוני")
+    _add_product(db, p_veg, name="חביתה", is_vegetarian=True)
+
+    p_vegan = make_producer(db, name="עם טבעוני בלבד")
+    _add_product(db, p_vegan, name="חומוס", is_vegan=True, is_vegetarian=False)
+
+    p_no = make_producer(db, name="בלי צמחוני")
+    _add_product(db, p_no, name="סטייק", is_vegetarian=False, is_vegan=False)
+
+    r = client.get("/producers")
+    assert r.status_code == 200
+    by_name = {row["name"]: row for row in r.json()}
+    assert by_name["עם צמחוני"]["has_vegetarian_products"] is True
+    assert by_name["עם טבעוני בלבד"]["has_vegetarian_products"] is True
+    assert by_name["בלי צמחוני"]["has_vegetarian_products"] is False

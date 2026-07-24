@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, MapPin } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter, useLocale } from "next-intl";
 import api from "@/lib/api";
@@ -17,10 +17,18 @@ import OpeningHours from "@/components/OpeningHours";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
+// MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
+import OwnerCard from "./OwnerCard";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
+// MEH-1460: the "טעות בפרטים?" correction link relocated here from
+// ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
+import ReportInfoModal from "@/components/ReportInfoModal";
 import ReviewsSection from "@/components/ReviewsSection";
+// MEH-1490: quiet live-fetch Google-rating line — renders below (and detached
+// from) the native reviews block, only for producers an admin mapped.
+import GoogleRatingLine from "@/components/GoogleRatingLine";
 
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
@@ -29,6 +37,12 @@ const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 // back — below it the section hides entirely so it never shows a thin 1-2 card
 // row. Documented const per the spec.
 const MIN_NEARBY_BUSINESSES = 4;
+
+// MEH-1334 chunk 3: single owner of "does this producer have a mappable
+// location" — gates both the merged location section and the MiniMap mount.
+function parseHasLocation(producer) {
+  return producer.has_physical_location !== false && !!producer.lat && !!producer.lng;
+}
 
 /**
  * The middle of the main column. MEH-1146 chunk B reorders the sections to
@@ -60,6 +74,9 @@ export default function ProducerSections({
   const format = useFormatter();
   const locale = useLocale();
   const [showAllEvents, setShowAllEvents] = useState(false);
+  // MEH-1460: "report wrong info" modal — moved from ContactCard so the
+  // correction link lives in the page-end meta block, not the CTA card.
+  const [reportOpen, setReportOpen] = useState(false);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -99,6 +116,21 @@ export default function ProducerSections({
   const gridProducts = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
+
+  // MEH-1463: when the signature product was deduped out of the grid and the
+  // free-text starting_price_label is empty, surface the matched product's own
+  // price/description on the highlight card so the info the dedup removed isn't
+  // lost. starting_price_label keeps priority when present (unchanged). Numeric
+  // price → canonical formatPriceRange (MEH-1140) with dir="ltr" bidi isolation;
+  // free-text price_range is DATA (MEH-1305 F) rendered in natural direction.
+  const signatureNumericPrice =
+    !producer.starting_price_label && signatureProduct?.price_min != null
+      ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
+      : null;
+  const signatureFreeTextPrice =
+    !producer.starting_price_label && !signatureNumericPrice
+      ? signatureProduct?.price_range || null
+      : null;
 
   return (
     <>
@@ -157,12 +189,25 @@ export default function ProducerSections({
                 )}
               </div>
               <div className="min-w-0">
+                {/* MEH-1463: accent eyebrow so the card reads as "the signature
+                    product", not just a bigger unlabeled row. */}
+                <p className="text-accent text-xs font-medium">
+                  {t("producer.detail.sections.products.signature_label")}
+                </p>
                 {producer.top_product_name && (
                   <p className="font-medium text-text">{producer.top_product_name}</p>
                 )}
-                {producer.starting_price_label && (
-                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                {/* MEH-1463: description fallback from the deduped grid product. */}
+                {signatureProduct?.description && (
+                  <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
+                {producer.starting_price_label ? (
+                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                ) : signatureNumericPrice ? (
+                  <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
+                ) : signatureFreeTextPrice ? (
+                  <p className="text-accent font-semibold mt-0.5">{signatureFreeTextPrice}</p>
+                ) : null}
               </div>
             </div>
           )}
@@ -358,6 +403,11 @@ export default function ProducerSections({
         </div>
       )}
 
+      {/* MEH-1334 chunk 3: owner card — between delivery and reviews per the
+          approved mockup (a NEW section; the MEH-1146 order of existing
+          sections is untouched). Self-gates on contact_name (null without). */}
+      <OwnerCard producer={producer} />
+
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
           MEH-1048: id="reviews" is the anchor target for the header trust
@@ -388,6 +438,15 @@ export default function ProducerSections({
         )}
       </div>
 
+      {/* MEH-1490: quiet Google-rating trust line — detached from the native
+          reviews block above (its own border-t + margin, ToS visual separation
+          + cannibalization guard). Mount is gated on a mapped place_id so
+          unmapped producers make zero requests; the component itself renders
+          nothing on a 204 (< 20 reviews / API error / no key). */}
+      {producer.google_place_id && (
+        <GoogleRatingLine producerId={producer.id} producerName={producer.name} />
+      )}
+
       {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
       {similarProducers.length >= 3 && (
         <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
@@ -407,28 +466,36 @@ export default function ProducerSections({
         </FadeInSection>
       )}
 
-      {/* MEH-1146 chunk B: location is the LAST content section — opening hours
-          + the Leaflet MiniMap (never a Google embed, fix 1) with the
-          "פתיחה במפות Google" navigation link inside MiniMap. */}
-      {/* MEH-102: Opening hours */}
-      <OpeningHours opening_hours={producer.opening_hours} />
-
-      {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
-      {producer.has_physical_location !== false && producer.lat && producer.lng && (
-        // MEH-1306: the map block is the location card's public counterpart.
-        // MiniMap owns its own heading (MiniMap.jsx:42), so the owner pencil is
-        // absolutely pinned to the inline-end of that heading row (top-8 =
-        // MiniMap's pt-8; the section's mt-8 collapses outside this wrapper).
-        // Absolute positioning → zero layout shift for every viewer.
-        <div id="section-location" className="relative scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
-          <OwnerSectionEditLink
-            producerId={producer.id}
-            anchor="location"
-            sectionKey="location"
-            className="absolute top-8 end-0"
-          />
-          <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
-        </div>
+      {/* MEH-1146 chunk B: location is the LAST content section. MEH-1334
+          chunk 3: merged into ONE "הגעה ומיקום" section (mockup Z3) — heading
+          + address line (city ONLY — street address is admin/owner-private
+          per MEH-829, decision 3) + collapsed OpeningHours + the Leaflet
+          MiniMap (never a Google embed) with brand nav buttons. The owner
+          pencil (MEH-1306) moved inline beside the heading, matching the
+          bio/products idiom. */}
+      {(parseHasLocation(producer) || producer.opening_hours) && (
+        <section
+          id="section-location"
+          className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="font-headline-md text-2xl font-bold text-text">
+              {t("producer.detail.sections.location")}
+            </h2>
+            <OwnerSectionEditLink producerId={producer.id} anchor="location" sectionKey="location" />
+          </div>
+          {/* Address line — city-only fallback, never empty (revision-1 #5). */}
+          {producer.city && (
+            <p className="flex items-center gap-1.5 text-[13.5px] text-muted mb-3">
+              <MapPin size={14} aria-hidden="true" />
+              {producer.city}
+            </p>
+          )}
+          <OpeningHours opening_hours={producer.opening_hours} />
+          {parseHasLocation(producer) && (
+            <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+          )}
+        </section>
       )}
 
       {/* Directory-only disclaimer — required by Israeli consumer
@@ -458,7 +525,23 @@ export default function ProducerSections({
       {/* Report — stays at the page end, below the discovery loop. */}
       <div className="mt-6 pt-6 border-t border-border">
         <ReportButton producerId={producer.id} />
+        {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
+            directly below ReportButton (opens the MEH-1443 email-only modal).
+            Relocated here from ContactCard — same quiet-link styling. */}
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
+        >
+          {t("producer.detail.contact_card.report_info_link")}
+        </button>
       </div>
+
+      <ReportInfoModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        producerSlug={producer.slug || producer.id}
+      />
 
       {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
           edit has stamped producer.updated_at (nullable, no backfill — Chunk A

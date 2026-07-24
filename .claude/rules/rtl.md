@@ -90,6 +90,15 @@ Bottom sheets must ALWAYS sit below map controls. See `globals.css` for
 CSS overrides and `MapClient.jsx` for the Tailwind classes that reference
 these tokens.
 
+**Leaflet attribution (z-1001) vs bottom-sheet (z-600) — resolved spatially,
+not by z-index (MEH-1365).** The attribution must stay legally visible (ODbL)
+AND above the header (the MEH-15/30 loop: z-1 → header covered it → z-1001 →
+it covered the sheet). Do not touch either z value: on <1024px the attribution
+now rides the sheet's live top edge via
+`margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px), 10px)` (globals.css,
+`!important` to outrank Leaflet's own `.leaflet-bottom .leaflet-control`
+margin). Any future overlap in that corner → adjust geometry, never z-index.
+
 ### Floating-elements corner ownership (MEH-1135)
 
 Floating elements position with **logical props only** (`insetInlineStart` /

@@ -126,11 +126,14 @@ export default function AdminReviewsPage() {
           aria-label={t("reviews.filter_aria")}
         >
           <option value="all">{t("reviews.all_ratings")}</option>
-          <option value="1">⭐ 1</option>
-          <option value="2">⭐ 2</option>
-          <option value="3">⭐ 3</option>
-          <option value="4">⭐ 4</option>
-          <option value="5">⭐ 5</option>
+          {/* MEH-1472: ⭐ emoji → ★ typographic star (U+2605) — the repo's
+              rating glyph (ProducerCard/MapProducerCard); SVG can't live in
+              an <option>. */}
+          <option value="1">★ 1</option>
+          <option value="2">★ 2</option>
+          <option value="3">★ 3</option>
+          <option value="4">★ 4</option>
+          <option value="5">★ 5</option>
         </select>
       </div>
 

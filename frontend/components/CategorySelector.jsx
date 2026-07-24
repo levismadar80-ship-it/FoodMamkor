@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
  *
  * Re-skin of the prior emoji-pill control to the S7 "card" design (MEH-203):
- * a 2-col card grid, bespoke hand-drawn glyphs (CategoryIcons.jsx) for the 6
- * popular categories + a Phosphor Leaf fallback for the other 12, and a live
+ * a 2-col card grid, unified geometric glyphs (CategoryIcons.jsx, MEH-683) for
+ * every one of the 18 cards (Leaf fallback only for an unknown admin-created
+ * category with no CATEGORY_ICONS row), and a live
  * name+desc filter that DIMS (not hides) non-matching cards. The data contract
  * is unchanged — props categories / selectedIds / onChange(id) / onRequestCategory
  * still feed form.category_ids — so the mount (RegisterProducerClient.jsx:546)
@@ -41,6 +42,27 @@ const POPULAR = [
 ];
 const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
 const POPULAR_NAMES = POPULAR.map((p) => p.name);
+
+// MEH-1354: desc slugs for the 12 non-popular categories, so every card in
+// the expanded grid carries a short example line (and the search filter can
+// match synonyms — e.g. "גרנולה" → מוצרים מוכנים). Keys track the DB names
+// in backend/seed_data.py CATEGORIES verbatim; copy lives in
+// forms.category_selector.rest_descs (i18n). A future rename in the seed
+// must update this map in the same PR (same contract as POPULAR above).
+const REST_DESC_SLUGS = {
+  "ביצים": "eggs",
+  "פירות": "fruit",
+  "מותססים וכבושים": "ferments",
+  "מוצרים מוכנים": "prepared",
+  "צמחי מרפא ותוספים": "herbs",
+  "קוסמטיקה טבעית": "cosmetics",
+  "נרות וארומה": "candles",
+  "יין, בירה ומשקאות": "drinks",
+  "תבלינים וצמחי תיבול": "spices",
+  "שוקולד וממתקים בוטיק": "chocolate",
+  "דבש": "honey",
+  "דגים": "fish",
+};
 
 // MEH-1098 (B1): the non-food (home & personal-care) categories. Names track the
 // DB values verbatim. They surface under a "בית וטיפוח" subheader in the expanded
@@ -75,7 +97,11 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   const descFor = (c) => {
     const p = POPULAR_BY_NAME[c.name];
-    return p ? t(`popular_descs.${p.glyph}`) : "";
+    if (p) return t(`popular_descs.${p.glyph}`);
+    // MEH-1354: non-popular rows get their own desc line (uniform expanded
+    // grid + synonym search). Unknown name (admin-created category) → no desc.
+    const slug = REST_DESC_SLUGS[c.name];
+    return slug ? t(`rest_descs.${slug}`) : "";
   };
   const isMatch = (c) => `${c.name} ${descFor(c)}`.toLowerCase().includes(q);
 
@@ -174,8 +200,11 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               const capDisabled = !selected && selectedIds.length >= MAX_CATEGORIES;
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
-              const popular = POPULAR_BY_NAME[cat.name];
-              const Glyph = popular ? CATEGORY_ICONS[popular.glyph] : null;
+              // MEH-683 #4: CATEGORY_ICONS is keyed by canonical DB name (was
+              // slug). EVERY card resolves its dedicated glyph; the Leaf
+              // fallback is now reached only by an unknown (admin-created)
+              // category with no row in CATEGORY_ICONS.
+              const Glyph = CATEGORY_ICONS[cat.name] || null;
               return (
                 <button
                   key={cat.id}
@@ -201,7 +230,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     className={`flex items-center justify-center ${selected ? "text-primary" : "text-primary-dark"}`}
                     aria-hidden="true"
                   >
-                    {Glyph ? <Glyph size={46} strokeWidth={5.5} /> : <Leaf size={46} weight="light" />}
+                    {Glyph ? <Glyph size={46} /> : <Leaf size={46} weight="light" />}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">

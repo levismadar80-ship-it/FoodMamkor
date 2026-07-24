@@ -1,5 +1,20 @@
 import { test, expect, type Page } from "@playwright/test";
+import * as fs from "fs";
 import * as path from "path";
+
+// MEH-1497: fixed producer-detail payload for the network-mocked shot (below).
+// Read from disk (not `import ... json`) so it works regardless of the spec
+// tsconfig's resolveJsonModule setting.
+const PRODUCER_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-detail.json"),
+  "utf-8"
+);
+// Matches ONLY the detail call GET /api/producers/{uuid} — not the collection
+// (`/api/producers?…`, no id segment), the `…/reviews` sub-resource, or the
+// non-UUID siblings (`/count`, `/cities`, `/random`, `/by-slug/*`). Producer
+// ids are UUIDs (schemas.py ProducerListOut.id: UUID); the `(?:\?|$)` tail
+// stops it swallowing `/api/producers/{uuid}/reviews`.
+const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
@@ -87,6 +102,13 @@ async function settle(page: Page): Promise<void> {
 }
 
 test.describe("Visual parity — MEH-991", () => {
+  // MEH-1328 (2026-07-18): the home hero/trust copy changed in MEH-1308 (#1904,
+  // "עסקים" → "בתי עסק" across home.hero.subtitle / cta_primary / home.trust.lead),
+  // red-lining the viewport-only home baseline against the now-stale copy. This
+  // touch re-triggers vrt-update.yml so home-{mobile,desktop}-linux.png are
+  // regenerated on-runner. Delta is confined to the hero region — the home shot
+  // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
+  // also merged 2026-07-18 sit below the fold and out of frame.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
@@ -108,6 +130,31 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
+  // MEH-1440 (2026-07-22): the /map chrome changed when the toggle-chip
+  // Phosphor icons + "רישוי מאומת" label (MEH-1418, #2021) merged with the
+  // baseline regen deliberately deferred ("Baseline regen for / + /map is a
+  // follow-up if the parity suite is run" — its HANDOFF note). The desktop
+  // map shot red-lines at ratio 0.03 — the chip row sits in the unmasked
+  // chrome above the masked .leaflet-container; mobile is unaffected (the
+  // chips live in the FilterSheet there). The MEH-1432 line regenerated no
+  // VRT baseline (its PRs #2030/#2033 touched only the 24-producer-locations
+  // spec), so the deferred regen lands here. This touch re-fires
+  // vrt-update.yml to regenerate map-desktop-linux.png on-runner.
+  // MEH-1440 second touch: the delta is DETERMINISTIC in full-suite e2e runs
+  // (byte-identical 33,522 px on runs 29897314926 + 29899891331) yet the
+  // vrt-update run 29898987845 rendered within the 0.02 threshold and did not
+  // rewrite the baseline (it only rewrites failing shots). The two workflows
+  // differ only in suite composition (visual-only vs full parallel suite) —
+  // if this second bot pass also declines to rewrite while e2e keeps failing
+  // at the same pixel count, the divergence needs eyes on the runner's
+  // map-diff.png artifact (CC sandbox cannot download Actions artifacts —
+  // proxy-blocked); follow-up-ticket material, not silently absorbable here.
+  // MEH-1440 third touch: PR #2046 (category chips gain a 16px CATEGORY_ICONS
+  // leading glyph) merged into staging mid-PR, changing the /map chip-row
+  // chrome AGAIN and staling the baseline the second bot pass (bf8516b3) had
+  // just regenerated. This touch re-fires vrt-update from the post-#2046
+  // build. (Root cause of the churn: the desktop rail + chip row are unmasked
+  // live chrome — see the follow-up flag in PR #2041.)
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);
@@ -136,35 +183,124 @@ test.describe("Visual parity — MEH-991", () => {
   // after the 13:37 baseline — MEH-1186 (#1732, one visual language per behavior)
   // and MEH-1173 (#1727) — red-lining producer-detail-mobile against a now-stale
   // snapshot. This touch re-triggers vrt-update.yml to refresh the baselines.
+  // MEH-991 regen (2026-07-20): Quiet Direction v3 (MEH-1334, #1936) redesigned
+  // the page — both producer-detail baselines are stale by design. Re-trigger.
+  // MEH-1336 follow-up (2026-07-20, same day): SHOW_VERIFICATION flipped on in
+  // #1982 and exposed the new /about verification section — about-{desktop,mobile}
+  // baselines stale (rule 2b miss: should have shipped in #1982). Re-trigger.
+  // MEH-1369 (2026-07-21): the producer-detail regen kept red-lining on the nav
+  // step, not on a stale pixel diff. Root cause is a stale TEST, not a product
+  // regression — #1936 (Quiet Direction v3) redesigned /producer/[id] but left
+  // ProducerCard.jsx / ProducersClient.jsx / the /producers route untouched, and
+  // the card still exposes real <a href> image + name links. The step clicked the
+  // <article> WRAPPER, whose navigation routes through a React onClick
+  // (handleRootClick → router.push) that needs hydration; `h-full` grid stretch
+  // can also place the wrapper's geometric center in non-anchor padding — the
+  // "/producer nav flake" noted above (MEH-1295). Fixed by clicking the inner
+  // anchor. This touch also re-fires vrt-update to refresh the stale baselines.
+  // MEH-1411 (2026-07-21): producer-detail header polish — the orphan "שמירה"
+  // actions row lost its full-width hairline and tightened its top margin
+  // (ProducerHeader.jsx), the "חדש" fallback became a small neutral pill, and the
+  // mobile StickyContactBar CTA gained the WhatsApp icon. The producer-detail
+  // (mobile especially) baseline shifts by design; this touch re-fires
+  // vrt-update.yml so producer-detail-{desktop,mobile}-linux regenerate on-runner.
+  // Review follow-up: the pill was recolored green→neutral (one-green-per-page);
+  // it only renders for reviews_count=0 so it does not change this baseline (the
+  // baseline producer has reviews), but this re-touch re-fires vrt-update on the
+  // neutral-pill commit so the fresh baseline comes from the final code.
+  // MEH-1440 (2026-07-22): both producer-detail baselines red-line on clean
+  // staging (desktop ratio 0.21, mobile 0.17, run 29897314926). Desktop was
+  // last regenerated by the MEH-1369 flow (#2000) — the MEH-1411 (#2015)
+  // header polish committed only the fresh MOBILE png; and the 2026-07-21
+  // staging producer_locations re-seed changed which producer the shot lands
+  // on (the spec clicks the first /producers card), shifting the unmasked
+  // live regions (description, trust strip, products) on BOTH viewports.
+  // Classified deferred-regen + staging-data drift per the header note
+  // ("staging-data drift ... is refreshed the same way"), pending the
+  // old-vs-new baseline diff review on the bot commit. This touch re-fires
+  // vrt-update.yml to regenerate producer-detail-{desktop,mobile}-linux.
+  // MEH-1497 (2026-07-23): APPROACH CHANGE — the shot no longer renders from
+  // whichever business was approved most recently on live staging (the
+  // /producers sort is created_at DESC, so the first card, and thus this
+  // baseline, drifted on every new approval — ticket §2.1). The producer-detail
+  // API call is intercepted with page.route() and fulfilled from a fixed
+  // fixture, so a newly approved business can no longer move this baseline.
+  // PIN-to-seed and masking were both investigated and rejected (§2.2/§2.3).
+  // Mechanism note (resolved from the app, see the in-test file:line trail):
+  // the shot must land on the /producer/[id] route (client-fetches → mockable),
+  // reached with a REAL borrowed id because middleware.js existence-checks the
+  // id against the backend; the /[slug] route SSR-seeds the producer and can't
+  // be mocked. The borrowed id only unlocks the page — the pixels are the
+  // fixture's.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
-    await page.goto("/producers");
-    const firstCard = page.locator('[data-testid="producer-card"]').first();
-    await page.waitForLoadState("domcontentloaded");
-    if ((await firstCard.count()) === 0) {
-      // Same graceful skip as flows/03 — an empty staging DB is a data
-      // problem, not a layout regression.
-      test.skip(true, "No producer cards found — staging DB may be empty");
+
+    // ── MEH-417 no-mocks EXCEPTION — scoped to VRT specs only (ticket §2.4) ──
+    // frontend/e2e/CLAUDE.md:25 forbids mocks ("mocks hid real backend bugs for
+    // 8 CI cycles"). This spec is a DELIBERATE, NARROW exception: the subject
+    // under test here is layout/pixels, and the producer data is noise. The
+    // exception is bounded to e2e/visual/** — the functional specs under
+    // e2e/flows/ stay unmocked and keep catching real backend contract breaks.
+    // DO NOT copy this pattern into e2e/flows/ — that reintroduces MEH-417.
+    // If e2e/CLAUDE.md's no-mocks policy is ever updated, record this exception
+    // there too (ticket §2.4).
+    //
+    // Fulfil the producer-detail API call from the fixed fixture so the shot no
+    // longer renders whichever business was approved most recently on live
+    // staging (ticket §2.1). Registered BEFORE any navigation so the first
+    // request is intercepted (acceptance criterion).
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: PRODUCER_FIXTURE,
+      });
+    });
+
+    // Borrow ANY real producer id from the live listing. This is NOT a demo /
+    // seed dependency (ticket §2.3): any producer works, and the id is used
+    // ONLY to satisfy two backend gates on the way to the page — the rendered
+    // content is always the fixture, so a newly approved business can't move
+    // this baseline. `page.request` bypasses page.route (separate context), so
+    // this call hits live staging, not the mock. Same graceful skip-on-empty as
+    // the pre-1497 spec (an empty staging DB is a data problem, not a
+    // regression).
+    const listRes = await page.request.get("/api/producers", {
+      params: { limit: 1 },
+    });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
       return;
     }
-    await expect(firstCard).toBeVisible({ timeout: 20_000 });
-    await firstCard.click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), {
-      timeout: 20_000,
-    });
-    await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
+
+    // Navigate to the /producer/[id] route with the borrowed real id — NOT via
+    // a /producers card and NOT to /[slug]. Two reasons this exact path is
+    // required (both resolved from the app, not guessed):
+    //   1. middleware.js:67-71 rewrites /producer/{id} to a real 404 unless the
+    //      backend confirms the id exists (fails OPEN only on a thrown error,
+    //      not on a 404 response) — so a synthetic id can't reach the page.
+    //      The borrowed real id passes this edge check.
+    //   2. The /[slug] route SSR-seeds initialProducer
+    //      (app/[locale]/[slug]/page.js:96), which short-circuits the client
+    //      fetch (useProducerData.js:33 `if (initialProducer) return`) — the
+    //      mock could never intercept it. The /producer/[id] route renders
+    //      <ProducerDetail/> with no initialProducer (producer/[id]/page.js:73),
+    //      so it CLIENT-fetches /api/producers/{id} (useProducerData.js:32-40),
+    //      which the mock above fulfils with the fixture.
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail.png", {
       ...SHOT,
-      // The producer itself is live data: name, photos, rating counts and the
-      // review excerpt all vary. Layout chrome (gallery grid geometry, trust
-      // strip, CTA hierarchy, sticky bar) is the subject.
-      mask: [
-        page.locator("main h1"),
-        page.locator("main img"),
-        page.locator('a[href="#reviews"]'),
-        page.locator(".leaflet-container"),
-      ],
+      // With the fixture, the name, one-liner, meta line and gallery grid
+      // geometry are all deterministic, so the former h1 / #reviews masks are
+      // dropped (the shot now verifies that header layout — the actual drift
+      // per §2.2). Only genuinely external assets stay masked: the Cloudinary
+      // photos (pixel bytes vary; the gallery *grid* geometry is locked by the
+      // fixed 3-image count, ImageGallery.jsx:179) and any Leaflet tiles.
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
   });
 

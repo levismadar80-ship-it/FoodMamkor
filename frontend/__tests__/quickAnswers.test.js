@@ -81,6 +81,32 @@ describe("buildDeliveryAnswer (MEH-1302)", () => {
     ).toEqual({ kind: "pickup_only", city: null });
   });
 
+  it("MEH-1512: a single pickup location names that city (from locations[])", () => {
+    expect(
+      buildDeliveryAnswer({
+        offers_delivery: false,
+        has_physical_location: true,
+        city: "ירושלים",
+        locations: [{ kind: "pickup", city: "חיפה" }],
+      }),
+    ).toEqual({ kind: "pickup_only", city: "חיפה" });
+  });
+
+  it("MEH-1512: multiple distinct pickup cities → null city (no single-city claim)", () => {
+    expect(
+      buildDeliveryAnswer({
+        offers_delivery: false,
+        has_physical_location: true,
+        city: "ירושלים",
+        locations: [
+          { kind: "pickup", city: "חיפה" },
+          { kind: "market_stand", city: "עכו" },
+          { kind: "branch", city: "נהריה" },
+        ],
+      }),
+    ).toEqual({ kind: "pickup_only", city: null });
+  });
+
   it("offers delivery but no specifics → null (WhatsApp fallback)", () => {
     expect(buildDeliveryAnswer({ offers_delivery: true, has_physical_location: true })).toBeNull();
   });
@@ -236,5 +262,42 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
   it("escalation appears only when a phone exists", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
     expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? שלחו לנו הודעה");
+  });
+
+  // MEH-1462 — recipe-idea chip: last in the row, WhatsApp-only, exact prefill.
+  it("recipe-idea chip renders with a phone, opens WhatsApp with the Sapir-locked prefill", () => {
+    render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
+    const link = screen.getByTestId("recipe-idea-link");
+    expect(link).toHaveTextContent("אפשר לשתף מתכון שהכנתי?");
+    const href = link.getAttribute("href");
+    expect(href).toContain("wa.me");
+    expect(decodeURIComponent(href)).toContain(
+      "היי! הגעתי מהעמוד שלכם במהמקור — הכנתי משהו מהמוצרים שלכם ואשמח לשתף את המתכון:",
+    );
+  });
+
+  it("recipe-idea chip is rendered LAST — after the escalation link", () => {
+    const { container } = render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
+    const testids = [...container.querySelectorAll("[data-testid]")].map((el) =>
+      el.getAttribute("data-testid"),
+    );
+    const esc = testids.lastIndexOf("escalation-link");
+    const recipe = testids.lastIndexOf("recipe-idea-link");
+    expect(esc).toBeGreaterThanOrEqual(0);
+    expect(recipe).toBeGreaterThan(esc);
+  });
+
+  it("recipe-idea chip is gated on a contact channel — absent without a phone", () => {
+    render(
+      <WhatsAppQuestionChips
+        producer={{
+          city: "צפת",
+          delivery_nationwide: true,
+          primary_contact_method: "external_order",
+          external_order_form: "order.example.com",
+        }}
+      />,
+    );
+    expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
   });
 });

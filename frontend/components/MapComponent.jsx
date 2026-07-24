@@ -13,7 +13,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { setUserLocation } from "@/lib/user-location";
 import { CoordSchema } from "@/lib/schemas";
-import { styleForProducer } from "@/lib/map-categories";
+import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 
 /**
@@ -85,7 +85,7 @@ function escapeHtmlAttr(str) {
 
 function createCategoryMarker(
   producer,
-  { active = false, hovered = false, visited = false } = {},
+  { active = false, hovered = false, visited = false, approximate = false } = {},
 ) {
   // S5 FINAL: all markers are uniform 36px circles; state shows via border +
   // rings, not size (drops the old 28/32/36 size jump).
@@ -139,7 +139,11 @@ function createCategoryMarker(
   // MEH-1065: accent token value #896714 (retired the stale gold that failed AA, MEH-917).
   // Inline hex required — Leaflet divIcon renders raw HTML, no Tailwind class here.
   const premiumRing = isPremium ? ",0 0 0 6px #896714" : "";
-  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}`;
+  // MEH-1412: precision=approximate (e.g. a private home) → soft outer halo so
+  // the pin reads as "around here", not a pinpoint address. Inline rgba is the
+  // primary token (#2e6853), same divIcon raw-HTML exception noted above.
+  const approxRing = approximate ? ",0 0 0 7px rgba(46,104,83,0.14)" : "";
+  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}${approxRing}`;
 
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
@@ -164,6 +168,64 @@ function createCategoryMarker(
   });
 }
 
+// MEH-1412 (MEH-1388 chunk 3): pickup / market_stand points render as a
+// SECONDARY outline marker — smaller (26px), hollow (white fill), category-
+// colour ring + category glyph in the category colour (weight "regular", not
+// the primary's white fill) — so a producer's self-pickup / market points read
+// as visually distinct from its primary business pin. No photo, no verified
+// badge (a pickup point is a place, not the business identity). Inline hex is
+// the same divIcon raw-HTML exception documented above createCategoryMarker.
+function createSecondaryMarker(
+  producer,
+  { active = false, hovered = false, visited = false, approximate = false } = {},
+) {
+  const size = 26;
+  const dimmed = visited && !active && !hovered;
+  const opacity = dimmed ? 0.7 : 1;
+  const grayscale = dimmed ? "filter:grayscale(1);" : "";
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const borderWidth = active ? 3 : 2;
+  const borderStyle = approximate ? "dashed" : "solid";
+  const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
+  const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
+  const approxRing = approximate ? ",0 0 0 7px rgba(46,104,83,0.14)" : "";
+  const boxShadow = `0 1px 5px rgba(0,0,0,0.2)${activeRing}${hoverRing}${approxRing}`;
+  const glyph = categoryGlyphSvg(GlyphIcon, {
+    color: categoryColor,
+    weight: "regular",
+    size: 14,
+  });
+  const html = `
+    <div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:#fff;
+      border:${borderWidth}px ${borderStyle} ${categoryColor};
+      box-shadow:${boxShadow};
+      opacity:${opacity};
+      ${grayscale}
+      display:flex;align-items:center;justify-content:center;
+      transition:all 0.18s ease-out;
+    ">${glyph}</div>`;
+  return L.divIcon({
+    html,
+    className: "mehamakor-marker-wrap mehamakor-marker-secondary",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+// MEH-1412: pick the marker style for a single producer_location row.
+// branch (+ the empty-locations fallback synthesised in the marker loop) →
+// the primary category pin; pickup / market_stand → the secondary outline.
+// precision flows through to both so an approximate point anchors softly.
+function createLocationIcon(producer, location, state = {}) {
+  const kind = location?.kind;
+  const opts = { ...state, approximate: location?.precision === "approximate" };
+  return kind === "pickup" || kind === "market_stand"
+    ? createSecondaryMarker(producer, opts)
+    : createCategoryMarker(producer, opts);
+}
+
 export default function MapComponent({
   producers = [],
   onProducerClick,
@@ -181,6 +243,9 @@ export default function MapComponent({
   // MEH-14: IDs of producers the user has already viewed (from
   // recently_viewed sessionStorage). These markers render dimmed.
   visitedIds = null,
+  // MEH-1412 (MEH-1388 chunk 3): show/hide the pickup + market_stand secondary
+  // marker layer. Default true (all points visible); MapClient owns the toggle.
+  showSecondaryLayer = true,
 }) {
   const t = useTranslations("map.component");
   const visitedSet =
@@ -221,13 +286,17 @@ export default function MapComponent({
   const refreshMarkerIcon = (id) => {
     const entry = markersRef.current.get(id);
     if (!entry) return;
-    entry.marker.setIcon(
-      createCategoryMarker(entry.producer, {
-        active: activeIdRef.current === id,
-        hovered: hoveredIdRef.current === id,
-        visited: visitedSet.has(id),
-      }),
-    );
+    // MEH-1412: a producer now owns N markers (one per location) — refresh the
+    // active/hover/visited state on ALL of them so highlighting a card lights
+    // every one of that business's pins.
+    const state = {
+      active: activeIdRef.current === id,
+      hovered: hoveredIdRef.current === id,
+      visited: visitedSet.has(id),
+    };
+    entry.markers.forEach(({ marker, location }) => {
+      marker.setIcon(createLocationIcon(entry.producer, location, state));
+    });
   };
 
   // Expose imperative API via a callback prop
@@ -236,12 +305,16 @@ export default function MapComponent({
     const api = {
       focusProducer: (producerId) => {
         const entry = markersRef.current.get(producerId);
-        if (!entry || !mapInstanceRef.current) return;
+        if (!entry || !entry.markers?.length || !mapInstanceRef.current) return;
         const prev = activeIdRef.current;
         activeIdRef.current = producerId;
         if (prev) refreshMarkerIcon(prev);
         refreshMarkerIcon(producerId);
-        const latlng = entry.marker.getLatLng();
+        // MEH-1412: a producer owns N markers now — fly to its primary location
+        // (fallback: first marker).
+        const primary =
+          entry.markers.find((m) => m.location?.is_primary) || entry.markers[0];
+        const latlng = primary.marker.getLatLng();
         const coordCheck = CoordSchema.safeParse({ lat: latlng?.lat, lng: latlng?.lng });
         if (!coordCheck.success) return;
         // Suppress the "search this area" banner on programmatic flyTo.
@@ -346,12 +419,29 @@ export default function MapComponent({
 
     // MEH-58 Phase 1: cluster below zoom 11, green circle + white count.
     clusterGroupRef.current = L.markerClusterGroup({
-      chunkedLoading: true,
+      // MEH-1424: chunkedLoading must stay OFF now that markers arrive via
+      // bulk addLayers(). Chunked mode makes addLayers ASYNC (it re-schedules
+      // itself with setTimeout), and clearLayers() does NOT cancel the pending
+      // continuation — a rapid refetch (search-this-area, layer toggle) could
+      // re-add stale markers from the previous feed after the wipe. With the
+      // flag off the same code path runs to completion synchronously, still
+      // with a single _refreshClustersIcons() pass, preserving both the perf
+      // win and the pre-bulk synchronous timing semantics. (The old true value
+      // was dead anyway: singular addLayer never engaged chunking.)
+      chunkedLoading: false,
       showCoverageOnHover: false,
       maxClusterRadius: 60,
       disableClusteringAtZoom: 11,
       iconCreateFunction: (cluster) => {
-        const count = cluster.getChildCount();
+        // MEH-1412 (MEH-1388 chunk 3): the cluster badge counts UNIQUE
+        // businesses, not markers — a 10-location producer contributes 1, not
+        // 10. Each marker carries `producerId` (set in the marker loop); dedupe
+        // the cluster's leaf markers by it. getAllChildMarkers() flattens nested
+        // sub-clusters, so the count is correct at every zoom.
+        const uniqueBusinesses = new Set(
+          cluster.getAllChildMarkers().map((m) => m.producerId),
+        );
+        const count = uniqueBusinesses.size;
         return L.divIcon({
           html: `
             <div style="
@@ -450,50 +540,132 @@ export default function MapComponent({
     // Defensive: guard against null/empty producers (#10)
     if (!Array.isArray(producers) || producers.length === 0) return;
 
+    // MEH-1424: collect every marker and hand the whole batch to
+    // addLayers(bulk) ONCE after the loop, instead of addLayer per marker.
+    // Each singular addLayer re-runs iconCreateFunction on every affected
+    // cluster, and since MEH-1412 that function walks the cluster's whole
+    // subtree (getAllChildMarkers) to dedupe businesses — per-marker adds
+    // made the initial load O(N²): measured 663 icon builds / 96k marker
+    // walks for a 345-marker feed (1.17M walks at 1,150 markers), vs 9
+    // builds / ~2k walks with the bulk add, which runs ONE clustering pass
+    // and one icon build per visible cluster. Bulk add stays synchronous —
+    // see the chunkedLoading:false note on the group options above.
+    const bulkMarkers = [];
+
     producers.forEach((p) => {
-      // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks:
-      // skip producers without coordinates or identifying data
-      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number" || isNaN(p.lat) || isNaN(p.lng)) return;
-      if (!p.id) return;
+      if (!p || !p.id) return;
 
-      const marker = L.marker([p.lat, p.lng], {
-        icon: createCategoryMarker(p, {
-          active: false,
-          hovered: false,
-          visited: visitedSet.has(p.id),
-        }),
-        // MEH-30 #8: no Leaflet tooltip or popup. Marker click opens the
-        // bottom sheet in MapClient.jsx (via onProducerClickRef). Hover
-        // syncs with card highlight — it is NOT a tooltip.
-        alt: p.name || t("marker_singular"),
-        title: p.name || t("marker_singular"),
-        keyboard: true,
-      });
+      // MEH-1412 (MEH-1388 chunk 3): fan a producer's physical presence points
+      // (locations[], from chunk 2's serializer) into one marker each — branch
+      // (+ the fallback below) → the primary category pin, pickup/market_stand →
+      // the secondary outline (createLocationIcon). If locations[] is empty OR
+      // no row had usable coords, the post-loop fallback pins the producer's own
+      // lat/lng mirror so no business disappears (parity with the chunk-2
+      // backend COALESCE — Expand overlap + the all-coords-invalid edge).
+      const locations = Array.isArray(p.locations) ? p.locations : [];
 
-      // MEH-765: keyboard a11y. `keyboard: true` (above) already makes the
-      // divIcon focusable (tabindex=0) and Leaflet maps Enter→click, so the
-      // bottom sheet opens from the keyboard. The remaining gap (axe
-      // `aria-command-name`) is the missing accessible NAME on the divIcon —
-      // unlike an <img> icon, a divIcon has no `alt`. Set role + aria-label on
-      // the actual element via the marker's `add` event, which fires each time
-      // the marker renders out of a cluster (so clustered/late-rendered pins
-      // get named too). Idempotent.
       const markerLabel = p.name || t("marker_singular");
-      marker.on("add", () => {
-        const el = marker.getElement();
-        if (el) {
-          el.setAttribute("role", "button");
-          el.setAttribute("aria-label", markerLabel);
-        }
+      const entryMarkers = [];
+
+      // Build + register one marker for a single location row. Returns true if a
+      // marker was added (usable coords), false otherwise.
+      const addMarker = (loc) => {
+        // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks: skip a
+        // location without usable coordinates (never render a NaN marker).
+        const lat = loc?.lat;
+        const lng = loc?.lng;
+        if (
+          typeof lat !== "number" ||
+          typeof lng !== "number" ||
+          isNaN(lat) ||
+          isNaN(lng)
+        )
+          return false;
+
+        const marker = L.marker([lat, lng], {
+          icon: createLocationIcon(p, loc, {
+            active: false,
+            hovered: false,
+            visited: visitedSet.has(p.id),
+          }),
+          // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
+          // sheet in MapClient (onProducerClickRef). ALL of a producer's markers
+          // open the SAME producer card. Hover syncs card highlight, not a tooltip.
+          alt: markerLabel,
+          title: markerLabel,
+          keyboard: true,
+        });
+        // MEH-1412: tag the marker with its business id so the cluster badge can
+        // dedupe by producer (unique-business count, not marker count).
+        marker.producerId = p.id;
+
+        // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
+        // role + accessible name on each marker's element via the `add` event
+        // (fires each time it renders out of a cluster). Idempotent.
+        marker.on("add", () => {
+          const el = marker.getElement();
+          if (el) {
+            el.setAttribute("role", "button");
+            el.setAttribute("aria-label", markerLabel);
+          }
+        });
+
+        // MEH-1412: pass the clicked LOCATION alongside the producer so the
+        // selected-card can show the point's label (business name + label).
+        // ALL of a producer's markers still open the SAME producer card.
+        marker.on("click", () => onProducerClickRef.current?.(p, loc));
+        marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
+        marker.on("mouseout", () => onProducerHoverRef.current?.(null));
+
+        bulkMarkers.push(marker); // MEH-1424: batched into one addLayers below
+        entryMarkers.push({ marker, location: loc });
+        return true;
+      };
+
+      // MEH-1412: render each usable location. Secondary points
+      // (pickup/market_stand) are suppressed when the layer toggle is off — but
+      // a suppressed point still COUNTS as a usable location, so the coord
+      // fallback below does not fire for a producer whose only points are hidden
+      // pickups (it stays off-map while the layer is hidden rather than
+      // reappearing as a primary pin).
+      let hadUsableLocation = false;
+      locations.forEach((loc) => {
+        const lat = loc?.lat;
+        const lng = loc?.lng;
+        const usable =
+          typeof lat === "number" &&
+          typeof lng === "number" &&
+          !isNaN(lat) &&
+          !isNaN(lng);
+        if (!usable) return;
+        hadUsableLocation = true;
+        const secondary = loc?.kind === "pickup" || loc?.kind === "market_stand";
+        if (secondary && !showSecondaryLayer) return; // hidden by the layer toggle
+        addMarker(loc);
       });
 
-      marker.on("click", () => onProducerClickRef.current?.(p));
-      marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
-      marker.on("mouseout", () => onProducerHoverRef.current?.(null));
+      // Fallback ONLY when the producer had NO usable location at all (empty
+      // locations[] or every row coord-invalid) — parity with the chunk-2
+      // COALESCE (adversarial-review finding). A producer whose usable points
+      // were merely toggled off is intentionally left off-map.
+      if (!hadUsableLocation) {
+        addMarker({
+          kind: "branch",
+          is_primary: true,
+          lat: p.lat,
+          lng: p.lng,
+          precision: "exact",
+          label: null,
+        });
+      }
 
-      clusterGroupRef.current.addLayer(marker);
-      markersRef.current.set(p.id, { marker, producer: p });
+      if (entryMarkers.length === 0) return;
+      markersRef.current.set(p.id, { markers: entryMarkers, producer: p });
     });
+
+    // MEH-1424: single bulk add — one clustering pass + one icon build per
+    // visible cluster (see the comment on bulkMarkers above).
+    clusterGroupRef.current.addLayers(bulkMarkers);
 
     // MEH-58 QA: removed auto-fitBounds that overrode the initial center
     // (MEH-932: now [32.4, 34.95] zoom 8, the fixed producer-band view). The
@@ -501,7 +673,7 @@ export default function MapComponent({
     // northern Israel when test data was sparse), making the map look
     // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producers, visitedIds]);
+  }, [producers, visitedIds, showSecondaryLayer]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-lg" />
