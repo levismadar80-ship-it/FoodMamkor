@@ -13,6 +13,7 @@ import {
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
+import { withReferralParams } from "@/lib/utils";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
 
@@ -103,7 +104,9 @@ const CHANNELS = [
       return handle ? `https://instagram.com/${handle}` : null;
     },
   },
-  { key: "website", Icon: Globe, href: (p) => httpUrl(p.website) },
+  // MEH-1525: the business-website tile carries referral UTM (rel drops
+  // noreferrer at the render site below). Social / order tiles are untouched.
+  { key: "website", Icon: Globe, href: (p) => withReferralParams(httpUrl(p.website)) },
   {
     key: "email",
     Icon: EnvelopeSimple,
@@ -178,7 +181,12 @@ export default function ContactCard({ producer, isVacation }) {
                 href={href(producer)}
                 {...(key === "phone"
                   ? {}
-                  : { target: "_blank", rel: "noopener noreferrer" })}
+                  : {
+                      target: "_blank",
+                      // MEH-1525: website tile keeps noopener but drops
+                      // noreferrer so the owner's analytics sees the referral.
+                      rel: key === "website" ? "noopener" : "noopener noreferrer",
+                    })}
                 role="listitem"
                 aria-label={t(`producer.detail.contact_card.aria.${key}`)}
                 title={t(`producer.detail.contact_card.aria.${key}`)}
