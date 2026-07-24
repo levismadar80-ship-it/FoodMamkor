@@ -3025,6 +3025,7 @@
       "ask_us": "Ask us",
       "common_questions": "Common questions",
       "greeting_template": "Hi {name}, {q}",
+      "source_line": "I found you on Mehamakor",
       "delivery_to_city": "Delivery to {city}?",
       "ordering_q": "How do I order?",
       "delivery_nationwide": "Yes! We deliver nationwide",
@@ -3935,7 +3936,7 @@
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
         "kpi": {
-          "whatsapp_leads": "WhatsApp leads",
+          "whatsapp_leads": "Contact clicks",
           "contact_clicks": "Contact clicks",
           "rating": "Rating",
           "views": "Views",

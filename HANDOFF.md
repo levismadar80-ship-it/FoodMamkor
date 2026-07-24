@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-24 — MEH-1524 + MEH-1525 source-marking batch (serial, off fresh staging each)
+
+- **MEH-1524** (GREEN, `feature/meh-1524-whatsapp-source-marker`, `Closes MEH-1524`): WhatsApp prefill source line + dashboard KPI relabel. New `whatsapp.question_chips.source_line` (he+en, defined once) appended at both `WhatsAppQuestionChips.jsx` call sites (greeting rows + recipe-idea); `kpi.whatsapp_leads` "פניות בוואטסאפ"→"קליקים ליצירת קשר" ("WhatsApp leads"→"Contact clicks"). build 0 · eslint 0 · vitest 15p · parity green. **Phase 0 flags (PR body):** `contact-method.js:44` is a 3rd business-specific prefill (whatsapp primary CTA) — left untouched (outside file_locations + hardcoded string in pure helper, already carries inline "מצאתי אותך במהמקור"); English label now collides with sibling `kpi.contact_clicks`="Contact clicks". Both = Sapir follow-up.
+- **MEH-1525** (YELLOW, `feature/meh-1525-outbound-utm`, `Closes MEH-1525`): see below entry once landed — off fresh `origin/staging` AFTER 1524 merged.
+- **DoD exception (Sapir 24/07):** preview-first + mobile check waived for merge; Sapir QAs on staging after. Both auto-merged on green.
+
 ## 2026-07-23 — MEH-1508 chunk 2 Phase B done (owner form + admin + business page)
 
 - **MEH-1508 chunk 2 Phase B** (PR #2121, `feature/meh-1508-chunk2-dietary-scope-io`, `Refs MEH-1508`): UI for the scope columns. Owner `DietaryScopeCard.jsx` (2 YES/NO → all/some + 1 gluten 3-way) next to KashrutCard; admin 3 `<select>` in `ProducerForm.jsx`; plain-text gluten line in `ProducerHeader.jsx` (shared/dedicated only, MEH-1259 pattern). **Lactose cut (§6.3).** Copy = §6.2/6.4/6.5 locked. Backend untouched (Phase A did it). build 0 · vitest **1591p** (+18) · he/en parity · RTL clean · 0 label structures edited. **NB: MEH-1507 #2113 is NOT merged to staging** (git-verified: `LabelScopeContract.test.js`/`labels.md` absent, `attribute-labels.js` still string-shaped), despite Linear §9 marking it Done — so the label guard isn't on this branch and the 1591 ≠ MEH-1507's 1579+18. **NOT merged** — merge gate = Sapir confirms `alembic_version == d51508a7c9e2` + mobile QA on preview (CC can't screenshot: MEH-360 + auth-gated dashboard). **Chunk 3** (100% chip/badge, data-gated, + the vegan_scope='all' vs is_vegan-EXISTS contradiction fix from §5) NOT started.

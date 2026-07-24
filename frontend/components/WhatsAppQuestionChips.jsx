@@ -158,8 +158,17 @@ export default function WhatsAppQuestionChips({ producer }) {
   const delivery = buildDeliveryAnswer(producer);
   const ordering = buildOrderingAnswer(producer);
 
+  // MEH-1524: every prefill that opens a chat with a specific business ends
+  // with a source line on its own final line, so the owner sees the referral
+  // source in her own inbox. LOCKED copy — the `source_line` key is defined
+  // once and appended here + at the recipe-idea call site.
   const waHref = (q) =>
-    digits ? getWhatsAppHref(digits, t("greeting_template", { name, q })) : null;
+    digits
+      ? getWhatsAppHref(
+          digits,
+          `${t("greeting_template", { name, q })}\n\n${t("source_line")}`,
+        )
+      : null;
 
   // MEH-1462: "יש לי רעיון למתכון" — routes the recipe-idea intent to the
   // existing WhatsApp channel (research 22/07: no in-app suggestion box, no
@@ -167,7 +176,10 @@ export default function WhatsAppQuestionChips({ producer }) {
   // that wraps the other questions), no in-page answer, gated on a phone like
   // every other WhatsApp row.
   const recipeIdeaHref = digits
-    ? getWhatsAppHref(digits, t("recipe_idea_message"))
+    ? getWhatsAppHref(
+        digits,
+        `${t("recipe_idea_message")}\n\n${t("source_line")}`,
+      )
     : null;
 
   // Category-aware stock / custom questions stay WhatsApp — minus the two
