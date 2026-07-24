@@ -774,6 +774,10 @@
           "delivery": "Delivery",
           "kosher": "Kosher"
         },
+        "gluten_facility": {
+          "shared": "Gluten is present in the production facility — as declared by the business. If you have celiac disease, please confirm directly with the business.",
+          "dedicated": "No gluten in the production facility — as declared by the business."
+        },
         "slow_response": "⏳ Longer response times this week",
         "vacation": "🌙 This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
@@ -4147,6 +4151,18 @@
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
+      },
+      "dietaryScope": {
+        "heading": "Diet",
+        "helper": "We cross-check these answers against the catalog before publishing.",
+        "q_vegan": "Is everything the business sells vegan?",
+        "q_vegetarian": "Is everything the business sells vegetarian?",
+        "q_gluten": "Is gluten present in the production facility?",
+        "opt_yes": "Yes",
+        "opt_no": "No",
+        "opt_unknown": "Not known",
+        "gluten_dedicated": "No gluten in the production facility",
+        "gluten_shared": "Gluten is present in the production facility"
       },
       "delivery": {
         "heading": "Delivery & pickup",

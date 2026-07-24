@@ -171,3 +171,52 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
     expect(screen.getByTestId("new-mark")).toBeInTheDocument();
   });
 });
+
+// MEH-1508 ch2 Phase B: the gluten production-facility line — plain text, three
+// states. The next-intl mock echoes the key, so we assert on the key path.
+const SHARED_KEY = "producer.detail.header.gluten_facility.shared";
+const DEDICATED_KEY = "producer.detail.header.gluten_facility.dedicated";
+
+describe("ProducerHeader gluten facility line (MEH-1508 ch2)", () => {
+  it("renders the shared line (only) when gluten_free_facility === 'shared'", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, gluten_free_facility: "shared" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByText(SHARED_KEY)).toBeInTheDocument();
+    expect(screen.queryByText(DEDICATED_KEY)).not.toBeInTheDocument();
+  });
+
+  it("renders the dedicated line (only) when gluten_free_facility === 'dedicated'", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, gluten_free_facility: "dedicated" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByText(DEDICATED_KEY)).toBeInTheDocument();
+    expect(screen.queryByText(SHARED_KEY)).not.toBeInTheDocument();
+  });
+
+  it("renders NOTHING for 'unknown' (the render-nothing case)", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, gluten_free_facility: "unknown" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.queryByText(SHARED_KEY)).not.toBeInTheDocument();
+    expect(screen.queryByText(DEDICATED_KEY)).not.toBeInTheDocument();
+  });
+
+  it("renders nothing when the field is absent (older payloads)", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
+    expect(screen.queryByText(SHARED_KEY)).not.toBeInTheDocument();
+    expect(screen.queryByText(DEDICATED_KEY)).not.toBeInTheDocument();
+  });
+});

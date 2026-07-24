@@ -230,6 +230,12 @@ def update_my_producer(
         "owner_photo_url",
         "grass_fed",
         "organic_certified",
+        # MEH-1508 ch2: owner declares business-level dietary scope. Values are
+        # enum-validated in ProducerUpdate (schemas.py); this opens the write path.
+        "vegan_scope",
+        "vegetarian_scope",
+        "gluten_free_facility",
+        "lactose_free_facility",
         "has_delivery",
         "pickup_points",
         # MEH-1242 PR5: owner permission-surface extension — location mode +
