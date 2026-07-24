@@ -1122,7 +1122,7 @@
       "skip": "דלגו"
     },
     "popup": {
-      "whatsapp_greeting": "היי! מצאתי אותך במהמקור — {name}"
+      "whatsapp_greeting": "היי! הגעתי דרך מהמקור — {name}"
     },
     "filter": {
       "aria": {
@@ -1177,7 +1177,7 @@
     "producer_card": {
       "verified": "מאומת",
       "distance_prefix": "ל",
-      "wa_message": "היי! מצאתי אותך במהמקור — {name}",
+      "wa_message": "היי! הגעתי דרך מהמקור — {name}",
       "full_profile": "פרופיל מלא"
     },
     "mini": {
@@ -3957,13 +3957,13 @@
       "analytics": {
         "stats_window_label": "7 ימים / 30 ימים / סה״כ",
         "kpi": {
-          "whatsapp_leads": "קליקים ליצירת קשר",
+          "whatsapp_leads": "קליקים בוואטסאפ",
           "contact_clicks": "יצירת קשר",
           "rating": "דירוג",
           "views": "צפיות",
           "window_7d": "7 הימים האחרונים",
           "rating_sub": "{count} ביקורות",
-          "conversion_line": "{rate}% מהצופות פנו אלייך"
+          "conversion_line": "{rate}% מהצופות לחצו על כפתור הוואטסאפ. קליק אינו בהכרח הודעה שנשלחה."
         },
         "hero": {
           "views_week_label": "צפיות השבוע",
