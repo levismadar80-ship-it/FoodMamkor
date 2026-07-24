@@ -1,7 +1,7 @@
 /**
- * MEH-1241: Playwright globalSetup — provision authenticated storageState for
- * the seeded staging QA accounts (producer + consumer) so specs behind login
- * run without per-spec login code.
+ * MEH-1241 / MEH-1528: Playwright globalSetup — provision authenticated
+ * storageState for the seeded QA accounts (producer + consumer + admin) so
+ * specs behind login run without per-spec login code.
  *
  * The app stores its JWT in localStorage["token"] (lib/auth-context.js), so each
  * role's storageState injects the access_token there for the target origin (plus
@@ -9,22 +9,28 @@
  *
  * Emails are code constants; passwords come from env — the SAME names as the
  * Railway staging backend + GitHub secrets: DEMO_OWNER_PASSWORD /
- * DEMO_CONSUMER_PASSWORD. Output: e2e/.auth/{producer,consumer}.json, which is
- * GITIGNORED (each file embeds a live JWT — never commit it). Passwords/tokens
- * are never logged.
+ * DEMO_CONSUMER_PASSWORD / DEMO_ADMIN_PASSWORD (MEH-1528). Output:
+ * e2e/.auth/{producer,consumer,admin}.json — one file per role, never shared —
+ * which is GITIGNORED (each file embeds a live JWT — never commit it).
+ * Passwords/tokens are never logged.
  *
- * Target gating: the seeded accounts exist on staging/preview only, so auth is
- * provisioned solely when baseURL is NOT localhost. On a local target we log and
- * skip (the default flows suite is unauthenticated) — a spec that opts into a
- * role's storageState then fails loudly on the missing file. When the target IS
- * remote but a password env var is missing, we THROW — never a silent skip.
+ * Target gating:
+ *   - Local target + NO DEMO_*_PASSWORD set → skip (the default flows suite is
+ *     unauthenticated); a spec that opts into a role's storageState then fails
+ *     loudly on the missing file.
+ *   - Local target WITH the passwords set (MEH-1528: a seeded local full stack)
+ *     → provision all three roles — enables the role-reachability proof specs
+ *     to run end-to-end locally.
+ *   - Remote (staging/preview) target → always provision; a missing password
+ *     env var or a missing Vercel bypass secret THROWS (never a silent skip).
  *
  * Usage in a spec:
  *   import { test } from "@playwright/test";
- *   test.use({ storageState: "e2e/.auth/producer.json" });
+ *   test.use({ storageState: "e2e/.auth/admin.json" });
  *
- * The existing admin fixture (SMOKE_ADMIN_* → POST /auth/login in flows/19,20)
- * is unrelated to this file and untouched.
+ * The older admin fixture (SMOKE_ADMIN_* → POST /auth/login in flows/19,20) is a
+ * disposable-producer lifecycle admin and is unrelated to this file's admin.json
+ * (the seeded demo-admin QA account) — both are left intact.
  */
 import { request, type FullConfig } from "@playwright/test";
 import fs from "node:fs";
@@ -32,9 +38,17 @@ import path from "node:path";
 
 type Role = { name: string; email: string; passwordEnv: string };
 
+// MEH-1528: three roles, one storageState file each (never shared) — the proof
+// specs (e2e/flows/25-role-reachability) assert admin reaches /admin and the
+// owner/consumer do not, which only holds if each role has its OWN login.
+// `name` is the app's role vocabulary → file name: producer.json (the
+// demo-owner, whose role IS "producer"), consumer.json, admin.json. Passwords
+// are read from env at setup time only; emails are code constants matching
+// backend/scripts/seed_demo_business.py.
 const ROLES: Role[] = [
   { name: "producer", email: "demo-owner@example.com", passwordEnv: "DEMO_OWNER_PASSWORD" },
   { name: "consumer", email: "demo-consumer@example.com", passwordEnv: "DEMO_CONSUMER_PASSWORD" },
+  { name: "admin", email: "demo-admin@example.com", passwordEnv: "DEMO_ADMIN_PASSWORD" },
 ];
 
 export const AUTH_DIR = path.join(__dirname, ".auth");
@@ -46,11 +60,21 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     process.env.TEST_URL ||
     "http://localhost:3000";
 
-  if (/\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(baseURL)) {
+  const isLocal = /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(baseURL);
+  const anyPasswordSet = ROLES.some((r) => !!process.env[r.passwordEnv]);
+
+  // A purely-local run with NO QA passwords set is the default UNAUTHENTICATED
+  // suite — skip provisioning (a spec that opts into a role's storageState then
+  // fails loudly on the missing file). MEH-1528: when the passwords ARE set
+  // against a local target (a seeded local full stack — the end-to-end
+  // verification path), we DO provision so the role-reachability proof specs
+  // run locally. Remote targets always provision (seeded on staging).
+  if (isLocal && !anyPasswordSet) {
     console.warn(
-      `[global-setup] baseURL=${baseURL} is local — skipping QA auth fixtures ` +
-        `(demo-owner/demo-consumer are seeded on staging only). Run auth specs ` +
-        `against TEST_URL=staging.`,
+      `[global-setup] baseURL=${baseURL} is local and no DEMO_*_PASSWORD is set ` +
+        `— skipping QA auth fixtures (the default flows suite is unauthenticated). ` +
+        `Seed a local DB + export the DEMO_*_PASSWORD vars, or run against ` +
+        `TEST_URL=staging, to provision producer/consumer/admin storageState.`,
     );
     return;
   }
@@ -58,11 +82,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   // MEH-1241: a remote staging/preview target sits behind Vercel Deployment
   // Protection — the login request needs the automation-bypass header or it
   // 302s to the Vercel SSO wall (vercel.com/sso-api) and never reaches the
-  // backend. Local runs returned above and need no header; a remote target
-  // with the secret missing is a hard error (fail loud, never silent).
-  const bypassSecret =
-    process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "";
-  if (!bypassSecret) {
+  // backend. A LOCAL target needs no header (bypassSecret stays ""); a REMOTE
+  // target with the secret missing is a hard error (fail loud, never silent).
+  const bypassSecret = isLocal
+    ? ""
+    : process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "";
+  if (!isLocal && !bypassSecret) {
     throw new Error(
       `[global-setup] ${baseURL} is a remote target behind Vercel Deployment ` +
         `Protection, but VERCEL_AUTOMATION_BYPASS_SECRET is not set — the login ` +
@@ -90,8 +115,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       baseURL,
       ignoreHTTPSErrors: true,
       // Bypass Vercel Deployment Protection on the login POST (value from env
-      // — never logged, never committed).
-      extraHTTPHeaders: { "x-vercel-protection-bypass": bypassSecret },
+      // — never logged, never committed). Omitted entirely on a local target.
+      extraHTTPHeaders: bypassSecret ? { "x-vercel-protection-bypass": bypassSecret } : {},
     });
     const res = await ctx.post("/api/auth/login", { data: { email: role.email, password } });
     if (!res.ok()) {
