@@ -407,9 +407,7 @@ DIETARY_SCOPE_DEMOS = [
     },
 ]
 # Shared demo hero image (project-owned dfzpscjks cloud, staging-only bucket).
-DIETARY_DEMO_IMAGE = (
-    "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
-)
+DIETARY_DEMO_IMAGE = "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
 DIETARY_DEMO_CITY = "זכרון יעקב"
 
 
@@ -460,9 +458,11 @@ def _delete_existing(db) -> None:
         db.delete(delivery_only)
     # MEH-1528: the dietary-scope demo producers (ORM cascade covers their
     # ProducerCategory rows — they have no locations/products/reviews).
-    for diet in db.query(Producer).filter(
-        Producer.slug.in_([d["slug"] for d in DIETARY_SCOPE_DEMOS])
-    ).all():
+    for diet in (
+        db.query(Producer)
+        .filter(Producer.slug.in_([d["slug"] for d in DIETARY_SCOPE_DEMOS]))
+        .all()
+    ):
         db.delete(diet)
     # MEH-1528: DEMO_ADMIN_EMAIL joins the owner in the delete set (both are
     # recreated by seed_demo_business); the display reviewers stay by convention.
