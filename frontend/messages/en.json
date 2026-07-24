@@ -3936,13 +3936,13 @@
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
         "kpi": {
-          "whatsapp_leads": "Contact clicks",
+          "whatsapp_leads": "WhatsApp clicks",
           "contact_clicks": "Contact clicks",
           "rating": "Rating",
           "views": "Views",
           "window_7d": "Last 7 days",
           "rating_sub": "{count} reviews",
-          "conversion_line": "{rate}% of viewers reached out"
+          "conversion_line": "{rate}% of viewers clicked the WhatsApp button. A click is not necessarily a message sent."
         },
         "hero": {
           "views_week_label": "Views this week",
