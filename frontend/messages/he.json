@@ -3046,6 +3046,7 @@
       "ask_us": "שאלו אותנו",
       "common_questions": "שאלות נפוצות",
       "greeting_template": "שלום {name}, {q}",
+      "source_line": "הגעתי דרך מהמקור",
       "delivery_to_city": "אפשר משלוח ל{city}?",
       "ordering_q": "איך מזמינים?",
       "delivery_nationwide": "כן! משלוחים לכל הארץ",
@@ -3956,7 +3957,7 @@
       "analytics": {
         "stats_window_label": "7 ימים / 30 ימים / סה״כ",
         "kpi": {
-          "whatsapp_leads": "פניות בוואטסאפ",
+          "whatsapp_leads": "קליקים ליצירת קשר",
           "contact_clicks": "יצירת קשר",
           "rating": "דירוג",
           "views": "צפיות",
