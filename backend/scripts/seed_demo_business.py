@@ -14,7 +14,9 @@ Does NOT: touch production — a hard environment guard refuses any non-local
 Related:  backend/seed_data.py (base seed patterns) · MEH-999 (producer
           dogfood) · MEH-997 (E2E seed) · MEH-409 (first-10 — the demo is
           swapped for the best real profile after first-10).
-History:  MEH-1074 Wave 3 (creation).
+History:  MEH-1074 Wave 3 (creation); MEH-1241 (--sync-users QA passwords);
+          MEH-1432 (multi-location + delivery-only demo); MEH-1528 (QA admin
+          account + dietary-scope demo producers for auth-free QA).
 
 Run (Sapir, Git Bash, after approving the demo identity below):
     railway run python backend/scripts/seed_demo_business.py
@@ -205,6 +207,15 @@ DEMO_OWNER_EMAIL = "demo-owner@example.com"
 # random unrecorded passwords and are never touched by --sync-users.
 DEMO_CONSUMER_EMAIL = "demo-consumer@example.com"
 DEMO_CONSUMER_NAME = "לקוחת בדיקות (QA)"
+# MEH-1528: dedicated QA admin (code constant; password from DEMO_ADMIN_PASSWORD
+# env — the ONLY new env var this ticket adds). role="admin", NO producer_id.
+# Provisioned exactly like the consumer (upsert in --sync-users), giving the
+# Playwright admin.json storageState a distinct, admin-role login so the
+# admin-panel proof test can prove the roles are separate (not three copies of
+# the same login). STAGING ONLY — must never exist in production (the
+# _assert_not_production() guard below + ADR-029 check_no_demo_data.py enforce it).
+DEMO_ADMIN_EMAIL = "demo-admin@example.com"
+DEMO_ADMIN_NAME = "מנהלת בדיקות (QA)"
 ADMIN_NOTE = (
     "DEMO BUSINESS — MEH-1074 Wave 3 'sample perfect listing'. "
     "STAGING ONLY: never promote/import this row to production "
@@ -342,6 +353,63 @@ DELIVERY_ONLY_LOCATION = {
     "location_precision": "exact",
 }
 
+# ============================================================================
+# MEH-1528 — DIETARY-SCOPE DEMO PRODUCERS (Component B). Three approved, public
+# producers that populate the MEH-1508 scope columns so the dietary QA checks
+# have data WITHOUT any login:
+#   - gluten_free_facility: one producer for EACH state — unknown | shared |
+#     dedicated (makes the public gluten row fully testable, auth-free).
+#   - vegan_scope / vegetarian_scope: at least one 'all' AND one 'some' each, so
+#     the chunk-3 "100%" chips have real rows to gate on.
+# The scope columns already exist on staging (schema chunk 1, revision
+# d51508a7c9e2 — models.py:122-133); NO filter reads them yet, so this is pure
+# fixture DATA, not behaviour. STAGING ONLY (ADMIN_NOTE carries the DEMO marker
+# that ADR-029's check_no_demo_data.py flags). Idempotent per-slug (see
+# seed_dietary_scope_demos) and swept out on --refresh. Names are obviously
+# demo ("דמו QA — …") and deliberately avoid seed_demo_producers.py's
+# TEST_NAME_PATTERNS so its --reset never collides with them.
+#
+# Coverage matrix (verified against B1/B2):
+#   slug                 | gluten     | vegan | vegetarian
+#   demo-diet-dedicated  | dedicated  | all   | all
+#   demo-diet-shared     | shared     | some  | some
+#   demo-diet-unknown    | unknown    | all   | some
+# → gluten: {unknown, shared, dedicated} one each ✓
+#   vegan_scope: {all, some} both present ✓ · vegetarian_scope: {all, some} ✓
+# ============================================================================
+DIETARY_SCOPE_DEMOS = [
+    {
+        "slug": "demo-diet-dedicated",
+        "name": "דמו QA — מטבח נקי מגלוטן (ייעודי)",
+        "contact_name": "בדיקות QA",
+        "short_description": "דמו לבדיקה: מתקן ייעודי נטול גלוטן, קטלוג טבעוני וצמחוני מלא.",
+        "gluten_free_facility": "dedicated",
+        "vegan_scope": "all",
+        "vegetarian_scope": "all",
+    },
+    {
+        "slug": "demo-diet-shared",
+        "name": "דמו QA — מטבח עם קו משותף",
+        "contact_name": "בדיקות QA",
+        "short_description": "דמו לבדיקה: מתקן משותף, חלק מהמוצרים טבעוניים/צמחוניים.",
+        "gluten_free_facility": "shared",
+        "vegan_scope": "some",
+        "vegetarian_scope": "some",
+    },
+    {
+        "slug": "demo-diet-unknown",
+        "name": "דמו QA — מטבח דיאטה (מצב לא ידוע)",
+        "contact_name": "בדיקות QA",
+        "short_description": "דמו לבדיקה: מצב מתקן הגלוטן לא הוגדר; קטלוג טבעוני מלא.",
+        "gluten_free_facility": "unknown",
+        "vegan_scope": "all",
+        "vegetarian_scope": "some",
+    },
+]
+# Shared demo hero image (project-owned dfzpscjks cloud, staging-only bucket).
+DIETARY_DEMO_IMAGE = "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
+DIETARY_DEMO_CITY = "זכרון יעקב"
+
 
 def _assert_not_production() -> None:
     """Refuse to run against anything that is not localhost or Railway staging.
@@ -388,7 +456,17 @@ def _delete_existing(db) -> None:
             ProducerLocation.producer_id == delivery_only.id
         ).delete()
         db.delete(delivery_only)
-    emails = [r["email"] for r in DEMO_REVIEWS] + [DEMO_OWNER_EMAIL]
+    # MEH-1528: the dietary-scope demo producers (ORM cascade covers their
+    # ProducerCategory rows — they have no locations/products/reviews).
+    for diet in (
+        db.query(Producer)
+        .filter(Producer.slug.in_([d["slug"] for d in DIETARY_SCOPE_DEMOS]))
+        .all()
+    ):
+        db.delete(diet)
+    # MEH-1528: DEMO_ADMIN_EMAIL joins the owner in the delete set (both are
+    # recreated by seed_demo_business); the display reviewers stay by convention.
+    emails = [r["email"] for r in DEMO_REVIEWS] + [DEMO_OWNER_EMAIL, DEMO_ADMIN_EMAIL]
     # ORM-level deletes (not bulk .delete()) keep the session's identity map
     # consistent — a bulk delete here leaves stale review objects that emit a
     # spurious 0-rows-matched DELETE at the re-seed commit.
@@ -497,6 +575,22 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
         )
     )
 
+    # MEH-1528: QA admin login (role="admin", NO producer_id) so the Playwright
+    # admin.json storageState reaches the admin panel — proving the roles are
+    # distinct from the producer owner. Password from DEMO_ADMIN_PASSWORD env,
+    # else random + unrecorded (mirrors the owner exactly).
+    db.add(
+        User(
+            email=DEMO_ADMIN_EMAIL,
+            name=DEMO_ADMIN_NAME,
+            password_hash=hash_password(
+                os.getenv("DEMO_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
+            ),
+            role="admin",
+            email_verified=True,
+        )
+    )
+
     for r in DEMO_REVIEWS:
         reviewer = User(
             email=r["email"],
@@ -546,6 +640,60 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
     return producer
 
 
+def seed_dietary_scope_demos(db) -> int:
+    """MEH-1528 (Component B): idempotently upsert the dietary-scope demo
+    producers (gluten_free_facility unknown/shared/dedicated + vegan_scope /
+    vegetarian_scope all/some).
+
+    Per-slug skip-if-exists so re-running never duplicates (B3) and so this
+    runs even when the main demo already exists (seed_demo_business returns
+    early on skip-if-exists). --refresh clears them via _delete_existing before
+    this recreates them. Returns the number of producers inserted this run.
+    """
+    category = db.query(Category).filter(Category.name == DEMO_CATEGORY_NAME).first()
+    if not category:
+        sys.exit(
+            f"Category '{DEMO_CATEGORY_NAME}' not found — run backend/seed_data.py first."
+        )
+
+    inserted = 0
+    for spec in DIETARY_SCOPE_DEMOS:
+        if db.query(Producer).filter(Producer.slug == spec["slug"]).first():
+            print(f"Dietary demo '{spec['slug']}' already exists — skipping.")
+            continue
+        producer = Producer(
+            name=spec["name"],
+            contact_name=spec["contact_name"],
+            slug=spec["slug"],
+            short_description=spec["short_description"],
+            description=spec["short_description"],
+            city=DIETARY_DEMO_CITY,
+            primary_contact_method="whatsapp",
+            status="approved",
+            admin_notes=ADMIN_NOTE,
+            images=[DIETARY_DEMO_IMAGE],
+            has_physical_location=True,
+            availability_state="accepting_orders",
+            # MEH-1528: the scope columns under test (schema chunk 1).
+            gluten_free_facility=spec["gluten_free_facility"],
+            vegan_scope=spec["vegan_scope"],
+            vegetarian_scope=spec["vegetarian_scope"],
+        )
+        db.add(producer)
+        db.flush()
+        db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
+        db.commit()
+        inserted += 1
+        print(
+            f"Dietary demo seeded: /{spec['slug']} "
+            f"(gluten={spec['gluten_free_facility']}, "
+            f"vegan={spec['vegan_scope']}, vegetarian={spec['vegetarian_scope']})"
+        )
+    if inserted == 0:
+        print("Dietary-scope demos: all present — nothing to insert.")
+    return inserted
+
+
 def _sync_users(db) -> None:
     """MEH-1241: non-destructive, users-only sync for staging QA fixtures.
 
@@ -562,18 +710,23 @@ def _sync_users(db) -> None:
       seeded yet → abort rather than create a producer-less "producer".
     - ``demo-consumer@example.com``: upsert as a verified consumer with a
       password from ``DEMO_CONSUMER_PASSWORD`` (no producer linkage).
+    - ``demo-admin@example.com`` (MEH-1528): upsert as a verified admin
+      (role="admin", no producer linkage) with a password from
+      ``DEMO_ADMIN_PASSWORD`` — the only new env var this ticket adds.
 
-    Both env passwords are mandatory: abort if either is unset — never write a
+    All three env passwords are mandatory: abort if any is unset — never write a
     random password again (that random-at-seed gap was the MEH-1241 root cause).
     Passwords are never printed. Idempotent: re-running yields the same rows.
     """
     owner_pw = os.getenv("DEMO_OWNER_PASSWORD")
     consumer_pw = os.getenv("DEMO_CONSUMER_PASSWORD")
+    admin_pw = os.getenv("DEMO_ADMIN_PASSWORD")  # MEH-1528
     missing = [
         name
         for name, val in (
             ("DEMO_OWNER_PASSWORD", owner_pw),
             ("DEMO_CONSUMER_PASSWORD", consumer_pw),
+            ("DEMO_ADMIN_PASSWORD", admin_pw),
         )
         if not val
     ]
@@ -612,10 +765,27 @@ def _sync_users(db) -> None:
     consumer.password_hash = hash_password(consumer_pw)
     consumer.email_verified = True
 
+    # MEH-1528: Admin — UPSERT (create if missing; admins have no producer_id,
+    # so — like the consumer — a create here is safe on a DB seeded before this
+    # ticket landed). role="admin".
+    admin = db.query(User).filter(User.email == DEMO_ADMIN_EMAIL).first()
+    admin_created = admin is None
+    if admin is None:
+        admin = User(
+            email=DEMO_ADMIN_EMAIL,
+            name=DEMO_ADMIN_NAME,
+            role="admin",
+            email_verified=True,
+        )
+        db.add(admin)
+    admin.password_hash = hash_password(admin_pw)
+    admin.email_verified = True
+
     db.commit()
     print(
         f"Synced QA users: {DEMO_OWNER_EMAIL} (password reset), "
-        f"{DEMO_CONSUMER_EMAIL} ({'created' if created else 'password reset'}). "
+        f"{DEMO_CONSUMER_EMAIL} ({'created' if created else 'password reset'}), "
+        f"{DEMO_ADMIN_EMAIL} ({'created' if admin_created else 'password reset'}). "
         "Producer / reviews / products / display reviewers untouched."
     )
 
@@ -647,6 +817,10 @@ def main() -> None:
             _sync_users(db)
         else:
             seed_demo_business(db, refresh=args.refresh)
+            # MEH-1528: always run — idempotent per-slug, so it seeds the
+            # dietary demos even when the main business already existed (the
+            # skip-if-exists path above returns before creating anything).
+            seed_dietary_scope_demos(db)
     finally:
         db.close()
 

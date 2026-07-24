@@ -1,9 +1,10 @@
-"""MEH-1241: regression tests for seed_demo_business._sync_users.
+"""MEH-1241 / MEH-1528: regression tests for seed_demo_business._sync_users.
 
 Executes the non-destructive --sync-users seed mode against the test DB and
-proves it repairs exactly the two QA user rows (demo-owner password reset,
-demo-consumer created) while leaving the demo producer, its products/reviews,
-and the display-only review consumers byte-for-byte unchanged.
+proves it repairs exactly the three QA user rows (demo-owner password reset,
+demo-consumer created, demo-admin created — MEH-1528) while leaving the demo
+producer, its products/reviews, and the display-only review consumers
+byte-for-byte unchanged.
 
 Chunk 1 could only transcribe _sync_users' writes to SQL (pip was denied in the
 CC sandbox); this file is the real ORM execution — CI runs it via `pytest tests/`
@@ -15,6 +16,7 @@ import pytest
 from app.auth import hash_password, verify_password
 from app.models.models import Producer, Product, ProducerReview, User
 from scripts.seed_demo_business import (
+    DEMO_ADMIN_EMAIL,
     DEMO_CONSUMER_EMAIL,
     DEMO_OWNER_EMAIL,
     _sync_users,
@@ -22,7 +24,15 @@ from scripts.seed_demo_business import (
 
 OWNER_PW = "OwnerQaPw2026xyz"
 CONSUMER_PW = "ConsumerQaPw2026xyz"
+ADMIN_PW = "AdminQaPw2026xyz"  # MEH-1528
 REVIEWER_EMAIL = "demo-reviewer-1@example.com"
+
+
+def _set_all_pw(monkeypatch):
+    """MEH-1528: all three QA passwords are mandatory for _sync_users."""
+    monkeypatch.setenv("DEMO_OWNER_PASSWORD", OWNER_PW)
+    monkeypatch.setenv("DEMO_CONSUMER_PASSWORD", CONSUMER_PW)
+    monkeypatch.setenv("DEMO_ADMIN_PASSWORD", ADMIN_PW)
 
 
 def _seed_demo_like(db):
@@ -68,8 +78,7 @@ def _seed_demo_like(db):
 
 
 def test_sync_users_updates_owner_and_creates_consumer(db, monkeypatch):
-    monkeypatch.setenv("DEMO_OWNER_PASSWORD", OWNER_PW)
-    monkeypatch.setenv("DEMO_CONSUMER_PASSWORD", CONSUMER_PW)
+    _set_all_pw(monkeypatch)
     producer, product, owner, reviewer, review = _seed_demo_like(db)
 
     # Snapshots of the rows that MUST NOT change.
@@ -97,6 +106,13 @@ def test_sync_users_updates_owner_and_creates_consumer(db, monkeypatch):
     assert consumer.producer_id is None
     assert verify_password(CONSUMER_PW, consumer.password_hash)
 
+    # MEH-1528 — Admin: created, verified, admin role, no producer linkage.
+    admin = db.query(User).filter_by(email=DEMO_ADMIN_EMAIL).one()
+    assert admin.role == "admin"
+    assert admin.email_verified is True
+    assert admin.producer_id is None
+    assert verify_password(ADMIN_PW, admin.password_hash)
+
     # Producer / product / review / display reviewer: unchanged.
     producer2 = db.query(Producer).filter_by(id=prod_id).one()
     assert producer2.verified_at == prod_verified_at
@@ -115,8 +131,8 @@ def test_sync_users_updates_owner_and_creates_consumer(db, monkeypatch):
 
 
 def test_sync_users_aborts_when_owner_password_unset(db, monkeypatch):
-    monkeypatch.delenv("DEMO_OWNER_PASSWORD", raising=False)
-    monkeypatch.setenv("DEMO_CONSUMER_PASSWORD", CONSUMER_PW)
+    _set_all_pw(monkeypatch)
+    monkeypatch.delenv("DEMO_OWNER_PASSWORD", raising=False)  # isolate owner
     _seed_demo_like(db)
 
     with pytest.raises(SystemExit):
@@ -128,8 +144,8 @@ def test_sync_users_aborts_when_owner_password_unset(db, monkeypatch):
 
 
 def test_sync_users_aborts_when_consumer_password_unset(db, monkeypatch):
-    monkeypatch.setenv("DEMO_OWNER_PASSWORD", OWNER_PW)
-    monkeypatch.delenv("DEMO_CONSUMER_PASSWORD", raising=False)
+    _set_all_pw(monkeypatch)
+    monkeypatch.delenv("DEMO_CONSUMER_PASSWORD", raising=False)  # isolate consumer
     _, _, owner, _, _ = _seed_demo_like(db)
     owner_old_hash = owner.password_hash
 
@@ -142,9 +158,27 @@ def test_sync_users_aborts_when_consumer_password_unset(db, monkeypatch):
     assert owner2.password_hash == owner_old_hash
 
 
+def test_sync_users_aborts_when_admin_password_unset(db, monkeypatch):
+    """MEH-1528: DEMO_ADMIN_PASSWORD is mandatory too."""
+    _set_all_pw(monkeypatch)
+    monkeypatch.delenv("DEMO_ADMIN_PASSWORD", raising=False)  # isolate admin
+    _, _, owner, _, _ = _seed_demo_like(db)
+    owner_old_hash = owner.password_hash
+
+    with pytest.raises(SystemExit):
+        _sync_users(db)
+
+    # Aborts before any write — neither the admin nor the consumer is created,
+    # and the owner password is untouched.
+    db.expire_all()
+    assert db.query(User).filter_by(email=DEMO_ADMIN_EMAIL).first() is None
+    assert db.query(User).filter_by(email=DEMO_CONSUMER_EMAIL).first() is None
+    owner2 = db.query(User).filter_by(email=DEMO_OWNER_EMAIL).one()
+    assert owner2.password_hash == owner_old_hash
+
+
 def test_sync_users_aborts_when_owner_row_missing(db, monkeypatch):
-    monkeypatch.setenv("DEMO_OWNER_PASSWORD", OWNER_PW)
-    monkeypatch.setenv("DEMO_CONSUMER_PASSWORD", CONSUMER_PW)
+    _set_all_pw(monkeypatch)
     # No owner row seeded — the producer_id linkage only comes from the full seed.
 
     with pytest.raises(SystemExit):
@@ -155,17 +189,22 @@ def test_sync_users_aborts_when_owner_row_missing(db, monkeypatch):
 
 
 def test_sync_users_is_idempotent(db, monkeypatch):
-    monkeypatch.setenv("DEMO_OWNER_PASSWORD", OWNER_PW)
-    monkeypatch.setenv("DEMO_CONSUMER_PASSWORD", CONSUMER_PW)
+    _set_all_pw(monkeypatch)
     _seed_demo_like(db)
 
     _sync_users(db)
     db.expire_all()
     consumer_id_first = db.query(User).filter_by(email=DEMO_CONSUMER_EMAIL).one().id
+    admin_id_first = db.query(User).filter_by(email=DEMO_ADMIN_EMAIL).one().id
 
-    _sync_users(db)  # second run — no duplicate, same row.
+    _sync_users(db)  # second run — no duplicate, same rows.
     db.expire_all()
     consumers = db.query(User).filter_by(email=DEMO_CONSUMER_EMAIL).all()
     assert len(consumers) == 1
     assert consumers[0].id == consumer_id_first
     assert verify_password(CONSUMER_PW, consumers[0].password_hash)
+    # MEH-1528 — admin is idempotent too (same row, no duplicate).
+    admins = db.query(User).filter_by(email=DEMO_ADMIN_EMAIL).all()
+    assert len(admins) == 1
+    assert admins[0].id == admin_id_first
+    assert verify_password(ADMIN_PW, admins[0].password_hash)
