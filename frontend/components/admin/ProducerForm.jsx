@@ -148,6 +148,12 @@ const EMPTY = {
   kosher: "",
   grass_fed: false,
   organic_certified: false,
+  // MEH-1508 ch2: business-level dietary scope (admin cross-check selects).
+  // `...initial` overrides these from ProducerAdminOut on edit; defaults here
+  // cover the admin-create path.
+  vegan_scope: "unknown",
+  vegetarian_scope: "unknown",
+  gluten_free_facility: "unknown",
   // MEH-293: dietary flags (gluten_free / vegan / lactose_free) moved to per-product.
   // MEH-766 ch3: is_verified removed — verification is the doc-grant flow, not a form toggle.
   // MEH-18
@@ -196,6 +202,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
   // address search — no new i18n keys (see dashboard.producer.location).
   const tLoc = useTranslations("dashboard.producer.location");
+  // MEH-1508 ch2: the admin cross-check selects reuse the owner form's locked
+  // dietary-scope copy (§6.5) — one SoT, no admin-specific strings.
+  const tDiet = useTranslations("dashboard.producer.dietaryScope");
   const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
@@ -391,6 +400,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       kosher: form.kosher,
       grass_fed: form.grass_fed,
       organic_certified: form.organic_certified,
+      // MEH-1508 ch2: admin sets/cross-checks the declared dietary scope.
+      vegan_scope: form.vegan_scope,
+      vegetarian_scope: form.vegetarian_scope,
+      gluten_free_facility: form.gluten_free_facility,
       is_recommended: form.is_recommended,
       producer_license_number: form.producer_license_number,
       admin_notes: form.admin_notes,
@@ -737,6 +750,43 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   {kosherLabel(k)}
                 </option>
               ))}
+            </select>
+          </Field>
+          {/* MEH-1508 ch2: business-level dietary scope — admin sees + cross-checks
+              the owner's declaration during manual approval. YES/NO → all/some for
+              vegan/vegetarian; 3-way facility state for gluten. Lactose omitted
+              (§6.3). Copy is the owner form's locked §6.5 strings (tDiet). */}
+          <Field label={tDiet("q_vegan")}>
+            <select
+              value={form.vegan_scope}
+              onChange={(e) => update("vegan_scope", e.target.value)}
+              className={inputClass}
+            >
+              <option value="all">{tDiet("opt_yes")}</option>
+              <option value="some">{tDiet("opt_no")}</option>
+              <option value="unknown">{tDiet("opt_unknown")}</option>
+            </select>
+          </Field>
+          <Field label={tDiet("q_vegetarian")}>
+            <select
+              value={form.vegetarian_scope}
+              onChange={(e) => update("vegetarian_scope", e.target.value)}
+              className={inputClass}
+            >
+              <option value="all">{tDiet("opt_yes")}</option>
+              <option value="some">{tDiet("opt_no")}</option>
+              <option value="unknown">{tDiet("opt_unknown")}</option>
+            </select>
+          </Field>
+          <Field label={tDiet("q_gluten")}>
+            <select
+              value={form.gluten_free_facility}
+              onChange={(e) => update("gluten_free_facility", e.target.value)}
+              className={inputClass}
+            >
+              <option value="dedicated">{tDiet("gluten_dedicated")}</option>
+              <option value="shared">{tDiet("gluten_shared")}</option>
+              <option value="unknown">{tDiet("opt_unknown")}</option>
             </select>
           </Field>
         </div>

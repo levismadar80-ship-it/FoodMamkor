@@ -160,6 +160,27 @@ export default function ProducerHeader({
             {t("producer.detail.header.attr.kosher")}
           </p>
         ) : null}
+
+        {/* MEH-1508 ch2 Phase B — gluten production-facility line. Plain text,
+            no badge / icon / checkmark (MEH-1259 self-declaration pattern, NOT
+            the MEH-1087 verified pattern — a checkmark would imply a certificate).
+            Renders ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
+        {producer.gluten_free_facility === "shared" && (
+          <p
+            className="text-xs text-fg-muted leading-relaxed max-w-prose"
+            data-testid="gluten-facility-shared"
+          >
+            {t("producer.detail.header.gluten_facility.shared")}
+          </p>
+        )}
+        {producer.gluten_free_facility === "dedicated" && (
+          <p
+            className="text-xs text-fg-muted leading-relaxed max-w-prose"
+            data-testid="gluten-facility-dedicated"
+          >
+            {t("producer.detail.header.gluten_facility.dedicated")}
+          </p>
+        )}
       </div>
 
       {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
