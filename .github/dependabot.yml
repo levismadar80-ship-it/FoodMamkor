@@ -21,6 +21,17 @@ updates:
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
     open-pull-requests-limit: 3
+    # MEH-1518: intentionally NO pip group. Every pip bump drifts uv.lock
+    # (dependabot updates pyproject.toml but not the lock — MEH-1332/1527/#1531);
+    # grouping would concentrate the drift into one PR, not fix it. Blocked on
+    # MEH-1527 Chunk 2b (a lock-regen step).
+    ignore:
+      # schemathesis 4.24 slows the fuzz suite past the pytest job timeout
+      # (MEH-1529). Dev-only test tool, no CVE — hold minor/patch bumps.
+      - dependency-name: "schemathesis"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
     labels:
       - "dependencies"
       - "meh-330"
@@ -45,6 +56,20 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # eslint 9->10 major is a tracked MANUAL migration (MEH-893). A fork does
+      # not inherit the `@dependabot ignore this major version` comment command,
+      # which is why #1703 reappeared — declare it here so it survives the fork.
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
+      # react 18->19 major deferred post-launch (MEH-1522).
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/react"
+        update-types:
+          - "version-update:semver-major"
     labels:
       - "dependencies"
       - "meh-330"
@@ -61,6 +86,15 @@ updates:
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
     open-pull-requests-limit: 3
+    # MEH-1518: mirror npm-minor-patch — one grouped PR for all minor+patch
+    # action bumps. Majors stay individual (they need human review — see the
+    # setup-node/checkout/github-script majors #1700/#1701/#1964).
+    groups:
+      github-actions-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "ci"
