@@ -25,6 +25,7 @@ from app.models import (
     HomeProduct,
     Producer,
     Product,
+    ProducerLocation,
     ProducerPageView,
     ProducerWhatsAppClick,
     User,
@@ -42,6 +43,9 @@ from app.schemas.schemas import (
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
+    ProducerLocationCreate,
+    ProducerLocationOwnerOut,
+    ProducerLocationUpdate,
     ProducerOwnerOut,
     ProducerUpdate,
     ProductCreate,
@@ -945,6 +949,27 @@ def request_kashrut_badge(
     return out
 
 
+@router.get("/kashrut-requests", response_model=list[KashrutRequestOut])
+@limiter.limit("30/minute")
+def list_kashrut_requests(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """MEH-1167: the logged-in producer's own kashrut badge requests,
+    newest first — feeds the dashboard KashrutCard status zone so a
+    pending/rejected request is visible after submit. Owner-isolated by
+    producer_id (require_producer guarantees one); no schema change —
+    KashrutRequestOut already exists (MEH-51)."""
+    rows = (
+        db.query(KashrutBadgeRequest)
+        .filter(KashrutBadgeRequest.producer_id == user.producer_id)
+        .order_by(KashrutBadgeRequest.created_at.desc())
+        .all()
+    )
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # MEH-1236: resubmit-for-review — the owner signals she finished completing
 # the details an admin requested, so the admin knows to look again.
@@ -1121,3 +1146,185 @@ def delete_my_product(
         from app.cloudinary_utils import destroy_image
 
         destroy_image(old_image_url, context="producer_me.delete_my_product image")
+
+
+# ============================================================================
+# MEH-1421 (MEH-1388 chunk 4a): producer_locations owner CRUD.
+# Owner-scoped physical presence points (branch / pickup / market_stand),
+# mirroring the products CRUD shape above (list/create/update/delete).
+#
+# IDOR: `require_producer` gates the ROLE (403 for a non-producer, auth.py:268);
+# a location id that exists but belongs to ANOTHER producer raises 403 via
+# `_get_owned_location` — the security.md ownership invariant. This
+# INTENTIONALLY differs from the products 404-on-not-owned (producer_me.py:1108):
+# the MEH-1421 AC + IDOR test require a 403. There is NO admin override — an
+# admin has role != "producer" and is 403'd by require_producer upstream, so
+# admin location management is out of 4a scope (admin surface = the read-only
+# dedup signal, not mutation).
+#
+# Two cross-row invariants live here (not the schema — they need the session):
+#   1. Single-primary: a producer has exactly one primary location while ≥1
+#      exists. First create is forced primary; setting one primary clears the
+#      others; deleting the primary promotes the oldest survivor.
+#   2. Same-city label: a location whose city already exists for the producer
+#      must carry a non-empty label (map tooltip disambiguation, epic rule).
+# ============================================================================
+
+
+def _get_owned_location(
+    db: Session, producer_id: UUID, location_id: UUID
+) -> ProducerLocation:
+    # MEH-1421 IDOR: look up by id ALONE, then check ownership so a cross-owner
+    # id is a 403 (not a 404). A genuinely missing id is a 404.
+    # REUSES: .claude/rules/security.md — owner_id == current_user.id else 403.
+    loc = db.query(ProducerLocation).filter(ProducerLocation.id == location_id).first()
+    if loc is None:
+        raise HTTPException(status_code=404, detail="מיקום לא נמצא")
+    if loc.producer_id != producer_id:
+        raise HTTPException(status_code=403, detail="אין הרשאה למיקום זה")
+    return loc
+
+
+def _reject_same_city_without_label(
+    db: Session,
+    producer_id: UUID,
+    city: str | None,
+    label: str | None,
+    exclude_id: UUID | None = None,
+) -> None:
+    # MEH-1421: a 2nd location in a city the producer already uses MUST carry a
+    # label so the map tooltip + dashboard can tell the points apart. Python-side
+    # compare (a producer has few locations) keeps it DB-agnostic (sqlite tests
+    # + Postgres prod).
+    if not city or not city.strip():
+        return
+    if label and label.strip():
+        return
+    target = city.strip().lower()
+    rows = (
+        db.query(ProducerLocation.id, ProducerLocation.city)
+        .filter(ProducerLocation.producer_id == producer_id)
+        .all()
+    )
+    for row in rows:
+        if exclude_id is not None and row.id == exclude_id:
+            continue
+        if row.city and row.city.strip().lower() == target:
+            raise HTTPException(
+                status_code=422,
+                detail="כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה",
+            )
+
+
+def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> None:
+    db.query(ProducerLocation).filter(
+        ProducerLocation.producer_id == producer_id,
+        ProducerLocation.id != keep_id,
+    ).update({ProducerLocation.is_primary: False})
+
+
+@router.get("/locations", response_model=list[ProducerLocationOwnerOut])
+def list_my_locations(
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.producer_id == user.producer_id)
+        .order_by(
+            ProducerLocation.is_primary.desc(),
+            ProducerLocation.created_at.asc(),
+        )
+        .all()
+    )
+
+
+@router.post("/locations", response_model=ProducerLocationOwnerOut, status_code=201)
+@limiter.limit("60/hour")
+def create_my_location(
+    request: Request,
+    data: ProducerLocationCreate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    _reject_same_city_without_label(db, user.producer_id, data.city, data.label)
+    existing_count = (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.producer_id == user.producer_id)
+        .count()
+    )
+    loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
+    # Single-primary: the first location is always primary; an explicit
+    # is_primary=true on a later one clears the existing primary.
+    if existing_count == 0:
+        loc.is_primary = True
+    db.add(loc)
+    db.flush()  # assign loc.id before clearing siblings
+    if loc.is_primary:
+        _clear_other_primaries(db, user.producer_id, loc.id)
+    db.commit()
+    db.refresh(loc)
+    return loc
+
+
+@router.put("/locations/{location_id}", response_model=ProducerLocationOwnerOut)
+@limiter.limit("60/hour")
+def update_my_location(
+    request: Request,
+    location_id: UUID,
+    data: ProducerLocationUpdate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    loc = _get_owned_location(db, user.producer_id, location_id)
+    patch = data.model_dump(exclude_unset=True)
+    # Same-city check ONLY when this update actually touches city or label —
+    # otherwise a pure is_primary toggle would re-validate an already-valid row
+    # and falsely 422 a label-less FIRST location whose city a labeled sibling
+    # legitimately shares (adversarial-review-errors finding).
+    if "city" in patch or "label" in patch:
+        new_city = patch.get("city", loc.city)
+        new_label = patch.get("label", loc.label)
+        _reject_same_city_without_label(
+            db, user.producer_id, new_city, new_label, exclude_id=loc.id
+        )
+
+    want_primary = patch.pop("is_primary", None)
+    for field, value in patch.items():
+        setattr(loc, field, value)
+
+    if want_primary is True:
+        _clear_other_primaries(db, user.producer_id, loc.id)
+        loc.is_primary = True
+    elif want_primary is False and loc.is_primary:
+        # Can't directly demote the sole primary (that would leave zero) — the
+        # owner promotes another location instead (which clears this one).
+        raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
+
+    db.commit()
+    db.refresh(loc)
+    return loc
+
+
+@router.delete("/locations/{location_id}", status_code=204)
+def delete_my_location(
+    location_id: UUID,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    loc = _get_owned_location(db, user.producer_id, location_id)
+    was_primary = loc.is_primary
+    db.delete(loc)
+    db.flush()
+    # Delete-primary: promote the oldest survivor so the producer keeps exactly
+    # one primary while any location remains (map/geo needs a primary anchor).
+    if was_primary:
+        replacement = (
+            db.query(ProducerLocation)
+            .filter(ProducerLocation.producer_id == user.producer_id)
+            .order_by(ProducerLocation.created_at.asc())
+            .first()
+        )
+        if replacement is not None:
+            replacement.is_primary = True
+    db.commit()

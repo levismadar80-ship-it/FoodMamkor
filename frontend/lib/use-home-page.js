@@ -16,6 +16,7 @@ import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
+import { findRegionForCity } from "@/data/regions";
 import {
   CategoriesResponseSchema,
   StatsSchema,
@@ -71,6 +72,10 @@ export function useHomePage() {
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
   const [producers, setProducers] = useState([]);
+  // MEH-1487: region fallback — { regionName, producers } when a delivery_city
+  // filter returned 0 AND the city belongs to a region in data/regions.js;
+  // null otherwise. Drives the "בתי עסק שמגיעים לאזור" section in the empty state.
+  const [regionFallback, setRegionFallback] = useState(null);
   const [categories, setCategories] = useState([]);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
   // sessionStorage) are read in the initial useEffect below to avoid React
@@ -158,6 +163,7 @@ export function useHomePage() {
       // MEH-1259: organic no longer hydrated — chip + filter removed.
       gluten_free: p.get("gluten_free") === "1",
       vegan: p.get("vegan") === "1",
+      vegetarian: p.get("vegetarian") === "1",  // MEH-1438
       lactose_free: p.get("lactose_free") === "1",
       has_delivery: p.get("delivery") === "1",
       verified: p.get("verified") === "1",
@@ -275,6 +281,7 @@ export function useHomePage() {
     // match the chip keys (delivery stays the legacy short name).
     if (c.gluten_free) p.set("gluten_free", "1");
     if (c.vegan) p.set("vegan", "1");
+    if (c.vegetarian) p.set("vegetarian", "1");  // MEH-1438
     if (c.lactose_free) p.set("lactose_free", "1");
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
@@ -313,6 +320,43 @@ export function useHomePage() {
       .catch(() => {})
       .finally(() => setProducersLoading(false));
   };
+
+  // MEH-1487: region fallback. When an explicit delivery_city filter returns
+  // zero results AND the city belongs to a region, fetch the businesses that
+  // deliver anywhere in that region (delivery_cities=<region cities>) and
+  // surface them as an editorial discovery section in the empty state.
+  // Editorial framing only — NOT a delivery-eligibility check.
+  useEffect(() => {
+    const city = filters.delivery_city;
+    if (producersLoading) return;
+    if (!city || producers.length > 0) {
+      setRegionFallback(null);
+      return;
+    }
+    const region = findRegionForCity(city);
+    if (!region) {
+      setRegionFallback(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get("/producers", { params: { delivery_cities: region.cities } })
+      .then((r) => {
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        const list = parsed.success ? parsed.data : [];
+        if (!cancelled) {
+          setRegionFallback(
+            list.length ? { regionName: region.name, producers: list } : null,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRegionFallback(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [producers, producersLoading, filters.delivery_city]);
 
   // MEH-1080: handleCategoryCardClick removed — homepage category cards are
   // real <Link>s to /producers?category=<id> (HomeCategoryGrid.jsx); no
@@ -553,6 +597,7 @@ export function useHomePage() {
     user,
     // raw state
     producers,
+    regionFallback,
     categories,
     filters,
     chips,

@@ -71,6 +71,9 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  // MEH-1412 (MEH-1388 chunk 3): pickup/market_stand marker layer visibility.
+  // Default on — all points show; the MapPane toggle flips it.
+  const [showSecondaryLayer, setShowSecondaryLayer] = useState(true);
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
@@ -377,6 +380,7 @@ export default function MapPage() {
       resultCount={filters.visibleProducers.length}
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
+      activeAttributeCount={filters.activeAttributeCount}
     />
   );
 
@@ -391,6 +395,8 @@ export default function MapPage() {
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
       visitedIds={hints.visitedIds}
+      showSecondaryLayer={showSecondaryLayer}
+      onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
@@ -430,7 +436,7 @@ export default function MapPage() {
         // cancel any pending debounced sheet fetch so it can't clobber this reset.
         // MEH-1087: + kosher (verified-only kashrut toggle).
         filters.cancelPendingSheetFetch();
-        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
+        filters.setChipState({ categoryKeys: [], organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
         filters.setActiveCategoryNames(null);
         filters.setCommittedBounds(null);
         filters.setCityFilter("");
@@ -589,6 +595,7 @@ export default function MapPage() {
         <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading}>
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
+            selectedLocation={sync.selectedLocation}
             onClose={() => filters.setSelectedProducer(null)}
           />
           {cardList}

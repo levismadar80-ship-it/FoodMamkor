@@ -8,11 +8,13 @@ import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import CitySearch from "@/components/CitySearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
@@ -39,6 +41,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     max_participants: "",
     deadline: "",
     city: producerCity || "",
+    fulfillment_note: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +72,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
         deadline: new Date(form.deadline).toISOString(),
       });
+      showToast.success(t("toast_created")); // MEH-1446
       onCreated();
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
@@ -95,6 +99,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             label={`${t("title_label")}${t("required_marker")}`}
             value={form.title}
             onChange={set("title")}
+            placeholder={t("title_placeholder")}
             required
             dir="rtl"
           />
@@ -105,6 +110,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           <textarea
             value={form.description}
             onChange={set("description")}
+            placeholder={t("description_placeholder")}
             rows={2}
             className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
             dir="rtl"
@@ -115,6 +121,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           label={`${t("product_name_label")}${t("required_marker")}`}
           value={form.product_name}
           onChange={set("product_name")}
+          placeholder={t("product_name_placeholder")}
           required
           dir="rtl"
         />
@@ -168,6 +175,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           min={2}
           value={form.min_participants}
           onChange={set("min_participants")}
+          placeholder={t("min_placeholder")}
           required
           dir="ltr"
         />
@@ -177,6 +185,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           min={2}
           value={form.max_participants}
           onChange={set("max_participants")}
+          placeholder={t("max_placeholder")}
           dir="ltr"
         />
 
@@ -191,12 +200,33 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           helperText={t("deadline_helper")}
           dir="ltr"
         />
-        <Input
+        {/* MEH-1455: canonical CitySearch (was a free-text Input) — a group
+            created with a canonical city name is findable under the /group-buys
+            city filter (exact-match `GroupBuy.city == city`). Prefill from
+            producerCity kept; free typing still allowed (CitySearch default). */}
+        <CitySearch
+          id="gb-city"
           label={t("city_label")}
+          labelVisible
           value={form.city}
-          onChange={set("city")}
-          dir="rtl"
+          onChange={(val) => setForm({ ...form, city: val })}
         />
+
+        {/* MEH-1457: optional "מתי ואיך מקבלים" — free text (OFN "Ready for"). */}
+        <div className="sm:col-span-2">
+          <label htmlFor="gb-fulfillment" className="block text-sm font-medium mb-1">
+            {t("fulfillment_label")}
+          </label>
+          <textarea
+            id="gb-fulfillment"
+            value={form.fulfillment_note}
+            onChange={set("fulfillment_note")}
+            placeholder={t("fulfillment_placeholder")}
+            rows={2}
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
+            dir="rtl"
+          />
+        </div>
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
@@ -292,14 +322,24 @@ export default function ProducerGroupBuysPage() {
           {/* MEH-1115: what a group buy is, under the page heading. */}
           <WhatsThis content={tWhat("group_buy")} testId="whats-this-group-buy" />
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          disabled={notApproved}
-          aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
-          className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
-        >
-          {showForm ? t("btn_close_form") : t("btn_open_form")}
-        </button>
+        {/* MEH-1420: hide the header toggle in the approved empty state so the
+            EmptyState CTA is the single create entry point (mirrors MEH-1097 F14
+            in recipes/page.js:85). The button returns once a group exists, or
+            while the form is open (rendering as "close"). notApproved is the
+            exception — keep the disabled button + aria-describedby hint
+            (MEH-1350 / MEH-1165): EmptyState self-hides its CTA there, so hiding
+            the header button too would orphan the hint's aria-describedby target
+            and leave zero affordance. */}
+        {!(items?.length === 0 && !showForm && !notApproved) && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            disabled={notApproved}
+            aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
+            className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            {showForm ? t("btn_close_form") : t("btn_open_form")}
+          </button>
+        )}
       </div>
 
       {/* MEH-1165: why-locked hint, aria-describedby-linked so it's announced

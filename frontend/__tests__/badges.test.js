@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  BADGE_CONFIG,
   BADGE_PRIORITY,
   allBadges,
   topBadges,
@@ -9,13 +10,15 @@ import {
 describe("BADGE_PRIORITY", () => {
   it("matches the Phase B fold order", () => {
     // MEH-1259: "organic" removed from the priority list (badge hidden).
+    // MEH-1492: recommended drops below license (fact before opinion).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
       "grass_fed",
       "gluten_free",
+      "vegetarian",
       "vegan",
       "lactose_free",
       "kosher",
@@ -135,6 +138,22 @@ describe("allBadges", () => {
     expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
   });
 
+  // MEH-1438: vegetarian badge — driven by the aggregated has_vegetarian_products
+  // (is_vegetarian OR is_vegan). Priority sits after gluten_free, before vegan.
+  it("vegetarian — when has_vegetarian_products is true", () => {
+    expect(allBadges({ has_vegetarian_products: true }).map((b) => b.key)).toEqual(["vegetarian"]);
+  });
+
+  it("vegetarian priority — sits between gluten_free and vegan", () => {
+    expect(
+      allBadges({
+        has_gluten_free_products: true,
+        has_vegetarian_products: true,
+        has_vegan_products: true,
+      }).map((b) => b.key),
+    ).toEqual(["gluten_free", "vegetarian", "vegan"]);
+  });
+
   it("lactose_free — when has_lactose_free_products is true", () => {
     expect(allBadges({ has_lactose_free_products: true }).map((b) => b.key)).toEqual(["lactose_free"]);
   });
@@ -235,10 +254,11 @@ describe("allBadges", () => {
       verification_tier: "verified",
     });
     // MEH-1259: organic_certified is set but earns no badge — absent from order.
+    // MEH-1492: license now precedes recommended.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
       "grass_fed",
       "gluten_free",
@@ -302,10 +322,10 @@ describe("topBadges", () => {
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
-  // MEH-531: license sits between recommended and new.
+  // MEH-1492: license now sits between verified and recommended (fact > opinion).
   // MEH-1162: fixture must be verified-tier — an unverified license no longer
   // earns the chip, so the verified badge (priority 0) leads the expectation.
-  it("license priority — sits between recommended and new", () => {
+  it("license priority — sits between verified and recommended", () => {
     const p = {
       verification_tier: "verified",
       is_recommended: true,
@@ -314,16 +334,49 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 4).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
       "new",
     ]);
-    // limit=3 → verified + recommended + license, new gets truncated
+    // limit=3 → verified + license + recommended, new gets truncated
     expect(topBadges(p, 3).map((b) => b.key)).toEqual([
       "verified",
-      "recommended",
       "license",
+      "recommended",
     ]);
+  });
+});
+
+// MEH-1439: dietary badges light on has_X_products (ANY marked product, MEH-479),
+// so the tooltip must not claim the WHOLE catalog. The old copy over-claimed
+// ("כל המוצרים טבעוניים", "המוצרים מתאימים...") — same over-claim risk family as
+// MEH-1259 organic. New copy = "לעסק יש מוצרים ... מסומנים בקטלוג".
+describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
+  it("vegan tooltip states any-product semantics, not 'all products'", () => {
+    expect(BADGE_CONFIG.vegan.tooltip).toBe(
+      "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+    );
+    expect(BADGE_CONFIG.vegan.tooltip).not.toMatch(/כל המוצרים/);
+  });
+
+  it("gluten_free tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.gluten_free.tooltip).toBe(
+      "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
+    );
+    expect(BADGE_CONFIG.gluten_free.tooltip).not.toMatch(/צליאק/);
+  });
+
+  it("lactose_free tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.lactose_free.tooltip).toBe(
+      "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
+    );
+  });
+
+  // MEH-1438: vegetarian tooltip mirrors the same any-product wording.
+  it("vegetarian tooltip states any-product semantics", () => {
+    expect(BADGE_CONFIG.vegetarian.tooltip).toBe(
+      "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
+    );
   });
 });
 

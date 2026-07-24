@@ -22,7 +22,13 @@ import OwnerCard from "./OwnerCard";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
+// MEH-1460: the "טעות בפרטים?" correction link relocated here from
+// ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
+import ReportInfoModal from "@/components/ReportInfoModal";
 import ReviewsSection from "@/components/ReviewsSection";
+// MEH-1490: quiet live-fetch Google-rating line — renders below (and detached
+// from) the native reviews block, only for producers an admin mapped.
+import GoogleRatingLine from "@/components/GoogleRatingLine";
 
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
@@ -68,6 +74,9 @@ export default function ProducerSections({
   const format = useFormatter();
   const locale = useLocale();
   const [showAllEvents, setShowAllEvents] = useState(false);
+  // MEH-1460: "report wrong info" modal — moved from ContactCard so the
+  // correction link lives in the page-end meta block, not the CTA card.
+  const [reportOpen, setReportOpen] = useState(false);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -107,6 +116,21 @@ export default function ProducerSections({
   const gridProducts = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
+
+  // MEH-1463: when the signature product was deduped out of the grid and the
+  // free-text starting_price_label is empty, surface the matched product's own
+  // price/description on the highlight card so the info the dedup removed isn't
+  // lost. starting_price_label keeps priority when present (unchanged). Numeric
+  // price → canonical formatPriceRange (MEH-1140) with dir="ltr" bidi isolation;
+  // free-text price_range is DATA (MEH-1305 F) rendered in natural direction.
+  const signatureNumericPrice =
+    !producer.starting_price_label && signatureProduct?.price_min != null
+      ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
+      : null;
+  const signatureFreeTextPrice =
+    !producer.starting_price_label && !signatureNumericPrice
+      ? signatureProduct?.price_range || null
+      : null;
 
   return (
     <>
@@ -165,12 +189,25 @@ export default function ProducerSections({
                 )}
               </div>
               <div className="min-w-0">
+                {/* MEH-1463: accent eyebrow so the card reads as "the signature
+                    product", not just a bigger unlabeled row. */}
+                <p className="text-accent text-xs font-medium">
+                  {t("producer.detail.sections.products.signature_label")}
+                </p>
                 {producer.top_product_name && (
                   <p className="font-medium text-text">{producer.top_product_name}</p>
                 )}
-                {producer.starting_price_label && (
-                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                {/* MEH-1463: description fallback from the deduped grid product. */}
+                {signatureProduct?.description && (
+                  <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
+                {producer.starting_price_label ? (
+                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                ) : signatureNumericPrice ? (
+                  <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
+                ) : signatureFreeTextPrice ? (
+                  <p className="text-accent font-semibold mt-0.5">{signatureFreeTextPrice}</p>
+                ) : null}
               </div>
             </div>
           )}
@@ -401,6 +438,15 @@ export default function ProducerSections({
         )}
       </div>
 
+      {/* MEH-1490: quiet Google-rating trust line — detached from the native
+          reviews block above (its own border-t + margin, ToS visual separation
+          + cannibalization guard). Mount is gated on a mapped place_id so
+          unmapped producers make zero requests; the component itself renders
+          nothing on a 204 (< 20 reviews / API error / no key). */}
+      {producer.google_place_id && (
+        <GoogleRatingLine producerId={producer.id} producerName={producer.name} />
+      )}
+
       {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
       {similarProducers.length >= 3 && (
         <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
@@ -479,7 +525,23 @@ export default function ProducerSections({
       {/* Report — stays at the page end, below the discovery loop. */}
       <div className="mt-6 pt-6 border-t border-border">
         <ReportButton producerId={producer.id} />
+        {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
+            directly below ReportButton (opens the MEH-1443 email-only modal).
+            Relocated here from ContactCard — same quiet-link styling. */}
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
+        >
+          {t("producer.detail.contact_card.report_info_link")}
+        </button>
       </div>
+
+      <ReportInfoModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        producerSlug={producer.slug || producer.id}
+      />
 
       {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
           edit has stamped producer.updated_at (nullable, no backfill — Chunk A

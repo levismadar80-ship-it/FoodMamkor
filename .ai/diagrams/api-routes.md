@@ -40,7 +40,7 @@ graph LR
 
 ```mermaid
 graph TD
-    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified]
+    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified<br/>sort=newest default | rating MEH-1483]
     GProducers --> LProducers[Haversine distance,<br/>status=approved only]
 
     Home --> GCategories[GET /categories<br/>🌐 list all]
@@ -50,11 +50,13 @@ graph TD
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
+    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
+    GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist]
 ```
 
 ## 3. Auth + account self-service
@@ -103,6 +105,7 @@ graph TD
 
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
+    Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
 ```
 

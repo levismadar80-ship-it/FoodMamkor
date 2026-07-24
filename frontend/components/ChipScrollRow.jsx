@@ -1,22 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
-// MEH-1383: arrow click pages ~80% of the visible row width per press.
-const SCROLL_STEP_RATIO = 0.8;
-const DESKTOP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
 // the conventional equivalence.
 const WHEEL_LINE_PX = 16;
 
+// MEH-1465: fallback --cat-ring for a SELECTED category chip whose descriptor
+// carries no iconColor (an admin category with no CATEGORY_STYLES entry). The
+// DEFAULT category green (= primary / DEFAULT_CATEGORY_STYLE.color) — never a
+// new palette colour (MEH-763 lock).
+const DEFAULT_CAT_RING = "#2e6853";
+
 /**
  * Scrollable chip row for filter bars.
  *
- * variant="category" — radio semantics; one chip active at a time.
- *   activeKey: string key of the selected chip.
+ * variant="category" — MULTI-select (MEH-1465). Callers pass EITHER the
+ *   legacy single-key `activeKey` string (length-1 selection — /events + the
+ *   pre-1465 rows) OR an `activeKeys` Set of the selected category keys. Both
+ *   normalise to one Set internally, so a selection of any size renders the
+ *   MEH-1181-A "Direction A" language (category-colour ring + faint wash +
+ *   neutral label) on each selected chip. "כל" is the reset sentinel.
  *
  * variant="toggle" — boolean; any combination can be active.
  *   activeKeys: object { chipKey: boolean }.
@@ -36,13 +43,17 @@ const WHEEL_LINE_PX = 16;
  * Shrink-0 spacer at scroll-end also fixes RTL padding-inline-end clipping.
  *
  * MEH-1383: desktop-pointer (hover:hover + pointer:fine) devices also get
- * round edge scroll-arrow buttons above the fades. Each arrow reuses its
- * side's sentinel signal (showStartFade/showEndFade) — the sentinels ARE
- * the can-scroll-in-that-direction fact, and they already live-update on
- * scroll and resize via the IntersectionObserver, so no second overflow
- * mechanism (scroll listener + ResizeObserver) is added. Touch devices
- * render zero extra DOM. Vertical wheel over the row translates to
- * horizontal scroll (desktop only), passing through at the edges.
+ * round edge scroll-arrow buttons above the fades. Touch devices render
+ * zero extra DOM. Vertical wheel over the row translates to horizontal
+ * scroll (desktop only), passing through at the edges.
+ *
+ * MEH-1391: the arrow logic moved to the shared useScrollAffordance hook
+ * (also used by FridayDeliveryStrip + HomeRecentlyViewed). Arrows are now
+ * driven by the hook's scroll+ResizeObserver math; the FADES stay on the
+ * MEH-1340 IO sentinels (they also feed the scrollIntoView clearance
+ * design). Two signals for overlapping facts is a known, deliberate
+ * trade: the hook is the single authority for ARROW affordance across
+ * all strips, the sentinels remain the single authority for fades here.
  */
 export default function ChipScrollRow({
   chips,
@@ -55,7 +66,9 @@ export default function ChipScrollRow({
 }) {
   const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
-  const scrollRef = useRef(null);
+  // MEH-1391: scrollRef + arrow state come from the shared hook.
+  const affordance = useScrollAffordance();
+  const { scrollRef, showArrows } = affordance;
   const prevActiveKeysRef = useRef(null);
   // MEH-1340: sentinels observed by one IntersectionObserver to drive the
   // dynamic edge fades. A fade shows only while its sentinel is off-screen
@@ -65,12 +78,25 @@ export default function ChipScrollRow({
   const endSentinelRef = useRef(null);
   const [showStartFade, setShowStartFade] = useState(false);
   const [showEndFade, setShowEndFade] = useState(false);
-  // MEH-1383: desktop-pointer gate for the edge scroll arrows. False on
-  // the server and on touch devices — those render zero arrow DOM.
-  const [hasFinePointer, setHasFinePointer] = useState(false);
 
+  // MEH-1465: normalise the category selection to one Set regardless of which
+  // prop the caller passed — an `activeKeys` Set (multi-select) or the legacy
+  // `activeKey` string (length-1). "all" is never a member: it is the reset
+  // sentinel, styled separately (solid primary baseline / ghost when ≥1 active).
+  const categorySet = useMemo(() => {
+    if (variant !== "category") return null;
+    if (activeKeys instanceof Set) return activeKeys;
+    return new Set(activeKey && activeKey !== "all" ? [activeKey] : []);
+  }, [variant, activeKeys, activeKey]);
+
+  // A chip reads as "pressed" when it is the current active affordance:
+  //   - toggle variant: its key is on in activeKeys
+  //   - category chip:  its key is in the selected Set
+  //   - "כל" reset:     nothing is selected (the baseline active state)
   function isActive(chip) {
-    return variant === "category" ? chip.key === activeKey : !!activeKeys[chip.key];
+    if (variant !== "category") return !!activeKeys[chip.key];
+    if (chip.key === "all") return categorySet.size === 0;
+    return categorySet.has(chip.key);
   }
 
   function scrollChipIntoView(key) {
@@ -88,20 +114,26 @@ export default function ChipScrollRow({
   useEffect(() => {
     const hasActiveFilter =
       variant === "category"
-        ? activeKey && activeKey !== "all"
+        ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
     if (!hasActiveFilter) {
       scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
     }
   }, []);
 
-  // Category: scroll the active chip into view when it changes. On mount
-  // the useEffect above already pins to scrollLeft:0; only pull a
-  // non-first chip into view on later changes.
+  // Category: scroll the LAST-ACTIVATED chip into view (MEH-1465 — mirrors the
+  // toggle-variant diff below now that categories are multi-select). On mount,
+  // pull the first already-selected chip in (URL-seeded state); on later changes
+  // pull whichever key was just added to the Set.
+  const prevCategorySetRef = useRef(null);
   useEffect(() => {
-    if (variant !== "category" || !activeKey) return;
-    scrollChipIntoView(activeKey);
-  }, [variant, activeKey]);
+    if (variant !== "category") return;
+    const prev = prevCategorySetRef.current;
+    const keys = [...categorySet];
+    const keyToScroll = prev === null ? keys[0] : keys.find((k) => !prev.has(k));
+    if (keyToScroll) scrollChipIntoView(keyToScroll);
+    prevCategorySetRef.current = categorySet;
+  }, [variant, categorySet]);
 
   // Toggle: scroll the newly activated chip into view. On mount, scroll to
   // the first already-active chip (e.g. pre-set from URL state).
@@ -143,27 +175,15 @@ export default function ChipScrollRow({
     return () => io.disconnect();
   }, []);
 
-  // MEH-1383: matchMedia gates the arrows' rendering; the `change`
-  // listener keeps hybrids (convertible laptops, external mouse plugged
-  // into a tablet) live-correct without a reload.
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return;
-    }
-    const mq = window.matchMedia(DESKTOP_POINTER_QUERY);
-    setHasFinePointer(mq.matches);
-    const onChange = (e) => setHasFinePointer(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
   // MEH-1383 bonus: vertical wheel over the row → horizontal scroll,
-  // desktop-pointer only. Native listener because React's root-attached
-  // wheel handler is passive — preventDefault would be ignored. At either
-  // edge the event is left alone so the page keeps scrolling normally.
+  // desktop-pointer only (showArrows = the hook's matchMedia gate).
+  // Native listener because React's root-attached wheel handler is
+  // passive — preventDefault would be ignored. At either edge the event
+  // is left alone so the page keeps scrolling normally. Stays here (not
+  // in the hook): ChipScrollRow-only behavior per MEH-1391 scope.
   useEffect(() => {
     const el = scrollRef.current;
-    if (!hasFinePointer || !el) return;
+    if (!showArrows || !el) return;
     const onWheel = (e) => {
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       const maxScroll = el.scrollWidth - el.clientWidth;
@@ -179,17 +199,7 @@ export default function ChipScrollRow({
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [hasFinePointer]);
-
-  // MEH-1383: arrow click. dir="rtl" is fixed on the wrapper, so a
-  // negative left delta always moves toward the inline-end (see the RTL
-  // scrollLeft note in the wheel handler above).
-  function scrollStep(towardEnd) {
-    const el = scrollRef.current;
-    if (!el) return;
-    const delta = Math.round(el.clientWidth * SCROLL_STEP_RATIO);
-    el.scrollBy({ left: towardEnd ? -delta : delta, behavior: "smooth" });
-  }
+  }, [showArrows]);
 
   return (
     <div className={`relative min-w-0 ${className}`} dir="rtl">
@@ -215,36 +225,10 @@ export default function ChipScrollRow({
           aria-hidden="true"
         />
       )}
-      {/* MEH-1383: desktop-only edge scroll arrows, above the fades
-          (z-20 > fade z-10). Each renders only while its side's sentinel
-          reports hidden content — same signal as the fades, so an arrow
-          vanishes exactly when scroll in its direction is exhausted.
-          tabIndex=-1 + aria-hidden: pointer affordance only; chips are
-          already keyboard-reachable, and no i18n label is needed. */}
-      {hasFinePointer && showStartFade && (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => scrollStep(false)}
-          className="absolute start-1 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary"
-        >
-          {/* Inline-start = physical RIGHT in RTL — caret points at the hidden content. */}
-          <CaretRight size={16} weight="bold" />
-        </button>
-      )}
-      {hasFinePointer && showEndFade && (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => scrollStep(true)}
-          className="absolute end-1 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary"
-        >
-          {/* Inline-end = physical LEFT in RTL. */}
-          <CaretLeft size={16} weight="bold" />
-        </button>
-      )}
+      {/* MEH-1383/MEH-1391: desktop-only edge scroll arrows, above the
+          fades (z-20 > fade z-10), rendered by the shared hook pair —
+          per-direction visibility from the hook's scroll+RO math. */}
+      <ScrollArrows affordance={affordance} />
       <div
         ref={scrollRef}
         // MEH-1314: snap-proximity (NOT mandatory) so a chip rests aligned to
@@ -255,7 +239,10 @@ export default function ChipScrollRow({
         // MEH-1340: scroll-pe-12 matches the end fade width so scrollIntoView
         // on an active chip stops clear of the fade zone (no JS offset math).
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-4 snap-x snap-proximity scroll-ps-4 scroll-pe-12"
-        role={variant === "category" ? "radiogroup" : "toolbar"}
+        // MEH-1465: category is now MULTI-select (a toolbar of toggle buttons),
+        // not a single-choice radiogroup — both variants use role="toolbar";
+        // aria-pressed on each button carries the on/off state.
+        role="toolbar"
         aria-label={variant === "category" ? t("category_aria") : t("attribute_aria")}
       >
         {/* MEH-1340: inline-start sentinel — visible ⇒ at the start edge ⇒
@@ -263,6 +250,44 @@ export default function ChipScrollRow({
         <div ref={startSentinelRef} className="shrink-0 w-px" aria-hidden="true" />
         {chips.map((chip) => {
           const active = isActive(chip);
+          // MEH-1465 + MEH-1181-A "Direction A": a SELECTED category chip carries
+          // its category colour as a ring + 12% wash with a neutral dark label
+          // (the ring/glyph carry the colour, the label stays ≥4.5:1) — NOT the
+          // solid state-selected fill. The solid fill is kept for toggle chips
+          // and the "כל" reset baseline; "כל" drops to a ghost once ≥1 category
+          // is selected, so the coloured selection reads as the active state and
+          // "כל" reads as the escape. Spec: docs/DESIGN.md:478-506.
+          const isReset = variant === "category" && chip.key === "all";
+          const isCategorySelected = variant === "category" && !isReset && active;
+          // --cat-ring = the category's registry tint (textColor ?? color) — the
+          // exact value declared as the chip's `iconColor` (map-chips.js /
+          // ProducersClient). Fallback to the DEFAULT category green for an admin
+          // category with no registry style.
+          const catRing = chip.iconColor || DEFAULT_CAT_RING;
+          let stateClass;
+          let stateStyle;
+          if (isCategorySelected) {
+            stateClass = "text-text"; // neutral dark label (token = #1c1a17)
+            stateStyle = {
+              background: `color-mix(in srgb, ${catRing} 12%, #fff)`,
+              border: `1.5px solid ${catRing}`,
+              fontWeight: 600,
+            };
+          } else if (isReset && !active) {
+            // "כל" ghost — ≥1 category selected → it is the escape, not the state.
+            stateClass = "bg-white text-muted border-border";
+          } else if (active) {
+            // solid fill: toggle-active chips + the "כל" baseline.
+            stateClass = "bg-state-selected text-white border-state-selected";
+          } else {
+            stateClass =
+              "bg-white text-text border-border hover:border-primary hover:text-primary";
+          }
+          // Glyph tint: keep the category colour on the glyph UNLESS the chip is a
+          // solid white-fill state (toggle-active / "כל" baseline), where the
+          // glyph inherits the button's white currentColor. A SELECTED category
+          // chip (Direction A) KEEPS the tint — the glyph carries the colour.
+          const glyphSolidWhite = active && !isCategorySelected;
           return (
             <button
               key={chip.key}
@@ -273,15 +298,19 @@ export default function ChipScrollRow({
               type="button"
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
-              // MEH-764: chips are rounded-md + state-selected on ALL surfaces
-              // (/home, /producers, /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${
-                active
-                  ? "bg-state-selected text-white border-state-selected"
-                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
-              }`}
+              // MEH-764: chips are rounded-md on ALL surfaces (/home, /producers,
+              // /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
+              style={stateStyle}
             >
-              {chip.icon && <span aria-hidden="true">{chip.icon}</span>}
+              {chip.icon && (
+                <span
+                  aria-hidden="true"
+                  style={!glyphSolidWhite && chip.iconColor ? { color: chip.iconColor } : undefined}
+                >
+                  {chip.icon}
+                </span>
+              )}
               {chip.label}
             </button>
           );

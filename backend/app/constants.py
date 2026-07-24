@@ -72,3 +72,28 @@ PRODUCER_LICENSE_MAX_LENGTH: int = 20
 #     commitment wording ("פועל כדין… ההצהרה תישאר נכונה כל עוד העסק
 #     מופיע במהמקור…") + conditional farmer line. New wording = new version.
 DECLARATION_VERSION: str = "2026-06-v2"
+
+# MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
+# self-reported attribution captured at the final registration step). English
+# keys are stored in the DB; the Hebrew labels are rendered from i18n
+# (frontend/messages/*.json → auth.register.producer.fields.referral_source.*).
+# Fixed order mirrors the dropdown. Validated at the API boundary
+# (ProducerRegister._validate_referral_source → 422 on an unknown value); there
+# is NO DB CHECK/enum, matching the app-layer enforcement of availability_state /
+# verification_doc_type. "prefer_not_to_say" is a first-class choice so the field
+# can be a required dropdown without forcing a channel disclosure.
+#
+# DO NOT reorder or rename a key without updating the i18n label mirrors
+#        (he.json/en.json auth.register.producer.fields.referral_source.options)
+#        AND the REFERRAL_SOURCE_KEYS array in RegisterProducerClient.jsx — the
+#        DB stores these exact strings.
+REFERRAL_SOURCE_KEYS: tuple[str, ...] = (
+    "business_referral",
+    "friends_family",
+    "instagram",
+    "facebook",
+    "google",
+    "whatsapp_group",
+    "other",
+    "prefer_not_to_say",
+)

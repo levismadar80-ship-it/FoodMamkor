@@ -191,11 +191,14 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
     expect(onChipClick).toHaveBeenCalledWith("bread");
   });
 
-  it("category variant → radiogroup; active chip has aria-pressed", () => {
+  it("category variant → toolbar (MEH-1465 multi-select); active chip has aria-pressed", () => {
     render(
       <ChipScrollRow variant="category" activeKey="bread" chips={CHIPS} onChipClick={() => {}} />,
     );
-    expect(screen.getByRole("radiogroup")).toBeInTheDocument();
+    // MEH-1465: category rows are multi-select now → role="toolbar", not the
+    // single-choice "radiogroup".
+    expect(screen.getByRole("toolbar")).toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.getByText("לחמים ואפייה").closest("button")).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -219,10 +222,77 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
   });
 });
 
-describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
+describe("ChipScrollRow — category glyph tint (MEH-1465 Direction A)", () => {
+  // Chips carry a leading glyph (icon) + an iconColor. An INACTIVE category chip
+  // tints its glyph with iconColor. Under MEH-1181-A "Direction A", a SELECTED
+  // category chip ALSO keeps the tint (the ring/glyph carry the colour, the
+  // label stays neutral) — only a solid white-fill state (toggle-active, "כל"
+  // baseline) drops the tint so the glyph inherits white. A chip without
+  // iconColor is never tinted.
+  const TINT_CHIPS = [
+    { key: "meat", label: "בשר", icon: <span data-testid="glyph-meat" />, iconColor: "#c04040" },
+    { key: "dairy", label: "חלב", icon: <span data-testid="glyph-dairy" />, iconColor: "#3b72ad" },
+    { key: "all", label: "כל", icon: <span data-testid="glyph-all" /> }, // no iconColor
+  ];
+
+  function glyphWrapper(testid) {
+    return screen.getByTestId(testid).parentElement;
+  }
+
+  it("inactive category chip → glyph span is tinted with iconColor", () => {
+    render(
+      <ChipScrollRow variant="category" activeKey="all" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    expect(glyphWrapper("glyph-meat")).toHaveStyle({ color: "#c04040" });
+    expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
+  });
+
+  it("SELECTED category chip → glyph STAYS tinted (Direction A: glyph carries the colour)", () => {
+    render(
+      <ChipScrollRow variant="category" activeKey="meat" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    // Direction A: the selected chip is NOT a solid white fill, so the glyph keeps
+    // the category tint (unlike the old radio-fill behaviour where it went white).
+    expect(glyphWrapper("glyph-meat")).toHaveStyle({ color: "#c04040" });
+    // A different, inactive chip in the same row also stays tinted.
+    expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
+  });
+
+  it("toggle-active chip → glyph is NOT tinted (solid fill → inherits white)", () => {
+    render(
+      <ChipScrollRow
+        variant="toggle"
+        activeKeys={{ meat: true }}
+        chips={TINT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    // A solid state-selected fill (toggle-active) drops the tint so the glyph
+    // inherits the button's white currentColor.
+    expect(glyphWrapper("glyph-meat").getAttribute("style")).toBeNull();
+    // The still-inactive chip keeps its tint.
+    expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
+  });
+
+  it("chip without iconColor → glyph never tinted, active or not", () => {
+    const { rerender } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    expect(glyphWrapper("glyph-all").getAttribute("style")).toBeNull();
+    rerender(
+      <ChipScrollRow variant="category" activeKey="meat" chips={TINT_CHIPS} onChipClick={() => {}} />,
+    );
+    expect(glyphWrapper("glyph-all").getAttribute("style")).toBeNull();
+  });
+});
+
+describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383/MEH-1391)", () => {
   // The arrows are gated on (hover: hover) and (pointer: fine); each
   // matchMedia mock records its change listeners so a test can flip the
   // pointer capability live (hybrid devices).
+  // MEH-1391: visibility moved from the IO sentinels to the shared
+  // useScrollAffordance hook (scroll listener + RO math), so these tests
+  // drive scroll geometry + scroll events instead of firing the IO mock.
   let mqChangeListeners;
   let savedMatchMedia;
 
@@ -245,13 +315,24 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     };
   }
 
-  // Both sentinels off-screen = overflowing row scrolled to the middle.
-  function reportOverflowBothSides(container) {
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: false },
-    ]);
+  // Give the scroller real geometry (jsdom defaults everything to 0)
+  // and fire a scroll event so the hook recomputes.
+  function setScroll(container, { scrollWidth, clientWidth, scrollLeft }) {
+    const scroller = container.querySelector("div.overflow-x-auto");
+    Object.defineProperty(scroller, "scrollWidth", { value: scrollWidth, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: clientWidth, configurable: true });
+    Object.defineProperty(scroller, "scrollLeft", {
+      value: scrollLeft,
+      configurable: true,
+      writable: true,
+    });
+    fireEvent.scroll(scroller);
+    return scroller;
+  }
+
+  // Overflowing row scrolled to the middle (RTL: scrollLeft negative).
+  function setOverflowMid(container) {
+    return setScroll(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
   }
 
   beforeEach(() => {
@@ -268,7 +349,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
+    setOverflowMid(container);
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).toBeNull();
   });
@@ -278,7 +359,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
+    setOverflowMid(container);
     const { start, end } = getArrows(container);
     expect(start).not.toBeNull();
     expect(end).not.toBeNull();
@@ -295,11 +376,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: true },
-    ]);
+    setScroll(container, { scrollWidth: 500, clientWidth: 500, scrollLeft: 0 });
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).toBeNull();
   });
@@ -309,19 +386,12 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    const { start, end } = getSentinels(container);
     // At the start edge: can only scroll toward the end.
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: false },
-    ]);
+    setScroll(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: 0 });
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).not.toBeNull();
-    // At the far end: can only scroll back toward the start.
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: true },
-    ]);
+    // At the far end (RTL: scrollLeft at -max): only back toward the start.
+    setScroll(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
     expect(getArrows(container).start).not.toBeNull();
     expect(getArrows(container).end).toBeNull();
   });
@@ -331,9 +401,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
-    const scroller = container.querySelector("div.overflow-x-auto");
-    Object.defineProperty(scroller, "clientWidth", { value: 500, configurable: true });
+    const scroller = setOverflowMid(container);
     scroller.scrollBy = vi.fn();
     // dir="rtl": toward inline-end = NEGATIVE left delta.
     fireEvent.click(getArrows(container).end);
@@ -373,11 +441,103 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
+    setOverflowMid(container);
     expect(getArrows(container).end).not.toBeNull();
     expect(mqChangeListeners.length).toBeGreaterThan(0);
     act(() => mqChangeListeners.forEach((cb) => cb({ matches: false })));
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).toBeNull();
+  });
+});
+
+describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-1181-A)", () => {
+  // Category chips carry `iconColor` = the registry tint (textColor ?? color),
+  // which ChipScrollRow reuses as --cat-ring for the Direction A selected state.
+  const CAT_CHIPS = [
+    { key: "all", label: "כל" }, // reset sentinel — no iconColor
+    { key: "meat", label: "בשר ודגים", iconColor: "#c04040" },
+    { key: "dairy", label: "חלב וגבינות", iconColor: "#3b72ad" },
+    { key: "bread", label: "לחמים ואפייה", iconColor: "#896714" },
+  ];
+
+  function btn(label) {
+    return screen.getByText(label).closest("button");
+  }
+
+  it("legacy single-key activeKey selects one chip with the Direction A ring + wash", () => {
+    render(
+      <ChipScrollRow variant="category" activeKey="meat" chips={CAT_CHIPS} onChipClick={() => {}} />,
+    );
+    const style = btn("בשר ודגים").getAttribute("style");
+    // ring (1.5px, cat colour) + 12% wash + fw600, neutral label (no white fill).
+    // jsdom serialises the hex to rgb() in the style attribute (#c04040 →
+    // rgb(192, 64, 64)).
+    expect(style).toContain("border: 1.5px solid rgb(192, 64, 64)");
+    expect(style).toContain("color-mix(in srgb, rgb(192, 64, 64) 12%");
+    expect(style).toContain("font-weight: 600");
+    expect(btn("בשר ודגים").className).toContain("text-text");
+    expect(btn("בשר ודגים").className).not.toContain("bg-state-selected");
+    expect(btn("בשר ודגים")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("activeKeys Set selects MULTIPLE chips (each gets its own ring colour)", () => {
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set(["meat", "dairy"])}
+        chips={CAT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    expect(btn("בשר ודגים").getAttribute("style")).toContain("1.5px solid rgb(192, 64, 64)");
+    expect(btn("חלב וגבינות").getAttribute("style")).toContain("1.5px solid rgb(59, 114, 173)");
+    expect(btn("בשר ודגים")).toHaveAttribute("aria-pressed", "true");
+    expect(btn("חלב וגבינות")).toHaveAttribute("aria-pressed", "true");
+    // an unselected category chip stays the plain inactive style (no inline style)
+    expect(btn("לחמים ואפייה").getAttribute("style")).toBeNull();
+    expect(btn("לחמים ואפייה")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it('"כל" is a solid primary fill at baseline (nothing selected) and pressed', () => {
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set()}
+        chips={CAT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    expect(btn("כל").className).toContain("bg-state-selected");
+    expect(btn("כל").className).toContain("text-white");
+    expect(btn("כל")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it('"כל" drops to a ghost (bg-white + muted, not pressed) once ≥1 category is selected', () => {
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set(["meat"])}
+        chips={CAT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    expect(btn("כל").className).toContain("bg-white");
+    expect(btn("כל").className).toContain("text-muted");
+    expect(btn("כל").className).not.toContain("bg-state-selected");
+    expect(btn("כל")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("fires onChipClick with the chip key (toggle semantics live in the caller this chunk)", () => {
+    const onChipClick = vi.fn();
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set(["meat"])}
+        chips={CAT_CHIPS}
+        onChipClick={onChipClick}
+      />,
+    );
+    fireEvent.click(btn("חלב וגבינות"));
+    expect(onChipClick).toHaveBeenCalledWith("dairy");
   });
 });

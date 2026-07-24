@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import Input from "@/components/ui/Input";
@@ -175,6 +176,7 @@ export default function GroupBuyDetailClient({ id }) {
     try {
       await api.delete(`/group-buys/${id}/commit`);
       await load();
+      showToast.success(t("toast_cancelled")); // MEH-1446
     } catch (err) {
       // MEH-975: same array-detail crash guard as handleCommit.
       setError(detailToMessage(err.response?.data?.detail) || t("errors.cancel_failed"));
@@ -313,6 +315,13 @@ export default function GroupBuyDetailClient({ id }) {
             <p className="text-xs text-fg-muted mt-1">
               {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
+            {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
+            {gb.fulfillment_note && (
+              <p className="text-xs text-text mt-1 whitespace-pre-line">
+                <span className="font-medium">{t("fulfillment_prefix")}</span>
+                {gb.fulfillment_note}
+              </p>
+            )}
           </div>
 
           {/* Commit form */}

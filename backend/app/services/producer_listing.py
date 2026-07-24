@@ -31,13 +31,14 @@ from app.models import (
     DeliveryArea,
     Producer,
     ProducerCategory,
+    ProducerLocation,
     Product,
     SearchQuery,
 )
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
-    haversine_km,
+    haversine_min_km,
 )
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -111,7 +112,12 @@ def _build_base_queries(
     """
     if geo is not None:
         lat, lng, radius_km = geo
-        distance_expr = haversine_km(lat, lng).label("distance_km")
+        # MEH-1402: distance = the NEAREST of the producer's producer_locations
+        # rows (COALESCE fallback to Producer.lat/lng during the Expand
+        # overlap). It's a correlated scalar subquery — NOT a JOIN — so a
+        # 10-location producer stays ONE row and the DISTINCT count below is
+        # one-per-business (the _build_base_queries double-count trap).
+        distance_expr = haversine_min_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
             .options(
@@ -119,6 +125,8 @@ def _build_base_queries(
                 # MEH-18 — batch-load the two collections the badge system counts.
                 selectinload(Producer.products),
                 selectinload(Producer.delivery_areas),
+                # MEH-1402 — serialize locations[] on ProducerListOut w/o N+1.
+                selectinload(Producer.locations),
             )
             .filter(Producer.status == "approved")
         )
@@ -128,35 +136,52 @@ def _build_base_queries(
             .filter(Producer.status == "approved")
         )
         if require_physical:
-            # MEH-213 map-pin semantics: only producers with a physical
-            # location. MEH-1282 makes this opt-in (default OFF) so the home
-            # "קרוב אליי" flow can surface delivery-only producers too. Apply
-            # to BOTH q and count_q — see the 500-bug warning above.
-            q = q.filter(Producer.has_physical_location.is_(True))
-            count_q = count_q.filter(Producer.has_physical_location.is_(True))
-        # Haversine is undefined for NULL coords — exclude them before
-        # applying the distance filter.
-        q = (
-            q.filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
-            .filter(distance_expr <= radius_km)
-            .order_by(distance_expr.asc())
-        )
-        count_q = count_q.filter(
-            Producer.lat.isnot(None), Producer.lng.isnot(None)
-        ).filter(haversine_km(lat, lng) <= radius_km)
+            # MEH-213 map-pin semantics: pinnable producers only. MEH-1282
+            # made this opt-in (default OFF) so the home "קרוב אליי" flow can
+            # surface delivery-only producers too. MEH-1402 scoped reversal: a
+            # delivery-only producer (has_physical_location=false) that owns a
+            # pickup/market_stand location row IS now pinnable (at that point),
+            # while a producer with no such row stays hidden — no blanket
+            # unhide. Applied to BOTH q and count_q (the 500-bug warning above).
+            pinnable = or_(
+                Producer.has_physical_location.is_(True),
+                Producer.locations.any(
+                    ProducerLocation.kind.in_(("pickup", "market_stand"))
+                ),
+            )
+            q = q.filter(pinnable)
+            count_q = count_q.filter(pinnable)
+        # MEH-1402: the coalesced distance is NULL exactly when a producer has
+        # neither a usable location row NOR a Producer.lat/lng point, and
+        # `NULL <= radius` is false — so those drop out without an explicit
+        # coord-IS-NOT-NULL guard (which would wrongly exclude a producer that
+        # has a valid pickup location but no own Producer point).
+        q = q.filter(distance_expr <= radius_km).order_by(distance_expr.asc())
+        count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
 
-    order = (
-        (Producer.avg_rating.desc(), Producer.reviews_count.desc())
-        if sort == "rating"
-        else (Producer.created_at.desc(),)
-    )
+    if sort == "rating":
+        # MEH-1483: avg_rating DESC, NULLs last, tiebreak reviews_count DESC,
+        # then created_at DESC. `avg_rating.is_(None)` is a boolean order key
+        # (FALSE < TRUE → non-null first, null last) — the portable nulls-last
+        # idiom this codebase already uses instead of .nullslast() (see
+        # search.py:85-87, which orders on `(Producer.name != q_clean)`).
+        order = (
+            Producer.avg_rating.is_(None),
+            Producer.avg_rating.desc(),
+            Producer.reviews_count.desc(),
+            Producer.created_at.desc(),
+        )
+    else:
+        order = (Producer.created_at.desc(),)
     q = (
         db.query(Producer)
         .options(
             joinedload(Producer.categories),
             selectinload(Producer.products),
             selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] on ProducerListOut (LIST/DETAIL shape parity).
+            selectinload(Producer.locations),
         )
         .filter(Producer.status == "approved")
         .order_by(*order)
@@ -167,6 +192,29 @@ def _build_base_queries(
         .filter(Producer.status == "approved")
     )
     return q, count_q
+
+
+# MEH-1487: region-fallback OR-list cap — the largest region in
+# frontend/data/regions.js is ~18 cities; 40 is generous headroom while
+# still bounding a hostile caller's ?delivery_cities= list.
+_MAX_DELIVERY_CITIES = 40
+
+
+def _delivery_city_condition(city: str):
+    """A producer 'delivers to <city>' iff it has a delivery_areas row for
+    that city OR delivers nationwide and hasn't excluded it (MEH-1255).
+
+    Shared by the single `delivery_city` filter and the `delivery_cities`
+    region-fallback OR-list (MEH-1487) so the two matching paths never drift.
+    """
+    area_match = Producer.delivery_areas.any(
+        func.lower(DeliveryArea.city) == city.lower()
+    )
+    nationwide_match = and_(
+        Producer.delivery_nationwide.is_(True),
+        ~Producer.delivery_excluded_cities.any(city),
+    )
+    return or_(area_match, nationwide_match)
 
 
 def _kosher_condition(kosher: bool):
@@ -196,7 +244,7 @@ def _kosher_condition(kosher: bool):
     )
 
 
-def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
+def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, PLR0915  # 15 boolean filter pairs by design (MEH-1438 added the vegetarian OR-branch) — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (vegetarian / kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
     # boolean column needs only an extra row, not a new branch.
@@ -222,6 +270,19 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
         cond = Producer.products.any(prod_col.is_(True))
         q = q.filter(cond if val else ~cond)
         count_q = count_q.filter(cond if val else ~cond)
+
+    # MEH-1438 — vegetarian axis. A vegan product is vegetarian by definition,
+    # so ?vegetarian=true matches a producer with at least one product that is
+    # is_vegetarian OR is_vegan (the owner needn't mark both); ?vegetarian=false
+    # is the complement (no such product). Kept out of _DIETARY_FILTERS because
+    # that table maps a single column — this is a two-column OR condition.
+    vegetarian = filters.get("vegetarian")
+    if vegetarian is not None:
+        veg_cond = Producer.products.any(
+            or_(Product.is_vegetarian.is_(True), Product.is_vegan.is_(True))
+        )
+        q = q.filter(veg_cond if vegetarian else ~veg_cond)
+        count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)
 
     # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
     # explicitly filter by availability_state, exclude vacation producers from
@@ -252,32 +313,42 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
             q = q.filter(Producer.verified_at.is_(None))
             count_q = count_q.filter(Producer.verified_at.is_(None))
 
+    # MEH-1465: category filter is now OR over a list of ids. An EXISTS
+    # (Producer.categories.any) replaces the prior JOIN — a producer linked to
+    # two of the selected categories would otherwise appear TWICE in the full
+    # SELECT (the JOIN fans out one row per matching producer_categories row;
+    # count_q was already DISTINCT, so page and count would disagree). EXISTS
+    # matches at most once regardless of how many ids overlap. `category` may be
+    # a bare int from a legacy single-value call — normalize to a list.
+    # REUSES: the dietary EXISTS pattern above (Producer.products.any).
     category = filters.get("category")
-    if category is not None:
-        q = q.join(ProducerCategory).filter(ProducerCategory.category_id == category)
-        count_q = count_q.join(ProducerCategory).filter(
-            ProducerCategory.category_id == category
-        )
+    if category:
+        category_ids = category if isinstance(category, list) else [category]
+        cat_cond = Producer.categories.any(Category.id.in_(category_ids))
+        q = q.filter(cat_cond)
+        count_q = count_q.filter(cat_cond)
 
     delivery_city = filters.get("delivery_city")
+    delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
     if delivery_city:
         # MEH-1255: nationwide producers now match any delivery_city EXCEPT
-        # their exclusion list ("לכל הארץ חוץ מ:"). Before this they were
-        # never returned here at all — the XOR keeps their delivery_areas
-        # empty, so the old inner JOIN dropped them. EXISTS (.any()) replaces
-        # the JOIN so the OR branch isn't swallowed by join semantics; for
-        # area-based producers the result set is identical.
-        area_match = Producer.delivery_areas.any(
-            func.lower(DeliveryArea.city) == delivery_city.lower()
-        )
-        nationwide_match = and_(
-            Producer.delivery_nationwide.is_(True),
-            ~Producer.delivery_excluded_cities.any(delivery_city),
-        )
-        city_cond = or_(area_match, nationwide_match)
+        # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used so
+        # the OR branch isn't swallowed by join semantics; for area-based
+        # producers the result set is identical. Extracted to
+        # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
+        city_cond = _delivery_city_condition(delivery_city)
         q = q.filter(city_cond)
         count_q = count_q.filter(city_cond)
+    elif delivery_cities:
+        # MEH-1487: region fallback — OR the SAME per-city condition across
+        # the region's cities (nationwide-minus-excluded honoured per city).
+        # Cap + empty-strip guard bound a hostile / malformed list.
+        cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
+        if cities:
+            city_cond = or_(*[_delivery_city_condition(c) for c in cities])
+            q = q.filter(city_cond)
+            count_q = count_q.filter(city_cond)
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
         count_q = count_q.filter(Producer.delivery_areas.any())
@@ -293,10 +364,14 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
 def _apply_search_filter(
     db: Session, q, count_q, search_q: str | None, *, geo_search: bool
 ):
-    """MEH-99 cross-field search: name · description · city · category names · product names.
+    """MEH-99 cross-field search: name · description · city · category names · product names · delivery cities.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
     prefix, then rating, then created_at) — geo mode keeps distance ASC.
+
+    MEH-1488: the search also matches a business's delivery_areas.city, so
+    `q=<city>` surfaces a producer that DELIVERS to that city even when its
+    own Producer.city differs (the city the owner typed under "אזורי משלוח").
     """
     if not (search_q and search_q.strip()):
         return q, count_q
@@ -321,12 +396,25 @@ def _apply_search_filter(
         )
         .exists()
     )
+    # MEH-1488: EXISTS on delivery_areas.city — same pattern as has_category /
+    # has_product. Matches a producer that delivers to the searched city even
+    # when its own Producer.city differs (the exact-match delivery_city filter
+    # in _apply_scalar_filters is a separate, stricter path).
+    has_delivery_city = (
+        db.query(DeliveryArea)
+        .filter(
+            DeliveryArea.producer_id == Producer.id,
+            DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE),
+        )
+        .exists()
+    )
     search_filter = (
         Producer.name.ilike(like, escape=LIKE_ESCAPE)
         | Producer.description.ilike(like, escape=LIKE_ESCAPE)
         | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         | has_category
         | has_product
+        | has_delivery_city
     )
     q = q.filter(search_filter)
     count_q = count_q.filter(search_filter)
@@ -399,7 +487,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
-    category, delivery_city, has_delivery, verified, kosher, city,
+    category, delivery_city, delivery_cities, has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)

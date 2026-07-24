@@ -4,6 +4,11 @@ import * as Sentry from "@sentry/nextjs";
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true,
+  // MEH-1465: render array query params as repeated keys (?category=1&category=2),
+  // NOT axios's default bracket form (?category[]=1). FastAPI's `list[int]` query
+  // parsing reads repeated bare keys; the bracketed form is silently ignored,
+  // which would drop a multi-id category filter. Applies to every array param.
+  paramsSerializer: { indexes: null },
 });
 
 // Attach JWT token to requests

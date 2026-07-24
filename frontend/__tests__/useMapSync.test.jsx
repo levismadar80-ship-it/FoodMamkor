@@ -64,3 +64,54 @@ describe("useMapSync — handleCardClick (MEH-1298: no page scroll)", () => {
     expect(props.setSelectedProducer).not.toHaveBeenCalled();
   });
 });
+
+// MEH-1412 (MEH-1388 chunk 3): a marker click carries the clicked LOCATION so
+// the selected card can label the point; the label clears with the selection.
+describe("useMapSync — selectedLocation (MEH-1412)", () => {
+  it("handleMarkerClick stores the clicked location", () => {
+    const { result } = setup();
+    const producer = { id: "p1", name: "הלחם של גל" };
+    const location = { kind: "pickup", label: "נקודת איסוף צפון" };
+    expect(result.current.selectedLocation).toBeNull();
+    act(() => {
+      result.current.handleMarkerClick(producer, location);
+    });
+    expect(result.current.selectedLocation).toEqual(location);
+  });
+
+  it("defaults selectedLocation to null when a marker is clicked without one", () => {
+    const { result } = setup();
+    act(() => {
+      result.current.handleMarkerClick({ id: "p1" }, { label: "x" });
+    });
+    act(() => {
+      result.current.handleMarkerClick({ id: "p2" }); // e.g. lat/lng fallback marker
+    });
+    expect(result.current.selectedLocation).toBeNull();
+  });
+
+  it("handleMapCanvasClick clears the selected location", () => {
+    const { result } = setup();
+    act(() => {
+      result.current.handleMarkerClick({ id: "p1" }, { label: "y" });
+    });
+    act(() => {
+      result.current.handleMapCanvasClick();
+    });
+    expect(result.current.selectedLocation).toBeNull();
+  });
+
+  it("handleCardClick clears a stale location label (sidebar select is not location-specific)", () => {
+    const { result } = setup();
+    // Tap producer A's pickup marker → its label is stored.
+    act(() => {
+      result.current.handleMarkerClick({ id: "pA" }, { label: "נקודת איסוף A" });
+    });
+    expect(result.current.selectedLocation).toEqual({ label: "נקודת איסוף A" });
+    // Now select producer B from the sidebar card — A's label must not linger.
+    act(() => {
+      result.current.handleCardClick({ id: "pB", lat: 32, lng: 34 });
+    });
+    expect(result.current.selectedLocation).toBeNull();
+  });
+});

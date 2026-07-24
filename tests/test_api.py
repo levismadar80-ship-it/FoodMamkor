@@ -3374,6 +3374,7 @@ class TestSanitizationIntegration:
         assert "</script>" not in (row.description or "")
         assert "טקסט נקי" in (row.description or "")
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_home_product_description_sanitized(self, client, db, monkeypatch):
         from app.models.models import HomeProduct
         # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
@@ -3720,6 +3721,40 @@ class TestAppleTokenVerification:
 # MEH-386: BOLA regression tests
 # ---------------------------------------------------------------------------
 
+class TestHomeProductsKillSwitch:
+    """MEH-1406: the home-products feature is unmounted (router not included,
+    admin endpoints removed). These POSITIVE assertions prove the public +
+    admin surfaces 404 — they encode the ticket's core acceptance criterion
+    ("all /home-products* endpoints return 404") as a runnable guard, and will
+    fail loudly if the router is ever re-mounted WITHOUT also un-skipping the
+    BOLA / sanitization tests below (silent-guard-loss guard).
+    """
+
+    def test_public_home_products_list_is_404(self, client):
+        assert client.get("/home-products").status_code == 404
+
+    def test_public_home_product_create_is_404(self, client, db):
+        # A verified-email user previously could POST here (the write hole
+        # MEH-1406 closed). The route no longer exists → 404 regardless of auth.
+        user = make_user(db, email="killswitch@example.com")
+        resp = client.post(
+            "/home-products",
+            json={"title": "עוגה", "description": "טעימה", "price": "25"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 404
+
+    def test_admin_home_products_flagged_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin@example.com", role="admin")
+        resp = client.get("/admin/home-products/flagged", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+    def test_admin_home_products_hidden_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin2@example.com", role="admin")
+        resp = client.get("/admin/home-products/hidden", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+
 class TestBOLA:
     """Regression suite for MEH-386 — Broken Object Level Authorization.
 
@@ -3728,6 +3763,7 @@ class TestBOLA:
       2. POST /category-requests accepted spoofed producer_id from anonymous callers.
     """
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
         from app.models.models import HomeProduct
@@ -3753,6 +3789,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}")
         assert resp.status_code == 404
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
         """Owner of a hidden listing can still view it."""
         from app.models.models import HomeProduct
@@ -3777,6 +3814,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
         assert resp.status_code == 200
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A deactivated listing (is_active=False) must 404 for anonymous callers."""
         monkeypatch.setattr(
@@ -3866,3 +3904,159 @@ class TestPublicStats:
         resp = client.get("/stats")
         body = resp.json()
         assert body["producers_count"] == 0
+
+
+class TestMeh1167KashrutCard:
+    """MEH-1167 — kashrut-request card backend: GET own requests + cert upload.
+
+    The POST /producers/me/kashrut-request already existed (MEH-51); this
+    ticket adds the read endpoint (dashboard status zone) + the dedicated
+    cert-upload endpoint (no freemium gate). Own-list is producer-isolated;
+    upload mirrors /upload/owner-photo's sniff + cap.
+    """
+
+    def _producer_owner(self, db, *, email, plan="free", images=None):
+        from conftest import make_user
+
+        producer = make_producer(db, images=images)
+        producer.plan = plan
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = producer.id
+        db.commit()
+        return user, producer
+
+    def _seed_request(self, db, producer, badge_code, status="pending"):
+        from app.models.models import KashrutBadgeRequest
+
+        req = KashrutBadgeRequest(
+            producer_id=producer.id, badge_code=badge_code, status=status
+        )
+        db.add(req)
+        db.commit()
+        return req
+
+    # ---- GET /producers/me/kashrut-requests ----
+
+    def test_own_requests_happy_newest_first(self, client, db):
+        user, producer = self._producer_owner(db, email="kr_happy@test.com")
+        self._seed_request(db, producer, "rabanut")
+        self._seed_request(db, producer, "badatz", status="rejected")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(user)
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 2
+        # newest first — badatz was inserted last.
+        assert body[0]["badge_code"] == "badatz"
+        assert {r["badge_code"] for r in body} == {"rabanut", "badatz"}
+
+    def test_own_requests_empty(self, client, db):
+        user, _ = self._producer_owner(db, email="kr_empty@test.com")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(user)
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_own_requests_producer_isolation(self, client, db):
+        """A producer sees only her OWN requests, never another producer's."""
+        mine, _ = self._producer_owner(db, email="kr_mine@test.com")
+        _, other_producer = self._producer_owner(db, email="kr_other@test.com")
+        self._seed_request(db, other_producer, "mehadrin")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(mine)
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_own_requests_non_producer_forbidden(self, client, db):
+        from conftest import make_user
+
+        consumer = make_user(db, email="kr_cons@test.com", role="consumer")
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(consumer)
+        )
+        assert resp.status_code == 403
+
+    def test_own_requests_requires_auth(self, client):
+        assert client.get("/producers/me/kashrut-requests").status_code == 401
+
+    # ---- POST /upload/kashrut-cert ----
+
+    def test_cert_upload_happy(self, client, db):
+        import io
+
+        user, _ = self._producer_owner(db, email="cert_happy@test.com")
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("cert.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["url"]
+
+    def test_cert_upload_no_freemium_gate_full_gallery(self, client, db):
+        """A free-plan producer with a full 3-image gallery (blocked on
+        /upload/image) can still upload a cert — the whole reason this
+        endpoint exists, mirroring /upload/owner-photo."""
+        import io
+
+        user, _ = self._producer_owner(
+            db,
+            email="cert_cap@test.com",
+            images=[
+                "https://res.cloudinary.com/test/img/0.jpg",
+                "https://res.cloudinary.com/test/img/1.jpg",
+                "https://res.cloudinary.com/test/img/2.jpg",
+            ],
+        )
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        blocked = client.post(
+            "/upload/image",
+            files={"file": ("g.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert blocked.status_code == 403
+        ok = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("cert.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert ok.status_code == 200
+
+    def test_cert_upload_oversized(self, client, db):
+        import io
+
+        user, _ = self._producer_owner(db, email="cert_big@test.com")
+        big = b"\xff\xd8\xff" + b"\x00" * (5 * 1024 * 1024 + 1)
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("big.jpg", io.BytesIO(big), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+
+    def test_cert_upload_non_image(self, client, db):
+        import io
+
+        user, _ = self._producer_owner(db, email="cert_pdf@test.com")
+        fake_pdf = b"%PDF-1.4" + b"\x00" * 100
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={"file": ("doc.pdf", io.BytesIO(fake_pdf), "application/pdf")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+
+    def test_cert_upload_requires_auth(self, client):
+        import io
+
+        resp = client.post(
+            "/upload/kashrut-cert",
+            files={
+                "file": ("c.jpg", io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100), "image/jpeg")
+            },
+        )
+        assert resp.status_code == 401

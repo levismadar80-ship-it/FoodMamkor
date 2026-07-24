@@ -7,9 +7,11 @@ import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
+import { useMemo } from "react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
 /**
@@ -19,8 +21,12 @@ import { LOAD_MORE_CAP } from "@/lib/use-home-page";
  * and the "load more" button.
  *
  * All state ownership stays in useHomePage; this component is purely
- * presentational and emits two callbacks (onToggleChip / onClearCategory
- * / onLoadMore) plus the onboarding-advance/dismiss pair.
+ * presentational and emits its callbacks (onToggleChip / onClearCategory
+ * / onLoadMore / onSurprise) plus the onboarding-advance/dismiss pair.
+ *
+ * MEH-1476: owns the "הפתיעו אותי" surprise-me button at the grid end (moved
+ * from the hero, MEH-1288/MEH-1369). onSurprise = use-home-page handleSurprise
+ * (GET /producers/random); render-gated on hasProducers.
  */
 export function HomeProducersGrid({
   producers,
@@ -42,11 +48,16 @@ export function HomeProducersGrid({
   onClearCategory,
   onClearLocation,
   onLoadMore,
+  onSurprise,
+  hasProducers,
   geoActive,
   cityActive,
   geoEmptyNotice,
+  regionFallback,
 }) {
   const t = useTranslations();
+  // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
+  const chipsWithIcons = useMemo(() => withChipIcons(CHIPS_CONFIG), []);
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
   // is selected OR the id hasn't resolved against the loaded list yet, so
@@ -82,7 +93,7 @@ export function HomeProducersGrid({
       {/* Filter chips */}
       <ChipScrollRow
         variant="toggle"
-        chips={CHIPS_CONFIG}
+        chips={chipsWithIcons}
         activeKeys={chips}
         onChipClick={onToggleChip}
         fadeBg="#F5F0E8"
@@ -183,7 +194,35 @@ export function HomeProducersGrid({
               </motion.div>
             ))}
           </div>
-          {producers.length === 0 && (
+          {/* MEH-1487: region fallback — when a city filter returned 0 but the
+              city belongs to a region, show the businesses that deliver
+              anywhere in that region. Editorial discovery framing, not a
+              delivery-eligibility check. Replaces the generic empty state. */}
+          {producers.length === 0 && regionFallback?.producers?.length > 0 && (
+            <div data-testid="region-fallback">
+              <h3 className="font-headline-md text-lg font-bold text-text mb-4">
+                {t("home.producers.region_fallback_header", {
+                  city: filters.delivery_city,
+                  region: regionFallback.regionName,
+                })}
+              </h3>
+              <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
+                {regionFallback.producers.map((p, idx) => (
+                  <motion.div
+                    key={p.id}
+                    className="h-full"
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.1 }}
+                    transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+          {producers.length === 0 && !(regionFallback?.producers?.length > 0) && (
             <div className="text-center py-16">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} className="text-primary" />
@@ -235,6 +274,26 @@ export function HomeProducersGrid({
                   {t("home.producers.load_more")}
                 </button>
               )}
+            </div>
+          )}
+          {/* MEH-1476: surprise-me relocated here from the hero (was
+              MEH-1288/MEH-1369). Full-catalog random producer via onSurprise
+              (use-home-page handleSurprise → GET /producers/random); gated on
+              hasProducers. Rendered as a TEXT LINK (same weight/classes as the
+              hero "how it works" link) — deliberately LIGHTER than the
+              "עוד בתי עסק" pill above so the two never read as equal-weight twin
+              actions (the MEH-1369 anti-pattern Sapir caught 22/07). `inline-block
+              px-4 py-3` keeps the tap target ≥44px via padding, not font size.
+              Reuses t("home.hero.surprise_me"). */}
+          {hasProducers && (
+            <div className="text-center mt-3">
+              <button
+                type="button"
+                onClick={onSurprise}
+                className="inline-block px-4 py-3 text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
+              >
+                {t("home.hero.surprise_me")}
+              </button>
             </div>
           )}
         </>

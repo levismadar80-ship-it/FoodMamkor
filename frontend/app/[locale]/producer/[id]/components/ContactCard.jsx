@@ -151,11 +151,16 @@ export default function ContactCard({ producer, isVacation }) {
         <PrimaryContactButton
           producer={producer}
           onClick={() => {
+            // MEH-1426: attribution + unlock fire together, and ONLY on a
+            // WhatsApp primary CTA. Previously markWhatsAppClickedLocal ran
+            // unconditionally, so a phone/email/website primary still unlocked
+            // the review form — a click that never created an attributed WA row,
+            // so the reviews gate (reviews.py guard 3) would 403 anyway.
+            // Invariant: every WhatsApp click = attribution + unlock; non-WA = neither.
             if (primaryMethod === "whatsapp") {
               pingWhatsAppBeacon(producer.id);
+              markWhatsAppClickedLocal(producer.id);
             }
-            // Unlocks the review form (localStorage.wa_clicked_<id>).
-            markWhatsAppClickedLocal(producer.id);
           }}
         />
 
@@ -221,6 +226,11 @@ export default function ContactCard({ producer, isVacation }) {
 
         {/* MEH-1334: the tertiary follow + share row moved to the header's
             quiet actions row (שמירה · מעקב · שיתוף) — one home per action. */}
+
+        {/* MEH-1460: the "טעות בפרטים?" correction link moved OUT of the
+            contact card to the page-end meta block (ProducerSections.jsx,
+            below ReportButton) — the conversion card no longer mixes a
+            site-directed action with the business-directed CTA. */}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@
  *   (organic REMOVED — MEH-1259: self-declared organic_certified presented an
  *    unverified claim as a certificate; hidden until an admin-verified flow.)
  *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
+ *   vegetarian   (manual)  — has_vegetarian_products   (any product is_vegetarian OR is_vegan, MEH-1438)
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
@@ -17,7 +18,8 @@
  *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > license > new > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
+ *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery > products
+ *   (MEH-1492: license — a regulatory fact — outranks recommended, an opinion.)
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -35,8 +37,16 @@ export const BADGE_CONFIG = {
   },
   recommended: {
     key: "recommended",
-    label: "מומלץ",
-    tooltip: "המלצת עורכת מהמקור — אהבנו את איכות המוצרים או השירות.",
+    // MEH-1492: renamed מומלץ → "בחירת העורכת" — the label now names who stands
+    // behind the opinion (an editor), and the popover links out to the /about
+    // criteria + the ADR-030 "can't be bought" promise (aboutHref below).
+    label: "בחירת העורכת",
+    tooltip:
+      "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
+    // MEH-1492: the badge popover links here (BadgeRow wraps the tooltip in a
+    // LocaleLink when aboutHref is set — mirrors the verified → /about#verification
+    // pattern, MEH-1336). Editorial opinion → publish the criteria.
+    aboutHref: "/about#editors-pick",
     color: "accent",
   },
   // MEH-531: license badge — trust signal for Ministry of Health producer
@@ -72,22 +82,35 @@ export const BADGE_CONFIG = {
     tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
     color: "muted",
   },
+  // MEH-1439: tooltips state any-product semantics, not an all-products claim.
+  // The badge lights on has_X_products (ANY marked product, MEH-479) — the old
+  // copy ("כל המוצרים", "המוצרים מתאימים") over-claimed the whole catalog (same
+  // over-claim risk family as MEH-1259 organic).
   gluten_free: {
     key: "gluten_free",
     label: "ללא גלוטן",
-    tooltip: "המוצרים מתאימים לאנשים עם צליאק או רגישות לגלוטן.",
+    tooltip: "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
+    color: "muted",
+  },
+  // MEH-1438: vegetarian badge — lights on has_vegetarian_products (aggregation
+  // counts is_vegan too, since a vegan product is vegetarian). Priority sits
+  // after gluten_free, before vegan.
+  vegetarian: {
+    key: "vegetarian",
+    label: "צמחוני",
+    tooltip: "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     color: "muted",
   },
   vegan: {
     key: "vegan",
     label: "טבעוני",
-    tooltip: "כל המוצרים טבעוניים — ללא כל מרכיב מן החי.",
+    tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
     color: "muted",
   },
   lactose_free: {
     key: "lactose_free",
     label: "ללא לקטוז",
-    tooltip: "המוצרים מתאימים לאנשים עם אי-סבילות ללקטוז.",
+    tooltip: "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     color: "muted",
   },
   kosher: {
@@ -111,14 +134,17 @@ export const BADGE_CONFIG = {
 };
 
 // Priority order — left = highest. Exposed for tests.
+// MEH-1492: recommended ("בחירת העורכת") drops BELOW license — a regulatory
+// fact (Ministry of Health licence) outranks an editorial opinion.
 export const BADGE_PRIORITY = [
   "verified",
-  "recommended",
   "license",
+  "recommended",
   "new",
   // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
   "grass_fed",
   "gluten_free",
+  "vegetarian",
   "vegan",
   "lactose_free",
   "kosher",
@@ -167,6 +193,9 @@ function earnsBadge(producer, key) {
     case "gluten_free":
       // MEH-293/MEH-479: aggregated from products.is_gluten_free.
       return !!producer.has_gluten_free_products;
+    case "vegetarian":
+      // MEH-1438: aggregated has_vegetarian_products (is_vegetarian OR is_vegan).
+      return !!producer.has_vegetarian_products;
     case "vegan":
       return !!producer.has_vegan_products;
     case "lactose_free":
