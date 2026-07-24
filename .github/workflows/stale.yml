@@ -1,0 +1,34 @@
+# MEH-1518 — auto-expire abandoned PRs so the open queue stays small without
+# manual sweeps. 7 days idle -> labelled 'stale'; 7 more -> closed. Draft PRs,
+# launch-blocking / dependency PRs, and any assigned PR are exempt. Issues are
+# left untouched (issue thresholds set to -1).
+#
+# The `# rtl-ok` markers below suppress a false positive from the RTL guard
+# (.claude/hooks/check-rtl.sh): the actions/stale input names contain a
+# hyphenated token the guard misreads as a Tailwind physical class. Not CSS.
+name: Stale PR sweep
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-pr-stale: 7 # rtl-ok
+          days-before-pr-close: 7 # rtl-ok
+          stale-pr-label: "stale" # rtl-ok
+          remove-stale-when-updated: true
+          exempt-draft-pr: true
+          exempt-pr-labels: "launch-blocking,dependencies" # rtl-ok
+          exempt-all-pr-assignees: true # rtl-ok
+          days-before-issue-stale: -1
+          days-before-issue-close: -1
