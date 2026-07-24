@@ -617,7 +617,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
 | **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
 | **i18n key** | `producer.badge.declared_explainer` |
-| **Status** | 🕐 key-only — badge UI port consumes |
+| **Status** | ✅ MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
 ### Gate 3 — /terms §5 two-tier (MEH-760)
@@ -773,8 +773,26 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 | **Copy** | `העתיקו קישור` · Toast: `הקישור הועתק` |
 | **Native** | `עוד דרכים לשתף` |
 | **Email** | `שתפו במייל` · Subject: `מכירים את מהמקור?` |
-| **Prefilled message (WA + email body)** | `הכירו את מהמקור — מגזין של בתי עסק מקומיים לאוכל, כולם נבדקו אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`) |
+| **Prefilled message (WA + email body)** | `הכירו את מהמקור — בתי עסק מקומיים לאוכל, כולם עברו היכרות אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`). _MEH-1170: dropped "מגזין" (forbidden in UI surfaces) + "נבדקו אישית" over-claim → "עברו היכרות אישית" (ADR-022 / MEH-758 locked language)._ |
 | **Footer link** | `ספרו עלינו` (`share_page.footer_link`) |
 | **seo.share.title** | `ספרו עלינו — מהמקור` |
 | **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
 | **Status** | ✅ MEH-1160 |
+
+## Section 11 — /about/why-local "למה מקומי?" (MEH-1289)
+
+> **Source:** MEH-1289 locked copy (Sapir, 17/07/2026) — shipped verbatim, no rewording. Reader-facing editorial page (magazine prose, no bullets). All keys under `about_why_local.*` (he + en twins, MEH-978/840). Voice per ADR-024. Two external sources cited as live links; the "מחקר בריטי של New Economics Foundation" phrase links inline. No licensing/verification claims (legal-gated, MEH-1285 follow-up).
+
+| Field | Value |
+|---|---|
+| **H1** | `למה מקומי?` |
+| **Intro** | `"מקומי" זה דבר פשוט. אוכל שגדל, נאפה או נעשה קרוב לבית. בעונה שלו. מאנשים עם שם ופנים, לא ממערכות. הנה חמש סיבות טובות לבחור בו — ובסוף, איך מוצאים אותו.` |
+| **H2 — טעם של עכשיו** | `יש הבדל בין עגבנייה שנקטפה הבוקר במושב הסמוך, לבין עגבנייה שנקטפה ירוקה כדי שתשרוד שבועיים בדרכים. אחת הבשילה בשמש, השנייה במחסן — ומרגישים את זה כבר בביס הראשון. ויש עוד סיבה, מפתיעה: הזן. רשתות שיווק מוכרות זנים שנבחרו כי הם שורדים משלוח ונראים טוב על המדף; מגדל מקומי בוחר זן בגלל הטעם. לפעמים זה פשוט לא אותו פרי.` |
+| **H2 — הכסף נשאר קרוב** | `שקל שמוציאים אצל בית עסק מקומי ממשיך להסתובב באזור: הופך למשכורת, לקנייה אצל ספק מהמושב ליד, לערב בעסק אחר קרוב. שקל שהולך לרשת גדולה — רובו עוזב. מחקר בריטי של New Economics Foundation מצא שסלי ירקות מעסקים מקומיים השאירו לכלכלה המקומית בערך כפליים לעומת קנייה ברשתות.` — the phrase `מחקר בריטי של New Economics Foundation` links to `https://www.sustainweb.org/blogs/jul25-what-is-local-food/` (target=_blank rel=noopener). |
+| **H2 — הוגנות למי שעושה את העבודה** | `בלי מתווכים ובלי עמלות, הכסף מגיע למי שגידל, אפה, בישל או יצר — לא למי שעמד באמצע.` |
+| **H2 — לדעת מאיפה זה בא** | `לאוכל מקומי יש כתובת ויש שם. אפשר לשאול מי גידל, איך ומתי — ולקבל תשובה מבן אדם, לא ממדבקה. עם הזמן זה הופך להיכרות: מי שמוכר לכם כבר יודע מה אתם אוהבים, ויגיד לכם מתי זה חוזר. הידיעה הזאת היא סוג של שקט.` |
+| **H2 — טוב לסביבה, טוב לכולנו** | `פחות קילומטרים בדרך, פחות אריזות, פחות ימים בקירור. ומשהו שקל לשכוח: אזור שיודע להאכיל את עצמו הוא אזור חזק יותר — בכל מצב.` |
+| **H2 — איפה מתחילים** | `בשביל זה מהמקור קיים: מקום אחד שמרכז בתי עסק מקומיים — כל אחד נבחר ואושר ידנית, לכל אחד עמוד עם הסיפור שלו, והקשר איתו ישיר. בלי עמלות, בלי מתווכים.` |
+| **CTA** | `גלו בתי עסק באזור שלכם` → `/producers` (locale-aware) |
+| **Sources line** | `מקורות: Sustain UK — What is local food and why does it matter? (2025) · CollectiveCrop — Fresh-Picked vs Supermarket Produce (2026)` — both titles are live links: Sustain → `https://www.sustainweb.org/blogs/jul25-what-is-local-food/`; CollectiveCrop → `https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter` |
+| **Status** | ✅ MEH-1289 |

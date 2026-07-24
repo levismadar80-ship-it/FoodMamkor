@@ -5,25 +5,36 @@ import Image from "next/image";
 import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
  * the user opened recently (7-day TTL applied by the hook). Hidden
- * when the list is empty.
+ * when the list is empty. MEH-1391: desktop scroll arrows via the
+ * shared useScrollAffordance hook.
  */
 export function HomeRecentlyViewed({ items }) {
   const t = useTranslations();
+  // Hook must run unconditionally (rules of hooks) — before the empty-list return.
+  const affordance = useScrollAffordance();
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
       <h2 className="font-headline-md text-headline-md text-text mb-4">
         {t("home.recent.heading")}
       </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
-        {items.map((p) => {
+      {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
+      <div className="relative">
+        <ScrollArrows affordance={affordance} />
+        <div
+          ref={affordance.scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
+        >
+          {items.map((p) => {
           const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-          const imgSrc = optimizeCloudinary(p.images?.[0]);
+          const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
           return (
             <Link
               key={p.id}
@@ -51,7 +62,8 @@ export function HomeRecentlyViewed({ items }) {
               </div>
             </Link>
           );
-        })}
+          })}
+        </div>
       </div>
     </section>
   );
@@ -85,7 +97,7 @@ export function HomeFeaturedProducer({ featured }) {
   const t = useTranslations("home.featured");
   if (!featured) return null;
   const photo = featured.photo
-    ? optimizeCloudinary(featured.photo, { aspectRatio: "4:5", width: 900 })
+    ? optimizeCloudinary(featured.photo, { aspectRatio: IMAGE_RATIOS.featured, width: 900 })
     : null;
   const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
     .filter(Boolean)
@@ -239,8 +251,6 @@ export function HomeCTA() {
   return (
     <section className="bg-background text-text py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
-        {/* Gold eyebrow rule — 64px. mx-auto = sanctioned horizontal-center idiom (text-center section), not a physical RTL prop. */}
-        <span className="block w-16 h-px bg-accent mx-auto mb-6" aria-hidden="true" />
         <h2 className="font-headline-display text-headline-display mb-4">
           {t("home.cta.heading")}
         </h2>
@@ -255,12 +265,13 @@ export function HomeCTA() {
         <p className="text-fg-muted text-lg mb-8 max-w-xl mx-auto">
           {t("home.cta.body_l3")}
         </p>
-        <Link
+        {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+        <BusinessCtaLink
           href="/register/producer"
           className="inline-block bg-primary text-white px-8 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
         >
           {t("home.cta.button")}
-        </Link>
+        </BusinessCtaLink>
       </div>
     </section>
   );

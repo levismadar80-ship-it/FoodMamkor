@@ -273,10 +273,36 @@ def require_producer(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+# Shared so require_verified_email + require_verified_producer can't drift.
+_EMAIL_UNVERIFIED_MESSAGE = "יש לאמת את כתובת האימייל תחילה"
+# MEH-1164 sub-chunk B: the 403 detail is a structured object so the frontend
+# matches on a stable `code` (locale-independent) rather than the Hebrew
+# string. `message` stays the existing constant for transition safety — clients
+# that still read a bare string fall back to it. Shape:
+#   {"code": "email_unverified", "message": <Hebrew>}
+_EMAIL_UNVERIFIED_CODE = "email_unverified"
+_EMAIL_UNVERIFIED_DETAIL = {
+    "code": _EMAIL_UNVERIFIED_CODE,
+    "message": _EMAIL_UNVERIFIED_MESSAGE,
+}
+
+
 def require_verified_email(user: User = Depends(get_current_user)) -> User:
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="יש לאמת את כתובת האימייל תחילה",
+            detail=_EMAIL_UNVERIFIED_DETAIL,
+        )
+    return user
+
+
+def require_verified_producer(user: User = Depends(require_producer)) -> User:
+    # MEH-1164 F5: role check first (require_producer → "Producer access
+    # required"), then the email-verified gate. experiences.py already uses
+    # require_verified_email directly and is left unchanged.
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=_EMAIL_UNVERIFIED_DETAIL,
         )
     return user

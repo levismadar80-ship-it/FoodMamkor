@@ -17,7 +17,9 @@ test.describe("WhatsApp analytics", () => {
       test.skip(true, "No producers in staging DB — skip");
       return;
     }
-    await firstCard.click();
+    // MEH-1369: click the card's inner nav anchor (real <a href>), not the
+    // <article> wrapper whose click races hydration. See parity.spec.ts header.
+    await firstCard.locator('a[href^="/"]').first().click();
     // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
     await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
     await page.waitForLoadState("domcontentloaded");
@@ -25,15 +27,24 @@ test.describe("WhatsApp analytics", () => {
     // Block WhatsApp navigation so the test page stays active
     await page.route("https://wa.me/**", (route) => route.abort());
 
-    // WhatsAppButton (data-testid="whatsapp-cta") fires the analytics beacon.
-    // PrimaryContactButton (data-testid="primary-contact-button") does NOT.
-    const whatsappCta = page.locator('[data-testid="whatsapp-cta"]').first();
-    if ((await whatsappCta.count()) === 0) {
-      test.skip(true, "No whatsapp-cta on this producer's detail page — skip");
+    // MEH-1467: the standalone WhatsAppButton (data-testid="whatsapp-cta") was
+    // removed as orphaned; the producer-detail primary CTA is now
+    // PrimaryContactButton (data-testid="primary-contact-button"). Its
+    // ContactCard/StickyContactBar onClick fires pingWhatsAppBeacon +
+    // markWhatsAppClickedLocal (the MEH-1426 attribution + review-unlock chain)
+    // — but ONLY for a WhatsApp-method producer, so guard on data-method.
+    const primaryCta = page.locator('[data-testid="primary-contact-button"]').first();
+    if ((await primaryCta.count()) === 0) {
+      test.skip(true, "No primary contact CTA on this producer's detail page — skip");
+      return;
+    }
+    const method = await primaryCta.getAttribute("data-method");
+    if (method !== "whatsapp") {
+      test.skip(true, `Primary contact is "${method}", not whatsapp — beacon only fires for whatsapp — skip`);
       return;
     }
 
-    await whatsappCta.click();
+    await primaryCta.click();
     await page.waitForTimeout(500);
 
     expect(beaconFired, "whatsapp-click beacon did not fire").toBe(true);

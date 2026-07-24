@@ -24,6 +24,25 @@ for frontend), then make it pass. See
 - Color / spacing tweaks
 - Minor UI adjustments
 
+### Test dummy URLs must be real backend routes with a matching method
+
+`scripts/check_api_contract.py` (the "API contract audit (static)" job
+that feeds the **Deploy gate**) scans `frontend/__tests__/**` too, not
+just app code. An `api.get(...)` / `api.post(...)` in a test with an
+arbitrary path fails the gate: a path the backend doesn't serve →
+orphan-frontend (404 risk); a path served under a different verb →
+method mismatch. Pick a route that exists with the verb you call — e.g.
+`GET /auth/me`, **not** `GET /users/me` which is PATCH-only. Local check
+before pushing any test that hits the API:
+
+```
+python scripts/check_api_contract.py   # expect: Method mismatches: 0 · Orphan frontend … 0
+```
+
+_Source: MEH-1315 (2026-07-18) — `api.get("/users/me")` in the new
+retry-once test tripped a method mismatch and reddened the Deploy gate;
+swapped to `GET /auth/me` (a real route, not in `SKIP_REFRESH`)._
+
 ---
 
 ## Rule 5a — Adversarial review before every merge to staging
@@ -81,10 +100,38 @@ are needed — an earlier version of this note claimed MEH-736 added them to sat
 ruleset only ever gated on the 2 aggregators). Full mechanism:
 [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) → "Required checks".
 
-**`Playwright E2E (Vercel preview)` is NOT a required check.** It lives in
-`e2e.yml`, triggered by `deployment_status` (after the Vercel preview deploys),
-and job-skips on docs diffs (`e2e.yml:54-60`). **Docs-only PRs: don't poll E2E.**
-Merge when the **2 required aggregator gates** are green.
+**`Playwright E2E (Vercel preview)` (mobile Pixel 5 + VRT parity) runs on every
+PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
+`staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
+MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
+wired into the required-check set — the sanctioned way to make it block merge is
+the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+`needs: [filter, e2e]`) whose YAML is staged in
+[docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
+(`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
+ruleset was tried on 2026-07-13 and reverted the same day because it re-introduced
+MEH-892 (a skipped-but-directly-required job reads as `Expected` → blocks
+docs-only).
+
+> **⚠️ `e2e.yml`'s paths-filter does NOT currently skip docs-only** — proven by
+> MEH-1201's own CI (PR #1741, a docs-only diff, run `29283974004`): the `filter`
+> job emitted `frontend = true` for 5 `.md` files and the full suite ran (and was
+> red). Root cause: `e2e.yml`'s filter uses `predicate-quantifier: some` with
+> negation patterns (`!**/*.md`, `!docs/**`, …), under which each negation is an
+> additive OR that matches nearly everything — so the MEH-499 "docs-skip" never
+> worked. (`pr-checks.yml`'s `changes` job has **no** negations and correctly
+> skips docs — which is why the 2 required aggregators stayed green.) **Therefore
+> the E2E gate must NOT be added to the ruleset until (A) the `e2e.yml` filter is
+> fixed to actually skip docs-only, and (B) the suite is green.** Both fixes +
+> evidence are in [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
+> ("תנאי מוקדם A/B").
+
+Governance + gate matrix:
+[ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
+amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
+aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+Sapir fixes the filter, greens the suite, applies the patch, and adds the context
+to ruleset 15240090).
 
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then
@@ -180,7 +227,11 @@ replaces each `.png` with a `.webp` and prints the before/after. Proven on the
 still legible (`qa-artifacts/MEH-1156/home-1280-compressed.webp`). `--jpeg` gives
 a JPEG q80 fallback; `--keep` preserves the source PNG.
 
-**Status:** the 2 MB cap is a **convention**, not yet a CI gate — no size-check
-job exists in `.github/workflows/**` as of 2026-07-12 (`.github/workflows/**` is
-CC-deny, MEH-671). The gate YAML ships in the MEH-1156 PR body for Sapir to wire;
-until then, honor the cap by running the helper.
+**Status:** the 2 MB cap is a **live CI gate**, not just a convention — the
+**"qa-artifacts size cap"** job (`qa-artifacts-size` in
+`.github/workflows/pr-checks.yml`) sums the bytes added/modified under
+`qa-artifacts/` in the PR diff and fails at > 2,097,152 bytes; it's wired into
+**"CI gate (required)"** (`ci-gate` `needs:` + the `R_QA_SIZE` result check, an
+always-required aggregator leg), so an over-cap PR cannot go green. Sapir applied
+it in PR #1684; `.github/workflows/**` is CC-deny (MEH-671). Running the helper
+above is how you **comply** — compress every screenshot before committing.

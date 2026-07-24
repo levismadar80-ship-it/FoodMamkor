@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -32,6 +32,9 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
   const t = useTranslations();
   const panelRef = useRef(null);
   const isIn = !!user;
+  // MEH-1228: producers get a dashboard entry from the sheet (mobile parity
+  // with the desktop UserMenu, where "לוח הבקרה שלי" leads — MEH-1226).
+  const isProducer = user?.role === "producer";
   const hasAvatar = !!user?.avatar_url;
   const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
@@ -74,11 +77,6 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
   const liCls = "border-b border-white/10 last:border-b-0";
   const rowCls =
     "flex items-center gap-3 w-full min-h-[48px] px-1 text-start text-[14.5px] font-medium text-background transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring";
-  // MEH-868: the language row is a non-interactive wrapper — the toggle inside
-  // is the only control. It must not carry a tap-target min-height or a
-  // focus-ring it can never receive; py-2.5 preserves the list rhythm instead.
-  const staticRowCls =
-    "flex items-center gap-3 w-full px-1 py-2.5 text-start text-[14.5px] font-medium text-background";
   const iconCls = "text-background/65";
 
   return (
@@ -135,6 +133,17 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               </Link>
             </li>
           )}
+          {/* MEH-1228: producer dashboard entry — first row (above favorites),
+              mirroring the desktop UserMenu order. Guest/consumer sheets are
+              unchanged (isProducer is false). */}
+          {isProducer && (
+            <li className={liCls}>
+              <Link href="/producer/dashboard" onClick={onClose} className={rowCls}>
+                <Gauge size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                {t("account.menu.dashboard")}
+              </Link>
+            </li>
+          )}
           <li className={liCls}>
             <Link href="/favorites" onClick={onClose} className={rowCls}>
               <Heart size={19} weight="regular" className={iconCls} aria-hidden="true" />
@@ -163,19 +172,30 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               </Link>
             </li>
           )}
-          {/* Language — not a button (embeds the LanguageToggle control 1:1).
+          {/* Language row.
               MEH-908: dropped the redundant leading Globe + "שפה" label; the
               LanguageToggle already renders its own Globe (single control),
-              and "עב / EN" reads as the language affordance on its own. */}
+              and "עב / EN" reads as the language affordance on its own.
+              MEH-1196: dropped the leftover `ms-auto` wrapper that pushed this
+              row to the OPPOSITE (END) edge from its siblings.
+              MEH-1279: MEH-1196 fixed the SIDE but not the GEOMETRY — the
+              embedded LanguageToggle was a 36px circle chip, so its Globe sat
+              ~8px inside the sibling icon line and inflated the row height. The
+              row is now the toggle itself (`variant="bare"` → bare Globe 19)
+              carrying rowCls — geometrically identical to the SignOut row (same
+              min-h-[48px], gap-3, start line, /65 tertiary tier) and a single
+              full-row tap target (≥44px). "עב / EN" moves inside as the visible
+              affordance label (aria-hidden — the button's aria-label already
+              names the switch action). */}
           <li className={liCls}>
-            <div className={staticRowCls + " text-background/65 text-[13.5px]"}>
-              <span className="ms-auto inline-flex items-center gap-1.5">
-                <span className="font-english text-[13px] text-background/70" dir="ltr" aria-hidden="true">
-                  עב / EN
-                </span>
-                <LanguageToggle className="text-background hover:bg-white/10" />
+            <LanguageToggle
+              variant="bare"
+              className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
+            >
+              <span className="font-english" dir="ltr" aria-hidden="true">
+                עב / EN
               </span>
-            </div>
+            </LanguageToggle>
           </li>
           {isIn && (
             <li className={liCls}>

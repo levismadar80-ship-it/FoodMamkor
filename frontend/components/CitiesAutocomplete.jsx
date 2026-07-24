@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { REGIONS } from "@/data/regions";
 
 /**
  * MEH-213: Multi-select city autocomplete backed by GET /cities?q=.
@@ -21,8 +22,25 @@ import api from "@/lib/api";
  * D2 converges only the field radius to the canon (`rounded-[12px]`→
  * `rounded-md`); the composed structure + debounce/fetch/keyboard nav are
  * untouched (over-engineering guard: no autocomplete refactor).
+ *
+ * MEH-1254 — commit-on-type fix (Fluent/Clarity combobox pattern): a fully
+ * typed city that exactly matches a suggestion commits on Enter (even with
+ * activeIdx === -1 and multiple suggestions) and on blur; non-matching text
+ * clears on blur so it's obvious it was NOT saved. autoComplete="off" keeps
+ * browser autofill from bypassing the suggestion flow, and a muted helper
+ * line shows while typed text is still uncommitted.
+ *
+ * MEH-1256 — optional region quick-add chips (showRegionChips, default
+ * false; delivery contexts only — dashboard DeliveryCard + admin
+ * ProducerForm). Clicking a region unions its data/regions.js city list
+ * into value (dedupe); a fully-selected region renders disabled ("נוסף").
+ * UI sugar only — no region entity is persisted.
  */
-export default function CitiesAutocomplete({ value = [], onChange }) {
+export default function CitiesAutocomplete({
+  value = [],
+  onChange,
+  showRegionChips = false,
+}) {
   const t = useTranslations("search.cities_autocomplete");
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -61,18 +79,49 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
     fetchSuggestions(q);
   };
 
-  const addCity = (city) => {
+  const addCity = (city, { refocus = true } = {}) => {
+    // MEH-1254: cancel any in-flight debounce — a late fetch would reopen
+    // the dropdown after the field was already committed/cleared.
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!value.includes(city)) onChange([...value, city]);
     setQuery("");
     setSuggestions([]);
     setOpen(false);
     setActiveIdx(-1);
-    inputRef.current?.focus();
+    if (refocus) inputRef.current?.focus();
   };
 
   const removeCity = (city) => {
     onChange(value.filter((c) => c !== city));
   };
+
+  // MEH-1256: region quick-add — union (dedupe) of value + the region's
+  // cities. MEH-1346: the chip is now a TOGGLE — a fully-added region is
+  // clickable again and removes exactly its city list (mirrors the
+  // addCity/removeCity symmetry). Cities the user added individually that
+  // happen to belong to the region ARE removed too — simplest correct
+  // semantics, noted in the PR.
+  const regionDone = (region) => region.cities.every((c) => value.includes(c));
+
+  const addRegion = (region) => {
+    const merged = [...value];
+    for (const c of region.cities) {
+      if (!merged.includes(c)) merged.push(c);
+    }
+    if (merged.length !== value.length) onChange(merged);
+  };
+
+  const removeRegion = (region) => {
+    onChange(value.filter((c) => !region.cities.includes(c)));
+  };
+
+  // MEH-1254: a fully typed city counts as a selection when it exactly
+  // matches one of the current suggestions (compare after trim; NFC
+  // normalize so IME/autofill decomposed forms still match).
+  const exactMatch = (q) =>
+    q
+      ? suggestions.find((c) => c.trim().normalize() === q.normalize()) || null
+      : null;
 
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -83,8 +132,11 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
       setActiveIdx((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter") {
       e.preventDefault();
+      const exact = exactMatch(query.trim());
       if (activeIdx >= 0 && suggestions[activeIdx]) {
         addCity(suggestions[activeIdx]);
+      } else if (exact) {
+        addCity(exact);
       } else if (query.trim() && suggestions.length === 1) {
         addCity(suggestions[0]);
       }
@@ -94,6 +146,24 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
       setOpen(false);
       setActiveIdx(-1);
     }
+  };
+
+  // MEH-1254: commit an exact match on blur (click on "שמירה" must not lose
+  // the typed city); clear non-matching text so it's obvious it wasn't saved.
+  // Commit/clear runs synchronously — the parent reads state right after blur
+  // on a save click. Dropdown options preventDefault on mousedown, so picking
+  // one never triggers this path.
+  const handleBlur = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    const exact = exactMatch(q);
+    if (exact) {
+      addCity(exact, { refocus: false });
+    } else if (q) {
+      setQuery("");
+      setSuggestions([]);
+    }
+    setTimeout(() => setOpen(false), 150);
   };
 
   // Scroll active item into view
@@ -106,6 +176,31 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
 
   return (
     <div className="relative">
+      {/* MEH-1256: region quick-add chips (delivery contexts only) */}
+      {showRegionChips && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {REGIONS.map((region) => {
+            const done = regionDone(region);
+            return (
+              <button
+                key={region.key}
+                type="button"
+                aria-pressed={done}
+                title={done ? t("region_remove_title", { region: region.name }) : undefined}
+                onClick={() => (done ? removeRegion(region) : addRegion(region))}
+                className={`rounded-full border text-[12px] px-2.5 py-0.5 transition ${
+                  done
+                    ? "bg-green-50 border-primary/40 text-text hover:bg-red-50 hover:border-red-300"
+                    : "bg-white border-border text-text hover:bg-background"
+                }`}
+              >
+                {done ? `${region.name} · ✓ ${t("region_added")}` : region.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Selected chips + input */}
       <div
         className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-md px-3 py-2 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
@@ -134,9 +229,10 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           onFocus={() => { if (suggestions.length > 0) setOpen(true); else fetchSuggestions(query); }}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onBlur={handleBlur}
           placeholder={value.length === 0 ? t("placeholder") : ""}
           className="flex-1 min-w-[120px] outline-none text-sm bg-transparent"
+          autoComplete="off"
           dir="rtl"
           role="combobox"
           aria-expanded={open}
@@ -145,6 +241,13 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           aria-activedescendant={activeIdx >= 0 ? `city-opt-${activeIdx}` : undefined}
         />
       </div>
+
+      {/* MEH-1254: typed-but-uncommitted hint — muted, not an error.
+          Hidden while a suggestion is arrow-highlighted (the user is already
+          "picking from the list" — PR #1811 review). */}
+      {query.trim() !== "" && activeIdx < 0 && (
+        <p className="mt-1 text-xs text-fg-muted">{t("commit_hint")}</p>
+      )}
 
       {/* Dropdown */}
       {open && (

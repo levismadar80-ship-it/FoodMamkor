@@ -48,30 +48,23 @@ concurrency:
 
 jobs:
   filter:
-    name: Paths filter
-    runs-on: ubuntu-latest
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            frontend:
-              - 'frontend/**'
-              - 'public/**'
-              - 'package.json'
-              - 'package-lock.json'
-              # MEH-499: skip Playwright on docs-only diffs. Negation
-              # patterns mirror the docs-only file classes used in the
-              # PR-Checks workflow.
-              - '!**/*.md'
-              - '!docs/**'
-              - '!.changeset/**'
-              - '!CHANGELOG.md'
+      name: Paths filter
+      runs-on: ubuntu-latest
+      outputs:
+        frontend: ${{ steps.filter.outputs.frontend }}
+      steps:
+        - uses: actions/checkout@v7
+          with:
+            fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
+        - uses: dorny/paths-filter@v3
+          id: filter
+          with:
+            filters: |
+              frontend:
+                - 'frontend/**'
+                - 'public/**'
+                - 'package.json'
+                - 'package-lock.json'
 
   e2e:
     # NOTE (MEH-1044): job name kept verbatim although the target is now
@@ -94,7 +87,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: "npm"

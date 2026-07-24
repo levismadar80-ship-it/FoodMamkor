@@ -154,22 +154,20 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
             {t("count", { count })}
           </p>
         )}
-        {snap === HALF && (
-          <button
-            type="button"
-            onClick={() => onSnapChange(PEEK)}
-            className="text-sm text-primary font-medium hover:underline"
-          >
-            {t("show_map")}
-          </button>
-        )}
       </div>
 
       {/* Scrollable content — MEH-1133: `pt-1` gives the first card a little
           breathing room under the peek header (the header's `pb-2` alone left the
           first card's top edge visually touching the count row). Small so it
-          doesn't eat the already-short PEEK content area. */}
-      <div className="flex-1 overflow-y-auto px-4 pt-1">
+          doesn't eat the already-short PEEK content area.
+          MEH-1298: `[overflow-anchor:none]` disables the browser's scroll
+          anchoring for this container so the MobileSheetSelectedCard mount ->
+          scrollTop compensation (MobileSheetSelectedCard.jsx) is deterministic
+          across browsers. Chromium anchors natively (so the manual comp would
+          double-shift); iOS Safari's anchoring is weaker (so it would shift with
+          no comp). Turning anchoring OFF makes the manual comp the single,
+          consistent mechanism -> zero list shift everywhere. */}
+      <div className="flex-1 overflow-y-auto [overflow-anchor:none] px-4 pt-1">
         {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}
       </div>
     </div>

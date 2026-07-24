@@ -40,6 +40,23 @@ def _parse_json_array(path: Path, key: str) -> list[tuple[int, str]]:
     return out
 
 
+def _parse_static_routes(path: Path) -> list[tuple[int, str]]:
+    """lib/static-routes.json holds route SEGMENTS (e.g. "about"), not paths.
+    Each segment maps to the dir app/[locale]/<segment>/ that must still exist
+    (MEH-1398 — the middleware skips existence-checking these). Emit that dir as
+    the repo-relative path so the shared existence check covers it."""
+    text = path.read_text(encoding="utf-8")
+    routes = json.loads(text).get("routes", [])
+    lines = text.splitlines()
+    out: list[tuple[int, str]] = []
+    for seg in routes:
+        lineno = next(
+            (i + 1 for i, ln in enumerate(lines) if f'"{seg}"' in ln), 0
+        )
+        out.append((lineno, f"frontend/app/[locale]/{seg}"))
+    return out
+
+
 def _parse_rtl_allowlist(path: Path) -> list[tuple[int, str]]:
     """rtl-allowlist.txt has two sections. Only the PATH EXCEPTIONS section
     (between the two `# ==== ... ====` header markers) holds file paths; the
@@ -69,6 +86,10 @@ REGISTRIES = [
     {
         "file": ".claude/hooks/rtl-allowlist.txt",
         "parser": _parse_rtl_allowlist,
+    },
+    {
+        "file": "frontend/lib/static-routes.json",
+        "parser": _parse_static_routes,
     },
 ]
 

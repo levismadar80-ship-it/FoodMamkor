@@ -25,7 +25,7 @@ from app.models import (
     HomeProduct,
     Producer,
     Product,
-    ProducerFollower,
+    ProducerLocation,
     ProducerPageView,
     ProducerWhatsAppClick,
     User,
@@ -43,13 +43,21 @@ from app.schemas.schemas import (
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
+    ProducerLocationCreate,
+    ProducerLocationOwnerOut,
+    ProducerLocationUpdate,
     ProducerOwnerOut,
     ProducerUpdate,
     ProductCreate,
     ProductOut,
     ProductUpdate,
 )
-from app.services.license_validation import ensure_license_for_categories
+from app.services.auth_notifications import notify_admin_producer_review_ready
+from app.services.delivery_validation import ensure_exclusion_requires_nationwide
+from app.services.license_validation import (
+    categories_require_license,
+    ensure_license_for_categories,
+)
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
@@ -152,6 +160,32 @@ def _enforce_owner_license_gate(db, producer, payload, category_ids):
         ensure_license_for_categories(db, final_category_ids, None)
 
 
+# MEH-1351: approvability = the admin approve gate's definition, REUSED not
+# reimplemented — ≥1 image (MEH-799) AND license present when the categories
+# require one (MEH-971). Keep in sync with admin.py:approve_producer.
+def _is_approvable(db, producer) -> bool:
+    if not producer.images:
+        return False
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    return not (categories_require_license(db, category_ids) and license_missing)
+
+
+def _pending_and_approvable(db, producer) -> bool:
+    return producer.status == "pending" and _is_approvable(db, producer)
+
+
+def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> None:
+    """MEH-1351: review-ready ping on the false→true approvability transition
+    of a pending producer (first image / license completed). Fire-and-forget
+    BackgroundTask mirroring the resubmit ping's contract; the transition
+    check (not a sent-flag) is the idempotency guard — no schema change."""
+    if not was_approvable and _pending_and_approvable(db, producer):
+        background_tasks.add_task(
+            notify_admin_producer_review_ready, producer.name, producer.city
+        )
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -164,6 +198,10 @@ def update_my_producer(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-1351: snapshot approvability BEFORE mutation — the review-ready ping
+    # fires only on the false→true transition of a pending producer (below).
+    was_approvable = _pending_and_approvable(db, producer)
 
     _PRODUCER_WRITABLE_FIELDS = {
         "name",
@@ -186,10 +224,27 @@ def update_my_producer(
         "top_product_name",
         "starting_price_label",
         "price_range",
+        # MEH-1335: owner story fields (public OwnerCard data path). Validated
+        # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
+        "owner_bio",
+        "owner_photo_url",
         "grass_fed",
         "organic_certified",
         "has_delivery",
         "pickup_points",
+        # MEH-1242 PR5: owner permission-surface extension — location mode +
+        # opening hours (previously admin-only). delivery_area_cities is still
+        # popped + processed separately below. The (has_physical_location OR
+        # offers_delivery) and nationwide-XOR-cities invariants are enforced by
+        # ProducerUpdate._validate_location_mode (schemas.py) + the DB CHECK
+        # constraints (models.py) — this only opens the write path.
+        "has_physical_location",
+        "offers_delivery",
+        "delivery_nationwide",
+        # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
+        # _ensure_exclusion_requires_nationwide + the DB CHECK.
+        "delivery_excluded_cities",
+        "opening_hours",
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
@@ -202,6 +257,8 @@ def update_my_producer(
     delivery_cities = payload.pop("delivery_area_cities", None)
 
     _enforce_owner_license_gate(db, producer, payload, category_ids)
+    # MEH-1255: effective-state guard — excluded cities require nationwide.
+    ensure_exclusion_requires_nationwide(producer, payload)
 
     # Validate and deduplicate slug if explicitly provided.
     if "slug" in payload and payload["slug"]:
@@ -235,8 +292,11 @@ def update_my_producer(
         db.query(ProducerCategory).filter(
             ProducerCategory.producer_id == producer.id
         ).delete()
-        for cid in category_ids:
-            db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+        # MEH-1297: payload order = stored order (position 0 = primary).
+        for pos, cid in enumerate(category_ids):
+            db.add(
+                ProducerCategory(producer_id=producer.id, category_id=cid, position=pos)
+            )
 
     db.commit()
     db.refresh(producer)
@@ -255,7 +315,10 @@ def update_my_producer(
             context="producer_me.update_my_producer images",
         )
 
-    # MEH-54: fire delivery area alerts for newly added cities
+    # MEH-54: fire delivery area alerts for newly added cities.
+    # MEH-1360: targeted — only users whose User.city is among new_cities
+    # receive it; fire_alerts fills "{cities}" per recipient with only THEIR
+    # matched cities (a user in כרמיאל no longer hears about אילת).
     if new_cities:
         from app.routers.alerts import AlertContent, fire_alerts
 
@@ -266,10 +329,13 @@ def update_my_producer(
             "delivery_area",
             AlertContent(
                 title=f"🚚 משלוחים חדשים: {producer.name}",
-                body=f"עכשיו מגיעים גם ל: {', '.join(new_cities)}",
+                body="עכשיו מגיעים גם ל: {cities}",
                 url=f"/producer/{producer.id}",
             ),
+            new_cities,
         )
+
+    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
 
     return producer
 
@@ -557,19 +623,24 @@ def producer_analytics(
     whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
     contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
 
-    # Followers
+    # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
+    # the canonical interest record, since MEH-1363 removed the follow button
+    # and producer_followers stopped receiving writes (Expand half only —
+    # the table + producer_follows.py stay until the Contract ticket).
+    # favorites has a composite PK (user_id, producer_id) and NO id column —
+    # count on a key column (REUSES: :510 func.count(Favorite.producer_id)).
     follower_count = (
-        db.query(func.count(ProducerFollower.id))
-        .filter(ProducerFollower.producer_id == pid)
+        db.query(func.count(Favorite.producer_id))
+        .filter(Favorite.producer_id == pid)
         .scalar()
         or 0
     )
     week_ago = datetime.utcnow() - timedelta(days=7)
     new_followers_this_week = (
-        db.query(func.count(ProducerFollower.id))
+        db.query(func.count(Favorite.producer_id))
         .filter(
-            ProducerFollower.producer_id == pid,
-            ProducerFollower.created_at >= week_ago,
+            Favorite.producer_id == pid,
+            Favorite.created_at >= week_ago,
         )
         .scalar()
         or 0
@@ -878,6 +949,76 @@ def request_kashrut_badge(
     return out
 
 
+@router.get("/kashrut-requests", response_model=list[KashrutRequestOut])
+@limiter.limit("30/minute")
+def list_kashrut_requests(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """MEH-1167: the logged-in producer's own kashrut badge requests,
+    newest first — feeds the dashboard KashrutCard status zone so a
+    pending/rejected request is visible after submit. Owner-isolated by
+    producer_id (require_producer guarantees one); no schema change —
+    KashrutRequestOut already exists (MEH-51)."""
+    rows = (
+        db.query(KashrutBadgeRequest)
+        .filter(KashrutBadgeRequest.producer_id == user.producer_id)
+        .order_by(KashrutBadgeRequest.created_at.desc())
+        .all()
+    )
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# MEH-1236: resubmit-for-review — the owner signals she finished completing
+# the details an admin requested, so the admin knows to look again.
+# ---------------------------------------------------------------------------
+
+
+@router.post("/request-review", status_code=200)
+@limiter.limit("3/hour")
+def request_producer_review(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """Producer-initiated "I'm done — please re-check" ping (MEH-1236).
+
+    Notification-only: NO schema change. The `requested_changes` /
+    `changes_requested_at` columns are deliberately left untouched (they are
+    admin-owned; only approve/reject/request-changes in admin.py write them) —
+    this closes the resubmit loop without inventing a "resubmitted" DB state.
+
+    Pending-only: mirrors admin.request_producer_changes:599 — a re-review
+    request only makes sense while the producer is still in the approval queue,
+    so an already-decided producer (approved/rejected/inactive) → 409.
+
+    The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
+    MEH-977): a Meta/Resend outage or missing admin config must never affect
+    the 200 the owner sees.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if producer.status not in ("pending", "pending_whatsapp"):
+        raise HTTPException(
+            status_code=409,
+            detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+
+    # REUSES: app/services/auth_notifications.py notify_admin_new_recipe pattern
+    # (admin WhatsApp + email, fail-open). Lazy import mirrors the fire_alerts
+    # style already used in this file.
+    from app.services.auth_notifications import notify_admin_producer_resubmit
+
+    background_tasks.add_task(
+        notify_admin_producer_resubmit, producer.name, producer.city
+    )
+    return {"detail": "נשלח לבדיקה חוזרת"}
+
+
 # ---------------------------------------------------------------------------
 # MEH-56: AI bio generator
 # ---------------------------------------------------------------------------
@@ -890,13 +1031,15 @@ def generate_bio_endpoint(
     body: BioGenerateIn,
     user: User = Depends(require_producer),
 ):
-    """Generate a Hebrew ≤150-char business bio via Claude Haiku.
-    Accepts an Instagram handle, URL, or free text.
-    Fail-open: returns {"bio": ""} when AI is unavailable.
+    """Generate a Hebrew ≤150-char business description via Claude Haiku.
+
+    MEH-1173: accepts structured input (sells + optional area/special/
+    instagram) — the Instagram scrape is gone. Fail-open: returns
+    {"bio": ""} when AI is unavailable.
     """
     from app.services.bio_generator import generate_bio
 
-    bio = generate_bio(body.source)
+    bio = generate_bio(body.sells, body.area, body.special, body.instagram)
     return {"bio": bio}
 
 
@@ -1003,3 +1146,185 @@ def delete_my_product(
         from app.cloudinary_utils import destroy_image
 
         destroy_image(old_image_url, context="producer_me.delete_my_product image")
+
+
+# ============================================================================
+# MEH-1421 (MEH-1388 chunk 4a): producer_locations owner CRUD.
+# Owner-scoped physical presence points (branch / pickup / market_stand),
+# mirroring the products CRUD shape above (list/create/update/delete).
+#
+# IDOR: `require_producer` gates the ROLE (403 for a non-producer, auth.py:268);
+# a location id that exists but belongs to ANOTHER producer raises 403 via
+# `_get_owned_location` — the security.md ownership invariant. This
+# INTENTIONALLY differs from the products 404-on-not-owned (producer_me.py:1108):
+# the MEH-1421 AC + IDOR test require a 403. There is NO admin override — an
+# admin has role != "producer" and is 403'd by require_producer upstream, so
+# admin location management is out of 4a scope (admin surface = the read-only
+# dedup signal, not mutation).
+#
+# Two cross-row invariants live here (not the schema — they need the session):
+#   1. Single-primary: a producer has exactly one primary location while ≥1
+#      exists. First create is forced primary; setting one primary clears the
+#      others; deleting the primary promotes the oldest survivor.
+#   2. Same-city label: a location whose city already exists for the producer
+#      must carry a non-empty label (map tooltip disambiguation, epic rule).
+# ============================================================================
+
+
+def _get_owned_location(
+    db: Session, producer_id: UUID, location_id: UUID
+) -> ProducerLocation:
+    # MEH-1421 IDOR: look up by id ALONE, then check ownership so a cross-owner
+    # id is a 403 (not a 404). A genuinely missing id is a 404.
+    # REUSES: .claude/rules/security.md — owner_id == current_user.id else 403.
+    loc = db.query(ProducerLocation).filter(ProducerLocation.id == location_id).first()
+    if loc is None:
+        raise HTTPException(status_code=404, detail="מיקום לא נמצא")
+    if loc.producer_id != producer_id:
+        raise HTTPException(status_code=403, detail="אין הרשאה למיקום זה")
+    return loc
+
+
+def _reject_same_city_without_label(
+    db: Session,
+    producer_id: UUID,
+    city: str | None,
+    label: str | None,
+    exclude_id: UUID | None = None,
+) -> None:
+    # MEH-1421: a 2nd location in a city the producer already uses MUST carry a
+    # label so the map tooltip + dashboard can tell the points apart. Python-side
+    # compare (a producer has few locations) keeps it DB-agnostic (sqlite tests
+    # + Postgres prod).
+    if not city or not city.strip():
+        return
+    if label and label.strip():
+        return
+    target = city.strip().lower()
+    rows = (
+        db.query(ProducerLocation.id, ProducerLocation.city)
+        .filter(ProducerLocation.producer_id == producer_id)
+        .all()
+    )
+    for row in rows:
+        if exclude_id is not None and row.id == exclude_id:
+            continue
+        if row.city and row.city.strip().lower() == target:
+            raise HTTPException(
+                status_code=422,
+                detail="כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה",
+            )
+
+
+def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> None:
+    db.query(ProducerLocation).filter(
+        ProducerLocation.producer_id == producer_id,
+        ProducerLocation.id != keep_id,
+    ).update({ProducerLocation.is_primary: False})
+
+
+@router.get("/locations", response_model=list[ProducerLocationOwnerOut])
+def list_my_locations(
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.producer_id == user.producer_id)
+        .order_by(
+            ProducerLocation.is_primary.desc(),
+            ProducerLocation.created_at.asc(),
+        )
+        .all()
+    )
+
+
+@router.post("/locations", response_model=ProducerLocationOwnerOut, status_code=201)
+@limiter.limit("60/hour")
+def create_my_location(
+    request: Request,
+    data: ProducerLocationCreate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    _reject_same_city_without_label(db, user.producer_id, data.city, data.label)
+    existing_count = (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.producer_id == user.producer_id)
+        .count()
+    )
+    loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
+    # Single-primary: the first location is always primary; an explicit
+    # is_primary=true on a later one clears the existing primary.
+    if existing_count == 0:
+        loc.is_primary = True
+    db.add(loc)
+    db.flush()  # assign loc.id before clearing siblings
+    if loc.is_primary:
+        _clear_other_primaries(db, user.producer_id, loc.id)
+    db.commit()
+    db.refresh(loc)
+    return loc
+
+
+@router.put("/locations/{location_id}", response_model=ProducerLocationOwnerOut)
+@limiter.limit("60/hour")
+def update_my_location(
+    request: Request,
+    location_id: UUID,
+    data: ProducerLocationUpdate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    loc = _get_owned_location(db, user.producer_id, location_id)
+    patch = data.model_dump(exclude_unset=True)
+    # Same-city check ONLY when this update actually touches city or label —
+    # otherwise a pure is_primary toggle would re-validate an already-valid row
+    # and falsely 422 a label-less FIRST location whose city a labeled sibling
+    # legitimately shares (adversarial-review-errors finding).
+    if "city" in patch or "label" in patch:
+        new_city = patch.get("city", loc.city)
+        new_label = patch.get("label", loc.label)
+        _reject_same_city_without_label(
+            db, user.producer_id, new_city, new_label, exclude_id=loc.id
+        )
+
+    want_primary = patch.pop("is_primary", None)
+    for field, value in patch.items():
+        setattr(loc, field, value)
+
+    if want_primary is True:
+        _clear_other_primaries(db, user.producer_id, loc.id)
+        loc.is_primary = True
+    elif want_primary is False and loc.is_primary:
+        # Can't directly demote the sole primary (that would leave zero) — the
+        # owner promotes another location instead (which clears this one).
+        raise HTTPException(status_code=422, detail="חובה מיקום ראשי אחד")
+
+    db.commit()
+    db.refresh(loc)
+    return loc
+
+
+@router.delete("/locations/{location_id}", status_code=204)
+def delete_my_location(
+    location_id: UUID,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    loc = _get_owned_location(db, user.producer_id, location_id)
+    was_primary = loc.is_primary
+    db.delete(loc)
+    db.flush()
+    # Delete-primary: promote the oldest survivor so the producer keeps exactly
+    # one primary while any location remains (map/geo needs a primary anchor).
+    if was_primary:
+        replacement = (
+            db.query(ProducerLocation)
+            .filter(ProducerLocation.producer_id == user.producer_id)
+            .order_by(ProducerLocation.created_at.asc())
+            .first()
+        )
+        if replacement is not None:
+            replacement.is_primary = True
+    db.commit()

@@ -3,12 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid } from "@phosphor-icons/react";
+import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import AdminReviewChecklist from "./AdminReviewChecklist";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -137,6 +139,49 @@ function ProducerTags({ producer }) {
           {t("producers.table.tags.license_pending")}
         </span>
       )}
+      {/* MEH-1421 (MEH-1388 chunk 4a): read-only dedup signal — likely-duplicate
+          producer (shared name/city). Signal only; approval is never blocked. */}
+      {(producer._dup?.name || producer._dup?.city) && (
+        <span
+          title={t(
+            producer._dup.name && producer._dup.city
+              ? "producers.table.tags.dedup_both_title"
+              : producer._dup.name
+                ? "producers.table.tags.dedup_name_title"
+                : "producers.table.tags.dedup_city_title",
+          )}
+          aria-label={t("producers.table.tags.dedup")}
+          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-[10px] font-medium"
+        >
+          <Warning size={ICON_SIZE_SM} weight="fill" aria-hidden="true" />
+          {t("producers.table.tags.dedup")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// MEH-1471: read-only self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only
+// (ProducerAdminOut). Renders the Hebrew option label, "אחר: <text>" for the
+// free-text case, and "—" for producers who registered before the field existed.
+// Option labels come from the auth namespace (single source of the Hebrew copy)
+// so the strings aren't duplicated in the admin namespace.
+function ReferralSource({ producer }) {
+  const t = useTranslations("admin");
+  const tOpt = useTranslations(
+    "auth.register.producer.fields.referral_source.options",
+  );
+  const key = producer.referral_source;
+  let value = "—";
+  if (key === "other") {
+    const other = (producer.referral_source_other || "").trim();
+    value = other ? `${tOpt("other")}: ${other}` : tOpt("other");
+  } else if (key) {
+    value = tOpt(key);
+  }
+  return (
+    <div className="text-[11px] text-muted mt-0.5">
+      {t("producers.table.referral.label")}: {value}
     </div>
   );
 }
@@ -192,7 +237,13 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
           ...(p.status === "approved"
             ? [{
                 key: "ambassador",
-                label: p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive"),
+                // MEH-1267: title explains the ambassador action (Trust Tier 5)
+                // for admins who don't know what "שגריר" means.
+                label: (
+                  <span title={t("producers.table.actions.ambassador_tooltip")}>
+                    {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
+                  </span>
+                ),
                 disabled: busy(`ambassador:${p.id}`),
                 onSelect: () => onToggleAmbassador(p.id, p.ambassador),
               }]
@@ -217,9 +268,96 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
   );
 }
 
-function AdminProducersRow({ producer, isStoryOpen, handlers }) {
+// MEH-1232: pending-approval photo preview. Statuses whose gallery the admin
+// must eyeball BEFORE approving (photo-quality gate at manual approval — the
+// MEH-799 gate only checks images is non-empty, not that they render).
+const PENDING_PHOTO_STATUSES = ["pending", "pending_whatsapp"];
+// Max thumbnails before collapsing the rest into a "+N" indicator.
+const PENDING_THUMB_MAX = 4;
+// Rendered thumbnail box (px). Small on purpose — the admin judges quality at a
+// glance; clicking opens the full original in a new tab.
+const PENDING_THUMB_PX = 72;
+// Cloudinary delivery width for the thumbnail (2× the box for retina crispness).
+const PENDING_THUMB_CLOUDINARY_W = 160;
+
+// MEH-1232: single gallery thumbnail. Renders through optimizeCloudinary at a
+// small width; a load error (broken/404 URL like the MEH-1222 "https://bread.jpg",
+// or a CSP-blocked host) swaps to a red ⚠ marker so the admin sees at a glance
+// that an image is broken. The anchor opens the ORIGINAL (untransformed) URL in
+// a new tab. Uses <img> (not next/image) to match the existing admin gallery
+// pattern (ProducerForm.jsx:617) and to let onError fire on any bad host.
+function PendingPhotoThumb({ url, index, producerName, t }) {
+  const [broken, setBroken] = React.useState(false);
+  const alt = t("producers.table.photo_preview.thumb_alt", { index: index + 1, name: producerName });
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={alt}
+      className="relative block shrink-0 rounded-[8px] overflow-hidden border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+      style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
+    >
+      {broken ? (
+        <span
+          role="img"
+          aria-label={t("producers.table.photo_preview.broken")}
+          title={t("producers.table.photo_preview.broken")}
+          className="flex h-full w-full items-center justify-center bg-red-50 text-red-600"
+        >
+          <Warning size={22} weight="fill" aria-hidden="true" />
+        </span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={optimizeCloudinary(url, { width: PENDING_THUMB_CLOUDINARY_W })}
+          alt={alt}
+          onError={() => setBroken(true)}
+          className="h-full w-full object-cover"
+        />
+      )}
+    </a>
+  );
+}
+
+// MEH-1232: horizontal strip of up to PENDING_THUMB_MAX thumbnails + a "+N"
+// overflow box. Rendered as an always-visible sub-row for pending producers so
+// the photos are in front of the admin at approval time (no extra click).
+function PendingPhotoStrip({ producer }) {
+  const t = useTranslations("admin");
+  const images = producer.images || [];
+  const shown = images.slice(0, PENDING_THUMB_MAX);
+  const extra = images.length - shown.length;
+  return (
+    <div className="flex items-center gap-2 pt-1">
+      <span className="text-[11px] text-muted me-1">{t("producers.table.photo_preview.label")}</span>
+      {shown.map((url, i) => (
+        <PendingPhotoThumb key={`${url}-${i}`} url={url} index={i} producerName={producer.name} t={t} />
+      ))}
+      {extra > 0 && (
+        <span
+          className="inline-flex shrink-0 items-center justify-center rounded-[8px] border border-border bg-background text-xs font-medium text-muted"
+          style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
+          title={t("producers.table.photo_preview.more_alt", { count: extra })}
+          aria-label={t("producers.table.photo_preview.more_alt", { count: extra })}
+        >
+          +{extra}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
   const p = producer;
   const { missing, priority } = p._completeness;
+  // MEH-1232: pending rows carry a photo-preview sub-row iff they have images.
+  const showPhotoPreview =
+    PENDING_PHOTO_STATUSES.includes(p.status) && (p.images?.length || 0) > 0;
+  // MEH-1396: the same pending statuses carry the pre-approval review checklist
+  // (soft aid before "אשר"), independent of whether images exist.
+  const showReviewChecklist =
+    !!checklist && PENDING_PHOTO_STATUSES.includes(p.status);
   return (
     <React.Fragment>
       <tr className="border-t hover:bg-background/50">
@@ -228,6 +366,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
             <CompletenessBadge missing={missing} priority={priority} />
             <span>{p.name}</span>
           </div>
+          <ReferralSource producer={p} />
         </td>
         <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
@@ -243,12 +382,32 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
           <ProducerActions producer={p} isStoryOpen={isStoryOpen} {...handlers} />
         </td>
       </tr>
+      {showPhotoPreview && (
+        <tr>
+          <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pt-0 pb-4 bg-background/30">
+            <PendingPhotoStrip producer={p} />
+          </td>
+        </tr>
+      )}
+      {showReviewChecklist && (
+        <tr>
+          <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pt-0 pb-4 bg-background/30">
+            <AdminReviewChecklist
+              open={checklist.openId === p.id}
+              onToggleOpen={() => checklist.toggleOpen(p.id)}
+              checkedIds={checklist.checked[p.id]}
+              onToggleItem={(itemId) => checklist.toggleItem(p.id, itemId)}
+            />
+          </td>
+        </tr>
+      )}
       {isStoryOpen && (
         <tr>
           <td colSpan={TABLE_COLUMN_COUNT} className="px-6 pb-5 bg-background/60">
             <StoryCardCanvas
               producer={p}
               onUploaded={(url) => handlers.onUploadStoryCard(p.id, url)}
+              onClose={() => handlers.onToggleStoryCard(p.id)}
             />
           </td>
         </tr>
@@ -302,7 +461,7 @@ function EmptyRow({ incompleteOnly }) {
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
   onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
-  onUploadStoryCard, isBusy,
+  onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
@@ -324,6 +483,7 @@ export default function AdminProducersTable({
                 producer={p}
                 isStoryOpen={storyCardOpenId === p.id}
                 handlers={handlers}
+                checklist={checklist}
               />
             ))}
           </tbody>

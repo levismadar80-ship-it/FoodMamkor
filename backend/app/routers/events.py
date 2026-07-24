@@ -17,7 +17,12 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, get_current_user_optional, require_producer
+from app.auth import (
+    get_current_user,
+    get_current_user_optional,
+    require_producer,
+    require_verified_producer,
+)
 from app.database import get_db
 from app.models import Event, Producer, User
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
@@ -121,6 +126,25 @@ def upcoming_events(
     return [_serialize(ev) for ev in events]
 
 
+# MEH-1405: owner-scoped list so a producer can manage her own events from the
+# dashboard — includes inactive (canceled) events, unlike the public feed which
+# filters is_active. Mirrors GET /experiences/mine (experiences.py:141). Declared
+# BEFORE /events/{event_id} so "mine" isn't captured as a UUID path param.
+@router.get("/events/mine", response_model=list[EventOut])
+def list_my_events(
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    events = (
+        db.query(Event)
+        .options(joinedload(Event.producer))
+        .filter(Event.producer_id == user.producer_id)
+        .order_by(Event.event_date.desc(), Event.event_time.desc())
+        .all()
+    )
+    return [_serialize(ev) for ev in events]
+
+
 @router.get("/events/{event_id}", response_model=EventOut)
 def get_event(
     event_id: UUID,
@@ -152,7 +176,7 @@ def get_event(
 def create_event(
     data: EventCreate,
     background_tasks: BackgroundTasks,
-    user: User = Depends(require_producer),
+    user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
     if data.category not in VALID_CATEGORIES:

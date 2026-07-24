@@ -1,99 +1,68 @@
-# Session state — MEH-291 Phase 4 (plan only — held for soak)
+# Session state — MEH-1512 pickup UI + MEH-1510 verification (2026-07-23)
 
-> Written per workflow rule 14. Phase 4 is the final removal PR. Plan
-> approved by Smadar 2026-05-05; **execution held** until preconditions
-> below are met.
-> Last updated: 2026-05-05, end of Phase 3 merge + Phase 4 planning.
+> Transient per workflow rule 14. Prior contents (MEH-1313 PR-triage sweep, 2026-07-18)
+> superseded; that work stays tracked in Linear. This note captures the 2026-07-23 batch.
 
-## MEH-291 progress
+**Batch:** MEH-1512 (frontend chunk 2 of the pickup-locations feature) + MEH-1510
+(read-only acceptance verification of MEH-1412). Earlier in the same session an
+MEH-1511 amendment (rule 23 self-QA substitution) was attempted but is **not landed**
+(see §3).
 
-| Phase | PR | SHA | Status |
-|---|---|---|---|
-| 1 — Alembic migration + backfill | #469 | `0d90968` | ✅ merged |
-| 2 — backend model + endpoint + dual-write | #470 | `5aeef41` | ✅ merged |
-| 3 — frontend 5 surfaces + default-hide vacation | #473 | `f686c75` | ✅ merged 2026-05-05 |
-| **4 — drop legacy columns + endpoints + helpers** | TBD | TBD | ⏸️ **plan only — held for soak** |
+---
 
-## Phase 4 execution preconditions (ALL must be true before PR opens)
+## 1 · MEH-1512 — business-page pickup rows — **MERGED (PR #2115, squash `1e77f6b2`, on staging `d2e7798f`)**
 
-- [ ] **7-day staging soak complete** — earliest 2026-05-12 (Phase 3 merged 2026-05-05).
-- [ ] **MEH-408 R2 backup layer live** — Phase 4 drops 2 columns from `producers`; backups are non-negotiable for destructive schema changes.
-- [ ] **No dual-write divergence reported during soak** — Smadar spot-checks staging psql periodically; legacy + new columns must stay in sync via the dual-write mirror (Phase 2 helpers).
-- [ ] **Producer-traffic check on the new endpoint** — production logs / Vercel preview show real `POST /producers/me/availability-state` writes landing on `availability_state` (i.e., the new endpoint is being exercised by actual producer users).
-- [ ] **CI extends to migration+import round-trip** — Phase 4 PR's CI must run `alembic upgrade head` AND `python -c "from app.main import app"` against fresh Postgres in the same job. Catches the migration-success-but-app-import-failure window where DB has columns dropped but new code can't boot. Surfaced by deeper adversarial pass (NEW3); R2 backup is the recovery layer of last resort, this gate is the prevention layer.
-- [ ] **Endpoint client audit during soak** — confirm via Railway logs that only the web dashboard hits `POST /producers/me/availability` (toggle) and `POST /producers/me/availability-status`. If any non-web caller appears (mobile app, integration, scraper), route them to deprecation responses (410 Gone) before Phase 4 ships. Surfaced by deeper adversarial pass (NEW7).
+- `feature/meh-1512-business-page-pickup-ui` off `origin/staging`. Frontend-only.
+- **What shipped:** `DeliveryBlock.jsx` now consumes the `producer` prop (already passed at
+  `ProducerSections.jsx:401`, never destructured) and renders real pickup/market_stand rows
+  from `producer.locations[]` — label (→city fallback) · city · opening_hours · outbound
+  Waze nav link (from lat/lng, mirrors `MiniMap.jsx:90`). Sorted city→label; >5 rows collapse
+  to a 5-row preview + the reused MEH-1435 `CompactCities` show-more toggle. Fallback preserved
+  (pickup=true + no rows → generic "איסוף עצמי" line). Branch-kind filtered out. No 2nd in-page
+  map. `quickAnswers.buildDeliveryAnswer` pickup_only now derives cities from `locations[]`
+  (multi-pickup → no-city copy, not one misleading city) — only consumer is this page
+  (WhatsAppQuestionChips→ContactCard), verified.
+- **No new Hebrew string** (nav reuses `map.mini.open_in_waze`); MEH-1461 "איסוף עצמי" lock kept;
+  MEH-829 address stays off payload; RTL logical-only.
+- **Gates (local, after `npm ci`):** build exit 0 · full vitest 1580 pass/10 skip (DeliveryBlock
+  +4, quickAnswers +2) · eslint 0 errors · `/adversarial-review-coverage` 0 REFEREE BLOCKs.
+- **Screenshots** 375+1440 (3-row + 10-row) committed `qa-artifacts/MEH-1512/` (webp 93 KB,
+  compressed MEH-1156), rendered via a temp `next dev` route (not committed).
+- **Merge:** Sapir enabled auto-merge herself (actor `levismadar80-ship-it`); landed on the 2
+  required gates green post-ready. The earlier "CI gate failure" was the superseded draft-run
+  (rule 21). Vercel preview was **Ignored/CANCELED** (deploy rate-limit, not a code failure) →
+  no preview URL; mobile QA on `staging` remains Sapir's. `Closes MEH-1512`.
 
-When all six preconditions are checked, Smadar issues `go execute` (with explicit override note OR post-soak greenlight). Do not branch, write Alembic revision, or open PR before that.
+## 2 · MEH-1510 — MEH-1412 acceptance verification — **Done** (report-only, no files)
 
-## Phase 4 scope (plan, frozen)
+- Result block written to the top of the MEH-1510 description; spec path corrected to
+  `frontend/e2e/flows/24-producer-locations.spec.ts` (was `tests/e2e/`, 3×). Moved to Done.
+- **6/6 criteria VERIFIED at code-path level** (per-location markers, secondary style, layer
+  toggle `MapPane.jsx:111-120`, unique-business cluster `MapComponent.jsx:441-444`, one-card-per-
+  producer, empty-locations fallback `:651-660`). **Live-on-staging NOT independently verified** —
+  sandbox blocked from Railway + staging unseeded, so the seed-dependent E2E fails as documented
+  (non-required gate). **MEH-1424 perf: NOT VERIFIABLE** from the sandbox (mitigation code present:
+  bulk `addLayers` `:666-668`).
 
-### Migration
-- NEW: `backend/alembic/versions/<DATE>_<HHMM>_<NEW_REV>_meh_291_drop_legacy_availability.py`
-- `down_revision='2a74fa41ceb1'` (Phase 1 head — staging now uses Phase 1's migration as the EXPECTED_REV, since Phases 2/3 added no new revisions).
-- Bump `EXPECTED_REV` at `.github/workflows/pr-checks.yml:107` from `"2a74fa41ceb1"` → new SHA. `EXPECTED_TABLES=34` unchanged.
-- Migration full content captured in chat-only code block (not on disk per Smadar's plan-only directive). Reverse-backfill on downgrade restores legacy columns + populates from `availability_state` via inverse CASE-WHEN tree.
+## 3 · MEH-1511 — rule 23 self-QA amendment — **NOT landed (superseded)**
 
-### Backend code removals
-| File | Lines | Action |
-|---|---|---|
-| `backend/app/models/models.py` | 84-91 | Drop `is_available_today` + `availability_status` columns |
-| `backend/app/schemas/schemas.py` | 307, 320, 336-342, 403, 405, 454-466 | Drop legacy fields, validator, simplify auto-clear |
-| `backend/app/routers/producer_me.py` | 115, 162-187, 190-216, 217-228, 230-258, 284-298, 337, 339 | Drop writable-field, helpers, legacy endpoints, dual-write block, dashboard fields |
-| `backend/app/routers/producers.py` | 53-56, 86 | Drop `is_available_today` query param + kwarg |
-| `backend/app/services/producer_listing.py` | 51, 294 | Drop `_SIMPLE_FILTERS` legacy entry + docstring mention |
+- Phase 0 done; both Vercel+Sentry MCPs confirmed connected. Amendment drafted for
+  `.claude/rules/workflow.md` (rule 23) + `docs/decisions/ADR-016-*.md`, but the edits were
+  **blocked by the harness auto-mode classifier** (a docs change relaxing a human-in-the-loop
+  merge gate reads as safety-sensitive). Branch `feature/meh-1511-rule23-self-qa-substitution`
+  exists with **no committed changes**. The user then pivoted to MEH-1512/1510. If resumed:
+  the full amendment text was posted in chat; carve-out (d) must use "merge-block marker"
+  wording (never the literal phrase) or the PR self-trips the gate (ADR-016 lines 79-94).
 
-### Frontend code removals / simplifications
-| File | Action |
-|---|---|
-| `frontend/components/ProducerCard.jsx` | Simplify `availabilityDotColor` to read only `availability_state`; switch Friday-strip ribbon (`:347`) to new field |
-| `frontend/components/AvailabilityBadge.jsx` | Drop legacy 3 keys from `STATUS_CONFIG`; reduce `CARD_HIDDEN_STATES` to `{accepting_orders}`; flip fallback to `accepting_orders` |
-| `frontend/components/admin/ProducerForm.jsx` | Drop legacy-fallback ternary in form-init useEffect |
-| `frontend/app/producer/[id]/ProducerDetail.jsx` | Simplify `isVacation` derivation |
-| `frontend/app/producer/[id]/components/ProducerHeader.jsx` | Drop `||` fallback on AvailabilityBadge status prop |
-| `frontend/app/producer/dashboard/page.js` | Drop legacy comment block |
-| `frontend/lib/map-chips.js` | Drop obsolete comment line `:30` |
+---
 
-### Test cleanup
-| File | Action |
-|---|---|
-| `tests/test_api.py` | Rewrite `TestVacationBadgeClear` (4 tests) to new state; drop `test_old_toggle_mirrors_to_state`, `test_old_status_mirrors_full_to_full_this_week`, `test_legacy_is_available_today_filter_still_works`; drop legacy assertions inside remaining `TestAvailabilityState` tests |
-| `frontend/__tests__/ProducerCard.test.jsx` | Drop `is_available_today` from fixtures |
-| `frontend/__tests__/ProducerStatusBanners.test.jsx` | Drop legacy fields from fixture |
-| `frontend/__tests__/SettingsPage.test.jsx` | Drop legacy field from fixture |
+## Next / open
 
-### Docs
-| File | Action |
-|---|---|
-| `docs/DATA.md` | Drop legacy endpoint + column rows |
-| `.ai/diagrams/db-schema.md` | Drop legacy column rows from producers node |
-| `docs/CHANGELOG.md` | Phase 4 entry — closes MEH-291 |
-| `docs/MANUAL_TESTING.md` | Drop overlap-period test cases |
-| `HANDOFF.md` | Closure bullet |
-
-## Adversarial-review-style risk pass (12 candidates → 0 hard blockers)
-
-Verified at plan time:
-- F1 — slug routes / favorites / direct lookups consume `ProducerListOut` → `availability_state` only; no legacy reads.
-- F2 — `?availability_state=` filter unchanged in Phase 4.
-- F3 — analytics + admin + webhook surfaces grep clean of legacy refs.
-- F11 — no CI gate hardcodes test count.
-
-Advisory items (verify at execution):
-- F4 — stale client caches (mitigated by 7-day soak).
-- F8 — orphan `vacation_until` on non-vacation rows (benign; auto-clear handles).
-- F10 — Friday-strip semantic shift from per-day boolean to durable enum (Smadar verifies on staging during soak).
-- F12 — MEH-408 R2 backup must be live (precondition above).
-
-## Resume entry-point for next session
-
-1. `/session-resume` → reads this file.
-2. Verify all 4 execution preconditions are checked.
-3. If all green: branch `feature/meh-291-phase-4-drop-legacy` off staging, write the Alembic revision file (using the chat-block content as template, with fresh SHA from `secrets.token_hex(6)`), execute the file removals per the §1.2-1.9 plan, run `/adversarial-review`, push, open PR (NOT draft).
-4. If any precondition is unmet: stop and report which one is blocking.
-
-## Constraint reminders
-
-- ✗ Do not skip the soak window without explicit override (`go execute`).
-- ✗ Do not open Phase 4 PR before MEH-408 R2 backups are live.
-- ✗ Do not bundle Phase 4 with any other ticket (MEH-291 closure scope only).
-- ✗ Do not preserve "during overlap" comments in Phase 4 — the overlap is over.
+- **Sapir:** mobile QA of the pickup rows on `staging` (rule 23 human pass); MEH-1424 live
+  /map profiling; re-seed staging (`seed_demo_business.py --refresh`) to green the
+  producer_locations E2E.
+- **MEH-1511** remains blocked on the classifier — needs the user to clear the edit block
+  (permission mode / rule) to land the rule-23 amendment.
+- This session-state update is on its own branch `feature/meh-1512-session-state`, **not** in
+  the (merged) MEH-1512 PR, per the batch instruction. No PR opened for it (batch said "one PR,
+  MEH-1512 only") — Sapir can land or discard it.

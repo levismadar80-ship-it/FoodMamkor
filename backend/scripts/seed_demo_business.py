@@ -41,6 +41,7 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
     DeliveryArea,
     Producer,
     ProducerCategory,
+    ProducerLocation,
     Product,
     ProducerRecipe,
 )
@@ -49,9 +50,10 @@ from app.models.models import ProducerReview, Event, User  # noqa: E402  # impor
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
 # (business name, contact name, category, product set) live in the dict below
-# and in the MEH-1074 Linear description. Photo URLs are Cloudinary public
-# demo-cloud placeholders — swap for real uploads on the mehamakor cloud when
-# available (edit this block + re-run with --refresh).
+# and in the MEH-1074 Linear description. Photo URLs point to free-stock
+# images uploaded to our Cloudinary cloud (dfzpscjks) under mehamakor/demo/,
+# tagged staging-only (MEH-1198 SYNC 16/07 → MEH-1252). One image per slot:
+# hero + one per product (sourdough / challah / spelt / cookies).
 # GUARD — STAGING ONLY: never promote/import this row to production (DNA:
 # licensed-only, trust); MEH-409 swaps it for the best real profile after
 # first-10. The _assert_not_production() gate below enforces staging-only.
@@ -82,10 +84,10 @@ DEMO_PRODUCER = {
     "kosher": "כשר",
     "producer_license_number": "10-000001",  # fictional — admin-only surface
     "images": [
-        # Cloudinary public demo cloud — placeholders, swap for real uploads.
-        "https://res.cloudinary.com/demo/image/upload/bread.jpg",
-        "https://res.cloudinary.com/demo/image/upload/cld-sample-4.jpg",
-        "https://res.cloudinary.com/demo/image/upload/cld-sample-2.jpg",
+        # dfzpscjks cloud (MEH-1198 SYNC) — free-stock, tagged staging-only.
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero",
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-challah",
     ],
     "top_product_name": "לחם מחמצת כפרי",
     "price_range": "מ-₪24",
@@ -97,19 +99,21 @@ DEMO_PRODUCTS = [
         "description": "כיכר קלאסית 800 גרם — קמח לבן וקמח מלא טחינת אבן, התפחה של 24 שעות.",
         "price_min": 28,
         "price_max": 34,
-        "image_url": "https://res.cloudinary.com/demo/image/upload/bread.jpg",
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
     },
     {
         "name": "חלה קלועה לשבת",
         "description": "חלה רכה ומבריקה על בסיס מחמצת, נאפית בימי חמישי ושישי בלבד.",
         "price_min": 24,
         "price_max": 28,
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-challah",
     },
     {
         "name": "לחם כוסמין מלא",
         "description": "כיכר 100% כוסמין מלא, מתאימה גם למי שמעדיפות דגנים עתיקים.",
         "price_min": 30,
         "price_max": 36,
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-spelt",
     },
     {
         "name": "עוגיות שקדים ללא גלוטן",
@@ -117,6 +121,7 @@ DEMO_PRODUCTS = [
         "price_min": 25,
         "price_max": 30,
         "is_gluten_free": True,
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-cookies",
     },
 ]
 
@@ -146,7 +151,8 @@ DEMO_RECIPE = {
     "prep_time_min": 10,
     "cook_time_min": 5,
     "servings": 6,
-    "image_url": "https://res.cloudinary.com/demo/image/upload/cld-sample-4.jpg",
+    # Bruschetta made from the כפרי sourdough loaf → reuse its photo.
+    "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
 }
 
 DEMO_EVENT = {
@@ -162,7 +168,8 @@ DEMO_EVENT = {
     "category": "סדנה",
     "price": 120,
     "max_participants": 12,
-    "image_url": "https://res.cloudinary.com/demo/image/upload/cld-sample-2.jpg",
+    # Bread-baking workshop → reuse the hero (basket of assorted breads).
+    "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero",
 }
 
 # Seed reviewers — @example.com per tests convention; passwords are random
@@ -193,11 +200,147 @@ DEMO_REVIEWS = [
 ]
 
 DEMO_OWNER_EMAIL = "demo-owner@example.com"
+# MEH-1241: dedicated QA consumer (code constant, NOT an env var). Distinct
+# from the 3 display-only review consumers (DEMO_REVIEWS), which keep their
+# random unrecorded passwords and are never touched by --sync-users.
+DEMO_CONSUMER_EMAIL = "demo-consumer@example.com"
+DEMO_CONSUMER_NAME = "לקוחת בדיקות (QA)"
 ADMIN_NOTE = (
     "DEMO BUSINESS — MEH-1074 Wave 3 'sample perfect listing'. "
     "STAGING ONLY: never promote/import this row to production "
     "(swap for the best real profile after first-10, MEH-409)."
 )
+
+# MEH-1432 (MEH-1388 chunk 6): producer_locations for the demo business — a
+# 10-location set ALL in one city (זכרון יעקב) so the E2E multi-location
+# assertions have real data: (a) markers fan out per location, (b) a business
+# with 10 pins clusters as ONE unique business, (c) every location shares the
+# city so the same-city LABEL rule is exercised. 1 branch (primary, the
+# business's own coords) + 9 pickup points, scattered ~0.5-3 km around the
+# business so they collapse into a single cluster at the default /map zoom (8)
+# yet remain distinct rows. Coordinates are inside the זכרון יעקב / בנימינה band.
+DEMO_LOCATIONS = [
+    {
+        "kind": "branch",
+        "label": "המאפייה (הסניף המרכזי)",
+        "city": "זכרון יעקב",
+        "address": "רחוב המייסדים 12, זכרון יעקב",
+        "lat": 32.5732,
+        "lng": 34.9519,
+        "is_primary": True,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — מרכז זכרון",
+        "city": "זכרון יעקב",
+        "lat": 32.5748,
+        "lng": 34.9536,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — שוק האיכרים",
+        "city": "זכרון יעקב",
+        "lat": 32.5711,
+        "lng": 34.9502,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — רמת צבי",
+        "city": "זכרון יעקב",
+        "lat": 32.5769,
+        "lng": 34.9548,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — נחלת ז'בוטינסקי",
+        "city": "זכרון יעקב",
+        "lat": 32.5695,
+        "lng": 34.9560,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — גן שמואל",
+        "city": "זכרון יעקב",
+        "lat": 32.5801,
+        "lng": 34.9491,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — כיכר המושבה",
+        "city": "זכרון יעקב",
+        "lat": 32.5726,
+        "lng": 34.9575,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — בית הבד",
+        "city": "זכרון יעקב",
+        "lat": 32.5680,
+        "lng": 34.9524,
+        "is_primary": False,
+        "location_precision": "approximate",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — הגן הבהאי",
+        "city": "זכרון יעקב",
+        "lat": 32.5758,
+        "lng": 34.9507,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+    {
+        "kind": "pickup",
+        "label": "איסוף — תחנת הרכבת",
+        "city": "זכרון יעקב",
+        "lat": 32.5703,
+        "lng": 34.9543,
+        "is_primary": False,
+        "location_precision": "exact",
+    },
+]
+
+# MEH-1432: a SECOND demo producer — delivery-only (has_physical_location=False)
+# WITH one pickup location. Proves the chunk-2 MEH-213 reversal: a delivery-only
+# business reappears on /map BECAUSE it owns a pickup point (a zero-location
+# delivery-only producer stays hidden — the existing behaviour, no seed needed).
+# STAGING ONLY, same as the primary demo. Minimal-but-approvable (>=1 image).
+DELIVERY_ONLY_SLUG = "demo-delivery-pickup"
+DELIVERY_ONLY_PRODUCER = {
+    "name": "משק החלב של דנה (משלוחים + איסוף)",
+    "contact_name": "דנה כהן",
+    "slug": DELIVERY_ONLY_SLUG,
+    "description": "משק חלב משפחתי — מוכר במשלוחים ובנקודת איסוף אחת בבנימינה. דמו לבדיקת ריבוי-מיקום (delivery-only + pickup).",
+    "short_description": "גבינות עזים טריות במשלוח ובאיסוף.",
+    "city": "בנימינה",
+    # Project-owned cloud (dfzpscjks), same staging-only demo bucket as the
+    # primary demo producer — resilient vs the public cloudinary/demo sample.
+    "images": [
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
+    ],
+}
+DELIVERY_ONLY_LOCATION = {
+    "kind": "pickup",
+    "label": "איסוף — מרכז בנימינה",
+    "city": "בנימינה",
+    "lat": 32.5190,
+    "lng": 34.9530,
+    "is_primary": True,
+    "location_precision": "exact",
+}
 
 
 def _assert_not_production() -> None:
@@ -228,7 +371,23 @@ def _delete_existing(db) -> None:
     producer = db.query(Producer).filter(Producer.slug == DEMO_SLUG).first()
     if producer:
         db.query(Event).filter(Event.producer_id == producer.id).delete()
+        # MEH-1432: producer_locations rows carry ON DELETE CASCADE, so
+        # db.delete(producer) removes them too; the explicit ORM delete keeps the
+        # session identity map clean on re-seed (same reasoning as the Event
+        # delete above and the review deletes below).
+        db.query(ProducerLocation).filter(
+            ProducerLocation.producer_id == producer.id
+        ).delete()
         db.delete(producer)  # ORM cascade covers products/areas/reviews/recipes
+    # MEH-1432: the delivery-only demo producer (its 1 pickup cascades / cleared).
+    delivery_only = (
+        db.query(Producer).filter(Producer.slug == DELIVERY_ONLY_SLUG).first()
+    )
+    if delivery_only:
+        db.query(ProducerLocation).filter(
+            ProducerLocation.producer_id == delivery_only.id
+        ).delete()
+        db.delete(delivery_only)
     emails = [r["email"] for r in DEMO_REVIEWS] + [DEMO_OWNER_EMAIL]
     # ORM-level deletes (not bulk .delete()) keep the session's identity map
     # consistent — a bulk delete here leaves stale review objects that emit a
@@ -284,6 +443,13 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
 
     for area in DEMO_DELIVERY_AREAS:
         db.add(DeliveryArea(producer_id=producer.id, **area))
+    db.flush()
+
+    # MEH-1432 (MEH-1388 chunk 6): the 10-location set — activates the E2E
+    # multi-location assertions (per-location markers, cluster-counts-1-business,
+    # same-city label). Mirrors the DeliveryArea child pattern above.
+    for loc in DEMO_LOCATIONS:
+        db.add(ProducerLocation(producer_id=producer.id, **loc))
     db.flush()
 
     recipe = ProducerRecipe(
@@ -352,9 +518,106 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
             )
         )
 
+    # MEH-1432: the delivery-only-with-pickup demo producer. No own lat/lng — it
+    # reappears on /map SOLELY because it owns a pickup location (chunk-2 MEH-213
+    # reversal). A zero-location delivery-only producer stays hidden (unchanged).
+    delivery_only = Producer(
+        **DELIVERY_ONLY_PRODUCER,
+        status="approved",
+        admin_notes=ADMIN_NOTE,
+        has_physical_location=False,
+        offers_delivery=True,
+        delivery_nationwide=True,
+        has_delivery=True,
+        lat=None,
+        lng=None,
+    )
+    db.add(delivery_only)
+    db.flush()
+    db.add(ProducerCategory(producer_id=delivery_only.id, category_id=category.id))
+    db.add(ProducerLocation(producer_id=delivery_only.id, **DELIVERY_ONLY_LOCATION))
+
     db.commit()
     print(f"Demo business seeded: /{DEMO_SLUG} (producer {producer.id})")
+    print(
+        f"Delivery-only demo seeded: /{DELIVERY_ONLY_SLUG} "
+        f"(producer {delivery_only.id}, 1 pickup, no own lat/lng)"
+    )
     return producer
+
+
+def _sync_users(db) -> None:
+    """MEH-1241: non-destructive, users-only sync for staging QA fixtures.
+
+    Repairs exactly the two ``users`` rows Playwright needs a KNOWN password
+    for, WITHOUT touching the producer, its reviews/products/recipes/events, or
+    the 3 display-only demo reviewers. Deliberately does NOT go through
+    ``_delete_existing`` — no cascade, no new producer UUID (see the --refresh
+    path, which is left untouched).
+
+    - ``demo-owner@example.com`` (role=producer, already linked to the demo
+      producer): reset ``password_hash`` from ``DEMO_OWNER_PASSWORD`` + ensure
+      ``email_verified``. UPDATE-only — its ``producer_id`` linkage is created
+      solely by the full seed, so a MISSING owner means the demo business isn't
+      seeded yet → abort rather than create a producer-less "producer".
+    - ``demo-consumer@example.com``: upsert as a verified consumer with a
+      password from ``DEMO_CONSUMER_PASSWORD`` (no producer linkage).
+
+    Both env passwords are mandatory: abort if either is unset — never write a
+    random password again (that random-at-seed gap was the MEH-1241 root cause).
+    Passwords are never printed. Idempotent: re-running yields the same rows.
+    """
+    owner_pw = os.getenv("DEMO_OWNER_PASSWORD")
+    consumer_pw = os.getenv("DEMO_CONSUMER_PASSWORD")
+    missing = [
+        name
+        for name, val in (
+            ("DEMO_OWNER_PASSWORD", owner_pw),
+            ("DEMO_CONSUMER_PASSWORD", consumer_pw),
+        )
+        if not val
+    ]
+    if missing:
+        sys.exit(
+            "REFUSING to sync QA users: missing env var(s) "
+            f"{', '.join(missing)}. Set them (Railway staging backend / local) "
+            "before --sync-users — a random password would be unusable for QA."
+        )
+
+    # Producer owner — UPDATE only (never create here: the producer_id linkage
+    # comes from the full seed, and a producer-less role='producer' would render
+    # a broken /producer/undefined menu row, MEH-1226).
+    owner = db.query(User).filter(User.email == DEMO_OWNER_EMAIL).first()
+    if owner is None:
+        sys.exit(
+            f"REFUSING to sync QA users: {DEMO_OWNER_EMAIL} not found. Run the "
+            "full seed first (python backend/scripts/seed_demo_business.py, "
+            "skip-if-exists) to create the producer + owner, then re-run "
+            "--sync-users."
+        )
+    owner.password_hash = hash_password(owner_pw)
+    owner.email_verified = True
+
+    # Consumer — UPSERT (create if missing; consumers have no producer_id).
+    consumer = db.query(User).filter(User.email == DEMO_CONSUMER_EMAIL).first()
+    created = consumer is None
+    if consumer is None:
+        consumer = User(
+            email=DEMO_CONSUMER_EMAIL,
+            name=DEMO_CONSUMER_NAME,
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(consumer)
+    consumer.password_hash = hash_password(consumer_pw)
+    consumer.email_verified = True
+
+    db.commit()
+    print(
+        f"Synced QA users: {DEMO_OWNER_EMAIL} (password reset), "
+        f"{DEMO_CONSUMER_EMAIL} ({'created' if created else 'password reset'}). "
+        "Producer / reviews / products / display reviewers untouched."
+    )
 
 
 def main() -> None:
@@ -364,11 +627,26 @@ def main() -> None:
         action="store_true",
         help="delete the existing demo business (+ seed users) and recreate",
     )
+    parser.add_argument(
+        "--sync-users",
+        action="store_true",
+        help=(
+            "MEH-1241: non-destructive — set demo-owner + demo-consumer "
+            "passwords from DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD, "
+            "leaving the producer, reviews, products and the 3 display "
+            "reviewers untouched. Mutually exclusive with --refresh."
+        ),
+    )
     args = parser.parse_args()
+    if args.sync_users and args.refresh:
+        sys.exit("--sync-users and --refresh are mutually exclusive.")
     _assert_not_production()
     db = SessionLocal()
     try:
-        seed_demo_business(db, refresh=args.refresh)
+        if args.sync_users:
+            _sync_users(db)
+        else:
+            seed_demo_business(db, refresh=args.refresh)
     finally:
         db.close()
 

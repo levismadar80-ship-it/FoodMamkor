@@ -90,6 +90,15 @@ Bottom sheets must ALWAYS sit below map controls. See `globals.css` for
 CSS overrides and `MapClient.jsx` for the Tailwind classes that reference
 these tokens.
 
+**Leaflet attribution (z-1001) vs bottom-sheet (z-600) — resolved spatially,
+not by z-index (MEH-1365).** The attribution must stay legally visible (ODbL)
+AND above the header (the MEH-15/30 loop: z-1 → header covered it → z-1001 →
+it covered the sheet). Do not touch either z value: on <1024px the attribution
+now rides the sheet's live top edge via
+`margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px), 10px)` (globals.css,
+`!important` to outrank Leaflet's own `.leaflet-bottom .leaflet-control`
+margin). Any future overlap in that corner → adjust geometry, never z-index.
+
 ### Floating-elements corner ownership (MEH-1135)
 
 Floating elements position with **logical props only** (`insetInlineStart` /
@@ -100,6 +109,11 @@ floats (MEH-979 · MEH-970 · MEH-1133) because in RTL physical-right == the inl
 start; MEH-1135 made the FAB logical so the whole system shares one axis. Any new
 bottom-corner float must clear the FAB's corner (or the near-me pill's) on the
 **vertical** axis rather than contend for the same horizontal edge.
+
+**Exception — `/map`:** the chat FAB is pathname-gated OFF `/map` (MEH-1180), so
+the bottom-END corner there is free and is owned by `NearMePill.jsx` (circular
+near-me icon button, `end-4`, MEH-1194). A new float on `/map` contends with the
+near-me pill (and the search-this-area pill), NOT the FAB.
 
 ---
 

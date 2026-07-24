@@ -29,7 +29,7 @@ from app.models import (
     StaticPage,
     User,
 )
-from app.models.models import KashrutBadgeRequest, ProducerRecipe
+from app.models.models import GroupBuy, KashrutBadgeRequest, ProducerRecipe
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -42,6 +42,7 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import server_health
 from app.services.vacation_state import read_vacation_state
+from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
@@ -62,8 +63,13 @@ def list_users(
 ):
     q = db.query(User)
     if search:
-        like = f"%{search}%"
-        q = q.filter((User.email.ilike(like)) | (User.name.ilike(like)))
+        # F13 (MEH-1188): escape LIKE metacharacters so a user-supplied % / _
+        # matches literally instead of acting as a wildcard (same class as F1).
+        like = f"%{escape_like(search)}%"
+        q = q.filter(
+            User.email.ilike(like, escape=LIKE_ESCAPE)
+            | User.name.ilike(like, escape=LIKE_ESCAPE)
+        )
     if role and role != "all":
         q = q.filter(User.role == role)
     users = q.order_by(User.created_at.desc()).limit(500).all()
@@ -224,6 +230,18 @@ def delete_category(
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
+    # MEH-1297: block deleting a category still linked to producers — a silent
+    # cascade would orphan those businesses (uncategorised → invisible).
+    linked = (
+        db.query(func.count(ProducerCategory.producer_id))
+        .filter(ProducerCategory.category_id == category_id)
+        .scalar()
+    )
+    if linked:
+        raise HTTPException(
+            status_code=409,
+            detail=f"לא ניתן למחוק — {linked} בתי עסק משויכים לקטגוריה זו",
+        )
     db.delete(cat)
     db.commit()
     return {"detail": "Category deleted"}
@@ -542,7 +560,12 @@ def get_dashboard(
         .scalar()
         or 0
     )
-    open_reports = db.query(func.count(Report.id)).scalar() or 0
+    # MEH-1266: count OPEN reports only (status != resolved|dismissed) so the
+    # red dashboard alert + sidebar badge (pending_moderation_count) drop as
+    # admins close reports, instead of the all-time inflation they had before.
+    open_reports = (
+        db.query(func.count(Report.id)).filter(Report.status == "open").scalar() or 0
+    )
     flagged_home_products = (
         db.query(func.count(HomeProduct.id))
         .filter(HomeProduct.moderation_status == "FLAGGED")
@@ -604,6 +627,9 @@ def get_dashboard(
         .scalar()
         or 0,
         "open_reports": int(open_reports),
+        # MEH-1267: real group-buys count replaces the hardcoded "›" placeholder
+        # on the admin dashboard card.
+        "total_group_buys": db.query(func.count(GroupBuy.id)).scalar() or 0,
         "total_events": db.query(func.count(Event.id)).scalar() or 0,
         "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
         "flagged_home_products": int(flagged_home_products),

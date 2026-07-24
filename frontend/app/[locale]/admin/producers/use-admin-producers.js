@@ -115,6 +115,7 @@ function useProducerActions(loadAllProducers) {
       async () => {
         await api.post(`/admin/producers/${producer.id}/approve`);
         loadAllProducers();
+        showToast.success(t("producers.toast_approved")); // MEH-1446
       },
       // MEH-1011 Chunk 2: the MEH-799 (photo) / MEH-971 (license) approve gates
       // return 422. Instead of a dead-end toast, auto-open request-changes with
@@ -136,6 +137,7 @@ function useProducerActions(loadAllProducers) {
       async () => {
         await api.post(`/admin/producers/${id}/toggle-status`);
         loadAllProducers();
+        showToast.success(t("producers.toast_status_updated")); // MEH-1446
       },
       // MEH-769: a 409 means the producer isn't in a toggleable state
       // (pending / rejected) — surface the message-key copy that steers the
@@ -252,8 +254,31 @@ export function useAdminProducers() {
     data.setPage(1);
   };
 
+  // MEH-1421 (MEH-1388 chunk 4a): read-only dedup signal. Flag a producer that
+  // shares a (normalized) name OR city with ANOTHER producer so the admin can
+  // eyeball likely-duplicate registrations at approval time (epic "עסק קיים
+  // באותו שם/עיר"; MEH-409 dedup). Signal only — no mutation, no auto-block. The
+  // badge's title states which axis collided so a shared-city match (weaker than
+  // a shared-name match on a growing dataset) reads as context, not a verdict.
+  const _norm = (s) => (s || "").trim().toLowerCase();
+  const nameCounts = {};
+  const cityCounts = {};
+  for (const p of data.producers) {
+    const n = _norm(p.name);
+    const c = _norm(p.city);
+    if (n) nameCounts[n] = (nameCounts[n] || 0) + 1;
+    if (c) cityCounts[c] = (cityCounts[c] || 0) + 1;
+  }
+
   // Derived: annotate, filter, paginate.
-  const annotated = data.producers.map((p) => ({ ...p, _completeness: producerCompleteness(p) }));
+  const annotated = data.producers.map((p) => ({
+    ...p,
+    _completeness: producerCompleteness(p),
+    _dup: {
+      name: nameCounts[_norm(p.name)] > 1,
+      city: cityCounts[_norm(p.city)] > 1,
+    },
+  }));
   const incompleteCount = annotated.filter((p) => p._completeness.priority !== "green").length;
   const visible = data.incompleteOnly
     ? annotated.filter((p) => p._completeness.priority !== "green")

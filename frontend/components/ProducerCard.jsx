@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
-import { HeartStraight, Leaf, Star } from "@phosphor-icons/react";
+import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
@@ -161,19 +161,29 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
-  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
+  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-1211: a present-but-dead image URL renders the browser broken-glyph +
+  // overflowing alt. Track load failure and fall back to the canonical no-photo
+  // placeholder below (the same else-branch used when imgSrc is absent).
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [imgSrc]);
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const priceLabel = producer.price_range || producer.starting_price_label;
   const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
+  const locale = useLocale();
   const distanceLabel =
     userLoc && producer.lat != null && producer.lng != null
       ? formatDistance(
           haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+          { unit: locale === "he" ? "he" : "latin" },
         )
       : null;
 
@@ -223,22 +233,26 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
         >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
-            {imgSrc ? (
+            {imgSrc && !imgError ? (
               <Image
                 src={imgSrc}
                 alt={producer.name}
                 fill
                 className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                onError={() => setImgError(true)}
               />
             ) : (
-              // MEH-643: canonical no-photo state — cream surface + leaf glyph + brand name.
+              // MEH-643: canonical no-photo state — green-50 tile + leaf glyph + brand name.
+              // MEH-1400: bg-background (cream) read as an empty hole on the cream page;
+              // aligned to the MEH-1243 locked #EAF3DE (green-50) tile + 70% glyph precedent.
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 gap-2"
+                role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
-                <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
-                <span className="font-headline-md text-base font-bold text-primary/50">
+                <Leaf size={60} weight="light" className="text-primary/70" data-testid="leaf-icon" aria-hidden="true" />
+                <span className="font-headline-md text-base font-bold text-primary/80">
                   {BRAND_NAME}
                 </span>
               </div>
@@ -270,7 +284,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             <TrustBadge tier={producer.trust_tier} compact />
           )}
           {producer.has_physical_location === false && producer.offers_delivery && (
-            <span className="inline-flex items-center rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+            // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string
+            // is replaced by the MEH-1418 delivery glyph (Phosphor Truck, currentColor via the
+            // pill's text-text) so it matches the delivery toggle chip. size 14
+            // keeps the pill height in line with the sibling text badges.
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+              <Truck size={14} className="shrink-0" aria-hidden="true" />
               {t("producer.card.badges.delivery_only")}
             </span>
           )}
@@ -303,7 +322,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               dir="ltr"
               data-testid="card-rating"
             >
-              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} · {producer.reviews_count}
+              {/* MEH-1243 (🔒 §7): unify to Google format ★ X.X (N) across surfaces. */}
+              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
             </span>
           )}
         </div>
@@ -325,9 +345,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {distanceLabel && (
               <>
                 {" · "}
-                <span dir="ltr" data-testid="distance-pill">
-                  {distanceLabel}
-                </span>
+                <span data-testid="distance-pill">{distanceLabel}</span>
               </>
             )}
           </span>
@@ -358,23 +376,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        {/* MEH-1142: footer is price-only — the decorative primary-contact-method
-            hint was removed (it read as a broken button; live contact CTAs are on
-            /producer). mt-auto keeps the footer pinned to the card bottom; the
-            row always renders so layout stays stable when priceLabel is absent. */}
-        <div className="mt-auto pt-3">
-          {priceLabel && (
-            // MEH-1031 (A6): bidi-isolate the price (number+unit+currency)
-            // so it can't flip inside RTL — mirrors the ProducerCard.jsx
-            // distance-pill and rating idiom (the only prior unwrapped numeric span).
-            <span
-              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px] inline-block"
-              dir="ltr"
-            >
-              {priceLabel}
-            </span>
-          )}
-        </div>
+        {/* MEH-1210: price removed from discovery cards ("מגזין, לא marketplace")
+            — exact prices are a marketplace signal; they stay at product level
+            inside /producer. The prior MEH-1142 price-only footer (mt-auto span)
+            is gone; p-4 supplies the card's bottom padding. */}
       </div>
     </article>
   );

@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
  *
  * Re-skin of the prior emoji-pill control to the S7 "card" design (MEH-203):
- * a 2-col card grid, bespoke hand-drawn glyphs (CategoryIcons.jsx) for the 6
- * popular categories + a Phosphor Leaf fallback for the other 12, and a live
+ * a 2-col card grid, unified geometric glyphs (CategoryIcons.jsx, MEH-683) for
+ * every one of the 18 cards (Leaf fallback only for an unknown admin-created
+ * category with no CATEGORY_ICONS row), and a live
  * name+desc filter that DIMS (not hides) non-matching cards. The data contract
  * is unchanged — props categories / selectedIds / onChange(id) / onRequestCategory
  * still feed form.category_ids — so the mount (RegisterProducerClient.jsx:546)
@@ -42,6 +43,27 @@ const POPULAR = [
 const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
 const POPULAR_NAMES = POPULAR.map((p) => p.name);
 
+// MEH-1354: desc slugs for the 12 non-popular categories, so every card in
+// the expanded grid carries a short example line (and the search filter can
+// match synonyms — e.g. "גרנולה" → מוצרים מוכנים). Keys track the DB names
+// in backend/seed_data.py CATEGORIES verbatim; copy lives in
+// forms.category_selector.rest_descs (i18n). A future rename in the seed
+// must update this map in the same PR (same contract as POPULAR above).
+const REST_DESC_SLUGS = {
+  "ביצים": "eggs",
+  "פירות": "fruit",
+  "מותססים וכבושים": "ferments",
+  "מוצרים מוכנים": "prepared",
+  "צמחי מרפא ותוספים": "herbs",
+  "קוסמטיקה טבעית": "cosmetics",
+  "נרות וארומה": "candles",
+  "יין, בירה ומשקאות": "drinks",
+  "תבלינים וצמחי תיבול": "spices",
+  "שוקולד וממתקים בוטיק": "chocolate",
+  "דבש": "honey",
+  "דגים": "fish",
+};
+
 // MEH-1098 (B1): the non-food (home & personal-care) categories. Names track the
 // DB values verbatim. They surface under a "בית וטיפוח" subheader in the expanded
 // grid; everything else falls under "מזון". Presentational grouping only — the
@@ -53,6 +75,12 @@ const HOME_CARE_NAMES = [
   "קוסמטיקה טבעית",
   "נרות וארומה",
 ];
+
+// MEH-1297: a producer may pick at most 3 categories (Yelp model). The first
+// selected is the primary — it drives categories[0] on the card/map pin. The
+// selection ORDER is owned by the parent (form.category_ids append-on-select),
+// so selectedIds[0] is the primary here; this component only reflects it.
+const MAX_CATEGORIES = 3;
 
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
@@ -69,7 +97,11 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   const descFor = (c) => {
     const p = POPULAR_BY_NAME[c.name];
-    return p ? t(`popular_descs.${p.glyph}`) : "";
+    if (p) return t(`popular_descs.${p.glyph}`);
+    // MEH-1354: non-popular rows get their own desc line (uniform expanded
+    // grid + synonym search). Unknown name (admin-created category) → no desc.
+    const slug = REST_DESC_SLUGS[c.name];
+    return slug ? t(`rest_descs.${slug}`) : "";
   };
   const isMatch = (c) => `${c.name} ${descFor(c)}`.toLowerCase().includes(q);
 
@@ -105,9 +137,17 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   return (
     <div role="group" aria-label={t("label")}>
-      <p className="font-medium mb-2 text-sm">
-        {t("label")} <span className="text-red-700">*</span>
-      </p>
+      <div className="flex items-center justify-between mb-1">
+        <p className="font-medium text-sm">
+          {t("label")} <span className="text-red-700">*</span>
+        </p>
+        {/* MEH-1297: live N/3 counter */}
+        <span className="text-xs text-fg-muted tabular-nums" data-testid="category-counter">
+          {t("counter", { count: selectedIds.length, max: MAX_CATEGORIES })}
+        </span>
+      </div>
+      {/* MEH-1297: primary-first + cap hint */}
+      <p className="text-[11px] text-fg-muted mb-2">{t("cap_hint")}</p>
 
       {/* Search — magnifier on the start side, 16px font to avoid iOS zoom. */}
       <label htmlFor="category-search" className="block text-sm font-medium text-text mb-1">
@@ -155,23 +195,34 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               }
               const cat = item.cat;
               const selected = selectedIds.includes(cat.id);
+              // MEH-1297: first-selected = primary; cap blocks new picks at 3.
+              const isPrimary = selectedIds[0] === cat.id;
+              const capDisabled = !selected && selectedIds.length >= MAX_CATEGORIES;
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
-              const popular = POPULAR_BY_NAME[cat.name];
-              const Glyph = popular ? CATEGORY_ICONS[popular.glyph] : null;
+              // MEH-683 #4: CATEGORY_ICONS is keyed by canonical DB name (was
+              // slug). EVERY card resolves its dedicated glyph; the Leaf
+              // fallback is now reached only by an unknown (admin-created)
+              // category with no row in CATEGORY_ICONS.
+              const Glyph = CATEGORY_ICONS[cat.name] || null;
               return (
                 <button
                   key={cat.id}
                   type="button"
                   data-testid={`category-chip-${cat.id}`}
                   aria-pressed={selected}
+                  disabled={capDisabled}
                   onClick={() => onChange(cat.id)}
                   className={[
                     "relative grid grid-cols-[46px_1fr] items-center gap-[14px] text-start",
                     "rounded-[14px] border p-4 md:p-[18px] min-h-[78px] transition",
                     selected
                       ? "border-primary bg-green-50"
-                      : "border-border bg-surface-card hover:border-primary",
+                      : capDisabled
+                        ? "border-border bg-surface-card"
+                        : "border-border bg-surface-card hover:border-primary",
+                    // MEH-1297: cap-disabled cards read as unavailable, not dimmed-by-search.
+                    capDisabled ? "opacity-50 cursor-not-allowed" : "",
                     dimmed ? "opacity-[.32]" : "",
                   ].join(" ")}
                 >
@@ -179,11 +230,20 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     className={`flex items-center justify-center ${selected ? "text-primary" : "text-primary-dark"}`}
                     aria-hidden="true"
                   >
-                    {Glyph ? <Glyph size={46} strokeWidth={5.5} /> : <Leaf size={46} weight="light" />}
+                    {Glyph ? <Glyph size={46} /> : <Leaf size={46} weight="light" />}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">
                       {cat.name}
+                      {/* MEH-1297: "ראשית" pill on the first-selected category */}
+                      {isPrimary && (
+                        <span
+                          data-testid="primary-badge"
+                          className="ms-2 align-middle inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                        >
+                          {t("primary_badge")}
+                        </span>
+                      )}
                     </span>
                     {desc && (
                       <span className="block text-[12.5px] text-fg-muted mt-0.5 leading-snug">{desc}</span>

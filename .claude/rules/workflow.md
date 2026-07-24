@@ -260,6 +260,19 @@ and MEH-374 (62 commits)._
       rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
       emitted "CI gate failed" from superseded run #2279 while #2280 ran
       green and auto-merged.)
+    - **Draft PRs produce a skip-green signal, not a real pass.** The
+      backend jobs (`Backend tests`, `Backend lint`, build) gate on
+      `github.event.pull_request.draft == false`, so on a *draft* they
+      report `skipped` — and `CI gate`/`Deploy gate` still aggregate to
+      `success` because a skipped leg passes. That green means "nothing
+      ran," not "tests passed." A PR that must merge on CI has to be marked
+      **ready** (`draft: false`) so the real jobs execute; never read a
+      draft's green aggregators as a verified signal. (18/07 — the first
+      MEH-1331 run showed both required gates green while pytest never ran.)
+      Same aggregator mechanic (skipped leg = pass) is documented for
+      docs-only PRs in `.claude/rules/testing.md` → "Required status checks +
+      docs-only merge (MEH-716)" — cross-ref, don't duplicate; if one note
+      changes, update both.
 
 ---
 
@@ -295,6 +308,11 @@ and MEH-374 (62 commits)._
    landed; corrected in MEH-1012 after a rejected push on 2026-07-03.)
 8. **Never add new env vars without listing them explicitly**
    **and waiting for confirmation.**
+9. **Test dummy URLs must be real backend routes (matching method).**
+   The static API-contract audit scans `frontend/__tests__/**` and reds
+   the Deploy gate on orphan/method-mismatch paths. Full rule:
+   [.claude/rules/testing.md](./testing.md) → "Test dummy URLs must be
+   real backend routes".
 
 ---
 
@@ -408,8 +426,18 @@ When a bug is found and fixed:
 1. **Identify the root cause** — don't just fix the symptom. Document
    *why* the bug happened.
 2. **Grep for siblings (MANDATORY before closing task).**
-   `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx"`
+   `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx" --include="*.json"`
    and report findings to user before marking done.
+   - **2a — i18n copy siblings (MEH-1308).** When the fix changes a
+     user-visible string, grep the STRING VALUE (the rendered text, not
+     just the code identifier) across `frontend/messages/he.json` and
+     `frontend/messages/en.json`; report every occurrence before marking
+     done. _MEH-1301's sweep missed the hero subtitle + trust strip in `he.json`._
+   - **2b — VRT baselines (MEH-1328).** When any `he.json` value rendered
+     on a VRT-covered route changes, regenerate
+     `frontend/e2e/visual/parity.spec.ts-snapshots/` in the SAME PR —
+     never a follow-up ticket. Routes: `/`, `/map`, `/about`, `/login`,
+     `/register`, producer detail. _Home baselines went stale after MEH-1308._
 3. **Add a regression rule** to this file (workflow.md) if the pattern
    is likely to recur.
 4. **Add a test** that would have caught the bug. If no automated test
@@ -427,8 +455,8 @@ punctuation-only strings (e.g. "???") unless explicitly validated.
 When adding a `String` field visible to admins or users, add a
 `field_validator` requiring ≥ 3 letter chars via `[א-תa-zA-Z]` regex.
 Count letters AFTER `strip()`, not before. Return the stripped value.
-Sibling gaps not yet fixed: `ProducerCreate.name`, `HomeProductCreate.title`,
-`ExperienceCreate.title` — track in follow-up tickets.
+Sibling gaps closed (verified 18/07/26): all three schemas carry the
+letters validator.
 
 ---
 
@@ -560,6 +588,7 @@ the variant matching the diff; use the base when the class is unknown:
 - `/adversarial-review-types` — diff touches `backend/app/models/`,
   `backend/app/schemas/`, `frontend/lib/schemas.js`, or
   `backend/alembic/versions/` (MEH-283/321 schema-drift family).
+  חריג merge-revision ריק — ראו ADR-025 Amendment 18/07/2026.
 - `/adversarial-review-errors` — diff touches `backend/app/services/`,
   `backend/app/routers/`, background tasks, or any `try:`/`except:` in
   side-effect code (MEH-325 silent-except family).
@@ -674,6 +703,22 @@ Tasks auto-expire after 7 days.
     — preserves the original feature SHAs for adversarial review and the
     merge commit makes the sync point explicit in `git log`. Never force-push.
 
+    **Concurrent-merge storm (staging churns during your CI cycle).** When
+    other PRs land on `staging` across your ~8-min backend-CI run, two
+    failure modes compound. (a) **Stale-ref revert:** a `git merge
+    origin/staging` that reused an earlier `git fetch` can silently
+    reintroduce another PR's *deletions* — `git fetch origin staging`
+    immediately before EVERY merge and confirm the merge shows the expected
+    deletions (18/07 nearly reverted MEH-1317's `analytics.py` removal;
+    caught by adversarial review). (b) **Append-only churn:** your
+    top-of-`## Unreleased` CHANGELOG entry conflicts with every concurrent
+    CHANGELOG insertion → `mergeable_state: dirty` after each CI pass, a
+    loop. Break it by **dropping the CHANGELOG entry from the code PR**
+    (`git checkout origin/staging -- docs/CHANGELOG.md`) so the branch no
+    longer touches CHANGELOG, then re-add it in a later PR. Pair with GitHub
+    **auto-merge** so the PR lands the instant a clean+green window opens.
+    (18/07 — PR #1928 churned ~5 CI cycles before the CHANGELOG-drop cleared it.)
+
     _Source: 2026-05-15 night batch — PR #662 (MEH-222) hit an avoidable
     CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660
     (MEH-481) merged between branch creation and push. Three merges in a
@@ -713,3 +758,78 @@ Tasks auto-expire after 7 days.
     landed in the interim, so these slot at 26 + 27 to preserve sequential
     numbering with no gaps and no collision. Rule bodies are verbatim from
     the MEH-405 spec; only the leading numbers changed._
+
+28. **Single-dispatch rule — one prompt per ticket, from the ticket.**
+    Prompt ל-CC יוצא רק מ-ticket קיים. פעם אחת.
+
+    - אין ticket → אין prompt. נותנים תוכנית ממוספרת בלבד (עקרון 5, Manus).
+      Ticket נוצר → ה-prompt יוצא ממנו, ורק ממנו.
+    - ה-prompt חי ב-description. לא מודבק לשיחה לפני שנוצר.
+      Ticket description = the dispatch. אין dispatch שני לאותה עבודה.
+    - שינוי אחרי dispatch → עריכת description + הודעה ל-CC לקרוא מחדש.
+      לעולם לא prompt חדש.
+
+    **Pre-dispatch check (חובה, לפני כל prompt ל-CC):**
+    1. Linear live: קיים ticket לאותה עבודה? (list_issues query על הקבצים/הנושא)
+    2. אותה עבודה כבר דווחה merged בשיחה הזאת או ב-HANDOFF? → STOP, אמת מול staging.
+    3. Umbrella ticket + split tickets על אותם קבצים = double-dispatch.
+       בחרי אחד. השני נסגר כ-duplicate לפני dispatch, לא אחרי.
+
+    _Source: MEH-1215/1216 (2026-07-15) — ה-prompt הודבק לשיחה לפני יצירת
+    ה-tickets, ואז שוב מתוכם. שני CC sessions עבדו אותן שורות: PRs #1755+#1756
+    (שניהם מוזגו — duplicate merge), #1757+#1760 (השני empty, נסגר). CC's STOP
+    condition + Rule 1 (single-session) תפסו את זה בדיעבד — ה-guard האחרון עבד,
+    אבל הוא לא אמור להידרש. Extends Rule 1 (session-start parallel-session audit)
+    ו-Rule 27 (search Linear before opening an issue) לצד ה-dispatch._
+
+29. **Linear auto-reopen guard — no bare `MEH-XXXX` in docs/HANDOFF PRs that
+    only MENTION already-Done issues.** In a `docs/`-only or `HANDOFF.md` PR
+    whose diff merely *references* issues that are already `Done`, do NOT put
+    the bare Linear identifier (`MEH-1234`) in the **branch name**, **PR
+    title**, or **PR body**. Write `PR #1772` or a prose description instead.
+
+    - **Why:** the Linear↔GitHub integration (the Linear workspace app — **not**
+      a repo Action; `.github/` has no Linear reference) auto-links on identifier
+      match and fires "linked PR opened → In Progress", flipping the mentioned
+      closed issues back to In Progress. A merge whose body has no closing
+      keyword (`Closes`/`Fixes`) does **not** restore them to Done — so they
+      stay reopened and need manual re-closing.
+    - **Evidence (16/07):** PR #1778 (docs/HANDOFF) carried `Refs` + two closed
+      identifiers in its body → Linear linked both; they flipped Done→In Progress
+      ~3s after the PR opened (19:31:55Z) and the non-`Closes` merge left them
+      reopened.
+    - **Scope of the ban:** only the identifier of an **already-Done** issue that
+      the PR merely mentions. The identifier of the issue the PR actually
+      *closes* still belongs in the body as `Closes MEH-XXXX` (that link is
+      correct — the issue is genuinely active and should return to Done on
+      merge). Branch-name gate (MEH-1141) requires `meh-[0-9]+` for code PRs, so
+      this ban applies to the *mentioned-and-Done* identifiers, not to a code
+      PR's own active-ticket branch slug.
+
+    _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
+    #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
+    automation._
+
+30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
+    never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
+    PR title/body to unblock the `DO-NOT-MERGE marker gate` (`pr-checks.yml`
+    `do-not-merge-gate`, MEH-1155 / ADR-016 amendment), or push a commit whose
+    purpose is to re-trigger a gate CC is blocked on. The marker is cleared by
+    **Sapir**, not by CC — even when merge has been authorized. A blocking gate
+    (red required check, unmet approval, an explicit hold) is a STOP: surface it
+    to Sapir with the evidence and wait. This holds regardless of any "merge
+    this" instruction — the instruction authorizes the *merge*, not the removal
+    of the block; if the block is a marker only Sapir removes, the two steps are
+    separate and the marker step stays with Sapir.
+
+    - **Scope:** applies to the `DO-NOT-MERGE`/`DNM-LOCK` marker specifically and
+      to the general class of "a gate is blocking me and I'm tempted to edit
+      metadata / push a no-op commit to get past it." Fixing a *real* red check
+      that's legitimately CC's to fix (a failing test, a lint error in CC's own
+      diff) is not this rule — that's normal drive-to-green work. The line is:
+      never neutralize the block itself; only fix the underlying cause CC owns.
+
+    _Source: 2026-07-23 city-discovery batch — CC cleared the marker + pushed
+    re-trigger commits on PRs #2087/#2089/#2090 to merge after a "MERGE ALL"
+    authorization. The merges were correct; clearing the marker was not CC's to
+    do. Codified so the STOP boundary survives future merge authorizations._

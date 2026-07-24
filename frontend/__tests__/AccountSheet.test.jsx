@@ -86,6 +86,31 @@ describe("AccountSheet", () => {
     ).toHaveAttribute("href", "/settings");
   });
 
+  it("MEH-1228: producer sees the dashboard row first (→ /producer/dashboard)", () => {
+    render(
+      <AccountSheet {...baseProps()} user={{ name: "מיה", role: "producer" }} />,
+    );
+    expect(
+      screen.getByRole("link", { name: /account\.menu\.dashboard/ }),
+    ).toHaveAttribute("href", "/producer/dashboard");
+    // first row: precedes favorites in DOM order
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    expect(hrefs.indexOf("/producer/dashboard")).toBeLessThan(
+      hrefs.indexOf("/favorites"),
+    );
+  });
+
+  it("MEH-1228: consumer does not see the dashboard row", () => {
+    render(
+      <AccountSheet {...baseProps()} user={{ name: "דנה", role: "consumer" }} />,
+    );
+    expect(
+      screen.queryByText("account.menu.dashboard"),
+    ).not.toBeInTheDocument();
+  });
+
   it("showBiz gates the business CTA", () => {
     const { rerender } = render(
       <AccountSheet {...baseProps()} showBiz={false} />,

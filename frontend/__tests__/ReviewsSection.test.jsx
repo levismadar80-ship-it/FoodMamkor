@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
+// MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
+import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 // MEH-1039: business-owner reply UI. These tests cover CHUNK C (display +
 // owner affordance). The PUT endpoint lands in CHUNK B (reviews.py, blocked
@@ -32,11 +34,27 @@ const { apiMock, authState } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({ default: apiMock }));
+// MEH-1285: the login prompt now uses Link from @/i18n/navigation
+// (locale-aware); stub it so next-intl's createNavigation isn't loaded
+// under jsdom.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+}));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => authState }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/errors", () => ({ detailToMessage: (d) => (typeof d === "string" ? d : null) }));
 vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "7.7.2026" }));
 vi.mock("@/components/ui/EmptyState", () => ({ default: () => <div data-testid="empty-state" /> }));
+vi.mock("@/lib/contact-tracking", () => ({
+  pingWhatsAppBeacon: vi.fn(),
+  markWhatsAppClickedLocal: vi.fn(),
+}));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
@@ -185,5 +203,67 @@ describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
     expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1233 B1: the rating summary must render a fractional 5th star for a 4.7
+// average — the pre-fix Math.round painted five FULL stars, reading as a faked
+// 5.0. Each star position clips a filled star to `fill*100%`; here we assert the
+// 5th wrapper is 70% wide and exactly four are 100%.
+describe("ReviewsSection — B1 fractional star fill (MEH-1233)", () => {
+  it("avg 4.7 → four full stars + one 70%-filled star (never five full)", async () => {
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 3, page: 1, pages: 1 } });
+    const { container } = render(
+      <ReviewsSection producerId="p-1" avgRating={4.7} reviewCount={3} isOwner={false} />,
+    );
+    // Summary appears once the fetch resolves (total>=3 && avg>0).
+    await screen.findByText("4.7");
+    const fills = [...container.querySelectorAll("span[style]")]
+      .map((el) => el.style.width)
+      .filter((w) => w.endsWith("%"));
+    expect(fills.filter((w) => w === "100%")).toHaveLength(4);
+    expect(fills).toContain("70%");
+  });
+});
+
+describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
+  const PID = "prod-1426";
+
+  beforeEach(() => {
+    pingWhatsAppBeacon.mockClear();
+    localStorage.clear();
+  });
+
+  it("logged-in + wa_clicked flag → opening the form fires ONE authenticated ping (once per mount)", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem(`wa_clicked_${PID}`, "1");
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    const btn = await screen.findByText("write_cta");
+    fireEvent.click(btn);
+    expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
+    expect(pingWhatsAppBeacon).toHaveBeenCalledWith(PID);
+    // Close and reopen — the re-ping must not fire a second time (once per mount).
+    fireEvent.click(await screen.findByText("ביטול"));
+    fireEvent.click(await screen.findByText("write_cta"));
+    expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
+  });
+
+  it("no wa_clicked flag → gated (no write CTA), no ping", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+  });
+
+  it("guest (not logged in) → no ping even if the local flag is set", async () => {
+    authState.user = null;
+    localStorage.setItem(`wa_clicked_${PID}`, "1");
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
   });
 });

@@ -17,6 +17,7 @@ colors:
   muted: "#6B6860"
   fg-muted: "#5c584f"
   accent: "#896714"
+  gold-deep: "#7A5A10"
   honey: "#C8821E"
   gold-on-dark: "#E7C88A"
   border: "#E5DFD3"
@@ -326,6 +327,34 @@ front matter for the normative token bindings.
   pinned **top-start** (`start-3`) as a single shared overlay across both layouts.
   First image is eager (`priority`); the rest are lazy. Imageless state = the
   Tinted Masthead (MEH-815, unchanged). RTL logical props only.
+- **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
+  the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
+  the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
+  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or **"חדש"**
+  at zero reviews — a rating-slot fallback, not a badge] · [meta line
+  city · category · **status** + one quiet kosher line]. The page's ONLY order
+  status is colored text in the meta line — open=`primary`,
+  "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
+  #7a5a10** (5.61:1 on cream, AA; the vacation banner was removed — the status
+  owns the return date, "one home per fact"). Dropped from the header: premium
+  chip, favorites count, TrustBadge, secondary-category chips,
+  grass_fed/delivery chips, contact_name line (→ OwnerCard). **Quiet actions**
+  שמירה·מעקב·שיתוף(lg+) beside the title (borderless icon+label, ≥44px);
+  guests see them and get the login prompt; the intended action auto-completes
+  after sign-in with scroll restore (`lib/pending-action.js`). **Mobile hero
+  overlay = share** (`lg:hidden`; the heart's one home is the actions row);
+  desktop hero clean. **Verified popover** (hero seal): locked dateless copy +
+  link to `/about#verification`; mobile = bottom sheet with focus trap
+  (`ui/Popover` `sheetOnMobile`). **Contact card:** one CTA + quick answers
+  (3 visible + "עוד שאלות", MEH-1302 behavior intact) + circular hairline icon
+  row; desktop phone tap reveals the number inline (dir=ltr pill, no dialing).
+  **Location = one "הגעה ומיקום" section:** city-only address (MEH-829),
+  collapsed neutral hours "היום · 9:00–17:00" (no green, no "פתוח", ranges
+  `dir="ltr"`, expand → weekly table with font-weight-only today), Waze/Google
+  **brand SVGs** (not mirrored, not recolored) on the standard deep links.
+  **OwnerCard "מאחורי העסק":** data-gated — compact (single-letter avatar at
+  inline-start + name + city) is the live variant; bio/photo variants dormant
+  until MEH-1335; hidden entirely without contact_name.
 - **Producer trust strip (`ProducerHeader` + `ReviewExcerpt`, MEH-1048):** social
   proof beside the h1. A `green-50`/`accent` pill **`★ 4.8 · N ביקורות`** (Phosphor
   `Star`) links to the reviews section (`<a href="#reviews">` → `id="reviews"
@@ -335,6 +364,15 @@ front matter for the normative token bindings.
   also linking to `#reviews`. **Zero reviews → the whole strip is absent** (no
   "0 ביקורות"); a producer with only rating-only reviews shows the pill but no
   excerpt. Numerals stay Latin + bidi-isolated. RTL logical props only.
+- **Producer section tab bar (`ProducerDetail`, MEH-1168 P2 — ADOPTED):** the
+  **mobile-only** (`md:hidden`) section nav on `/producer/[id]` — a sticky row of
+  four tabs (about · products · delivery · reviews) with Phosphor icons
+  (`Info`/`Package`/`Truck`/`ChatCircleText`, fill weight when active); the active
+  tab is marked by `border-b-2 border-primary text-primary`. It sticks at
+  `top-[82px]`, **below** the global header (82px, `z-[1050]`) so it stays visible
+  page-long — at `top-0` it was occluded behind the header once scrolled into a
+  deep section. Tapping a tab smooth-scrolls the section clear of both the header
+  and the bar (`useTabScroll`). RTL logical props only.
 
 ## Action hierarchy
 
@@ -351,6 +389,23 @@ promotes it. Established on the producer detail page (MEH-1146): the single
 primary is the contact card's CTA; the sticky bar mirrors it (never co-visible);
 the delivery section's WhatsApp order button is tertiary; follow + share are
 tertiary. Verified per-viewport, not just per-section.
+
+### Chrome budget — at most one top + one bottom sticky layer (MEH-1202)
+
+On any mobile viewport, at most **one** sticky top layer and **one** fixed
+bottom layer may be visible at once. Stacked chrome eats the reading area and
+reads as a rendering bug (the ghost-strip class). Rules:
+
+- **Top:** the global `Header` pill is the top layer. A page-level sticky
+  element (e.g. the `/producer` section tab bar) attaches directly *below* it
+  and the two read as one unit — never a second free-floating top bar.
+- **Bottom:** `StickyContactBar` and `BottomNav` must not co-stack. On
+  `/producer/[id]` mobile the contact bar is the sole bottom layer and
+  `BottomNav` is gated off by route (`isProducerDetail`, `lib/producer-route.js`).
+- **Never hardcode a stacked-chrome offset in px/vh.** A sticky layer that sits
+  below another measures the layer above at runtime. `Header` publishes its
+  live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
+  chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
 
 ## Do's and Don'ts
 
@@ -419,6 +474,43 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   — selection reuses the existing palette dark per ADR-019, same precedent as
   `action-primary-hover`. Components bind to this role name so a future tweak to
   the selected colour is one token edit, not a grep across `/map`.
+
+  > **🔓 LOCK-deviation — MEH-1181-A (Sapir 22/07): the MEH-764 `state-selected`
+  > solid-fill is amended for CATEGORY chips only.** "Direction A" — a selected
+  > category chip carries its category's colour as a *ring + faint wash*, not a
+  > solid fill, so the chip↔pin colour link (MEH-1452 glyph tint) stays legible
+  > when the chip is active. Precise selected-state per surface:
+  >
+  > - **CATEGORY chips** (all `ChipScrollRow variant="category"` surfaces —
+  >   `/map`, `/producers`, `/events`, and future — MEH-1465), selected:
+  >   A chip with no registry colour (`chip.iconColor` absent, e.g. `/events` or
+  >   an admin category with no `CATEGORY_STYLES` row) falls back to
+  >   `--cat-ring` = the DEFAULT category green (`primary` `#2e6853`).
+  >   - `background: color-mix(in srgb, var(--cat-ring) 12%, #fff);`
+  >   - `border: 1.5px solid var(--cat-ring);`
+  >   - `color: var(--text)` (`#1a1a1a`) — **never** the category colour as text
+  >     (keeps the label at ≥4.5:1; the ring/glyph carry the colour, the label
+  >     stays neutral).
+  >   - `font-weight: 600;`
+  >   - `--cat-ring:` the category's registry tint = `textColor ?? color`
+  >     (`lib/category-registry.js` `CATEGORY_STYLES`). Every value clears WCAG
+  >     1.4.11 ≥3:1 on **both** white and cream `#F5F0E8` (MEH-1181 audit).
+  > - **ATTRIBUTE / toggle chips, `FilterSheet`, `CategoryTag`, and every OTHER
+  >   chip surface:** UNCHANGED — solid `state-selected`/primary fill, white
+  >   text. The deviation is scoped to category chips; nothing else moves.
+  > - **"כל" reset chip:** when nothing is selected (baseline) it is the solid
+  >   primary fill (the current active-"all" look); when ≥1 category is selected
+  >   it drops to a **ghost** — `background: #fff`, `border: 1px solid
+  >   var(--line)`, `color: var(--muted)` — so the coloured selection reads as
+  >   the active state and "כל" reads as the escape.
+  > - **Tag-strip rule:** removable tags represent **attributes only**. A
+  >   category *selection* is shown by its chip ring, never mirrored as a
+  >   removable tag; the category's exit affordance is the "כל" chip.
+  >   `clearAll()` / "נקו הכל" clears **both** categories and attributes.
+  >
+  > Scope note: this is the DESIGN SoT delta only. The component wiring (radio →
+  > multi-select ring rendering) lands with the MEH-1465 multi-select chunks; a
+  > single-select ring is the interim shape until then.
 - Spacing `5xl` (96px) / `6xl` (128px) — editorial section rhythm above `4xl`.
 - Headline fallback: every Frank Ruhl Libre stack
   (`headline-display`/`-lg`/`-md`) degrades to `"David Libre", Georgia, serif`.
@@ -487,6 +579,8 @@ recorded reason — do not "fix" them:
   CTAs, "מגזין" internal-only, brand-name UI vs outbound). Not duplicated here.
 - **Color audit baseline:** `.claude/commands/design-review/design-principles.md`
   (design-review checklist; treated as a cross-check, not canonical).
+- **External benchmarks:** `docs/design/BENCHMARKS.md` (5-site precedent + rationale;
+  reference only — this file wins on any conflict).
 - **Decisions:** ADR-011 (tagline), ADR-013 (iconography — Phosphor only, Lucide
   forbidden), ADR-014 (voice), ADR-019 (component state tokens).
 - **Endpoints / data shapes:** `docs/DATA.md` (not a design concern).

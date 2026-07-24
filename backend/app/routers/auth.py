@@ -497,6 +497,11 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-1471: self-reported attribution captured at the final
+            # registration step. Schema-validated (allowed-key set / bleach);
+            # persisted verbatim. NULL when the field is absent (upgrade path).
+            referral_source=data.referral_source,
+            referral_source_other=data.referral_source_other,
             # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
@@ -505,10 +510,18 @@ async def register_producer(
         )
         db.add(producer)
         db.flush()
+        # MEH-1297: payload order = stored order; position advances only on a
+        # valid category so it stays contiguous when an invalid id is skipped.
+        _pos = 0
         for cid in data.category_ids:
             cat = db.query(Category).filter(Category.id == cid).first()
             if cat:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id, category_id=cid, position=_pos
+                    )
+                )
+                _pos += 1
         for da in data.delivery_areas:
             db.add(
                 DeliveryArea(
@@ -595,6 +608,11 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-1471: self-reported attribution captured at the final
+            # registration step. Schema-validated (allowed-key set / bleach);
+            # persisted verbatim. NULL when the field is absent (upgrade path).
+            referral_source=data.referral_source,
+            referral_source_other=data.referral_source_other,
             # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
@@ -603,10 +621,18 @@ async def register_producer(
         )
         db.add(producer)
         db.flush()
+        # MEH-1297: payload order = stored order; position advances only on a
+        # valid category so it stays contiguous when an invalid id is skipped.
+        _pos = 0
         for cid in data.category_ids:
             cat = db.query(Category).filter(Category.id == cid).first()
             if cat:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id, category_id=cid, position=_pos
+                    )
+                )
+                _pos += 1
         for da in data.delivery_areas:
             db.add(
                 DeliveryArea(

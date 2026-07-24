@@ -100,8 +100,9 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.queryByTestId("share-locked-hint")).not.toBeInTheDocument();
-    // VanityLinkCard renders the /p/{slug} vanity URL
-    expect(screen.getByText(/mehamakor\.online\/p\/demo-farm/)).toBeInTheDocument();
+    // VanityLinkCard renders the /p/{slug} vanity URL on the canonical
+    // domain (MEH-1267: mehamakor.online staging alias → SITE_URL mehamakor.co.il).
+    expect(screen.getByText(/mehamakor\.co\.il\/p\/demo-farm/)).toBeInTheDocument();
   });
 
   it("hides the share card + shows the locked hint when INCOMPLETE", async () => {
@@ -109,7 +110,7 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
-    expect(screen.queryByText(/mehamakor\.online\/p\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mehamakor\.co\.il\/p\//)).not.toBeInTheDocument();
   });
 
   it("hides the share card + shows the locked hint when UNAPPROVED", async () => {
@@ -117,7 +118,7 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
-    expect(screen.queryByText(/mehamakor\.online\/p\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mehamakor\.co\.il\/p\//)).not.toBeInTheDocument();
   });
 });
 

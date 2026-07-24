@@ -3,12 +3,14 @@ import { renderHook, act } from "@testing-library/react";
 import { useHomePage } from "@/lib/use-home-page";
 import api from "@/lib/api";
 
-// MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders all 7 CHIPS_CONFIG
-// chips and buildChipParams sends all 7 to the API, but updateURL serialized
+// MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders the CHIPS_CONFIG
+// chips and buildChipParams sends them to the API, but updateURL serialized
 // only kosher/organic/delivery/verified and mount-init read the same 4 — so
 // gluten_free/vegan/lactose_free filtered results without ever reaching the
 // URL, and a shared/refreshed URL silently dropped them. These tests pin the
-// 7-key round-trip: toggle → URL param, and deep-link → hydrated chip state.
+// round-trip: toggle → URL param, and deep-link → hydrated chip state.
+// MEH-1259: the "organic" chip was removed (self-declared → not a public
+// filter). MEH-1438: the "vegetarian" chip was added — the set is now 7 keys.
 
 const router = { replace: vi.fn(), push: vi.fn() };
 
@@ -45,35 +47,39 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
   it("toggling a diet chip writes its param to the URL", () => {
     const { result } = renderHook(() => useHomePage());
     act(() => result.current.toggleChip("gluten_free"));
-    const lastUrl = router.replace.mock.calls.at(-1)[0];
-    expect(lastUrl).toContain("gluten_free=1");
+    // MEH-1293: updateURL now mirrors via window.history.replaceState (shallow)
+    // instead of router.replace — assert on the real URL, transport-agnostic.
+    expect(window.location.search).toContain("gluten_free=1");
   });
 
   it("serializes all 7 chip keys when all are active", () => {
     const { result } = renderHook(() => useHomePage());
     for (const key of [
       "kosher",
-      "organic",
       "gluten_free",
       "vegan",
+      "vegetarian",
       "lactose_free",
       "has_delivery",
       "verified",
     ]) {
       act(() => result.current.toggleChip(key));
     }
-    const lastUrl = router.replace.mock.calls.at(-1)[0];
+    // MEH-1293: assert on the real URL (history.replaceState), not router.replace.
+    const lastUrl = window.location.search;
     for (const param of [
       "kosher=1",
-      "organic=1",
       "gluten_free=1",
       "vegan=1",
+      "vegetarian=1",
       "lactose_free=1",
       "delivery=1",
       "verified=1",
     ]) {
       expect(lastUrl).toContain(param);
     }
+    // MEH-1259: organic is no longer serialized.
+    expect(lastUrl).not.toContain("organic=1");
   });
 
   it("deep-link ?vegan=1 hydrates the chip and the initial fetch", () => {
@@ -83,6 +89,15 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     const producersCall = api.get.mock.calls.find(([path]) => path === "/producers");
     expect(producersCall).toBeDefined();
     expect(producersCall[1].params).toMatchObject({ vegan: true });
+  });
+
+  it("deep-link ?vegetarian=1 hydrates the chip and the initial fetch (MEH-1438)", () => {
+    window.history.replaceState(null, "", "/?vegetarian=1");
+    const { result } = renderHook(() => useHomePage());
+    expect(result.current.chips.vegetarian).toBe(true);
+    const producersCall = api.get.mock.calls.find(([path]) => path === "/producers");
+    expect(producersCall).toBeDefined();
+    expect(producersCall[1].params).toMatchObject({ vegetarian: true });
   });
 
   it("deep-link with a legacy key (?kosher=1) still hydrates — no regression", () => {

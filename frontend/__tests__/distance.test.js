@@ -48,27 +48,51 @@ describe("formatDistance", () => {
     expect(formatDistance(undefined)).toBe(null);
   });
 
+  // MEH-1307: no trailing " ממך" tail on any form.
   it("rounds sub-kilometer distances to the nearest 50 m", () => {
-    expect(formatDistance(0.45)).toBe("\u2066450 m\u2069 ממך");
-    expect(formatDistance(0.475)).toBe("\u2066500 m\u2069 ממך"); // rounds up
-    expect(formatDistance(0.999)).toBe("\u20661000 m\u2069 ממך");
+    expect(formatDistance(0.45)).toBe("⁦450 m⁩");
+    expect(formatDistance(0.475)).toBe("⁦500 m⁩"); // rounds up
+    expect(formatDistance(0.999)).toBe("⁦1000 m⁩");
   });
 
   it("uses 'less than 50m' label for very close distances", () => {
-    expect(formatDistance(0.01)).toBe("פחות מ-50 \u2066m\u2069 ממך");
-    expect(formatDistance(0.02)).toBe("פחות מ-50 \u2066m\u2069 ממך");
+    expect(formatDistance(0.01)).toBe("פחות מ-50 ⁦m⁩");
+    expect(formatDistance(0.02)).toBe("פחות מ-50 ⁦m⁩");
   });
 
-  it("uses one decimal for 1–99 km", () => {
-    expect(formatDistance(1)).toBe("\u20661.0 km\u2069 ממך");
-    expect(formatDistance(3.24)).toBe("\u20663.2 km\u2069 ממך");
-    expect(formatDistance(54.7)).toBe("\u206654.7 km\u2069 ממך");
-    expect(formatDistance(99.94)).toBe("\u206699.9 km\u2069 ממך");
+  it("uses one decimal for 1–9.9 km", () => {
+    expect(formatDistance(1)).toBe("⁦1.0 km⁩");
+    expect(formatDistance(3.24)).toBe("⁦3.2 km⁩");
+    expect(formatDistance(9.94)).toBe("⁦9.9 km⁩");
   });
 
-  it("uses no decimal for ≥100 km (avoids false precision)", () => {
-    expect(formatDistance(100)).toBe("\u2066100 km\u2069 ממך");
-    expect(formatDistance(312.5)).toBe("\u2066313 km\u2069 ממך");
-    expect(formatDistance(20015)).toBe("\u206620015 km\u2069 ממך");
+  it("rounds to a whole number for ≥10 km (MEH-1298 — false precision)", () => {
+    expect(formatDistance(10)).toBe("⁦10 km⁩");
+    expect(formatDistance(54.7)).toBe("⁦55 km⁩");
+    expect(formatDistance(99.94)).toBe("⁦100 km⁩");
+    expect(formatDistance(312.5)).toBe("⁦313 km⁩");
+    expect(formatDistance(20015)).toBe("⁦20015 km⁩");
+  });
+});
+
+describe("formatDistance — Hebrew unit (MEH-1243 §3), no ממך tail (MEH-1307)", () => {
+  it("renders one-decimal ק\"מ for 1-9.9 km, digits-first, no tail", () => {
+    expect(formatDistance(1.2, { unit: "he" })).toBe("1.2 ק\"מ");
+    expect(formatDistance(9.9, { unit: "he" })).toBe("9.9 ק\"מ"); // <10 keeps decimal
+  });
+
+  it("renders whole ק\"מ for >=10 km and מ for <1 km", () => {
+    expect(formatDistance(53.9, { unit: "he" })).toBe("54 ק\"מ"); // ≥10 rounds
+    expect(formatDistance(312.5, { unit: "he" })).toBe("313 ק\"מ");
+    expect(formatDistance(0.45, { unit: "he" })).toBe("450 מ'");
+  });
+
+  it("MEH-1307: no tail on the Hebrew ProducerCard pill either", () => {
+    expect(formatDistance(1.2, { unit: "he" })).toBe("1.2 ק\"מ");
+    expect(formatDistance(38.3, { unit: "he" })).toBe("38 ק\"מ");
+  });
+
+  it("default (latin) output has no tail for existing callers", () => {
+    expect(formatDistance(1.2)).toBe("⁦1.2 km⁩");
   });
 });

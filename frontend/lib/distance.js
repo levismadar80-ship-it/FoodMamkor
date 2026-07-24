@@ -41,28 +41,42 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 /**
- * Distance formatter (v4 LOCK CARD-18 — MEH-1035: Latin units + bidi isolate):
- *   < 1 km  → "{N} m ממך"     (rounded to nearest 50 m)
- *   1–99 km → "{x.x} km ממך"  (one decimal)
- *   ≥ 100 km → "{N} km ממך"    (no decimal — false precision)
+ * Distance formatter. Two presentations via the `unit` option:
  *
- * The {number}{unit} run is wrapped in LRI…PDI (\u2066…\u2069) so it renders
- * LTR (Latin numerals + unit) without flipping the trailing Hebrew "ממך",
- * which stays OUTSIDE the isolate and flows RTL. REUSES: BadgeRow.jsx:79.
- * Returns null for non-finite inputs so callers can render conditionally.
+ *   unit:"latin" (DEFAULT — v4 LOCK CARD-18 / MEH-1035, used by ProducerCard +
+ *   BadgeRow): Latin unit inside an LRI…PDI (⁦…⁩) isolate:
+ *     < 1 km   → "⁦{N} m⁩"    (nearest 50 m)
+ *     1–9.9 km → "⁦{x.x} km⁩" (one decimal)
+ *     ≥ 10 km  → "⁦{N} km⁩"   (no decimal — false precision, MEH-1298)
+ *
+ *   unit:"he" (MEH-1243 🔒 §3 — MapProducerCard meta line; MEH-1301 — the Hebrew
+ *   ProducerCard distance pill): Hebrew unit 'ק"מ', digits first. No isolate
+ *   chars — MapProducerCard wraps the token in <bdi>, ProducerCard relies on
+ *   bare-RTL digit isolation (the Latin number self-isolates inside the RTL
+ *   span). Which unit a card renders is chosen by the active locale at the call
+ *   site (next-intl `useLocale`), not hardcoded here:
+ *     < 1 km  → "{N} מ'"   ·   1–9.9 km → "{x.x} ק\"מ"   ·   ≥ 10 km → "{N} ק\"מ"
+ *
+ * MEH-1307: the trailing Hebrew " ממך" suffix was dropped from BOTH forms — the
+ * label now reads as a bare magnitude with no "from you" tail. Returns null for
+ * non-finite/negative inputs so callers can render conditionally.
+ * REUSES: BadgeRow.jsx:79 (latin form).
  */
-export function formatDistance(km) {
+export function formatDistance(km, { unit = "latin" } = {}) {
   if (!Number.isFinite(km) || km < 0) return null;
+
+  const he = unit === "he";
 
   if (km < 1) {
     const meters = Math.round((km * 1000) / 50) * 50;
-    if (meters === 0) return "פחות מ-50 \u2066m\u2069 ממך";
-    return `\u2066${meters} m\u2069 ממך`;
+    if (meters === 0) {
+      return he ? `פחות מ-50 מ'` : `פחות מ-50 ⁦m⁩`;
+    }
+    return he ? `${meters} מ'` : `⁦${meters} m⁩`;
   }
 
-  if (km < 100) {
-    return `\u2066${km.toFixed(1)} km\u2069 ממך`;
-  }
-
-  return `\u2066${Math.round(km)} km\u2069 ממך`;
+  // MEH-1298: one decimal only below 10 km ("1.2 ק"מ"); ≥ 10 km rounds to a whole
+  // number ("38 ק"מ") — a tenth of a km is false precision at that range.
+  const val = km < 10 ? km.toFixed(1) : String(Math.round(km));
+  return he ? `${val} ק"מ` : `⁦${val} km⁩`;
 }

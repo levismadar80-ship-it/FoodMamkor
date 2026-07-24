@@ -112,3 +112,7 @@ if loop telemetry shows systematic over/under-run.
 - **(d) Per-primitive rules with no shared tier map (status quo).** Rejected:
   that scatter is the MEH-271 two-mechanisms smell — each rule re-deriving
   scope drifts. One ADR, referenced everywhere.
+
+## Amendments
+
+> **Amendment 18/07/2026 (precedent: PR #1892).** חריג יחיד ל-deny על `backend/alembic/versions/**`: **merge-revision לאיחוד heads** מותר ל-CC כאשר מתקיימים כולם: (1) `upgrade()` ו-`downgrade()` ריקים לחלוטין — אפס DDL/DML; (2) `down_revision` הוא tuple של ה-heads הקיימים בלבד; (3) ה-branches המאוחדים נוגעים בטבלאות disjoint; (4) האורקסטרטור מאמת את תוכן הקובץ עצמו (fetch של ה-PR ref) לפני merge ומדווח לספיר. כל מיגרציה אחרת — כולל merge-revision עם תוכן — נשארת Sapir-applies-manually.

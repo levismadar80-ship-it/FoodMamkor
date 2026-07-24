@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, MapPinLine, Rows } from "@phosphor-icons/react";
 
@@ -10,6 +10,7 @@ import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
+import { useUserLocation, setUserLocation } from "@/lib/user-location";
 
 import CityPickerModal from "./components/CityPickerModal";
 import FilterChipsBar from "./components/FilterChipsBar";
@@ -18,7 +19,7 @@ import MapPane from "./components/MapPane";
 import MobileSheetSelectedCard from "./components/MobileSheetSelectedCard";
 import NearMePill from "./components/NearMePill";
 import { useFirstVisitHints } from "./state/useFirstVisitHints";
-import { useMapFilters } from "./state/useMapFilters";
+import { sortProducers, useMapFilters } from "./state/useMapFilters";
 import { useMapSync } from "./state/useMapSync";
 import { useProducersFeed } from "./state/useProducersFeed";
 
@@ -70,8 +71,17 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  // Source line 78 — desktop sort dropdown UI state, no consumer outside JSX.
-  const [sortBy, setSortBy] = useState("default");
+  // MEH-1412 (MEH-1388 chunk 3): pickup/market_stand marker layer visibility.
+  // Default on — all points show; the MapPane toggle flips it.
+  const [showSecondaryLayer, setShowSecondaryLayer] = useState(true);
+  // Sort state for the desktop dropdown — consumed by sortedProducers below
+  // (until this batch the select wrote state nothing read). `null` = "auto":
+  // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
+  // useUserLocation (sessionStorage) — the same source the cards use for their
+  // distance labels, so "מרחק" orders by exactly what the user sees.
+  const [sortBy, setSortBy] = useState(null);
+  const userLoc = useUserLocation();
+  const effectiveSort = sortBy ?? (userLoc ? "nearest" : "newest");
 
   // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
   // bottom strip of the full-bleed map and clips a marker there. Reserve that
@@ -242,7 +252,6 @@ export default function MapPage() {
     setCommittedBounds: filters.setCommittedBounds,
     categories: feed.categories,
     setAllProducers: feed.setAllProducers,
-    setShowMapHint: hints.setShowMapHint,
     setSheetSnap: hints.setSheetSnap,
   });
 
@@ -279,6 +288,9 @@ export default function MapPage() {
         setGpsLoading(false);
         const { latitude: lat, longitude: lng } = pos.coords;
         if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+        // MEH-1230: persist the fix so "מרחק" sort unlocks + card distance labels
+        // render live (useUserLocation subscribers re-render on the event).
+        setUserLocation(lat, lng);
         sync.mapApiRef.current?.getMap()?.flyTo([lat, lng], 13, { duration: 1.2 });
       },
       (err) => {
@@ -368,6 +380,7 @@ export default function MapPage() {
       resultCount={filters.visibleProducers.length}
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
+      activeAttributeCount={filters.activeAttributeCount}
     />
   );
 
@@ -382,7 +395,8 @@ export default function MapPage() {
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
       visitedIds={hints.visitedIds}
-      showMapHint={hints.showMapHint}
+      showSecondaryLayer={showSecondaryLayer}
+      onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
@@ -400,9 +414,17 @@ export default function MapPage() {
     />
   );
 
+  // Client-side ordering of the visible list (pure helper in useMapFilters —
+  // unit-tested there). Applied to the card list ONLY: the count, markers and
+  // legend keep reading filters.visibleProducers (order-insensitive consumers).
+  const sortedProducers = useMemo(
+    () => sortProducers(filters.visibleProducers, effectiveSort, userLoc),
+    [filters.visibleProducers, effectiveSort, userLoc],
+  );
+
   const cardList = (
     <MapCardList
-      visibleProducers={filters.visibleProducers}
+      visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
       cardRefs={sync.cardRefs}
@@ -410,10 +432,11 @@ export default function MapPage() {
       onCardMouseLeave={sync.handleCardMouseLeave}
       onCardClick={sync.handleCardClick}
       onResetAll={() => {
-        // MEH-1075: completed to all 7 toggle keys (was missing the diet trio);
+        // MEH-1075: completed to all toggle keys (was missing the diet trio);
         // cancel any pending debounced sheet fetch so it can't clobber this reset.
+        // MEH-1087: + kosher (verified-only kashrut toggle).
         filters.cancelPendingSheetFetch();
-        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
+        filters.setChipState({ categoryKeys: [], organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
         filters.setActiveCategoryNames(null);
         filters.setCommittedBounds(null);
         filters.setCityFilter("");
@@ -451,7 +474,11 @@ export default function MapPage() {
             </div>
             {filterChipsBar}
           </div>
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {/* MEH-1230: pt-3.5 gives the sort <select>'s focus ring clearance at the
+              scroll container's top edge. The control keeps -my-2.5 (compact count
+              row); without top padding overflow-y-auto clipped the ring (the row is
+              this container's top-flush child). */}
+          <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-4">
             <div className="flex items-start justify-between mb-3">
               {/* MEH-826: locked count copy + "near you · {region}" subhead under it */}
               <div>
@@ -466,13 +493,18 @@ export default function MapPage() {
                   (MEH-825 pattern). Keyboard focus uses a ring (box-shadow),
                   NOT text-decoration — underline is unreliable on native <select>. */}
               <div className="relative inline-flex items-center shrink-0 -my-2.5">
+                {/* Static label so the control reads as "מיון: <mode>" — the
+                    select's own value alone looked like a caption, not a control */}
+                <span className="text-sm text-fg-muted" aria-hidden="true">{t("map.client.sort.label")}</span>
                 <select
-                  value={sortBy}
+                  value={effectiveSort}
                   onChange={(e) => setSortBy(e.target.value)}
                   aria-label={t("map.client.sort.aria_label")}
                   className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
-                  <option value="default">{t("map.client.sort.nearest")}</option>
+                  {/* "מרחק" needs a GPS fix to mean anything — disabled without one
+                      (the auto default then falls back to newest). */}
+                  <option value="nearest" disabled={!userLoc}>{t("map.client.sort.nearest")}</option>
                   <option value="rating">{t("map.client.sort.top_rated")}</option>
                   <option value="newest">{t("map.client.sort.newest")}</option>
                 </select>
@@ -563,6 +595,7 @@ export default function MapPage() {
         <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading}>
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
+            selectedLocation={sync.selectedLocation}
             onClose={() => filters.setSelectedProducer(null)}
           />
           {cardList}

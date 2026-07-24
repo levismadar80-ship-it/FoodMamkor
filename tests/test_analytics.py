@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from app.models.models import (
     Event,
     Experience,
+    Favorite,
     HomeProduct,
     Producer,
     ProducerFollower,
@@ -262,30 +263,37 @@ class TestProducerAnalytics:
         assert body["search_appearances"]["total"] == 2
 
     def test_analytics_follower_counts(self, client, db):
+        """MEH-1364 (decision A): counts come from `favorites`, not
+        producer_followers. Fixture spans the 7-day window boundary (20d/8d
+        outside, 6d/2d inside) and plants one legacy producer_followers row
+        to prove it no longer feeds the metric."""
         p = make_producer(db)
         user = make_user(db, email="owner6@test.com", role="producer")
         user.producer_id = p.id
         db.commit()
 
-        old_follower = make_user(db, email="follower-old@test.com")
-        new_follower = make_user(db, email="follower-new@test.com")
+        ages_days = [20, 8, 6, 2]
+        for i, age in enumerate(ages_days):
+            fan = make_user(db, email=f"fav-{age}d-{i}@test.com")
+            db.add(Favorite(
+                producer_id=p.id,
+                user_id=fan.id,
+                created_at=datetime.utcnow() - timedelta(days=age),
+            ))
+        # Legacy row — the frozen table must NOT be counted post-repoint.
+        legacy = make_user(db, email="legacy-follower@test.com")
         db.add(ProducerFollower(
             producer_id=p.id,
-            user_id=old_follower.id,
-            created_at=datetime.utcnow() - timedelta(days=20),
-        ))
-        db.add(ProducerFollower(
-            producer_id=p.id,
-            user_id=new_follower.id,
-            created_at=datetime.utcnow() - timedelta(days=2),
+            user_id=legacy.id,
+            created_at=datetime.utcnow() - timedelta(days=1),
         ))
         db.commit()
 
         body = client.get(
             "/producers/me/analytics", headers=auth_header(user)
         ).json()
-        assert body["follower_count"] == 2
-        assert body["new_followers_this_week"] == 1
+        assert body["follower_count"] == 4
+        assert body["new_followers_this_week"] == 2
 
     def test_analytics_home_products_count_scopes_to_owner(self, client, db):
         p = make_producer(db)

@@ -9,18 +9,21 @@ vi.mock("next-intl", () => ({
     const flat = {
       aria: "תגיות בית עסק",
       verified_label: "מאומת",
-      declared_label: "מוצהר",
       verified_tooltip_license: "רישיון הוגש ונבדק בתאריך {date}",
       verified_tooltip_exemption: "אישור פטור הוגש ונבדק בתאריך {date}",
-      declared_explainer: "העסק חתם על הצהרה מחייבת שהוא פועל כדין.",
       aria_verified: "בית עסק מאומת. {tooltip}",
       aria_verified_plain: "בית עסק מאומת",
-      aria_declared: "בית עסק מוצהר",
     };
     let s = flat[key] ?? key;
     for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
     return s;
   },
+}));
+
+// MEH-1334: BadgeRow's hero popover links to /about#verification via the
+// locale-aware Link — mock the wrapper directly (BottomNav.test precedent).
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 
 import BadgeRow from "@/components/BadgeRow";
@@ -51,7 +54,7 @@ describe("BadgeRow", () => {
       />,
     );
     expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("מומלץ")).toBeInTheDocument();
+    expect(screen.getByText("בחירת העורכת")).toBeInTheDocument(); // MEH-1492 rename
     expect(screen.getByText("חדש")).toBeInTheDocument();
   });
 
@@ -68,8 +71,11 @@ describe("BadgeRow", () => {
         }}
       />,
     );
+    // This fixture earns no license badge (has_producer_license unset — the
+    // "license" here is the verification DOC TYPE), so the top-2 stay
+    // verified + recommended ("בחירת העורכת" after the MEH-1492 rename).
     expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("מומלץ")).toBeInTheDocument();
+    expect(screen.getByText("בחירת העורכת")).toBeInTheDocument();
     expect(screen.queryByText("חדש")).not.toBeInTheDocument();
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
   });
@@ -137,36 +143,64 @@ describe("BadgeRow", () => {
   });
 
   // MEH-76 chunk 4 — S12 tier states from the live ADR-022 contract.
+  // MEH-1334 (CLARIFY c): the doc-date tooltip now lives ONLY on the card
+  // surface — the hero popover shows the locked dateless copy. These assert
+  // the date-bearing strings via surface="card" (getVerifiedTooltip owner).
   describe("S12 tier badge", () => {
-    it("license tooltip carries the LTR-isolated d.m.yyyy date", () => {
-      render(<BadgeRow producer={VERIFIED_LICENSE} />);
-      fireEvent.click(screen.getByText("מאומת"));
+    it("license tooltip carries the LTR-isolated d.m.yyyy date (card surface)", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} surface="card" />);
+      fireEvent.click(screen.getByRole("button", { name: /מאומת/ }));
       const tip = screen.getByTestId("badge-tooltip-verified");
       expect(tip.textContent).toContain("רישיון הוגש ונבדק בתאריך");
       expect(tip.textContent).toContain("⁦5.6.2026⁩");
     });
 
-    it("exemption doc type swaps the tooltip string", () => {
+    it("exemption doc type swaps the tooltip string (card surface)", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "exemption" }}
+          surface="card"
         />,
       );
-      fireEvent.click(screen.getByText("מאומת"));
+      fireEvent.click(screen.getByRole("button", { name: /מאומת/ }));
       expect(screen.getByTestId("badge-tooltip-verified").textContent).toContain(
         "אישור פטור",
       );
     });
 
-    it("cosmetics renders the seal WITHOUT a tooltip (key not yet locked)", () => {
+    // MEH-1334: the hero seal ALWAYS opens the verification popover with the
+    // LOCKED dateless copy (title + body + /about#verification link) — the
+    // pre-existing MEH-762 doc-date line was dropped from the hero surface
+    // (CLARIFY c). Same content for every doc type; cosmetics included.
+    it("hero popover shows the locked dateless copy for license doc type", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} />);
+      fireEvent.click(screen.getByText("מאומת"));
+      const pop = screen.getByTestId("badge-tooltip-verified");
+      expect(pop.querySelector('a[href="/about#verification"]')).not.toBeNull();
+      expect(pop.textContent).toContain("verified_popover_body");
+      // the pre-existing doc-date line must NOT appear on the hero surface
+      expect(pop.textContent).not.toContain("הוגש ונבדק");
+    });
+
+    it("hero popover copy is identical for a cosmetics doc type (still no date)", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
         />,
       );
-      const btn = screen.getByRole("button", { name: "בית עסק מאומת" });
-      fireEvent.click(btn);
-      expect(screen.queryByTestId("badge-tooltip-verified")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "בית עסק מאומת" }));
+      const pop = screen.getByTestId("badge-tooltip-verified");
+      expect(pop.textContent).toContain("verified_popover_body");
+      expect(pop.textContent).not.toContain("הוגש ונבדק");
+    });
+
+    // CLARIFY a/b: the seal — and therefore this popover — never renders for a
+    // non-verified producer, so the "אישור ידני ופועל ברישיון" claim is safe.
+    it("renders NO verified seal (and no popover) when verification_tier !== verified", () => {
+      const { container } = render(
+        <BadgeRow producer={{ verification_tier: "declared" }} />,
+      );
+      expect(container.querySelector('[data-badge="verified"]')).toBeNull();
     });
 
     it("card surface renders the icon-only seal (no word)", () => {
@@ -176,11 +210,15 @@ describe("BadgeRow", () => {
       expect(btn.textContent).toBe(""); // seal glyph only — the name stays the hero
     });
 
-    it("declared renders the calm chip + explainer on the hero surface", () => {
-      render(<BadgeRow producer={{ verification_tier: "declared" }} />);
-      const chip = screen.getByText("מוצהר");
-      fireEvent.click(chip);
-      expect(screen.getByTestId("badge-tooltip-declared")).toBeInTheDocument();
+    // MEH-1170: the S12 "מוצהר" chip contradicted ADR-022 ("tier 2 = no
+    // badge") and was removed. Declared renders no tier badge on ANY surface;
+    // the affirmative declared_explainer moved to ProducerHeader as visible copy.
+    it("declared renders no tier badge on the hero surface (ADR-022 no-badge)", () => {
+      const { container } = render(
+        <BadgeRow producer={{ verification_tier: "declared" }} />,
+      );
+      expect(container.innerHTML).toBe("");
+      expect(screen.queryByText("מוצהר")).not.toBeInTheDocument();
     });
 
     it("declared renders NOTHING on the card surface (no negative tag)", () => {
@@ -196,7 +234,19 @@ describe("BadgeRow", () => {
       );
       expect(screen.queryByText("מאומת")).not.toBeInTheDocument();
       expect(screen.queryByText("מוצהר")).not.toBeInTheDocument();
-      expect(screen.getByText("מומלץ")).toBeInTheDocument();
+      expect(screen.getByText("בחירת העורכת")).toBeInTheDocument(); // MEH-1492 rename
+    });
+
+    // MEH-1492: the recommended badge popover links to the /about criteria +
+    // ADR-030 promise (mirrors the verified seal → /about#verification).
+    it("recommended badge popover links to /about#editors-pick", async () => {
+      const { container } = render(
+        <BadgeRow producer={{ verification_tier: null, is_recommended: true }} />,
+      );
+      // open the popover by clicking the chip trigger
+      fireEvent.click(screen.getByText("בחירת העורכת"));
+      const link = container.querySelector('a[href="/about#editors-pick"]');
+      expect(link).not.toBeNull();
     });
   });
 });

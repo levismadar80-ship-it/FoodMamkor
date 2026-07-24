@@ -7,9 +7,10 @@
  * cap on their own (e.g. qa-artifacts/MEH-1143/home-events-1280.png = 4.75 MB;
  * this script takes it to ~92 KB, -98%).
  *
- * NOTE: as of 2026-07-12 the 2 MB cap is a convention, NOT a CI gate — no
- * size-check job exists in .github/workflows yet (the gate YAML ships in the
- * MEH-1156 PR body for Sapir to apply; workflows are CC-deny, MEH-671).
+ * NOTE: the 2 MB cap is a LIVE, blocking CI gate — the "qa-artifacts size cap"
+ * job (qa-artifacts-size in the CI checks workflow) is wired into
+ * "CI gate (required)", so an over-cap PR cannot go green. Running this script
+ * is how you comply.
  *
  * Strategy (in order of the effect on size):
  *   1. Cap the pixel width at --max-width (default 1440) — undoes the retina
