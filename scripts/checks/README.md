@@ -91,6 +91,57 @@ Zero guards found is a `NOTICE` and exit **0**, not a failure.
 | [`ui-pattern-guard.sh`](./ui-pattern-guard.sh) | Producer-dashboard pages hand-rolling `EmptyState` / `BackLink` / text arrows in `he.json` back keys | MEH-999 |
 | [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves all three cases. | MEH-1602 |
 
+### File taxonomy — what `changelog-branch-guard.sh` calls "docs"
+
+The guard's whole verdict turns on one question: **is this diff a code change?**
+That means the docs/code split is the guard's real interface, and it is worth
+stating outright rather than leaving readers to infer it from a `case` statement.
+
+`is_docs_path()` returns **docs** for exactly these:
+
+| Pattern | Examples | Why |
+|---|---|---|
+| `docs/**` | `docs/CHANGELOG.md`, `docs/DESIGN.md`, `docs/audits/…` | the documentation tree |
+| `.claude/**` | `.claude/rules/workflow.md`, `.claude/hooks/…` | agent configuration + rules |
+| `HANDOFF.md` | — | an append-only log itself |
+| **root-level** `*.md` | `CLAUDE.md`, `AGENTS.md`, `README.md` | documentation that happens to live at the repo root |
+
+Everything else is **code**, including some things that look like docs:
+
+| Pattern | Examples | Classified |
+|---|---|---|
+| nested Markdown | `frontend/components/CLAUDE.md`, `backend/**/*.md` | **code** — it ships beside the code it documents, and a PR touching it is a code PR |
+| `.github/**` | workflows, PR/issue templates — *including* `.md` ones | **code** |
+| root-level non-Markdown | `package.json`, `Dockerfile`, `.gitignore`, `LICENSE` | **code** |
+| everything under `scripts/`, `tests/`, `frontend/`, `backend/`, `qa-artifacts/` | — | **code** |
+
+The root-level `*.md` arm exists because the guard **got this wrong on its first
+real customer**: PR #2228 corrected `CLAUDE.md` (the rule this guard enforces)
+and the guard classified `CLAUDE.md` as code, which would have blocked that PR
+from carrying its own CHANGELOG entry. `--self-test` case 4 now locks the fix —
+remove the arm and the self-test goes red rather than the behaviour regressing
+quietly.
+
+#### Deliberately NOT decided
+
+These have never come up, so the guard's current answer is an accident of the
+patterns above rather than a considered decision. **Decide them the first time
+one actually blocks a PR** — don't pre-emptively widen the taxonomy:
+
+- **`.github/**/*.md`** (PR / issue templates) — currently **code**. Arguably
+  documentation, but `.github/**` is CC-deny territory anyway, so a PR touching
+  it is unusual and rarely also a docs backfill.
+- **A root-level doc with no `.md` extension** (`LICENSE`, `CODEOWNERS`) —
+  currently **code**. No such PR has needed a CHANGELOG entry yet.
+- **`qa-artifacts/**`** (screenshots) — currently **code**, which is deliberate
+  for now: they are evidence attached to a code change and travel with it.
+- **A docs-only PR that also touches `docs/ci/*.patch.md`** — currently **docs**
+  (under `docs/`), even though those files are staged workflow YAML.
+
+If one of these bites, the fix is one `case` arm plus a `--self-test` case. Do
+both — a taxonomy change without a locking case is how the CLAUDE.md defect got
+in.
+
 ### The one guard that needs a diff
 
 `changelog-branch-guard.sh` is the first guard here that reasons about the
