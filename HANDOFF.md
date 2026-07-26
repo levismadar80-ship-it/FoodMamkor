@@ -3,6 +3,58 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — MEH-1599 (merged `ae06a786`) + MEH-1601 (patch doc merged `c02d2e4c`, ticket stays open)
+
+**Shipped.** MEH-1599 — an authenticated-but-unauthorized visitor now gets an
+in-app denied state instead of a silent bounce to the homepage (PR #2230,
+squash `ae06a786`). MEH-1601 — the concurrency patch doc for Sapir (PR #2231,
+squash `c02d2e4c`), plus a four-file CI-docs correction (PR #2233).
+
+**The scope call worth remembering.** Phase 0 on MEH-1599 found the bare
+`router.push("/login")` on **25 call sites across 22 files**, not the one the
+ticket named. The useful part was the second cut: only **2 of them are
+reachable gates** — `producer/dashboard/layout.js:53` and `admin/layout.js:120`
+— because both layouts return before `children` mounts, so the 15 duplicate
+child guards underneath can never fire. CC stopped and asked rather than fixing
+one instance of a systemic pattern; Sapir chose "both role gates". The 3
+auth-only routes (`settings:59`, `favorites:111`, `group-buys:145`) are a
+different failure mode and were left alone deliberately — **they still lack
+`?redirect=`, which is a real (small) gap someone may want to ticket.**
+
+**The flake is dead, and it was a test bug, not a product bug.** The MEH-999
+`25-role-reachability` flake came from asserting a **transient** URL that
+`LoginClient.jsx:89-91` replaced inside the same poll window. CI run
+`30222430014`: **10/10 tests, both projects, zero retries**, including a real
+login round-trip. Adversarial review added the non-obvious part — assertion
+*order* matters, because `toHaveURL` matches on arrival and would still pass
+against a late redirect; the state assertion has to come first.
+
+**Two things found in passing, neither fixed:**
+1. `data-testid="hero-search"` resolves to **2 elements** (strict-mode
+   violation) — both search shells mount, hidden from each other by CSS. This
+   is what makes `02-search-producer` intermittently red. Same class as the
+   `cardList` double-render on #2210. Needs a ticket.
+2. `parity.spec.ts` `map` + `home` are **green** again — `a22c4a8`'s
+   regenerated baseline works. Confirmed on a PR head only; confirming it on
+   `staging` still needs MEH-1601 applied.
+
+**What is still Sapir's, and what it unblocks.** `docs/ci/e2e-concurrency.patch.md`
+is a one-line change to a CC-deny file. **Nothing in MEH-1601 is verifiable
+until it is applied** — the green CI on #2231/#2233 proves the docs merge, not
+that the fix works. The acceptance test is in the doc: merge two PRs close
+together and confirm the first run is not `cancelled`.
+
+**Docs drift, now closed.** Four CI docs claimed things `e2e.yml` had already
+moved past — the paths-filter *does* skip docs-only, and the job *does* export
+the `DEMO_*` secrets (since `21ccecc`). Notably `docs/ci/e2e-auth-fixtures.patch.md`
+was a patch doc telling Sapir to do work she had already done; it is now marked
+APPLIED. **The E2E gate is still blocked, but on precondition B alone** (suite
+not green) — A has been satisfied for some time and no doc said so.
+
+**Process note.** The `changelog-branch-guard` (MEH-1602) landed on `staging`
+mid-session and correctly rejected the CHANGELOG entry inside the MEH-1599 code
+PR; the entry moved to this docs-only PR. Working as intended, first catch.
+
 ## 2026-07-26 — MEH-1583 phone-reveal geometry (merged `9007dbb2`) + MEH-1584 canceled
 
 - **MEH-1583** (YELLOW, PR #2204, squash `9007dbb2`): one row anatomy across every cell of the (channel-count × reveal-state) matrix. `ContactCard.jsx` now spreads a single `ROW_ANATOMY` constant into both full-width affordances; on reveal the phone leaves `channels` and the number becomes the container's **last** child; `dir="ltr"`/`.numeric` moved from the row onto the number span (on the row they dragged the phone icon to the visual end in RTL). New `producer-detail-two-channel.json` fixture + desktop-only `producer-detail-two-channel-revealed` VRT shot cover the one cell no existing fixture could reach.
