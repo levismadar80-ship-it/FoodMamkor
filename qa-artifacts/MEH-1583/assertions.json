@@ -1,0 +1,74 @@
+[
+  {
+    "cell": "1-closed",
+    "viewport": "1440",
+    "clicked": false,
+    "revealedPhoneCount": 0,
+    "singleRowHref": "tel:0521234567",
+    "customCursorVisible": true,
+    "desktopExpectation": "reveal allowed"
+  },
+  {
+    "cell": "1-open",
+    "viewport": "1440",
+    "clicked": true,
+    "revealedPhoneCount": 1,
+    "singleRowHref": "tel:0521234567",
+    "customCursorVisible": true,
+    "desktopExpectation": "reveal allowed"
+  },
+  {
+    "cell": "many-closed",
+    "viewport": "1440",
+    "clicked": false,
+    "revealedPhoneCount": 0,
+    "singleRowHref": null,
+    "customCursorVisible": true,
+    "desktopExpectation": "reveal allowed"
+  },
+  {
+    "cell": "many-open",
+    "viewport": "1440",
+    "clicked": true,
+    "revealedPhoneCount": 1,
+    "singleRowHref": "https://instagram.com/sde_hazahav",
+    "customCursorVisible": true,
+    "desktopExpectation": "reveal allowed"
+  },
+  {
+    "cell": "1-closed",
+    "viewport": "375",
+    "clicked": false,
+    "revealedPhoneCount": 0,
+    "singleRowHref": "tel:0521234567",
+    "customCursorVisible": false,
+    "desktopExpectation": "reveal MUST NOT appear"
+  },
+  {
+    "cell": "1-open",
+    "viewport": "375",
+    "clicked": true,
+    "revealedPhoneCount": 0,
+    "singleRowHref": "tel:0521234567",
+    "customCursorVisible": false,
+    "desktopExpectation": "reveal MUST NOT appear"
+  },
+  {
+    "cell": "many-closed",
+    "viewport": "375",
+    "clicked": false,
+    "revealedPhoneCount": 0,
+    "singleRowHref": null,
+    "customCursorVisible": false,
+    "desktopExpectation": "reveal MUST NOT appear"
+  },
+  {
+    "cell": "many-open",
+    "viewport": "375",
+    "clicked": true,
+    "revealedPhoneCount": 0,
+    "singleRowHref": null,
+    "customCursorVisible": false,
+    "desktopExpectation": "reveal MUST NOT appear"
+  }
+]
