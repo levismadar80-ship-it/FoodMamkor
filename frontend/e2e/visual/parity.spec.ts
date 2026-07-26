@@ -87,11 +87,42 @@ const STYLE_PATH = path.join(__dirname, "parity.css");
 const SHOT = { stylePath: STYLE_PATH } as const;
 
 /**
+ * MEH-1531: the page's wall clock, frozen. The home hero subtitle switches on
+ * real time — `HomeHero.jsx:115` renders `home.hero.friday_subtitle` instead of
+ * `home.hero.subtitle` while `isFridayMode()` (`lib/friday-mode.js:4`) is true,
+ * i.e. Thu 18:00 → Fri 14:00 Asia/Jerusalem. `parity.css` already hides the
+ * friday-delivery-strip (presence varies) but nothing froze the SUBTITLE, so
+ * the shot differed by day-of-week: any run whose friday state differed from
+ * the baseline's red-lined, and a regen inside the window guaranteed failures
+ * outside it (and vice versa).
+ *
+ * WHY page.clock and not a parity.css mask: hiding the subtitle would collapse
+ * its box and shift the whole hero, and it would delete the very region hero
+ * copy changes land in (MEH-1308/MEH-1328 both moved it). Freezing the clock
+ * keeps the subtitle visible AND deterministic. It is also strictly
+ * test-harness-side — zero production files touched, so real users' Friday
+ * behaviour (MEH-50) is untouched.
+ *
+ * WHY this instant: Wednesday, comfortably outside the friday window, so the
+ * frozen variant is the non-friday subtitle the current baselines already
+ * carry. Any fixed non-window instant would do; this one is arbitrary but
+ * pinned, which is the whole point.
+ */
+const VRT_FIXED_TIME = new Date("2026-07-15T09:00:00Z"); // Wed 12:00 IDT
+
+/**
  * Neutralize pre-page state that changes rendering: cookie-consent banner
  * (localStorage) and the verify-email banner's per-session dismiss flag is
- * left unset — logged-out pages never render it.
+ * left unset — logged-out pages never render it. MEH-1531 adds the frozen
+ * clock (above) so wall-clock-dependent copy can't drift between runs.
  */
 async function preparePage(page: Page): Promise<void> {
+  // setFixedTime (not clock.install): Date.now()/new Date() return the pinned
+  // instant while timers keep running normally, so the app's own polling —
+  // e.g. use-home-page.js:131's 60s isFridayMode() re-check — still ticks and
+  // simply keeps re-deriving the same frozen answer. install() would freeze
+  // timers too and risk hanging networkidle/font settle.
+  await page.clock.setFixedTime(VRT_FIXED_TIME);
   await page.addInitScript(() => {
     try {
       localStorage.setItem("cookieConsent", "essential");
@@ -118,6 +149,27 @@ test.describe("Visual parity — MEH-991", () => {
   // regenerated on-runner. Delta is confined to the hero region — the home shot
   // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
   // also merged 2026-07-18 sit below the fold and out of frame.
+  // MEH-999 (2026-07-26): home-mobile red-lines at 17,589 px (ratio 0.07) and
+  // the cause is UNIDENTIFIED. Do NOT regenerate this baseline until it is —
+  // a regen would silently bless whatever changed. What was ruled out:
+  //   1. Copy. A key-by-key diff of he.json between the baseline commit
+  //      (1eb89491) and the failing base (397f4466) gives 44 changed keys and
+  //      ZERO under home.hero / home.trust / home.stats / nav.*. The only
+  //      home.* change is home.producers.filter_prefix, which renders on
+  //      /producers, not here.
+  //   2. Above-the-fold components. Nothing in Header / HeroSearch / BottomNav /
+  //      page.js changed in that range.
+  //   3. The live /stats strip (page.js:112-140) — the leading hypothesis, and
+  //      WRONG. Measured on a real 375x812 render: the strip's bounding box is
+  //      y=1061, h=58, i.e. ~250px BELOW the 812px fold. This shot is
+  //      viewport-only (no fullPage), so the strip is out of frame and cannot
+  //      contribute a single pixel. (With live producers the grid above is
+  //      taller, pushing it further down still.) Masking it was implemented,
+  //      measured, and reverted.
+  // Next step is the diff image, not another guess: open home-diff.png in the
+  // playwright-report artifact of a failing run (run 30199607886 has one). The
+  // CC sandbox cannot download Actions artifacts — proxy-blocked, same limit
+  // recorded in the MEH-1440 note below.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
@@ -164,6 +216,18 @@ test.describe("Visual parity — MEH-991", () => {
   // just regenerated. This touch re-fires vrt-update from the post-#2046
   // build. (Root cause of the churn: the desktop rail + chip row are unmasked
   // live chrome — see the follow-up flag in PR #2041.)
+  // MEH-999 (2026-07-26): map-desktop red-lines again, and this one IS a real
+  // (expected) UI change — no mask needed. Diff→cause: fd20ed41 (MEH-1507,
+  // Label Scope Contract) is the ONLY commit between the baseline (1eb89491)
+  // and the failing base (397f4466) touching the map's unmasked chrome —
+  // lib/map-chips.js, lib/attribute-labels.js, lib/producer-filters.js and
+  // components/FilterSheet.jsx. Its FilterSheet change reverted the MEH-1478
+  // diet pill grid to full-width role="switch" rows so every diet row carries a
+  // scope subtext — and on desktop the FilterSheet IS the unmasked left rail.
+  // That also explains the asymmetry this comment block has recorded twice
+  // before: desktop fails, mobile passes, because on mobile the FilterSheet is
+  // a closed bottom sheet. Correct action is a scoped regen, route = "map";
+  // there is nothing to fix in the product.
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);

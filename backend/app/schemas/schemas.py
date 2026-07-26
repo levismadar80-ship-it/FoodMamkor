@@ -113,6 +113,74 @@ def _contact_method_validator(value: str | None) -> str | None:
     return value
 
 
+# MEH-1537: contact-field format guards. The server is the source of truth for
+# contact_email / phone / whatsapp_group on EVERY Producer write path — a
+# malformed phone silently breaks the wa.me button, a malformed email is a dead
+# contact channel, a bad group link dead-ends the invite. Shared (not
+# copy-pasted) so all four write schemas — ProducerRegister, ProducerCreate,
+# ProducerAdminCreate, ProducerUpdate — enforce one definition. Empty /
+# whitespace-only normalises to None on all three: the dashboard sends "" for a
+# cleared field and must not 422. Precedent: _url_scheme_validator (scheme
+# guard) + _validate_referral_source (strip → None).
+_EMAIL_FORMAT_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# Matches the MEH-1537 Railway audit SQL exactly: strip every non-digit, then
+# optional 972 country code, optional leading 0, then 8-9 subscriber digits.
+_PHONE_DIGITS_RE = re.compile(r"^(972)?0?[0-9]{8,9}$")
+_PHONE_SEPARATORS_RE = re.compile(r"[\s()\-]")
+
+
+def _normalize_contact_email(value: str | None) -> str | None:
+    """`mode="before"` guard for contact_email. Empty/whitespace → None; else a
+    basic local@domain.tld shape (same regex as the frontend `validateEmail` +
+    the audit SQL) with a Hebrew error. Runs BEFORE the field's `EmailStr` type
+    so a cleared field ("") normalises to None instead of 422-ing; a surviving
+    non-empty value still passes through EmailStr as the RFC backstop.
+    """
+    if not isinstance(value, str):
+        # None or a non-string — let the field type (EmailStr | None) decide.
+        return value
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    if not _EMAIL_FORMAT_RE.match(stripped):
+        raise ValueError("כתובת אימייל לא תקינה")
+    return stripped
+
+
+def _phone_validator(value: str | None) -> str | None:
+    """Strip separators (spaces/dashes/parens) ONLY — keep the +/digits as typed
+    so the wa.me builders (frontend `normalizePhone` re-strips to digits anyway,
+    lib/utils.js) are unaffected. Validate the digit-only projection against the
+    audit regex. Empty/whitespace → None.
+    """
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    cleaned = _PHONE_SEPARATORS_RE.sub("", stripped)
+    digits = re.sub(r"\D", "", cleaned)
+    if not _PHONE_DIGITS_RE.match(digits):
+        raise ValueError("מספר טלפון לא תקין")
+    return cleaned
+
+
+def _whatsapp_group_validator(value: str | None) -> str | None:
+    """WhatsApp group invite links must be https://chat.whatsapp.com/… — any
+    other scheme/host is a dead or wrong link on the public contact card.
+    Empty/whitespace → None.
+    """
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    parsed = urlparse(stripped)
+    if parsed.scheme != "https" or parsed.netloc.lower() != "chat.whatsapp.com":
+        raise ValueError("קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com")
+    return stripped
+
+
 def _url_scheme_validator(value: str | None) -> str | None:
     if value is None:
         return None
@@ -344,6 +412,17 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    # MEH-1537: phone format + empty→None. No whatsapp_group on this schema.
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, v):
+        return _phone_validator(v)
+
+    @field_validator("contact_email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return _normalize_contact_email(v)
 
     # MEH-1471: reject any non-null referral_source outside the allowed key set
     # (422). None / empty / whitespace-only normalise to None (nullable column;
@@ -745,6 +824,12 @@ class ProducerCreate(BaseModel):
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-1537: phone format (no contact_email / whatsapp_group on this schema).
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, v):
+        return _phone_validator(v)
+
     @field_validator("category_ids")
     @classmethod
     def _require_categories(cls, v):
@@ -834,6 +919,22 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    # MEH-1537: phone / whatsapp_group format + contact_email empty→None.
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, v):
+        return _phone_validator(v)
+
+    @field_validator("whatsapp_group")
+    @classmethod
+    def _validate_whatsapp_group(cls, v):
+        return _whatsapp_group_validator(v)
+
+    @field_validator("contact_email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return _normalize_contact_email(v)
 
     # MEH-1222: reject malformed image URLs in the producer photo array.
     @field_validator("images")
@@ -1101,6 +1202,24 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    # MEH-1537: phone / whatsapp_group format + contact_email empty→None. This
+    # schema backs BOTH the owner PUT /producers/me and the admin PUT (admin.py
+    # bulk setattr), so validating here covers both write paths at once.
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, v):
+        return _phone_validator(v)
+
+    @field_validator("whatsapp_group")
+    @classmethod
+    def _validate_whatsapp_group(cls, v):
+        return _whatsapp_group_validator(v)
+
+    @field_validator("contact_email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return _normalize_contact_email(v)
 
     # MEH-1222: reject malformed image URLs in the producer photo array.
     @field_validator("images")
