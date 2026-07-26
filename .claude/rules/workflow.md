@@ -833,3 +833,27 @@ Tasks auto-expire after 7 days.
     re-trigger commits on PRs #2087/#2089/#2090 to merge after a "MERGE ALL"
     authorization. The merges were correct; clearing the marker was not CC's to
     do. Codified so the STOP boundary survives future merge authorizations._
+
+31. **Append-only logs never ride in a code branch — enforced, not advised
+    (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
+    append-only, so every concurrent merge to `staging` conflicts on them. Keep
+    them OUT of any branch that also changes code; backfill them in a separate
+    **docs-only** PR.
+
+    **Enforcement:** `scripts/checks/changelog-branch-guard.sh`, discovered
+    automatically by `scripts/checks/run-all.sh` under the required
+    **Repo guards** job. It fails when a diff touches any file outside
+    `docs/**` / `HANDOFF.md` / `.claude/**` *and* touches either log. A
+    docs-only PR still passes — that backfill path is the point.
+
+    **If it fires on your branch**, don't argue with it:
+    ```bash
+    git checkout origin/staging -- docs/CHANGELOG.md HANDOFF.md
+    ```
+    then re-add the entries in a docs-only PR.
+
+    _Source: MEH-1372 wrote the rule as prose on 26/07; the same evening PR
+    #2207 carried a CHANGELOG entry, absorbed 7 staging merges, and produced
+    two contradictory MEH-1569 entries that only a human reading the log
+    caught. A rule no gate enforces is a suggestion — the same conclusion
+    MEH-1155/ADR-016 reached for DO-NOT-MERGE._
