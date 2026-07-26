@@ -73,9 +73,10 @@ BACKGROUND_TASK_TAG = "background_task"
 def capture_background_exception(exc: BaseException, *, task: str) -> None:
     """MEH-1533: report an otherwise-swallowed background exception to Sentry.
 
-    Background work — ``asyncio.to_thread`` (``startup.py:162``) and the
-    APScheduler jobs (``startup.py:281,296``) — runs OUTSIDE the ASGI request
-    cycle, so ``FastApiIntegration`` (the only integration configured in
+    Background work — ``startup._init_db_background`` (via ``asyncio.to_thread``)
+    and the APScheduler jobs ``startup._run_followup_job`` /
+    ``startup._run_watchdog_job`` — runs OUTSIDE the ASGI request cycle, so
+    ``FastApiIntegration`` (the only integration configured in
     ``init_sentry`` above) never observes it. Each of those handlers logs via
     structlog and returns, so the failure reaches Railway stdout and nowhere
     else: a ``seed()`` crash that fired on every staging boot produced ZERO
@@ -108,6 +109,10 @@ def capture_background_exception(exc: BaseException, *, task: str) -> None:
             sentry_sdk, "push_scope", None
         )
         if scope_factory is None:  # pragma: no cover — neither API present
+            # Tag on the global scope so the event stays filterable even on the
+            # degraded path (else it would be invisible to the Sentry filter
+            # this helper's whole purpose is to make possible).
+            sentry_sdk.set_tag(BACKGROUND_TASK_TAG, task)
             sentry_sdk.capture_exception(exc)
             return
         with scope_factory() as scope:

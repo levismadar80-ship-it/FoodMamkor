@@ -145,6 +145,50 @@ def test_capture_happens_before_the_log_call(monkeypatch):
     assert calls == ["capture", "log"], f"expected capture before log, got {calls}"
 
 
+# --- the two APScheduler job handlers ---------------------------------------
+
+
+class _FakeSession:
+    """Minimal stand-in — the handlers only pass it through and close it."""
+
+    def close(self):
+        pass
+
+
+@pytest.mark.parametrize(
+    ("job_attr", "patch_target", "expected_task"),
+    [
+        ("_run_followup_job", "send_due_followups", "onboarding_followups"),
+        ("_run_watchdog_job", "run_watchdog", "auto_reply_watchdog"),
+    ],
+)
+def test_scheduler_job_failures_are_captured(
+    monkeypatch, sentry_probe, job_attr, patch_target, expected_task
+):
+    """Both APScheduler jobs share the DB-init pattern; assert each one's tag.
+
+    They import their worker lazily inside the function body, so the patch
+    targets the SERVICE module the import resolves to, not a startup attribute.
+    """
+    boom = RuntimeError(f"{expected_task} exploded")
+    module = {
+        "send_due_followups": "app.services.onboarding_followup",
+        "run_watchdog": "app.services.auto_reply_watchdog",
+    }[patch_target]
+
+    def _raise(_db):
+        raise boom
+
+    monkeypatch.setattr(f"{module}.{patch_target}", _raise)
+    # Keep the test off the database: the handler opens its own session.
+    monkeypatch.setattr("app.database.SessionLocal", lambda: _FakeSession())
+
+    getattr(startup_mod, job_attr)()  # must swallow, not raise
+
+    assert sentry_probe.captured == [boom]
+    assert sentry_probe.scope.tags == {BACKGROUND_TASK_TAG: expected_task}
+
+
 def test_success_path_captures_nothing(monkeypatch, sentry_probe):
     """A healthy boot must not emit Sentry events."""
     monkeypatch.setattr(startup_mod, "_run_db_init_sync", lambda: None)
