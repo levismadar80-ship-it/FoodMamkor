@@ -48,6 +48,49 @@ and MEH-374 (62 commits)._
 
 ---
 
+## Provenance verification — shallow clones fabricate file history (MEH-1519)
+
+**Before any "file X last changed in commit Y" claim, prove the clone is not
+shallow.** The harness often clones with `--depth`, and in a shallow clone git
+does not error, warn, or mark the boundary — it reports the **graft commit** as
+though it introduced every file whose real history is beyond the cutoff.
+
+```bash
+git rev-parse --is-shallow-repository   # MUST print false before any provenance claim
+git fetch --unshallow origin            # if it printed true
+```
+
+The failure is silent and reads as a real answer, which is what makes it
+dangerous: `git log -- <path>` and `git log -S'<string>' -- <path>` both return
+one plausible commit, with a plausible date, and nothing in the output says the
+history was truncated.
+
+**Proven case — MEH-1519, 2026-07-26.** The repo was cloned at `--depth` with a
+graft at `51a43fc`. Two independent provenance questions were asked and *both*
+came back wrong, pointing at the graft commit:
+
+| Question | Shallow answer | Truth after `--unshallow` (2,376 commits) |
+|---|---|---|
+| When was `home-mobile-linux.png` last written? | `51a43fc` (26/07) | `52ab77da` (23/07), and its blob is a **restore** of `8431634e` (21/07) |
+| When did `ChatWidget.jsx`'s `if (!isDesktop) return null` land? | `51a43fc` (26/07) | `e4b725a0` (21/07, MEH-1410) |
+
+Those two dates were the whole diagnosis: the true ordering (baseline captured
+21/07, gate landed 21/07, CTA relocation landed 23/07) is what proved a VRT
+failure was ratifiable intentional drift rather than the non-determinism a
+sibling ticket had been opened to chase. The shallow answers had put both events
+*after* the baseline, which inverts the conclusion.
+
+**Corollary — blob identity beats commit identity.** "Commit C last touched this
+file" does not mean C *changed* it: `git rev-parse <commit>:<path>` compares the
+content hash, and that is what exposed `52ab77da` as reverting a good baseline
+rather than writing a new one. When provenance is load-bearing, compare blobs.
+
+Cross-refs: meta-patterns.md §1 (verify orchestrator claims with file:line
+evidence) — this rule is how that verification can itself return a confident
+wrong answer.
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
