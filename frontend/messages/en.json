@@ -843,7 +843,8 @@
       },
       "badges": {
         "delivery_only": "Delivery only",
-        "available_today": "🛒 Coming today"
+        "available_today": "🛒 Coming today",
+        "overflow_aria": "Show {count} more badges"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
     }
