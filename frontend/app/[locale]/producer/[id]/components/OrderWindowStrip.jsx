@@ -3,8 +3,9 @@
 /**
  * Module:   OrderWindowStrip
  * Purpose:  Informational weekly order-acceptance hours on the public producer
- *           page ("מקבלים הזמנות: א׳–ה׳ 9:00–14:00"), plus the context line
- *           that sits BESIDE the WhatsApp CTA while orders are closed.
+ *           page (rendered as "accepting orders: Sun-Thu 9:00-14:00" in the
+ *           active locale), plus the context line that sits BESIDE the
+ *           WhatsApp CTA while orders are closed.
  * Does NOT: render any status colour or any open/closed verdict — the page's
  *           single status lives in ProducerHeader.jsx and only there
  *           (MEH-1334 / MEH-1546). It also never touches the CTA itself: the
@@ -13,7 +14,7 @@
  * Related:  frontend/lib/orderWindow.js (getOrderWindowRanges +
  *           getOrderWindowStatus — read-only here),
  *           components/ProducerHeader.jsx (the status branch this complements).
- * History:  MEH-1546 — chunk 3/3 of חלון הזמנות.
+ * History:  MEH-1546 — chunk 3/3 of the order-window feature.
  */
 
 import { useEffect, useState } from "react";
@@ -44,9 +45,8 @@ export default function OrderWindowStrip({ orderWindow }) {
       {ranges.map((r, i) => (
         <span key={`${r.fromDay}-${r.toDay}`}>
           {i > 0 && <span aria-hidden="true" className="opacity-60">{" · "}</span>}
-          {/* Compact day letters (א׳–ה׳), not the full "יום ראשון" names the
-              weekly table uses — the strip is a one-line summary and the
-              locked copy reads "מקבלים הזמנות: א׳–ה׳ 9:00–14:00". Own
+          {/* Compact single-letter day labels, not the full weekday names the
+              weekly table uses — the strip is a one-line summary. Own i18n
               namespace rather than reusing events.calendar.days. */}
           <span>
             {r.fromDay === r.toDay
@@ -66,10 +66,10 @@ export default function OrderWindowStrip({ orderWindow }) {
 }
 
 /**
- * The one context line beside the WhatsApp CTA while orders are closed —
- * "אפשר לשלוח הודעה גם עכשיו — היא תיענה כשההזמנות ייפתחו". Wolt's pre-order
- * pattern adapted to an asynchronous channel: never block the send, just set
- * the expectation.
+ * The one context line beside the WhatsApp CTA while orders are closed: it
+ * tells the visitor a message sent now will be answered when orders reopen.
+ * Wolt's pre-order pattern adapted to an asynchronous channel — never block
+ * the send, just set the expectation.
  *
  * Time-derived, so it is mounted-guarded exactly like the header status:
  * renders nothing on the server pass, which also keeps a null-window producer

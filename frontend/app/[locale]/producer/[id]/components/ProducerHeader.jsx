@@ -13,6 +13,8 @@ import { getVacationReturnDate } from "../lib/producer-format";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
 // order_window feeds THAT branch rather than adding a second line — see
 // lib/order-status.js for the precedence and the contradiction it avoids.
+// (Copy itself lives in messages/{he,en}.json; comments stay English per
+// docs/CLAUDE-REVIEW.md rule 5.)
 import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
 
 /**

@@ -44,23 +44,24 @@ export function israelDayKey(date) {
  * Resolve the single status element. First match wins (MEH-1546):
  *   1 vacation            → gold-deep, copy unchanged
  *   2 full/full_this_week → muted, copy unchanged
- *   3 order window closed → muted, "ההזמנות סגורות עכשיו · נפתחות {יום} ב־{שעה}"
- *   4 order window open   → primary, "פתוח להזמנות · עד {שעה}"
- *   5 no order window     → primary, "פתוח להזמנות" (byte-identical to pre-1546)
+ *   3 order window closed → muted, "orders closed now · reopening {day} at {time}"
+ *   4 order window open   → primary, "open for orders · until {time}"
+ *   5 no order window     → primary, "open for orders" (byte-identical to pre-1546)
  *
  * Why this is a mapper and not a second line: ProducerHeader already owned a
  * 3-state ORDER status derived from availability_state. A second, window-derived
  * line would be a factual CONTRADICTION, not merely a second green — a producer
  * with availability_state=available and a window that closed at 14:00 would
- * assert "פתוח להזמנות" and "ההזמנות סגורות עכשיו" on the same page at 16:00.
+ * assert both "open for orders" and "orders closed now" on the same page at
+ * 16:00.
  *
  * `orderStatus` is null on the server pass and until mount, so SSR always
  * resolves to branch 5's semantics — no hydration mismatch on a time-derived
  * value (MEH-1531 precedent).
  *
  * `closing_soon` is deliberately NOT a visual state: the helper still returns
- * it, and it maps to branch 4. "עד {שעה}" carries the cutoff honestly — no
- * urgency styling, no countdown.
+ * it, and it maps to branch 4. The "until {time}" suffix carries the cutoff
+ * honestly — no urgency styling, no countdown.
  */
 export function resolveHeaderStatus({ isVacation, isClosed, orderStatus }) {
   if (isVacation) {
@@ -73,9 +74,10 @@ export function resolveHeaderStatus({ isVacation, isClosed, orderStatus }) {
     // A window object whose every day is unusable (close <= open on all of
     // them) yields nextChange=null — orderWindow.js's last return. The backend
     // validator blocks that shape on write, but a hand-edited or legacy row
-    // could carry it, and "נפתחות {יום} ב־{שעה}" would then format null as the
-    // epoch ("ה׳ 02:00"). With no reopening time to state, degrade to the plain
-    // closed copy rather than inventing one.
+    // could carry it, and the "reopening {day} at {time}" copy would then
+    // format null as the epoch (rendering a bogus Thursday 02:00). With no
+    // reopening time to state, degrade to the plain closed copy rather than
+    // inventing one.
     if (!orderStatus.nextChange) {
       return { branch: "closed", tone: "text-muted", testid: "status-closed" };
     }
