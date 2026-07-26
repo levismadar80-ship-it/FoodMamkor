@@ -109,6 +109,27 @@ test.describe("Visual parity — MEH-991", () => {
   // regenerated on-runner. Delta is confined to the hero region — the home shot
   // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
   // also merged 2026-07-18 sit below the fold and out of frame.
+  // MEH-999 (2026-07-26): home-mobile red-lines at 17,589 px (ratio 0.07) and
+  // the cause is UNIDENTIFIED. Do NOT regenerate this baseline until it is —
+  // a regen would silently bless whatever changed. What was ruled out:
+  //   1. Copy. A key-by-key diff of he.json between the baseline commit
+  //      (1eb89491) and the failing base (397f4466) gives 44 changed keys and
+  //      ZERO under home.hero / home.trust / home.stats / nav.*. The only
+  //      home.* change is home.producers.filter_prefix, which renders on
+  //      /producers, not here.
+  //   2. Above-the-fold components. Nothing in Header / HeroSearch / BottomNav /
+  //      page.js changed in that range.
+  //   3. The live /stats strip (page.js:112-140) — the leading hypothesis, and
+  //      WRONG. Measured on a real 375x812 render: the strip's bounding box is
+  //      y=1061, h=58, i.e. ~250px BELOW the 812px fold. This shot is
+  //      viewport-only (no fullPage), so the strip is out of frame and cannot
+  //      contribute a single pixel. (With live producers the grid above is
+  //      taller, pushing it further down still.) Masking it was implemented,
+  //      measured, and reverted.
+  // Next step is the diff image, not another guess: open home-diff.png in the
+  // playwright-report artifact of a failing run (run 30199607886 has one). The
+  // CC sandbox cannot download Actions artifacts — proxy-blocked, same limit
+  // recorded in the MEH-1440 note below.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
@@ -155,6 +176,18 @@ test.describe("Visual parity — MEH-991", () => {
   // just regenerated. This touch re-fires vrt-update from the post-#2046
   // build. (Root cause of the churn: the desktop rail + chip row are unmasked
   // live chrome — see the follow-up flag in PR #2041.)
+  // MEH-999 (2026-07-26): map-desktop red-lines again, and this one IS a real
+  // (expected) UI change — no mask needed. Diff→cause: fd20ed41 (MEH-1507,
+  // Label Scope Contract) is the ONLY commit between the baseline (1eb89491)
+  // and the failing base (397f4466) touching the map's unmasked chrome —
+  // lib/map-chips.js, lib/attribute-labels.js, lib/producer-filters.js and
+  // components/FilterSheet.jsx. Its FilterSheet change reverted the MEH-1478
+  // diet pill grid to full-width role="switch" rows so every diet row carries a
+  // scope subtext — and on desktop the FilterSheet IS the unmasked left rail.
+  // That also explains the asymmetry this comment block has recorded twice
+  // before: desktop fails, mobile passes, because on mobile the FilterSheet is
+  // a closed bottom sheet. Correct action is a scoped regen, route = "map";
+  // there is nothing to fix in the product.
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);
