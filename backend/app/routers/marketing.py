@@ -23,6 +23,7 @@ from app.models import (
     Producer,
 )
 from app.rate_limit import limiter
+from app.sentry import capture_background_exception
 
 # MEH-460 Pkg 5 (FINAL): schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
@@ -241,9 +242,37 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
     # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,
     # so Resend errors must never break the public form.
-    _send_contact_email(msg, label)
+    # MEH-1588: the guard lives HERE, at the call site, not only inside the
+    # helper — it must cover everything the helper does, not just the send. The
+    # visitor has already been promised a reply and the row is already
+    # committed, so no notification failure may turn a saved submission into an
+    # error response.
+    try:
+        _send_contact_email(msg, label)
+    except Exception as exc:  # noqa: BLE001 — fail-open, submission already saved
+        # REUSES: app/sentry.py:73 capture_background_exception — fail-open,
+        # no-ops when the SDK is absent or BACKEND_SENTRY_DSN is unset, and
+        # never raises. Called BEFORE the log line per the docstring there
+        # (getsentry/sentry-python#1468: a capture following a logging call can
+        # be dropped by event deduplication).
+        capture_background_exception(exc, task="contact_email")
+        logger.error(
+            "[CONTACT EMAIL] Notification failed for submission %s — row saved, "
+            "admin NOT notified: %s",
+            msg.id,
+            exc,
+        )
 
-    return {"detail": "תודה! נחזור אליכם בקרוב 🌿"}
+    # MEH-1588: states the same 3-business-day SLA as the frontend
+    # (messages/he.json:2882 "response_time_inline", :2884 "response_sla").
+    # The previous string was vague where the frontend is numeric, and
+    # plural-addressed where the brand voice is feminine singular (ADR-014).
+    # No emoji: this renders as a UI toast, outside the email/WhatsApp/share
+    # carve-out in docs/BRAND.md:70-72.
+    # No en variant exists because the backend has NO i18n mechanism at all
+    # (nothing reads Accept-Language); every response string is hardcoded and
+    # the locale split lives entirely in the frontend dictionaries.
+    return {"detail": "תודה! נחזור אלייך תוך 3 ימי עסקים"}
 
 
 def _send_contact_email(msg: ContactMessage, label: str) -> None:
@@ -252,10 +281,33 @@ def _send_contact_email(msg: ContactMessage, label: str) -> None:
     The DB row is the source of truth — email failure must never break the
     public form (fail-open contract from send_email). `label` is the Hebrew
     topic label (MEH-1113) surfaced in the subject line.
+
+    MEH-1588: fail-open is preserved, but no longer SILENT. The form now
+    promises a 3-business-day reply, and a promise nobody is alerted about is
+    the actual defect: the row lands in `contact_messages` and no one reads it.
+    The no-recipient path below reports the row id so a dropped submission is
+    recoverable by primary key; anything that raises is caught and reported at
+    the call site in `submit_contact`.
+
+    KNOWN GAP (deliberately not closed here): a Resend-side failure is still
+    invisible. `send_email` catches Exception internally and logs a warning
+    (app/services/email.py:56-57), returning None either way, so no caller can
+    observe it — the call-site guard in `submit_contact` cannot see it either.
+    Closing that needs `send_email` to signal failure to its ~20 callers, a
+    contract change well outside this ticket. What IS closed here is the
+    no-recipient path, which was a live silent failure: with neither
+    CONTACT_EMAIL nor ADMIN_EMAIL set, every submission was dropped at INFO.
     """
     recipient = settings.contact_email or settings.admin_email
     if not recipient:
-        logger.info("[CONTACT EMAIL] No recipient configured — skipping send")
+        # Escalated INFO -> ERROR (MEH-1588): this is a total notification
+        # outage, not routine information. Nobody is emailed, ever, and the
+        # visitor has been told we will reply within 3 business days.
+        logger.error(
+            "[CONTACT EMAIL] No recipient configured (CONTACT_EMAIL and "
+            "ADMIN_EMAIL both unset) — submission %s saved but NOT delivered",
+            msg.id,
+        )
         return
     body = f"שם: {msg.name}\nאימייל: {msg.email}\n\n{msg.message}"
     send_email(recipient, f"מהמקור — פנייה חדשה ({label}) מ-{msg.name}", body)
