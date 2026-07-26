@@ -329,9 +329,17 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   // form must not open on two unexplained numbers), but expanded when the row
   // already carries coordinates, so editing never hides a value the owner
   // previously set. Seeded once via useState so a re-render can't reopen a
-  // disclosure the owner just closed.
+  // disclosure the owner just closed. Null-checked rather than String()-cast:
+  // String(null) is "null", which is !== "" and would open the disclosure on a
+  // NEW location if a caller ever passed null for an unset coordinate. Both of
+  // today's callers (EMPTY_FORM, toEditForm) hand over "", so this is a guard
+  // on the invariant, not a live bug.
   const [coordsOpen] = useState(
-    () => String(initial.lat) !== "" && String(initial.lng) !== "",
+    () =>
+      initial.lat != null &&
+      initial.lat !== "" &&
+      initial.lng != null &&
+      initial.lng !== "",
   );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
