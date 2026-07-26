@@ -1,7 +1,7 @@
 # `Playwright E2E` — enable authenticated coverage (MEH-999)
 
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply
-this. Same shape as [`ui-pattern-guard.patch.md`](./ui-pattern-guard.patch.md)
+this. Same shape as [`repo-guards.patch.md`](./repo-guards.patch.md)
 and [`e2e-gate.patch.md`](./e2e-gate.patch.md).
 
 **This patch is optional.** Nothing is broken without it — MEH-999 already made

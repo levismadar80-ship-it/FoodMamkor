@@ -492,7 +492,7 @@
       "heading": "שלושה צעדים",
       "step01_title": "מצאו",
       "step01_text": "גלו בתי עסק קרובים אליכם",
-      "step02_title": "צרו קשר",
+      "step02_title": "צרו קשר עם העסק",
       "step02_text": "דברו ישירות עם בית העסק",
       "step03_title": "קנייה",
       "step03_text": "ישר מהמקור, איך שמתאים לך"
@@ -536,9 +536,6 @@
     },
     "info_tooltip": {
       "trigger_aria": "מידע נוסף"
-    },
-    "parallax_quote": {
-      "aria": "ציטוט"
     },
     "skeleton": {
       "loading_businesses": "טעינת עסקים טריים"
@@ -841,7 +838,8 @@
       },
       "badges": {
         "delivery_only": "משלוחים בלבד",
-        "available_today": "🛒 מגיעה היום"
+        "available_today": "🛒 מגיעה היום",
+        "overflow_aria": "הצגת עוד {count} תגיות"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
     }
@@ -1231,8 +1229,8 @@
       "back_home": "→ חזרה לאתר",
       "error_loading": "שגיאה בטעינת המידע",
       "error_generic": "שגיאה",
-      "no_data": "אין נתונים להצגה",
-      "no_results": "אין נתונים",
+      "no_data": "אין נתונים עדיין",
+      "no_results": "אין נתונים עדיין",
       "items_pending_label": "{count} פריטים לאישור",
       "items_pending_title": "{count} פריטים ממתינים לאישור",
       "brand_admin": "מהמקור Admin"
@@ -1292,7 +1290,7 @@
       },
       "activity": {
         "heading": "פעילות אחרונה",
-        "empty": "אין נתונים להצגה",
+        "empty": "אין נתונים עדיין",
         "added_producer": "נוסף בית עסק:"
       },
       "weekly": {
@@ -1916,7 +1914,6 @@
       "title": "הגדרות",
       "load_error": "שגיאה בטעינת הגדרות — נסו לרענן את הדף.",
       "sections": {
-        "notifications": "התראות",
         "holiday": "חלון חג",
         "holiday_tooltip": "הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג.",
         "holiday_tooltip_label": "מידע על חלון חג",
@@ -1944,8 +1941,6 @@
         "categories_link": "לעמוד תוכן ←"
       },
       "fields": {
-        "admin_email": "אימייל אדמין לקבלת התראות",
-        "admin_whatsapp": "מספר וואטסאפ אדמין (E.164)",
         "holiday_key_label": "מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)",
         "holiday_none": "— ללא עקיפה —",
         "holiday_pesach": "פסח",
@@ -1979,7 +1974,7 @@
       "categories": {
         "name_placeholder": "שם קטגוריה",
         "add": "+ הוסף",
-        "empty": "אין נתונים להצגה",
+        "empty": "אין נתונים עדיין",
         "save": "שמרו",
         "delete": "מחקו",
         "confirm_delete": "מחיקת '{name}' — {count} בתי עסק משויכים",
@@ -2066,8 +2061,8 @@
       "legend_producers": "בתי עסק",
       "legend_users": "משתמשים",
       "top_categories": "קטגוריות פופולריות",
-      "no_data": "אין נתונים",
-      "no_data_display": "אין נתונים להצגה",
+      "no_data": "אין נתונים עדיין",
+      "no_data_display": "אין נתונים עדיין",
       "top_cities": "ערים מובילות",
       "top_producers_favorites": "בתי עסק עם הכי הרבה מועדפים",
       "geographic": "פיזור גיאוגרפי",
@@ -3928,7 +3923,7 @@
         "zero_state": "כאן יופיעו קליקים וצפיות חדשות — נעדכן ברגע שלקוחות יתחילו להגיב"
       },
       "analytics": {
-        "stats_window_label": "7 ימים / 30 ימים / סה״כ",
+        "stats_window_label": "7 ימים / ב-30 הימים האחרונים / סה״כ",
         "kpi": {
           "whatsapp_leads": "קליקים בוואטסאפ",
           "contact_clicks": "קליקים ליצירת קשר (בלי וואטסאפ)",
@@ -3945,10 +3940,10 @@
           "whatsapp_clicks_sub": "7 הימים האחרונים",
           "conversion_label": "המרה %",
           "conversion_tooltip": "אחוז הצפיות שהפכו ללחיצה על וואטסאפ ב-30 הימים האחרונים. ככל שיותר גבוה — הפרופיל משכנע יותר.",
-          "conversion_sub": "צפייה → וואטסאפ (30 יום)",
+          "conversion_sub": "צפייה → וואטסאפ ב-30 הימים האחרונים",
           "rank_label": "דירוג בעיר",
           "rank_tooltip": "המיקום שלך בעיר לפי צפיות ב-30 הימים האחרונים. מתעדכן אוטומטית.",
-          "rank_sub": "לפי צפיות (30 יום)"
+          "rank_sub": "לפי צפיות ב-30 הימים האחרונים"
         },
         "eligible_weekly_title": "מועמדות לבעלת עסק השבוע — צרו קשר עם הצוות",
         "eligible_weekly_tooltip": "הצוות בוחר מדי שבוע בעלת עסק עם דירוג ראשון בעיר וחוזק פרופיל גבוה. אם את מועמדת — יופיע כאן הודעה.",
@@ -4556,6 +4551,7 @@
     },
     "locations": {
       "section_heading": "מיקומים",
+      "intro": "נקודות המיקום של בית העסק — חנות, דוכן או נקודת איסוף. הן יוצגו בעמוד שלך ובמפה, עם ניווט בלחיצה.",
       "add_cta": "הוסיפו מיקום",
       "add_heading": "מיקום חדש",
       "edit_heading": "עריכת מיקום",
@@ -4572,14 +4568,25 @@
       },
       "form": {
         "kind_label": "סוג",
+        "kind_helper": "סניף — חנות או נקודת מכירה קבועה. נקודת איסוף — מקום שבו הלקוחות אוספות הזמנה. דוכן שוק — עמדה בשוק בימים קבועים.",
         "label_label": "תווית",
+        "label_hint": "השם שהלקוחות יראו לצד הנקודה",
+        "label_placeholder": "למשל: הדוכן בשוק הנמל",
         "city_label": "עיר",
+        "city_placeholder": "למשל: חיפה",
         "address_label": "כתובת",
+        "address_placeholder": "למשל: רחוב העצמאות 12",
+        "place_hint": "יוצגו בעמוד ובניווט",
         "lat_label": "קו רוחב",
         "lng_label": "קו אורך",
+        "coords_summary": "קואורדינטות ידניות",
+        "coords_hint": "לא חובה. מלאי רק אם הסיכה במפה לא יושבת במקום הנכון.",
         "hours_label": "שעות",
+        "hours_placeholder": "למשל: ימים א׳–ה׳, 9:00–17:00",
         "phone_label": "טלפון",
+        "phone_placeholder": "למשל: 050-1234567",
         "precision_label": "דיוק",
+        "precision_helper": "מדויק — הלקוחות יראו סיכה במיקום המלא; משוער — סיכה באזור בלבד, בלי כתובת",
         "precision_exact": "מדויק",
         "precision_approximate": "משוער",
         "primary_label": "מיקום ראשי"

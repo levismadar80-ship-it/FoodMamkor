@@ -1027,18 +1027,25 @@ class TestAdminFlows:
         resp = client.get("/admin/settings", headers=auth_header(admin))
         assert resp.status_code == 200
         defaults = resp.json()
-        assert "admin_email" in defaults
+        # MEH-1566: was `admin_email` until that write-only key was removed
+        # from DEFAULT_SETTINGS. Any surviving free-text key exercises the same
+        # GET-defaults + PUT-persists contract.
+        assert "holiday_override_key" in defaults
 
         resp = client.put(
             "/admin/settings",
-            json={"admin_email": "boss@mehamakor.co.il"},
+            json={"holiday_override_key": "pesach"},
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
         # Persisted
-        row = db.query(AdminSetting).filter(AdminSetting.key == "admin_email").first()
+        row = (
+            db.query(AdminSetting)
+            .filter(AdminSetting.key == "holiday_override_key")
+            .first()
+        )
         assert row is not None
-        assert row.value == "boss@mehamakor.co.il"
+        assert row.value == "pesach"
 
     def test_analytics_endpoint(self, client, db):
         admin = make_user(db, role="admin")

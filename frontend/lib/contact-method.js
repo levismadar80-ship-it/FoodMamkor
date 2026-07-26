@@ -38,7 +38,12 @@ export function getPrimaryContactHref(producer) {
     case "whatsapp": {
       const digits = normalizePhone(producer.phone);
       if (!digits) return null;
-      const msg = `היי! מצאתי אותך במהמקור — ${producer.name || ""}`;
+      // MEH-1559: this was the last surface using the older "found you"
+      // phrasing — every other referral prefill converged on
+      // "הגעתי דרך מהמקור" (MEH-1535). Text only; this is a pure helper
+      // so it cannot call useTranslations — injecting i18n is a separate
+      // follow-up, which is why the string is still hardcoded here.
+      const msg = `היי! הגעתי דרך מהמקור — ${producer.name || ""}`;
       return getWhatsAppHref(digits, msg);
     }
     case "phone": {
