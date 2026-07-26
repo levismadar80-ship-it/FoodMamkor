@@ -1065,7 +1065,14 @@
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
       "show_all": "הצג עוד {count} ערים",
-      "show_less": "הצג פחות"
+      "show_less": "הצג פחות",
+      "checker": {
+        "label": "מגיעים אלייך?",
+        "placeholder": "הקלידי עיר לבדיקה",
+        "yes_nationwide": "כן! משלוחים לכל הארץ — כולל {city}",
+        "yes": "כן, מגיעים ל{city}",
+        "no": "לצערנו לא מגיעים ל{city} כרגע"
+      }
     },
     "friday_delivery": {
       "today": "היום",

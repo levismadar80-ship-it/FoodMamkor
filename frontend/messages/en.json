@@ -1067,7 +1067,14 @@
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
       "show_all": "Show {count} more cities",
-      "show_less": "Show less"
+      "show_less": "Show less",
+      "checker": {
+        "label": "Do you deliver to me?",
+        "placeholder": "Type a city to check",
+        "yes_nationwide": "Yes! Nationwide delivery — including {city}",
+        "yes": "Yes, we deliver to {city}",
+        "no": "Sorry, we don't deliver to {city} right now"
+      }
     },
     "friday_delivery": {
       "today": "today",

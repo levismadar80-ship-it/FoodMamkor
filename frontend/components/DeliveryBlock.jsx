@@ -5,6 +5,7 @@ import { Truck, Package, CaretDown, CaretUp, NavigationArrow } from "@phosphor-i
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
+import DeliveryChecker from "@/components/DeliveryChecker";
 
 /**
  * MEH-213 / MEH-1146 chunk B: editorial delivery section shown on
@@ -219,6 +220,18 @@ export default function DeliveryBlock({
         <Truck size={22} className="text-primary" aria-hidden="true" />
         {t("heading")}
       </h2>
+
+      {/* MEH-1536: "מגיעים אלייך?" checker — ADDITIVE, at the top of the block.
+          Self-gates (offers_delivery, and hides when the answer is trivially
+          yes or uniformly no — see DeliveryChecker.jsx:70-83). Everything
+          below it — grouped rows, CompactCities, pickup — is untouched
+          (MEH-1435 lock: cities are never hidden behind a search box). */}
+      <DeliveryChecker
+        offersDelivery={!!producer?.offers_delivery}
+        nationwide={nationwide}
+        excluded={excluded}
+        areas={areas}
+      />
 
       {nationwide ? (
         <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
