@@ -142,6 +142,8 @@ const EMPTY = {
   short_description: "",
   top_product_name: "",
   price_range: "",
+  // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
+  established_year: "",
   category_ids: [],
   has_delivery: false,
   pickup_points: false,
@@ -251,6 +253,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
+        // MEH-1541: null → "" so the number input stays controlled + empty.
+        established_year: initial.established_year ?? "",
         admin_notes: initial.admin_notes ?? "",
         opening_hours: initial.opening_hours ?? "",
         // MEH-213 — location mode
@@ -394,6 +398,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       short_description: form.short_description,
       top_product_name: form.top_product_name,
       price_range: form.price_range,
+      // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
+      established_year:
+        String(form.established_year).trim() === ""
+          ? null
+          : Number(form.established_year),
       category_ids: form.category_ids,
       has_delivery: form.has_delivery,
       pickup_points: form.pickup_points,
@@ -924,6 +933,19 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.price_range}
             onChange={(e) => update("price_range", e.target.value)}
             placeholder={t("producers.form.fields.price_range_placeholder")}
+          />
+          {/* MEH-1541: founding year (optional) — numeric, dir="ltr", range
+              bounds mirror the server validator (1800..current year). */}
+          <Input
+            type="number"
+            label={t("producers.form.fields.established_year")}
+            value={form.established_year}
+            onChange={(e) => update("established_year", e.target.value)}
+            min={1800}
+            max={new Date().getFullYear()}
+            dir="ltr"
+            inputMode="numeric"
+            placeholder={t("producers.form.fields.established_year_placeholder")}
           />
         </div>
       </Section>
