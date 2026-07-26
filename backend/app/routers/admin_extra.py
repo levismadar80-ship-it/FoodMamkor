@@ -388,8 +388,12 @@ def get_analytics(
 DEFAULT_SETTINGS = {
     "admin_email": "",
     "admin_whatsapp": "",
-    "freemium_premium_price": "0",
-    "freemium_free_image_limit": "3",
+    # MEH-1555: `freemium_premium_price` + `freemium_free_image_limit` were
+    # removed here — write-only keys with zero readers anywhere in backend or
+    # frontend (the /upload/image cap is the hardcoded `>= 3` in
+    # routers/upload.py:101, which never consulted the setting). Existing
+    # `admin_settings` rows are intentionally left in place: PUT /admin/settings
+    # ignores unknown keys, so the orphan rows are inert and no migration runs.
     # MEH-247 — admin-facing holiday + Friday override toggles. Both are
     # persisted server-side so admin A's toggle is visible to admin B on
     # next /admin/settings load. Consumer-side reads happen via the
