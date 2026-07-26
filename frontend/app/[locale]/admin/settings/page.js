@@ -163,23 +163,10 @@ export default function AdminSettingsPage() {
         />
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">{t("settings.sections.freemium")}</h2>
-        <Input
-          type="number"
-          label={t("settings.fields.premium_price")}
-          value={settings.freemium_premium_price || ""}
-          onChange={(event) => update("freemium_premium_price", event.target.value)}
-          placeholder="49"
-        />
-        <Input
-          type="number"
-          label={t("settings.fields.free_image_limit")}
-          value={settings.freemium_free_image_limit || ""}
-          onChange={(event) => update("freemium_free_image_limit", event.target.value)}
-          placeholder="3"
-        />
-      </div>
+      {/* MEH-1555: the Freemium section (מחיר חודשי לפרמיום / מספר תמונות
+          בחבילת חינם) was removed — both inputs wrote admin_settings keys that
+          nothing ever read. The real gallery cap is the hardcoded `>= 3` in
+          backend/app/routers/upload.py:101. */}
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">

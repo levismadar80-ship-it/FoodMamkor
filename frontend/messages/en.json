@@ -1921,7 +1921,6 @@
       "load_error": "Error loading settings — try refreshing the page.",
       "sections": {
         "notifications": "Notifications",
-        "freemium": "Freemium",
         "holiday": "Holiday window",
         "holiday_tooltip": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses are not accepting orders this week'. Disable after the holiday.",
         "holiday_tooltip_label": "Holiday window info",
@@ -1951,8 +1950,6 @@
       "fields": {
         "admin_email": "Admin email for notifications",
         "admin_whatsapp": "Admin WhatsApp number (E.164)",
-        "premium_price": "Monthly premium price (₪)",
-        "free_image_limit": "Number of images in the free plan",
         "holiday_key_label": "Holiday key for testing (empty = auto-detect by date)",
         "holiday_none": "— No override —",
         "holiday_pesach": "Passover",

@@ -1923,7 +1923,6 @@
       "load_error": "שגיאה בטעינת הגדרות — נסו לרענן את הדף.",
       "sections": {
         "notifications": "התראות",
-        "freemium": "Freemium",
         "holiday": "חלון חג",
         "holiday_tooltip": "הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג.",
         "holiday_tooltip_label": "מידע על חלון חג",
@@ -1953,8 +1952,6 @@
       "fields": {
         "admin_email": "אימייל אדמין לקבלת התראות",
         "admin_whatsapp": "מספר וואטסאפ אדמין (E.164)",
-        "premium_price": "מחיר חודשי לפרמיום (₪)",
-        "free_image_limit": "מספר תמונות בחבילת חינם",
         "holiday_key_label": "מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)",
         "holiday_none": "— ללא עקיפה —",
         "holiday_pesach": "פסח",
