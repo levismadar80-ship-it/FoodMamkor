@@ -1,6 +1,7 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import structlog
@@ -174,6 +175,31 @@ async def _init_db_background(app: FastAPI) -> None:
         )
         app.state.db_init_status = "failed"
 
+    # MEH-1596: cache the alembic revision ONCE, here, so GET /health can
+    # publish it without a per-request DB round-trip. Reuses the reader that
+    # /health/readiness already owns (app/routers/health.py) rather than adding
+    # a second query path for the same fact.
+    #
+    # Runs after the try/except and outside it on purpose:
+    #   - after  — this is the background task, already off the boot path via
+    #              create_task + to_thread, so it adds no boot latency and
+    #              cannot delay or fail the Railway healthcheck.
+    #   - outside — a seed() crash sets db_init="failed" but the DB may still
+    #              hold a perfectly valid revision; reporting it is strictly
+    #              more useful when diagnosing exactly that failure.
+    # Fully guarded: _read_alembic_head already swallows its own errors, and
+    # this second net covers an import or thread failure. There is no retry —
+    # one read, cached, per the MEH-1596 no-per-request-query constraint.
+    try:
+        from app.routers.health import _read_alembic_head
+
+        app.state.alembic_head = (
+            await asyncio.to_thread(_read_alembic_head) or "unknown"
+        )
+    except Exception:
+        log.warning("alembic head unreadable at startup — /health reports 'unknown'")
+        app.state.alembic_head = "unknown"
+
 
 def _run_followup_job() -> None:
     """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
@@ -282,6 +308,19 @@ async def lifespan(app: FastAPI):
     if _email_config_error:
         log.error("EMAIL CONFIG FATAL: %s", _email_config_error)
         raise RuntimeError(_email_config_error)
+
+    # MEH-1596: boot facts published by GET /health, stored on app.state
+    # alongside db_init_status (the same mechanism, the same place — no second
+    # state holder). Both are set SYNCHRONOUSLY here so the keys exist from the
+    # first request onward; alembic_head is then overwritten once by
+    # _init_db_background. If that task fails, is cancelled, or never runs,
+    # "unknown" is what /health reports — never a missing key and never a raise.
+    #
+    # UTC, deliberately: app/utils/clock.py is Asia/Jerusalem for availability
+    # and vacation logic; a deploy timestamp is infrastructure, read by whoever
+    # is looking at logs, so it stays UTC per the MEH-1596 spec.
+    app.state.booted_at = datetime.now(timezone.utc).isoformat()
+    app.state.alembic_head = "unknown"
 
     app.state.db_init_status = "initializing"
     app.state.db_init_task = asyncio.create_task(_init_db_background(app))
