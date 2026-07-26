@@ -4222,6 +4222,24 @@
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
         "invalid_range": "Closing time must be after opening time"
       },
+      "order_window": {
+        "heading": "Order window",
+        "subtitle": "Until what time each day you accept orders. Separate from opening hours.",
+        "empty_state": "No order window set — your business page won't show order hours.",
+        "toggle_label": "accepting orders this day",
+        "toggle_closed": "Not accepting orders",
+        "from_label": "opening time",
+        "to_label": "closing time",
+        "invalid_range": "Closing time must be after opening time",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "save_success": "Order window saved",
+        "save_error": "Save failed. Please try again.",
+        "revert_cta": "Discard changes",
+        "clear_cta": "Clear all",
+        "summary_empty": "Not set",
+        "summary_set": "{count, plural, one {1 day a week} other {# days a week}}"
+      },
       "custom_questions": {
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
