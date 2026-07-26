@@ -192,8 +192,12 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               variant="bare"
               className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
             >
+              {/* MEH-1542: full native language names replace the "עב / EN"
+                  abbreviation — W3C / NN/g best practice (language named in its
+                  own script, no flags). Text-only change; dir="ltr" keeps the
+                  Hebrew-then-English visual order and order logic is untouched. */}
               <span className="font-english" dir="ltr" aria-hidden="true">
-                עב / EN
+                עברית / English
               </span>
             </LanguageToggle>
           </li>
