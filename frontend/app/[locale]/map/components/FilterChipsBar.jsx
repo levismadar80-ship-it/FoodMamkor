@@ -70,9 +70,6 @@ export default function FilterChipsBar({
           activeKeys={new Set(chipState.categoryKeys)}
           onChipClick={onCategoryChipClick}
           className="flex-1"
-          // MEH-1108: ChipScrollRow's default fadeBg is #ffffff, which smears
-          // white at the scroll edges on the cream /map surface (#F5F0E8).
-          fadeBg="#F5F0E8"
         />
         {/* Anchor wrapper — FilterSheet's md+ panel positions off this
             `relative` wrapper. */}
