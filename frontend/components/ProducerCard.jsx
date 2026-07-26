@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
@@ -159,6 +159,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const t = useTranslations();
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
+  // MEH-1592: collision boundary handed to the +N Popover — see the badge strip
+  // below. The panel must clear the whole strip, not just the +N chip.
+  const badgeStripRef = useRef(null);
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -273,7 +276,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             stacking context, so plain `absolute` already paints it above the
             photo — verified at 375px + 1440px, badges unchanged. z-index ledger:
             .claude/rules/rtl.md (sheet family 1200/1210 > BottomNav 1000). */}
-        <div className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1.5">
+        {/* MEH-1592: the strip is the +N popover's collision boundary — the
+            panel is placed so it clears this whole box, which is what makes
+            WRAPPED siblings safe too (at 4-col desktop widths the TrustBadge
+            "מובילת קהילה" wraps onto a second line directly under the +N chip,
+            which is the overlap Sapir's QA screenshot caught). */}
+        <div
+          ref={badgeStripRef}
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1.5"
+        >
           <BadgeRow producer={producer} limit={2} surface="card" />
           {badgeCount(producer) > 2 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
@@ -297,6 +308,16 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               contentTestId="badge-overflow-popover"
               contentClassName="w-max whitespace-nowrap"
               sheetOnMobile
+              // MEH-1592: lg-and-up presentation moves to the overlay layer.
+              // The pre-1592 anchored panel opened `top-full` DOWNWARD out of a
+              // strip pinned to the photo's bottom edge, so it landed on the
+              // card title / rating row (measured 47.9x24.1px of overlap at
+              // 1440px) and on any sibling pill that had wrapped below it.
+              // Overlay mode places it above the whole strip instead, portalled
+              // out of the card's overflow-hidden. Below lg, sheetOnMobile
+              // still wins — the sheet was never the colliding surface.
+              overlay
+              avoidRef={badgeStripRef}
               trigger={
                 <button
                   type="button"

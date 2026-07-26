@@ -26,9 +26,11 @@ import {
   ChatCircleSlash,
   Bread,
   Package,
+  Lock,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+import EmptyState from "@/components/ui/EmptyState";
 import api from "@/lib/api";
 
 /**
@@ -104,6 +106,7 @@ const NAV_HREFS = NAV_SECTIONS.flatMap((s) => s.items);
 
 export default function AdminLayout({ children }) {
   const t = useTranslations("admin");
+  const tDenied = useTranslations("errors.access_denied.admin");
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -116,9 +119,20 @@ export default function AdminLayout({ children }) {
   const [pendingModCount, setPendingModCount] = useState(null);
   const [pendingKashrutCount, setPendingKashrutCount] = useState(null);
 
+  // MEH-1599: same 401/403 split as producer/dashboard/layout.js:53 — an
+  // authenticated non-admin gets the in-app denied state below, NOT a bounce
+  // through /login to "/" (LoginClient.jsx:89-91 replace()s an authenticated
+  // visitor straight past the form). Only a genuinely unauthenticated visitor
+  // is redirected, and now with ?redirect= so she returns to her target.
+  // `router` is next/navigation by MEH-731's explicit choice; `pathname` is
+  // the locale-stripped one, which is exactly what ?redirect= wants.
+  const isUnauthenticated = !loading && !user;
+  const isDenied = !loading && !!user && user.role !== "admin";
+
   useEffect(() => {
-    if (!loading && (!user || user.role !== "admin")) router.push("/login");
-  }, [user, loading, router]);
+    if (!isUnauthenticated) return;
+    router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+  }, [isUnauthenticated, pathname, router]);
 
   useEffect(() => {
     if (!user || user.role !== "admin") return;
@@ -131,7 +145,24 @@ export default function AdminLayout({ children }) {
       .catch(() => { setPendingModCount(null); setPendingKashrutCount(null); });
   }, [user, pathname]);
 
-  if (loading || !user || user.role !== "admin") {
+  // 403 — rendered in place. The two admin pages that repeat this guard
+  // (producers/new/page.js:16, producers/[id]/edit/page.js:20) never mount,
+  // so exactly ONE denied state can render.
+  if (isDenied) {
+    return (
+      <div data-testid="access-denied" className="max-w-7xl mx-auto px-4">
+        <EmptyState
+          icon={Lock}
+          title={tDenied("heading")}
+          description={tDenied("message")}
+          ctaLabel={tDenied("home")}
+          ctaHref="/"
+        />
+      </div>
+    );
+  }
+
+  if (loading || !user) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-fg-muted">
         {t("common.loading_f")}
