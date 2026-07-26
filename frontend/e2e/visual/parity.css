@@ -20,7 +20,7 @@
   display: none !important;
 }
 
-/* MEH-1583: the CustomCursor dot (components/CustomCursor.jsx:86) follows the
+/* MEH-1583: the CustomCursor dot (components/CustomCursor.jsx:122) follows the
  * mouse and scales up on hover, so every CLICK-then-shoot test parks a green
  * disc on the element it just clicked — its position tracks the click
  * coordinates, which move with layout. It is already baked into the
