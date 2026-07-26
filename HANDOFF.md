@@ -10,6 +10,43 @@
 - **Process note worth keeping:** the 22px value came from the ticket and CC implemented it as specified rather than substituting a number, then flagged the conflict for a human ruling. That is the intended shape — but note the flag landed *after* the PR had already auto-merged, so the correction needed a second PR. **A blocking a11y finding should gate the merge, not trail it.**
 - **Re-measured after the change:** live DOM reports primary `36px` ×1, secondary `24px` ×6, `meetsWcag248: true`, halo `rgba(46,104,83,0.14) 0 0 0 4px`, zero page errors — **identical at 375 and 1440** (`qa-artifacts/MEH-1569-24px/`, 46 KB).
 - **E2E:** still repo-wide red at `global-setup` (`demo-admin` → HTTP 401, zero tests run). Covered by **MEH-1590** (Urgent, RED, Sapir-owned) — not worked around here.
+## 2026-07-26 — QA-driven session: contact validation + custom-questions clarity + opt-out decision
+
+**Shipped:** MEH-1537 (PRs #2153 code, #2177 docs) — shared validators make the
+server source-of-truth for contact_email/phone/whatsapp_group on all four Producer
+write schemas. MEH-1578 (PRs #2195 R1, #2202 R2) — "לדוגמה:" placeholders,
+answer-first guidance line, context_line deduped, subtitle voice fixed to female
+singular. Both verified against raw staging by the orchestrator, not from reports.
+
+**Decided — MEH-1538 ready-questions opt-out: NOT BUILDING, signal-gated.** Trigger
+is >=2 real business owners asking, not a date. Rationale: (1) MEH-1302 already made
+the chips answer-first, so unwanted questions are mostly a symptom of an incomplete
+profile, not a format bug; (2) Google Business Profile never allowed opting out and
+removed Q&A entirely in Nov 2025 in favour of answers sourced from the business's own
+content, while eBay's Smart FAQ does allow opt-out but leads with "use complete
+listing info" — both poles agree the fix is data, not a mute switch; (3) zero live
+producers = zero demand evidence; (4) an editorial directory keeps one house format.
+MEH-1578 is the approved alternative: better data path, no toggle. Full research is
+in the MEH-1538 description.
+
+**Lesson 1 — inference presented as evidence (orchestrator).** MEH-1537's ticket
+claimed ProducerUpdate.contact_email was plain `str`; it was already EmailStr. The
+claim came from a PK snippet showing a DIFFERENT schema. CC's Phase 0 corrected it.
+Ticket evidence must cite the line that was actually read, not the line implied by
+a neighbouring one.
+
+**Lesson 2 — green CI is not a met DoD.** MEH-1578 R1 spec said "REPLACE it — do not
+stack two helper lines"; CC added a THIRD paragraph. CI green, auto-merged, DoD item
+unmet, result more confusing than the original bug. Tests assert PRESENCE, so an
+extra element breaks nothing. R2 added "expected exactly TWO helper paragraphs, not
+three" and it landed correctly first try. STANDING RULE: any spec containing
+replace/delete/consolidate/dedupe must carry a numeric final-state assertion in
+<verification_step> plus a repo-wide grep for the removed symbol in Phase 0.
+
+**Gates closed:** MEH-1537 Railway audit run by Sapir, 0 rows. Production carries 4
+producers (teva-pure, tases-ferments, dana-sourdough, galil-farm), so the
+grandfathered-invalid risk was bounded and is now cleared.
+
 ## 2026-07-26 — MEH-1572 ChipScrollRow scroll-chrome unification (batch 2/2)
 
 - **MEH-1572** (YELLOW, `feature/meh-1572-chip-scroll-chrome` cut off `origin/staging` **after** MEH-1575 merged, `Closes MEH-1572`): mask-image fades (kills `fadeBg`), one shared inline-start gutter (0), overflow-conditional end spacer, and one affordance authority. Full Phase-0 table in the PR body.
