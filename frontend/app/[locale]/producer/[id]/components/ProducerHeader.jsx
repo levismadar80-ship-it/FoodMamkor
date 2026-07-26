@@ -169,6 +169,19 @@ export default function ProducerHeader({
           </span>
         </p>
 
+        {/* MEH-1541: quiet "מאז {שנה}" heritage line — a veteran-business trust
+            signal in the magazine voice, NOT a badge. Plain body text (DM Sans),
+            fg-muted, no icon / emoji / gold / border (Emoji LOCK + Quiet
+            Direction v3 — the single-green rule stays with the status above).
+            The year numerals are wrapped dir="ltr". Null-safe: the whole line is
+            absent from the DOM when established_year is unset. */}
+        {producer.established_year ? (
+          <p className="text-sm text-fg-muted" data-testid="established-year">
+            {t("producer.detail.header.since_prefix")}{" "}
+            <span dir="ltr" className="numeric">{producer.established_year}</span>
+          </p>
+        ) : null}
+
         {/* Kosher renders ONCE (MEH-1334): specific admin-assigned badges via
             the quiet strip variant (owns the MEH-1260 expiry gate), else the
             generic label — gated on admin-verified kashrut only, never the

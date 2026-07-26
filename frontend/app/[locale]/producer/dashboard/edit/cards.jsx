@@ -915,13 +915,21 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
   // the same explicit PUT as the bio.
   const [contactName, setContactName] = useState(profile.contact_name || "");
   const [savedContactName, setSavedContactName] = useState(profile.contact_name || "");
+  // MEH-1541: self-reported founding year → the quiet "מאז {שנה}" masthead line.
+  // Kept as a string in state (the native number input's value) and coerced to
+  // int|null on save. Empty string clears the value.
+  const [year, setYear] = useState(profile.established_year ?? "");
+  const [savedYear, setSavedYear] = useState(profile.established_year ?? "");
   const [photoUrl, setPhotoUrl] = useState(profile.owner_photo_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const dirty = bio !== savedBio || contactName !== savedContactName;
+  const dirty =
+    bio !== savedBio ||
+    contactName !== savedContactName ||
+    String(year) !== String(savedYear);
   useEffect(() => {
     reportDirty("ownerStory", dirty);
     return () => reportDirty("ownerStory", false);
@@ -955,9 +963,13 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     setError("");
     const owner_bio = bio.trim() || null;
     const contact_name = contactName.trim() || null;
+    // MEH-1541: "" clears the year; otherwise send the integer. Range
+    // (1800..current year) is enforced server-side (422 → surfaced below).
+    const established_year =
+      String(year).trim() === "" ? null : Number(year);
     try {
-      await api.put("/producers/me", { owner_bio, contact_name });
-      onSave({ owner_bio, contact_name });
+      await api.put("/producers/me", { owner_bio, contact_name, established_year });
+      onSave({ owner_bio, contact_name, established_year });
       // Track (and show) the normalized value that was actually persisted —
       // storing the raw textarea value would leave a phantom-dirty gap when
       // the input carried trailing whitespace (PR review nit).
@@ -965,9 +977,13 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       setSavedBio(owner_bio ?? "");
       setContactName(contact_name ?? "");
       setSavedContactName(contact_name ?? "");
+      setYear(established_year ?? "");
+      setSavedYear(established_year ?? "");
       setSaved(true);
-    } catch {
-      setError(t("error_save"));
+    } catch (err) {
+      // MEH-1541: surface the Hebrew validation detail (e.g. "שנת ההקמה לא
+      // תקינה") instead of the generic fallback.
+      setError(detailToMessage(err?.response?.data?.detail) || t("error_save"));
     }
     setSaving(false);
   };
@@ -990,6 +1006,25 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
         }}
         placeholder={t("contact_placeholder")}
         data-testid="owner-contact-name-input"
+      />
+
+      {/* MEH-1541: founding year (optional) → the quiet "מאז {שנה}" masthead
+          line. Numeric field, dir="ltr" so the digits read in LTR order; range
+          bounds mirror the server validator (1800..current year). */}
+      <Input
+        type="number"
+        label={t("year_label")}
+        helperText={t("year_helper")}
+        value={year}
+        onChange={(e) => {
+          setYear(e.target.value);
+          setSaved(false);
+        }}
+        min={1800}
+        max={new Date().getFullYear()}
+        dir="ltr"
+        inputMode="numeric"
+        data-testid="owner-established-year-input"
       />
 
       {/* Photo — locked spec label (photo_label). Square face-gravity crop is

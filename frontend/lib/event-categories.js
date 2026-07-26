@@ -5,8 +5,10 @@
  *           files (EventsClient, ExperiencesClient, the two create-forms).
  * Touches:  nothing — pure data. Labels resolve via next-intl
  *           `events.categories.*` / `experiences.categories.*`.
- * Does NOT: cover PRODUCER categories (that's lib/categories.js, MEH-472)
- *           nor own the category icon map (EventsClient.jsx CATEGORY_ICON).
+ * Does NOT: cover PRODUCER categories (that's lib/category-registry.js +
+ *           components/CategoryIcons.jsx — the MEH-472 lib/categories.js
+ *           slug map was unused and deleted in MEH-1567) nor own the
+ *           category icon map (EventsClient.jsx CATEGORY_ICON).
  * Related:  frontend/app/[locale]/events/EventsClient.jsx (both filter sets),
  *           frontend/app/[locale]/experiences/ExperiencesClient.jsx (filter),
  *           frontend/app/[locale]/experiences/new/NewExperienceClient.jsx (form),

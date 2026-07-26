@@ -91,6 +91,14 @@ class Producer(Base):
     # migration: f7d2a9c4b1e8.
     owner_bio = Column(Text, nullable=True)
     owner_photo_url = Column(String(500), nullable=True)
+    # MEH-1541: self-reported founding year → the quiet "מאז {שנה}" heritage
+    # line on the public masthead (a trust signal for veteran businesses, not a
+    # badge). Nullable, Expand-only (ADR-007, no backfill) — NULL = the owner
+    # hasn't stated a year and the line is absent from the DOM. Range
+    # (1800..current year) is enforced at the app layer (schemas.ProducerUpdate),
+    # not a DB CHECK — mirrors the availability_state app-layer-validation
+    # precedent. Paired migration: e4a9c1f7b2d3.
+    established_year = Column(Integer, nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     # MEH-1490: admin-mapped Google Maps Place ID. The ONLY Google datum we
@@ -1183,10 +1191,14 @@ class ProducerPageView(Base):
     city = Column(String(100), nullable=True)
     # Where the view came from — lets the producer dashboard answer
     # "how often did people find me via search" without a separate impression
-    # table. NULL = direct/unknown.
+    # table. NULL = direct/unknown, or a value outside the allowlist.
+    # MEH-1558: the allowlist is the authority (services/analytics.py
+    # track_producer_view) — this comment mirrors it and must be updated
+    # with it. Anything not listed there is stored as NULL.
     referrer = Column(
         String(30), nullable=True
-    )  # search | map | category | home | None
+    )  # search | map | category | home | favorites | follow
+    # | producers-index | similar | nearby | None
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
