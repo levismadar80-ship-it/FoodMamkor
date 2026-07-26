@@ -66,17 +66,55 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id=None) -> str:
         counter += 1
 
 
-def _get_or_create_category(db: Session, name: str) -> Category | None:
+def _lookup_category(db: Session, name: str) -> Category | None:
+    """Look up a category by exact name. NEVER creates one (MEH-1534).
+
+    Returns ``None`` for a blank name (column I is optional — ``parse_row``
+    already records a warning) and for an unknown name. Callers must validate
+    unknown names via ``_known_category_names`` BEFORE reaching this, so an
+    unknown value is reported as a row error rather than silently dropped.
+
+    # DO NOT reintroduce get-or-create here — a spreadsheet typo must not
+    # become a taxonomy row (MEH-1534). It widened the curated 18-item
+    # taxonomy, wrote a hardcoded emoji in violation of the Emoji LOCK, and
+    # was an undocumented source of the category id drift that broke the seed
+    # (MEH-1530). Deliberate creation stays in admin_extra.create_category.
+    """
     name = (name or "").strip()
     if not name:
         return None
-    cat = db.query(Category).filter(Category.name == name).first()
-    if cat:
-        return cat
-    cat = Category(name=name, emoji="🌿")
-    db.add(cat)
-    db.flush()
-    return cat
+    return db.query(Category).filter(Category.name == name).first()
+
+
+def _known_category_names(db: Session) -> list[str]:
+    """Canonical category names, read from the live table — never a second
+    hardcoded copy of the seed list (which would drift out of sync)."""
+    return [row[0] for row in db.query(Category.name).order_by(Category.name).all()]
+
+
+def _flag_unknown_categories(db: Session, parsed_rows: list[RowResult]) -> None:
+    """MEH-1534: record a row error for any category name not in the taxonomy.
+
+    Runs as a pre-pass over ALL parsed rows (one query for the batch) so the
+    error lands in ``RowResult.errors`` — the channel that already exists — and
+    is therefore handled by the existing ``if parsed.errors`` branch in
+    ``import_rows``. That branch sits ABOVE the ``dry_run`` early-return, which
+    is what makes ``dry_run=true`` surface these errors too: previously dry_run
+    returned before the category was ever looked at, so a bad sheet passed the
+    preview and only surfaced on the real run — by silently creating the row.
+
+    A blank category is acceptable (column I is optional — ``parse_row`` already
+    records a warning), so "" is folded into the known set.
+    """
+    known_names = _known_category_names(db)
+    known = set(known_names) | {""}
+    for parsed in parsed_rows:
+        name = (parsed.data["category_name"] or "").strip()
+        if name not in known:
+            parsed.errors.append(
+                f"קטגוריה לא מוכרת: '{name}'. "
+                f"קטגוריות מותרות: {', '.join(known_names)}"
+            )
 
 
 def _coerce_float(v: Any) -> float | None:
@@ -195,6 +233,12 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
     results: list[RowResult] = []
     imported = skipped = errors = 0
 
+    # MEH-1534: reject unknown categories instead of creating them. Runs before
+    # the loop so the error lands in parsed.errors and is picked up by the
+    # existing `if parsed.errors` branch below — which sits above the dry_run
+    # early-return, so dry_run surfaces these errors too.
+    _flag_unknown_categories(db, all_parsed)
+
     for parsed in all_parsed:
         if not parsed.data["name"]:
             skipped += 1
@@ -248,7 +292,7 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
         db.add(producer)
         db.flush()
 
-        cat = _get_or_create_category(db, parsed.data["category_name"])
+        cat = _lookup_category(db, parsed.data["category_name"])
         if cat:
             # MEH-1297: import assigns exactly one category → primary (position 0).
             db.add(
