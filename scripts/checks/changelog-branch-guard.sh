@@ -69,10 +69,21 @@ cd "$REPO_ROOT" || exit 1
 
 LOGS=("docs/CHANGELOG.md" "HANDOFF.md")
 
-# A path is "docs" if it is under docs/, under .claude/, or is HANDOFF.md.
+# A path is "docs" if it is under docs/, under .claude/, or is a root-level
+# Markdown document.
+#
+# The root-level `*.md` arm is MEH-1602 follow-up, found by this guard
+# false-positiving on its own first real customer: a CLAUDE.md-only correction
+# PR was classified as a CODE change (CLAUDE.md is not under docs/), which
+# would have blocked it from carrying the CHANGELOG entry that documents it.
+# Root docs — CLAUDE.md, AGENTS.md, README.md — are documentation by any
+# reading; only the top level is matched, so a nested `frontend/**/*.md` still
+# counts as part of a code change.
 is_docs_path() {
   case "$1" in
     docs/*|.claude/*|HANDOFF.md) return 0 ;;
+    */*) return 1 ;;          # anything nested that isn't docs/ or .claude/
+    *.md) return 0 ;;         # root-level Markdown: CLAUDE.md, AGENTS.md, …
     *) return 1 ;;
   esac
 }
