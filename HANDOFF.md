@@ -3,6 +3,69 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — MEH-1587 · MEH-1588 backend copy-integrity batch (serial, end-to-end)
+
+- **MEH-1587** (YELLOW, backend-only, `feature/meh-1587-onboarding-status-filter` off fresh `origin/staging`, `Closes MEH-1587`): onboarding follow-up emails had **no status filter at all** — `onboarding_followup.py:298-302` gated on `created_at` + NULL sent-column only, so a **rejected** business received the full 30-day first-person coaching sequence. Fix is the WHERE clause only: `Producer.status == _ELIGIBLE_STATUS` (`"approved"`).
+- **Phase 0 headline — `Producer.status` has FIVE values, not the four the model documents.** `models.py:72-74` comments `pending | approved | rejected | inactive`; the code writes a fifth, `pending_whatsapp` (`auth.py:509,624`, consumed `producer_me.py:914-915`). The authoritative enumeration is the admin filter pattern at `admin.py:112` — `^(pending|pending_whatsapp|approved|rejected|inactive|all)$` (`all` is a query sentinel, never stored). **No Python enum, no DB CHECK constraint** — free `String(20)`. Anyone adding a status must hand-audit consumers; nothing mechanical will catch it. *The stale model comment is not fixed here (out of scope) and is worth its own ticket.*
+- **Chose `==` over `IN(...)` deliberately** so a status added later is excluded **fail-closed** rather than silently opted into an email written in Sapir's first person. Encoded as a `# DO NOT` anchor at the constant.
+- **The counts the ticket asked for could NOT be produced.** No `DATABASE_URL` in the sandbox, CC egress to `*.up.railway.app` is blocked (MEH-360), and `$DATABASE_URL_PRODUCTION` is deny-listed by `.claude/rules/security.md`. The two counting queries are written out verbatim in the PR body for Sapir to run — **how many businesses already received the wrong email is still unknown, and the ticket's DoD item for it is unmet by evidence, not by omission.**
+- **One existing test encoded the bug and had to be corrected:** sub-case (c) of `test_step5_variant_b_for_pending_or_unlicensed` asserted a `pending` producer receives Email 5B. That can no longer happen. Renamed to `..._for_approved_unlicensed`, case (c) removed, count 3→2, with the reason in the docstring.
+- **New tests proven load-bearing, not assumed:** stashing **only** the source file (tests untouched) turned **10 red**; restoring it → 16/16 green.
+- Verify: full backend suite **1831 passed / 6 skipped / 359 deselected (fuzz) / 1 xfailed** (13m41s, real Postgres 16 locally — see the MEH-1559 note below for provisioning).
+- **Branch-name deviation (same as MEH-1575 / MEH-999 below):** harness assigned `claude/backend-hebrew-audit-aibq79`, which violates the `claude/*` ban and the `Branch name gate`; used the ticket's own `feature/meh-1587-…` per CLAUDE.md line 1.
+## 2026-07-26 — QA-driven session: contact validation + custom-questions clarity + opt-out decision
+
+**Shipped:** MEH-1537 (PRs #2153 code, #2177 docs) — shared validators make the
+server source-of-truth for contact_email/phone/whatsapp_group on all four Producer
+write schemas. MEH-1578 (PRs #2195 R1, #2202 R2) — "לדוגמה:" placeholders,
+answer-first guidance line, context_line deduped, subtitle voice fixed to female
+singular. Both verified against raw staging by the orchestrator, not from reports.
+
+**Decided — MEH-1538 ready-questions opt-out: NOT BUILDING, signal-gated.** Trigger
+is >=2 real business owners asking, not a date. Rationale: (1) MEH-1302 already made
+the chips answer-first, so unwanted questions are mostly a symptom of an incomplete
+profile, not a format bug; (2) Google Business Profile never allowed opting out and
+removed Q&A entirely in Nov 2025 in favour of answers sourced from the business's own
+content, while eBay's Smart FAQ does allow opt-out but leads with "use complete
+listing info" — both poles agree the fix is data, not a mute switch; (3) zero live
+producers = zero demand evidence; (4) an editorial directory keeps one house format.
+MEH-1578 is the approved alternative: better data path, no toggle. Full research is
+in the MEH-1538 description.
+
+**Lesson 1 — inference presented as evidence (orchestrator).** MEH-1537's ticket
+claimed ProducerUpdate.contact_email was plain `str`; it was already EmailStr. The
+claim came from a PK snippet showing a DIFFERENT schema. CC's Phase 0 corrected it.
+Ticket evidence must cite the line that was actually read, not the line implied by
+a neighbouring one.
+
+**Lesson 2 — green CI is not a met DoD.** MEH-1578 R1 spec said "REPLACE it — do not
+stack two helper lines"; CC added a THIRD paragraph. CI green, auto-merged, DoD item
+unmet, result more confusing than the original bug. Tests assert PRESENCE, so an
+extra element breaks nothing. R2 added "expected exactly TWO helper paragraphs, not
+three" and it landed correctly first try. STANDING RULE: any spec containing
+replace/delete/consolidate/dedupe must carry a numeric final-state assertion in
+<verification_step> plus a repo-wide grep for the removed symbol in Phase 0.
+
+**Gates closed:** MEH-1537 Railway audit run by Sapir, 0 rows. Production carries 4
+producers (teva-pure, tases-ferments, dana-sourdough, galil-farm), so the
+grandfathered-invalid risk was bounded and is now cleared.
+
+## 2026-07-26 — MEH-1539 closing batch: mobile QA at 375px + session docs
+
+- **What shipped today on the owner edit page** (seven merges, one consolidated CHANGELOG entry): delivery scope + explicit exclusion label (PR #2141), the top-product field explained with example-led placeholders (#2144), the categories card swapped onto the register `CategorySelector` (#2149), the field-guidance standard + audit (#2155), `LocationsEditor` brought up to that standard (#2178), its coords-disclosure contract locked by a test (#2189), and the place hint made precision-aware (#2199).
+- **Preflight passed — staging was serving today's HEAD, not a stale build.** Vercel's free-tier daily deploy cap is being hit and deployments are marked `Ignored`, so this was checked before any QA: `"רק העיר תוצג"` is present in the served bundle, and `git log -S` confirms that string entered the repo **only** in `8fe0bd34` (the newest of the seven). Had it been absent the QA would have been invalid and the run would have stopped.
+- **Mobile QA is done — 375×812 Chromium against live staging, real login, no mocks. 10 of 13 assertions passed.** (An earlier revision of this line said "9 of 12" — miscounted. The scripted run was 7 pass / 5 fail; three of those five were harness selector bugs, not product defects, and each was re-verified individually against the exact `he.json` string before being reclassified as a pass. A 13th assertion — placeholder clipping — was added after the screenshots showed it, and it fails. Net: 10 pass, 3 real defects, all three listed below.) Evidence in `qa-artifacts/MEH-1539-mobile/` (17 screenshots, 645 KB webp, under the 2 MB cap). Verified live: per-category descriptions are legible (chip 80px, label 19px + description 12.5px); search filters with the mobile keyboard open and the input is 16px so iOS does not zoom; the counter reads `3/3` and the 4th option is `disabled` **before** save; save returns `PUT /producers/me` → 200; the card intro precedes the fields; the coords disclosure is collapsed by default on a new location; and the place hint switches live between `מדויק` and `משוער` with no save round-trip.
+- **Three readability defects found and deliberately NOT fixed** (the batch was observation-only; each needs its own ticket):
+  1. **Example placeholders are clipped in `LocationsEditor` at 375px** — the two-column grid gives each input 134px (108px usable) while the placeholders measure 125–186px. Four of five are cut: `למשל: ימים א׳–ה׳, 9:00–17:00` overflows by 78px, `למשל: רחוב העצמאות 12` by 43px, `למשל: הדוכן בשוק הנמל` by 35px, and `למשל: 050-1234567` by 17px — the last renders as `של: 050-1234567`, losing the word that marks it as an example. This is the guidance standard's item 3 defeating itself: the example is the part that gets cut.
+  2. **The `kind` and `precision` helpers wrap to 5 and 4 lines** in their half-width columns (11px text) — over the 3-line readability bar, and the two columns end at different heights.
+  3. **The coords-disclosure summary is a 249×16px tap target** — well under 44px, on the one control an owner has to find deliberately.
+- **Two observations, not defects.** The place hint renders **twice** in the same form, under both `עיר` and `כתובת` (`LocationsEditor.jsx:415,422`) — intended, since precision governs both, but at 375px the identical three-line sentence appears twice within one screen. And the location list rows truncate with a real ellipsis (`text-overflow: ellipsis`, by design) — but every pickup row starts `איסוף — `, so the truncation eats precisely the part that distinguishes them (`איסוף — הגן ה…`, `איסוף — תחנ…`).
+- **Post-launch, unchanged:** the two follow-ups already filed off the audit stay post-launch; the audit's remaining gaps (`ProductsSection`, `ContactChannelsCard`, `LicenseCard`, `DietaryScopeCard`) are grouped and ranked in the report handed to Sapir this session, for her to turn into one batch or per-card tickets.
+- **⚠️ The E2E blocker's stated cause does not reproduce — do not reset the demo password before reading this.** HANDOFF has been recording `global-setup.ts:123` throwing `login failed for admin (demo-admin@example.com) … HTTP 401`. Probed directly against staging this session, **all three demo accounts authenticate — `demo-owner`, `demo-consumer` and `demo-admin` each return HTTP 200** with the `DEMO_*_PASSWORD` values available to the session. So the staging DB row is fine; if CI still 401s, the stale value is the **GitHub secret**, and re-running `--sync-users` against staging would overwrite a working row without touching the thing that is actually wrong. Cheapest next step is to re-run E2E and read the result, not to change any password.
+- **A second, independent blocker sits behind that one.** The login response sets `__Secure-Fgp` (`HttpOnly; Secure`), and `backend/app/auth.py:188-200` rejects any token whose `userFingerprint` claim has no matching cookie. The CI suite targets `http://localhost:3000` (`e2e.yml:161`) — plain HTTP, where a `Secure` / `__Secure-`-prefixed cookie is refused by the client. `global-setup.ts` would still write its storageState files (login itself returns 200), so the authenticated specs would fail at request time with `אסימון לא תקין` rather than at setup. This session hit exactly that failure and had to log in through the browser context's own cookie jar to get past it. Fixing the password alone will move this failure, not clear it.
+- **Vercel deploy cap still in force** (`api-deployments-free-per-day`) — preview URLs are unavailable today; it is a commit status, not a required gate.
+- **Scope note:** this session wrote two files, `docs/CHANGELOG.md` and `HANDOFF.md`. The QA screenshots live under `qa-artifacts/MEH-1539-mobile/` on disk and are deliberately **not** in this PR, which is docs-only by instruction — say the word and they can go in a follow-up.
+
 ## 2026-07-26 — MEH-1572 ChipScrollRow scroll-chrome unification (batch 2/2)
 
 - **MEH-1572** (YELLOW, `feature/meh-1572-chip-scroll-chrome` cut off `origin/staging` **after** MEH-1575 merged, `Closes MEH-1572`): mask-image fades (kills `fadeBg`), one shared inline-start gutter (0), overflow-conditional end spacer, and one affordance authority. Full Phase-0 table in the PR body.
@@ -82,6 +145,13 @@
 - **Parallel-session evidence (Rule 1 report, not a block):** `origin/staging` advanced at least six times during this batch (`15ddce6e`, `8896d940`, `da6035c6`, `1ea41337`, `dca82c6a`, `6a0cca3f`), once turning #2173 `dirty` mid-flight. Every branch was re-merged with fresh `origin/staging` before push and the gates re-run against the merged tree (rule 25 / MEH-1535), with the post-merge diff re-checked to confirm nothing was silently reverted by a stale ref. Flagging because Rule 1 forbids two concurrent CC sessions on this repo.
 
 - **Follow-ups surfaced, not filed:** (a) **RED** — implement the `profile_views` dedup that MEH-1557's copy was softened around, plus the `conversion_rate` denominator; (b) frontend card to add a `map` referrer writer (or drop the four dead allowlist values); (c) inject i18n into `contact-method.js` so its message stops being hardcoded Hebrew in a helper; (d) `lib/badges.js` + `attribute-labels.js` hardcoded Hebrew, and backend Hebrew templates (never scanned).
+## 2026-07-26 — DEPLOYMENT.md `backend/` prefix: local vs Railway Console (`Refs MEH-999`)
+
+- **GREEN docs-only, `feature/meh-999-deployment-console-path` off fresh `origin/staging`.** Sapir hit `No such file or directory` running the QA-user sync in the Railway console. Root cause of the *doc* bug: `Dockerfile:40` `COPY backend/ .` into `WORKDIR /app` (`Dockerfile:14`) means **`/app` IS `backend/`** — the `backend/` prefix is correct locally and wrong in the console.
+- **Phase 0 corrected the task premise (meta-patterns §1).** The auth-fixtures block at `:864-877` **already** carried both routes with the correct commands — the doc never told her to run the prefixed form in the console. What was broken was its stated **reason**: "the Docker build context is `backend/`" is false (the context is the repo root — `Dockerfile:38` copies `backend/pyproject.toml`). A reader who checks the reason finds it doesn't hold, so the rule isn't derivable. Replaced with the real `Dockerfile:40`/`:14` mechanism + the literal error string a mis-paste produces.
+- **Swept the file; 3 commands changed in total.** Also fixed the cities seed (`:420` — previously only "from a shell with `DATABASE_URL`", which *describes the console*, where its `cd backend` fails) and the pre-promotion `check_no_demo_data.py` prod scan (`:502`). `check_api_contract.py` + `restore_from_backup.py` are repo-root scripts that never exist in the container — deliberately untouched.
+- **This PR also re-triggers `e2e.yml`** (no `workflow_dispatch`; push-to-staging only) — the first run after Sapir's `--sync-users` created `demo-admin`. Triage in the next entry.
+
 ## 2026-07-26 — repo-guard script dispatcher (`Refs MEH-999`)
 
 - **GREEN, script + docs only, `feature/meh-999-repo-guards-dispatcher` off fresh `origin/staging`.** Generalises the one-off UI-pattern-guard job into a dispatcher so **this is the last workflow edit guards ever need**. Before: every guard = one named CI job = one `.github/workflows/**` edit = CC-deny (MEH-671) = bottlenecked on Sapir. After: one generic `repo-guards` job runs `bash scripts/checks/run-all.sh`, and a new guard is a file drop.
