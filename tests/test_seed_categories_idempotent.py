@@ -30,7 +30,11 @@ def _snapshot(db):
 
 
 def _names(db):
-    return [r.name for r in db.query(Category).all()]
+    # ORDER BY is explicit: test_seed_populates_a_fresh_table compares this
+    # list positionally against CATEGORIES, and Postgres guarantees no row
+    # order without it (insertion/heap order happens to hold after TRUNCATE
+    # RESTART IDENTITY, but that is not a contract).
+    return [r.name for r in db.query(Category).order_by(Category.id).all()]
 
 
 def _seed_staging_shaped(db):
