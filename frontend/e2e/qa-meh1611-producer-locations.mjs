@@ -22,6 +22,10 @@ import path from "node:path";
 
 const OUT = path.resolve(process.argv[2] || "../qa-artifacts/MEH-1611");
 const BASE = process.argv[3] || "http://127.0.0.1:3000";
+// CC-sandbox only: the container ships Chromium at this fixed path, which may
+// not match the revision this repo's @playwright/test pins. Absent elsewhere —
+// the launch below falls back to Playwright's own resolution when it does not
+// exist, so running this locally needs no change.
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 // UUID-shaped: the detail route matches a uuid segment (parity.spec.ts's

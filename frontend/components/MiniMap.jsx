@@ -218,9 +218,16 @@ export default function MiniMap({ lat, lng, name, locations, producer = null }) 
   const hasCoords = isUsableCoord(lat, lng);
 
   // Absent from the DOM entirely when there is nothing to show — no empty map,
-  // no placeholder. A business with points but no lat/lng mirror still renders
-  // (the points are the content); only "no coordinates anywhere" bails. This
-  // guard runs BEFORE the camera/nav target below, which dereferences a point.
+  // no placeholder. Runs BEFORE the camera/nav target below, which dereferences
+  // a point.
+  //
+  // The `!hasCoords && points.length > 0` arm is defensive depth, not a live
+  // path from the business page: ProducerSections gates the mount on
+  // parseHasLocation() (ProducerSections.jsx:45), which requires lat/lng AND
+  // has_physical_location !== false, and lat/lng is maintained as the mirror of
+  // the primary location. Do NOT "fix" that gate by widening it to
+  // `|| locations?.length` — it would bypass the has_physical_location check and
+  // put delivery-only businesses back on a map, which is MEH-213.
   if (!hasCoords && points.length === 0) return null;
 
   // Initial camera + navigation target. Prefer the producer's own lat/lng
