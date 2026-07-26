@@ -190,6 +190,7 @@ Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
 - ReviewCard component (rating, comment, date, badge)
 - ProducerDetail integration (after description, before similar_producers)
 - pytest: happy path + invalid token + duplicate + expired token
+- Conditional UI? declare 0/1/many + open/closed states.
 - npm run build + mobile preview
 </acceptance_criteria>
 
