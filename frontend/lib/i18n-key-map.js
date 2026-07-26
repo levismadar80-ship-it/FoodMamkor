@@ -32,7 +32,7 @@ export const OLD_TO_NEW = {
   footer_terms: "nav.footer.terms",
   footer_accessibility: "nav.footer.accessibility",
   // MEH-1576: cta_show_on_map alias removed — common.cta.show_on_map was
-  // deleted in this PR (its only renderer, the ActionRow "הצג במפה" button,
+  // deleted in this PR (its only renderer, the ActionRow "Show on map" button,
   // went with ActionRow.jsx in MEH-1146 PR #1670; no live consumer).
   cta_more_info: "common.cta.more_info",
 };
