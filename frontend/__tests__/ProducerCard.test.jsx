@@ -17,6 +17,8 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "משלוחים בלבד",
       "producer.card.badges.available_today": "🛒 מגיעה היום",
+      // MEH-1547: +N overflow disclosure aria.
+      "producer.card.badges.overflow_aria": `הצגת עוד ${values.count} תגיות`,
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
       verified_label: "מאומת",
       declared_label: "מוצהר",
@@ -589,5 +591,49 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       />,
     );
     expect(screen.queryByTestId("badge-overflow")).not.toBeInTheDocument();
+  });
+
+  // MEH-1547: the +N counter is a Popover trigger disclosing the HIDDEN
+  // badges. Fixture earns 4 badges (priority: grass_fed > gluten_free >
+  // kosher > delivery) → visible = grass_fed + gluten_free, hidden = kosher
+  // + delivery. The pre-1547 markup (static <span>) fails all three cases.
+  const overflowProducer = {
+    ...minimalProducer,
+    kashrut_verified_at: "2026-01-01T00:00:00Z",
+    grass_fed: true,
+    has_gluten_free_products: true,
+    has_delivery: true,
+  };
+
+  it("+N is an interactive disclosure button (MEH-1547)", () => {
+    render(<ProducerCard producer={overflowProducer} />);
+    const chip = screen.getByTestId("badge-overflow");
+    expect(chip.tagName).toBe("BUTTON");
+    expect(chip).toHaveAttribute("aria-haspopup");
+    expect(chip).toHaveAttribute("aria-expanded", "false");
+    expect(chip).toHaveAttribute("aria-label", "הצגת עוד 2 תגיות");
+  });
+
+  it("tapping +N opens a popover listing ONLY the hidden badge labels (MEH-1547)", () => {
+    render(<ProducerCard producer={overflowProducer} />);
+    expect(screen.queryByTestId("badge-overflow-popover")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("badge-overflow"));
+    const panel = screen.getByTestId("badge-overflow-popover");
+    // Hidden badges (positions 3+): kosher + delivery.
+    expect(panel).toHaveTextContent("כשר");
+    expect(panel).toHaveTextContent("משלוח");
+    // The 2 visible badges must NOT be duplicated inside the disclosure.
+    expect(panel).not.toHaveTextContent("גראס פד");
+    expect(panel).not.toHaveTextContent("ללא גלוטן");
+  });
+
+  it("tapping +N does not navigate the card (MEH-1547)", () => {
+    const onClick = vi.fn();
+    render(<ProducerCard producer={overflowProducer} onClick={onClick} />);
+    fireEvent.click(screen.getByTestId("badge-overflow"));
+    expect(onClick).not.toHaveBeenCalled();
+    // Card root click elsewhere still works (guard is scoped to the button).
+    fireEvent.click(screen.getByTestId("producer-card"));
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
