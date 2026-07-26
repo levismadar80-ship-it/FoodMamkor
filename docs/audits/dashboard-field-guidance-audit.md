@@ -51,7 +51,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | `description` | `DescriptionCard` | `desc_label` | — | ✓ `desc_placeholder` | ✓ `desc_where` | ok |
 | `tagline` | `DescriptionCard` | `tagline_label` | — | ✓ `tagline_placeholder` | ✓ `tagline_where` — card in search/lists | ok |
 | assist: sell / area / special | `DescriptionCard` | `q_*_label` | — | ✓ `q_*_placeholder` | — (input to the generator, never published) | ok |
-| assist: instagram | `DescriptionCard` | `instagram_label` | ✓ `instagram_hint` | ✓ literal URL | — | ok |
+| assist: instagram | `DescriptionCard` | `instagram_label` — username framing (MEH-1608) | ✓ `instagram_hint` | ✓ `instagram_placeholder` — bare handle (was a hardcoded literal URL, the exact shape that broke the public link) | — | ok |
 | `top_product_name` | `PricingCard` | `field_top_product` | ✓ `scope_helper` | ✓ `top_product_placeholder` | ✓ `scope_helper` — highlighted card atop the product list | ok |
 | `price_range` | `PricingCard` | `field_price_range` | ✓ `price_hint` | ✓ `price_range_placeholder` | ✓ `scope_helper` | ok |
 | owner name | `OwnerStoryCard` | `contact_label` | — | ✓ `contact_placeholder` | ✓ `intro` + placeholder text | ok |
@@ -108,7 +108,7 @@ above.
 | `price_min` | `ProductsSection` | no placeholder, no "where" | ✓ `price_min_placeholder` + card-level `where` |
 | `price_max` | `ProductsSection` | no placeholder, no "where" | ✓ `price_max_placeholder` + card-level `where` |
 | product image | `ProductsSection` | no "where" | ✓ card-level `where` |
-| `instagram` | `ContactChannelsCard` | no placeholder | ✓ `instagram_placeholder` — a **bare handle**, not a URL: the field has no validator and `ContactCard.jsx:105-106` composes the URL itself, so a URL here would render a doubled, dead link |
+| `instagram` | `ContactChannelsCard` | no placeholder | ✓ `instagram_placeholder` — a **bare handle**, not a URL: `ContactCard.jsx:105-106` composes the URL itself, so a URL here would render a doubled, dead link. Since MEH-1608 the server also normalizes URL/@ input to a bare handle on every producer write schema (`_normalize_instagram`, schemas.py) |
 | `website` | `ContactChannelsCard` | no placeholder | ✓ `website_placeholder` — full URL, matching `_url_scheme_validator` |
 | `whatsapp_group` | `ContactChannelsCard` | no placeholder | ✓ `whatsapp_group_placeholder` — the `https://chat.whatsapp.com/…` shape its validator requires |
 | `contact_email` | `ContactChannelsCard` | no placeholder | ✓ `email_placeholder` |
