@@ -4080,6 +4080,11 @@
         "field_email": "אימייל",
         "field_facebook": "פייסבוק (קישור)",
         "field_external_order": "טופס הזמנות (קישור)",
+        "instagram_placeholder": "maafiat_hasade",
+        "website_placeholder": "https://example.co.il",
+        "whatsapp_group_placeholder": "https://chat.whatsapp.com/AbCd",
+        "email_placeholder": "hello@example.co.il",
+        "facebook_placeholder": "https://facebook.com/hasade",
         "primary_legend": "הערוץ הראשי",
         "primary_whatsapp": "וואטסאפ — הלקוחות שולחות הודעה",
         "primary_phone": "טלפון — הלקוחות מתקשרות",
@@ -4137,6 +4142,7 @@
         "heading": "רישיון יצרן",
         "field_label": "מספר רישיון יצרן (משרד הבריאות)",
         "required_hint": "אחת הקטגוריות שבחרתם דורשת רישיון יצרן. מילוי המספר נדרש לאישור העסק.",
+        "where": "המספר נשמר אצלנו בלבד ולא מוצג בעמוד שלך. הוא נדרש כדי לאשר בתי עסק בקטגוריות שמחייבות רישיון.",
         "summary_empty": "לא הוזן",
         "save_cta": "שמירה",
         "saving": "בשמירה…",
@@ -4168,7 +4174,8 @@
         "opt_no": "לא",
         "opt_unknown": "לא ידוע",
         "gluten_dedicated": "אין גלוטן במקום הייצור",
-        "gluten_shared": "יש גלוטן במקום הייצור"
+        "gluten_shared": "יש גלוטן במקום הייצור",
+        "scope_helper": "התשובות כאן מפעילות פילטרים בעמוד החיפוש. הן חלות על כל המוצרים של בית העסק, ומוצגות כהצהרה שלך."
       },
       "delivery": {
         "heading": "משלוחים ואיסוף",
@@ -4493,6 +4500,7 @@
     },
     "products": {
       "section_heading": "מוצרים",
+      "where": "המוצרים יוצגו ברשימה בעמוד שלך — עם השם, התיאור והמחיר שתמלאי כאן.",
       "add_cta": "הוסיפו מוצר",
       "errors": {
         "upload_type": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
@@ -4527,8 +4535,10 @@
         "description_label": "תיאור קצר",
         "description_placeholder": "לדוגמה: כיכר 750 גרם, נאפה בטאבון",
         "price_min_label": "מחיר מ-",
+        "price_min_placeholder": "24",
         "price_max_label": "מחיר עד",
         "price_max_optional_suffix": "אופציונלי",
+        "price_max_placeholder": "60",
         "price_hint": "מחיר אחיד? מלאו רק \"מ-\". טווח מחירים? מלאו גם \"עד\" (אופציונלי).",
         "diet_heading": "סימוני תזונה (אופציונלי)",
         "diet_gluten_free": "ללא גלוטן",
