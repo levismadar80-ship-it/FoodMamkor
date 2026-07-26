@@ -39,6 +39,8 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 
 ## Conditional-UI states (5-state rule)
 כל רינדור מותנה (רשימות, filter, reveal, disclosure) חייב התייחסות מפורשת ב-`acceptance_criteria` למצבים: **0 פריטים / פריט 1 / רבים**, ו**פתוח/סגור** לכל reveal. spec שמגדיר רק את המצב המלא = חסר. (UI Stack, Scott Hurff.) דוגמת עבר: [MEH-1551](https://linear.app/mehamakor/issue/MEH-1551) — עיגול יתום בערוץ קשר יחיד.
+- **state × count = מטריצה, לא שתי רשימות.** מונים את **התאים**: (0 / 1 / רבים) × (סגור / פתוח). ספירת שתי הרשימות בנפרד נראית כמו כיסוי מלא ומשאירה תא בלי spec ובלי טסט — [MEH-1583](https://linear.app/mehamakor/issue/MEH-1583): (1×סגור), (1×פתוח), (רבים×סגור) נבדקו, **(רבים×פתוח)** נשאר יתום והגיע ל-production.
+- **baseline של טסט VRT חדש הוא candidate, לא אמת.** חובה **לפתוח את ה-PNG ולסקור ויזואלית** לפני merge — bot שמייצר baseline מקבע כל מצב שהיה בקוד, כולל באג. תקדים: baseline של [MEH-1552](https://linear.app/mehamakor/issue/MEH-1552) קיבע את התא השבור ונמזג. (תעשייה: BrowserStack baseline-drift · TestInspector candidate-baseline.)
 
 ## Documentation map
 | File | What's in it |
