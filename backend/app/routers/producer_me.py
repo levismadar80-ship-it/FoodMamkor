@@ -262,6 +262,10 @@ def update_my_producer(
         "is_available_today",
         "images",
         "custom_questions",
+        # MEH-1541: owner sets her own founding year. Range-validated
+        # (1800..current year) in ProducerUpdate (schemas.py); this opens
+        # the write path.
+        "established_year",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
