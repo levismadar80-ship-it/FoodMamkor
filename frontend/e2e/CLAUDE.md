@@ -46,13 +46,22 @@ target-gated** (`global-setup.ts:72-80`):
 | `TEST_URL=` staging / preview | set (+ `VERCEL_AUTOMATION_BYPASS_SECRET`) | written | run |
 | any remote | **missing** | — | **throws** (never a silent skip) |
 
-The default CI E2E job is row 1: `e2e.yml:158` sets
-`PLAYWRIGHT_BASE_URL=http://localhost:3000` and the job exports **no** `DEMO_*`
-secret (`e2e.yml:28` — "Required secrets: none"). So **authed coverage does not
-run on PRs today.** It runs when someone points the suite at a seeded target.
-To turn it on in CI, the job needs the three secrets in its env — the YAML is in
-[`docs/ci/e2e-auth-fixtures.patch.md`](../../docs/ci/e2e-auth-fixtures.patch.md)
-(`.github/workflows/**` is CC-deny, MEH-671).
+**Superseded (26/07) — the CI job now DOES export the three secrets.** Sapir
+applied `docs/ci/e2e-auth-fixtures.patch.md` in commit `21ccecc`, so
+`e2e.yml:168-170` passes `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` /
+`DEMO_ADMIN_PASSWORD` into the run. The job is therefore **row 2, not row 1**:
+`PLAYWRIGHT_BASE_URL` is still `http://localhost:3000` (`e2e.yml:161`), but with
+the passwords set, `global-setup` provisions all three roles against the seeded
+staging backend. **Authenticated coverage runs on every PR.** Proof: run
+`30220096957` logged `[global-setup] wrote {producer,consumer,admin}
+storageState` and executed all 6 `25-role-reachability` tests, where run
+`30211526292` earlier the same day had logged "no `DEMO_*_PASSWORD` is set" and
+skipped them.
+
+This paragraph previously said the opposite ("the job exports **no** `DEMO_*`
+secret … authed coverage does not run on PRs today"). That was accurate until
+`21ccecc`. The table above still describes the mechanism correctly — only which
+row the CI job occupies has changed.
 
 **Any new spec that opts into a storageState MUST guard on the fixture**, or it
 turns the default CI run permanently red at fixture setup with

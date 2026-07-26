@@ -113,18 +113,33 @@ ruleset was tried on 2026-07-13 and reverted the same day because it re-introduc
 MEH-892 (a skipped-but-directly-required job reads as `Expected` → blocks
 docs-only).
 
-> **⚠️ `e2e.yml`'s paths-filter does NOT currently skip docs-only** — proven by
-> MEH-1201's own CI (PR #1741, a docs-only diff, run `29283974004`): the `filter`
-> job emitted `frontend = true` for 5 `.md` files and the full suite ran (and was
-> red). Root cause: `e2e.yml`'s filter uses `predicate-quantifier: some` with
-> negation patterns (`!**/*.md`, `!docs/**`, …), under which each negation is an
-> additive OR that matches nearly everything — so the MEH-499 "docs-skip" never
-> worked. (`pr-checks.yml`'s `changes` job has **no** negations and correctly
-> skips docs — which is why the 2 required aggregators stayed green.) **Therefore
-> the E2E gate must NOT be added to the ruleset until (A) the `e2e.yml` filter is
-> fixed to actually skip docs-only, and (B) the suite is green.** Both fixes +
-> evidence are in [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
+> **✅ Precondition A is now MET — `e2e.yml`'s paths-filter DOES skip docs-only.**
+> This note previously said the opposite; that was true when written and is not
+> true now. The filter (`e2e.yml:62-70`) is **positive-only** today —
+> `frontend/**`, `public/**`, `package.json`, `package-lock.json` — with **no**
+> negation patterns and **no** `predicate-quantifier`, which is exactly the
+> replacement block `e2e-gate.patch.md` prescribed for precondition A.
+> **Empirical proof** (MEH-999, 26/07): run `30220080416`, the docs-only staging
+> push `80d5c62` — the `Playwright E2E (Vercel preview)` job reported `skipped`.
+> The history that produced the old note is still accurate for its date: under
+> `predicate-quantifier: some`, each negation (`!**/*.md`, `!docs/**`, …) is an
+> additive OR matching nearly everything, so MEH-499's "docs-skip" never worked
+> and PR #1741 (run `29283974004`) ran the full suite on 5 `.md` files. The
+> negations are simply gone now. (The exact commit that removed them is not
+> recoverable — squash-merge flattened `e2e.yml`'s history — so this rests on the
+> live file plus the run above, not on a blame line.)
+>
+> **The gate is still NOT ready for the ruleset — precondition B alone now blocks
+> it.** The suite is not green: 2 VRT `parity.spec.ts` failures (`map` desktop,
+> `home` mobile) as of run `30220096957`. Adding the context while red would
+> block every PR. See [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
 > ("תנאי מוקדם A/B").
+>
+> **Not to be confused with the *other* e2e.yml problem:** the filter skipping
+> docs-only is correct, but combined with the collapsed staging concurrency group
+> it silently destroys post-merge coverage — a docs push cancels the previous
+> code push's run and puts nothing in its place. That is MEH-1601, and its fix is
+> [docs/ci/e2e-concurrency.patch.md](../../docs/ci/e2e-concurrency.patch.md).
 
 Governance + gate matrix:
 [ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
