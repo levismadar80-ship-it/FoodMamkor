@@ -223,8 +223,10 @@ function createSecondaryMarker(
   const glyph = categoryGlyphSvg(GlyphIcon, {
     color: categoryColor,
     weight: "regular",
-    // MEH-1569: 14 → 13 so the glyph keeps its breathing room inside the smaller
-    // 24px circle (the 2px border eats 4px of the diameter).
+    // MEH-1569: 14 → 12 → 13. Dropped to 12 for the 22px circle in PR #2203,
+    // then back up to 13 when the circle returned to 24px (see the size constant
+    // above) — the glyph keeps its breathing room inside the border, which eats
+    // 4px of the diameter.
     size: 13,
   });
   const html = `
