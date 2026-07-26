@@ -147,14 +147,31 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">
+          {/* MEH-1390: a tab whose section never renders is a dead click, so
+              each tab mirrors its section's render condition from
+              ProducerSections.jsx (about :143 — description; products :159 —
+              products/signature; delivery :410-412 — any delivery/pickup
+              signal). Keep the pairs in sync when a section condition changes.
+              The reviews wrapper always renders (it is the IO observation
+              point), so that tab is unconditional. */}
           {[
-            { key: "about", label: t("producer.detail.tabs.about"), Icon: Info },
-            { key: "products", label: t("producer.detail.tabs.products"), Icon: Package },
-            { key: "delivery", label: t("producer.detail.tabs.delivery"), Icon: Truck },
+            { key: "about", label: t("producer.detail.tabs.about"), Icon: Info, show: !!producer.description },
+            {
+              key: "products",
+              label: t("producer.detail.tabs.products"),
+              Icon: Package,
+              show: !!(producer.products?.length > 0 || producer.top_product_name || producer.starting_price_label),
+            },
+            {
+              key: "delivery",
+              label: t("producer.detail.tabs.delivery"),
+              Icon: Truck,
+              show: !!(producer.offers_delivery || producer.delivery_areas?.length > 0 || producer.pickup_points),
+            },
             // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
             // star implies a rating system the reviews section doesn't provide.
-            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText },
-          ].map((tab) => (
+            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText, show: true },
+          ].filter((tab) => tab.show).map((tab) => (
             <button
               key={tab.key}
               type="button"
