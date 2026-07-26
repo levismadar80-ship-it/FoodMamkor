@@ -33,6 +33,33 @@ const TWO_CHANNEL_FIXTURE = fs.readFileSync(
 // stops it swallowing `/api/producers/{uuid}/reviews`.
 const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 
+// MEH-1591: fixed /map payloads. The map's results rail and category chip row
+// are UNMASKED live chrome (only `.leaflet-container` is masked), so the
+// baseline moved whenever a business was approved/deactivated — the 26/07 regen
+// proved it: a pure 124px vertical shift of the rail, count row 13 → 12, map
+// canvas byte-identical. Same fs.readFileSync loading as the MEH-1497 pair above.
+const MAP_PRODUCERS_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "map-producers.json"),
+  "utf-8"
+);
+// Sapir's call (MEH-1591 §2): mock /categories too, not just /producers. The chip
+// row is filtered by what the API returns (`resolveCategoryId`,
+// useMapFilters.js:346 — a chip whose category is absent is HIDDEN), it has
+// already churned this baseline once (MEH-1440), and the category table is in
+// active motion (MEH-1530 seed rekey merged, MEH-1456 chunk 3 pending). Partial
+// mocking would reopen this ticket within a week.
+const MAP_CATEGORIES_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "map-categories.json"),
+  "utf-8"
+);
+// COLLECTION only — deliberately disjoint from PRODUCER_DETAIL_RE above. The
+// `(?:\?[^#]*)?$` tail anchors the end, so this matches `/api/producers` and
+// `/api/producers?limit=1` but NOT `/api/producers/{uuid}` (detail — owned by
+// the regex above), nor the non-UUID siblings `/count`, `/cities`, `/random`,
+// `/by-slug/*`, which all carry a further `/segment`.
+const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
+const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
+
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
  * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
@@ -51,9 +78,20 @@ const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
  * route per project (desktop 1440x900 + mobile Pixel 5), compared with
  * maxDiffPixelRatio 0.02 (playwright.config.ts expect.toHaveScreenshot).
  *
- * Determinism strategy (no mocks — MEH-417):
- * - Live-data regions (producers grid, events preview, mini-map, Leaflet
- *   tiles) are MASKED — layout chrome is the subject under test, data isn't.
+ * Determinism strategy — three tools, in preference order:
+ * - NETWORK MOCK (page.route + a fixed JSON fixture) where the DATA moves but
+ *   the layout is the subject: producer detail (MEH-1497) and /map (MEH-1591).
+ *   This is a deliberate, NARROW carve-out from the MEH-417 no-mocks rule,
+ *   scoped to e2e/visual/** and recorded in frontend/e2e/CLAUDE.md ("No mocks").
+ *   Functional specs under e2e/flows/ stay unmocked — that is what MEH-417
+ *   actually protects. Prefer this over masking when the region is real chrome
+ *   we want under test: a mask hides regressions, a fixture only freezes data.
+ *   (The header previously read "no mocks — MEH-417" outright; that has been
+ *   stale since MEH-1497 landed on 2026-07-23.)
+ * - MASK for regions that are irreducibly non-deterministic and NOT the subject
+ *   (Leaflet tiles/markers, the home producers grid, events preview, mini-map).
+ * - FROZEN CLOCK (page.clock.setFixedTime, MEH-1531) for wall-clock-dependent
+ *   copy — see VRT_FIXED_TIME below.
  * - Calendar-dependent banners (holiday / friday-delivery) are HIDDEN via
  *   parity.css — their *presence* varies, and a mask can't absorb the layout
  *   shift of a section that appears and disappears with the date.
@@ -157,27 +195,34 @@ test.describe("Visual parity — MEH-991", () => {
   // regenerated on-runner. Delta is confined to the hero region — the home shot
   // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
   // also merged 2026-07-18 sit below the fold and out of frame.
-  // MEH-999 (2026-07-26): home-mobile red-lines at 17,589 px (ratio 0.07) and
-  // the cause is UNIDENTIFIED. Do NOT regenerate this baseline until it is —
-  // a regen would silently bless whatever changed. What was ruled out:
-  //   1. Copy. A key-by-key diff of he.json between the baseline commit
-  //      (1eb89491) and the failing base (397f4466) gives 44 changed keys and
-  //      ZERO under home.hero / home.trust / home.stats / nav.*. The only
-  //      home.* change is home.producers.filter_prefix, which renders on
-  //      /producers, not here.
-  //   2. Above-the-fold components. Nothing in Header / HeroSearch / BottomNav /
-  //      page.js changed in that range.
-  //   3. The live /stats strip (page.js:112-140) — the leading hypothesis, and
-  //      WRONG. Measured on a real 375x812 render: the strip's bounding box is
-  //      y=1061, h=58, i.e. ~250px BELOW the 812px fold. This shot is
-  //      viewport-only (no fullPage), so the strip is out of frame and cannot
-  //      contribute a single pixel. (With live producers the grid above is
-  //      taller, pushing it further down still.) Masking it was implemented,
-  //      measured, and reverted.
-  // Next step is the diff image, not another guess: open home-diff.png in the
-  // playwright-report artifact of a failing run (run 30199607886 has one). The
-  // CC sandbox cannot download Actions artifacts — proxy-blocked, same limit
-  // recorded in the MEH-1440 note below.
+  // MEH-1519 (2026-07-26): home-mobile's 17,589 px (ratio 0.07) red line is
+  // RESOLVED and RATIFIED. An earlier revision of this note recorded the cause
+  // as UNIDENTIFIED and forbade regen; both statements are retracted. The diff
+  // was confined to y=466-696 — everything above (header, hero, H1, subtitle,
+  // search card) was pixel-identical — and it decomposes into exactly two
+  // INTENTIONAL product changes that the baseline predated:
+  //   1. MEH-1476 (af62123e, 2026-07-23) relocated "הפתיעו אותי" out of the hero
+  //      to the producers-grid end (HomeHero.jsx:49-51), collapsing the CTA row
+  //      from two rows to one and shifting everything below it up.
+  //   2. MEH-1410 (e4b725a0, 2026-07-21) restored ChatWidget to desktop-only —
+  //      ChatWidget.jsx:215 `if (!isDesktop) return null` returns null below
+  //      768px, so the chat FAB no longer renders on the mobile project
+  //      (Pixel 5, 393x851). The FAB survived in the baseline only because the
+  //      baseline predates that commit. NOT a hydration race: ChatWidgetLazy's
+  //      route gate does not cover "/", but the viewport gate one component
+  //      deeper does, deterministically, on every run.
+  // Ratified by RESTORING the blob 3680b928 already committed — the on-runner
+  // regen of 2026-07-23, captured after BOTH changes above, which 52ab77da
+  // ("undo PR #2102 contamination") reverted to a 2026-07-21 image by mistake.
+  // Restoring a runner-generated blob is why no new regen was needed here; a
+  // dev-machine capture is still forbidden (font stacks differ — see the
+  // "Baseline maintenance" note above).
+  // home-desktop-linux.png needed no change: 3680b928 regenerated 5 baselines
+  // and left it untouched, i.e. the runner's post-change desktop render was
+  // byte-identical to the existing image (blob 85ba6329 unchanged since
+  // bf71e303, 2026-07-11), and the desktop shot has stayed green throughout.
+  // Cause: MEH-1410 only gates <768px, and at 1440px the hero CTA row never
+  // wrapped, so MEH-1476's relocation cost it no vertical space.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
@@ -239,6 +284,32 @@ test.describe("Visual parity — MEH-991", () => {
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);
+
+    // ── MEH-1591: data mock (MEH-417 no-mocks EXCEPTION, e2e/visual/** only) ──
+    // Same carve-out the producer-detail shot uses (frontend/e2e/CLAUDE.md
+    // "No mocks" → MEH-1497 §2.4): the subject here is layout/pixels, the
+    // producer + category data is noise. DO NOT copy into e2e/flows/.
+    // Registered BEFORE goto so the mount fetches are intercepted:
+    // useProducersFeed.js:65 fires loadProducers() (no params → bare
+    // /api/producers) and :64 fires /api/categories.
+    // NOTE: the rail and chip row stay UNMASKED on purpose — masking them would
+    // hide real layout regressions, which is exactly what this baseline is for.
+    // Mocking the data keeps the pixels stable without blinding the shot.
+    await page.route(PRODUCERS_COLLECTION_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: MAP_PRODUCERS_FIXTURE,
+      });
+    });
+    await page.route(CATEGORIES_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: MAP_CATEGORIES_FIXTURE,
+      });
+    });
+
     await page.goto("/map");
     // MEH-549 pattern (flow 05): __MAP_CENTER__ is race-free across the two
     // MapPane instances; .leaflet-container:visible is not.
@@ -249,9 +320,35 @@ test.describe("Visual parity — MEH-991", () => {
       { timeout: 45_000 }
     );
     await settle(page);
+
+    // MEH-1591 guard — the fixture must actually REACH the rail. The feed parses
+    // the response through ProducersResponseSchema (lib/schemas.js:104) and a
+    // malformed payload degrades to an empty list + toast (useProducersFeed.js:36-40)
+    // rather than throwing. That failure mode is invisible to VRT: an empty rail
+    // is perfectly *stable*, so the baseline would lock in a blank column and the
+    // suite would stay green while testing nothing.
+    //
+    // Two assertions, because count alone is not enough:
+    //   1. at least one card per fixture row — kills the empty/short-rail case;
+    //   2. a fixture-specific NAME is rendered — proves the pixels came from the
+    //      fixture and not from a live backend response that happened to be
+    //      non-empty (a count-only check would pass on live data too).
+    // NOT an exact-equality count: `cardList` is ONE element rendered in BOTH
+    // shells — the desktop grid (MapClient.jsx:457 `hidden lg:grid`) and the
+    // mobile sheet (:534 `lg:hidden`) — so every producer yields 2 DOM nodes on
+    // both projects, with CSS (not the DOM) hiding the irrelevant shell. Asserting
+    // `=== fixture.length` fails with "Received: 12" for 6 rows; asserting `>=`
+    // keeps the empty-rail guarantee without hard-coding that ×2 detail.
+    const fixtureRows = JSON.parse(MAP_PRODUCERS_FIXTURE) as { name: string }[];
+    const cardCount = await page.getByTestId("map-card").count();
+    expect(cardCount).toBeGreaterThanOrEqual(fixtureRows.length);
+    await expect(page.getByText(fixtureRows[0].name).first()).toHaveCount(1);
+
     await expect(page).toHaveScreenshot("map.png", {
       ...SHOT,
       // Tiles + markers are live; chrome (header, filters, controls) is not.
+      // MEH-1591: the rail + chip row are no longer live — they render from the
+      // fixtures mocked above — so they stay unmasked and under test.
       mask: [page.locator(".leaflet-container")],
     });
   });

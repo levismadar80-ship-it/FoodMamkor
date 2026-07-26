@@ -16,6 +16,161 @@
 - **Open follow-up (not filed yet, needs a ticket):** the 2% tolerance on a **full-viewport** shot means VRT cannot detect a component-sized regression on producer-detail at all — the same blindness that hid MEH-1551 from VRT originally and let MEH-1552 freeze it. Either tighten `maxDiffPixelRatio` or scope the interaction shots to the ContactCard element (`locator.toHaveScreenshot()`) so the denominator is the component, not the page. Not done here: it would move every existing baseline.
 - **Worth remembering — CC cannot dispatch `vrt-update.yml`.** `actions_run_trigger` returns **403 Resource not accessible by integration**, so the SAPIR GATE is a real capability boundary, not a convention. Also: the bot's baseline commit is pushed with `GITHUB_TOKEN` and never triggers the required gates (MEH-1112/1113), so a follow-up commit as yourself is always needed before the merge signal is real.
 - **MEH-1584 — Phase 0 done, recommended Canceled** (full evidence on the ticket): `CATEGORY_CARDS` is a hardcoded 10-entry literal (`lib/home-categories.js:33-48`) and `matchCategoryId` is a length-preserving `.map()` with no filter in the chain (`lib/use-home-page.js:569` → `app/[locale]/page.js:172`). `categoryCards.length` is always 10 — the 0/1/3 counts the ticket asks to guard are unreachable, and 10 tiles cleanly at both breakpoints.
+## 2026-07-26 — MEH-1570 Starlette CVE bump (0.49.3 → 1.3.1, deps-only)
+
+- **MEH-1570** (`feature/meh-1570-starlette-cve-bump`, `Closes MEH-1570`): closes **CVE-2026-54283** (urlencoded form DoS, CVSS 7.5) and 4 other Starlette advisories. Origin: my own self-audit during MEH-1553, deliberately not bundled into that bug fix. **Whole change = `backend/uv.lock`, 3 lines.** No app code, no FastAPI bump, no pyproject, no env/Alembic.
+- **Phase 0 — FastAPI compat (the question that gated scope):** FastAPI 0.139.0 declares `Requires-Dist: starlette>=0.46.0` — **lower bound only, no upper bound** — so 1.3.1 satisfies it and the feared major-jump conflict does not exist. `uv lock --upgrade-package starlette` moved **1 of 137** packages; `uv lock --check` (CI gate, `pr-checks.yml:305,442`) exits 0.
+- **Phase 0 — CVE verification:** `pip-audit` on 0.49.3 → **5 distinct advisories, not the 2 the ticket assumed**. PYSEC-2026-249 = CVE-2026-54283 (fix 1.3.1) · PYSEC-2026-161 = CVE-2026-48710 (fix 1.0.1, Host header) — **my MEH-1553 report was correct**, GHSA-86qp-5c8j-p5mr / X41-2026-002 · PYSEC-2026-248 = CVE-2026-54282 (fix 1.3.0) · PYSEC-2026-2281 = CVE-2026-48818 · PYSEC-2026-2280 = CVE-2026-48817. After: "No known vulnerabilities found."
+- **Phase 0 — exposure map, and the counter-intuitive part worth remembering:** `backend/app` has **zero** `request.form()` / `Form(` / `OAuth2PasswordRequestForm`, which looks like zero exposure and is not. `UploadFile`/`File(...)` in `upload.py` + `admin.py` make FastAPI call `request.form()`, and **the attacker picks the Content-Type** — urlencoded sent to a multipart endpoint lands in the unbounded parser. And `file: UploadFile` precedes `user: Depends(get_current_user)` (`upload.py:67-70,146-149`), so per regression rule 6 the body parses **before auth** → reachable unauthenticated. `20/hour` slowapi caps but doesn't remove it. The two `request.url` CVEs touch only `middleware.py:119,125` (Sentry tags) → telemetry poisoning, not a bypass; no `TrustedHostMiddleware`. Not applicable: CVE-2026-48818 (StaticFiles, Windows-only — unused) and CVE-2026-48817 (`HTTPEndpoint` — unused, all routers function-based).
+- **Verified empirically in BOTH directions on our own endpoint** rather than trusting a version number: identical unauthenticated 2000-field urlencoded POST to `/upload/image` → on **0.49.3** `401 Not authenticated` (all 2000 fields parsed silently, then auth rejected — with a million fields that parse *is* the DoS); on **1.3.1** `400 "Too many fields. Maximum number of fields is 1000."` (bounded before the work and before auth). Plus `uv sync` locked-env boot: `/health` 200, bad-creds login 401 Hebrew; full pytest green.
+- **Recommended, deliberately NOT done (Sapir's call, outside the ticket's scope + over-engineering guard):** an explicit `starlette>=1.3.1` floor in `pyproject.toml`. The lock alone protects today; a floor would stop a future resolution from selecting an older version.
+
+## 2026-07-26 — חלון הזמנות (order window): all 3 chunks shipped
+
+**Shipped, in order, each merged on green required gates:** chunk 1/3 backend
+`producers.order_window` JSONB + validation + owner write path (PR #2152,
+squash `72f6becc`, migration `f4a1e9c3b7d2` authored + applied by Sapir under
+the RED-Alembic protocol); chunk 2/3 the dashboard editor (PR #2163, squash
+`ec4b915f`); chunk 3/3 the public producer page (PR #2170, squash `cf44738b`).
+
+**The decision that shaped chunk 3.** The ticket originally specified a NEW
+status line on the producer page. Phase 0 found `ProducerHeader.jsx` already
+owned a 3-state ORDER status derived from `availability_state`, so a second
+window-derived line would have produced a **factual contradiction**, not a
+styling nit: `availability_state=available` plus a window that closed at 14:00
+would assert both "open for orders" and "orders closed now" at 16:00. CC
+stopped and surfaced it with `file:line` rather than shipping any of the
+options it had drafted; Smadar rewrote the ticket around a fifth answer none of
+them contained — no new element, the existing status gains `order_window` as
+one more input, with scope expansion into `ProducerHeader.jsx` approved and
+bounded to the status branch. `closing_soon` was dropped as a visual state in
+the same rewrite.
+
+**What to verify on staging (mobile).** Producer page: a business with no
+`order_window` must look **exactly** as before (that branch is byte-identical
+by design); a business with a window shows one status line — never two — plus
+the weekly strip, and the WhatsApp button stays enabled in every state. Owner
+dashboard: the "חלון הזמנות" card saves, reloads, and "ניקוי הכל" clears.
+
+**Open, deliberate gap.** The closed-state CTA context line renders beside the
+**mobile** inline CTA only. `ContactSidebar`'s `lg:sticky` child depends on the
+`<aside>` being the stretched grid item, so wrapping it to add a sibling would
+collapse the sticky travel, and editing that component was outside chunk 3's
+scope. Desktop shows the status + strip but not the note — worth its own ticket
+if the note matters on desktop.
+
+**Two gate lessons worth keeping.**
+1. **The ICU parity gate earns its keep.** The new dashboard plural shipped with
+   only `one`/`other`; `check-icu-parity.py:35` requires HE to carry
+   `{one, two, other}` because Hebrew has a dual and translation batches drop it
+   silently. Caught pre-merge.
+2. **Superseded-run false failures cost several cycles.** Flipping a PR
+   draft→ready starts a new `pr-checks` run that concurrency-cancels the
+   in-flight one, and the gate's aggregator maps `cancelled` deps to FAIL — so
+   `CI gate (required)` reported failure three times across this batch while
+   nothing was actually broken (workflow rule 21 documents exactly this). Read
+   the aggregator's own `R_*: cancelled` lines before diagnosing.
+
+**Pre-existing E2E reds — not this batch's.** `Playwright E2E` stayed red
+throughout: 6 × `25-role-reachability` fixture `ENOENT` (fixed independently in
+PR #2164, which converted them to skips) and 2 × `parity.spec.ts` VRT drift on
+`map`/`home`, plus one flaky map-cluster spec. E2E is non-required per MEH-716;
+the analysis is recorded on PR #2163 rather than repeated per PR.
+
+## 2026-07-26 — MEH-1569 follow-up: secondary marker 22px → 24px (WCAG 2.2 AA target size)
+
+- **Correction to the entry below.** MEH-1569 shipped the secondary pin at **22px** in PR #2203 (merged `33154672`). The adversarial review had flagged that 22px falls **below WCAG 2.2 SC 2.5.8 (AA), which sets the minimum target size at 24×24 CSS px** — the previous 26px cleared it. Sapir ruled **24px**; this PR raises it (glyph 12 → 13 to match). `approxRing` stays at 4px as shipped. Hierarchy is now **36 vs 24**.
+- **Why it's a real constraint, not a nicety:** these markers are genuine targets — click handler, `keyboard: true`, `role="button"` + `aria-label` (MEH-765). SC 2.5.8's spacing exception (a 24px circle around a target must not intersect a neighbour's) fails **by definition** in the dense/spiderfied stacks this ticket exists to declutter, so it could never have rescued a 22px pin. IS 5568 makes this a legal requirement. A `DO NOT drop this below 24` anchor now sits on the constant so a future "make it smaller" pass has to read the reason first.
+- **Process note worth keeping:** the 22px value came from the ticket and CC implemented it as specified rather than substituting a number, then flagged the conflict for a human ruling. That is the intended shape — but note the flag landed *after* the PR had already auto-merged, so the correction needed a second PR. **A blocking a11y finding should gate the merge, not trail it.**
+- **Re-measured after the change:** live DOM reports primary `36px` ×1, secondary `24px` ×6, `meetsWcag248: true`, halo `rgba(46,104,83,0.14) 0 0 0 4px`, zero page errors — **identical at 375 and 1440** (`qa-artifacts/MEH-1569-24px/`, 46 KB).
+- **E2E:** still repo-wide red at `global-setup` (`demo-admin` → HTTP 401, zero tests run). Covered by **MEH-1590** (Urgent, RED, Sapir-owned) — not worked around here.
+## 2026-07-26 — MEH-1519 RATIFY (home VRT baseline) + MEH-1594 retracted
+
+- **MEH-1519** (`feature/meh-1519-home-baseline-ratify` off fresh `origin/staging`, `Closes MEH-1519`): the home-mobile VRT baseline is ratified by **restoring the `3680b928` blob** (`c01d43011917`) — no regen. Also rewrote `parity.spec.ts:190-210` (it claimed the cause was UNIDENTIFIED and forbade regen; both false) and added a provenance rule to `.claude/rules/workflow.md`.
+- **The dispatched diagnosis was wrong and was corrected before any code was written.** The batch arrived describing the chat FAB as a **hydration race** in `ChatWidgetLazy` (`dynamic({ssr:false})`) to be fixed by awaiting the launcher before `toHaveScreenshot`, with a 5-run determinism check. That fix is unimplementable: `ChatWidget.jsx:215` `if (!isDesktop) return null` (MEH-1410, `e4b725a0`, 21/07) means the FAB **never renders** on the mobile project (Pixel 5, 393×851 — under the 768px gate). `ChatWidgetLazy`'s route gate genuinely does not cover `/`; the viewport gate one component deeper does. STOP fired, no branch was cut, and MEH-1594 is now closed as not-a-bug.
+- **Root cause of the whole three-day red check: `52ab77da` restored a stale blob over a good regen.** `3680b928` (23/07) was an on-runner regen that ran **after** both MEH-1476 (`af62123e`, CTA relocation) and MEH-1410, and it updated 5 baselines. `52ab77da` ("undo PR #2102 contamination", MEH-1496 recovery) reverted **exactly one** of them back to a 21/07 image. Same class as MEH-1450 — a baseline written by circumstance, not by decision — recurring in the opposite direction and unnoticed for three days.
+- **⚠️ New rule, and the reason this session nearly shipped the wrong conclusion: shallow clones fabricate file provenance.** The container clone was `--depth` with a graft at `51a43fc`. `git log -- <png>` and `git log -S'if (!isDesktop) return null'` **both** returned the graft commit as the introducing commit — no error, no warning, entirely plausible dates. Those two answers placed both product changes *after* the baseline, which inverts the diagnosis. `git rev-parse --is-shallow-repository` must read `false` before any "last changed in X" claim. Written up under "Provenance verification" in `.claude/rules/workflow.md`.
+- **Blob identity beats commit identity.** "Commit C last touched this file" ≠ "C changed it". `git rev-parse <commit>:<path>` is what exposed `52ab77da` as a revert, and what proved `home-desktop-linux.png` needs nothing: `3680b928` left it untouched (blob `85ba6329`, unchanged since `bf71e303`, 11/07), i.e. the runner's post-change desktop render was byte-identical.
+- **The "flapping" evidence in MEH-1519 was retracted.** Run `30209600496` ("success", 16:04) lasted **15 seconds** with the Playwright job `skipped` — zero screenshots. Rule-21 skip-green, not a green run. There is no flapping on home; the failure was deterministic all along.
+- Linear synced (descriptions only, no status edits except the authorized MEH-1594 close): MEH-1519 §4 verdict UNKNOWN → EXPLAINED + new §4ב; MEH-1591 gained a `## Evidence — pixel diff, 26/07` section (the /map drift is the sidebar list, not the masked clusters — 13→12 producers, 31,091px/3% — which raises that ticket's priority since regen there is a treadmill).
+
+## 2026-07-26 — MEH-1587 · MEH-1588 backend copy-integrity batch (serial, end-to-end)
+
+- **MEH-1587** (YELLOW, backend-only, `feature/meh-1587-onboarding-status-filter` off fresh `origin/staging`, `Closes MEH-1587`): onboarding follow-up emails had **no status filter at all** — `onboarding_followup.py:298-302` gated on `created_at` + NULL sent-column only, so a **rejected** business received the full 30-day first-person coaching sequence. Fix is the WHERE clause only: `Producer.status == _ELIGIBLE_STATUS` (`"approved"`).
+- **Phase 0 headline — `Producer.status` has FIVE values, not the four the model documents.** `models.py:72-74` comments `pending | approved | rejected | inactive`; the code writes a fifth, `pending_whatsapp` (`auth.py:509,624`, consumed `producer_me.py:914-915`). The authoritative enumeration is the admin filter pattern at `admin.py:112` — `^(pending|pending_whatsapp|approved|rejected|inactive|all)$` (`all` is a query sentinel, never stored). **No Python enum, no DB CHECK constraint** — free `String(20)`. Anyone adding a status must hand-audit consumers; nothing mechanical will catch it. *The stale model comment is not fixed here (out of scope) and is worth its own ticket.*
+- **Chose `==` over `IN(...)` deliberately** so a status added later is excluded **fail-closed** rather than silently opted into an email written in Sapir's first person. Encoded as a `# DO NOT` anchor at the constant.
+- **The counts the ticket asked for could NOT be produced.** No `DATABASE_URL` in the sandbox, CC egress to `*.up.railway.app` is blocked (MEH-360), and `$DATABASE_URL_PRODUCTION` is deny-listed by `.claude/rules/security.md`. The two counting queries are written out verbatim in the PR body for Sapir to run — **how many businesses already received the wrong email is still unknown, and the ticket's DoD item for it is unmet by evidence, not by omission.**
+- **One existing test encoded the bug and had to be corrected:** sub-case (c) of `test_step5_variant_b_for_pending_or_unlicensed` asserted a `pending` producer receives Email 5B. That can no longer happen. Renamed to `..._for_approved_unlicensed`, case (c) removed, count 3→2, with the reason in the docstring.
+- **New tests proven load-bearing, not assumed:** stashing **only** the source file (tests untouched) turned **10 red**; restoring it → 16/16 green.
+- Verify: full backend suite **1831 passed / 6 skipped / 359 deselected (fuzz) / 1 xfailed** (13m41s, real Postgres 16 locally — see the MEH-1559 note below for provisioning).
+- **Branch-name deviation (same as MEH-1575 / MEH-999 below):** harness assigned `claude/backend-hebrew-audit-aibq79`, which violates the `claude/*` ban and the `Branch name gate`; used the ticket's own `feature/meh-1587-…` per CLAUDE.md line 1.
+## 2026-07-26 — QA-driven session: contact validation + custom-questions clarity + opt-out decision
+
+**Shipped:** MEH-1537 (PRs #2153 code, #2177 docs) — shared validators make the
+server source-of-truth for contact_email/phone/whatsapp_group on all four Producer
+write schemas. MEH-1578 (PRs #2195 R1, #2202 R2) — "לדוגמה:" placeholders,
+answer-first guidance line, context_line deduped, subtitle voice fixed to female
+singular. Both verified against raw staging by the orchestrator, not from reports.
+
+**Decided — MEH-1538 ready-questions opt-out: NOT BUILDING, signal-gated.** Trigger
+is >=2 real business owners asking, not a date. Rationale: (1) MEH-1302 already made
+the chips answer-first, so unwanted questions are mostly a symptom of an incomplete
+profile, not a format bug; (2) Google Business Profile never allowed opting out and
+removed Q&A entirely in Nov 2025 in favour of answers sourced from the business's own
+content, while eBay's Smart FAQ does allow opt-out but leads with "use complete
+listing info" — both poles agree the fix is data, not a mute switch; (3) zero live
+producers = zero demand evidence; (4) an editorial directory keeps one house format.
+MEH-1578 is the approved alternative: better data path, no toggle. Full research is
+in the MEH-1538 description.
+
+**Lesson 1 — inference presented as evidence (orchestrator).** MEH-1537's ticket
+claimed ProducerUpdate.contact_email was plain `str`; it was already EmailStr. The
+claim came from a PK snippet showing a DIFFERENT schema. CC's Phase 0 corrected it.
+Ticket evidence must cite the line that was actually read, not the line implied by
+a neighbouring one.
+
+**Lesson 2 — green CI is not a met DoD.** MEH-1578 R1 spec said "REPLACE it — do not
+stack two helper lines"; CC added a THIRD paragraph. CI green, auto-merged, DoD item
+unmet, result more confusing than the original bug. Tests assert PRESENCE, so an
+extra element breaks nothing. R2 added "expected exactly TWO helper paragraphs, not
+three" and it landed correctly first try. STANDING RULE: any spec containing
+replace/delete/consolidate/dedupe must carry a numeric final-state assertion in
+<verification_step> plus a repo-wide grep for the removed symbol in Phase 0.
+
+**Gates closed:** MEH-1537 Railway audit run by Sapir, 0 rows. Production carries 4
+producers (teva-pure, tases-ferments, dana-sourdough, galil-farm), so the
+grandfathered-invalid risk was bounded and is now cleared.
+
+## 2026-07-26 — MEH-1539 closing batch: mobile QA at 375px + session docs
+
+- **What shipped today on the owner edit page** (seven merges, one consolidated CHANGELOG entry): delivery scope + explicit exclusion label (PR #2141), the top-product field explained with example-led placeholders (#2144), the categories card swapped onto the register `CategorySelector` (#2149), the field-guidance standard + audit (#2155), `LocationsEditor` brought up to that standard (#2178), its coords-disclosure contract locked by a test (#2189), and the place hint made precision-aware (#2199).
+- **Preflight passed — staging was serving today's HEAD, not a stale build.** Vercel's free-tier daily deploy cap is being hit and deployments are marked `Ignored`, so this was checked before any QA: `"רק העיר תוצג"` is present in the served bundle, and `git log -S` confirms that string entered the repo **only** in `8fe0bd34` (the newest of the seven). Had it been absent the QA would have been invalid and the run would have stopped.
+- **Mobile QA is done — 375×812 Chromium against live staging, real login, no mocks. 10 of 13 assertions passed.** (An earlier revision of this line said "9 of 12" — miscounted. The scripted run was 7 pass / 5 fail; three of those five were harness selector bugs, not product defects, and each was re-verified individually against the exact `he.json` string before being reclassified as a pass. A 13th assertion — placeholder clipping — was added after the screenshots showed it, and it fails. Net: 10 pass, 3 real defects, all three listed below.) Evidence in `qa-artifacts/MEH-1539-mobile/` (17 screenshots, 645 KB webp, under the 2 MB cap). Verified live: per-category descriptions are legible (chip 80px, label 19px + description 12.5px); search filters with the mobile keyboard open and the input is 16px so iOS does not zoom; the counter reads `3/3` and the 4th option is `disabled` **before** save; save returns `PUT /producers/me` → 200; the card intro precedes the fields; the coords disclosure is collapsed by default on a new location; and the place hint switches live between `מדויק` and `משוער` with no save round-trip.
+- **Three readability defects found and deliberately NOT fixed** (the batch was observation-only; each needs its own ticket):
+  1. **Example placeholders are clipped in `LocationsEditor` at 375px** — the two-column grid gives each input 134px (108px usable) while the placeholders measure 125–186px. Four of five are cut: `למשל: ימים א׳–ה׳, 9:00–17:00` overflows by 78px, `למשל: רחוב העצמאות 12` by 43px, `למשל: הדוכן בשוק הנמל` by 35px, and `למשל: 050-1234567` by 17px — the last renders as `של: 050-1234567`, losing the word that marks it as an example. This is the guidance standard's item 3 defeating itself: the example is the part that gets cut.
+  2. **The `kind` and `precision` helpers wrap to 5 and 4 lines** in their half-width columns (11px text) — over the 3-line readability bar, and the two columns end at different heights.
+  3. **The coords-disclosure summary is a 249×16px tap target** — well under 44px, on the one control an owner has to find deliberately.
+- **Two observations, not defects.** The place hint renders **twice** in the same form, under both `עיר` and `כתובת` (`LocationsEditor.jsx:415,422`) — intended, since precision governs both, but at 375px the identical three-line sentence appears twice within one screen. And the location list rows truncate with a real ellipsis (`text-overflow: ellipsis`, by design) — but every pickup row starts `איסוף — `, so the truncation eats precisely the part that distinguishes them (`איסוף — הגן ה…`, `איסוף — תחנ…`).
+- **Post-launch, unchanged:** the two follow-ups already filed off the audit stay post-launch; the audit's remaining gaps (`ProductsSection`, `ContactChannelsCard`, `LicenseCard`, `DietaryScopeCard`) are grouped and ranked in the report handed to Sapir this session, for her to turn into one batch or per-card tickets.
+- **⚠️ The E2E blocker's stated cause does not reproduce — do not reset the demo password before reading this.** HANDOFF has been recording `global-setup.ts:123` throwing `login failed for admin (demo-admin@example.com) … HTTP 401`. Probed directly against staging this session, **all three demo accounts authenticate — `demo-owner`, `demo-consumer` and `demo-admin` each return HTTP 200** with the `DEMO_*_PASSWORD` values available to the session. So the staging DB row is fine; if CI still 401s, the stale value is the **GitHub secret**, and re-running `--sync-users` against staging would overwrite a working row without touching the thing that is actually wrong. Cheapest next step is to re-run E2E and read the result, not to change any password.
+- **A second, independent blocker sits behind that one.** The login response sets `__Secure-Fgp` (`HttpOnly; Secure`), and `backend/app/auth.py:188-200` rejects any token whose `userFingerprint` claim has no matching cookie. The CI suite targets `http://localhost:3000` (`e2e.yml:161`) — plain HTTP, where a `Secure` / `__Secure-`-prefixed cookie is refused by the client. `global-setup.ts` would still write its storageState files (login itself returns 200), so the authenticated specs would fail at request time with `אסימון לא תקין` rather than at setup. This session hit exactly that failure and had to log in through the browser context's own cookie jar to get past it. Fixing the password alone will move this failure, not clear it.
+- **Vercel deploy cap still in force** (`api-deployments-free-per-day`) — preview URLs are unavailable today; it is a commit status, not a required gate.
+- **Scope note:** this session wrote two files, `docs/CHANGELOG.md` and `HANDOFF.md`. The QA screenshots live under `qa-artifacts/MEH-1539-mobile/` on disk and are deliberately **not** in this PR, which is docs-only by instruction — say the word and they can go in a follow-up.
+
+## 2026-07-26 — MEH-1572 ChipScrollRow scroll-chrome unification (batch 2/2)
+
+- **MEH-1572** (YELLOW, `feature/meh-1572-chip-scroll-chrome` cut off `origin/staging` **after** MEH-1575 merged, `Closes MEH-1572`): mask-image fades (kills `fadeBg`), one shared inline-start gutter (0), overflow-conditional end spacer, and one affordance authority. Full Phase-0 table in the PR body.
+- **Phase 0 disproved one of the ticket's four evidence claims — reported, not silently worked around.** §2c says the map passes `fadeBg="#ffffff"`; it passes `#F5F0E8` (`FilterChipsBar.jsx:75`), and the comment directly above it says MEH-1108 already fixed exactly that. **All five call sites passed the identical value** — `#ffffff` is only the prop's default, which nothing uses. STOP-(a) did not fire because this *strengthens* the case for deleting the prop rather than undermining it, and changes no part of the work. The other three claims (always-on spacer, three stacked start offsets, two affordance authorities) hold at their cited lines.
+- **The MEH-1391 two-authority trade is now closed.** The MEH-1340 IntersectionObserver sentinels are deleted; fades, arrows and the spacer all read `useScrollAffordance`. The sentinels could not distinguish real chip overflow from "only my own trailing spacer is off-screen" — the same bug class MEH-1545 hit on the arrow side. Consequence worth knowing: **the hook now computes its flags on every device, not just fine-pointer**, because the fades need them on touch too (`showArrows` still gates only the arrows).
+- **The conditional spacer needs a conditional filler.** `trailingFillerPx` is passed as 56 only while the spacer is mounted and 0 otherwise (`spacerMountedRef`). Passing a constant 56 would let a fitting row discount 56px it isn't rendering and never report overflow again once it dropped the spacer.
+- **Worth remembering — jsdom's CSSOM silently drops `mask-image`.** Setting it inline made `style.maskImage` read back as `""`, so the first version of the tests could not assert anything. Moving the gradient into `globals.css` (`.chip-scroll-fade-mask`) and having the component publish only two **custom properties** fixed the test *and* produced better production code — custom properties survive jsdom, and the gradient now lives next to the other component utilities.
+- **Worth remembering — a local VRT run against the committed baselines proves nothing here.** `e2e/visual/parity.spec.ts` states the baselines are runner-generated and must never be compared from a dev machine (font stacks differ). Substitute used instead: build `origin/staging`, capture, build the branch, capture, diff **in the same sandbox** so font differences cancel. Every diff row was explained arithmetically (-34px = -18 sentinels/gaps -16 ps-4) and every viewport diff came in at 0.92–1.50%, under VRT's own 2% tolerance. **The real VRT signal is still owed** — see the blocker below.
+- **⚠️ BLOCKER OWED TO SAPIR — E2E (and therefore VRT) cannot run at all right now.** `e2e/global-setup.ts:123` throws `login failed for admin (demo-admin@example.com) … HTTP 401`; `demo-owner` and `demo-consumer` authenticate fine. **This is pre-existing**: the `e2e.yml` run on `staging` itself at `ed6d567` failed byte-identically ([run 30212595947](https://github.com/levismadar80-ship-it/FoodMamkor/actions/runs/30212595947)). Needs a `--sync-users` re-run against staging for `demo-admin` (or a refreshed `DEMO_ADMIN_PASSWORD`). Until it is fixed, **no PR in this repo gets a VRT verdict** — not just this one.
+- **Also environmental:** Vercel previews are rate-limited today (`api-deployments-free-per-day`, >100 free deploys/24h), so neither batch PR has a preview URL. Both are commit statuses, neither is a required gate.
+- **Scope note:** one file beyond the ticket's list — `frontend/app/globals.css`, which hosts the mask utility alongside the existing `.scrollbar-hide` (:262) and `.custom-cursor` (:380).
+- Verify: build exit 0 · full vitest **1661 passed / 10 skipped** · ChipScrollRow suite **29 passed** · eslint 0 errors · `qa-artifacts/MEH-1572/` 12 before/after shots, 50 KB webp.
+- **Process note — the `lint-feedback` 3-strike hook fired falsely twice**, exactly the MEH-763 / exec §8 pattern: a multi-file refactor leaves transient `no-undef` between sequential edits (`useState` import removed while the sentinel state still referenced it). Both times the named symbols were on the very lines the next edit deleted; `npx eslint` after completing the edit set reported **0 errors**. Do not "fix" these — complete the edit set, then verify manually.
+
 ## 2026-07-26 — MEH-1569 /map marker density polish (after MEH-1568 merged)
 
 - **MEH-1569** (GREEN, single file, `feature/meh-1569-map-marker-density` off `origin/staging` **after** confirming MEH-1568 landed at `ace6f02d`, `Closes MEH-1569`): `approxRing` 7px → 4px in both marker builders, and the secondary pin 26px → 22px (glyph 14 → 12). Rationale + numbers in the CHANGELOG entry.
@@ -81,6 +236,13 @@
 - **Parallel-session evidence (Rule 1 report, not a block):** `origin/staging` advanced at least six times during this batch (`15ddce6e`, `8896d940`, `da6035c6`, `1ea41337`, `dca82c6a`, `6a0cca3f`), once turning #2173 `dirty` mid-flight. Every branch was re-merged with fresh `origin/staging` before push and the gates re-run against the merged tree (rule 25 / MEH-1535), with the post-merge diff re-checked to confirm nothing was silently reverted by a stale ref. Flagging because Rule 1 forbids two concurrent CC sessions on this repo.
 
 - **Follow-ups surfaced, not filed:** (a) **RED** — implement the `profile_views` dedup that MEH-1557's copy was softened around, plus the `conversion_rate` denominator; (b) frontend card to add a `map` referrer writer (or drop the four dead allowlist values); (c) inject i18n into `contact-method.js` so its message stops being hardcoded Hebrew in a helper; (d) `lib/badges.js` + `attribute-labels.js` hardcoded Hebrew, and backend Hebrew templates (never scanned).
+## 2026-07-26 — DEPLOYMENT.md `backend/` prefix: local vs Railway Console (`Refs MEH-999`)
+
+- **GREEN docs-only, `feature/meh-999-deployment-console-path` off fresh `origin/staging`.** Sapir hit `No such file or directory` running the QA-user sync in the Railway console. Root cause of the *doc* bug: `Dockerfile:40` `COPY backend/ .` into `WORKDIR /app` (`Dockerfile:14`) means **`/app` IS `backend/`** — the `backend/` prefix is correct locally and wrong in the console.
+- **Phase 0 corrected the task premise (meta-patterns §1).** The auth-fixtures block at `:864-877` **already** carried both routes with the correct commands — the doc never told her to run the prefixed form in the console. What was broken was its stated **reason**: "the Docker build context is `backend/`" is false (the context is the repo root — `Dockerfile:38` copies `backend/pyproject.toml`). A reader who checks the reason finds it doesn't hold, so the rule isn't derivable. Replaced with the real `Dockerfile:40`/`:14` mechanism + the literal error string a mis-paste produces.
+- **Swept the file; 3 commands changed in total.** Also fixed the cities seed (`:420` — previously only "from a shell with `DATABASE_URL`", which *describes the console*, where its `cd backend` fails) and the pre-promotion `check_no_demo_data.py` prod scan (`:502`). `check_api_contract.py` + `restore_from_backup.py` are repo-root scripts that never exist in the container — deliberately untouched.
+- **This PR also re-triggers `e2e.yml`** (no `workflow_dispatch`; push-to-staging only) — the first run after Sapir's `--sync-users` created `demo-admin`. Triage in the next entry.
+
 ## 2026-07-26 — repo-guard script dispatcher (`Refs MEH-999`)
 
 - **GREEN, script + docs only, `feature/meh-999-repo-guards-dispatcher` off fresh `origin/staging`.** Generalises the one-off UI-pattern-guard job into a dispatcher so **this is the last workflow edit guards ever need**. Before: every guard = one named CI job = one `.github/workflows/**` edit = CC-deny (MEH-671) = bottlenecked on Sapir. After: one generic `repo-guards` job runs `bash scripts/checks/run-all.sh`, and a new guard is a file drop.

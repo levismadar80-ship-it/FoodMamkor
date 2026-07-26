@@ -182,7 +182,7 @@ function createCategoryMarker(
 }
 
 // MEH-1412 (MEH-1388 chunk 3): pickup / market_stand points render as a
-// SECONDARY outline marker — smaller (22px), hollow (white fill), category-
+// SECONDARY outline marker — smaller (24px), hollow (white fill), category-
 // colour ring + category glyph in the category colour (weight "regular", not
 // the primary's white fill) — so a producer's self-pickup / market points read
 // as visually distinct from its primary business pin. No photo, no verified
@@ -192,21 +192,28 @@ function createSecondaryMarker(
   producer,
   { active = false, hovered = false, visited = false, approximate = false } = {},
 ) {
-  // MEH-1569: 26px → 22px. Against the 36px primary pin (createCategoryMarker),
-  // 26px read as "almost the same size", so a business's branch did not stand out
-  // from its own pickup points in a dense stack. 22px makes the primary clearly
-  // dominant (36 vs 22) while staying above the ~20px comfortable tap-target floor
-  // for a secondary affordance. (The ticket described the primary as 32px; it is
-  // in fact 36px since the MEH-763 S5 uniform-circle pass — see :100. The gap is
-  // therefore wider than the ticket assumed, which only helps the hierarchy.)
-  const size = 22;
+  // MEH-1569: 26px → 24px. Against the 36px primary pin (createCategoryMarker,
+  // :100 — 36px since the MEH-763 S5 uniform-circle pass), 26px read as "almost
+  // the same size", so a business's branch did not stand out from its own pickup
+  // points in a dense stack. 24px makes the primary clearly dominant (36 vs 24).
+  //
+  // DO NOT drop this below 24 — WCAG 2.2 SC 2.5.8 (AA) sets the minimum target
+  // size at 24×24 CSS px, and these markers are real targets: they carry a click
+  // handler, `keyboard: true`, and role="button" + aria-label (MEH-765). The SC's
+  // spacing exception (a 24px circle around the target must not intersect a
+  // neighbour's) fails **by definition** in exactly the dense/spiderfied stacks
+  // this ticket exists to declutter, so it cannot rescue a smaller pin here.
+  // Israeli accessibility compliance (IS 5568) treats this as a legal
+  // requirement, not a preference. This shipped briefly at 22px in PR #2203 and
+  // was corrected to 24 the same day.
+  const size = 24;
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.7 : 1;
   const grayscale = dimmed ? "filter:grayscale(1);" : "";
   const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const borderWidth = active ? 3 : 2;
   // Preserved: dashed border still carries `approximate` on the secondary pin —
-  // only the halo shrinks (MEH-1569), so the precision signal survives at 22px.
+  // only the halo shrinks (MEH-1569), so the precision signal survives at 24px.
   const borderStyle = approximate ? "dashed" : "solid";
   const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
   const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
@@ -216,9 +223,11 @@ function createSecondaryMarker(
   const glyph = categoryGlyphSvg(GlyphIcon, {
     color: categoryColor,
     weight: "regular",
-    // MEH-1569: 14 → 12 so the glyph keeps its breathing room inside the smaller
-    // 22px circle (the 2px border eats 4px of the diameter).
-    size: 12,
+    // MEH-1569: 14 → 12 → 13. Dropped to 12 for the 22px circle in PR #2203,
+    // then back up to 13 when the circle returned to 24px (see the size constant
+    // above) — the glyph keeps its breathing room inside the border, which eats
+    // 4px of the diameter.
+    size: 13,
   });
   const html = `
     <div style="
