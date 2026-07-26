@@ -634,11 +634,14 @@ function AssistForm({ t, assist }) {
             {t("optional")}
           </span>
         </div>
+        {/* MEH-1608: handle-shaped placeholder via i18n — the old hardcoded
+            "https://instagram.com/…" told owners to type the exact value
+            that broke their public link (ContactCard composes the URL). */}
         <input
           type="text"
           value={instagram}
           onChange={(e) => setInstagram(e.target.value.slice(0, 200))}
-          placeholder="https://instagram.com/…"
+          placeholder={t("instagram_placeholder")}
           className="w-full border border-border bg-surface rounded-[10px] px-3 py-2 text-sm"
           dir="ltr"
           maxLength={200}
