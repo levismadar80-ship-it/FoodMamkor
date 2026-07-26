@@ -3,6 +3,65 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — חלון הזמנות (order window): all 3 chunks shipped
+
+**Shipped, in order, each merged on green required gates:** chunk 1/3 backend
+`producers.order_window` JSONB + validation + owner write path (PR #2152,
+squash `72f6becc`, migration `f4a1e9c3b7d2` authored + applied by Sapir under
+the RED-Alembic protocol); chunk 2/3 the dashboard editor (PR #2163, squash
+`ec4b915f`); chunk 3/3 the public producer page (PR #2170, squash `cf44738b`).
+
+**The decision that shaped chunk 3.** The ticket originally specified a NEW
+status line on the producer page. Phase 0 found `ProducerHeader.jsx` already
+owned a 3-state ORDER status derived from `availability_state`, so a second
+window-derived line would have produced a **factual contradiction**, not a
+styling nit: `availability_state=available` plus a window that closed at 14:00
+would assert both "open for orders" and "orders closed now" at 16:00. CC
+stopped and surfaced it with `file:line` rather than shipping any of the
+options it had drafted; Smadar rewrote the ticket around a fifth answer none of
+them contained — no new element, the existing status gains `order_window` as
+one more input, with scope expansion into `ProducerHeader.jsx` approved and
+bounded to the status branch. `closing_soon` was dropped as a visual state in
+the same rewrite.
+
+**What to verify on staging (mobile).** Producer page: a business with no
+`order_window` must look **exactly** as before (that branch is byte-identical
+by design); a business with a window shows one status line — never two — plus
+the weekly strip, and the WhatsApp button stays enabled in every state. Owner
+dashboard: the "חלון הזמנות" card saves, reloads, and "ניקוי הכל" clears.
+
+**Open, deliberate gap.** The closed-state CTA context line renders beside the
+**mobile** inline CTA only. `ContactSidebar`'s `lg:sticky` child depends on the
+`<aside>` being the stretched grid item, so wrapping it to add a sibling would
+collapse the sticky travel, and editing that component was outside chunk 3's
+scope. Desktop shows the status + strip but not the note — worth its own ticket
+if the note matters on desktop.
+
+**Two gate lessons worth keeping.**
+1. **The ICU parity gate earns its keep.** The new dashboard plural shipped with
+   only `one`/`other`; `check-icu-parity.py:35` requires HE to carry
+   `{one, two, other}` because Hebrew has a dual and translation batches drop it
+   silently. Caught pre-merge.
+2. **Superseded-run false failures cost several cycles.** Flipping a PR
+   draft→ready starts a new `pr-checks` run that concurrency-cancels the
+   in-flight one, and the gate's aggregator maps `cancelled` deps to FAIL — so
+   `CI gate (required)` reported failure three times across this batch while
+   nothing was actually broken (workflow rule 21 documents exactly this). Read
+   the aggregator's own `R_*: cancelled` lines before diagnosing.
+
+**Pre-existing E2E reds — not this batch's.** `Playwright E2E` stayed red
+throughout: 6 × `25-role-reachability` fixture `ENOENT` (fixed independently in
+PR #2164, which converted them to skips) and 2 × `parity.spec.ts` VRT drift on
+`map`/`home`, plus one flaky map-cluster spec. E2E is non-required per MEH-716;
+the analysis is recorded on PR #2163 rather than repeated per PR.
+
+## 2026-07-26 — MEH-1569 follow-up: secondary marker 22px → 24px (WCAG 2.2 AA target size)
+
+- **Correction to the entry below.** MEH-1569 shipped the secondary pin at **22px** in PR #2203 (merged `33154672`). The adversarial review had flagged that 22px falls **below WCAG 2.2 SC 2.5.8 (AA), which sets the minimum target size at 24×24 CSS px** — the previous 26px cleared it. Sapir ruled **24px**; this PR raises it (glyph 12 → 13 to match). `approxRing` stays at 4px as shipped. Hierarchy is now **36 vs 24**.
+- **Why it's a real constraint, not a nicety:** these markers are genuine targets — click handler, `keyboard: true`, `role="button"` + `aria-label` (MEH-765). SC 2.5.8's spacing exception (a 24px circle around a target must not intersect a neighbour's) fails **by definition** in the dense/spiderfied stacks this ticket exists to declutter, so it could never have rescued a 22px pin. IS 5568 makes this a legal requirement. A `DO NOT drop this below 24` anchor now sits on the constant so a future "make it smaller" pass has to read the reason first.
+- **Process note worth keeping:** the 22px value came from the ticket and CC implemented it as specified rather than substituting a number, then flagged the conflict for a human ruling. That is the intended shape — but note the flag landed *after* the PR had already auto-merged, so the correction needed a second PR. **A blocking a11y finding should gate the merge, not trail it.**
+- **Re-measured after the change:** live DOM reports primary `36px` ×1, secondary `24px` ×6, `meetsWcag248: true`, halo `rgba(46,104,83,0.14) 0 0 0 4px`, zero page errors — **identical at 375 and 1440** (`qa-artifacts/MEH-1569-24px/`, 46 KB).
+- **E2E:** still repo-wide red at `global-setup` (`demo-admin` → HTTP 401, zero tests run). Covered by **MEH-1590** (Urgent, RED, Sapir-owned) — not worked around here.
 ## 2026-07-26 — MEH-1587 · MEH-1588 backend copy-integrity batch (serial, end-to-end)
 
 - **MEH-1587** (YELLOW, backend-only, `feature/meh-1587-onboarding-status-filter` off fresh `origin/staging`, `Closes MEH-1587`): onboarding follow-up emails had **no status filter at all** — `onboarding_followup.py:298-302` gated on `created_at` + NULL sent-column only, so a **rejected** business received the full 30-day first-person coaching sequence. Fix is the WHERE clause only: `Producer.status == _ELIGIBLE_STATUS` (`"approved"`).
