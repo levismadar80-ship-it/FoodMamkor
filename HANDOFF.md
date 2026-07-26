@@ -3,37 +3,6 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-26 (evening) — badge popover collision: MEH-1592 fix
-
-**Shipped:** MEH-1592 — the MEH-1547 +N badge-overflow Popover no longer collides
-with sibling badge pills or the card title/rating row. `ui/Popover` gains an
-**opt-in** `overlay` mode (portal → `<body>`, `position: fixed`, flip/shift against
-a caller-supplied `avoidRef` boundary); `ProducerCard` is its only consumer and
-passes the whole badge strip so wrapped siblings are cleared too. Every existing
-Popover consumer is untouched. New spec `e2e/visual/badge-overflow-collision.spec.ts`
-asserts **exactly 0** bounding-box intersections at 375px + 1440px, proven
-fail→pass against the pre-fix code (3 intersections, `card-title 47.2×24.1px`).
-
-**Branch/PR:** `feature/meh-1592-badge-overflow-popover-collision`.
-**Phase 0 counts:** `badge-overflow` render sites = **1** (`ProducerCard.jsx:296-325`).
-`ui/Popover` had **no** portal before this (`Popover.jsx:146`/`:171`, stated in its
-own docstring at `:13-17`).
-
-**Lesson — a passing numeric assertion is not a correct one.** The first
-implementation read text direction from the *trigger*, which carries its own
-`dir="ltr"` for the "+2" numeral, while `insetInlineStart` resolves against the
-portalled panel's containing block (`<body>`, `dir="rtl"`). The panel anchored to
-the opposite edge of the screen — measured **982px** from its own trigger — and
-*both* numeric assertions (0 intersections, inside viewport) still passed, because
-flinging a panel far away satisfies "doesn't overlap". Caught by adversarial
-review, not by the suite. A third assertion (panel anchored ≤80px from its chip)
-now closes the gap. Generalisation: when an assertion is a *negative* ("does not
-overlap"), pair it with a positive one ("is where it belongs") — otherwise the
-degenerate solution passes.
-
-**Next:** MEH-1593 — systematic audit of every badge popover/tooltip surface for
-the same defect family (inventory ≥5 surfaces, mechanical fixes only, defer
-anything needing a Popover/Tooltip API redesign per the MEH-792 precedent).
 ## 2026-07-27 — established_year end-to-end + VRT /map determinism (4 merges) — 3 permanent lessons
 
 **Merged:** PR #2146 (AccountSheet language label → full native names, squash `ec426dd4`) · PR #2166 (`producers.established_year` + the quiet "מאז {שנה}" masthead line, `f437b2b5`) · PR #2198 (that field's client-side `max` moved from the browser clock to the Israel-tz year, `640fc329`) · PR #2210 (VRT `/map` network mock for `/producers` + `/categories`, `a22c4a85`).
