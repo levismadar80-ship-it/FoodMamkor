@@ -25,8 +25,8 @@
 #   conflict on every concurrent merge; keeping them out of code branches is
 #   what removes the conflict, and only a red check enforces it.
 #
-# THE RULE (one rule; --self-test drives four cases through it)
-#   Let DOCS = docs/**, .claude/**, HANDOFF.md, and root-level *.md
+# THE RULE (one rule; --self-test drives six cases through it)
+#   Let DOCS = docs/**, .claude/**, .ai/**, HANDOFF.md, and root-level *.md
 #   FAIL  when the diff touches at least one file OUTSIDE DOCS *and* touches
 #         docs/CHANGELOG.md or HANDOFF.md.
 #   PASS  when the diff is docs-only (even if it is entirely CHANGELOG+HANDOFF).
@@ -74,8 +74,8 @@ cd "$REPO_ROOT" || exit 1
 
 LOGS=("docs/CHANGELOG.md" "HANDOFF.md")
 
-# A path is "docs" if it is under docs/, under .claude/, or is a root-level
-# Markdown document.
+# A path is "docs" if it is under docs/, under .claude/, under .ai/, or is a
+# root-level Markdown document.
 #
 # The root-level `*.md` arm is MEH-1602 follow-up, found by this guard
 # false-positiving on its own first real customer: a CLAUDE.md-only correction
@@ -84,10 +84,15 @@ LOGS=("docs/CHANGELOG.md" "HANDOFF.md")
 # Root docs — CLAUDE.md, AGENTS.md, README.md — are documentation by any
 # reading; only the top level is matched, so a nested `frontend/**/*.md` still
 # counts as part of a code change.
+#
+# The `.ai/**` arm is MEH-1607: `.ai/diagrams/` is session-start documentation
+# whose own header requires updating it in the same PR as a router change
+# (workflow rule 12). Classifying it as code made rules 12 and 31 contradict
+# each other and forced every router PR to split in two (PR #2225 + #2226).
 is_docs_path() {
   case "$1" in
-    docs/*|.claude/*|HANDOFF.md) return 0 ;;
-    */*) return 1 ;;          # anything nested that isn't docs/ or .claude/
+    docs/*|.claude/*|.ai/*|HANDOFF.md) return 0 ;;
+    */*) return 1 ;;          # anything nested that isn't docs/, .claude/, .ai/
     *.md) return 0 ;;         # root-level Markdown: CLAUDE.md, AGENTS.md, …
     *) return 1 ;;
   esac
@@ -227,11 +232,13 @@ self_test() {
     git init --quiet -b staging .
     git config user.email guard@test.local
     git config user.name  guard-self-test
-    mkdir -p docs frontend/components
+    mkdir -p docs frontend/components .ai/diagrams backend/app
     echo "# changelog"          > docs/CHANGELOG.md
     echo "# handoff"            > HANDOFF.md
     echo "# claude"             > CLAUDE.md
     echo "export const a = 1;"  > frontend/components/Thing.jsx
+    echo "# api routes"         > .ai/diagrams/api-routes.md
+    echo "x = 1"                > backend/app/thing.py
     git add -A && git commit --quiet -m base
   ) || { echo "self-test: could not build fixture repo"; return 1; }
 
@@ -281,6 +288,19 @@ self_test() {
   # slipping through silently.
   run_case "root-level *.md + CHANGELOG" PASS \
     "echo '- rule change' >> CLAUDE.md; echo '- entry' >> docs/CHANGELOG.md"
+
+  # MEH-1607 — .ai/** is documentation (session-start diagrams). Rule 12
+  # requires .ai/diagrams/api-routes.md to ride in the same PR as a router
+  # change AND its CHANGELOG entry; classifying .ai/** as code forced every
+  # such PR to split (PR #2225 + #2226). This case locks the docs arm...
+  run_case ".ai/diagrams + CHANGELOG" PASS \
+    "echo '- route' >> .ai/diagrams/api-routes.md; echo '- entry' >> docs/CHANGELOG.md"
+
+  # ...and this one proves the fix did not hollow the guard out: real code
+  # (*.py) + CHANGELOG must still be a violation. A "fix" that greens the
+  # case above by weakening classification would go red here.
+  run_case "backend *.py + CHANGELOG" FAIL \
+    "echo 'x = 2' > backend/app/thing.py; echo '- entry' >> docs/CHANGELOG.md"
 
   if [ "$status" -eq 0 ]; then
     echo "self-test OK — all $cases cases behaved as specified."

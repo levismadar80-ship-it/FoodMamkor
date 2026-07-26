@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Star, StarOfDavid } from "@phosphor-icons/react";
+import { Bell, Star, StarOfDavid } from "@phosphor-icons/react";
 
+import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import ShareButton from "@/components/ShareButton";
+import { useAuth } from "@/lib/auth-context";
+import {
+  ensureFavoritesLoaded,
+  isFavorited as isFavoritedCache,
+  subscribeFavorites,
+} from "@/lib/favorites-cache";
 import { allBadges } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
@@ -46,6 +53,45 @@ export default function ProducerHeader({
 }) {
   const t = useTranslations();
   const locale = useLocale();
+
+  // MEH-1609: re-entry point to the MEH-54 AlertPrefsPanel. Before this, the
+  // panel was reachable from the producer page only in the instant after a
+  // save — and not even then on THIS surface: FavoriteButton.jsx:110 suppresses
+  // the auto-open for variant="quiet" (MEH-1334: "a block panel inside the flex
+  // row breaks the layout"). So the page had no way to open it at all, and the
+  // header owns the only mount here; there is no second panel to stack with.
+  // Favorited state is read from the shared favorites-cache — the same source
+  // FavoriteButton and CardHeart subscribe to (MEH-1325), so the control
+  // appears/disappears in step with the heart without touching FavoriteButton.
+  const { user } = useAuth();
+  const [favorited, setFavorited] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setFavorited(false);
+      return undefined;
+    }
+    let alive = true;
+    ensureFavoritesLoaded().then(() => {
+      if (alive) setFavorited(isFavoritedCache(producer.id));
+    });
+    const unsub = subscribeFavorites(() => {
+      if (alive) setFavorited(isFavoritedCache(producer.id));
+    });
+    return () => {
+      alive = false;
+      unsub();
+    };
+  }, [user, producer.id]);
+
+  // Un-favoriting while the panel is open must not leave `alertsOpen` armed —
+  // otherwise re-saving the business would silently re-open the panel.
+  useEffect(() => {
+    if (!favorited) setAlertsOpen(false);
+  }, [favorited]);
+
+  const showAlerts = Boolean(favorited && user);
 
   // MEH-1334: 3-state status. `full` is the legacy availability_status twin of
   // full_this_week (MEH-291 7-day overlap contract, same as isVacation in
@@ -255,6 +301,23 @@ export default function ProducerHeader({
           and are unchanged; desktop still absolute-pins to the title row. */}
       <div className="flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0">
         <FavoriteButton producerId={producer.id} producerName={producer.name} variant="quiet" />
+        {/* MEH-1609: third quiet control — visible only to a logged-in user who
+            has saved this business. Matches the FavoriteButton quiet variant's
+            geometry (44px tap target, 13px medium, gap-1.5) so the row reads as
+            one cluster rather than a new toolbar. */}
+        {showAlerts && (
+          <button
+            type="button"
+            onClick={() => setAlertsOpen((open) => !open)}
+            aria-expanded={alertsOpen}
+            aria-label={t("producer.detail.header.alerts_reentry_aria")}
+            data-testid="alerts-reentry"
+            className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium rounded text-text hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <Bell size={17} className="text-primary-dark" aria-hidden="true" />
+            {t("producer.detail.header.alerts_reentry")}
+          </button>
+        )}
         <span className="hidden lg:inline-flex">
           <ShareButton
             variant="quiet"
@@ -266,6 +329,20 @@ export default function ProducerHeader({
           />
         </span>
       </div>
+
+      {/* MEH-1609: the panel mounts OUTSIDE the actions row, in normal flow.
+          The row is `lg:absolute`-pinned to the title's inline-end, so a block
+          panel inside it would be pinned too — the exact layout break MEH-1334
+          cited when it suppressed the auto-open panel for variant="quiet". */}
+      {showAlerts && alertsOpen && (
+        <div className="mt-3" data-testid="alerts-reentry-panel">
+          <AlertPrefsPanel
+            producerId={producer.id}
+            producerName={producer.name}
+            onClose={() => setAlertsOpen(false)}
+          />
+        </div>
+      )}
 
       {/* MEH-291 — full_this_week banner (response-time hint, not a closure
           signal; kept per decision 4 alongside the closed status text).
