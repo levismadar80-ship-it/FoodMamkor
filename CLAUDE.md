@@ -53,6 +53,7 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |
 | [docs/templates/](./docs/templates/README.md) | 9 prompt templates (00-08) for Linear issues, CC tasks, Claude.ai design — see [ADR-020](./docs/decisions/ADR-020-templates-in-repo.md) |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
+| [docs/audits/dashboard-field-guidance-audit.md](./docs/audits/dashboard-field-guidance-audit.md) | **Dashboard field standard** — every new owner-dashboard field needs a clear label + a "where it appears" line + an example placeholder, and prefers select-from-existing over free text. Per-field audit + open gaps (MEH-1539) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
 
 ## Known Bug Patterns / Gotchas
