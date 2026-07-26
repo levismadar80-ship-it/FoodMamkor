@@ -309,6 +309,42 @@ body.sheet-open .cookie-banner {
   border: none !important;
 }
 
+/* MEH-1611 — focus-on-select demote.
+   MapComponent puts `mehamakor-map-focused` on the map container while a
+   business is selected, and tags that business's own pins with
+   `mehamakor-marker-focused`. Everything else fades + desaturates so the
+   selection reads instantly, WITHOUT removing a single pin: the surrounding
+   supply stays on the map as context (Airbnb map-search pattern). Because the
+   rule is a descendant selector, demoting N pins costs exactly one class
+   toggle — no per-marker JS and no layer add/remove (MEH-1424's O(N²) lesson).
+
+   Deliberately NOT extended to `.mehamakor-cluster`: a cluster's membership
+   isn't knowable from CSS, and a single-business cluster (MEH-1568) IS the
+   selected business at low zoom — dimming it would fade the very thing the
+   user just picked. Clusters therefore stay at full strength.
+
+   The fade rides in `filter: opacity()`, NOT the `opacity` property — that is
+   load-bearing, not style. leaflet.markercluster writes INLINE `style.opacity`
+   onto every marker it animates (`clusterShow()` -> `setOpacity(options.opacity)`
+   = 1, leaflet.markercluster-src.js:1826-1836, called from :197/:417/:1289/:1378/
+   :1757 on every zoom and spiderfy). An inline style outranks a class rule, so a
+   plain `opacity: 0.35` here was silently reverted to full strength the first
+   time the user zoomed while a business was selected, leaving grayscale as the
+   only surviving cue. markercluster never touches `filter`, so routing the fade
+   through it keeps the demote stable across cluster animations AND leaves
+   markercluster's own hide/show (opacity 0 <-> 1) working untouched. Verified
+   in-browser: after a zoom-out/in cycle the demoted pins still compute
+   `filter: grayscale(1) opacity(0.35)` while their inline opacity is back at 1. */
+.mehamakor-map-focused .mehamakor-marker-wrap:not(.mehamakor-marker-focused) {
+  filter: grayscale(1) opacity(0.35);
+  transition: filter 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mehamakor-map-focused .mehamakor-marker-wrap:not(.mehamakor-marker-focused) {
+    transition: none;
+  }
+}
+
 /* Slide-up animation for the mobile bottom sheet on /map */
 @keyframes slide-up {
   from {
