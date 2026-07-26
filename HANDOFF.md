@@ -3,6 +3,16 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — MEH-1587 · MEH-1588 backend copy-integrity batch (serial, end-to-end)
+
+- **MEH-1587** (YELLOW, backend-only, `feature/meh-1587-onboarding-status-filter` off fresh `origin/staging`, `Closes MEH-1587`): onboarding follow-up emails had **no status filter at all** — `onboarding_followup.py:298-302` gated on `created_at` + NULL sent-column only, so a **rejected** business received the full 30-day first-person coaching sequence. Fix is the WHERE clause only: `Producer.status == _ELIGIBLE_STATUS` (`"approved"`).
+- **Phase 0 headline — `Producer.status` has FIVE values, not the four the model documents.** `models.py:72-74` comments `pending | approved | rejected | inactive`; the code writes a fifth, `pending_whatsapp` (`auth.py:509,624`, consumed `producer_me.py:914-915`). The authoritative enumeration is the admin filter pattern at `admin.py:112` — `^(pending|pending_whatsapp|approved|rejected|inactive|all)$` (`all` is a query sentinel, never stored). **No Python enum, no DB CHECK constraint** — free `String(20)`. Anyone adding a status must hand-audit consumers; nothing mechanical will catch it. *The stale model comment is not fixed here (out of scope) and is worth its own ticket.*
+- **Chose `==` over `IN(...)` deliberately** so a status added later is excluded **fail-closed** rather than silently opted into an email written in Sapir's first person. Encoded as a `# DO NOT` anchor at the constant.
+- **The counts the ticket asked for could NOT be produced.** No `DATABASE_URL` in the sandbox, CC egress to `*.up.railway.app` is blocked (MEH-360), and `$DATABASE_URL_PRODUCTION` is deny-listed by `.claude/rules/security.md`. The two counting queries are written out verbatim in the PR body for Sapir to run — **how many businesses already received the wrong email is still unknown, and the ticket's DoD item for it is unmet by evidence, not by omission.**
+- **One existing test encoded the bug and had to be corrected:** sub-case (c) of `test_step5_variant_b_for_pending_or_unlicensed` asserted a `pending` producer receives Email 5B. That can no longer happen. Renamed to `..._for_approved_unlicensed`, case (c) removed, count 3→2, with the reason in the docstring.
+- **New tests proven load-bearing, not assumed:** stashing **only** the source file (tests untouched) turned **10 red**; restoring it → 16/16 green.
+- Verify: full backend suite **1831 passed / 6 skipped / 359 deselected (fuzz) / 1 xfailed** (13m41s, real Postgres 16 locally — see the MEH-1559 note below for provisioning).
+- **Branch-name deviation (same as MEH-1575 / MEH-999 below):** harness assigned `claude/backend-hebrew-audit-aibq79`, which violates the `claude/*` ban and the `Branch name gate`; used the ticket's own `feature/meh-1587-…` per CLAUDE.md line 1.
 ## 2026-07-26 — QA-driven session: contact validation + custom-questions clarity + opt-out decision
 
 **Shipped:** MEH-1537 (PRs #2153 code, #2177 docs) — shared validators make the
