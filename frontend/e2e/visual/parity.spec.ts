@@ -78,11 +78,42 @@ const STYLE_PATH = path.join(__dirname, "parity.css");
 const SHOT = { stylePath: STYLE_PATH } as const;
 
 /**
+ * MEH-1531: the page's wall clock, frozen. The home hero subtitle switches on
+ * real time — `HomeHero.jsx:115` renders `home.hero.friday_subtitle` instead of
+ * `home.hero.subtitle` while `isFridayMode()` (`lib/friday-mode.js:4`) is true,
+ * i.e. Thu 18:00 → Fri 14:00 Asia/Jerusalem. `parity.css` already hides the
+ * friday-delivery-strip (presence varies) but nothing froze the SUBTITLE, so
+ * the shot differed by day-of-week: any run whose friday state differed from
+ * the baseline's red-lined, and a regen inside the window guaranteed failures
+ * outside it (and vice versa).
+ *
+ * WHY page.clock and not a parity.css mask: hiding the subtitle would collapse
+ * its box and shift the whole hero, and it would delete the very region hero
+ * copy changes land in (MEH-1308/MEH-1328 both moved it). Freezing the clock
+ * keeps the subtitle visible AND deterministic. It is also strictly
+ * test-harness-side — zero production files touched, so real users' Friday
+ * behaviour (MEH-50) is untouched.
+ *
+ * WHY this instant: Wednesday, comfortably outside the friday window, so the
+ * frozen variant is the non-friday subtitle the current baselines already
+ * carry. Any fixed non-window instant would do; this one is arbitrary but
+ * pinned, which is the whole point.
+ */
+const VRT_FIXED_TIME = new Date("2026-07-15T09:00:00Z"); // Wed 12:00 IDT
+
+/**
  * Neutralize pre-page state that changes rendering: cookie-consent banner
  * (localStorage) and the verify-email banner's per-session dismiss flag is
- * left unset — logged-out pages never render it.
+ * left unset — logged-out pages never render it. MEH-1531 adds the frozen
+ * clock (above) so wall-clock-dependent copy can't drift between runs.
  */
 async function preparePage(page: Page): Promise<void> {
+  // setFixedTime (not clock.install): Date.now()/new Date() return the pinned
+  // instant while timers keep running normally, so the app's own polling —
+  // e.g. use-home-page.js:131's 60s isFridayMode() re-check — still ticks and
+  // simply keeps re-deriving the same frozen answer. install() would freeze
+  // timers too and risk hanging networkidle/font settle.
+  await page.clock.setFixedTime(VRT_FIXED_TIME);
   await page.addInitScript(() => {
     try {
       localStorage.setItem("cookieConsent", "essential");
