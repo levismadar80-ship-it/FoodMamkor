@@ -1626,7 +1626,10 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
 
   return (
     <div>
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      <p className="text-xs text-fg-muted mb-1">{t("subtitle")}</p>
+      {/* MEH-1540: scope helper — this card is delivery destinations only,
+          the business address itself lives in LocationCard. */}
+      <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
 
       <div className="space-y-3">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
