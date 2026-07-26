@@ -1,6 +1,6 @@
 # מהמקור — COPY BANK
 > Single source of truth for all copy decisions.
-> Last updated: 2026-05-22
+> Last updated: 2026-07-26
 > **Status key:** ✅ Merged to staging · ⏳ PR open · 🕐 Pending
 >
 > Rule: document only **merged** copy. Pending entries show the MEH ticket to watch.
