@@ -16,18 +16,6 @@ export function validateIsraeliPhone(phone) {
 }
 
 /**
- * Normalize an Israeli phone to E.164 (+9725XXXXXXXX).
- * Returns the cleaned input as-is if it doesn't match.
- */
-export function normalizeIsraeliPhone(phone) {
-  if (!phone) return phone;
-  let cleaned = phone.replace(/[-\s]/g, "");
-  if (cleaned.startsWith("+972")) return cleaned;
-  if (cleaned.startsWith("0")) return "+972" + cleaned.slice(1);
-  return cleaned;
-}
-
-/**
  * Password policy floor (MEH-306).
  *
  * Single source of truth for the minimum length. Imported by
