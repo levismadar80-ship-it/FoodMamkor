@@ -37,6 +37,9 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 ## Workflow + execution rules
 20 workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + Risk-tiered review frequency + PR Review Workflow + /loop patterns: [.claude/rules/workflow.md](./.claude/rules/workflow.md). Code execution principles (exec §7–13): [.claude/rules/code-execution.md](./.claude/rules/code-execution.md). Prompt compression (Caveman): [.claude/rules/prompting.md](./.claude/rules/prompting.md). RTL: [.claude/rules/rtl.md](./.claude/rules/rtl.md). Security: [.claude/rules/security.md](./.claude/rules/security.md). Skills supply chain (MEH-397): [.claude/rules/skills.md](./.claude/rules/skills.md). File edit safety: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md). Observability dashboard-receipt: [.claude/rules/observability.md](./.claude/rules/observability.md). MCP tools (Resend, Postgres, etc.) — standalone CC only (Git Bash → `claude`); harness CC can't reach user-registered MCPs — for MCP queries, tell Smadar to open standalone CC. Meta-patterns: [.claude/rules/meta-patterns.md](./.claude/rules/meta-patterns.md).
 
+## Conditional-UI states (5-state rule)
+כל רינדור מותנה (רשימות, filter, reveal, disclosure) חייב התייחסות מפורשת ב-`acceptance_criteria` למצבים: **0 פריטים / פריט 1 / רבים**, ו**פתוח/סגור** לכל reveal. spec שמגדיר רק את המצב המלא = חסר. (UI Stack, Scott Hurff.) דוגמת עבר: [MEH-1551](https://linear.app/mehamakor/issue/MEH-1551) — עיגול יתום בערוץ קשר יחיד.
+
 ## Documentation map
 | File | What's in it |
 |---|---|
