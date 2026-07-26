@@ -325,6 +325,14 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
   const [form, setForm] = useState(initial);
+  // MEH-1563: collapsed for a NEW location (the point of the disclosure — the
+  // form must not open on two unexplained numbers), but expanded when the row
+  // already carries coordinates, so editing never hides a value the owner
+  // previously set. Seeded once via useState so a re-render can't reopen a
+  // disclosure the owner just closed.
+  const [coordsOpen] = useState(
+    () => String(initial.lat) !== "" && String(initial.lng) !== "",
+  );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -431,7 +439,10 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
           numeric inputs. Presentation only: `form.lat` / `form.lng` state and
           buildPayload are untouched. REUSES: components/admin/ProducerForm.jsx:647
           (MEH-1242 PR2 manual-coords disclosure). */}
-      <details className="rounded-[10px] border border-border bg-surface px-3 py-2">
+      <details
+        open={coordsOpen}
+        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+      >
         <summary
           className="cursor-pointer text-xs font-medium text-fg-muted"
           data-testid="location-coords-toggle"
@@ -477,16 +488,22 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
 
 // MEH-1563: `hint` renders the field's "where it appears" / explanation line
 // under the input. Omitted → nothing renders (fields whose guidance is carried
-// by the card intro alone).
+// by the card intro alone). The hint sits OUTSIDE the <label> on purpose: an
+// implicit label contributes its whole text to the control's accessible name,
+// so an in-label hint would make a screen reader announce the select as
+// "דיוק מדויק — הלקוחות יראו סיכה…". REUSES: edit/cards.jsx:801-802 — same
+// label/`*_where`-sibling split.
 function Field({ label, hint, children }) {
   return (
-    <label className="block text-xs">
-      <span className="mb-1 block font-medium text-fg-muted">{label}</span>
-      {children}
+    <div className="text-xs">
+      <label className="block">
+        <span className="mb-1 block font-medium text-fg-muted">{label}</span>
+        {children}
+      </label>
       {hint ? (
         <span className="mt-1 block text-[11px] text-fg-muted">{hint}</span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
