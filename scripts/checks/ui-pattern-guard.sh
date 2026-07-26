@@ -48,7 +48,10 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$REPO_ROOT"
+# `|| exit 1` is load-bearing (SC2164): an unguarded cd that fails leaves the
+# guard grepping the wrong directory, matching nothing, and exiting 0 — a
+# silently-passing check. Under scripts/checks/run-all.sh that reads as PASS.
+cd "$REPO_ROOT" || exit 1
 
 DASHBOARD_DIR="frontend/app/[locale]/producer/dashboard"
 HE_JSON="frontend/messages/he.json"
