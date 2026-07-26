@@ -82,6 +82,54 @@ of the same shape). Omit either field → the guard fails.
 
 ---
 
+## Indicators & counters (MEH-1549)
+
+The contract above governs **labels** — a string that names a property. It says
+nothing about the other thing a consumer surface renders: an **indicator** that
+stands in for content it doesn't show. Those need a rule of their own, because a
+label that hides its scope over-claims, while an indicator that hides its content
+simply cannot be read at all.
+
+> **Every counter, truncation, or abbreviation on a consumer surface must carry
+> either interactive disclosure (tap/hover) or self-explanatory subtext.**
+
+An indicator is anything whose rendered form is a stand-in: `+4`, `‎…`, a bare
+number, an initialism, a shortened list. The reader can see that something was
+withheld but not what — so the surface must offer a way to find out, in place. A
+`title` attribute does not count (invisible on touch); the disclosure has to work
+by tap, since mobile is the primary surface.
+
+| | Example | Verdict |
+|---|---|---|
+| ✅ | `badge-overflow` `+N` on ProducerCard — a `<button>` wrapped in `ui/Popover` listing the hidden badge labels (MEH-1547) | Interactive disclosure. The reader taps `+3` and learns it means כשר · משלוח · מוצרים. |
+| ❌ | the same `+N` as a static `<span>` (its shape before MEH-1547) | Dead end. Sapir's own QA: *"אני לא מבינה מה זה"* — if the founder can't decode it, no consumer will. |
+
+The two routes are alternatives, not a ranking: a counter sitting beside copy that
+already explains it ("3 מוצרים בקטלוג") needs no popover. What is never acceptable
+is an indicator that is *only* a glyph or a number, with the thing it replaces
+unreachable from that surface.
+
+**Why this belongs next to the scope contract:** both encode the same failure —
+a surface showing less than it implies. Scope answers *what does this apply to*;
+disclosure answers *what is behind this*. Same review question, same file.
+
+### The guard
+
+`frontend/__tests__/LabelScopeContract.test.js` carries the assertion (same file,
+same reasoning as above: `.github/workflows/**` is CC-deny, vitest already gates
+every PR). It renders `ProducerCard` with a producer earning 5 badges and asserts
+the `badge-overflow` element is interactive — a `<button>` (or `role="button"`)
+carrying `aria-haspopup`.
+
+Proven fail→pass: against the pre-MEH-1547 markup (a static `<span>` with neither
+attribute) the assertion fails on all three counts; against the shipped component
+it passes. A future refactor that flattens the `+N` back to a `<span>` re-reds it.
+
+**Adding a new indicator:** give it a disclosure affordance or adjacent explanatory
+copy, and extend the guard if it's a new overflow surface.
+
+---
+
 ## Precedents (the four this contract encodes)
 
 | Issue | Label | What went wrong |
