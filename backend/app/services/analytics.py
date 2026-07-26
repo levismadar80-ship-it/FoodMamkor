@@ -118,9 +118,37 @@ def track_producer_view(
             city = ctx.viewer_user.city
 
         # Only accept known referrer values — protects against callers
-        # stuffing arbitrary strings into the column.
+        # stuffing arbitrary strings into the column. `from_` reaches this
+        # function straight off the query string (producers.py:246), so the
+        # set is the ONLY thing keeping the column bounded. DO NOT widen it
+        # to accept arbitrary input; add a literal per frontend writer.
+        #
+        # MEH-1558: the set was missing three values ProducerCard.jsx:174
+        # has been sending all along — producers-index, similar, nearby —
+        # so every view from the /producers index and from the two
+        # same-page rails was silently normalized to NULL, destroying the
+        # attribution permanently. Verified writer set (all hardcoded
+        # literals, none derived from user input):
+        #   home            — page.js:213, HomeProducersGrid.jsx:193,:219
+        #   search          — SearchClient.jsx:154
+        #   producers-index — ProducersClient.jsx:675
+        #   similar         — ProducerSections.jsx:480
+        #   nearby          — ProducerSections.jsx:536
+        # `map`, `category`, `favorites` and `follow` are kept but have NO
+        # writer today (MEH-1558 Phase 0) — retained so a surface that
+        # starts tagging doesn't silently drop to NULL again.
         normalized_referrer: Optional[str] = None
-        if ctx.referrer in {"search", "map", "category", "home", "favorites", "follow"}:
+        if ctx.referrer in {
+            "search",
+            "map",
+            "category",
+            "home",
+            "favorites",
+            "follow",
+            "producers-index",
+            "similar",
+            "nearby",
+        }:
             normalized_referrer = ctx.referrer
 
         row = ProducerPageView(

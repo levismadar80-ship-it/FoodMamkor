@@ -57,6 +57,10 @@ def main() -> int:
             existing.role = "admin"
             existing.password_hash = hash_password(password)
             existing.is_blocked = False
+            # MEH-1553: admins are provisioned out-of-band, not via the email
+            # verification flow — stamp verified so they don't see the verify
+            # banner and aren't blocked by require_verified_email.
+            existing.email_verified = True
             db.commit()
             print(f"✓ עודכן {email} → role=admin, סיסמה אופסה")
         else:
@@ -65,6 +69,9 @@ def main() -> int:
                 name="מהמקור אדמין",
                 password_hash=hash_password(password),
                 role="admin",
+                # MEH-1553: see the existing-user branch above — admins are
+                # verified by provisioning, never through the email flow.
+                email_verified=True,
             )
             db.add(user)
             db.commit()

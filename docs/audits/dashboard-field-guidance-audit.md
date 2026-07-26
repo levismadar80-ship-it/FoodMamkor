@@ -71,6 +71,14 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | primary channel | `ContactChannelsCard` | `primary_legend` | ✓ `WhatsThis` + `hint_empty` | — | ✓ `subtitle` — the big button | ok |
 | custom questions ×5 | `CustomQuestionsCard` | numbered rows | ✓ `tooltip` + `guidance` | ✓ `placeholder_1..5` | ✓ `context_line` | ok |
 | diet chips ×4 | `ProductsSection` | `diet_*` | ✓ `diet_helper` | — | ✓ `diet_helper` — search + map filters | ok |
+| `kind` | `LocationsEditor` | ✓ `kind_label` | ✓ `kind_helper` — one line per option (סניף / נקודת איסוף / דוכן שוק) | — (select) | ✓ `intro` (MEH-1563) | ok |
+| `precision` | `LocationsEditor` | ✓ `precision_label` | ✓ `precision_helper` — names what the customer sees per option | — (select) | ✓ `intro` | ok |
+| `label` | `LocationsEditor` | ✓ `label_label` | ✓ `label_hint` — "השם שהלקוחות יראו לצד הנקודה" | ✓ `label_placeholder` | ✓ `intro` | ok |
+| `city` | `LocationsEditor` | ✓ | ✓ `place_hint` | ✓ `city_placeholder` | ✓ `place_hint` + `intro` | ok |
+| `address` | `LocationsEditor` | ✓ | ✓ `place_hint` | ✓ `address_placeholder` | ✓ `place_hint` + `intro` | ok |
+| `phone` | `LocationsEditor` | ✓ | — | ✓ `phone_placeholder` | ✓ `intro` | ok |
+| `lat` / `lng` | `LocationsEditor` | ✓ | ✓ `coords_hint` — optional escape hatch, behind the collapsed `coords_summary` disclosure | — (numeric escape hatch) | ✓ `intro` | ok |
+| `hours` | `LocationsEditor` | ✓ `hours_label` | — still free text, while `HoursCard` next door is a structured editor (unchanged by MEH-1563) | ✓ `hours_placeholder` | ✓ `intro` | ok |
 
 ### Gaps
 
@@ -78,14 +86,6 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 |---|---|---|---|---|---|---|
 | `producer_license` | `LicenseCard` | ✓ `field_label` | ~ `required_hint` **only when a category demands it** | ✗ | ✗ — never says whether the number is shown publicly or used for the ✓ badge | missing-guidance |
 | `is_vegan` / `is_vegetarian` / gluten facility | `DietaryScopeCard` | ✓ (questions) | ~ `helper` says answers are cross-checked | — | ✗ — no line on which filters/badges the answers drive | missing-guidance |
-| `kind` | `LocationsEditor` | ✓ `kind_label` | ✗ | — | ✗ | missing-guidance |
-| `precision` | `LocationsEditor` | ✓ `precision_label` | ✗ — "מדויק / משוער" never says what changes for the customer | — | ✗ | missing-guidance |
-| `label` | `LocationsEditor` | ✓ `label_label` ("תווית" — opaque) | ✗ | ✗ | ✗ | missing-guidance |
-| `city` | `LocationsEditor` | ✓ | ✗ | ✗ | ✗ | missing-guidance |
-| `address` | `LocationsEditor` | ✓ | ✗ | ✗ | ✗ | missing-guidance |
-| `phone` | `LocationsEditor` | ✓ | ✗ | ✗ | ✗ | missing-guidance |
-| `lat` / `lng` | `LocationsEditor` | ✓ | ✗ — raw coordinates with no explanation | ✗ | ✗ | missing-guidance |
-| `hours` | `LocationsEditor` | ✓ `hours_label` | ✗ — free text, while `HoursCard` next door is a structured editor | ✗ | ✗ | missing-guidance |
 | product `name` | `ProductsSection` | ✓ `name_label` | ✗ | ✓ `name_placeholder` | ✗ | partial |
 | product `description` | `ProductsSection` | ✓ | ✗ | ✓ `description_placeholder` | ✗ | partial |
 | `price_min` | `ProductsSection` | ✓ | ✓ `price_hint` | ✗ | ✗ | partial |
@@ -101,12 +101,18 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 
 ## What the gaps say
 
-**`LocationsEditor` is the worst surface, by a distance** — 9 of its 9 form
-fields are label-only. It is also the only card with no card-level intro line
-at all, so nothing tells an owner what a "תווית" is, what changes when they
-pick `משוער` over `מדויק`, or where any of it renders. Two of its fields
-(`lat` / `lng`) ask for raw coordinates with no explanation. If one follow-up
-comes out of this audit, it should be this card.
+**`LocationsEditor` was the worst surface, by a distance — closed by MEH-1563.**
+At audit time 9 of its 9 form fields were label-only, and it was the only card
+with no card-level intro at all: nothing told an owner what a "תווית" was, what
+changed when they picked `משוער` over `מדויק`, or where any of it rendered. Two
+of its fields (`lat` / `lng`) asked for raw coordinates with no explanation.
+MEH-1563 added the card intro (what a location point is + that it renders on the
+business page and the map with tap-to-navigate), per-option helpers on `kind` and
+`precision`, hints + example placeholders on the free-text fields, and moved
+`lat` / `lng` behind a collapsed "קואורדינטות ידניות" disclosure (the MEH-1242
+PR2 pattern). Its rows now sit in the standard-met table above. **Not** changed:
+`hours` is still free text rather than the structured `HoursEditor` next door —
+that is a data-model question, not a guidance gap, and needs its own ticket.
 
 **`ProductsSection` has good placeholders and no "where" line anywhere.** The
 diet chips are the exception — `diet_helper` names the filters they drive, and
