@@ -901,7 +901,7 @@
       }
     },
     "dashboard": {
-      "back": "→ לוח הבקרה",
+      "back": "חזרה לכלים",
       "heading": "המתכונים שלי",
       "btn_close_form": "סגרו",
       "btn_open_form": "+ פרסום מתכון חדש",
@@ -998,7 +998,7 @@
         "cancelled": "בוטלה",
         "fulfilled": "הושלמה ✅"
       },
-      "back": "→ לוח הבקרה",
+      "back": "חזרה לכלים",
       "heading": "קבוצות הרכש שלי",
       "btn_close_form": "סגרו",
       "btn_open_form": "+ קבוצת רכש חדשה",
@@ -4327,7 +4327,8 @@
         "empty_description": "סדנה, סיור או יום פתוח — אירוע מופיע בעמוד העסק שלך ומביא לקוחות חדשות.",
         "empty_cta": "אירוע חדש",
         "loading": "טוען…",
-        "back": "← חזרה לאירועים שלי",
+        "back_to_tools": "חזרה לכלים",
+        "back": "חזרה לאירועים שלי",
         "edit_heading": "עריכת אירוע",
         "not_found": "האירוע לא נמצא.",
         "badge_active": "פעיל",
@@ -4346,7 +4347,8 @@
         "empty_description": "אירוח קבוע שאפשר להזמין — חוויה מופיעה בעמוד העסק שלך לצד המוצרים.",
         "empty_cta": "חוויה חדשה",
         "loading": "טוען…",
-        "back": "← חזרה לחוויות שלי",
+        "back_to_tools": "חזרה לכלים",
+        "back": "חזרה לחוויות שלי",
         "edit_heading": "עריכת חוויה",
         "not_found": "החוויה לא נמצאה.",
         "action_edit": "עריכה",
@@ -4377,7 +4379,7 @@
       "cta_favorites": "המועדפים שלי"
     },
     "followers": {
-      "back_link": "→ לוח הבקרה",
+      "back_link": "חזרה ללוח הבקרה",
       "heading": "העוקבות שלי",
       "loading": "בטעינה...",
       "empty_title": "עוד אין עוקבות — וזה בסדר",
@@ -4417,7 +4419,6 @@
       "skip_to_main": "דילוג לתוכן"
     },
     "event_new": {
-      "back_link": "→ לוח הבקרה",
       "heading": "פרסום אירוע חדש",
       "field_title_label": "כותרת *",
       "field_description_label": "תיאור",
