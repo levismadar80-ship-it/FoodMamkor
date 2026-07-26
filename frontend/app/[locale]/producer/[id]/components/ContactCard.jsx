@@ -87,7 +87,9 @@ function armMailtoFallback(email, t) {
  * Related:  ContactSidebar.jsx (desktop wrapper), StickyContactBar.jsx.
  * History:  MEH-1146 chunk A (creation — action-hierarchy rebuild,
  *           consolidates the old ContactSidebar + ActionRow CTAs);
- *           MEH-1334 chunk 1 (status line + follow/share row removed).
+ *           MEH-1334 chunk 1 (status line + follow/share row removed);
+ *           MEH-1551 (degenerate states — sole channel renders a labeled row,
+ *           phone reveal swaps in place instead of appending a sibling).
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
@@ -129,6 +131,15 @@ function httpUrl(raw) {
   return v.startsWith("http") ? v : `https://${v}`;
 }
 
+// MEH-1551: the circle and the single-channel row are two renderings of the
+// same link, so the target/rel policy lives in one place. Output for the
+// circle is unchanged — phone stays a bare tel:, website keeps noopener only
+// (MEH-1525 referral), everything else noopener noreferrer.
+const linkAttrs = (key) =>
+  key === "phone"
+    ? {}
+    : { target: "_blank", rel: key === "website" ? "noopener" : "noopener noreferrer" };
+
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
@@ -142,6 +153,34 @@ export default function ContactCard({ producer, isVacation }) {
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
   const channels = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
+
+  // MEH-1551: exactly one surviving channel used to render a lone unlabeled
+  // 44px circle floating on its own — a degenerate state MEH-1334's icon-row
+  // design never specified (it assumed a row of 3-6). One channel = one quiet
+  // labeled row instead.
+  const single = channels.length === 1;
+
+  // Shared by both affordances (circle + single row) so the tracking and the
+  // desktop phone-reveal behave identically whichever one is rendered.
+  const onChannelClick = (e, { key, track }) => {
+    // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
+    // — swallow the tel: navigation and show the pill.
+    if (
+      key === "phone" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches
+    ) {
+      e.preventDefault();
+      setPhoneRevealed(true);
+    }
+    if (track === false) return;
+    // Fires exactly once per click (fallback must not double-track).
+    trackContactClick(producer.id, key);
+    // MEH-1221: email-only silent-mailto fallback.
+    if (key === "email") {
+      armMailtoFallback(producer.contact_email?.trim(), t);
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg p-6 border border-border">
@@ -175,61 +214,66 @@ export default function ContactCard({ producer, isVacation }) {
             approved mockup's .iconrow anatomy). */}
         {channels.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mt-3 mb-1" role="list">
-            {channels.map(({ key, Icon, href, track }) => (
-              <a
-                key={key}
-                href={href(producer)}
-                {...(key === "phone"
-                  ? {}
-                  : {
-                      target: "_blank",
-                      // MEH-1525: website tile keeps noopener but drops
-                      // noreferrer so the owner's analytics sees the referral.
-                      rel: key === "website" ? "noopener" : "noopener noreferrer",
-                    })}
-                role="listitem"
-                aria-label={t(`producer.detail.contact_card.aria.${key}`)}
-                title={t(`producer.detail.contact_card.aria.${key}`)}
-                onClick={(e) => {
-                  // MEH-1334: on desktop a phone tap reveals the number inline
-                  // (no dialer) — swallow the tel: navigation and show the pill.
-                  if (
-                    key === "phone" &&
-                    typeof window !== "undefined" &&
-                    window.matchMedia("(min-width: 1024px)").matches
-                  ) {
-                    e.preventDefault();
-                    setPhoneRevealed(true);
-                  }
-                  if (track === false) return;
-                  // Fires exactly once per click (fallback must not double-track).
-                  trackContactClick(producer.id, key);
-                  // MEH-1221: email-only silent-mailto fallback.
-                  if (key === "email") {
-                    armMailtoFallback(producer.contact_email?.trim(), t);
-                  }
-                }}
-                className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white text-primary-dark hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <Icon size={18} aria-hidden="true" />
-              </a>
-            ))}
-          </div>
-        )}
+            {channels.map((channel) => {
+              const { key, Icon, href } = channel;
 
-        {/* Desktop-revealed phone number pill (MEH-1334). Number is dir="ltr"
-            + .numeric so RTL can't reorder the digits; still a tel: link so a
-            desktop softphone / click-to-call extension can act on it. */}
-        {phoneRevealed && producer.phone && (
-          <a
-            href={`tel:${producer.phone}`}
-            dir="ltr"
-            data-testid="revealed-phone"
-            className="numeric inline-flex items-center gap-2 mt-2 px-3 min-h-[44px] rounded-full border border-border bg-white text-sm text-text focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <Phone size={16} className="text-primary-dark" aria-hidden="true" />
-            {producer.phone}
-          </a>
+              // MEH-1551: the desktop-revealed number pill replaces the phone
+              // affordance IN PLACE. It used to render as a sibling block below
+              // the row (old :223-231), so the circle and the number read as two
+              // unrelated blobs. Number is dir="ltr" + .numeric so RTL can't
+              // reorder the digits; still a tel: link so a desktop softphone /
+              // click-to-call extension can act on it.
+              if (phoneRevealed && key === "phone" && producer.phone) {
+                return (
+                  <a
+                    key={key}
+                    href={`tel:${producer.phone}`}
+                    dir="ltr"
+                    data-testid="revealed-phone"
+                    role="listitem"
+                    className="numeric inline-flex items-center gap-2 px-3 min-h-[44px] rounded-full border border-border bg-white text-sm text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    <Phone size={16} className="text-primary-dark" aria-hidden="true" />
+                    {producer.phone}
+                  </a>
+                );
+              }
+
+              // MEH-1551: sole channel → a labeled quiet row (the visible label
+              // IS the accessible name here, so no aria-label overriding it).
+              if (single) {
+                return (
+                  <a
+                    key={key}
+                    href={href(producer)}
+                    {...linkAttrs(key)}
+                    role="listitem"
+                    data-testid="contact-single-row"
+                    onClick={(e) => onChannelClick(e, channel)}
+                    className="flex w-full items-center gap-2 min-h-[44px] px-3 rounded-[10px] border border-border bg-white text-sm text-primary-dark hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    {t(`producer.detail.contact_card.single.${key}`)}
+                  </a>
+                );
+              }
+
+              return (
+                <a
+                  key={key}
+                  href={href(producer)}
+                  {...linkAttrs(key)}
+                  role="listitem"
+                  aria-label={t(`producer.detail.contact_card.aria.${key}`)}
+                  title={t(`producer.detail.contact_card.aria.${key}`)}
+                  onClick={(e) => onChannelClick(e, channel)}
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white text-primary-dark hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <Icon size={18} aria-hidden="true" />
+                </a>
+              );
+            })}
+          </div>
         )}
 
         {/* MEH-1334: the tertiary follow + share row moved to the header's
