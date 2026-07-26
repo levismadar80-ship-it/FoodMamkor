@@ -4257,7 +4257,7 @@
         "revert_cta": "ביטול שינויים",
         "clear_cta": "ניקוי הכל",
         "summary_empty": "לא הוגדר",
-        "summary_set": "{count, plural, one {יום אחד בשבוע} other {# ימים בשבוע}}"
+        "summary_set": "{count, plural, one {יום אחד בשבוע} two {יומיים בשבוע} other {# ימים בשבוע}}"
       },
       "custom_questions": {
         "heading": "שאלות שמופיעות בדף שלך",
