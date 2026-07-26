@@ -13,6 +13,13 @@
 - **New tests proven load-bearing, not assumed:** stashing **only** the source file (tests untouched) turned **10 red**; restoring it → 16/16 green.
 - Verify: full backend suite **1831 passed / 6 skipped / 359 deselected (fuzz) / 1 xfailed** (13m41s, real Postgres 16 locally — see the MEH-1559 note below for provisioning).
 - **Branch-name deviation (same as MEH-1575 / MEH-999 below):** harness assigned `claude/backend-hebrew-audit-aibq79`, which violates the `claude/*` ban and the `Branch name gate`; used the ticket's own `feature/meh-1587-…` per CLAUDE.md line 1.
+## 2026-07-26 — MEH-1569 /map marker density polish (after MEH-1568 merged)
+
+- **MEH-1569** (GREEN, single file, `feature/meh-1569-map-marker-density` off `origin/staging` **after** confirming MEH-1568 landed at `ace6f02d`, `Closes MEH-1569`): `approxRing` 7px → 4px in both marker builders, and the secondary pin 26px → 22px (glyph 14 → 12). Rationale + numbers in the CHANGELOG entry.
+- **Phase-0 correction (meta-pattern #1):** the ticket called the primary pin **32px**; it is **36px** (`MapComponent.jsx:100`, MEH-763 S5 uniform circle). Reported, not silently "corrected" — the wider real gap only helps the hierarchy, and resizing the primary was never in scope.
+- **Self-QA measured, not eyeballed:** the live DOM reports primary `36px` ×1 vs secondary `22px` ×6 and a computed halo of `rgba(46,104,83,0.14) 0 0 0 4px` on the one dashed approximate pin — **identical at 375 and 1440**, zero page errors (`qa-artifacts/MEH-1569/`, 46 KB).
+- **VRT untouched by design.** `parity.spec.ts:246-249` masks the entire `.leaflet-container`, so marker geometry is never compared and this change cannot red-line a map baseline. The ticket's prompt said "if a VRT baseline reds → re-touch parity.spec.ts and let the bot regenerate" — **not done, deliberately**: that path is dead (`vrt-update.yml` has been `workflow_dispatch`-only since MEH-1496) and the premise does not hold here anyway.
+- **Follow-up, unchanged:** E2E remains repo-wide red at `global-setup` (`demo-admin@example.com` → HTTP 401, zero tests run) — a `--sync-users` / secret reconciliation for Sapir, unrelated to this PR or MEH-1568.
 
 ## 2026-07-26 — MEH-1568 /map clustering dead-zone (Refs MEH-1388)
 
