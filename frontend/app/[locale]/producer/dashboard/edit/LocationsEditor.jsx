@@ -379,8 +379,15 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder
           (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
-          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment. */}
-      <div className="grid grid-cols-2 gap-2">
+          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment.
+          MEH-1595: single column below `sm`. Two columns gave each input 134px
+          at 375px (108px usable) while the example placeholders measure
+          125–186px, so four of five were cut mid-example — `למשל: 050-1234567`
+          rendered as `של: 050-1234567`, losing the word that marks it as an
+          example. The same squeeze wrapped `kind_helper` to 5 lines and
+          `precision_helper` to 4. Full width fixes both at once; `sm:` and up
+          is unchanged. */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Field label={tForm("kind_label")} hint={tForm("kind_helper")}>
           <select
             value={form.kind}
@@ -463,8 +470,13 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
         open={coordsOpen}
         className="rounded-[10px] border border-border bg-surface px-3 py-2"
       >
+        {/* MEH-1595: 44px minimum tap target — the row was 16px tall, on the
+            one control an owner has to go looking for. Padding + min-height
+            only: no `display` override, because anything other than the
+            default `list-item` drops the disclosure triangle that signals the
+            row is expandable. */}
         <summary
-          className="cursor-pointer text-xs font-medium text-fg-muted"
+          className="min-h-[44px] cursor-pointer py-3 text-xs font-medium text-fg-muted"
           data-testid="location-coords-toggle"
         >
           {tForm("coords_summary")}
