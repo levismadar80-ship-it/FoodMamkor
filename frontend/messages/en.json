@@ -3936,7 +3936,7 @@
           "whatsapp": "WhatsApp button click",
           "view": "Profile view"
         },
-        "cta": "Open WhatsApp to reply",
+        "cta": "Open WhatsApp",
         "title": "Recent activity",
         "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
@@ -4151,10 +4151,12 @@
       "pricing": {
         "heading": "Price & top product",
         "subtitle": "Your starting price and top product — shown on your business card.",
+        "scope_helper": "Your top product is the one your business is best known for — it appears as a highlighted card at the top of the product list on your page, with the starting price beside it.",
         "field_top_product": "Top product",
-        "top_product_placeholder": "Grass-fed beef",
+        "top_product_placeholder": "e.g. spelt sourdough loaf",
         "field_price_range": "Starting price",
-        "price_range_placeholder": "from ₪65/kg",
+        "price_range_placeholder": "e.g. from ₪30",
+        "price_hint": "A short \"from\" price — not a price list.",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
