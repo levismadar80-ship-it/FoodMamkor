@@ -14,6 +14,8 @@ Three surfaces, single owner (workflow.md "two parallel mechanisms" rule):
   post-merge.
 """
 
+import os
+
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -84,6 +86,41 @@ def readiness(request: Request):
     }
 
 
+def _env_first(*names: str) -> str:
+    """First non-empty env var among ``names``, else ``"unknown"``.
+
+    MEH-1596: never raises and never introduces a new env var — it reads only
+    what Railway already injects. A missing value is reported as ``"unknown"``
+    because a health endpoint that 500s is worse than one that says it does
+    not know.
+    """
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value.strip()
+    return "unknown"
+
+
+def _version_block(request: Request) -> dict:
+    """The four MEH-1596 boot facts. Exactly four keys — see the test.
+
+    ``booted_at`` and ``alembic_head`` are read from ``app.state``, written
+    once during lifespan (app/startup.py). ``getattr`` defaults cover the case
+    where the lifespan never ran — a bare ``TestClient(app)`` does not fire
+    startup events — so this stays 200 rather than raising AttributeError.
+
+    Public surface: /health is unauthenticated, so this carries a commit SHA,
+    a branch name, a revision id and a timestamp, and nothing else. No env
+    dump, no DATABASE_URL, no file paths.
+    """
+    return {
+        "git_sha": _env_first("GIT_SHA", "RAILWAY_GIT_COMMIT_SHA"),
+        "git_branch": _env_first("GIT_BRANCH", "RAILWAY_GIT_BRANCH"),
+        "alembic_head": getattr(request.app.state, "alembic_head", "unknown"),
+        "booted_at": getattr(request.app.state, "booted_at", "unknown"),
+    }
+
+
 @router.api_route("/health", methods=["GET", "HEAD"])
 def health_alias(request: Request) -> dict:
     """Backwards-compat alias. Pre-MEH-483 shape preserved verbatim.
@@ -91,6 +128,12 @@ def health_alias(request: Request) -> dict:
     Migrate Railway healthcheck path to ``/health/readiness`` manually
     post-merge; this alias can be removed in a follow-up once the path
     flip has soaked.
+
+    MEH-1596: additive only. ``status`` and ``db_init`` keep their exact names,
+    positions and value types — the Railway healthcheck and
+    ``tests/test_lifespan_init.py:29`` both depend on ``db_init``. The new
+    ``version`` object is appended, never interleaved, and adds no DB query:
+    both DB-derived values were resolved once at startup.
     """
     db_state = getattr(request.app.state, "db_init_status", "not_scheduled")
-    return {"status": "ok", "db_init": db_state}
+    return {"status": "ok", "db_init": db_state, "version": _version_block(request)}
