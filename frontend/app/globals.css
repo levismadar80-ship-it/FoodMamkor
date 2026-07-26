@@ -337,9 +337,13 @@ body.sheet-open .cookie-banner {
   }
 }
 
-/* Ken Burns — slow parallax zoom/pan on parallax dividers (ParallaxQuote,
-   EventsClient hero, etc.). Two directions so adjacent sections don't
-   drift in lock-step. Disabled for prefers-reduced-motion. */
+/* Ken Burns — slow parallax zoom/pan on hero/divider layers (HomeHero,
+   EventsClient, ExperiencesClient, GroupBuysClient). Two directions so
+   adjacent sections don't drift in lock-step. Disabled for
+   prefers-reduced-motion.
+   MEH-1567: `kenburns-left` currently has NO consumer — its only user was
+   ParallaxQuote.jsx, deleted as dead code. Kept deliberately (removing it
+   is a VRT-touching change); `kenburns-right` is live. */
 @keyframes kenburns-right {
   0%   { transform: scale(1) translate(0%, 0%); }
   100% { transform: scale(1.06) translate(-2%, -1%); }

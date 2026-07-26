@@ -70,7 +70,8 @@ export function HomeHero({
         aria-label={t("home.hero.main_label")}
       >
         {/* Ken Burns layer — decorative produce photo. inset -5% gives the
-            ≤1.06 zoom drift room. REUSES: components/ParallaxQuote.jsx:36 */}
+            ≤1.06 zoom drift room. (The ParallaxQuote.jsx REUSES anchor that
+            was here died with that component — MEH-1567.) */}
         <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           <div
             className="kenburns-right absolute"
