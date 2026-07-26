@@ -69,3 +69,30 @@ describe("LocationsEditor (MEH-1421)", () => {
     await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
   });
 });
+
+// MEH-1563: the coords disclosure is the only non-trivial logic in the
+// field-guidance layer — a NEW location must not open on two unexplained
+// numeric inputs, but editing a row that already carries coordinates must not
+// hide a value the owner previously set.
+describe("coords disclosure (MEH-1563)", () => {
+  const detailsOf = () =>
+    screen.getByTestId("location-coords-toggle").closest("details");
+
+  it("starts closed on a new location", async () => {
+    await openAddForm();
+    expect(detailsOf().open).toBe(false);
+  });
+
+  it("starts open when the edited location already has coordinates", async () => {
+    apiMock.get.mockResolvedValue({
+      data: [{ id: 5, kind: "branch", lat: 32.818, lng: 34.999 }],
+    });
+    render(<LocationsEditor />);
+
+    await waitFor(() => screen.getByLabelText("settings.locations.edit_aria"));
+    fireEvent.click(screen.getByLabelText("settings.locations.edit_aria"));
+
+    await waitFor(() => screen.getByTestId("location-form"));
+    expect(detailsOf().open).toBe(true);
+  });
+});
