@@ -25,6 +25,33 @@ const MINIMAL_FIXTURE = fs.readFileSync(
 // stops it swallowing `/api/producers/{uuid}/reviews`.
 const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 
+// MEH-1591: fixed /map payloads. The map's results rail and category chip row
+// are UNMASKED live chrome (only `.leaflet-container` is masked), so the
+// baseline moved whenever a business was approved/deactivated — the 26/07 regen
+// proved it: a pure 124px vertical shift of the rail, count row 13 → 12, map
+// canvas byte-identical. Same fs.readFileSync loading as the MEH-1497 pair above.
+const MAP_PRODUCERS_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "map-producers.json"),
+  "utf-8"
+);
+// Sapir's call (MEH-1591 §2): mock /categories too, not just /producers. The chip
+// row is filtered by what the API returns (`resolveCategoryId`,
+// useMapFilters.js:346 — a chip whose category is absent is HIDDEN), it has
+// already churned this baseline once (MEH-1440), and the category table is in
+// active motion (MEH-1530 seed rekey merged, MEH-1456 chunk 3 pending). Partial
+// mocking would reopen this ticket within a week.
+const MAP_CATEGORIES_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "map-categories.json"),
+  "utf-8"
+);
+// COLLECTION only — deliberately disjoint from PRODUCER_DETAIL_RE above. The
+// `(?:\?[^#]*)?$` tail anchors the end, so this matches `/api/producers` and
+// `/api/producers?limit=1` but NOT `/api/producers/{uuid}` (detail — owned by
+// the regex above), nor the non-UUID siblings `/count`, `/cities`, `/random`,
+// `/by-slug/*`, which all carry a further `/segment`.
+const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
+const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
+
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
  * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
@@ -43,9 +70,20 @@ const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
  * route per project (desktop 1440x900 + mobile Pixel 5), compared with
  * maxDiffPixelRatio 0.02 (playwright.config.ts expect.toHaveScreenshot).
  *
- * Determinism strategy (no mocks — MEH-417):
- * - Live-data regions (producers grid, events preview, mini-map, Leaflet
- *   tiles) are MASKED — layout chrome is the subject under test, data isn't.
+ * Determinism strategy — three tools, in preference order:
+ * - NETWORK MOCK (page.route + a fixed JSON fixture) where the DATA moves but
+ *   the layout is the subject: producer detail (MEH-1497) and /map (MEH-1591).
+ *   This is a deliberate, NARROW carve-out from the MEH-417 no-mocks rule,
+ *   scoped to e2e/visual/** and recorded in frontend/e2e/CLAUDE.md ("No mocks").
+ *   Functional specs under e2e/flows/ stay unmocked — that is what MEH-417
+ *   actually protects. Prefer this over masking when the region is real chrome
+ *   we want under test: a mask hides regressions, a fixture only freezes data.
+ *   (The header previously read "no mocks — MEH-417" outright; that has been
+ *   stale since MEH-1497 landed on 2026-07-23.)
+ * - MASK for regions that are irreducibly non-deterministic and NOT the subject
+ *   (Leaflet tiles/markers, the home producers grid, events preview, mini-map).
+ * - FROZEN CLOCK (page.clock.setFixedTime, MEH-1531) for wall-clock-dependent
+ *   copy — see VRT_FIXED_TIME below.
  * - Calendar-dependent banners (holiday / friday-delivery) are HIDDEN via
  *   parity.css — their *presence* varies, and a mask can't absorb the layout
  *   shift of a section that appears and disappears with the date.
@@ -231,6 +269,32 @@ test.describe("Visual parity — MEH-991", () => {
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);
+
+    // ── MEH-1591: data mock (MEH-417 no-mocks EXCEPTION, e2e/visual/** only) ──
+    // Same carve-out the producer-detail shot uses (frontend/e2e/CLAUDE.md
+    // "No mocks" → MEH-1497 §2.4): the subject here is layout/pixels, the
+    // producer + category data is noise. DO NOT copy into e2e/flows/.
+    // Registered BEFORE goto so the mount fetches are intercepted:
+    // useProducersFeed.js:65 fires loadProducers() (no params → bare
+    // /api/producers) and :64 fires /api/categories.
+    // NOTE: the rail and chip row stay UNMASKED on purpose — masking them would
+    // hide real layout regressions, which is exactly what this baseline is for.
+    // Mocking the data keeps the pixels stable without blinding the shot.
+    await page.route(PRODUCERS_COLLECTION_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: MAP_PRODUCERS_FIXTURE,
+      });
+    });
+    await page.route(CATEGORIES_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: MAP_CATEGORIES_FIXTURE,
+      });
+    });
+
     await page.goto("/map");
     // MEH-549 pattern (flow 05): __MAP_CENTER__ is race-free across the two
     // MapPane instances; .leaflet-container:visible is not.
@@ -241,9 +305,35 @@ test.describe("Visual parity — MEH-991", () => {
       { timeout: 45_000 }
     );
     await settle(page);
+
+    // MEH-1591 guard — the fixture must actually REACH the rail. The feed parses
+    // the response through ProducersResponseSchema (lib/schemas.js:104) and a
+    // malformed payload degrades to an empty list + toast (useProducersFeed.js:36-40)
+    // rather than throwing. That failure mode is invisible to VRT: an empty rail
+    // is perfectly *stable*, so the baseline would lock in a blank column and the
+    // suite would stay green while testing nothing.
+    //
+    // Two assertions, because count alone is not enough:
+    //   1. at least one card per fixture row — kills the empty/short-rail case;
+    //   2. a fixture-specific NAME is rendered — proves the pixels came from the
+    //      fixture and not from a live backend response that happened to be
+    //      non-empty (a count-only check would pass on live data too).
+    // NOT an exact-equality count: `cardList` is ONE element rendered in BOTH
+    // shells — the desktop grid (MapClient.jsx:457 `hidden lg:grid`) and the
+    // mobile sheet (:534 `lg:hidden`) — so every producer yields 2 DOM nodes on
+    // both projects, with CSS (not the DOM) hiding the irrelevant shell. Asserting
+    // `=== fixture.length` fails with "Received: 12" for 6 rows; asserting `>=`
+    // keeps the empty-rail guarantee without hard-coding that ×2 detail.
+    const fixtureRows = JSON.parse(MAP_PRODUCERS_FIXTURE) as { name: string }[];
+    const cardCount = await page.getByTestId("map-card").count();
+    expect(cardCount).toBeGreaterThanOrEqual(fixtureRows.length);
+    await expect(page.getByText(fixtureRows[0].name).first()).toHaveCount(1);
+
     await expect(page).toHaveScreenshot("map.png", {
       ...SHOT,
       // Tiles + markers are live; chrome (header, filters, controls) is not.
+      // MEH-1591: the rail + chip row are no longer live — they render from the
+      // fixtures mocked above — so they stay unmasked and under test.
       mask: [page.locator(".leaflet-container")],
     });
   });
