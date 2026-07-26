@@ -153,18 +153,21 @@ def _load_create_admin():
 
 
 class TestCreateAdminVerified:
-    def test_new_admin_is_verified(self, client, db, monkeypatch):
+    def test_new_admin_is_verified(self, db, monkeypatch):
         create_admin = _load_create_admin()
         email = "brand-new-admin@example.com"
         monkeypatch.setattr(sys, "argv", ["create_admin.py", email, "AdminPass123"])
 
         assert create_admin.main() == 0
 
+        # The script commits in its OWN session — drop any state this session
+        # already cached so the assertions read the row the script wrote.
+        db.expire_all()
         user = db.query(User).filter(User.email == email).one()
         assert user.role == "admin"
         assert user.email_verified is True
 
-    def test_upgraded_existing_user_is_verified(self, client, db, monkeypatch):
+    def test_upgraded_existing_user_is_verified(self, db, monkeypatch):
         # Pre-existing, *unverified* consumer — the pre-fix upgrade branch
         # left email_verified untouched (False), so this pins the flip.
         email = "existing-consumer@example.com"
@@ -184,6 +187,7 @@ class TestCreateAdminVerified:
         monkeypatch.setattr(sys, "argv", ["create_admin.py", email, "AdminPass123"])
         assert create_admin.main() == 0
 
+        db.expire_all()  # see the sibling test — cross-session read
         user = db.query(User).filter(User.email == email).one()
         assert user.role == "admin"
         assert user.email_verified is True
