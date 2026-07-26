@@ -55,6 +55,13 @@ PR #2164, which converted them to skips) and 2 × `parity.spec.ts` VRT drift on
 `map`/`home`, plus one flaky map-cluster spec. E2E is non-required per MEH-716;
 the analysis is recorded on PR #2163 rather than repeated per PR.
 
+## 2026-07-26 — MEH-1569 follow-up: secondary marker 22px → 24px (WCAG 2.2 AA target size)
+
+- **Correction to the entry below.** MEH-1569 shipped the secondary pin at **22px** in PR #2203 (merged `33154672`). The adversarial review had flagged that 22px falls **below WCAG 2.2 SC 2.5.8 (AA), which sets the minimum target size at 24×24 CSS px** — the previous 26px cleared it. Sapir ruled **24px**; this PR raises it (glyph 12 → 13 to match). `approxRing` stays at 4px as shipped. Hierarchy is now **36 vs 24**.
+- **Why it's a real constraint, not a nicety:** these markers are genuine targets — click handler, `keyboard: true`, `role="button"` + `aria-label` (MEH-765). SC 2.5.8's spacing exception (a 24px circle around a target must not intersect a neighbour's) fails **by definition** in the dense/spiderfied stacks this ticket exists to declutter, so it could never have rescued a 22px pin. IS 5568 makes this a legal requirement. A `DO NOT drop this below 24` anchor now sits on the constant so a future "make it smaller" pass has to read the reason first.
+- **Process note worth keeping:** the 22px value came from the ticket and CC implemented it as specified rather than substituting a number, then flagged the conflict for a human ruling. That is the intended shape — but note the flag landed *after* the PR had already auto-merged, so the correction needed a second PR. **A blocking a11y finding should gate the merge, not trail it.**
+- **Re-measured after the change:** live DOM reports primary `36px` ×1, secondary `24px` ×6, `meetsWcag248: true`, halo `rgba(46,104,83,0.14) 0 0 0 4px`, zero page errors — **identical at 375 and 1440** (`qa-artifacts/MEH-1569-24px/`, 46 KB).
+- **E2E:** still repo-wide red at `global-setup` (`demo-admin` → HTTP 401, zero tests run). Covered by **MEH-1590** (Urgent, RED, Sapir-owned) — not worked around here.
 ## 2026-07-26 — MEH-1587 · MEH-1588 backend copy-integrity batch (serial, end-to-end)
 
 - **MEH-1587** (YELLOW, backend-only, `feature/meh-1587-onboarding-status-filter` off fresh `origin/staging`, `Closes MEH-1587`): onboarding follow-up emails had **no status filter at all** — `onboarding_followup.py:298-302` gated on `created_at` + NULL sent-column only, so a **rejected** business received the full 30-day first-person coaching sequence. Fix is the WHERE clause only: `Producer.status == _ELIGIBLE_STATUS` (`"approved"`).
