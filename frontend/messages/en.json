@@ -2400,6 +2400,19 @@
       "message": "The link may be old, or the business is no longer active. Find other businesses near you.",
       "discover": "Find businesses on the map",
       "home": "Back to home"
+    },
+    "access_denied": {
+      "producer": {
+        "heading": "You don't have access to the dashboard",
+        "message": "The dashboard is open to business owners only. The account you signed in with isn't linked to a business.",
+        "cta": "Register a business",
+        "home": "Back to home"
+      },
+      "admin": {
+        "heading": "You don't have access to the admin area",
+        "message": "This area is open to the admin team only. The account you signed in with isn't part of it.",
+        "home": "Back to home"
+      }
     }
   },
   "about": {
