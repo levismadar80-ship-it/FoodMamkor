@@ -30,6 +30,21 @@ vi.mock("@phosphor-icons/react", () => ({
   Star: () => <span data-testid="star" />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
+  // MEH-1609: the alerts re-entry control's glyph.
+  Bell: () => <span />,
+}));
+// MEH-1609: the header now reads auth + the favorites-cache to decide whether
+// to offer the alerts re-entry control. This suite is about the trust strip,
+// so it stays logged-out (control absent) — the control's own states are
+// covered in ProducerHeaderAlertsReentry.test.jsx.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
+vi.mock("@/lib/favorites-cache", () => ({
+  ensureFavoritesLoaded: () => Promise.resolve(),
+  isFavorited: () => false,
+  subscribeFavorites: () => () => {},
+}));
+vi.mock("@/components/AlertPrefsPanel", () => ({
+  default: () => <div data-testid="alert-prefs-panel" />,
 }));
 // MEH-1334: the quiet-actions row children are separately tested — stub them
 // so this suite stays focused on the header's own render logic.
