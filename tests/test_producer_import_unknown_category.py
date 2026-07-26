@@ -40,6 +40,10 @@ def _errors_of(result, row_index=0):
     return result["rows"][row_index]["errors"]
 
 
+def _warnings_of(result, row_index=0):
+    return result["rows"][row_index]["warnings"]
+
+
 def test_unknown_category_creates_no_row(db):
     """The core guarantee: zero new categories, ever."""
     _seed_known_category(db)
@@ -97,6 +101,9 @@ def test_blank_category_is_a_warning_not_an_error(db):
 
     assert result["imported"] == 1
     assert not _errors_of(result)
+    # Assert the warning is actually PRESENT, not just that no error fired —
+    # otherwise this stays green if parse_row ever stops emitting it.
+    assert any("קטגוריה" in w for w in _warnings_of(result)), _warnings_of(result)
 
 
 def test_partial_success_is_preserved(db):

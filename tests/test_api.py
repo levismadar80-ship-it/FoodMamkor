@@ -2431,8 +2431,9 @@ class TestMojibakeDetection:
         from app.models.models import Category
         # MEH-1534: import no longer auto-creates categories, and _clean_tables
         # truncates `categories` before every test — so the name in _good_row
-        # (column I) must exist or the row is now (correctly) rejected.
-        db.add(Category(name="בשר", emoji="🥩"))
+        # (column I) must exist or the row is now (correctly) rejected. Read the
+        # name back off the row helper so the two can never drift apart.
+        db.add(Category(name=self._good_row()[8], emoji="🥩"))
         db.commit()
         rows = [self._good_row(name="מאפיית הדר")]
         result = import_rows(db, rows, dry_run=True)
