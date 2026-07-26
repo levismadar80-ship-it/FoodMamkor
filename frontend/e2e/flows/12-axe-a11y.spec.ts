@@ -83,31 +83,37 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
   });
 
   test("/producer/[id]", async ({ page }) => {
-    // Resolve a real producer the same way 03-view-producer-detail does:
-    // navigate to /producers and open the first card. Graceful skip if the
-    // staging DB has no producers (no synthetic id — that would 404 and audit
-    // an error page, not a real detail page).
-    await page.goto("/producers");
-    await page.waitForLoadState("domcontentloaded");
-    const firstCard = page.locator('[data-testid="producer-card"]').first();
-    if ((await firstCard.count()) === 0) {
+    // MEH-1550: resolve the producer from the API, not from whichever card
+    // renders first. The /producers feed is created_at DESC, so "first card"
+    // moved onto a different business on every new approval (the MEH-1440
+    // first-card-drift class) — and the previous MEH-828 predicate was
+    // deliberately permissive, so a 404/redirect passed it. When the drifted
+    // business failed to resolve, axe audited Next's error document and
+    // reported a misleading `html-has-lang` instead of a navigation failure
+    // (run 30197313235, surfaced triaging MEH-1536). Sorting by id keeps the
+    // audited page stable across runs; the trade-off is that the audited
+    // business is arbitrary rather than newest — stability is the point, and
+    // the other gated routes already cover the shared page chrome.
+    const res = await page.request.get("/api/producers");
+    expect(res.ok(), "GET /producers must respond 2xx").toBeTruthy();
+    const producers = (await res.json()) as Array<{ id: string }>;
+    if (producers.length === 0) {
       // test.skip(condition, ...) throws to abort the test — no return needed.
-      test.skip(true, "No producer cards found — staging DB may be empty");
+      test.skip(true, "No producers in the feed — staging DB may be empty");
     }
-    await expect(firstCard).toBeVisible({ timeout: 15_000 });
-    // MEH-1369: click the card's inner nav anchor (real <a href>), not the
-    // <article> wrapper whose click races hydration. See parity.spec.ts header.
-    await firstCard.locator('a[href^="/"]').first().click();
-    // MEH-828: accept slug-routed detail pages too. Slug producers (e.g.
-    // /teva-pure) never hit /producer/{id}, so includes("/producer/") timed
-    // out and the axe scan silently never ran. Mirror 03-view-producer-detail:
-    // anything off the /producers listing is a detail page. Trade-off (vs the
-    // old "fail loudly on error/redirect" predicate): this is permissive — a
-    // redirect/404 would also pass — accepted deliberately to match 03; the
-    // h1 assertion below still guards against auditing a blank/unrendered page.
-    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), {
-      timeout: 20_000,
-    });
+    const target = [...producers].sort((a, b) => String(a.id).localeCompare(String(b.id)))[0];
+
+    await page.goto(`/producer/${target.id}`);
+    await page.waitForLoadState("domcontentloaded");
+    // MEH-1550 guard — MUST precede the h1 assertion and the scan. Next renders
+    // its error document as <html id="__next_error__"> WITH its own <h1>, so
+    // the h1 check cannot tell a real detail page from a failed navigation.
+    // Asserting the error boundary is absent turns that case into an explicit
+    // navigation failure instead of a bogus a11y violation.
+    await expect(
+      page.locator("#__next_error__"),
+      `navigation failed — /producer/${target.id} rendered Next's error page, not a producer detail`,
+    ).toHaveCount(0);
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
     const results = await analyze(page);
     summarize("/producer/[id]", results);
