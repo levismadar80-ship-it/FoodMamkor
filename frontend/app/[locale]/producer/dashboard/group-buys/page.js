@@ -18,6 +18,8 @@ import CitySearch from "@/components/CitySearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700 border-blue-200",
@@ -313,9 +315,8 @@ export default function ProducerGroupBuysPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            {t("back")}
-          </Link>
+          {/* MEH-999: entered from the Tools tab (tools/page.js:92). */}
+          <BackLink href="/producer/dashboard/tools" label={t("back")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>

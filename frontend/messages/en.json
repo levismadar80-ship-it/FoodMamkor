@@ -906,7 +906,7 @@
       }
     },
     "dashboard": {
-      "back": "← Dashboard",
+      "back": "Back to tools",
       "heading": "My recipes",
       "btn_close_form": "Close",
       "btn_open_form": "+ Publish new recipe",
@@ -1003,7 +1003,7 @@
         "cancelled": "Cancelled",
         "fulfilled": "Completed ✅"
       },
-      "back": "← Dashboard",
+      "back": "Back to tools",
       "heading": "My group buys",
       "btn_close_form": "Close",
       "btn_open_form": "+ New group buy",
@@ -3936,7 +3936,7 @@
           "whatsapp": "WhatsApp button click",
           "view": "Profile view"
         },
-        "cta": "Open WhatsApp to reply",
+        "cta": "Open WhatsApp",
         "title": "Recent activity",
         "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
@@ -4151,10 +4151,12 @@
       "pricing": {
         "heading": "Price & top product",
         "subtitle": "Your starting price and top product — shown on your business card.",
+        "scope_helper": "Your top product is the one your business is best known for — it appears as a highlighted card at the top of the product list on your page, with the starting price beside it.",
         "field_top_product": "Top product",
-        "top_product_placeholder": "Grass-fed beef",
+        "top_product_placeholder": "e.g. spelt sourdough loaf",
         "field_price_range": "Starting price",
-        "price_range_placeholder": "from ₪65/kg",
+        "price_range_placeholder": "e.g. from ₪30",
+        "price_hint": "A short \"from\" price — not a price list.",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4300,9 +4302,12 @@
       "manage_events": {
         "heading": "My events",
         "create_cta": "New event",
-        "empty": "You haven't created any events yet. Tap \"New event\" to start.",
+        "empty_title": "No events yet",
+        "empty_description": "A workshop, a tour or an open day — an event appears on your business page and brings in new customers.",
+        "empty_cta": "New event",
         "loading": "Loading…",
-        "back": "← Back to my events",
+        "back_to_tools": "Back to tools",
+        "back": "Back to my events",
         "edit_heading": "Edit event",
         "not_found": "Event not found.",
         "badge_active": "Active",
@@ -4317,9 +4322,12 @@
       "manage_experiences": {
         "heading": "My experiences",
         "create_cta": "New experience",
-        "empty": "You haven't created any experiences yet. Tap \"New experience\" to start.",
+        "empty_title": "No experiences yet",
+        "empty_description": "A regular hosted session guests can book — an experience appears on your business page alongside your products.",
+        "empty_cta": "New experience",
         "loading": "Loading…",
-        "back": "← Back to my experiences",
+        "back_to_tools": "Back to tools",
+        "back": "Back to my experiences",
         "edit_heading": "Edit experience",
         "not_found": "Experience not found.",
         "action_edit": "Edit",
@@ -4350,7 +4358,7 @@
       "cta_favorites": "My favorites"
     },
     "followers": {
-      "back_link": "← Dashboard",
+      "back_link": "Back to dashboard",
       "heading": "My followers",
       "loading": "Loading…",
       "empty_title": "No followers yet — and that's fine",
@@ -4390,7 +4398,6 @@
       "skip_to_main": "Skip to content"
     },
     "event_new": {
-      "back_link": "← Dashboard",
       "heading": "Publish a new event",
       "field_title_label": "Title *",
       "field_description_label": "Description",

@@ -7,6 +7,7 @@ import structlog
 from fastapi import FastAPI
 
 from app.config import settings
+from app.sentry import capture_background_exception
 
 log = structlog.get_logger("mehamakor.startup")
 
@@ -162,7 +163,11 @@ async def _init_db_background(app: FastAPI) -> None:
         await asyncio.to_thread(_run_db_init_sync)
         log.info("background DB init complete — all tables/migrations/seed ready")
         app.state.db_init_status = "ready"
-    except Exception:
+    except Exception as exc:
+        # MEH-1533: capture BEFORE the structlog call — a capture that FOLLOWS a
+        # logging call in the same except block can be dropped by Sentry event
+        # deduplication (getsentry/sentry-python#1468).
+        capture_background_exception(exc, task="db_init")
         log.error(
             "background DB init failed — /producers et al will 500 until fixed",
             exc_info=True,
@@ -184,7 +189,10 @@ def _run_followup_job() -> None:
     try:
         counts = send_due_followups(db)
         log.info("[FOLLOWUP] daily run complete counts=%s", counts)
-    except Exception:
+    except Exception as exc:
+        # MEH-1533: same capture-before-log ordering as _init_db_background.
+        # Daily cadence — cannot flood the Sentry quota.
+        capture_background_exception(exc, task="onboarding_followups")
         log.error("[FOLLOWUP] daily run crashed", exc_info=True)
     finally:
         db.close()
@@ -206,7 +214,14 @@ def _run_watchdog_job() -> None:
         counters = run_watchdog(db)
         if counters.get("scanned", 0):
             log.info("[WATCHDOG] tick complete counters=%s", counters)
-    except Exception:
+    except Exception as exc:
+        # MEH-1533: captured despite the 5-min cadence — run_watchdog() is
+        # fail-isolated per message and never raises (see its docstring), so
+        # reaching this handler is genuinely exceptional, and the job is only
+        # registered when WATCHDOG_ENABLED is true (default False, PR2c gate).
+        # Worst case is one Sentry ISSUE with repeated events, not a new issue
+        # per tick — judged not a quota-flood risk.
+        capture_background_exception(exc, task="auto_reply_watchdog")
         log.error("[WATCHDOG] tick crashed", exc_info=True)
     finally:
         db.close()
