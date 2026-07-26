@@ -41,11 +41,7 @@ def _order_window_validator(v):
                 f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
                 + ", ".join(sorted(_ORDER_WINDOW_DAYS))
             )
-        if (
-            not isinstance(hours, dict)
-            or "open" not in hours
-            or "close" not in hours
-        ):
+        if not isinstance(hours, dict) or "open" not in hours or "close" not in hours:
             raise ValueError(f"היום {day} חייב לכלול שעת פתיחה ושעת סגירה")
         open_t, close_t = hours["open"], hours["close"]
         if not (isinstance(open_t, str) and _HHMM_REGEX.match(open_t)) or not (
@@ -55,9 +51,7 @@ def _order_window_validator(v):
                 f"שעה לא תקינה ליום {day} — הפורמט חייב להיות HH:MM (24 שעות)"
             )
         if close_t <= open_t:
-            raise ValueError(
-                f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}"
-            )
+            raise ValueError(f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}")
     return v
 
 
