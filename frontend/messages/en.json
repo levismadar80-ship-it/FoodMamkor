@@ -542,9 +542,6 @@
     "info_tooltip": {
       "trigger_aria": "More info"
     },
-    "parallax_quote": {
-      "aria": "Quote"
-    },
     "skeleton": {
       "loading_businesses": "Loading fresh businesses"
     },
