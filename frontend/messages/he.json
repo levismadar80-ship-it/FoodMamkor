@@ -777,7 +777,9 @@
           "open": "פתוח להזמנות",
           "closed": "לא מקבל הזמנות כרגע",
           "vacation": "בחופשה · חוזרים ב־{date}",
-          "vacation_no_date": "בחופשה"
+          "vacation_no_date": "בחופשה",
+          "orders_closed": "ההזמנות סגורות עכשיו · נפתחות {day} ב־{time}",
+          "orders_open": "פתוח להזמנות · עד {time}"
         },
         "excerpt_footer": "מתוך הביקורות",
         "excerpt_all": "לכל הביקורות"
@@ -821,6 +823,19 @@
       },
       "sticky_bar": {
         "vacation_msg": "שליחת הודעה"
+      },
+      "order_window": {
+        "strip_label": "מקבלים הזמנות:",
+        "cta_note": "אפשר לשלוח הודעה גם עכשיו — היא תיענה כשההזמנות ייפתחו",
+        "days_short": {
+          "sun": "א׳",
+          "mon": "ב׳",
+          "tue": "ג׳",
+          "wed": "ד׳",
+          "thu": "ה׳",
+          "fri": "ו׳",
+          "sat": "ש׳"
+        }
       }
     },
     "card": {

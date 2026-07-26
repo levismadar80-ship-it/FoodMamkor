@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
 
@@ -6,8 +7,13 @@ import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import ShareButton from "@/components/ShareButton";
 import { allBadges } from "@/lib/badges";
+import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { getVacationReturnDate } from "../lib/producer-format";
+// MEH-1546: the meta-line status is the page's ONLY order-status element, so
+// order_window feeds THAT branch rather than adding a second line — see
+// lib/order-status.js for the precedence and the contradiction it avoids.
+import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
 
 /**
  * Main-column header block for the producer detail page.
@@ -46,6 +52,34 @@ export default function ProducerHeader({
   const availState = producer.availability_state || producer.availability_status;
   const isClosed = !isVacation && (availState === "full_this_week" || availState === "full");
   const vacationDate = getVacationReturnDate(producer, locale);
+
+  // MEH-1546: order_window status is time-derived, so it must not run during
+  // SSR — the server and the client would disagree and React would flag a
+  // hydration mismatch (MEH-1531). Until mounted, orderStatus stays null and
+  // resolveHeaderStatus falls through to branch 5, i.e. exactly the pre-1546
+  // output. `mounted` also re-runs nothing on a timer: the status refreshes on
+  // the next navigation/render, which is honest enough for a weekly window.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const orderStatus = mounted ? getOrderWindowStatus(producer.order_window) : null;
+  const status = resolveHeaderStatus({ isVacation, isClosed, orderStatus });
+  const statusLabel = {
+    vacation: () =>
+      vacationDate
+        ? t("producer.detail.header.status.vacation", { date: vacationDate })
+        : t("producer.detail.header.status.vacation_no_date"),
+    closed: () => t("producer.detail.header.status.closed"),
+    orders_closed: () =>
+      t("producer.detail.header.status.orders_closed", {
+        day: t(`opening_hours.weekdays.${israelDayKey(status.nextChange)}`),
+        time: israelTime(status.nextChange),
+      }),
+    orders_open: () =>
+      t("producer.detail.header.status.orders_open", {
+        time: israelTime(status.nextChange),
+      }),
+    open: () => t("producer.detail.header.status.open"),
+  }[status.branch]();
 
   // Single verified seal next to the name — every other earned badge left the
   // header (MEH-1334 decision 4). hideKeys derives from the live badge set so
@@ -126,21 +160,13 @@ export default function ProducerHeader({
           {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
           {primaryCategory && <span>{primaryCategory.name}</span>}
           {(producer.city || primaryCategory) && <span aria-hidden="true" className="opacity-60">·</span>}
-          {isVacation ? (
-            <span className="font-semibold text-gold-deep" data-testid="status-vacation">
-              {vacationDate
-                ? t("producer.detail.header.status.vacation", { date: vacationDate })
-                : t("producer.detail.header.status.vacation_no_date")}
-            </span>
-          ) : isClosed ? (
-            <span className="font-semibold text-muted" data-testid="status-closed">
-              {t("producer.detail.header.status.closed")}
-            </span>
-          ) : (
-            <span className="font-semibold text-primary" data-testid="status-open">
-              {t("producer.detail.header.status.open")}
-            </span>
-          )}
+          {/* MEH-1546: ONE status element, five-branch precedence (see
+              resolveHeaderStatus). order_window feeds this line instead of
+              adding a second one — two order-status assertions on one page
+              would contradict each other. */}
+          <span className={`font-semibold ${status.tone}`} data-testid={status.testid}>
+            {statusLabel}
+          </span>
         </p>
 
         {/* Kosher renders ONCE (MEH-1334): specific admin-assigned badges via
