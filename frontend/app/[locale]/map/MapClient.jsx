@@ -344,28 +344,13 @@ export default function MapPage() {
   // with no blocking location gate. LocationModal remains reachable only as
   // the geolocation permission-denied fallback (handleGpsClick, err.code 1).
 
-  // Was MapClient.jsx:196-215 — focusProducer deep-link effect.
-  useEffect(() => {
-    if (feed.allProducers.length === 0) return;
-    let focus;
-    try {
-      const raw = sessionStorage.getItem("focusProducer");
-      if (!raw) return;
-      focus = JSON.parse(raw);
-      sessionStorage.removeItem("focusProducer");
-    } catch {
-      return;
-    }
-    if (!focus?.id) return;
-    filters.setActiveProducerId(focus.id);
-
-    // Give the map a tick to mount + markers to register before flying
-    const t = setTimeout(() => {
-      sync.mapApiRef.current?.focusProducer(focus.id);
-    }, 400);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feed.allProducers]);
+  // MEH-1576: the sessionStorage deep-link effect that used to live here was
+  // removed — it had no writer. Its only one was the producer-page "show on
+  // map" button, deleted with ActionRow.jsx in MEH-1146 PR #1670; that ticket
+  // replaced the affordance with the inline MiniMap + Waze/Google nav
+  // (ProducerSections.jsx:514), so the reader sat orphaned for two weeks.
+  // DO NOT reintroduce a sessionStorage hand-off here — if producer → map
+  // focus is ever wanted again, it belongs in the URL, not in session state.
 
   // ============================================================
 
