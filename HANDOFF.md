@@ -3,6 +3,57 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — QA-driven session: contact validation + custom-questions clarity + opt-out decision
+
+**Shipped:** MEH-1537 (PRs #2153 code, #2177 docs) — shared validators make the
+server source-of-truth for contact_email/phone/whatsapp_group on all four Producer
+write schemas. MEH-1578 (PRs #2195 R1, #2202 R2) — "לדוגמה:" placeholders,
+answer-first guidance line, context_line deduped, subtitle voice fixed to female
+singular. Both verified against raw staging by the orchestrator, not from reports.
+
+**Decided — MEH-1538 ready-questions opt-out: NOT BUILDING, signal-gated.** Trigger
+is >=2 real business owners asking, not a date. Rationale: (1) MEH-1302 already made
+the chips answer-first, so unwanted questions are mostly a symptom of an incomplete
+profile, not a format bug; (2) Google Business Profile never allowed opting out and
+removed Q&A entirely in Nov 2025 in favour of answers sourced from the business's own
+content, while eBay's Smart FAQ does allow opt-out but leads with "use complete
+listing info" — both poles agree the fix is data, not a mute switch; (3) zero live
+producers = zero demand evidence; (4) an editorial directory keeps one house format.
+MEH-1578 is the approved alternative: better data path, no toggle. Full research is
+in the MEH-1538 description.
+
+**Lesson 1 — inference presented as evidence (orchestrator).** MEH-1537's ticket
+claimed ProducerUpdate.contact_email was plain `str`; it was already EmailStr. The
+claim came from a PK snippet showing a DIFFERENT schema. CC's Phase 0 corrected it.
+Ticket evidence must cite the line that was actually read, not the line implied by
+a neighbouring one.
+
+**Lesson 2 — green CI is not a met DoD.** MEH-1578 R1 spec said "REPLACE it — do not
+stack two helper lines"; CC added a THIRD paragraph. CI green, auto-merged, DoD item
+unmet, result more confusing than the original bug. Tests assert PRESENCE, so an
+extra element breaks nothing. R2 added "expected exactly TWO helper paragraphs, not
+three" and it landed correctly first try. STANDING RULE: any spec containing
+replace/delete/consolidate/dedupe must carry a numeric final-state assertion in
+<verification_step> plus a repo-wide grep for the removed symbol in Phase 0.
+
+**Gates closed:** MEH-1537 Railway audit run by Sapir, 0 rows. Production carries 4
+producers (teva-pure, tases-ferments, dana-sourdough, galil-farm), so the
+grandfathered-invalid risk was bounded and is now cleared.
+
+## 2026-07-26 — MEH-1572 ChipScrollRow scroll-chrome unification (batch 2/2)
+
+- **MEH-1572** (YELLOW, `feature/meh-1572-chip-scroll-chrome` cut off `origin/staging` **after** MEH-1575 merged, `Closes MEH-1572`): mask-image fades (kills `fadeBg`), one shared inline-start gutter (0), overflow-conditional end spacer, and one affordance authority. Full Phase-0 table in the PR body.
+- **Phase 0 disproved one of the ticket's four evidence claims — reported, not silently worked around.** §2c says the map passes `fadeBg="#ffffff"`; it passes `#F5F0E8` (`FilterChipsBar.jsx:75`), and the comment directly above it says MEH-1108 already fixed exactly that. **All five call sites passed the identical value** — `#ffffff` is only the prop's default, which nothing uses. STOP-(a) did not fire because this *strengthens* the case for deleting the prop rather than undermining it, and changes no part of the work. The other three claims (always-on spacer, three stacked start offsets, two affordance authorities) hold at their cited lines.
+- **The MEH-1391 two-authority trade is now closed.** The MEH-1340 IntersectionObserver sentinels are deleted; fades, arrows and the spacer all read `useScrollAffordance`. The sentinels could not distinguish real chip overflow from "only my own trailing spacer is off-screen" — the same bug class MEH-1545 hit on the arrow side. Consequence worth knowing: **the hook now computes its flags on every device, not just fine-pointer**, because the fades need them on touch too (`showArrows` still gates only the arrows).
+- **The conditional spacer needs a conditional filler.** `trailingFillerPx` is passed as 56 only while the spacer is mounted and 0 otherwise (`spacerMountedRef`). Passing a constant 56 would let a fitting row discount 56px it isn't rendering and never report overflow again once it dropped the spacer.
+- **Worth remembering — jsdom's CSSOM silently drops `mask-image`.** Setting it inline made `style.maskImage` read back as `""`, so the first version of the tests could not assert anything. Moving the gradient into `globals.css` (`.chip-scroll-fade-mask`) and having the component publish only two **custom properties** fixed the test *and* produced better production code — custom properties survive jsdom, and the gradient now lives next to the other component utilities.
+- **Worth remembering — a local VRT run against the committed baselines proves nothing here.** `e2e/visual/parity.spec.ts` states the baselines are runner-generated and must never be compared from a dev machine (font stacks differ). Substitute used instead: build `origin/staging`, capture, build the branch, capture, diff **in the same sandbox** so font differences cancel. Every diff row was explained arithmetically (-34px = -18 sentinels/gaps -16 ps-4) and every viewport diff came in at 0.92–1.50%, under VRT's own 2% tolerance. **The real VRT signal is still owed** — see the blocker below.
+- **⚠️ BLOCKER OWED TO SAPIR — E2E (and therefore VRT) cannot run at all right now.** `e2e/global-setup.ts:123` throws `login failed for admin (demo-admin@example.com) … HTTP 401`; `demo-owner` and `demo-consumer` authenticate fine. **This is pre-existing**: the `e2e.yml` run on `staging` itself at `ed6d567` failed byte-identically ([run 30212595947](https://github.com/levismadar80-ship-it/FoodMamkor/actions/runs/30212595947)). Needs a `--sync-users` re-run against staging for `demo-admin` (or a refreshed `DEMO_ADMIN_PASSWORD`). Until it is fixed, **no PR in this repo gets a VRT verdict** — not just this one.
+- **Also environmental:** Vercel previews are rate-limited today (`api-deployments-free-per-day`, >100 free deploys/24h), so neither batch PR has a preview URL. Both are commit statuses, neither is a required gate.
+- **Scope note:** one file beyond the ticket's list — `frontend/app/globals.css`, which hosts the mask utility alongside the existing `.scrollbar-hide` (:262) and `.custom-cursor` (:380).
+- Verify: build exit 0 · full vitest **1661 passed / 10 skipped** · ChipScrollRow suite **29 passed** · eslint 0 errors · `qa-artifacts/MEH-1572/` 12 before/after shots, 50 KB webp.
+- **Process note — the `lint-feedback` 3-strike hook fired falsely twice**, exactly the MEH-763 / exec §8 pattern: a multi-file refactor leaves transient `no-undef` between sequential edits (`useState` import removed while the sentinel state still referenced it). Both times the named symbols were on the very lines the next edit deleted; `npx eslint` after completing the edit set reported **0 errors**. Do not "fix" these — complete the edit set, then verify manually.
+
 ## 2026-07-26 — MEH-1569 /map marker density polish (after MEH-1568 merged)
 
 - **MEH-1569** (GREEN, single file, `feature/meh-1569-map-marker-density` off `origin/staging` **after** confirming MEH-1568 landed at `ace6f02d`, `Closes MEH-1569`): `approxRing` 7px → 4px in both marker builders, and the secondary pin 26px → 22px (glyph 14 → 12). Rationale + numbers in the CHANGELOG entry.
