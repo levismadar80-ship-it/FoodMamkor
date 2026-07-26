@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
@@ -75,4 +76,95 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       ).toEqual([]);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// MEH-1549 — Indicators & counters.
+//
+// Sibling rule to the scope contract above, same file for the same reason
+// (.github/workflows/** is CC-deny, vitest already gates every PR). Scope
+// answers "what does this label apply to"; disclosure answers "what is behind
+// this indicator". The +N badge-overflow counter was the second question's
+// failing case — a dead <span> on an otherwise fully tappable badge row, which
+// QA hit directly ("אני לא מבינה מה זה"). MEH-1547 made it a Popover trigger;
+// this guard stops a future refactor from silently flattening it back.
+//
+// Fail→pass proof: against the pre-MEH-1547 markup —
+//   <span data-testid="badge-overflow" dir="ltr">+{n}</span>
+// — all three assertions below fail (tagName SPAN, no aria-haspopup, and the
+// role-based query finds nothing). Against the shipped component they pass.
+// ---------------------------------------------------------------------------
+
+// ProducerCard pulls in the app's client-side world; mock only what jsdom
+// cannot provide, mirroring ProducerCard.test.jsx.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key, values = {}) =>
+    key === "producer.card.badges.overflow_aria"
+      ? `הצגת עוד ${values.count} תגיות`
+      : key,
+  useLocale: () => "he",
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), prefetch: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
+}));
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
+}));
+vi.mock("next/image", () => ({ default: ({ src, alt }) => <img src={src} alt={alt} /> }));
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
+vi.mock("@/lib/api", () => ({ default: { post: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/toast", () => ({
+  showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+vi.mock("@/lib/post-login-action", () => ({ enqueueFavoriteOnLogin: vi.fn() }));
+vi.mock("@/lib/favorites-cache", () => ({
+  ensureFavoritesLoaded: () => Promise.resolve(new Set()),
+  isFavorited: () => false,
+  setFavoritedLocal: vi.fn(),
+  subscribeFavorites: () => () => {},
+}));
+
+describe("MEH-1549 Indicators & counters — overflow counters are interactive", () => {
+  it("ProducerCard +N badge-overflow offers disclosure, not a dead glyph", async () => {
+    const { default: ProducerCard } = await import("@/components/ProducerCard");
+    // 5 earned badges (verified · grass_fed · gluten_free · kosher · delivery)
+    // → 2 rendered, 3 collapsed into "+3".
+    render(
+      <ProducerCard
+        producer={{
+          id: "p-1",
+          name: "עסק לדוגמה",
+          city: "תל אביב-יפו",
+          images: [],
+          categories: [],
+          verification_tier: "verified",
+          verified_at: "2026-01-01",
+          grass_fed: true,
+          has_gluten_free_products: true,
+          kashrut_verified_at: "2026-01-01T00:00:00Z",
+          has_delivery: true,
+          reviews_count: 0,
+          avg_rating: null,
+        }}
+      />,
+    );
+
+    const chip = screen.getByTestId("badge-overflow");
+    expect(
+      chip.tagName,
+      "badge-overflow must be a real control, not a static span — " +
+        "see .claude/rules/labels.md § Indicators & counters (MEH-1549)",
+    ).toBe("BUTTON");
+    expect(
+      chip.getAttribute("aria-haspopup"),
+      "badge-overflow must announce that it opens a disclosure (aria-haspopup)",
+    ).toBeTruthy();
+    // Reachable by role, i.e. actually exposed to assistive tech as a control.
+    expect(screen.getAllByRole("button").includes(chip)).toBe(true);
+  });
 });
