@@ -14,6 +14,9 @@ from __future__ import annotations
 
 import pytest
 
+# _normalize_instagram is private by convention; importing it here is a
+# deliberate coupling — the unit matrix tests the helper directly, and the
+# schema-level cases below cover the public surface if it is ever renamed.
 from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerCreate,
@@ -53,6 +56,13 @@ from app.schemas.schemas import (
         # a URL with no handle left after stripping → None, not ""
         ("https://instagram.com/", None),
         ("@", None),
+        # ACKNOWLEDGED out-of-scope: bare "instagram.com" (no slash, no handle)
+        # is not URL-shaped per _INSTAGRAM_URL_PREFIX_RE (which requires the
+        # trailing slash) and passes through as-is. It would render as a
+        # profile link to a handle literally named "instagram.com" — wrong,
+        # but a low-probability paste; widening the regex to eat it risks
+        # eating real handles containing dots. Documented, not normalized.
+        ("instagram.com", "instagram.com"),
     ],
 )
 def test_normalize_instagram(raw, expected):
