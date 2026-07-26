@@ -25,6 +25,8 @@ import { Bread } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 import RecipeForm from "@/components/RecipeForm";
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -69,12 +71,9 @@ export default function ProducerRecipesPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link
-            href="/producer/dashboard"
-            className="text-sm text-primary hover:underline"
-          >
-            {t("back")}
-          </Link>
+          {/* MEH-999: entered from the Tools tab (tools/page.js:101), so back
+              goes to Tools — not the overview. */}
+          <BackLink href="/producer/dashboard/tools" label={t("back")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
