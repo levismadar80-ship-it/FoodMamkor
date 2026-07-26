@@ -100,6 +100,44 @@ async function recenterOnSeededProducer(
   return multi!;
 }
 
+// MEH-1568: click the cluster CLOSEST TO THE MAP CENTRE, not `.first()` in DOM
+// order. near-me flies the camera onto one of the seeded producer's own pins, so
+// the centremost cluster is the seeded one — this is the deterministic form
+// MEH-1440 asked for (blind `.first()` could pick a cluster in another region
+// and strand the zoom away from the seed). Returns false when no cluster took
+// the click. Spec-side only — do NOT touch app code.
+async function clickCentremostCluster(
+  page: import("@playwright/test").Page,
+): Promise<boolean> {
+  const clusters = page.locator(".mehamakor-cluster");
+  const mapBox = await page.locator(".leaflet-container:visible").first().boundingBox();
+  if (!mapBox) return false;
+  const cx = mapBox.x + mapBox.width / 2;
+  const cy = mapBox.y + mapBox.height / 2;
+
+  const count = await clusters.count();
+  let bestIndex = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < count; i++) {
+    const box = await clusters.nth(i).boundingBox();
+    if (!box) continue;
+    const distance = Math.hypot(
+      box.x + box.width / 2 - cx,
+      box.y + box.height / 2 - cy,
+    );
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = i;
+    }
+  }
+  if (bestIndex < 0) return false;
+  return clusters
+    .nth(bestIndex)
+    .click({ timeout: 3_000 })
+    .then(() => true)
+    .catch(() => false);
+}
+
 test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
   test.describe.configure({ retries: 1 });
 
@@ -124,27 +162,38 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     // MEH-1451: :66 previously counted `.mehamakor-cluster` at the FIXED initial
     // viewport (center [32.4,34.95] zoom 8, MapComponent.jsx:411), where the
     // seeded זכרון יעקב pins aren't guaranteed materialised → clusterCount=0.
-    // Bring them into view with the SAME near-me flow :96 uses, then zoom back
-    // out below disableClusteringAtZoom:11 (MapComponent.jsx:434) so the
-    // co-located per-location pins collapse into one unique-business cluster.
-    // near-me lands at zoom 13 (MapComponent.jsx:355) where clustering is OFF —
-    // so :66, unlike :96, must zoom out to a clustering level.
+    // Bring them into view with the SAME near-me flow :96 uses, then zoom out so
+    // the co-located per-location pins collapse into one cluster.
+    // MEH-1568: the zoom-out is no longer about crossing a clustering threshold
+    // — disableClusteringAtZoom is GONE, so clustering is live at every zoom.
+    // It now just widens the view until pins are close enough (in pixels) to
+    // group under the zoom-scaled maxClusterRadius (MapComponent.jsx — 60px
+    // below zoom 11, 40px from 11 in). The loop is unchanged and still exits on
+    // the first cluster.
     // REUSES: recenterOnSeededProducer (this file) — same viewport setup as :96.
     await recenterOnSeededProducer(page, context, producers);
 
-    // Confirm the recenter landed (per-location markers materialised at zoom 13)
-    // before zooming out — the same signal :96 asserts, and it lets near-me's
-    // flyTo settle without a fixed wait.
-    await expect(
-      page.locator(".mehamakor-marker-secondary").first(),
-      "recenter must bring the seeded per-location pins into view",
-    ).toBeVisible({ timeout: 20_000 });
+    // Confirm the recenter landed before zooming out. MEH-1568: with clustering
+    // now live at zoom 13, the seeded pins may materialise EITHER as individual
+    // secondary markers OR already collapsed into a cluster — accept either as
+    // the "camera arrived" signal, so this no longer depends on the dead zone.
+    await expect
+      .poll(
+        async () =>
+          (await page.locator(".mehamakor-marker-secondary").count()) +
+          (await page.locator(".mehamakor-cluster").count()),
+        {
+          message: "recenter must bring the seeded per-location pins into view",
+          timeout: 20_000,
+        },
+      )
+      .toBeGreaterThan(0);
 
-    // Zoom out from near-me's zoom 13 to a clustering level using the app's own
-    // Leaflet zoom-out control (zoomControl:true, MapComponent.jsx:401). Click
-    // until a cluster materialises — condition-based + bounded (robust to a
-    // dropped click), NOT a fixed waitForTimeout. :visible scopes to the active
-    // shell (MapClient renders twice — 07 precedent).
+    // Zoom out from near-me's zoom 13 using the app's own Leaflet zoom-out
+    // control (zoomControl:true, MapComponent.jsx:401). Click until a cluster
+    // materialises — condition-based + bounded (robust to a dropped click), NOT
+    // a fixed waitForTimeout. :visible scopes to the active shell (MapClient
+    // renders twice — 07 precedent).
     const zoomOut = page.locator(".leaflet-control-zoom-out:visible").first();
     const clusters = page.locator(".mehamakor-cluster");
     for (let i = 0; i < 6 && (await clusters.count()) === 0; i++) {
@@ -158,16 +207,37 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
 
     // The non-negotiable invariant (unchanged): a unique-business cluster badge
     // can never exceed the number of producers in the feed.
+    // MEH-1568: scoped to MULTI-business clusters. A single-business cluster now
+    // renders that business's category marker + its POINT count
+    // (.mehamakor-cluster-single) — a legitimately marker-scale number that can
+    // exceed the producer count (the 10-location demo producer alone reads 10),
+    // so folding it into this assertion would assert the wrong invariant.
+    const multiBusinessClusters = page.locator(
+      ".mehamakor-cluster:not(.mehamakor-cluster-single)",
+    );
     const clusterCount = await clusters.count();
     expect(clusterCount, "at least one cluster must be present after zoom-out").toBeGreaterThan(0);
     const producerCount = producers.length;
-    for (let i = 0; i < clusterCount; i++) {
-      const badge = parseInt((await clusters.nth(i).innerText()).trim(), 10);
+    const multiCount = await multiBusinessClusters.count();
+    for (let i = 0; i < multiCount; i++) {
+      const badge = parseInt((await multiBusinessClusters.nth(i).innerText()).trim(), 10);
       if (Number.isNaN(badge)) continue;
       expect(badge, "a unique-business cluster badge cannot exceed the producer count").toBeLessThanOrEqual(
         producerCount,
       );
       expect(badge).toBeGreaterThan(0);
+    }
+
+    // MEH-1568: and the single-business cluster must read as a real point count,
+    // never the old "1" (which looked like a broken badge).
+    const singleClusters = page.locator(".mehamakor-cluster-single");
+    for (let i = 0; i < (await singleClusters.count()); i++) {
+      const badge = parseInt((await singleClusters.nth(i).innerText()).trim(), 10);
+      if (Number.isNaN(badge)) continue;
+      expect(
+        badge,
+        "a single-business cluster shows how many POINTS it holds (>= 2), not '1'",
+      ).toBeGreaterThan(1);
     }
   });
 
@@ -178,23 +248,43 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
   // region, and zooming into it strands the loop away from the seeded pins
   // (markercluster only materialises in-view markers), so the secondary
   // markers never appeared on CI. Deterministic form: mock geolocation at one
-  // of the producer's secondary pins and ride the app's own near-me flow —
-  // goToMyLocation flies to zoom 13 (MapComponent.jsx:355), past
-  // disableClusteringAtZoom:11, so the per-location markers render
-  // individually right where the fix is.
+  // of the producer's secondary pins and ride the app's own near-me flow.
+  //
+  // MEH-1568: this test used to rely on the DEAD ZONE for its reveal —
+  // near-me's zoom 13 sat past disableClusteringAtZoom:11, so clustering was
+  // simply off and every pin rendered individually. That is exactly the bug
+  // (pins at identical coordinates stacked unclickably), so the option is gone
+  // and the reveal is now the real user path: click the cluster covering the
+  // camera until the individual pins are reachable. markercluster zooms into
+  // the cluster's bounds, and when a cluster CANNOT be split by zooming — the
+  // identical-coordinates case — it spiderfies at max zoom into a clickable
+  // ring (leaflet.markercluster-src.js:868-888). Either way the loop only
+  // terminates when every seeded point is individually reachable, which is the
+  // property this ticket restores.
   test("a multi-location producer's markers all open the same business card", async ({ page, context }) => {
     test.setTimeout(120_000);
     const producers = await fetchProducers(page);
     // MEH-1451: the geolocation + near-me viewport setup moved into the shared
-    // recenterOnSeededProducer helper (now also used by :66). Behaviour is
-    // unchanged — near-me flies to zoom 13 where the per-location markers render
-    // individually, exactly where this test asserts.
+    // recenterOnSeededProducer helper (now also used by :66).
     await recenterOnSeededProducer(page, context, producers);
 
     const secondary = page.locator(".mehamakor-marker-secondary");
+    // Reveal loop: while the seeded points are still collapsed into a cluster,
+    // click the centremost cluster (zoom-in, then spiderfy at max zoom). Bounded
+    // + condition-based, never a fixed wait. Exits immediately when the pins are
+    // already individual at this zoom.
+    for (let i = 0; i < 6 && (await secondary.count()) === 0; i++) {
+      const clicked = await clickCentremostCluster(page);
+      if (!clicked) break;
+      await secondary
+        .first()
+        .waitFor({ state: "visible", timeout: 4_000 })
+        .catch(() => {});
+    }
+
     await expect(
       secondary.first(),
-      "pickup/market_stand markers fan out per location",
+      "pickup/market_stand markers must be individually reachable — by zoom or by spiderfy",
     ).toBeVisible({ timeout: 20_000 });
 
     // MEH-1440 run 29899891331: at zoom 13 the seeded pins can overlap, so a
