@@ -112,8 +112,7 @@ def _flag_unknown_categories(db: Session, parsed_rows: list[RowResult]) -> None:
         name = (parsed.data["category_name"] or "").strip()
         if name not in known:
             parsed.errors.append(
-                f"קטגוריה לא מוכרת: '{name}'. "
-                f"קטגוריות מותרות: {', '.join(known_names)}"
+                f"קטגוריה לא מוכרת: '{name}'. קטגוריות מותרות: {', '.join(known_names)}"
             )
 
 
