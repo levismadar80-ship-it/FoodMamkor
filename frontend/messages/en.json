@@ -816,6 +816,15 @@
           "external_order": "Order form",
           "whatsapp_group": "WhatsApp group"
         },
+        "single": {
+          "phone": "Call us",
+          "instagram": "Instagram",
+          "website": "Visit the website",
+          "email": "Send an email",
+          "facebook": "Facebook",
+          "external_order": "Order form",
+          "whatsapp_group": "WhatsApp group"
+        },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
         "reveal_phone": "Show phone number",
@@ -906,7 +915,7 @@
       }
     },
     "dashboard": {
-      "back": "← Dashboard",
+      "back": "Back to tools",
       "heading": "My recipes",
       "btn_close_form": "Close",
       "btn_open_form": "+ Publish new recipe",
@@ -1003,7 +1012,7 @@
         "cancelled": "Cancelled",
         "fulfilled": "Completed ✅"
       },
-      "back": "← Dashboard",
+      "back": "Back to tools",
       "heading": "My group buys",
       "btn_close_form": "Close",
       "btn_open_form": "+ New group buy",
@@ -1067,7 +1076,14 @@
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
       "show_all": "Show {count} more cities",
-      "show_less": "Show less"
+      "show_less": "Show less",
+      "checker": {
+        "label": "Do you deliver to me?",
+        "placeholder": "Type a city to check",
+        "yes_nationwide": "Yes! Nationwide delivery — including {city}",
+        "yes": "Yes, we deliver to {city}",
+        "no": "Sorry, we don't deliver to {city} right now"
+      }
     },
     "friday_delivery": {
       "today": "today",
@@ -3774,7 +3790,7 @@
       },
       "insights_zero_state": {
         "title": "Your page isn't published yet",
-        "body": "Once it's approved, views and inquiries will appear here.",
+        "body": "Once approved, views and clicks will appear here.",
         "cta": "Complete your profile"
       },
       "nav": {
@@ -3805,8 +3821,8 @@
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
       "states": {
-        "zero_activity_title": "Views & inquiries",
-        "zero_activity": "No views or inquiries yet — share your page to get started",
+        "zero_activity_title": "Views and clicks",
+        "zero_activity": "No views or clicks yet — share your page to get started",
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
         "availability_disabled": "You'll be able to update availability once the business is approved and published",
         "view_public": "View your page"
@@ -3924,14 +3940,14 @@
       "pulse": {
         "section_aria": "Recent activity",
         "window_7d": "Last 7 days",
-        "hero": "{count, plural, one {1 new WhatsApp inquiry — open to reply} other {# new WhatsApp inquiries — open to reply}}",
+        "hero": "{count, plural, one {One new click on the WhatsApp button — worth checking for messages} other {# new clicks on the WhatsApp button — worth checking for messages}}",
         "rows": {
-          "whatsapp": "WhatsApp inquiry",
+          "whatsapp": "WhatsApp button click",
           "view": "Profile view"
         },
-        "cta": "Open WhatsApp to reply",
+        "cta": "Open WhatsApp",
         "title": "Recent activity",
-        "zero_state": "New inquiries and views will appear here — we'll update the moment customers start responding"
+        "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
@@ -4144,10 +4160,12 @@
       "pricing": {
         "heading": "Price & top product",
         "subtitle": "Your starting price and top product — shown on your business card.",
+        "scope_helper": "Your top product is the one your business is best known for — it appears as a highlighted card at the top of the product list on your page, with the starting price beside it.",
         "field_top_product": "Top product",
-        "top_product_placeholder": "Grass-fed beef",
+        "top_product_placeholder": "e.g. spelt sourdough loaf",
         "field_price_range": "Starting price",
-        "price_range_placeholder": "from ₪65/kg",
+        "price_range_placeholder": "e.g. from ₪30",
+        "price_hint": "A short \"from\" price — not a price list.",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4168,12 +4186,13 @@
       "delivery": {
         "heading": "Delivery & pickup",
         "subtitle": "How customers get your products — physical store, delivery, or both.",
+        "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
         "has_physical_location": "🏪 Physical store (welcomes customers)",
         "offers_delivery": "🚚 Delivery",
         "type_validation": "Must select at least one of the two",
         "delivery_nationwide": "Delivery nationwide",
         "delivery_cities_label": "Cities delivered to",
-        "delivery_excluded_label": "Except:",
+        "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
         "save_cta": "Save",
@@ -4292,9 +4311,12 @@
       "manage_events": {
         "heading": "My events",
         "create_cta": "New event",
-        "empty": "You haven't created any events yet. Tap \"New event\" to start.",
+        "empty_title": "No events yet",
+        "empty_description": "A workshop, a tour or an open day — an event appears on your business page and brings in new customers.",
+        "empty_cta": "New event",
         "loading": "Loading…",
-        "back": "← Back to my events",
+        "back_to_tools": "Back to tools",
+        "back": "Back to my events",
         "edit_heading": "Edit event",
         "not_found": "Event not found.",
         "badge_active": "Active",
@@ -4309,9 +4331,12 @@
       "manage_experiences": {
         "heading": "My experiences",
         "create_cta": "New experience",
-        "empty": "You haven't created any experiences yet. Tap \"New experience\" to start.",
+        "empty_title": "No experiences yet",
+        "empty_description": "A regular hosted session guests can book — an experience appears on your business page alongside your products.",
+        "empty_cta": "New experience",
         "loading": "Loading…",
-        "back": "← Back to my experiences",
+        "back_to_tools": "Back to tools",
+        "back": "Back to my experiences",
         "edit_heading": "Edit experience",
         "not_found": "Experience not found.",
         "action_edit": "Edit",
@@ -4342,7 +4367,7 @@
       "cta_favorites": "My favorites"
     },
     "followers": {
-      "back_link": "← Dashboard",
+      "back_link": "Back to dashboard",
       "heading": "My followers",
       "loading": "Loading…",
       "empty_title": "No followers yet — and that's fine",
@@ -4382,7 +4407,6 @@
       "skip_to_main": "Skip to content"
     },
     "event_new": {
-      "back_link": "← Dashboard",
       "heading": "Publish a new event",
       "field_title_label": "Title *",
       "field_description_label": "Description",

@@ -36,6 +36,11 @@ import {
   hasLicenseFormatWarning,
 } from "@/lib/license-required-categories";
 import EditAccordionCard from "@/components/EditAccordionCard";
+// MEH-1539 T3: the owner categories card reuses the REGISTER picker (per-category
+// descriptions MEH-1354, popular-6 + search, ≤3 cap MEH-1297, primary-first)
+// instead of its own flat checkbox grid. Same selection contract (category_ids).
+import CategorySelector from "@/components/CategorySelector";
+import CategoryRequestModal from "@/components/CategoryRequestModal";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -92,6 +97,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [fetchError, setFetchError] = useState(null);
+  // MEH-1539 T3: CategorySelector's no-results CTA needs a destination — the
+  // same request-a-category modal the register step opens
+  // (RegisterProducerClient.jsx:775). Without it the CTA would be a dead link.
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,20 +178,19 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
           {fetchError}
         </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {allCategories.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selected.includes(c.id)}
-                onChange={() => toggle(c.id)}
-                className="w-4 h-4 accent-primary"
-              />
-              <span>{c.name}</span>
-            </label>
-          ))}
-        </div>
+        <CategorySelector
+          categories={allCategories}
+          selectedIds={selected}
+          onChange={toggle}
+          onRequestCategory={() => setShowCategoryModal(true)}
+        />
       )}
+
+      <CategoryRequestModal
+        open={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        producerId={profile?.id ?? null}
+      />
 
       {errorMsg && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
@@ -1108,7 +1116,9 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
   return (
     <div>
       {/* Chrome + heading live in the EditAccordionCard header (MEH-1116). */}
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      <p className="text-xs text-fg-muted mb-1">{t("subtitle")}</p>
+      {/* MEH-1539 T2: what "top product" means + where the pair surfaces. */}
+      <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
 
       <div className="space-y-3">
         <Input
@@ -1126,6 +1136,7 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
           maxLength={60}
           onChange={(e) => setPriceRange(e.target.value)}
           placeholder={t("price_range_placeholder")}
+          helperText={t("price_hint")}
         />
       </div>
 
@@ -1626,7 +1637,10 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
 
   return (
     <div>
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      <p className="text-xs text-fg-muted mb-1">{t("subtitle")}</p>
+      {/* MEH-1540: scope helper — this card is delivery destinations only,
+          the business address itself lives in LocationCard. */}
+      <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
 
       <div className="space-y-3">
         <label className="flex items-center gap-2 text-sm cursor-pointer">

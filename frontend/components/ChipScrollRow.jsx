@@ -15,6 +15,16 @@ const WHEEL_LINE_PX = 16;
 // new palette colour (MEH-763 lock).
 const DEFAULT_CAT_RING = "#2e6853";
 
+// MEH-1545: the row's trailing NON-CONTENT scroll extent — the w-12 end
+// spacer (48px, MEH-1340 fade clearance) + its gap-2 (8px) + the w-px end
+// sentinel (1px) + its gap-2 (8px). These flex children inflate scrollWidth,
+// so at viewport widths where every chip fits, maxScroll still lands at
+// ~50px and useScrollAffordance grew a lone "phantom" arrow over the empty
+// end of the row (clicking it revealed blank spacer — Sapir QA 26/07).
+// Declared to the hook so arrows only render on REAL chip overflow. Keep in
+// sync with the spacer/sentinel widths at the bottom of the JSX.
+const TRAILING_FILLER_PX = 65;
+
 /**
  * Scrollable chip row for filter bars.
  *
@@ -67,7 +77,9 @@ export default function ChipScrollRow({
   const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
   // MEH-1391: scrollRef + arrow state come from the shared hook.
-  const affordance = useScrollAffordance();
+  // MEH-1545: declare the trailing spacer+sentinel px so a row whose chips
+  // all fit doesn't grow a phantom arrow out of its own filler.
+  const affordance = useScrollAffordance({ trailingFillerPx: TRAILING_FILLER_PX });
   const { scrollRef, showArrows } = affordance;
   const prevActiveKeysRef = useRef(null);
   // MEH-1340: sentinels observed by one IntersectionObserver to drive the
