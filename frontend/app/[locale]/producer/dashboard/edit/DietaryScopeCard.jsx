@@ -104,6 +104,12 @@ export default function DietaryScopeCard({ profile, onSave, reportDirty = () => 
     <div className="space-y-4">
       {/* Chrome + heading live in the page.js sub-section header (MEH-1116). */}
       <p className="text-xs text-fg-muted">{t("helper")}</p>
+      {/* MEH-1597: `helper` above says the answers get cross-checked — the
+          mechanism — without saying what the owner gets for them. This is the
+          payoff half: which surface the answers drive, and that they are read
+          as her own declaration. REUSES: ProductsSection.jsx `diet_helper`,
+          which the MEH-1539 audit names as the pattern to copy. */}
+      <p className="text-xs text-fg-muted">{t("scope_helper")}</p>
 
       <RadioGroup
         legend={t("q_vegan")}

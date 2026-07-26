@@ -1278,6 +1278,14 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
       {required && (
         <p className="text-xs text-fg-muted mb-3">{t("required_hint")}</p>
       )}
+      {/* MEH-1597: the "where it appears" line the MEH-1539 standard requires.
+          Unconditional — `required_hint` above renders only for a category that
+          demands a license, so without this an owner in any other category was
+          asked for a regulated number with nothing said about where it goes.
+          Deliberately silent on the verified badge: filling this number does
+          not grant it (admin-granted after document review, ADR-022), and
+          implying otherwise is the over-claim class MEH-1579 fixed. */}
+      <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
       <Input
         type="text"
         dir="ltr"
