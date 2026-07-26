@@ -9,6 +9,15 @@ const PRODUCER_FIXTURE = fs.readFileSync(
   path.join(__dirname, "fixtures", "producer-detail.json"),
   "utf-8"
 );
+// MEH-1552: the "minimal producer" edge-state fixture — phone the only channel,
+// no images, no reviews. Freezes the degenerate ContactCard states MEH-1551
+// fixed (single labeled row; desktop reveal-in-place) so a regression there is
+// caught in pixels, not only in unit tests. Same UUID scheme as above so
+// PRODUCER_DETAIL_RE matches.
+const MINIMAL_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-detail-minimal.json"),
+  "utf-8"
+);
 // Matches ONLY the detail call GET /api/producers/{uuid} — not the collection
 // (`/api/producers?…`, no id segment), the `…/reviews` sub-resource, or the
 // non-UUID siblings (`/count`, `/cities`, `/random`, `/by-slug/*`). Producer
@@ -300,6 +309,95 @@ test.describe("Visual parity — MEH-991", () => {
       // per §2.2). Only genuinely external assets stay masked: the Cloudinary
       // photos (pixel bytes vary; the gallery *grid* geometry is locked by the
       // fixed 3-image count, ImageGallery.jsx:179) and any Leaflet tiles.
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
+    });
+  });
+
+  // MEH-1552: edge-state coverage for producer-detail — the states the
+  // 4-channel "producer detail" baseline above can't see (MEH-1551's bug was
+  // invisible to VRT because the fixture is the ideal case). Same MEH-1497
+  // mechanics exactly: borrow a real id ONLY to clear middleware.js:67-71,
+  // fulfil the detail call from a fixture (so the pixels are the fixture's),
+  // viewport-only, same masks. DO NOT generate these baselines locally (font
+  // drift) — vrt-update.yml regenerates them on the runner; they will fail
+  // until it does, which is expected.
+
+  // Minimal producer (phone-only, no images, no reviews) on BOTH projects —
+  // the degenerate ContactCard layout: a single labeled channel row, not the
+  // 3-6 circle row.
+  test("producer-detail-minimal", async ({ page }) => {
+    await preparePage(page);
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: MINIMAL_FIXTURE });
+    });
+    const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
+      return;
+    }
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
+    await settle(page);
+    await expect(page).toHaveScreenshot("producer-detail-minimal.png", {
+      ...SHOT,
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
+    });
+  });
+
+  // Desktop-only: the phone reveal is a >=1024px behavior. On the minimal
+  // producer the phone is the sole channel, so it renders as the labeled single
+  // row (MEH-1551) — clicking it swaps the number pill in place.
+  test("producer-detail-phone-revealed", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "phone reveal is desktop-only (>=1024px)");
+    await preparePage(page);
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: MINIMAL_FIXTURE });
+    });
+    const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
+      return;
+    }
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
+    // Click the visible ContactCard (the desktop sidebar instance — the inline
+    // card is hidden at this width), then wait for the revealed number pill.
+    await page.locator('[data-testid="contact-single-row"]:visible').first().click();
+    await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
+    await settle(page);
+    await expect(page).toHaveScreenshot("producer-detail-phone-revealed.png", {
+      ...SHOT,
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
+    });
+  });
+
+  // Mobile-only: the full fixture, with the first ready-made-question
+  // disclosure (WhatsAppQuestionChips) expanded — an interaction state that
+  // never had a baseline.
+  test("producer-detail-disclosure-open", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "disclosure shot is mobile-only");
+    await preparePage(page);
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: PRODUCER_FIXTURE });
+    });
+    const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
+      return;
+    }
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
+    await page.locator('[data-testid="quick-answer-toggle"]').first().click();
+    await page.locator('[data-testid="quick-answer-content"]').first().waitFor({ timeout: 5_000 });
+    await settle(page);
+    await expect(page).toHaveScreenshot("producer-detail-disclosure-open.png", {
+      ...SHOT,
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
   });
