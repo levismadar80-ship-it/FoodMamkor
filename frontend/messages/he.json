@@ -537,9 +537,6 @@
     "info_tooltip": {
       "trigger_aria": "מידע נוסף"
     },
-    "parallax_quote": {
-      "aria": "ציטוט"
-    },
     "skeleton": {
       "loading_businesses": "טעינת עסקים טריים"
     },
