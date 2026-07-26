@@ -482,7 +482,7 @@
       "heading": "Three steps",
       "step01_title": "Find",
       "step01_text": "Discover businesses near you",
-      "step02_title": "Connect",
+      "step02_title": "Contact the business",
       "step02_text": "Talk directly with the business",
       "step03_title": "Buy",
       "step03_text": "Straight from the source, however suits you"
@@ -1229,8 +1229,8 @@
       "back_home": "← Back to site",
       "error_loading": "Error loading data",
       "error_generic": "Error",
-      "no_data": "No data to display",
-      "no_results": "No data",
+      "no_data": "No data yet",
+      "no_results": "No data yet",
       "items_pending_label": "{count} items awaiting approval",
       "items_pending_title": "{count} items awaiting approval",
       "brand_admin": "Mehamakor Admin"
@@ -1290,7 +1290,7 @@
       },
       "activity": {
         "heading": "Recent activity",
-        "empty": "No data to display",
+        "empty": "No data yet",
         "added_producer": "Business added:"
       },
       "weekly": {
@@ -1914,7 +1914,6 @@
       "title": "Settings",
       "load_error": "Error loading settings — try refreshing the page.",
       "sections": {
-        "notifications": "Notifications",
         "holiday": "Holiday window",
         "holiday_tooltip": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses are not accepting orders this week'. Disable after the holiday.",
         "holiday_tooltip_label": "Holiday window info",
@@ -1942,8 +1941,6 @@
         "categories_link": "Go to content →"
       },
       "fields": {
-        "admin_email": "Admin email for notifications",
-        "admin_whatsapp": "Admin WhatsApp number (E.164)",
         "holiday_key_label": "Holiday key for testing (empty = auto-detect by date)",
         "holiday_none": "— No override —",
         "holiday_pesach": "Passover",
@@ -1977,7 +1974,7 @@
       "categories": {
         "name_placeholder": "Category name",
         "add": "+ Add",
-        "empty": "No data to display",
+        "empty": "No data yet",
         "save": "Save",
         "delete": "Delete",
         "confirm_delete": "Delete '{name}' — {count} associated businesses",
@@ -2045,8 +2042,8 @@
       "legend_producers": "Businesses",
       "legend_users": "Users",
       "top_categories": "Popular categories",
-      "no_data": "No data",
-      "no_data_display": "No data to display",
+      "no_data": "No data yet",
+      "no_data_display": "No data yet",
       "top_cities": "Top cities",
       "top_producers_favorites": "Businesses with the most favorites",
       "geographic": "Geographic distribution",
@@ -3907,7 +3904,7 @@
         "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
       "analytics": {
-        "stats_window_label": "7 days / 30 days / total",
+        "stats_window_label": "7 days / in the last 30 days / total",
         "kpi": {
           "whatsapp_leads": "WhatsApp clicks",
           "contact_clicks": "Contact clicks (non-WhatsApp)",
@@ -3924,10 +3921,10 @@
           "whatsapp_clicks_sub": "Last 7 days",
           "conversion_label": "Conversion %",
           "conversion_tooltip": "Share of views that turned into a WhatsApp click in the last 30 days. The higher it goes, the more persuasive the profile.",
-          "conversion_sub": "View → WhatsApp (30 days)",
+          "conversion_sub": "View → WhatsApp in the last 30 days",
           "rank_label": "City rank",
           "rank_tooltip": "Your rank in the city by views in the last 30 days. Updates automatically.",
-          "rank_sub": "By views (30 days)"
+          "rank_sub": "By views in the last 30 days"
         },
         "eligible_weekly_title": "You're a candidate for business of the week — contact the team",
         "eligible_weekly_tooltip": "The team picks a business of the week from those ranked first in their city with high profile strength. If you're a candidate, a message will appear here.",
