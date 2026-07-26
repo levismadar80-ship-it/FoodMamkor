@@ -62,6 +62,15 @@ test.describe("Producer detail", () => {
     // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
     await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
 
+    // MEH-1550: the predicate above is permissive — a 404/redirect satisfies it
+    // too — and Next's error document carries its own <h1>, so neither it nor
+    // the CTA check below can tell a failed navigation from a real detail page
+    // (the CTA would just fail as "missing", pointing at the wrong thing).
+    // Assert the error boundary is absent first so the failure names the cause.
+    await expect(
+      page.locator("#__next_error__"),
+      "navigation failed — landed on Next's error page instead of a producer detail",
+    ).toHaveCount(0);
     await expect(page.locator("h1").first()).toBeVisible();
     // Either the unified PrimaryContactButton or a standalone WhatsApp button.
     // :visible filters out the md:hidden mobile CTA that appears first in DOM.
