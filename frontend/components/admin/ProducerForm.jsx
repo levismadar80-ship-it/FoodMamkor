@@ -10,6 +10,7 @@ import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -935,15 +936,16 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("price_range", e.target.value)}
             placeholder={t("producers.form.fields.price_range_placeholder")}
           />
-          {/* MEH-1541: founding year (optional) — numeric, dir="ltr", range
-              bounds mirror the server validator (1800..current year). */}
+          {/* MEH-1541: founding year (optional) — numeric, dir="ltr".
+              MEH-1581: bounds derive from the shared helper (Israel-tz year),
+              parity with the server validator (1800..israel_today().year). */}
           <Input
             type="number"
             label={t("producers.form.fields.established_year")}
             value={form.established_year}
             onChange={(e) => update("established_year", e.target.value)}
-            min={1800}
-            max={new Date().getFullYear()}
+            min={MIN_ESTABLISHED_YEAR}
+            max={currentIsraelYear()}
             dir="ltr"
             inputMode="numeric"
             placeholder={t("producers.form.fields.established_year_placeholder")}

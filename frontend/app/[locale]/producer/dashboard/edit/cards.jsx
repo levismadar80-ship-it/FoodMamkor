@@ -31,6 +31,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import {
   requiresProducerLicense,
   hasLicenseFormatWarning,
@@ -1009,8 +1010,9 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       />
 
       {/* MEH-1541: founding year (optional) → the quiet "מאז {שנה}" masthead
-          line. Numeric field, dir="ltr" so the digits read in LTR order; range
-          bounds mirror the server validator (1800..current year). */}
+          line. Numeric field, dir="ltr" so the digits read in LTR order.
+          MEH-1581: bounds derive from the shared helper (Israel-tz year),
+          parity with the server validator (1800..israel_today().year). */}
       <Input
         type="number"
         label={t("year_label")}
@@ -1020,8 +1022,8 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
           setYear(e.target.value);
           setSaved(false);
         }}
-        min={1800}
-        max={new Date().getFullYear()}
+        min={MIN_ESTABLISHED_YEAR}
+        max={currentIsraelYear()}
         dir="ltr"
         inputMode="numeric"
         data-testid="owner-established-year-input"
