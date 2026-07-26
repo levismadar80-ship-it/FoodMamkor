@@ -344,6 +344,18 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
+  // MEH-1579: the city/address hint follows the precision selected RIGHT NOW —
+  // an `approximate` location renders a pin in the area with no address, so a
+  // flat "shown in navigation" line promised a surface the customer never sees
+  // (MEH-1539 standard, principle 2). Reads `form.location_precision`, so it
+  // re-renders live as the owner switches the select — no save round-trip.
+  // REUSES: the per-option `precision_helper` mechanism two fields above.
+  const placeHint = tForm(
+    form.location_precision === "approximate"
+      ? "place_hint_approximate"
+      : "place_hint_exact",
+  );
+
   return (
     <form
       onSubmit={(e) => {
@@ -400,14 +412,14 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             placeholder={tForm("label_placeholder")}
           />
         </Field>
-        <Field label={tForm("city_label")} hint={tForm("place_hint")}>
+        <Field label={tForm("city_label")} hint={placeHint}>
           <TextInput
             value={form.city}
             onChange={set("city")}
             placeholder={tForm("city_placeholder")}
           />
         </Field>
-        <Field label={tForm("address_label")} hint={tForm("place_hint")}>
+        <Field label={tForm("address_label")} hint={placeHint}>
           <TextInput
             value={form.address}
             onChange={set("address")}
