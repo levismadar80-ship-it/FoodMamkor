@@ -639,12 +639,6 @@
       "og_title": "My favorites on Mehamakor",
       "og_description": "The businesses and products you've saved, waiting in one place."
     },
-    "upgrade": {
-      "title": "Upgrade to premium | Mehamakor",
-      "description": "Compare plans for business owners on Mehamakor — free vs premium: unlimited products, more images, stats, and more.",
-      "og_title": "Upgrade to premium on Mehamakor",
-      "og_description": "Showcase your business in full — unlimited products, image gallery, and stats."
-    },
     "map": {
       "title": "Map of local food businesses — Mehamakor",
       "description": "Find local food businesses on the map. Real, fresh, healthy food near you.",
@@ -1921,7 +1915,6 @@
       "load_error": "Error loading settings — try refreshing the page.",
       "sections": {
         "notifications": "Notifications",
-        "freemium": "Freemium",
         "holiday": "Holiday window",
         "holiday_tooltip": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses are not accepting orders this week'. Disable after the holiday.",
         "holiday_tooltip_label": "Holiday window info",
@@ -1951,8 +1944,6 @@
       "fields": {
         "admin_email": "Admin email for notifications",
         "admin_whatsapp": "Admin WhatsApp number (E.164)",
-        "premium_price": "Monthly premium price (₪)",
-        "free_image_limit": "Number of images in the free plan",
         "holiday_key_label": "Holiday key for testing (empty = auto-detect by date)",
         "holiday_none": "— No override —",
         "holiday_pesach": "Passover",
@@ -2846,36 +2837,6 @@
       "prev_aria": "Previous page",
       "next_aria": "Next page"
     }
-  },
-  "upgrade": {
-    "title": "Upgrade to premium",
-    "subtitle": "Get more exposure and more options for your business",
-    "free_plan": {
-      "name": "Free",
-      "feature_map": "✓ Appears on the map",
-      "feature_3_images": "✓ Up to 3 images",
-      "feature_contact": "✓ Contact details",
-      "feature_delivery": "✓ Delivery zones",
-      "missing_products": "✗ Unlimited products",
-      "missing_images": "✗ Unlimited images",
-      "missing_stats": "✗ Statistics"
-    },
-    "premium_plan": {
-      "recommended": "Recommended",
-      "name": "Premium",
-      "price_pending": "Coming soon",
-      "feature_map": "✓ Appears on the map",
-      "feature_unlimited_images": "✓ Unlimited images",
-      "feature_contact": "✓ Contact details",
-      "feature_delivery": "✓ Delivery zones",
-      "feature_unlimited_products": "✓ Full product list",
-      "feature_stats": "✓ View statistics",
-      "feature_badge": "✓ Premium badge"
-    },
-    "notify_success": "🎉 You're signed up! We'll let you know when premium launches.",
-    "email_placeholder": "Your email",
-    "notify_cta": "Notify me at launch",
-    "notify_submitting": "Sending..."
   },
   "newsletter_unsubscribe": {
     "meta_title": "Unsubscribe from the newsletter · Mehamakor",
@@ -3912,10 +3873,6 @@
         "saved_vacation": "Saved — on a break until {date}"
       },
       "quick_links": {
-        "add_event": {
-          "title": "Add an event",
-          "sub": "Workshop, tour, open days, etc."
-        },
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
@@ -4221,6 +4178,24 @@
         "clear_cta": "Clear hours",
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
         "invalid_range": "Closing time must be after opening time"
+      },
+      "order_window": {
+        "heading": "Order window",
+        "subtitle": "Until what time each day you accept orders. Separate from opening hours.",
+        "empty_state": "No order window set — your business page won't show order hours.",
+        "toggle_label": "accepting orders this day",
+        "toggle_closed": "Not accepting orders",
+        "from_label": "opening time",
+        "to_label": "closing time",
+        "invalid_range": "Closing time must be after opening time",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "save_success": "Order window saved",
+        "save_error": "Save failed. Please try again.",
+        "revert_cta": "Discard changes",
+        "clear_cta": "Clear all",
+        "summary_empty": "Not set",
+        "summary_set": "{count, plural, one {1 day a week} other {# days a week}}"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
