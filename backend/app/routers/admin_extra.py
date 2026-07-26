@@ -386,8 +386,11 @@ def get_analytics(
 # ============================================================
 
 DEFAULT_SETTINGS = {
-    "admin_email": "",
-    "admin_whatsapp": "",
+    # MEH-1566: `admin_email` + `admin_whatsapp` were removed here — write-only
+    # keys with zero readers. Every admin-notification recipient is read from
+    # the env-backed settings object (`settings.admin_email` /
+    # `settings.admin_whatsapp_to`, backend/app/config.py:85,64), never from
+    # this table. Existing rows are left in place and inert, same as below.
     # MEH-1555: `freemium_premium_price` + `freemium_free_image_limit` were
     # removed here — write-only keys with zero readers anywhere in backend or
     # frontend (the /upload/image cap is the hardcoded `>= 3` in
