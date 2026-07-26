@@ -74,6 +74,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
+import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
@@ -1218,9 +1219,12 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      // Surface the Chunk-2 server guards (scheme / 7-value) inline.
-      const detail = err?.response?.data?.detail;
-      setErrorMsg(typeof detail === "string" ? detail : t("save_error"));
+      // Surface the server contact guards inline (Chunk-2 scheme / 7-value +
+      // MEH-1537 email/phone/whatsapp_group format). detailToMessage handles
+      // BOTH the string detail (400/409) and the 422 RequestValidationError
+      // array — the earlier `typeof detail === "string"` check collapsed the
+      // 422 array to the generic copy, hiding the specific Hebrew field error.
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
     } finally {
       setSaving(false);
     }
@@ -1236,7 +1240,7 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       <ViewOnPageLink producerId={profile?.id} anchor="section-contact" />
 
       <div className="space-y-3">
-        <Input type="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
+        <Input type="tel" inputMode="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
           onChange={(e) => upd("phone", e.target.value)} error={fieldError("phone")} />
         <Input type="text" dir="ltr" label={t("field_instagram")} value={form.instagram}
           onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
@@ -1246,7 +1250,7 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
             empty-primary guard applies (fieldError never targets it). */}
         <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
           onChange={(e) => upd("whatsapp_group", e.target.value)} />
-        <Input type="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+        <Input type="email" inputMode="email" dir="ltr" label={t("field_email")} value={form.contact_email}
           onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
         <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
           onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
