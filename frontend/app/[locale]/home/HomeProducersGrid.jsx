@@ -96,7 +96,6 @@ export function HomeProducersGrid({
         chips={chipsWithIcons}
         activeKeys={chips}
         onChipClick={onToggleChip}
-        fadeBg="#F5F0E8"
         className="mb-3"
       />
       {/* Step 1 — filter chips tip */}

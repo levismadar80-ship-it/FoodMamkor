@@ -373,9 +373,6 @@ export default function EventsPage() {
           chips={chips}
           activeKey={activeChipKey}
           onChipClick={onChipClick}
-          // brand cream — shared ChipScrollRow fade API, matches
-          // ProducersClient.jsx:264 + HomeProducersGrid.jsx:70.
-          fadeBg="#F5F0E8"
         />
       </div>
 

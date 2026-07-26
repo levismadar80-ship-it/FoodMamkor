@@ -263,6 +263,37 @@ body.sheet-open .cookie-banner {
   display: none;
 }
 
+/* MEH-1572 — ChipScrollRow edge fades, cut into the scroller with a mask
+   instead of two painted gradient overlays. Because a mask is transparent it
+   reveals whatever surface is behind the row, so the component no longer
+   needs each caller to declare its background colour (the old `fadeBg` prop,
+   whose #ffffff default smeared white over the cream surfaces — MEH-1019 /
+   MEH-1108). ChipScrollRow publishes only the two stop depths; a side with
+   nothing hidden past it publishes 0px, which collapses that end of the
+   gradient to fully opaque (= no fade).
+
+   Direction: ChipScrollRow pins dir="rtl" on its own wrapper, so inline-start
+   is always the physical RIGHT edge and `to left` runs start → end. If that
+   wrapper ever stops hard-coding dir, revisit this gradient with it. */
+.chip-scroll-fade-mask {
+  --chip-fade-start: 0px;
+  --chip-fade-end: 0px;
+  -webkit-mask-image: linear-gradient(
+    to left,
+    transparent 0,
+    #000 var(--chip-fade-start),
+    #000 calc(100% - var(--chip-fade-end)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to left,
+    transparent 0,
+    #000 var(--chip-fade-start),
+    #000 calc(100% - var(--chip-fade-end)),
+    transparent 100%
+  );
+}
+
 /* MEH-58 Phase 1 — custom SVG pin markers. */
 .mehamakor-marker-wrap {
   background: transparent !important;
