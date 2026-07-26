@@ -15,6 +15,8 @@ mapping. Renames/deletions now belong exclusively to Alembic migrations.
 Uses the shared Postgres test DB via the `db` fixture; `_clean_tables`
 (conftest) TRUNCATEs with RESTART IDENTITY before each test.
 """
+from sqlalchemy import text
+
 from seed_data import CATEGORIES, seed_categories
 
 from app.models.models import Category
@@ -50,6 +52,18 @@ def _seed_staging_shaped(db):
             _HIGH_ID_BASE + position if position in HOLE_POSITIONS else position
         )
         db.add(Category(id=row_id, name=name, emoji=emoji))
+    db.commit()
+    # Inserting with EXPLICIT ids does not advance the SERIAL sequence, but every
+    # real row (admin_extra.py, the MEH-927 migration) is created by autoincrement
+    # and does advance it. Re-sync so the fixture matches production: otherwise a
+    # genuine INSERT draws a stale id and dies on categories_pkey — an artifact of
+    # the fixture, not a property of the code under test.
+    db.execute(
+        text(
+            "SELECT setval(pg_get_serial_sequence('categories', 'id'), "
+            "(SELECT max(id) FROM categories))"
+        )
+    )
     db.commit()
 
 
@@ -95,22 +109,34 @@ def test_seed_never_duplicates_a_name(db):
     assert len(names) == len(set(names)), f"duplicate names: {names}"
 
 
-def test_seed_issues_no_update_so_renames_are_a_noop(db):
+def test_seed_never_updates_a_row_and_reinserts_the_freed_name(db):
     """The rename capability is GONE: a row whose name differs from CATEGORIES
-    at its positional id must survive untouched.
+    at its positional id survives untouched. If the renamed row ever comes back
+    as its canonical name, an UPDATE path was reintroduced — that is the
+    MEH-1530 bug returning, not a test to relax.
 
-    Renames are now an Alembic responsibility (MEH-927 is the worked example).
-    If this ever fails, an UPDATE path was reintroduced — that is the MEH-1530
-    bug returning, not a test to relax.
+    Insert-only has a corollary worth pinning down, because it is the visible
+    behaviour change for admins: renaming a row FREES its canonical name, so the
+    next seed re-inserts that name as a NEW row rather than reverting the rename.
+    The old id-keyed code silently reverted the admin's edit; this keeps it and
+    re-adds the canonical row alongside. That is the safer half of the trade (no
+    silent data loss), and renaming a seeded category from the admin API is
+    out-of-contract anyway — renames belong in a migration (MEH-927 pattern).
     """
     _seed_staging_shaped(db)
     squatter_id = 2  # a non-hole position, so a position-keyed write would hit it
+    freed_name = db.get(Category, squatter_id).name
     db.get(Category, squatter_id).name = "admin-created-name"
     db.commit()
+    before = db.query(Category).count()
 
     seed_categories(db)
 
+    # No UPDATE: the admin's rename stands.
     assert db.get(Category, squatter_id).name == "admin-created-name"
+    # The freed canonical name returns as exactly one NEW row.
+    assert db.query(Category).count() == before + 1
+    assert db.query(Category).filter(Category.name == freed_name).count() == 1
 
 
 def test_seed_populates_a_fresh_table(db):
