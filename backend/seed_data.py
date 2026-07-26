@@ -298,15 +298,41 @@ def seed_categories(db):
 
 
 def seed():
+    """Bootstrap a fresh database. Idempotent, insert-only, never a reconciler.
+
+    Identity is the STABLE key, never the display value. Every existence check
+    below matches on a column the product does not let a human edit for
+    presentation reasons — ``producers.slug`` (unique, part of the public URL),
+    ``categories.name`` via the DB UNIQUE constraint in ``seed_categories``,
+    ``users.email``. Display columns (``name``, ``title``, labels) are MUTABLE:
+    an admin renames one at runtime (``admin_extra.py`` for categories,
+    ``admin.py`` / ``producer_me.py`` for producers) and any seed keyed on that
+    value stops matching its own row on the next boot — it then INSERTs a
+    second copy instead of skipping.
+
+    Renames and deletions belong in an Alembic migration, not here. A migration
+    is reviewed, reversible, and can carry an FK guard; a boot-time seed has
+    none of that. Changing a display value in ``PRODUCERS`` / ``CATEGORIES`` is
+    deliberately a no-op against an already-seeded database.
+
+    History: MEH-1104 (name-keyed category UPDATE duplicated a row),
+    MEH-1107 (id-keyed replacement crashed on staging id holes),
+    MEH-1530 (categories → insert-only; producers → slug-keyed here).
+    """
     db = SessionLocal()
     try:
         # Seed categories — insert-only; renames/deletes are migrations (MEH-1530).
         seed_categories(db)
 
-        # Seed producers
+        # Seed producers. Keyed by slug — the stable identity column (unique,
+        # public URL). DO NOT key this on Producer.name: name is display text an
+        # admin can edit at runtime, and a rename would make this lookup miss its
+        # own row and INSERT a duplicate — the MEH-1104 failure, one table over.
+        # producers.name carries NO unique constraint, so nothing downstream
+        # would catch the duplicate.
         for p_data in PRODUCERS:
             existing = (
-                db.query(Producer).filter(Producer.name == p_data["name"]).first()
+                db.query(Producer).filter(Producer.slug == p_data["slug"]).first()
             )
             if existing:
                 continue
