@@ -3774,7 +3774,7 @@
       },
       "insights_zero_state": {
         "title": "Your page isn't published yet",
-        "body": "Once it's approved, views and inquiries will appear here.",
+        "body": "Once approved, views and clicks will appear here.",
         "cta": "Complete your profile"
       },
       "nav": {
@@ -3805,8 +3805,8 @@
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
       "states": {
-        "zero_activity_title": "Views & inquiries",
-        "zero_activity": "No views or inquiries yet — share your page to get started",
+        "zero_activity_title": "Views and clicks",
+        "zero_activity": "No views or clicks yet — share your page to get started",
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
         "availability_disabled": "You'll be able to update availability once the business is approved and published",
         "view_public": "View your page"
@@ -3924,14 +3924,14 @@
       "pulse": {
         "section_aria": "Recent activity",
         "window_7d": "Last 7 days",
-        "hero": "{count, plural, one {1 new WhatsApp inquiry — open to reply} other {# new WhatsApp inquiries — open to reply}}",
+        "hero": "{count, plural, one {One new click on the WhatsApp button — worth checking for messages} other {# new clicks on the WhatsApp button — worth checking for messages}}",
         "rows": {
-          "whatsapp": "WhatsApp inquiry",
+          "whatsapp": "WhatsApp button click",
           "view": "Profile view"
         },
         "cta": "Open WhatsApp to reply",
         "title": "Recent activity",
-        "zero_state": "New inquiries and views will appear here — we'll update the moment customers start responding"
+        "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
