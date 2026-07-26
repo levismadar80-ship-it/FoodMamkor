@@ -44,6 +44,13 @@ const CLUSTER_TIGHT_RADIUS_ZOOM = 11;
 const CLUSTER_RADIUS_WIDE = 60;
 const CLUSTER_RADIUS_TIGHT = 40;
 
+// MEH-1611: framing a selected business's points. Padding keeps the outermost
+// pins off the viewport edge (and clear of the bottom sheet's top edge on
+// mobile); the zoom cap stops a tight cluster of points from slamming the
+// camera to street level. Named per exec §10 / eslint no-magic-numbers.
+const FIT_PADDING_PX = 40;
+const FIT_MAX_ZOOM = 15;
+
 // docs/archive/MAP_IMPROVEMENTS.md #5 — category color + icon lookup lives in
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
@@ -89,6 +96,27 @@ function escapeHtmlAttr(str) {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+// MEH-1611: focus-on-select. When one business is selected, every OTHER
+// business's pin is DEMOTED (faded + desaturated) rather than removed — the
+// Airbnb map-search pattern: the surrounding supply stays legible as context,
+// so the map never lies about what is in the area. Anti-pattern (explicitly
+// rejected): hiding non-selected pins on a discovery map; full isolation lives
+// on the entity page (store-locator pattern), which is this ticket's chunk 2.
+//
+// The demote itself is pure CSS (globals.css `.mehamakor-map-focused`) driven by
+// ONE class toggle on the map container — no per-marker JS, no layer add/remove
+// (MEH-1424's O(N²) lesson). The only thing JS must know per marker is whether
+// it belongs to the SELECTED business, and that rides here in the divIcon's
+// className: Leaflet re-applies the icon every time a marker renders out of a
+// cluster, so the flag survives clustering/panning with zero bookkeeping.
+const MARKER_WRAP_CLASS = "mehamakor-marker-wrap";
+const MARKER_FOCUSED_CLASS = "mehamakor-marker-focused";
+const MAP_FOCUSED_CLASS = "mehamakor-map-focused";
+
+function markerWrapClass(active) {
+  return active ? `${MARKER_WRAP_CLASS} ${MARKER_FOCUSED_CLASS}` : MARKER_WRAP_CLASS;
 }
 
 function createCategoryMarker(
@@ -175,7 +203,7 @@ function createCategoryMarker(
 
   return L.divIcon({
     html,
-    className: "mehamakor-marker-wrap",
+    className: markerWrapClass(active),
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -242,7 +270,7 @@ function createSecondaryMarker(
     ">${glyph}</div>`;
   return L.divIcon({
     html,
-    className: "mehamakor-marker-wrap mehamakor-marker-secondary",
+    className: `${markerWrapClass(active)} mehamakor-marker-secondary`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -305,6 +333,21 @@ function createLocationIcon(producer, location, state = {}) {
     : createCategoryMarker(producer, opts);
 }
 
+// MEH-1611: the [lat, lng] pairs of a producer's markers, Zod-checked.
+// Rule 19 — every coordinate crossing into a Leaflet call is validated first,
+// so one NaN row can never poison the bounds the camera is fitted to (it is
+// dropped instead, and a business whose rows are ALL invalid yields [], which
+// focusProducer treats as "no camera move").
+function usablePoints(markers = []) {
+  return markers
+    .map(({ marker }) => {
+      const latlng = marker?.getLatLng?.();
+      const check = CoordSchema.safeParse({ lat: latlng?.lat, lng: latlng?.lng });
+      return check.success ? [check.data.lat, check.data.lng] : null;
+    })
+    .filter(Boolean);
+}
+
 export default function MapComponent({
   producers = [],
   onProducerClick,
@@ -325,6 +368,18 @@ export default function MapComponent({
   // MEH-1412 (MEH-1388 chunk 3): show/hide the pickup + market_stand secondary
   // marker layer. Default true (all points visible); MapClient owns the toggle.
   showSecondaryLayer = true,
+  // MEH-1611: id of the business the user has selected, or null. Drives the
+  // focus-on-select demote (see markerWrapClass above).
+  //
+  // DECLARATIVE ON PURPOSE — do NOT re-plumb this as imperative api calls.
+  // Selection is cleared in EIGHT places (useMapFilters.js:158,173,199,224,257
+  // on every filter change · useMapSync.js:186 canvas click · MapClient.jsx:584
+  // card close), so an imperative "clearFocus()" would have to be threaded
+  // through all of them and would silently rot the moment a ninth appears —
+  // the two-parallel-mechanisms smell (.claude/rules/workflow.md §Smell #1).
+  // React state is already the single owner of "who is selected"; this prop
+  // just mirrors it onto the map.
+  focusedProducerId = null,
 }) {
   const t = useTranslations("map.component");
   const visitedSet =
@@ -378,6 +433,22 @@ export default function MapComponent({
     });
   };
 
+  // MEH-1611: the ONLY writer of the focus state. Both entry points (the
+  // `focusedProducerId` prop effect and the imperative focusProducer API) route
+  // through here, so the container class and the icons can never disagree about
+  // who is selected. Returns nothing; camera work stays with the caller.
+  // `id = null` rather than `id ?? null` inside: a default parameter already
+  // covers the undefined case (the prop's own default), and an explicit null
+  // is the target value anyway.
+  const applyFocus = (id = null) => {
+    if (activeIdRef.current === id) return;
+    const prev = activeIdRef.current;
+    activeIdRef.current = id;
+    if (prev) refreshMarkerIcon(prev);
+    if (id) refreshMarkerIcon(id);
+    containerRef.current?.classList.toggle(MAP_FOCUSED_CLASS, id !== null);
+  };
+
   // Expose imperative API via a callback prop
   useEffect(() => {
     if (!registerApi) return;
@@ -385,20 +456,25 @@ export default function MapComponent({
       focusProducer: (producerId) => {
         const entry = markersRef.current.get(producerId);
         if (!entry || !entry.markers?.length || !mapInstanceRef.current) return;
-        const prev = activeIdRef.current;
-        activeIdRef.current = producerId;
-        if (prev) refreshMarkerIcon(prev);
-        refreshMarkerIcon(producerId);
-        // MEH-1412: a producer owns N markers now — fly to its primary location
-        // (fallback: first marker).
-        const primary =
-          entry.markers.find((m) => m.location?.is_primary) || entry.markers[0];
-        const latlng = primary.marker.getLatLng();
-        const coordCheck = CoordSchema.safeParse({ lat: latlng?.lat, lng: latlng?.lng });
-        if (!coordCheck.success) return;
-        // Suppress the "search this area" banner on programmatic flyTo.
+        applyFocus(producerId);
+        // MEH-1611: a business with several points must be FRAMED, not flown to.
+        const points = usablePoints(entry.markers);
+        if (points.length === 0) return;
+
+        // Suppress the "search this area" banner on our own camera moves — both
+        // branches below are programmatic (moveend fires once for either).
         programmaticMoveRef.current = true;
-        mapInstanceRef.current.flyTo([coordCheck.data.lat, coordCheck.data.lng], 14, { duration: 1.2 });
+        if (points.length >= 2) {
+          mapInstanceRef.current.fitBounds(points, {
+            padding: [FIT_PADDING_PX, FIT_PADDING_PX],
+            // Without a cap, a business whose points sit metres apart would fit
+            // to street level and lose all surrounding context.
+            maxZoom: FIT_MAX_ZOOM,
+          });
+          return;
+        }
+        // Single usable point → the existing flyTo, unchanged.
+        mapInstanceRef.current.flyTo(points[0], 14, { duration: 1.2 });
       },
       setHoveredProducer: (producerId) => {
         const prev = hoveredIdRef.current;
@@ -690,8 +766,13 @@ export default function MapComponent({
 
         const marker = L.marker([lat, lng], {
           icon: createLocationIcon(p, loc, {
-            active: false,
-            hovered: false,
+            // MEH-1611: was hardcoded `false`. A refetch that rebuilds every
+            // marker ("חפשי באזור זה", a layer toggle, a filter change) happens
+            // while a business can still be selected — hardcoding false dropped
+            // the selected business's own focus flag, so the CSS demote then
+            // faded it along with everything else.
+            active: activeIdRef.current === p.id,
+            hovered: hoveredIdRef.current === p.id,
             visited: visitedSet.has(p.id),
           }),
           // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
@@ -783,6 +864,24 @@ export default function MapComponent({
     // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producers, visitedIds, showSecondaryLayer]);
+
+  // MEH-1611: mirror the selected business onto the map.
+  //
+  // Declared AFTER the marker effect on purpose: on the first commit the
+  // markers must exist before we try to refresh their icons. Two writes total,
+  // both O(1) in the number of markers on screen:
+  //   1. the container class, which the CSS uses to demote everyone else;
+  //   2. an icon refresh for the outgoing + incoming business only (≤ its own
+  //      point count) so their focus flag / active ring flip.
+  // Nothing is added to or removed from the cluster group — marker count before
+  // a selection and after it is identical by construction.
+  useEffect(() => {
+    applyFocus(focusedProducerId);
+    // applyFocus is redefined every render and closes over the current
+    // visitedSet; depending on it would re-run this effect on every render for
+    // no benefit (its own equality check already makes a repeat call a no-op).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedProducerId]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-lg" />
