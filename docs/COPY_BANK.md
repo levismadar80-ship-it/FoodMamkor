@@ -799,7 +799,7 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 
 ## Section 12 — Producer-page directory disclaimer, plain-language rewrite (MEH-1548)
 
-> **Status: 🕐 PENDING — awaiting Sapir's pick. No copy has been changed yet.**
+> **Status: ✅ APPROVED — Sapir picked variant A (26/07). Shipped verbatim; see "Final locked copy" below.**
 > Surface: `components/DirectoryDisclaimer.jsx`, mounted once at
 > `app/[locale]/producer/[id]/components/ProducerSections.jsx:522` (producer detail page only;
 > home-product surfaces were deferred under MEH-543). Renders as
@@ -840,10 +840,29 @@ and the declared verification scope is **not** widened (over-claim guard):
 | **he** | `לפרטים המלאים — תנאי השימוש` → `/terms` |
 | **en** | `Full details — Terms of Use` → `/terms` |
 
-### Notes for the decision
+### Final locked copy (variant A — approved 26/07, shipped)
 
-- All three drop "מדריך" and instead say plainly what the platform **does** ("מציגה בתי עסק").
-- All three keep the three facts the current line carries: not the seller, responsibility for
-  products + licensing sits with the business, and prices are set by the business.
-- Whichever line is chosen, the final wording joins the agenda for the pending lawyer review of
-  the terms/privacy documents before it is treated as settled legal copy.
+| Field | Value |
+|---|---|
+| **he (rendered)** | `מהמקור מציגה בתי עסק — לא מוכרת ולא צד לעסקה. הקנייה נעשית ישירות מול בית העסק, והאחריות על המוצרים, על הרישוי ועל המחירים היא שלו.` + link `לפרטים המלאים — תנאי השימוש` → `/terms` |
+| **en (rendered)** | `מהמקור lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which is responsible for its products, its licensing, and its prices.` + link `Full details — Terms of Use` → `/terms` |
+| **i18n keys** | `directory.disclaimer.body` · `.terms_link` |
+| **Status** | ✅ MEH-1548 |
+
+`BRAND_NAME` is still rendered separately in semibold by the component, so each `body` value
+starts mid-sentence — that is deliberate, not a truncation.
+
+**Key structure changed 3 → 2.** `brand_is_prefix` / `directory_only` /
+`prices_set_by_businesses` were retired: variant A carries the price clause inline
+("ועל המחירים"), so a separate prices sentence would have repeated it. `DirectoryDisclaimer.jsx`
+was the only consumer of all three (grep-verified), so nothing else needed touching.
+
+### Notes on the decision
+
+- All three candidates dropped "מדריך" and instead said plainly what the platform **does**
+  ("מציגה בתי עסק"); A was chosen as the one that tracks `/terms` §1 most literally.
+- The three facts the old line carried are all preserved: not the seller, responsibility for
+  products + licensing sits with the business, and the business sets prices.
+- **Still open:** this wording joins the agenda for the pending lawyer review of the
+  terms/privacy documents before it is treated as finally settled legal copy. Approval here is
+  a product/copy approval, not a legal sign-off.
