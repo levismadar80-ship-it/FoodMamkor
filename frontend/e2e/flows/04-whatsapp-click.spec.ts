@@ -23,6 +23,14 @@ test.describe("WhatsApp analytics", () => {
     // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
     await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
     await page.waitForLoadState("domcontentloaded");
+    // MEH-1550: the predicate above is permissive (a 404/redirect satisfies it),
+    // and Next's error document has its own <h1> — so without this the CTA
+    // assertion below would fail as "CTA missing" on what is really a failed
+    // navigation. Name the actual cause instead.
+    await expect(
+      page.locator("#__next_error__"),
+      "navigation failed — landed on Next's error page instead of a producer detail",
+    ).toHaveCount(0);
 
     // Block WhatsApp navigation so the test page stays active
     await page.route("https://wa.me/**", (route) => route.abort());

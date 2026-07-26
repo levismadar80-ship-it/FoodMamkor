@@ -19,6 +19,14 @@ test.describe("Lightbox", () => {
     // <article> wrapper whose click races hydration. See parity.spec.ts header.
     await firstCard.locator('a[href^="/"]').first().click();
     await page.waitForURL((url) => !url.pathname.startsWith("/producers"), { timeout: 20_000 });
+    // MEH-1550: the predicate above is permissive (a 404/redirect satisfies it),
+    // and Next's error document has its own <h1>. Without this the spec would
+    // SKIP on a failed navigation ("no gallery images") rather than fail —
+    // silently losing coverage. Assert the error boundary is absent first.
+    await expect(
+      page.locator("#__next_error__"),
+      "navigation failed — landed on Next's error page instead of a producer detail",
+    ).toHaveCount(0);
 
     // Gallery image button — only exists when the producer has ≥1 photo
     const imageBtn = page.locator('[aria-label^="הגדלו תמונה"]').first();
