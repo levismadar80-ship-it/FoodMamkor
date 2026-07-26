@@ -4198,7 +4198,6 @@
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
         "subtitle": "Leave blank to show default questions based on your category",
-        "context_line": "These questions appear on your business page and help customers start a conversation",
         "guidance": "These questions appear on your page. The more delivery and ordering details you fill in, the more of them get answered right on the page instead of reaching you on WhatsApp.",
         "placeholder_1": "e.g. What's in stock this week?",
         "placeholder_2": "e.g. Do you deliver to [city]?",
