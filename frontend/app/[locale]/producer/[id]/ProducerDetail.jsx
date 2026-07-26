@@ -149,7 +149,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <div className="flex">
           {/* MEH-1390: a tab whose section never renders is a dead click, so
               each tab mirrors its section's render condition from
-              ProducerSections.jsx (about :143 — description; products :159 —
+              ProducerSections.jsx (about :141 — description; products :159 —
               products/signature; delivery :410-412 — any delivery/pickup
               signal). Keep the pairs in sync when a section condition changes.
               The reviews wrapper always renders (it is the IO observation
