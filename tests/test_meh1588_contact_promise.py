@@ -31,10 +31,15 @@ EXPECTED_DETAIL = "תודה! נחזור אלייך תוך 3 ימי עסקים"
 
 
 def _payload(**overrides):
+    # ASCII fixture values (CLAUDE-REVIEW.md rule 5 — Hebrew belongs in Linear,
+    # not in Python source). ContactIn's letter-count validator accepts
+    # [א-תa-zA-Z], so Latin text satisfies it exactly as Hebrew would. The
+    # Hebrew that remains in this file is unavoidable: EXPECTED_DETAIL and the
+    # assertion substrings ARE the API values under test.
     body = {
-        "name": "ספיר ניסוי",
+        "name": "Test User",
         "email": "contact_promise@example.com",
-        "message": "הודעת בדיקה עם מספיק תוכן כדי לעבור ולידציה.",
+        "message": "Testing message with enough content to pass validation.",
     }
     body.update(overrides)
     return body
