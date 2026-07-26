@@ -80,6 +80,9 @@ import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCa
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
+// MEH-1544: weekly order-acceptance window (own file, same reason as above —
+// imported directly rather than via a cards.jsx passthrough wrapper).
+import OrderWindowEditor from "./OrderWindowEditor";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -100,6 +103,8 @@ const ANCHOR_TO_KEY = {
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  // MEH-1544: weekly order-acceptance window (sibling of hours, same group).
+  "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
   "owner-story": "ownerStory",
@@ -153,6 +158,7 @@ const KEY_TO_ANCHOR = {
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  orderWindow: "order-window",
 };
 
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
@@ -177,6 +183,7 @@ const KEY_TO_GROUP = {
   location: "location",
   delivery: "location",
   hours: "location",
+  orderWindow: "location",
   contact: "contact",
   questions: "contact",
 };
@@ -194,6 +201,12 @@ const OPEN_KEY_FOR = (key) =>
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
   trust: ["license", "kashrut"],
+  // MEH-1544: `orderWindow` is deliberately NOT a member. Membership drives the
+  // hub's "{done}/{total}" completion count, and the order window is an opt-in
+  // field — counting it would show every existing business as 2/4 instead of
+  // 2/3 and nudge them to maintain hours they never asked for (the exact
+  // GBP-staleness risk the ticket cites). It still belongs to the location
+  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
   location: ["location", "delivery", "hours"],
   contact: ["contact", "questions"],
 };
@@ -566,6 +579,8 @@ function EditPageInner() {
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
     hours: Boolean((profile.opening_hours || "").trim()),
+    // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
+    orderWindow: Object.keys(profile.order_window || {}).length > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
@@ -605,11 +620,12 @@ function EditPageInner() {
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
     hours: t("hours.heading"),
+    orderWindow: t("order_window.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
+    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -976,6 +992,29 @@ function EditPageInner() {
           onToggle={() => toggleKey("hours")}
         >
           <HoursCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in and separate from
+            the opening-hours card above: a business that never opens this
+            renders nothing on its public page. */}
+        <EditAccordionCard
+          anchorId="order-window"
+          title={t("order_window.heading")}
+          summary={
+            cardFilled.orderWindow
+              ? t("order_window.summary_set", {
+                  count: Object.keys(profile.order_window || {}).length,
+                })
+              : t("order_window.summary_empty")
+          }
+          open={openKey === "orderWindow"}
+          onToggle={() => toggleKey("orderWindow")}
+        >
+          <OrderWindowEditor
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
