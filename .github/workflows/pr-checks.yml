@@ -73,6 +73,15 @@ jobs:
           fi
           echo "No DO-NOT-MERGE marker. OK."
 
+  repo-guards:
+    name: Repo guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run every guard in scripts/checks/ (MEH-999)
+        run: bash scripts/checks/run-all.sh
+
   qa-artifacts-size:
     name: qa-artifacts size cap
     runs-on: ubuntu-latest
@@ -648,6 +657,7 @@ jobs:
       - changes
       - do-not-merge-gate
       - qa-artifacts-size
+      - repo-guards
       - build
       - ai-artifact-scan
       - pytest
@@ -667,6 +677,7 @@ jobs:
           R_CHANGES: ${{ needs.changes.result }}
           R_DNM: ${{ needs.do-not-merge-gate.result }}
           R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
+          R_REPO_GUARDS: ${{ needs.repo-guards.result }}
           R_BUILD: ${{ needs.build.result }}
           R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
           R_PYTEST: ${{ needs.pytest.result }}
@@ -706,6 +717,7 @@ jobs:
           echo "Always required (stack-independent):"
           check "DO-NOT-MERGE marker gate" "$R_DNM"
           check "qa-artifacts size cap" "$R_QA_SIZE"
+          check "Repo guards" "$R_REPO_GUARDS"
           check "Env drift (.env.example)" "$R_ENV_DRIFT"
 
           if [ "$BACKEND_TOUCHED" = "true" ]; then
