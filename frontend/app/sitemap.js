@@ -7,6 +7,10 @@
 import { SITE_URL, API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { routing } from "@/i18n/routing";
+// MEH-1574: single owner for the hreflang map. This file used to keep its own
+// byte-identical copy of the same object — the exact two-owners drift class
+// lib/i18n-seo.js:18 warns about. Import it; never re-declare it here.
+import { HREFLANG_CODES } from "@/lib/i18n-seo";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -14,18 +18,16 @@ function urlForLocale(path, locale) {
   return `${base}${path}`;
 }
 
-// MEH-476: hreflang codes emitted to Google. "he-IL" geo-targets the Israeli
-// audience (mehamakor.online is IL-only); matches the <head> hreflang shipping
-// in MEH-476 PR 2 for cross-signal consistency. Routing locale codes ("he",
-// "en") stay unchanged in middleware + URL building above.
-const HREFLANG_CODES = { he: "he-IL", en: "en" };
-
 // Expands one logical path into one sitemap entry per locale. Every entry
 // carries the full alternates.languages map so Next.js emits an <xhtml:link>
 // per locale inside every <url> block.
+// MEH-1574: the `?? l` fallback mirrors buildAlternates (lib/i18n-seo.js:63) so
+// both hreflang consumers degrade identically — a locale added to routing.locales
+// without a HREFLANG_CODES entry emits its bare routing code instead of the
+// `undefined` key this file used to produce.
 function localizeEntry(path, meta) {
   const languages = Object.fromEntries(
-    routing.locales.map((l) => [HREFLANG_CODES[l], urlForLocale(path, l)]),
+    routing.locales.map((l) => [HREFLANG_CODES[l] ?? l, urlForLocale(path, l)]),
   );
   return routing.locales.map((locale) => ({
     url: urlForLocale(path, locale),
