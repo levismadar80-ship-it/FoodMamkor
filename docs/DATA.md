@@ -791,6 +791,47 @@ POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no free
                                  writes producers.owner_photo_url atomically
 ```
 
+### Health (`app/routers/health.py`)
+
+Three surfaces, one owner. All public, all unrate-limited. Undocumented since
+MEH-483 shipped them; added in MEH-1598 alongside the MEH-1596 version block.
+
+```
+GET/HEAD /health/liveness        public — {"status":"alive"}. Always 200 while the worker is up.
+                                 No DB call, no app.state read.
+
+GET/HEAD /health/readiness       public — 200 {"status":"ready","migrations":<rev|"unknown">,
+                                 "db_init":<state>} only when SELECT 1 succeeds AND db_init
+                                 settled. Otherwise 503 {"status":"not_ready","reason":...}:
+                                   db_unreachable:<ExcName>  SELECT 1 raised
+                                   db_init_failed            db_init_status == "failed"
+                                   db_init_pending           db_init_status == "initializing"
+                                 A 503 here means the boot-time DB init (create_all + seed)
+                                 failed or has not finished — NOT that the service is down.
+                                 The process is serving; it is not ready. MEH-1530 Chunk 2
+                                 points the Railway healthcheck here, so read the `reason`
+                                 before concluding anything.
+                                 `migrations` is "unknown" when the alembic_version table is
+                                 absent (e.g. a create_all-bootstrapped DB) — informational,
+                                 never a readiness failure.
+
+GET/HEAD /health                 public — backwards-compat alias, the path Railway currently
+                                 polls (railway.json). ALWAYS 200; it never reports failure
+                                 via status code, only via the db_init field.
+                                 {"status":"ok","db_init":<state>,"version":{...}}
+                                 `version` carries EXACTLY FOUR fields (MEH-1596):
+                                   git_sha       GIT_SHA or RAILWAY_GIT_COMMIT_SHA
+                                   git_branch    GIT_BRANCH or RAILWAY_GIT_BRANCH
+                                   alembic_head  revision cached ONCE at startup, not per request
+                                   booted_at     UTC ISO-8601 process start
+                                 Any of the four may be the string "unknown" — that is a known
+                                 state, not a bug. alembic_head is "unknown" whenever the
+                                 alembic_version table is absent or was unreadable at startup;
+                                 git_sha/git_branch are "unknown" when the env vars are unset
+                                 or empty. Nothing here raises: a health endpoint that 500s is
+                                 worse than one that says it does not know.
+```
+
 ---
 
 ## Notifications (Twilio + Resend)
