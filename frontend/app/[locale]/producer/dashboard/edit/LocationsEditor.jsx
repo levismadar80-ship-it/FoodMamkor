@@ -10,7 +10,9 @@
  *           of these rows lives in MapComponent (chunk 3, shipped).
  * Related:  frontend/lib/schemas.js:LocationInputSchema (Rule-19 safeParse);
  *           backend/app/routers/producer_me.py (CRUD + invariants).
- * History:  MEH-1421 (creation, MEH-1388 chunk 4a).
+ * History:  MEH-1421 (creation, MEH-1388 chunk 4a); MEH-1563 (field-guidance
+ *           layer per the MEH-1539 standard — card intro, per-field hints,
+ *           example placeholders, lat/lng behind a collapsed disclosure).
  */
 "use client";
 
@@ -194,6 +196,13 @@ export default function LocationsEditor() {
 
   return (
     <div className="space-y-3" data-testid="locations-editor">
+      {/* MEH-1563: card-level intro — what a location point is + where it renders.
+          Under the MEH-1539 standard a card-level "where" line covers every field
+          below it, so it stays visible in all three list states (0 / 1 / many). */}
+      <p className="text-xs text-fg-muted" data-testid="locations-intro">
+        {t("intro")}
+      </p>
+
       {locations.length === 0 && !adding ? (
         <EmptyState
           icon={MapPin}
@@ -340,8 +349,11 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
         </button>
       </div>
 
+      {/* MEH-1563: every field carries a hint and/or an example placeholder
+          (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
+          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment. */}
       <div className="grid grid-cols-2 gap-2">
-        <Field label={tForm("kind_label")}>
+        <Field label={tForm("kind_label")} hint={tForm("kind_helper")}>
           <select
             value={form.kind}
             onChange={set("kind")}
@@ -355,7 +367,7 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             ))}
           </select>
         </Field>
-        <Field label={tForm("precision_label")}>
+        <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
           <select
             value={form.location_precision}
             onChange={set("location_precision")}
@@ -365,31 +377,41 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             <option value="approximate">{tForm("precision_approximate")}</option>
           </select>
         </Field>
-        <Field label={tForm("label_label")}>
-          <TextInput value={form.label} onChange={set("label")} />
-        </Field>
-        <Field label={tForm("city_label")}>
-          <TextInput value={form.city} onChange={set("city")} />
-        </Field>
-        <Field label={tForm("address_label")}>
-          <TextInput value={form.address} onChange={set("address")} />
-        </Field>
-        <Field label={tForm("phone_label")}>
-          <TextInput value={form.phone} onChange={set("phone")} type="tel" />
-        </Field>
-        <Field label={tForm("lat_label")}>
+        <Field label={tForm("label_label")} hint={tForm("label_hint")}>
           <TextInput
-            value={form.lat}
-            onChange={set("lat")}
-            inputMode="decimal"
-            testid="location-lat"
+            value={form.label}
+            onChange={set("label")}
+            placeholder={tForm("label_placeholder")}
           />
         </Field>
-        <Field label={tForm("lng_label")}>
-          <TextInput value={form.lng} onChange={set("lng")} inputMode="decimal" />
+        <Field label={tForm("city_label")} hint={tForm("place_hint")}>
+          <TextInput
+            value={form.city}
+            onChange={set("city")}
+            placeholder={tForm("city_placeholder")}
+          />
+        </Field>
+        <Field label={tForm("address_label")} hint={tForm("place_hint")}>
+          <TextInput
+            value={form.address}
+            onChange={set("address")}
+            placeholder={tForm("address_placeholder")}
+          />
+        </Field>
+        <Field label={tForm("phone_label")}>
+          <TextInput
+            value={form.phone}
+            onChange={set("phone")}
+            type="tel"
+            placeholder={tForm("phone_placeholder")}
+          />
         </Field>
         <Field label={tForm("hours_label")}>
-          <TextInput value={form.opening_hours} onChange={set("opening_hours")} />
+          <TextInput
+            value={form.opening_hours}
+            onChange={set("opening_hours")}
+            placeholder={tForm("hours_placeholder")}
+          />
         </Field>
         <label className="flex items-center gap-2 self-end text-sm text-text">
           <input
@@ -403,6 +425,34 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
           {tForm("primary_label")}
         </label>
       </div>
+
+      {/* MEH-1563: raw coordinates are an escape hatch, not a required field —
+          collapsed by default so the form no longer opens on two unexplained
+          numeric inputs. Presentation only: `form.lat` / `form.lng` state and
+          buildPayload are untouched. REUSES: components/admin/ProducerForm.jsx:647
+          (MEH-1242 PR2 manual-coords disclosure). */}
+      <details className="rounded-[10px] border border-border bg-surface px-3 py-2">
+        <summary
+          className="cursor-pointer text-xs font-medium text-fg-muted"
+          data-testid="location-coords-toggle"
+        >
+          {tForm("coords_summary")}
+        </summary>
+        <p className="mt-1 text-[11px] text-fg-muted">{tForm("coords_hint")}</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Field label={tForm("lat_label")}>
+            <TextInput
+              value={form.lat}
+              onChange={set("lat")}
+              inputMode="decimal"
+              testid="location-lat"
+            />
+          </Field>
+          <Field label={tForm("lng_label")}>
+            <TextInput value={form.lng} onChange={set("lng")} inputMode="decimal" />
+          </Field>
+        </div>
+      </details>
 
       <div className="flex items-center gap-2">
         <button
@@ -425,22 +475,29 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   );
 }
 
-function Field({ label, children }) {
+// MEH-1563: `hint` renders the field's "where it appears" / explanation line
+// under the input. Omitted → nothing renders (fields whose guidance is carried
+// by the card intro alone).
+function Field({ label, hint, children }) {
   return (
     <label className="block text-xs">
       <span className="mb-1 block font-medium text-fg-muted">{label}</span>
       {children}
+      {hint ? (
+        <span className="mt-1 block text-[11px] text-fg-muted">{hint}</span>
+      ) : null}
     </label>
   );
 }
 
-function TextInput({ value, onChange, type = "text", inputMode, testid }) {
+function TextInput({ value, onChange, type = "text", inputMode, testid, placeholder }) {
   return (
     <input
       type={type}
       inputMode={inputMode}
       value={value}
       onChange={onChange}
+      placeholder={placeholder}
       data-testid={testid}
       className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
     />
