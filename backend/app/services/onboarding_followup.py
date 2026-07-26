@@ -268,6 +268,13 @@ def _is_licensed(producer: Producer) -> bool:
     admin-approved AND a non-blank license number was supplied. Whitespace-only
     license values count as "not supplied" — same normalisation as
     backend/app/services/license_validation.py:30."""
+    # MEH-1587: unreachable in the scheduler path — send_due_followups' query
+    # already admits only _ELIGIBLE_STATUS ("approved"), so this branch cannot
+    # fire from there. Kept deliberately: this predicate is BODY selection
+    # (5A vs 5B), not the eligibility gate, and it must stay correct if called
+    # directly or from a future caller that doesn't pre-filter.
+    # DO NOT read this as the status gate — the real one is in the candidate
+    # query in send_due_followups.
     if producer.status != "approved":
         return False
     pln = (producer.producer_license_number or "").strip()
