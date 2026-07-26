@@ -42,6 +42,25 @@ logger = logging.getLogger(__name__)
 SITE_DOMAIN = "mehamakor.co.il"
 
 
+# MEH-1587: the ONLY Producer.status that may enter the onboarding sequence.
+# The four bodies below are written in Sapir's first person and assume a
+# reviewed, published business ("עברתי על הפרופיל שלכם, והכל נראה טוב" :213;
+# "אם הפרופיל שלכם פעיל" :137). Before this filter the candidate query gated
+# on created_at + NULL-column only, so a REJECTED business received the full
+# 30-day coaching sequence — a founder-credibility failure, not a copy bug.
+#
+# Producer.status is a free String(20) (models.py:72) with no enum and no DB
+# CHECK constraint; the authoritative enumeration is the admin filter pattern
+# at routers/admin.py:112 — pending | pending_whatsapp | approved | rejected |
+# inactive. Equality against this constant admits exactly one of the five, so
+# a status added later is excluded by default (fail-closed) rather than
+# silently opted into a first-person email.
+#
+# DO NOT widen this to an IN(...) list without Sapir's sign-off — what a
+# pending business receives on day 2/5/10 is an open product question
+# (MEH-1587 §8), not an implementation detail.
+_ELIGIBLE_STATUS = "approved"
+
 # MEH-539: step → (days_old threshold, Producer column attribute name).
 # Column is by step number (the 2nd / 3rd / 4th / 5th email of the sequence),
 # the days-old number is the wait window. See migration b504e4be4225.
@@ -249,6 +268,13 @@ def _is_licensed(producer: Producer) -> bool:
     admin-approved AND a non-blank license number was supplied. Whitespace-only
     license values count as "not supplied" — same normalisation as
     backend/app/services/license_validation.py:30."""
+    # MEH-1587: unreachable in the scheduler path — send_due_followups' query
+    # already admits only _ELIGIBLE_STATUS ("approved"), so this branch cannot
+    # fire from there. Kept deliberately: this predicate is BODY selection
+    # (5A vs 5B), not the eligibility gate, and it must stay correct if called
+    # directly or from a future caller that doesn't pre-filter.
+    # DO NOT read this as the status gate — the real one is in the candidate
+    # query in send_due_followups.
     if producer.status != "approved":
         return False
     pln = (producer.producer_license_number or "").strip()
@@ -280,9 +306,15 @@ def _build_email(step: int, producer: Producer, first_name: str) -> Tuple[str, s
 
 def send_due_followups(db: Session) -> dict[int, int]:
     """Scheduler entry point. For each of the 4 follow-up steps, find every
-    producer whose registration is older than the step's window AND whose
-    `email_followup_N_sent_at` is still NULL, send the corresponding email,
-    and stamp the column with `now()`. Returns {step: count_sent}.
+    APPROVED producer whose registration is older than the step's window AND
+    whose `email_followup_N_sent_at` is still NULL, send the corresponding
+    email, and stamp the column with `now()`. Returns {step: count_sent}.
+
+    MEH-1587: the status gate (`_ELIGIBLE_STATUS`) is a correctness boundary,
+    not an optimisation — the bodies are first-person and assume a reviewed,
+    live business. A producer that leaves `approved` mid-sequence (admin.py:331
+    toggles approved↔inactive) stops receiving the remaining steps and its
+    unsent columns stay NULL, so it resumes if re-approved.
 
     Per-producer fail-isolation: any exception inside one iteration is logged
     and the loop continues — the daily run never crashes on a bad row.
@@ -297,7 +329,11 @@ def send_due_followups(db: Session) -> dict[int, int]:
         column = getattr(Producer, column_attr)
         candidates = (
             db.query(Producer)
-            .filter(Producer.created_at <= cutoff, column.is_(None))
+            .filter(
+                Producer.status == _ELIGIBLE_STATUS,
+                Producer.created_at <= cutoff,
+                column.is_(None),
+            )
             .all()
         )
         for p in candidates:
