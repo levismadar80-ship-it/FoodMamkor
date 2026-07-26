@@ -19,6 +19,14 @@
 - [ ] **phone-reveal בדסקטופ (≥1024px)** — לחיצה על אייקון/שורת הטלפון — **תוצאה מצופה:** ה-affordance של הטלפון מתחלף **במקום** לגלולת מספר (`dir="ltr"`, ספרות שמאל-לימין, אייקון טלפון) באותו מיקום בשורה. אין גלולה נפרדת שמופיעה מתחת לשורת העיגולים.
 - [ ] **טלפון בנייד (<1024px)** — הקשה על הטלפון — **תוצאה מצופה:** חיוג רגיל (tel:), ללא reveal.
 
+## MEH-1552 — VRT state-coverage ל-producer-detail (מצבי-קצה) (26/07)
+
+כיסוי אוטומטי (לא ידני) — הרשומה כאן מתעדת מה נשמר ואיך מרעננים baselines:
+
+- [ ] **fixture "עסק מינימלי"** — `frontend/e2e/visual/fixtures/producer-detail-minimal.json` (טלפון בלבד, בלי תמונות/ביקורות) → מקפיא את פריסת השורה-המתויגת היחידה של ContactCard (MEH-1551).
+- [ ] **3 צילומים חדשים ב-`parity.spec.ts`** — `producer-detail-minimal` (desktop+mobile), `producer-detail-phone-revealed` (desktop בלבד, reveal in-place), `producer-detail-disclosure-open` (mobile בלבד, quick-answer פתוח).
+- [ ] **רענון baselines** — דרך `vrt-update.yml` workflow_dispatch על ה-branch עם `--grep "producer-detail-(minimal|phone-revealed|disclosure-open)"` (הבוט מקמט על ה-runner; **אין** ליצור baselines מקומית — fonts drift). הצילומים נכשלים עד שה-baselines קיימים — צפוי.
+
 ## MEH-1489 — משטחי הרשמה מודעי-התחברות (early gate + adaptive CTA + redirect) (23/07)
 
 מטריצת QA — 4 מצבים × משטחי כל chunk (guest / consumer מחוברת / producer מחוברת / admin מחובר):
