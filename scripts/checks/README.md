@@ -103,6 +103,7 @@ stating outright rather than leaving readers to infer it from a `case` statement
 |---|---|---|
 | `docs/**` | `docs/CHANGELOG.md`, `docs/DESIGN.md`, `docs/audits/…` | the documentation tree |
 | `.claude/**` | `.claude/rules/workflow.md`, `.claude/hooks/…` | agent configuration + rules |
+| `.ai/**` | `.ai/diagrams/api-routes.md`, `.ai/diagrams/db-schema.md` | session-start diagrams — rule 12 requires them in the same PR as the code they document (MEH-1607) |
 | `HANDOFF.md` | — | an append-only log itself |
 | **root-level** `*.md` | `CLAUDE.md`, `AGENTS.md`, `README.md` | documentation that happens to live at the repo root |
 
