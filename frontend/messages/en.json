@@ -3873,10 +3873,6 @@
         "saved_vacation": "Saved — on a break until {date}"
       },
       "quick_links": {
-        "add_event": {
-          "title": "Add an event",
-          "sub": "Workshop, tour, open days, etc."
-        },
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
