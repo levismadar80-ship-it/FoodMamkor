@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useId } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { useEffect, useId, useMemo } from "react";
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import { useTranslations } from "next-intl";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { CoordSchema } from "@/lib/schemas";
+import { styleForProducer } from "@/lib/category-registry";
+import { categoryGlyphSvg } from "@/lib/marker-glyph";
 
 // Fix Leaflet's broken default icon paths in Next.js/webpack builds
 delete L.Icon.Default.prototype._getIconUrl;
@@ -13,6 +16,128 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
+
+// MEH-1611 chunk 2: the business's OWN points, rendered on its own page.
+//
+// This is the store-locator half of the ticket. /map is a discovery surface, so
+// there a selected business only DEMOTES its neighbours (chunk 1) — the full
+// isolation lives here, on the entity page, where "only this business" is the
+// correct and expected answer. Foreign pins are impossible by construction:
+// the component is handed one producer's `locations[]` and never fetches.
+const SINGLE_POINT_ZOOM = 14;
+const FIT_MAX_ZOOM = 15;
+const FIT_PADDING_PX = 28;
+const PRIMARY_PIN_PX = 32;
+const SECONDARY_PIN_PX = 24;
+
+// pickup / market_stand are the business's satellite points; a branch (and any
+// unknown kind) is the business itself. Same split as the /map fan-out
+// (MEH-1412) so a pin means the same thing on both surfaces.
+function isSecondaryKind(kind) {
+  return kind === "pickup" || kind === "market_stand";
+}
+
+// REUSES: frontend/components/MapComponent.jsx:94-306 — same visual language
+// (category colour + glyph from styleForProducer, filled circle for the
+// business, hollow ring for a satellite point) built from the same shared
+// primitives. Deliberately NOT imported from there: MapComponent pulls in
+// leaflet.markercluster + its CSS, and a business page must not ship the whole
+// clustering engine to draw ten static pins. The selection/hover/visited states
+// are dropped too — nothing on this map is selectable.
+// Inline hex is the documented Leaflet divIcon exception (raw HTML string, no
+// Tailwind): #fff = surface.
+function locationIcon(location, producer) {
+  const secondary = isSecondaryKind(location?.kind);
+  const { color, icon: GlyphIcon } = styleForProducer(producer);
+  const size = secondary ? SECONDARY_PIN_PX : PRIMARY_PIN_PX;
+  const inner = secondary
+    ? categoryGlyphSvg(GlyphIcon, { color, weight: "regular", size: 13 })
+    : categoryGlyphSvg(GlyphIcon);
+  const html = `
+    <div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${secondary ? "#fff" : color};
+      border:2px solid ${secondary ? color : "#fff"};
+      box-shadow:0 1px 5px rgba(0,0,0,0.2);
+      display:flex;align-items:center;justify-content:center;
+    ">${inner}</div>`;
+  return L.divIcon({
+    html,
+    className: `mehamakor-minimap-pin${secondary ? " mehamakor-minimap-pin-secondary" : ""}`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+// The producer's own lat/lng mirror, when it is usable. Kept as a named helper
+// so the branch count lives here rather than inflating the component.
+function isUsableCoord(lat, lng) {
+  return (
+    lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))
+  );
+}
+
+// Rule 19: coordinates are Zod-checked before they reach any Leaflet call, so a
+// single malformed row can never NaN the whole viewport — it is dropped and the
+// remaining points still frame correctly.
+function toUsablePoints(locations) {
+  if (!Array.isArray(locations)) return [];
+  return locations
+    .map((loc) => {
+      const check = CoordSchema.safeParse({ lat: loc?.lat, lng: loc?.lng });
+      return check.success ? { ...loc, lat: check.data.lat, lng: check.data.lng } : null;
+    })
+    .filter(Boolean);
+}
+
+// Frame every point the business has. lat/lng here are geographic values, not
+// layout directions — the RTL logical-property rule does not apply (documented
+// exception, .claude/rules/rtl.md "Map geographic controls").
+function FitToPoints({ points }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.setView([points[0].lat, points[0].lng], SINGLE_POINT_ZOOM);
+      return;
+    }
+    map.fitBounds(
+      points.map((point) => [point.lat, point.lng]),
+      { padding: [FIT_PADDING_PX, FIT_PADDING_PX], maxZoom: FIT_MAX_ZOOM },
+    );
+  }, [map, points]);
+  return null;
+}
+
+// One pin per point, with its label (and opening hours when the row carries
+// them). The tooltip is hover-only, which is a desktop affordance — the
+// authoritative, tap-reachable version of the same information is the pickup
+// list DeliveryBlock renders in text directly beside this map (MEH-1512), so
+// nothing here is reachable only by hovering.
+function LocationPins({ points, producer, fallbackLabel }) {
+  return points.map((location, index) => {
+    const label = location.label || fallbackLabel;
+    return (
+      <Marker
+        key={location.id ?? `${location.lat}-${location.lng}-${index}`}
+        position={[location.lat, location.lng]}
+        icon={locationIcon(location, producer)}
+        title={label}
+        alt={label}
+      >
+        <Tooltip>
+          <span className="font-medium">{label}</span>
+          {location.opening_hours && (
+            <>
+              <br />
+              <span>{location.opening_hours}</span>
+            </>
+          )}
+        </Tooltip>
+      </Marker>
+    );
+  });
+}
 
 // Disable all interaction on the map (static preview)
 function DisableInteraction() {
@@ -83,22 +208,38 @@ function GoogleMapsGlyph() {
  * the heading and the address line). Deep links unchanged: Waze universal
  * link (NOT waze://) + Google dir API (revision-1 #9).
  */
-export default function MiniMap({ lat, lng, name }) {
+export default function MiniMap({ lat, lng, name, locations, producer = null }) {
   const t = useTranslations("map.mini");
 
-  const hasCoords = lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng));
-  const wazeUrl = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  // MEH-1611: every usable point the business owns. Memoised so FitToPoints'
+  // effect keys on the data, not on a fresh array identity each render.
+  const points = useMemo(() => toUsablePoints(locations), [locations]);
 
-  if (!hasCoords) return null;
+  const hasCoords = isUsableCoord(lat, lng);
+
+  // Absent from the DOM entirely when there is nothing to show — no empty map,
+  // no placeholder. A business with points but no lat/lng mirror still renders
+  // (the points are the content); only "no coordinates anywhere" bails. This
+  // guard runs BEFORE the camera/nav target below, which dereferences a point.
+  if (!hasCoords && points.length === 0) return null;
+
+  // Initial camera + navigation target. Prefer the producer's own lat/lng
+  // mirror so /events, /experiences and every existing producer page keep the
+  // exact target they have today; fall back to the primary point (then the
+  // first) only for a business that has points but no mirror. FitToPoints
+  // re-frames straight after mount when there is more than one point.
+  const primaryPoint = points.find((point) => point.is_primary) ?? points[0] ?? null;
+  const centerPoint = hasCoords ? { lat: Number(lat), lng: Number(lng) } : primaryPoint;
+  const wazeUrl = `https://waze.com/ul?ll=${centerPoint.lat},${centerPoint.lng}&navigate=yes`;
+  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${centerPoint.lat},${centerPoint.lng}`;
 
   return (
     <div>
       <div className="rounded-lg overflow-hidden border border-border" style={{ height: 300 }}>
         <MapContainer
-          key={`${lat}-${lng}`}
-          center={[Number(lat), Number(lng)]}
-          zoom={14}
+          key={`${lat}-${lng}-${points.length}`}
+          center={[Number(centerPoint.lat), Number(centerPoint.lng)]}
+          zoom={SINGLE_POINT_ZOOM}
           style={{ height: "100%", width: "100%" }}
           zoomControl={false}
           attributionControl={false}
@@ -107,7 +248,17 @@ export default function MiniMap({ lat, lng, name }) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='© OpenStreetMap contributors'
           />
-          <Marker position={[Number(lat), Number(lng)]} title={name} />
+          {/* MEH-1611: one pin per point of THIS business — branch → filled
+              category pin, pickup / market_stand → hollow outline. When the
+              business has no locations[] rows we keep the original single
+              default-icon marker, so /events and /experiences (which pass no
+              locations at all) render exactly as before. */}
+          {points.length > 0 ? (
+            <LocationPins points={points} producer={producer} fallbackLabel={name || t("default_label")} />
+          ) : (
+            <Marker position={[Number(lat), Number(lng)]} title={name} />
+          )}
+          <FitToPoints points={points} />
           <DisableInteraction />
         </MapContainer>
       </div>
