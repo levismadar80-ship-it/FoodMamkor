@@ -136,9 +136,14 @@ test.describe("producer (owner) role is denied the admin panel", () => {
     // renders in place — no redirect at all. Asserting the URL is unchanged is
     // what makes this deterministic: the old toHaveURL(LOGIN_URL) sampled a
     // transient /login that LoginClient.jsx:89-91 immediately replaced.
+    // ORDER MATTERS: assert the STATE first. toHaveURL matches the moment the
+    // page arrives, so on its own it would also pass against a redirect that
+    // fires a beat later — the very race this spec was rewritten to remove.
+    // getByTestId auto-waits for the render, so by the time the URL is checked
+    // the page has settled.
+    await expect(page.getByTestId(DENIED)).toHaveCount(1);
     await expect(page).toHaveURL(ADMIN_URL);
     await expect(page).not.toHaveURL(LOGIN_URL);
-    await expect(page.getByTestId(DENIED)).toHaveCount(1);
     await expect(page.locator(ADMIN_NAV)).toHaveCount(0);
 
     // Positive contrast: the SAME session reaches the producer-only dashboard,
@@ -157,17 +162,18 @@ test.describe("consumer role is denied the admin panel", () => {
   test("consumer is denied both /admin and /producer/dashboard, in place", async ({ page }) => {
     await page.goto("/admin");
     await assertAuthenticated(page);
-    await expect(page).toHaveURL(ADMIN_URL);
+    // State before URL — see the ordering note in the producer describe above.
     await expect(page.getByTestId(DENIED)).toHaveCount(1);
+    await expect(page).toHaveURL(ADMIN_URL);
     await expect(page.locator(ADMIN_NAV)).toHaveCount(0);
 
     // A consumer is not a producer either — distinct from the owner above.
     await page.goto("/producer/dashboard");
+    await expect(page.getByTestId(DENIED)).toHaveCount(1);
     await expect(page).toHaveURL(DASHBOARD_URL);
     // MEH-1599's whole point: she is NOT silently dropped on the homepage.
     await expect(page).not.toHaveURL(HOME_URL);
     await expect(page).not.toHaveURL(LOGIN_URL);
-    await expect(page.getByTestId(DENIED)).toHaveCount(1);
     await expect(page.locator(PRODUCER_NAV)).toHaveCount(0);
   });
 });
