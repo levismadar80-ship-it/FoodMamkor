@@ -24,10 +24,16 @@ vi.mock("@/lib/api", () => ({
 }));
 
 const C = he.dashboard.producer.categories;
+// MEH-1539 T3: the card now renders the register CategorySelector, whose rest
+// state shows only the popular-6 (POPULAR in components/CategorySelector.jsx).
+// "ירקות" + "סבונים טבעיים" are both popular, so both cards are visible without
+// expanding; "פירות" is a rest-category used to cover the show-more path.
 const CATS = [
   { id: 1, name: "ירקות" },
-  { id: 2, name: "פירות" },
+  { id: 2, name: "סבונים טבעיים" },
+  { id: 3, name: "פירות" },
 ];
+const chip = (id) => screen.getByTestId(`category-chip-${id}`);
 
 function renderCard(props = {}) {
   const onSave = vi.fn();
@@ -52,8 +58,8 @@ beforeEach(() => {
 describe("Edit-tab CategoriesCard (isolation)", () => {
   it("toggles a category and saves the new category_ids set", async () => {
     const { onSave } = renderCard();
-    await screen.findByRole("checkbox", { name: "ירקות" });
-    fireEvent.click(screen.getByRole("checkbox", { name: "פירות" }));
+    await screen.findByTestId("category-chip-1");
+    fireEvent.click(chip(2));
     fireEvent.click(screen.getByRole("button", { name: C.save_cta }));
     await waitFor(() =>
       expect(api.put).toHaveBeenCalledWith("/producers/me", { category_ids: [1, 2] }),
@@ -65,13 +71,26 @@ describe("Edit-tab CategoriesCard (isolation)", () => {
     );
   });
 
+  it("marks the first-selected category as primary and reflects selection state", async () => {
+    renderCard();
+    await screen.findByTestId("category-chip-1");
+    // Seeded selection is [1] → chip 1 is pressed AND carries the primary badge.
+    expect(chip(1)).toHaveAttribute("aria-pressed", "true");
+    expect(chip(2)).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("primary-badge")).toBeInTheDocument();
+    // Deselect → nothing pressed, primary badge gone.
+    fireEvent.click(chip(1));
+    expect(chip(1)).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByTestId("primary-badge")).not.toBeInTheDocument();
+  });
+
   it("surfaces the backend Hebrew 422 detail inline (not generic)", async () => {
     api.put.mockRejectedValueOnce({
       response: { status: 422, data: { detail: [{ msg: "צריך מספר רישיון" }] } },
     });
     renderCard();
-    await screen.findByRole("checkbox", { name: "פירות" });
-    fireEvent.click(screen.getByRole("checkbox", { name: "פירות" }));
+    await screen.findByTestId("category-chip-2");
+    fireEvent.click(chip(2));
     fireEvent.click(screen.getByRole("button", { name: C.save_cta }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("צריך מספר רישיון");
