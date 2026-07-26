@@ -4302,7 +4302,9 @@
       "manage_events": {
         "heading": "My events",
         "create_cta": "New event",
-        "empty": "You haven't created any events yet. Tap \"New event\" to start.",
+        "empty_title": "No events yet",
+        "empty_description": "A workshop, a tour or an open day — an event appears on your business page and brings in new customers.",
+        "empty_cta": "New event",
         "loading": "Loading…",
         "back": "← Back to my events",
         "edit_heading": "Edit event",
@@ -4319,7 +4321,9 @@
       "manage_experiences": {
         "heading": "My experiences",
         "create_cta": "New experience",
-        "empty": "You haven't created any experiences yet. Tap \"New experience\" to start.",
+        "empty_title": "No experiences yet",
+        "empty_description": "A regular hosted session guests can book — an experience appears on your business page alongside your products.",
+        "empty_cta": "New experience",
         "loading": "Loading…",
         "back": "← Back to my experiences",
         "edit_heading": "Edit experience",
