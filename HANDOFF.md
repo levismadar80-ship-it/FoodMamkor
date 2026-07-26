@@ -3,6 +3,10 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — batch (MEH-1545 · MEH-1547 · MEH-1549 · MEH-1531 · MEH-1548), ADR-016 v2 authority
+
+- **MEH-1545** (`feature/meh-1545-producers-sort-gap`, `Closes MEH-1545`): discovery-first verdict — the "רווח" half is **intentional** (12–16px rhythm, evidence in PR), the stray `<` is a real **phantom-arrow bug**: ChipScrollRow's 65px trailing spacer+sentinel (MEH-1340 fade clearance) inflate scrollWidth, so at widths where all chips fit `useScrollAffordance` still rendered an end arrow that paged to blank space. Fixed via `trailingFillerPx` option in the hook (default 0 — FridayDeliveryStrip/HomeRecentlyViewed untouched); ChipScrollRow passes 65. Sort verified working (opens/refetches/`?sort=` syncs @375+@1440). No VRT movement (home/events no overflow @1440; /map overflow is genuine, arrow stays). vitest 1626p/10s (+2). Sapir's screenshot geometry (arrows at the empty end of short rows @~900-1040px desktop) reproduced and eliminated.
+
 ## 2026-07-26 — MEH-1536 delivery checker ("מגיעים אלייך?")
 
 - **MEH-1536** (YELLOW, frontend-only, `feature/meh-1536-delivery-checker`, `Closes MEH-1536`): client-side delivery checker at the top of `DeliveryBlock`. New `DeliveryChecker.jsx` (DeliveryBlock was already 295 lines) + `matchDeliveryCity()` exported for unit coverage; **`CitySearch` reused as-is** (no modification → no STOP-(a)). Phase 0 confirmed the premise: `delivery_excluded_cities` reaches the block via `ProducerSections.jsx:398` and `ProducerListOut` (`schemas.py:1187,1198`) exposes areas + exclusions publicly. Existing grouped list / CompactCities / pickup rows **untouched** (MEH-1435 lock).
