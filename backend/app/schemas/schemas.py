@@ -181,6 +181,30 @@ def _whatsapp_group_validator(value: str | None) -> str | None:
     return stripped
 
 
+# MEH-1608: producers.instagram stores a BARE HANDLE — the public renderer
+# (frontend ContactCard.jsx:105-106) composes https://instagram.com/{handle}
+# itself, so a stored full URL becomes a doubled, dead link on the public
+# contact card. Forgiving in input, canonical in storage: full instagram.com
+# URLs (any of https/http/www), a leading @, trailing slashes and query/#
+# tails all normalize to the handle. Empty/whitespace → None (the MEH-1537
+# empty-contact convention).
+_INSTAGRAM_URL_PREFIX_RE = re.compile(
+    r"^(?:https?://)?(?:www\.)?instagram\.com/", re.IGNORECASE
+)
+
+
+def _normalize_instagram(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    stripped = _INSTAGRAM_URL_PREFIX_RE.sub("", stripped)
+    stripped = stripped.split("?", 1)[0].split("#", 1)[0]
+    stripped = stripped.strip("/").lstrip("@").strip()
+    return stripped or None
+
+
 def _url_scheme_validator(value: str | None) -> str | None:
     if value is None:
         return None
@@ -418,6 +442,12 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_phone(cls, v):
         return _phone_validator(v)
+
+    # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
 
     @field_validator("contact_email", mode="before")
     @classmethod
@@ -830,6 +860,12 @@ class ProducerCreate(BaseModel):
     def _validate_phone(cls, v):
         return _phone_validator(v)
 
+    # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
+
     @field_validator("category_ids")
     @classmethod
     def _require_categories(cls, v):
@@ -930,6 +966,12 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _validate_whatsapp_group(cls, v):
         return _whatsapp_group_validator(v)
+
+    # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
 
     @field_validator("contact_email", mode="before")
     @classmethod
@@ -1219,6 +1261,12 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_whatsapp_group(cls, v):
         return _whatsapp_group_validator(v)
+
+    # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
 
     @field_validator("contact_email", mode="before")
     @classmethod
