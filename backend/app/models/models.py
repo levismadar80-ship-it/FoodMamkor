@@ -69,9 +69,13 @@ class Producer(Base):
     # (schemas.ProducerUpdate, http(s) only). Free-text columns, no enum.
     facebook = Column(String(200), nullable=True)
     external_order_form = Column(String(500), nullable=True)
-    status = Column(
-        String(20), default="pending"
-    )  # pending | approved | rejected | inactive
+    # MEH-1612: free String(20) — no enum, no DB CHECK constraint. The
+    # authoritative enumeration is the admin filter pattern at
+    # routers/admin.py:112:
+    #   pending | pending_whatsapp | approved | rejected | inactive
+    # (pending_whatsapp is written at auth.py:509 and auth.py:624; an earlier
+    # version of this comment omitted it and misled MEH-1587's Phase 0.)
+    status = Column(String(20), default="pending")
     images = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
