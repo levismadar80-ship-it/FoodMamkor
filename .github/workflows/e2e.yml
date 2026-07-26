@@ -25,7 +25,10 @@ name: E2E Tests
 # + trace upload. MEH-728's preview warm-up is replaced by a localhost
 # readiness poll (same purpose: cold start must not trip the flake gate).
 #
-# Required secrets: none. VERCEL_AUTOMATION_BYPASS_SECRET is no longer used —
+# Required secrets: DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD /
+# DEMO_ADMIN_PASSWORD — MEH-999, they unlock the authenticated specs; without
+# them global-setup skips provisioning and those specs skip with a reason.
+# VERCEL_AUTOMATION_BYPASS_SECRET is still unused —
 # playwright.config.ts still sends the (empty) bypass header, which localhost
 # ignores; TEST_URL manual runs against previews keep working with the secret
 # exported locally.
@@ -157,6 +160,14 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           CI: "true"
+          # MEH-999: unlock the authenticated specs. global-setup.ts provisions
+          # e2e/.auth/{producer,consumer,admin}.json by logging in through the
+          # /api proxy to the Railway staging backend, where these accounts are
+          # seeded (backend/scripts/seed_demo_business.py). Without them the
+          # authed specs skip — see docs/ci/e2e-auth-fixtures.patch.md.
+          DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+          DEMO_CONSUMER_PASSWORD: ${{ secrets.DEMO_CONSUMER_PASSWORD }}
+          DEMO_ADMIN_PASSWORD: ${{ secrets.DEMO_ADMIN_PASSWORD }}
 
       # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
       # PR (marker-matched, edited in place — no comment spam on re-push).
