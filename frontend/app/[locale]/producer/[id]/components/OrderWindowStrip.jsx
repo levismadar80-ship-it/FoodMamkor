@@ -24,7 +24,15 @@ import { getOrderWindowRanges, getOrderWindowStatus } from "@/lib/orderWindow";
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
-/** "9:00" — drops a leading zero so the strip reads like the mock. */
+/**
+ * "09:00" → "9:00" — drops a leading zero so the strip reads like the mock.
+ *
+ * NOTE this deliberately differs from `israelTime` in lib/order-status.js,
+ * which keeps the zero ("09:00") for the header status line. The strip is a
+ * compact weekly summary where the padding is visual noise; the status line
+ * states a single precise time. If you align one, align both — and re-capture
+ * the qa-artifacts/MEH-1546 screenshots, which document the current pairing.
+ */
 function trimHour(hhmm) {
   return hhmm.replace(/^0/, "");
 }
