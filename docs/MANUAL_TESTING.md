@@ -28,13 +28,24 @@
 - [ ] **phone-reveal בדסקטופ (≥1024px)** — לחיצה על אייקון/שורת הטלפון — **תוצאה מצופה:** ה-affordance של הטלפון מתחלף **במקום** לגלולת מספר (`dir="ltr"`, ספרות שמאל-לימין, אייקון טלפון) באותו מיקום בשורה. אין גלולה נפרדת שמופיעה מתחת לשורת העיגולים.
 - [ ] **טלפון בנייד (<1024px)** — הקשה על הטלפון — **תוצאה מצופה:** חיוג רגיל (tel:), ללא reveal.
 
+## MEH-1583 — phone-reveal: גיאומטריה אחת לכל תאי המטריצה (26/07)
+
+מטריצה מלאה — (0 / 1 / רבים) × (סגור / פתוח). התא **(רבים × פתוח)** הוא זה שחסר ב-MEH-1551 והגיע ל-production:
+
+- [ ] **(1 × סגור) מול (1 × פתוח) — אפס קפיצת layout** — עסק עם ערוץ משני יחיד (טלפון), דסקטופ ≥1024px: לוחצים על השורה המתויגת — **תוצאה מצופה:** המספר מופיע ב**אותה תיבה בדיוק** — רוחב מלא, אותו גובה (44px), אותן פינות (`rounded-[10px]`), אותו מיקום. השורה לא מתכווצת לגלולה צרה. אייקון הטלפון נשאר בהתחלה הלוגית (ימין ב-RTL), הספרות שמאל-לימין.
+- [ ] **(רבים × פתוח)** — עסק עם 2+ ערוצים משניים (למשל טלפון + אינסטגרם), דסקטופ: לוחצים על עיגול הטלפון — **תוצאה מצופה:** הטלפון **יוצא** משורת העיגולים, והמספר יורד לשורה מלאה משלו מתחת. **אין** גלולה רחבה שיושבת ליד עיגול 44px באותה שורה (זה היה הבאג).
+- [ ] **שורד יחיד אחרי reveal** — בדיוק 2 ערוצים (טלפון + אינסטגרם), אחרי reveal: **תוצאה מצופה:** האינסטגרם שנשאר לבדו מקבל שורה מתויגת ברוחב מלא ("אינסטגרם") — **לא** עיגול יתום (זה בדיוק העיגול היתום ש-MEH-1551 סגר).
+- [ ] **(רבים × סגור) = ללא שינוי** — 2+ ערוצים בלי לחיצה — **תוצאה מצופה:** שורת עיגולים 44px, byte-identical ל-MEH-1334.
+- [ ] **נייד (<1024px) — אין reveal בכלל** — הקשה על הטלפון בכל אחד מהמצבים — **תוצאה מצופה:** חיוג רגיל (`href` הוא `tel:`), ו-`revealed-phone` **לא** קיים ב-DOM.
+
 ## MEH-1552 — VRT state-coverage ל-producer-detail (מצבי-קצה) (26/07)
 
 כיסוי אוטומטי (לא ידני) — הרשומה כאן מתעדת מה נשמר ואיך מרעננים baselines:
 
 - [ ] **fixture "עסק מינימלי"** — `frontend/e2e/visual/fixtures/producer-detail-minimal.json` (טלפון בלבד, בלי תמונות/ביקורות) → מקפיא את פריסת השורה-המתויגת היחידה של ContactCard (MEH-1551).
-- [ ] **3 צילומים חדשים ב-`parity.spec.ts`** — `producer-detail-minimal` (desktop+mobile), `producer-detail-phone-revealed` (desktop בלבד, reveal in-place), `producer-detail-disclosure-open` (mobile בלבד, quick-answer פתוח).
+- [ ] **3 צילומים חדשים ב-`parity.spec.ts`** — `producer-detail-minimal` (desktop+mobile), `producer-detail-phone-revealed` (desktop בלבד, reveal in-place), `producer-detail-disclosure-open` (mobile בלבד, quick-answer פתוח). **MEH-1583 הוסיף רביעי:** `producer-detail-two-channel-revealed` (desktop בלבד, התא (רבים × פתוח)).
 - [ ] **רענון baselines** — דרך `vrt-update.yml` workflow_dispatch על ה-branch עם `--grep "producer-detail-(minimal|phone-revealed|disclosure-open)"` (הבוט מקמט על ה-runner; **אין** ליצור baselines מקומית — fonts drift). הצילומים נכשלים עד שה-baselines קיימים — צפוי.
+- [ ] **⚠️ baseline חדש = candidate, לא אמת** — לפתוח את ה-PNG ולסקור ויזואלית לפני merge. ה-baseline של `producer-detail-phone-revealed` שנוצר כאן **קיבע מצב שבור** (גלולה צרה במקום שורה מלאה) ונמזג ל-staging — תוקן ב-MEH-1583. הכלל עצמו נעול ב-CLAUDE.md § Conditional-UI states.
 
 ## MEH-1489 — משטחי הרשמה מודעי-התחברות (early gate + adaptive CTA + redirect) (23/07)
 
