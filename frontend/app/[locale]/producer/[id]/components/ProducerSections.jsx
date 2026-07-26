@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
+// MEH-999: the events card became a Link to /events/[id] (was a static div).
+import Link from "next/link";
 import { Leaf, MapPin } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter, useLocale } from "next-intl";
@@ -325,48 +327,64 @@ export default function ProducerSections({
                 ? ev.event_time.slice(0, 5)
                 : null;
               return (
+                // MEH-999: the card was a static <div> — the only event surface
+                // that did not open its public /events/[id] page. Now a Link,
+                // hover/focus styling mirrored from ExperienceCard.jsx:47.
+                // The registration_url <a> MOVED OUT of the Link (sibling row
+                // below it) — an <a> inside an <a> is invalid HTML and React
+                // hydration-unsafe; there is no stopPropagation precedent in
+                // EventsClient.jsx (its card carries no inner anchor).
                 <div
                   key={ev.id}
-                  className="bg-white rounded-md border border-border p-4 flex gap-4"
+                  className="bg-white rounded-md border border-border transition-colors duration-base ease-quart hover:border-primary"
                 >
-                  {/* MEH-1229: was a raw <Image src={ev.image_url}> that bypassed
-                      the helper. Now routed through it (square crop + f_auto,q_auto)
-                      with graceful fallback so a broken URL degrades to the
-                      placeholder instead of a _next/image 404. */}
-                  {ev.image_url && (
-                    <ImageWithFallback
-                      src={ev.image_url}
-                      alt={ev.title}
-                      aspectRatio={IMAGE_RATIOS.square}
-                      optimizeWidth={128}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-sm object-cover flex-shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-text leading-snug">{ev.title}</p>
-                    <p className="text-sm text-fg-muted mt-0.5">
-                      {dateStr}{timeStr && ` · ${timeStr}`}
-                      {ev.city && ` · ${ev.city}`}
-                    </p>
-                    {ev.price > 0 && (
-                      <p className="text-sm text-accent font-medium mt-1"><span dir="ltr">{formatPrice(ev.price)}</span></p>
+                  <Link
+                    href={`/events/${ev.id}`}
+                    className="p-4 flex gap-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+                  >
+                    {/* MEH-1229: was a raw <Image src={ev.image_url}> that bypassed
+                        the helper. Now routed through it (square crop + f_auto,q_auto)
+                        with graceful fallback so a broken URL degrades to the
+                        placeholder instead of a _next/image 404. */}
+                    {ev.image_url && (
+                      <ImageWithFallback
+                        src={ev.image_url}
+                        alt={ev.title}
+                        aspectRatio={IMAGE_RATIOS.square}
+                        optimizeWidth={128}
+                        width={64}
+                        height={64}
+                        className="w-16 h-16 rounded-sm object-cover flex-shrink-0"
+                      />
                     )}
-                    {ev.price === 0 && (
-                      <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
-                    )}
-                    {ev.registration_url && (
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-text leading-snug">{ev.title}</p>
+                      <p className="text-sm text-fg-muted mt-0.5">
+                        {dateStr}{timeStr && ` · ${timeStr}`}
+                        {ev.city && ` · ${ev.city}`}
+                      </p>
+                      {ev.price > 0 && (
+                        <p className="text-sm text-accent font-medium mt-1"><span dir="ltr">{formatPrice(ev.price)}</span></p>
+                      )}
+                      {ev.price === 0 && (
+                        <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
+                      )}
+                    </div>
+                  </Link>
+                  {ev.registration_url && (
+                    // Indented to line up under the text column when the card
+                    // has a thumbnail: p-4 (1rem) + w-16 (4rem) + gap-4 (1rem).
+                    <div className={`pb-4 pe-4 ${ev.image_url ? "ps-24" : "ps-4"}`}>
                       <a
                         href={ev.registration_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block mt-2 text-xs text-primary underline hover:text-primary-dark"
+                        className="inline-block text-xs text-primary underline hover:text-primary-dark"
                       >
                         {t("producer.detail.sections.events.register")}
                       </a>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
