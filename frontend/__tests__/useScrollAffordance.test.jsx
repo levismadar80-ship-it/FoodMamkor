@@ -7,8 +7,10 @@ import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 // HomeRecentlyViewed. The suite drives a minimal probe component: the
 // hook needs a real element for scrollRef, which renderHook can't attach.
 
-function Probe() {
-  const affordance = useScrollAffordance();
+function Probe({ trailingFillerPx }) {
+  const affordance = useScrollAffordance(
+    trailingFillerPx === undefined ? undefined : { trailingFillerPx },
+  );
   return (
     <div className="relative">
       <ScrollArrows affordance={affordance} />
@@ -134,6 +136,34 @@ describe("useScrollAffordance (MEH-1391)", () => {
     expect(scroller.scrollBy).toHaveBeenCalledWith({ left: 320, behavior: "smooth" });
     fireEvent.click(getArrows(container).start);
     expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -320, behavior: "smooth" });
+  });
+
+  // MEH-1545 — ChipScrollRow's w-12 end spacer + w-px sentinel (+gaps, 65px)
+  // inflate scrollWidth. At viewport widths where every chip fits, the old
+  // math (maxScroll > 0 + 16px epsilon) still grew a lone arrow over the
+  // empty end of the row; clicking it revealed blank spacer (Sapir QA 26/07).
+  it("filler-only overflow → no phantom arrow (MEH-1545)", () => {
+    mockMatchMedia(true);
+    const { container, getByTestId } = render(<Probe trailingFillerPx={65} />);
+    // maxScroll = 50: entirely inside the declared 65px trailing filler —
+    // the exact live geometry measured on /producers at 900px viewport.
+    setScroll(getByTestId("scroller"), { scrollWidth: 918, clientWidth: 868, scrollLeft: 0 });
+    expect(getArrows(container).start).toBeNull();
+    expect(getArrows(container).end).toBeNull();
+  });
+
+  it("real chip overflow past the filler → arrows still render (MEH-1545)", () => {
+    mockMatchMedia(true);
+    const { container, getByTestId } = render(<Probe trailingFillerPx={65} />);
+    // maxScroll = 136 > 65 + 16: genuine hidden chips (toggle row @900px).
+    const scroller = getByTestId("scroller");
+    setScroll(scroller, { scrollWidth: 1004, clientWidth: 868, scrollLeft: 0 });
+    expect(getArrows(container).start).toBeNull();
+    expect(getArrows(container).end).not.toBeNull();
+    // Mid-scroll: both directions, same as the default-filler behavior.
+    setScroll(scroller, { scrollWidth: 1004, clientWidth: 868, scrollLeft: -60 });
+    expect(getArrows(container).start).not.toBeNull();
+    expect(getArrows(container).end).not.toBeNull();
   });
 
   it("matchMedia change flips showArrows live", () => {
