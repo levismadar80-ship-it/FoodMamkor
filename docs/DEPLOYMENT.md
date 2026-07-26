@@ -417,7 +417,11 @@ starts **empty**; the official ~1,270 data.gov.il localities are loaded by a
 one-time, idempotent seed (`ON CONFLICT DO NOTHING` — safe to re-run):
 
 - **From the admin panel / API:** `POST /admin/seed-cities` (admin JWT).
-- **From a shell with `DATABASE_URL`:** `cd backend && python scripts/seed_cities.py`.
+- **From a local checkout** (repo root, `DATABASE_URL` set):
+  `cd backend && python scripts/seed_cities.py`.
+- **From the Railway Console** (`cwd=/app`, which already *is* `backend/` —
+  `Dockerfile:40`): `python scripts/seed_cities.py` — **no** `cd backend`, there
+  is no `/app/backend/`.
 
 Run it once on **staging** and once on **production**. Until an env is
 seeded, `GET /cities` falls back to the ~100-entry static list
@@ -499,7 +503,10 @@ python scripts/check_api_contract.py --probe "$BACKEND"
 - [ ] **Prod is clean of demo/test data** — run the read-only scan against
   production and confirm it exits 0:
   ```
+  # local checkout, repo root (Railway CLI injects the env)
   railway run python backend/scripts/check_no_demo_data.py
+  # Railway Console instead? /app already IS backend/ (Dockerfile:40) — drop the prefix:
+  #   python scripts/check_no_demo_data.py
   ```
   Exit 1 means a demo/test entity leaked to prod — review each flagged row
   (the script never deletes) and clean it before promoting. Policy + the
@@ -861,9 +868,15 @@ panel) is QA'd automatically instead of manually. Three moving parts:
    producer/review/product rows touched, unlike `--refresh` — run by Sapir
    against staging only. **Two routes, pick one:**
 
-   **A. Railway Console (in-container, `cwd=/app`)** — the Docker build context
-   is `backend/`, so its contents copy straight to `/app`; there is **no**
-   `/app/backend/`, and the `railway` CLI does not exist inside the container:
+   > **Path rule — the `backend/` prefix belongs to exactly one of these two.**
+   > `Dockerfile:40` is `COPY backend/ .` into `WORKDIR /app` (`Dockerfile:14`),
+   > so **inside the container `/app` *is* `backend/`** — there is no
+   > `/app/backend/`. In the console drop the prefix; from a local checkout keep
+   > it. Pasting route B into the console gives
+   > `python: can't open file '/app/backend/scripts/…': No such file or directory`.
+
+   **A. Railway Console (in-container, `cwd=/app`)** — no `backend/` prefix, and
+   the `railway` CLI does not exist inside the container:
 
    ```bash
    # Railway → service → Console (already at /app)
