@@ -1067,7 +1067,14 @@
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
       "show_all": "Show {count} more cities",
-      "show_less": "Show less"
+      "show_less": "Show less",
+      "checker": {
+        "label": "Do you deliver to me?",
+        "placeholder": "Type a city to check",
+        "yes_nationwide": "Yes! Nationwide delivery — including {city}",
+        "yes": "Yes, we deliver to {city}",
+        "no": "Sorry, we don't deliver to {city} right now"
+      }
     },
     "friday_delivery": {
       "today": "today",
@@ -4168,12 +4175,13 @@
       "delivery": {
         "heading": "Delivery & pickup",
         "subtitle": "How customers get your products — physical store, delivery, or both.",
+        "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
         "has_physical_location": "🏪 Physical store (welcomes customers)",
         "offers_delivery": "🚚 Delivery",
         "type_validation": "Must select at least one of the two",
         "delivery_nationwide": "Delivery nationwide",
         "delivery_cities_label": "Cities delivered to",
-        "delivery_excluded_label": "Except:",
+        "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
         "save_cta": "Save",
