@@ -16,6 +16,8 @@ They use the shared pytest fixtures in conftest.py.
 """
 from datetime import datetime, timedelta
 
+import pytest
+
 from app.models.models import (
     Event,
     Experience,
@@ -97,6 +99,46 @@ class TestProducerViewTracking:
         assert r.status_code == 200
         row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
         assert row.referrer == "search"
+
+    # MEH-1558: `from_` is read straight off the query string, so the
+    # allowlist in services/analytics.py is the only thing bounding the
+    # column. These two tests pin both halves of that contract — every
+    # sanctioned value round-trips verbatim, and anything else becomes
+    # NULL rather than being stored. `producers-index` / `similar` /
+    # `nearby` are the three the frontend had been sending all along
+    # while the backend silently discarded them.
+    @pytest.mark.parametrize(
+        "referrer",
+        [
+            "search",
+            "map",
+            "category",
+            "home",
+            "favorites",
+            "follow",
+            "producers-index",
+            "similar",
+            "nearby",
+        ],
+    )
+    def test_allowlisted_referrer_is_stored_verbatim(self, client, db, referrer):
+        p = make_producer(db)
+        r = client.get(f"/producers/{p.id}?from={referrer}")
+        assert r.status_code == 200
+        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        assert row.referrer == referrer
+
+    @pytest.mark.parametrize(
+        "referrer",
+        ["garbage", "SEARCH", "similar-businesses", "", "home; DROP TABLE"],
+    )
+    def test_unknown_referrer_is_stored_as_null(self, client, db, referrer):
+        p = make_producer(db)
+        r = client.get(f"/producers/{p.id}", params={"from": referrer})
+        assert r.status_code == 200
+        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        assert row.producer_id == p.id
+        assert row.referrer is None
 
     def test_get_producer_skips_bots_by_user_agent(self, client, db):
         p = make_producer(db)
