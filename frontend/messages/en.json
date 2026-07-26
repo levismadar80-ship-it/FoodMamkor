@@ -4072,6 +4072,11 @@
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
         "field_external_order": "Order form (link)",
+        "instagram_placeholder": "maafiat_hasade",
+        "website_placeholder": "https://example.co.il",
+        "whatsapp_group_placeholder": "https://chat.whatsapp.com/AbCd",
+        "email_placeholder": "hello@example.co.il",
+        "facebook_placeholder": "https://facebook.com/hasade",
         "primary_legend": "Primary channel",
         "primary_whatsapp": "WhatsApp — customers message you",
         "primary_phone": "Phone — customers call you",
@@ -4129,6 +4134,7 @@
         "heading": "Producer license",
         "field_label": "Producer license number (Ministry of Health)",
         "required_hint": "One of your selected categories requires a producer license. Filling in the number is required for approval.",
+        "where": "We keep this number on file only — it is never shown on your page. It is needed to approve businesses in categories that require a license.",
         "summary_empty": "Not set",
         "save_cta": "Save",
         "saving": "Saving…",
@@ -4160,7 +4166,8 @@
         "opt_no": "No",
         "opt_unknown": "Not known",
         "gluten_dedicated": "No gluten in the production facility",
-        "gluten_shared": "Gluten is present in the production facility"
+        "gluten_shared": "Gluten is present in the production facility",
+        "scope_helper": "These answers drive the filters on the search page. They apply to every product the business sells, and are shown as your own declaration."
       },
       "delivery": {
         "heading": "Delivery & pickup",
@@ -4485,6 +4492,7 @@
     },
     "products": {
       "section_heading": "Products",
+      "where": "Your products appear as a list on your page — with the name, description and price you enter here.",
       "add_cta": "Add product",
       "errors": {
         "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
@@ -4519,8 +4527,10 @@
         "description_label": "Short description",
         "description_placeholder": "e.g. 750g loaf, baked in a taboon",
         "price_min_label": "Price from",
+        "price_min_placeholder": "24",
         "price_max_label": "Price to",
         "price_max_optional_suffix": "optional",
+        "price_max_placeholder": "60",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "Gluten-free",
