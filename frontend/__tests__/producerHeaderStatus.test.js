@@ -57,6 +57,29 @@ describe("resolveHeaderStatus — precedence, first match wins", () => {
   });
 });
 
+describe("closed with no reopening time (PR review catch)", () => {
+  // getOrderWindowStatus returns {state:"closed", nextChange:null} when a
+  // window object exists but every day violates close > open. Interpolating
+  // that null into "נפתחות {יום} ב־{שעה}" would format the epoch ("ה׳ 02:00").
+  it("degrades to the plain closed branch instead of an epoch date", () => {
+    const s = resolveHeaderStatus({
+      isVacation: false,
+      isClosed: false,
+      orderStatus: { state: "closed", nextChange: null },
+    });
+    expect(s.branch).toBe("closed");
+    expect(s.tone).toBe("text-muted");
+    expect(s.testid).toBe("status-closed");
+    expect(s.nextChange).toBeUndefined();
+  });
+
+  it("still uses the orders_closed branch when a real reopening time exists", () => {
+    expect(
+      resolveHeaderStatus({ isVacation: false, isClosed: false, orderStatus: CLOSED }).branch
+    ).toBe("orders_closed");
+  });
+});
+
 describe("closing_soon is dropped as a VISUAL state", () => {
   it("maps to the plain open branch — no urgency tone, no separate testid", () => {
     const soon = resolveHeaderStatus({ isVacation: false, isClosed: false, orderStatus: CLOSING });

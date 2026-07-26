@@ -69,11 +69,18 @@ export default function ProducerHeader({
         ? t("producer.detail.header.status.vacation", { date: vacationDate })
         : t("producer.detail.header.status.vacation_no_date"),
     closed: () => t("producer.detail.header.status.closed"),
-    orders_closed: () =>
-      t("producer.detail.header.status.orders_closed", {
-        day: t(`opening_hours.weekdays.${israelDayKey(status.nextChange)}`),
-        time: israelTime(status.nextChange),
-      }),
+    // The mapper guarantees nextChange is a Date on this branch. The dayKey
+    // fallback covers the residual case where ICU returns an abbreviation we
+    // don't recognise — better the plain closed copy than `weekdays.undefined`.
+    orders_closed: () => {
+      const dayKey = israelDayKey(status.nextChange);
+      return dayKey
+        ? t("producer.detail.header.status.orders_closed", {
+            day: t(`opening_hours.weekdays.${dayKey}`),
+            time: israelTime(status.nextChange),
+          })
+        : t("producer.detail.header.status.closed");
+    },
     orders_open: () =>
       t("producer.detail.header.status.orders_open", {
         time: israelTime(status.nextChange),

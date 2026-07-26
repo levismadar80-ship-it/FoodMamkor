@@ -25,13 +25,19 @@ export function israelTime(date) {
   }).format(date);
 }
 
-/** Israel-local weekday key (sun…sat) for a Date — indexes opening_hours.weekdays. */
+/**
+ * Israel-local weekday key (sun…sat) for a Date — indexes opening_hours.weekdays.
+ * Returns null if the ICU abbreviation matches nothing, so a caller can fall
+ * back instead of interpolating `weekdays.undefined` into a message lookup.
+ * Mirrors the `if (dayIndex < 0) return null` guard in orderWindow.js.
+ */
 export function israelDayKey(date) {
   const abbr = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Jerusalem",
     weekday: "short",
   }).format(date);
-  return DAY_KEYS[DAY_ABBR.findIndex((d) => abbr.startsWith(d))];
+  const idx = DAY_ABBR.findIndex((d) => abbr.startsWith(d));
+  return idx < 0 ? null : DAY_KEYS[idx];
 }
 
 /**
@@ -64,6 +70,15 @@ export function resolveHeaderStatus({ isVacation, isClosed, orderStatus }) {
     return { branch: "closed", tone: "text-muted", testid: "status-closed" };
   }
   if (orderStatus?.state === "closed") {
+    // A window object whose every day is unusable (close <= open on all of
+    // them) yields nextChange=null — orderWindow.js's last return. The backend
+    // validator blocks that shape on write, but a hand-edited or legacy row
+    // could carry it, and "נפתחות {יום} ב־{שעה}" would then format null as the
+    // epoch ("ה׳ 02:00"). With no reopening time to state, degrade to the plain
+    // closed copy rather than inventing one.
+    if (!orderStatus.nextChange) {
+      return { branch: "closed", tone: "text-muted", testid: "status-closed" };
+    }
     return {
       branch: "orders_closed",
       tone: "text-muted",
