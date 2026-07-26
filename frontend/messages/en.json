@@ -520,7 +520,6 @@
   },
   "common": {
     "cta": {
-      "show_on_map": "Show on Map",
       "more_info": "More Info"
     },
     "aria": {
@@ -787,12 +786,6 @@
       },
       "owner_card": {
         "heading": "Behind the business"
-      },
-      "action_row": {
-        "aria": {
-          "show_on_map": "Open the business location on the map"
-        },
-        "show_on_map": "Show on map"
       },
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
