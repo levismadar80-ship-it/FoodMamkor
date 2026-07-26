@@ -150,7 +150,12 @@ function createCategoryMarker(
   // MEH-1412: precision=approximate (e.g. a private home) → soft outer halo so
   // the pin reads as "around here", not a pinpoint address. Inline rgba is the
   // primary token (#2e6853), same divIcon raw-HTML exception noted above.
-  const approxRing = approximate ? ",0 0 0 7px rgba(46,104,83,0.14)" : "";
+  // MEH-1569: 7px → 4px. The halo is drawn OUTSIDE the 36px circle, so at 7px it
+  // added 14px to the pin's effective footprint (36 → 50) and roughly doubled the
+  // overlap area wherever approximate pins sit close together — the density
+  // complaint this ticket fixes. 4px keeps the "around here" read without the
+  // pile-up. Same value in createSecondaryMarker; keep the two in step.
+  const approxRing = approximate ? ",0 0 0 4px rgba(46,104,83,0.14)" : "";
   const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}${approxRing}`;
 
   const html = `
@@ -177,7 +182,7 @@ function createCategoryMarker(
 }
 
 // MEH-1412 (MEH-1388 chunk 3): pickup / market_stand points render as a
-// SECONDARY outline marker — smaller (26px), hollow (white fill), category-
+// SECONDARY outline marker — smaller (22px), hollow (white fill), category-
 // colour ring + category glyph in the category colour (weight "regular", not
 // the primary's white fill) — so a producer's self-pickup / market points read
 // as visually distinct from its primary business pin. No photo, no verified
@@ -187,21 +192,33 @@ function createSecondaryMarker(
   producer,
   { active = false, hovered = false, visited = false, approximate = false } = {},
 ) {
-  const size = 26;
+  // MEH-1569: 26px → 22px. Against the 36px primary pin (createCategoryMarker),
+  // 26px read as "almost the same size", so a business's branch did not stand out
+  // from its own pickup points in a dense stack. 22px makes the primary clearly
+  // dominant (36 vs 22) while staying above the ~20px comfortable tap-target floor
+  // for a secondary affordance. (The ticket described the primary as 32px; it is
+  // in fact 36px since the MEH-763 S5 uniform-circle pass — see :100. The gap is
+  // therefore wider than the ticket assumed, which only helps the hierarchy.)
+  const size = 22;
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.7 : 1;
   const grayscale = dimmed ? "filter:grayscale(1);" : "";
   const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const borderWidth = active ? 3 : 2;
+  // Preserved: dashed border still carries `approximate` on the secondary pin —
+  // only the halo shrinks (MEH-1569), so the precision signal survives at 22px.
   const borderStyle = approximate ? "dashed" : "solid";
   const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
   const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
-  const approxRing = approximate ? ",0 0 0 7px rgba(46,104,83,0.14)" : "";
+  // MEH-1569: 7px → 4px, matching createCategoryMarker above.
+  const approxRing = approximate ? ",0 0 0 4px rgba(46,104,83,0.14)" : "";
   const boxShadow = `0 1px 5px rgba(0,0,0,0.2)${activeRing}${hoverRing}${approxRing}`;
   const glyph = categoryGlyphSvg(GlyphIcon, {
     color: categoryColor,
     weight: "regular",
-    size: 14,
+    // MEH-1569: 14 → 12 so the glyph keeps its breathing room inside the smaller
+    // 22px circle (the 2px border eats 4px of the diameter).
+    size: 12,
   });
   const html = `
     <div style="
