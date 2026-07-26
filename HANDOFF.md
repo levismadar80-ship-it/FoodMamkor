@@ -3,6 +3,9 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — batch (MEH-1545 · MEH-1547 · MEH-1549 · MEH-1531 · MEH-1548), ADR-016 v2 authority
+
+- **MEH-1545** (`feature/meh-1545-producers-sort-gap`, `Closes MEH-1545`): discovery-first verdict — the "רווח" half is **intentional** (12–16px rhythm, evidence in PR), the stray `<` is a real **phantom-arrow bug**: ChipScrollRow's 65px trailing spacer+sentinel (MEH-1340 fade clearance) inflate scrollWidth, so at widths where all chips fit `useScrollAffordance` still rendered an end arrow that paged to blank space. Fixed via `trailingFillerPx` option in the hook (default 0 — FridayDeliveryStrip/HomeRecentlyViewed untouched); ChipScrollRow passes 65. Sort verified working (opens/refetches/`?sort=` syncs @375+@1440). No VRT movement (home/events no overflow @1440; /map overflow is genuine, arrow stays). vitest 1626p/10s (+2). Sapir's screenshot geometry (arrows at the empty end of short rows @~900-1040px desktop) reproduced and eliminated.
 ## 2026-07-26 — MEH-999 producer-dashboard consistency batch (4 PRs, sequential)
 
 - **Merged to staging on green required gates, each cut off fresh `origin/staging`:** PR #2143 (event card → Link) → `51a43fcc` · PR #2147 (EmptyState on events + experiences) → `5ecf586b` · PR #2151 (BackLink component) → `b778b54f` · PR4 (UI-pattern guard) — see the deviation note below. Batch authority was end-to-end (ADR-016 v2): PRs 1–3 GREEN with auto-merge on CI green, PR2/PR3 YELLOW self-QA with 375px + 1440px screenshots attached before merge.
