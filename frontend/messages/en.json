@@ -3929,7 +3929,7 @@
           "whatsapp": "WhatsApp button click",
           "view": "Profile view"
         },
-        "cta": "Open WhatsApp to reply",
+        "cta": "Open WhatsApp",
         "title": "Recent activity",
         "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
