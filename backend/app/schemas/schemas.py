@@ -13,6 +13,53 @@ from app.utils.clock import israel_today
 
 _LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
 
+# MEH-1543: weekly order-acceptance window validation. Keys are a subset of
+# these 7 English day names (stable storage keys; Hebrew labels rendered
+# client-side); a day absent = orders closed that day. Each present day carries
+# {"open": "HH:MM", "close": "HH:MM"} in zero-padded 24h, close strictly after
+# open. String comparison of two zero-padded HH:MM values is a valid time order.
+_ORDER_WINDOW_DAYS = frozenset(
+    {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"}
+)
+_HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+def _order_window_validator(v):
+    """Validate producers.order_window on write (MEH-1543).
+
+    None passes through — an explicit null clears the field, an omitted field
+    never reaches here (exclude_unset). Any structural or value violation raises
+    ValueError, surfaced by FastAPI as a 422 with the Hebrew detail.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("חלון הזמנות חייב להיות אובייקט של ימים")
+    for day, hours in v.items():
+        if day not in _ORDER_WINDOW_DAYS:
+            raise ValueError(
+                f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
+                + ", ".join(sorted(_ORDER_WINDOW_DAYS))
+            )
+        if (
+            not isinstance(hours, dict)
+            or "open" not in hours
+            or "close" not in hours
+        ):
+            raise ValueError(f"היום {day} חייב לכלול שעת פתיחה ושעת סגירה")
+        open_t, close_t = hours["open"], hours["close"]
+        if not (isinstance(open_t, str) and _HHMM_REGEX.match(open_t)) or not (
+            isinstance(close_t, str) and _HHMM_REGEX.match(close_t)
+        ):
+            raise ValueError(
+                f"שעה לא תקינה ליום {day} — הפורמט חייב להיות HH:MM (24 שעות)"
+            )
+        if close_t <= open_t:
+            raise ValueError(
+                f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}"
+            )
+    return v
+
 
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     # HOT-003 (MEH-772): a stacked `_sanitize_title` validator runs first and
@@ -931,6 +978,11 @@ class ProducerUpdate(BaseModel):
     # During the 7-day overlap both fields are accepted and writes mirror to old columns.
     availability_state: str | None = None
     vacation_until: date | None = None
+    # MEH-1543: optional weekly order-acceptance window. dict (per-day
+    # open/close) or explicit null to clear. Validated below (day keys, HH:MM
+    # 24h, close>open → 422 Hebrew). Owner-writable path opened in
+    # producer_me.py (_PRODUCER_WRITABLE_FIELDS).
+    order_window: dict | None = None
 
     # MEH-1297: cap categories at 3 (admin/owner update). None passes through.
     @field_validator("category_ids")
@@ -1027,6 +1079,11 @@ class ProducerUpdate(BaseModel):
                 f"availability_state חייב להיות אחד מ: {', '.join(AVAILABILITY_STATES)}"
             )
         return v
+
+    @field_validator("order_window")
+    @classmethod
+    def _validate_order_window(cls, v):
+        return _order_window_validator(v)
 
     @field_validator("custom_questions")
     @classmethod
@@ -1306,6 +1363,11 @@ class ProducerDetailOut(ProducerListOut):
     owner_photo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
+    # MEH-1543: optional weekly order-acceptance window (JSONB). NULL = feature
+    # unused → the public page (MEH-1546) renders nothing. Read-only here;
+    # written via producer_me PUT. Inherited onto ProducerOwnerOut so the
+    # dashboard editor (MEH-1544) can reload the saved value.
+    order_window: dict | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-1490: admin-mapped Google Maps Place ID. Exposed on read so the admin
