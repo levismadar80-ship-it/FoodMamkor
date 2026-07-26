@@ -22,7 +22,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 const OUT = path.resolve(process.argv[2] || "../qa-artifacts/MEH-1611");
-const BASE = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
+// Deliberately a constant + optional argv override, NOT an env var: every
+// `process.env.*` read in the repo must be declared in a .env.example or the
+// "Env drift" gate blocks the PR (scripts/check_env_drift.sh), and a one-off
+// local QA harness is not worth a new documented env var (regression rule 8).
+const BASE = process.argv[3] || "http://127.0.0.1:3000";
 const PRODUCERS_RE = /\/api\/producers(?:\?[^#]*)?$/;
 const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
