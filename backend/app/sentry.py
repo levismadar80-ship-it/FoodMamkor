@@ -62,3 +62,61 @@ def init_sentry() -> None:
         )
     except Exception:
         logger.exception("Sentry init failed (continuing without Sentry)")
+
+
+# MEH-1533: tag key applied to every background-task capture, so these events
+# are filterable in Sentry (`background_task:db_init`) and separable from the
+# request-cycle errors FastApiIntegration reports.
+BACKGROUND_TASK_TAG = "background_task"
+
+
+def capture_background_exception(exc: BaseException, *, task: str) -> None:
+    """MEH-1533: report an otherwise-swallowed background exception to Sentry.
+
+    Background work — ``startup._init_db_background`` (via ``asyncio.to_thread``)
+    and the APScheduler jobs ``startup._run_followup_job`` /
+    ``startup._run_watchdog_job`` — runs OUTSIDE the ASGI request cycle, so
+    ``FastApiIntegration`` (the only integration configured in
+    ``init_sentry`` above) never observes it. Each of those handlers logs via
+    structlog and returns, so the failure reaches Railway stdout and nowhere
+    else: a ``seed()`` crash that fired on every staging boot produced ZERO
+    Sentry events in 90 days (MEH-1530 diagnosis).
+
+    ``LoggingIntegration`` deliberately NOT used to close this: structlog is
+    configured with ``logger_factory=structlog.PrintLoggerFactory(sys.stdout)``
+    (``app/logging_config.py:84``), which writes straight to stdout and never
+    routes through stdlib ``logging`` — so that integration would not see these
+    ``log.error`` calls at all.
+
+    Call this BEFORE the structlog ``log.error(..., exc_info=True)`` in the same
+    ``except`` block: getsentry/sentry-python#1468 documents a capture that
+    FOLLOWS a logging call being dropped by event deduplication.
+
+    Fail-open by construction, mirroring ``init_sentry``: no-ops when
+    ``sentry_sdk`` is absent (not installed in the CC sandbox) or uninitialised
+    (``BACKEND_SENTRY_DSN`` unset), and never raises — error reporting must not
+    escalate a swallowed background error into a boot failure.
+    """
+    try:
+        import sentry_sdk
+    except Exception:  # pragma: no cover — SDK absent (sandbox / minimal install)
+        return
+
+    try:
+        # SDK 2.x exposes new_scope(); 1.x only push_scope(). Prefer whichever
+        # the installed version provides rather than pinning to either.
+        scope_factory = getattr(sentry_sdk, "new_scope", None) or getattr(
+            sentry_sdk, "push_scope", None
+        )
+        if scope_factory is None:  # pragma: no cover — neither API present
+            # Tag on the global scope so the event stays filterable even on the
+            # degraded path (else it would be invisible to the Sentry filter
+            # this helper's whole purpose is to make possible).
+            sentry_sdk.set_tag(BACKGROUND_TASK_TAG, task)
+            sentry_sdk.capture_exception(exc)
+            return
+        with scope_factory() as scope:
+            scope.set_tag(BACKGROUND_TASK_TAG, task)
+            sentry_sdk.capture_exception(exc)
+    except Exception:  # pragma: no cover — reporting must never raise
+        logger.exception("Sentry capture_background_exception failed for task=%s", task)
