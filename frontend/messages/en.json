@@ -3027,9 +3027,8 @@
   },
   "directory": {
     "disclaimer": {
-      "brand_is_prefix": "presents",
-      "directory_only": "business information only. The business bears full responsibility for items and licensing.",
-      "prices_set_by_businesses": "Prices are set by the businesses themselves."
+      "body": "lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which is responsible for its products, its licensing, and its prices.",
+      "terms_link": "Full details — Terms of Use"
     }
   },
   "location": {
