@@ -14,7 +14,8 @@
 # Related:  scripts/checks/run-all.sh (discovers + runs this),
 #           scripts/checks/README.md (the authoring contract),
 #           .claude/rules/workflow.md (rule 31 — the rule this enforces).
-# History:  MEH-1602 (creation — mechanises MEH-1372).
+# History:  MEH-1602 (creation — mechanises MEH-1372); MEH-1602 follow-up
+#           (root-level *.md counts as docs, + its regression case).
 #
 # WHY THIS EXISTS
 #   MEH-1372 landed as prose, which makes it advice an agent can skip. The same
@@ -24,12 +25,16 @@
 #   conflict on every concurrent merge; keeping them out of code branches is
 #   what removes the conflict, and only a red check enforces it.
 #
-# THE RULE (one rule, three cases)
-#   Let DOCS = docs/**, HANDOFF.md, .claude/**
+# THE RULE (one rule; --self-test drives four cases through it)
+#   Let DOCS = docs/**, .claude/**, HANDOFF.md, and root-level *.md
 #   FAIL  when the diff touches at least one file OUTSIDE DOCS *and* touches
 #         docs/CHANGELOG.md or HANDOFF.md.
 #   PASS  when the diff is docs-only (even if it is entirely CHANGELOG+HANDOFF).
 #   PASS  when the diff is code-only and touches neither log.
+#   PASS  when the diff is root-level Markdown (CLAUDE.md) + a log — the case
+#         this guard got WRONG on PR #2228 and now locks with a regression test.
+#   Full taxonomy, including the cases deliberately left undecided:
+#   scripts/checks/README.md -> "File taxonomy".
 #
 # BASE RESOLUTION (why this is more than one line)
 #   The `repo-guards` job checks out with a plain `actions/checkout@v7` — depth
@@ -59,7 +64,7 @@
 #
 # USAGE
 #   bash scripts/checks/changelog-branch-guard.sh              # guard the diff
-#   bash scripts/checks/changelog-branch-guard.sh --self-test  # prove all 3 cases
+#   bash scripts/checks/changelog-branch-guard.sh --self-test  # prove all 4 cases
 #
 set -uo pipefail
 
@@ -69,10 +74,21 @@ cd "$REPO_ROOT" || exit 1
 
 LOGS=("docs/CHANGELOG.md" "HANDOFF.md")
 
-# A path is "docs" if it is under docs/, under .claude/, or is HANDOFF.md.
+# A path is "docs" if it is under docs/, under .claude/, or is a root-level
+# Markdown document.
+#
+# The root-level `*.md` arm is MEH-1602 follow-up, found by this guard
+# false-positiving on its own first real customer: a CLAUDE.md-only correction
+# PR was classified as a CODE change (CLAUDE.md is not under docs/), which
+# would have blocked it from carrying the CHANGELOG entry that documents it.
+# Root docs — CLAUDE.md, AGENTS.md, README.md — are documentation by any
+# reading; only the top level is matched, so a nested `frontend/**/*.md` still
+# counts as part of a code change.
 is_docs_path() {
   case "$1" in
     docs/*|.claude/*|HANDOFF.md) return 0 ;;
+    */*) return 1 ;;          # anything nested that isn't docs/ or .claude/
+    *.md) return 0 ;;         # root-level Markdown: CLAUDE.md, AGENTS.md, …
     *) return 1 ;;
   esac
 }
@@ -202,7 +218,7 @@ changed_files() {
 # through the real diff path rather than the classifier alone.
 # ---------------------------------------------------------------------------
 self_test() {
-  local tmp status=0 base_sha
+  local tmp status=0 base_sha cases=0
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
 
@@ -214,6 +230,7 @@ self_test() {
     mkdir -p docs frontend/components
     echo "# changelog"          > docs/CHANGELOG.md
     echo "# handoff"            > HANDOFF.md
+    echo "# claude"             > CLAUDE.md
     echo "export const a = 1;"  > frontend/components/Thing.jsx
     git add -A && git commit --quiet -m base
   ) || { echo "self-test: could not build fixture repo"; return 1; }
@@ -232,6 +249,7 @@ self_test() {
     printf '%s\n' "$files" | sed 's/^/     changed: /'
     printf '%s\n' "$files" | classify
     rc=$?
+    cases=$(( cases + 1 ))
     got=PASS; [ "$rc" -ne 0 ] && got=FAIL
     if [ "$got" = "$expect" ]; then
       echo "   [ok] got $got"
@@ -254,8 +272,18 @@ self_test() {
   run_case "code-only" PASS \
     "echo 'export const a = 3;' > frontend/components/Thing.jsx"
 
+  # Regression lock for the defect this guard found in ITSELF on PR #2228:
+  # CLAUDE.md is not under docs/ or .claude/, so the first version classified
+  # the project's primary documentation file as CODE and would have red-lined
+  # every CLAUDE.md-only docs PR — including the one correcting the very rule
+  # this guard enforces. Root-level Markdown is documentation; if that arm of
+  # is_docs_path() is ever removed, this case goes red instead of the change
+  # slipping through silently.
+  run_case "root-level *.md + CHANGELOG" PASS \
+    "echo '- rule change' >> CLAUDE.md; echo '- entry' >> docs/CHANGELOG.md"
+
   if [ "$status" -eq 0 ]; then
-    echo "self-test OK — all 3 cases behaved as specified."
+    echo "self-test OK — all $cases cases behaved as specified."
   else
     echo "self-test FAILED."
   fi

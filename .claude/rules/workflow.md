@@ -723,11 +723,19 @@ Tasks auto-expire after 7 days.
 
 25. **Pre-push staging sync (MEH-585, 15 May 2026).**
     Before every `git push -u origin <feature-branch>`, sync the branch
-    against the current tip of `staging` to absorb any append-only log
-    edits (CHANGELOG.md, HANDOFF.md) that landed during the work window.
+    against the current tip of `staging` so the push lands on current code.
     Prevention layer — pairs with the `resolve-conflicts` skill
     (recovery). Rule 1's session-start fetch covers boot; this covers
     the moment between feature work completion and `push`.
+
+    > **Superseded clause (MEH-1602).** This rule used to exist to absorb
+    > *append-only log* edits (CHANGELOG.md, HANDOFF.md) mid-flight, and told
+    > you to Accept-Both them. **Rule 31 removed the premise:** a code branch
+    > no longer carries those files at all, so there is nothing to Accept-Both
+    > — `scripts/checks/changelog-branch-guard.sh` reds the PR if it does. The
+    > sync itself is still required, for *code* drift. Accept-Both remains
+    > correct only in a **docs-only** backfill PR, where both entries are
+    > genuinely append-only and must both survive.
 
     Canonical command sequence:
 
@@ -738,9 +746,11 @@ Tasks auto-expire after 7 days.
     git push -u origin <feature-branch>
     ```
 
-    CHANGELOG.md + HANDOFF.md follow **Accept-Both** (Haacked rule for
-    append-only logs) — both entries land in chronological order, no
-    information lost. The resolve-conflicts skill encodes this.
+    **In a docs-only backfill PR**, CHANGELOG.md + HANDOFF.md follow
+    **Accept-Both** (Haacked rule for append-only logs) — both entries land
+    in chronological order, no information lost. The resolve-conflicts skill
+    encodes this. **In a code branch this does not arise**: rule 31 keeps
+    those files out entirely, and the guard enforces it.
 
     `git rebase origin/staging` is acceptable but **merge is the default**
     — preserves the original feature SHAs for adversarial review and the
