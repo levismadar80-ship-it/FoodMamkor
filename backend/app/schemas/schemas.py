@@ -136,9 +136,7 @@ def _whatsapp_group_validator(value: str | None) -> str | None:
         return None
     parsed = urlparse(stripped)
     if parsed.scheme != "https" or parsed.netloc.lower() != "chat.whatsapp.com":
-        raise ValueError(
-            "קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com"
-        )
+        raise ValueError("קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com")
     return stripped
 
 
