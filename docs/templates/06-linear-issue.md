@@ -141,6 +141,27 @@
 2. Surface gaps explicitly
 3. Never assume scope reduction is implicit
 
+### Rule — Every new AdminSetting key / feature flag names its reader (מ-MEH-1555)
+
+**כל מפתח `AdminSetting` חדש או feature flag חדש — ה-acceptance_criteria
+חייב לנקוב ב-(א) ה-reader שלו (נתיב קובץ) ו-(ב) תנאי המחיקה שלו.**
+
+Writer-only key = surface מת מהיום הראשון. הוא נראה חי (אדמינית מקלידה ערך,
+הוא נשמר, הוא חוזר בטעינה הבאה) ולכן אף מסך לא מראה שגיאה — בדיוק אותו
+smell של "שני מנגנונים לאותה עבודה" מ-MEH-271, רק בכיוון ההפוך: **אפס**
+מנגנונים צורכים את הערך.
+
+- ❌ `- AdminSetting חדש: freemium_premium_price`
+- ✅ `- AdminSetting חדש: freemium_premium_price — reader: backend/app/routers/upload.py (מחליף את התקרה הקשיחה >= 3); removal condition: אם מודל התמחור לא נסגר עד ההשקה, למחוק את המפתח + הסקשן`
+
+אין reader ידוע עדיין? זה לא פוטר — כותבים `reader: NONE YET` + תאריך/תנאי
+מפורש, וזה הופך לפריט שניתן לגריעה במקום לחוב סמוי.
+
+_מקור: MEH-1555 — `freemium_premium_price` ו-`freemium_free_image_limit`
+נוספו ל-`DEFAULT_SETTINGS` עם UI מלא ואפס קוראים, ושרדו עד ש-sweep ייעודי
+מצא אותם. באותו סבב: `admin_email` / `admin_whatsapp` ב-`admin_settings`
+מוצללים ע"י env vars באותם שמות — אותה משפחה בדיוק._
+
 ---
 
 ## 📝 דוגמה מלאה — MEH-103 Reviews System
@@ -190,6 +211,8 @@ Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
 - ReviewCard component (rating, comment, date, badge)
 - ProducerDetail integration (after description, before similar_producers)
 - pytest: happy path + invalid token + duplicate + expired token
+- Conditional UI? declare 0/1/many + open/closed states.
+- New AdminSetting key / feature flag? name its reader (file path) + removal condition.
 - npm run build + mobile preview
 </acceptance_criteria>
 

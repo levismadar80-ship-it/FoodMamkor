@@ -37,6 +37,9 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 ## Workflow + execution rules
 20 workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + Risk-tiered review frequency + PR Review Workflow + /loop patterns: [.claude/rules/workflow.md](./.claude/rules/workflow.md). Code execution principles (exec §7–13): [.claude/rules/code-execution.md](./.claude/rules/code-execution.md). Prompt compression (Caveman): [.claude/rules/prompting.md](./.claude/rules/prompting.md). RTL: [.claude/rules/rtl.md](./.claude/rules/rtl.md). Security: [.claude/rules/security.md](./.claude/rules/security.md). Skills supply chain (MEH-397): [.claude/rules/skills.md](./.claude/rules/skills.md). File edit safety: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md). Observability dashboard-receipt: [.claude/rules/observability.md](./.claude/rules/observability.md). MCP tools (Resend, Postgres, etc.) — standalone CC only (Git Bash → `claude`); harness CC can't reach user-registered MCPs — for MCP queries, tell Smadar to open standalone CC. Meta-patterns: [.claude/rules/meta-patterns.md](./.claude/rules/meta-patterns.md).
 
+## Conditional-UI states (5-state rule)
+כל רינדור מותנה (רשימות, filter, reveal, disclosure) חייב התייחסות מפורשת ב-`acceptance_criteria` למצבים: **0 פריטים / פריט 1 / רבים**, ו**פתוח/סגור** לכל reveal. spec שמגדיר רק את המצב המלא = חסר. (UI Stack, Scott Hurff.) דוגמת עבר: [MEH-1551](https://linear.app/mehamakor/issue/MEH-1551) — עיגול יתום בערוץ קשר יחיד.
+
 ## Documentation map
 | File | What's in it |
 |---|---|
@@ -53,6 +56,7 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |
 | [docs/templates/](./docs/templates/README.md) | 9 prompt templates (00-08) for Linear issues, CC tasks, Claude.ai design — see [ADR-020](./docs/decisions/ADR-020-templates-in-repo.md) |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
+| [docs/audits/dashboard-field-guidance-audit.md](./docs/audits/dashboard-field-guidance-audit.md) | **Dashboard field standard** — every new owner-dashboard field needs a clear label + a "where it appears" line + an example placeholder, and prefers select-from-existing over free text. Per-field audit + open gaps (MEH-1539) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
 
 ## Known Bug Patterns / Gotchas

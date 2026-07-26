@@ -20,7 +20,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 
 from app.database import Base
@@ -212,6 +212,17 @@ class Producer(Base):
     vacation_until = Column(Date, nullable=True)
     # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
     opening_hours = Column(String, nullable=True)
+    # MEH-1543: optional weekly ORDER-acceptance window — distinct from
+    # opening_hours (store hours) and from ProducerLocation.opening_hours
+    # (pickup-point hours, MEH-1509). Format:
+    #   {"sunday": {"open": "09:00", "close": "14:00"}, ...}
+    # keys a subset of sunday..saturday; a day absent = orders closed that day.
+    # NULL = feature unused → nothing rendered. Backend only stores/validates/
+    # returns; the "open now" derivation is client-side (MEH-1546). JSONB (not
+    # JSON) so a future EXISTS/containment query stays cheap. Owner-writable via
+    # producer_me PUT; validated in schemas.ProducerUpdate (day keys, HH:MM 24h,
+    # close>open → 422). Expand-only per ADR-007. Paired migration: f4a1e9c3b7d2.
+    order_window = Column(JSONB, nullable=True)
     # MEH-213: location mode. Two independent booleans (not an enum) because
     # a producer can have BOTH a physical store AND offer delivery.
     # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
@@ -1180,10 +1191,14 @@ class ProducerPageView(Base):
     city = Column(String(100), nullable=True)
     # Where the view came from — lets the producer dashboard answer
     # "how often did people find me via search" without a separate impression
-    # table. NULL = direct/unknown.
+    # table. NULL = direct/unknown, or a value outside the allowlist.
+    # MEH-1558: the allowlist is the authority (services/analytics.py
+    # track_producer_view) — this comment mirrors it and must be updated
+    # with it. Anything not listed there is stored as NULL.
     referrer = Column(
         String(30), nullable=True
-    )  # search | map | category | home | None
+    )  # search | map | category | home | favorites | follow
+    # | producers-index | similar | nearby | None
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 

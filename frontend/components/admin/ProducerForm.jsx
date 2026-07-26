@@ -479,6 +479,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("contact_name", e.target.value)}
           />
           <Input
+            type="tel"
             label={t("producers.form.fields.phone")}
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}

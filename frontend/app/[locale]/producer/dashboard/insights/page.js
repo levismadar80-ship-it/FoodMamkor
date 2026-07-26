@@ -136,15 +136,21 @@ function DeepAnalyticsSection({ analytics, profile }) {
           windows={search_appearances}
           tooltip={t("windowed.search_appearances_tooltip")}
         />
+        {/* MEH-1557: the two click tiles carry the scope risk — contact_clicks
+            excludes WhatsApp (ContactClick.method = phone|instagram|website|
+            email), and a click is not a sent message. Same tooltip slot the
+            profile/search tiles already use; no new component. */}
         <WindowedMetricCard
           label={t("windowed.whatsapp_clicks")}
           icon={ChatCircle}
           windows={whatsapp_clicks}
+          tooltip={t("windowed.whatsapp_clicks_tooltip")}
         />
         <WindowedMetricCard
           label={t("windowed.contact_clicks")}
           icon={Phone}
           windows={contact_clicks}
+          tooltip={t("windowed.contact_clicks_tooltip")}
         />
       </div>
 

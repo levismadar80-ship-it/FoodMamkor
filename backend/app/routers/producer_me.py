@@ -251,6 +251,11 @@ def update_my_producer(
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
         "opening_hours",
+        # MEH-1543: owner-editable weekly order-acceptance window. Validated in
+        # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
+        # body clears it (present-but-None flows through model_dump(exclude_unset)
+        # and setattr sets the column to NULL).
+        "order_window",
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
