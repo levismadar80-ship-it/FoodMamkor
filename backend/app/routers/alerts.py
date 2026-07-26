@@ -378,8 +378,7 @@ def fire_alerts(
 _ZWJ = "\u200d"  # zero-width joiner
 _VS16 = "\ufe0f"  # variation selector-16 (emoji presentation)
 _LEADING_EMOJI = re.compile(
-    "^[\\s" + _ZWJ + _VS16 +
-    "\U0001f300-\U0001faff"
+    "^[\\s" + _ZWJ + _VS16 + "\U0001f300-\U0001faff"
     "\U00002600-\U000027bf"
     "\U0001f1e6-\U0001f1ff"
     "]+"
