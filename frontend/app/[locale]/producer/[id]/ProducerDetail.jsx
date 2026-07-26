@@ -13,6 +13,10 @@ import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
+// MEH-1546: informational weekly hours + the closed-state note that sits
+// BESIDE each primary CTA (never inside it — the CTA stays read-only and is
+// never disabled).
+import OrderWindowStrip, { OrderWindowCtaNote } from "./components/OrderWindowStrip";
 import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -179,6 +183,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             hasImages={hasImages}
             shareUrl={shareUrl}
           />
+          {/* MEH-1546: weekly order-acceptance hours — informational only, no
+              status colour (the page's single status lives in ProducerHeader).
+              Renders nothing when order_window is null → zero layout shift. */}
+          <OrderWindowStrip orderWindow={producer.order_window} />
           {/* Mobile/tablet inline contact card — the IntersectionObserver
               target for useStickyBar. Must stay the first child after
               ProducerHeader so the sticky bar fires at the same scroll
@@ -194,6 +202,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
+            {/* Directly ABOVE the card — the card opens with the WhatsApp
+                button, so this lands beside the CTA rather than below the
+                whole card (FAQ chips included). Never inside it. */}
+            <OrderWindowCtaNote orderWindow={producer.order_window} />
             <ContactCard producer={producer} isVacation={isVacation} />
           </div>
           <ProducerSections
