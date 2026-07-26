@@ -3,7 +3,7 @@
  * Purpose:  Derive the CURRENT order-acceptance status from a producer's
  *           weekly `order_window` (MEH-1543) — open / closing_soon / closed,
  *           plus when the window next changes — and compress the weekly map
- *           into display ranges ("א׳–ה׳ 9:00–14:00").
+ *           into display ranges (rendered like "Sun–Thu 9:00–14:00").
  * Touches:  the clock. Everything here is time-derived and therefore
  *           client-only (see the SSR note below).
  * Does NOT: fetch, render, or decide colour/copy — the component owns that.
@@ -13,7 +13,7 @@
  * Related:  frontend/lib/hours.js (DAY_KEYS + the Asia/Jerusalem idiom this
  *           mirrors), backend/app/schemas/schemas.py (_order_window_validator
  *           — the shape guarantees relied on here).
- * History:  MEH-1546 — chunk 3/3 of חלון הזמנות.
+ * History:  MEH-1546 — chunk 3/3 of the order-window feature.
  *
  * SSR: never call these from render on the server. The status depends on "now"
  * in Asia/Jerusalem, so a server pass and the client hydration can disagree and

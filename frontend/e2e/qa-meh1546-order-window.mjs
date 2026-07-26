@@ -8,9 +8,10 @@
  * reach serverFetch) — the page under test is the real one, SSR included.
  *
  * Captures 375px + 1440px in the three DoD states:
- *   1-open   — window open now  → header "פתוח להזמנות · עד 14:00" (primary)
- *   2-closed — window closed now → header "ההזמנות סגורות עכשיו · נפתחות …"
- *              (muted) + the CTA context line
+ *   1-open   — window open now   → header "open for orders · until 14:00"
+ *              (primary tone)
+ *   2-closed — window closed now → header "orders closed now · reopening …"
+ *              (muted tone) + the CTA context line
  *   3-null   — no order_window  → byte-identical to pre-MEH-1546
  * and asserts the single-status invariant in every state.
  *

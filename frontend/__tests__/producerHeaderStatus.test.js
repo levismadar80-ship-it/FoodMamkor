@@ -2,10 +2,10 @@
  * MEH-1546 — ProducerHeader status precedence (the page's ONLY order status).
  *
  * The rewritten spec's core finding: a second status line is not a colour
- * clash but a factual contradiction (availability_state=available + a window
- * that closed at 14:00 would assert both "פתוח להזמנות" and "ההזמנות סגורות
- * עכשיו" at 16:00). So order_window feeds the existing single element via
- * resolveHeaderStatus, and these are its five branches.
+ * clash but a factual contradiction (availability_state=available plus a
+ * window that closed at 14:00 would assert both "open for orders" and
+ * "orders closed now" at 16:00). So order_window feeds the existing single
+ * element via resolveHeaderStatus, and these are its five branches.
  *
  * Pure mapper — no React, no i18n. Copy lives in he/en; this pins precedence,
  * tone (one green) and the data-testid contract.
@@ -60,7 +60,7 @@ describe("resolveHeaderStatus — precedence, first match wins", () => {
 describe("closed with no reopening time (PR review catch)", () => {
   // getOrderWindowStatus returns {state:"closed", nextChange:null} when a
   // window object exists but every day violates close > open. Interpolating
-  // that null into "נפתחות {יום} ב־{שעה}" would format the epoch ("ה׳ 02:00").
+  // that null into the "reopening {day} at {time}" copy formats the epoch.
   it("degrades to the plain closed branch instead of an epoch date", () => {
     const s = resolveHeaderStatus({
       isVacation: false,
