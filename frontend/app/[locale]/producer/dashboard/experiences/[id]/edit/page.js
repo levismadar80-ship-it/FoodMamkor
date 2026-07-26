@@ -10,13 +10,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import ExperienceForm from "@/components/ExperienceForm";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 const LIST_HREF = "/producer/dashboard/experiences";
 
@@ -52,9 +53,8 @@ export default function EditExperiencePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <Link href={LIST_HREF} className="text-sm text-primary hover:underline">
-        {t("back")}
-      </Link>
+      {/* MEH-999: entered from the experiences list, so back goes there. */}
+      <BackLink href={LIST_HREF} label={t("back")} />
       <h1 className="font-headline-lg text-3xl font-bold text-text mt-1 mb-6">{t("edit_heading")}</h1>
       {error ? (
         <p className="text-fg-muted">{error}</p>
