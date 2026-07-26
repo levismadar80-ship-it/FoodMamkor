@@ -18,6 +18,14 @@ const MINIMAL_FIXTURE = fs.readFileSync(
   path.join(__dirname, "fixtures", "producer-detail-minimal.json"),
   "utf-8"
 );
+// MEH-1583: exactly two channels (phone + instagram) — the one matrix cell
+// neither fixture above can reach. The 4-channel fixture never shows a reveal
+// and the minimal one has no surviving sibling, so "(many x open)" — the state
+// in Sapir's 26/07 screenshot — had no pixel coverage at all.
+const TWO_CHANNEL_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-detail-two-channel.json"),
+  "utf-8"
+);
 // Matches ONLY the detail call GET /api/producers/{uuid} — not the collection
 // (`/api/producers?…`, no id segment), the `…/reviews` sub-resource, or the
 // non-UUID siblings (`/count`, `/cities`, `/random`, `/by-slug/*`). Producer
@@ -531,6 +539,40 @@ test.describe("Visual parity — MEH-991", () => {
     await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail-phone-revealed.png", {
+      ...SHOT,
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
+    });
+  });
+
+  // Desktop-only, MEH-1583: the missing matrix cell — (many x open). Two
+  // channels, phone revealed: the phone leaves the icon row and its number
+  // takes a full-width row, so the card must show ONE geometry, never a wide
+  // pill parked beside a 44px circle.
+  test("producer-detail-two-channel-revealed", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "phone reveal is desktop-only (>=1024px)");
+    await preparePage(page);
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: TWO_CHANNEL_FIXTURE,
+      });
+    });
+    const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
+      return;
+    }
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
+    // Two channels => circles, so the phone is reached by its own channel
+    // testid; the single-row testid only exists at exactly one channel.
+    await page.locator('[data-testid="contact-channel-phone"]:visible').first().click();
+    await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
+    await settle(page);
+    await expect(page).toHaveScreenshot("producer-detail-two-channel-revealed.png", {
       ...SHOT,
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });

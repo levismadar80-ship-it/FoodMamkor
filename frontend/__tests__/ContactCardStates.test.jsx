@@ -133,14 +133,15 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
       fireEvent.click(screen.getByLabelText("התקשרו"));
 
       const revealed = screen.getByTestId("revealed-phone");
-      // same flex container, same position — not a block below the row.
+      // same flex container — not a block below the row. MEH-1583 moved it to
+      // the END of that container (it is a full-width row now, so it wraps
+      // under the surviving circles rather than sitting between them).
       expect(revealed.parentElement).toBe(row);
-      expect(row.firstElementChild).toBe(revealed);
+      expect(row.lastElementChild).toBe(revealed);
       // the circle it replaced is gone; the other channels are untouched.
       expect(screen.queryByLabelText("התקשרו")).not.toBeInTheDocument();
       expect(screen.getByLabelText("אינסטגרם")).toBeInTheDocument();
       expect(revealed).toHaveAttribute("href", "tel:0501234567");
-      expect(revealed).toHaveAttribute("dir", "ltr");
       expect(trackContactClick).toHaveBeenCalledWith(7, "phone");
     });
   });
@@ -154,6 +155,87 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
       const revealed = screen.getByTestId("revealed-phone");
       expect(revealed.parentElement).toBe(row);
       expect(screen.queryByTestId("contact-single-row")).not.toBeInTheDocument();
+    });
+  });
+
+  // MEH-1583 — the reveal now adopts the geometry of the element it replaces.
+  // MEH-1551 fixed WHERE the number lands but left it wearing pill anatomy, so
+  // a revealed card could show two geometric languages at once.
+
+  /** The geometry contract both full-width affordances must satisfy. */
+  const ROW_GEOMETRY = [
+    "flex",
+    "w-full",
+    "items-center",
+    "gap-2",
+    "min-h-[44px]",
+    "px-3",
+    "rounded-[10px]",
+    "border",
+    "border-border",
+    "bg-white",
+    "text-sm",
+  ];
+
+  it("(1 x open) is geometrically identical to (1 x closed) — no layout jump", () => {
+    withDesktop(() => {
+      const { unmount } = renderCard({ phone: "0501234567" });
+      const closed = screen.getByTestId("contact-single-row").className.split(/\s+/);
+      unmount();
+
+      renderCard({ phone: "0501234567" });
+      fireEvent.click(screen.getByTestId("contact-single-row"));
+      const open = screen.getByTestId("revealed-phone").className.split(/\s+/);
+
+      for (const cls of ROW_GEOMETRY) {
+        expect(closed).toContain(cls);
+        expect(open).toContain(cls);
+      }
+      // the pill anatomy is gone from the revealed row for good.
+      expect(open).not.toContain("rounded-full");
+      expect(open).not.toContain("inline-flex");
+    });
+  });
+
+  it("(many x open) drops the phone from the circle row and adds one full-width number row", () => {
+    withDesktop(() => {
+      renderCard({ phone: "0501234567", instagram: "@shikma", website: "x.co.il" });
+      fireEvent.click(screen.getByTestId("contact-channel-phone"));
+
+      const revealed = screen.getByTestId("revealed-phone");
+      // phone gone from the circle row; the survivors keep circle anatomy.
+      expect(screen.queryByTestId("contact-channel-phone")).not.toBeInTheDocument();
+      expect(screen.getByTestId("contact-channel-instagram").className).toContain("rounded-full");
+      // ...and the number is a row, not a pill wedged among the circles.
+      for (const cls of ROW_GEOMETRY) expect(revealed.className).toContain(cls);
+      expect(revealed.className).not.toContain("rounded-full");
+    });
+  });
+
+  it("puts dir/numeric on the number span, not the row (icon stays at the RTL start)", () => {
+    withDesktop(() => {
+      renderCard({ phone: "0501234567" });
+      fireEvent.click(screen.getByTestId("contact-single-row"));
+
+      const revealed = screen.getByTestId("revealed-phone");
+      expect(revealed).not.toHaveAttribute("dir");
+      const span = revealed.querySelector("span[dir='ltr']");
+      expect(span).toHaveTextContent("0501234567");
+      expect(span.className).toContain("numeric");
+    });
+  });
+
+  it("promotes the lone survivor to a labeled row (no orphan circle after reveal)", () => {
+    withDesktop(() => {
+      // 2 channels: revealing the phone leaves instagram alone. Left as a bare
+      // circle it would re-create exactly the orphan MEH-1551 closed.
+      renderCard({ phone: "0501234567", instagram: "@shikma" });
+      fireEvent.click(screen.getByTestId("contact-channel-phone"));
+
+      const survivor = screen.getByTestId("contact-single-row");
+      expect(survivor).toHaveTextContent("אינסטגרם");
+      expect(survivor.className).toContain("w-full");
+      expect(screen.getByTestId("revealed-phone")).toBeInTheDocument();
     });
   });
 
