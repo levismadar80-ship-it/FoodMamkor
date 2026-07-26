@@ -811,6 +811,15 @@
           "external_order": "טופס הזמנות",
           "whatsapp_group": "קבוצת וואטסאפ"
         },
+        "single": {
+          "phone": "חייגו אלינו",
+          "instagram": "אינסטגרם",
+          "website": "לאתר העסק",
+          "email": "שלחו אימייל",
+          "facebook": "פייסבוק",
+          "external_order": "טופס הזמנה",
+          "whatsapp_group": "קבוצת הוואטסאפ"
+        },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
         "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
         "reveal_phone": "הצגת מספר הטלפון",
