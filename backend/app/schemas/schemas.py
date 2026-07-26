@@ -1073,6 +1073,10 @@ class ProducerUpdate(BaseModel):
     # During the 7-day overlap both fields are accepted and writes mirror to old columns.
     availability_state: str | None = None
     vacation_until: date | None = None
+    # MEH-1541: self-reported founding year (optional). Range-validated below
+    # (1800 ≤ year ≤ current year). Shared by the owner PUT (producer_me.py,
+    # gated by _PRODUCER_WRITABLE_FIELDS) and the admin PUT (admin.py bulk setattr).
+    established_year: int | None = None
     # MEH-1543: optional weekly order-acceptance window. dict (per-day
     # open/close) or explicit null to clear. Validated below (day keys, HH:MM
     # 24h, close>open → 422 Hebrew). Owner-writable path opened in
@@ -1262,6 +1266,20 @@ class ProducerUpdate(BaseModel):
         ):
             raise ValueError("תאריך החזרה לחופשה חייב להיות עתידי")
         return self
+
+    # MEH-1541: founding-year range guard. Runs ONLY on an explicitly-provided
+    # value (an omitted field is dropped by exclude_unset, never validated); an
+    # explicit null clears the column (nullable). Upper bound is Israel-tz
+    # "today" year so an owner near new-year isn't blocked on a valid current
+    # year. Out-of-range → 422 with the single Hebrew detail the spec locks.
+    @field_validator("established_year")
+    @classmethod
+    def _validate_established_year(cls, v):
+        if v is None:
+            return None
+        if v < 1800 or v > israel_today().year:
+            raise ValueError("שנת ההקמה לא תקינה")
+        return v
 
 
 class ProducerListOut(BaseModel):
@@ -1489,6 +1507,12 @@ class ProducerDetailOut(ProducerListOut):
     # The rating/count are NEVER here — they are live-fetched from
     # GET /producers/{id}/google-rating (never stored; Google ToS §3.2.3(b)).
     google_place_id: str | None = None
+    # MEH-1541: self-reported founding year → the quiet "מאז {שנה}" masthead line.
+    # Public (like owner_bio above): the heritage line renders on the public
+    # producer page. NULL = the owner hasn't stated a year → the line is absent
+    # from the DOM. Inherited by ProducerAdminOut + ProducerOwnerOut (admin table
+    # + owner dashboard prefill read the same value).
+    established_year: int | None = None
 
     model_config = {"from_attributes": True}
 
