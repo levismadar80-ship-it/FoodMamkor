@@ -2841,7 +2841,7 @@
     "owner_empty_description": "Customers who reached out to you on WhatsApp can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
     "owner_empty_cta": "Share your profile",
     "empty_message": "No reviews here yet.",
-    "empty_gate_hint": "Ordered something? We'd love to hear — writing a review opens after you reach out on WhatsApp.",
+    "empty_gate_hint": "Reached out on WhatsApp? We would love to hear — reviews open after clicking the WhatsApp button.",
     "pagination": {
       "prev_aria": "Previous page",
       "next_aria": "Next page"
@@ -3953,7 +3953,7 @@
         "stats_window_label": "7 days / 30 days / total",
         "kpi": {
           "whatsapp_leads": "WhatsApp clicks",
-          "contact_clicks": "Contact clicks",
+          "contact_clicks": "Contact clicks (non-WhatsApp)",
           "rating": "Rating",
           "views": "Views",
           "window_7d": "Last 7 days",
@@ -3972,16 +3972,18 @@
           "rank_tooltip": "Your rank in the city by views in the last 30 days. Updates automatically.",
           "rank_sub": "By views (30 days)"
         },
-        "eligible_weekly_title": "You're a candidate for business of the week Contact the team",
+        "eligible_weekly_title": "You're a candidate for business of the week — contact the team",
         "eligible_weekly_tooltip": "The team picks a business of the week from those ranked first in their city with high profile strength. If you're a candidate, a message will appear here.",
         "eligible_weekly_sub": "First in your city + strong profile — well done!",
         "windowed": {
           "profile_views": "Profile views",
-          "profile_views_tooltip": "How many times customers visited your business page. One view per customer per day.",
+          "profile_views_tooltip": "How many times your page was loaded. Every visit counts, including repeat visits.",
           "search_appearances": "Search appearances",
-          "search_appearances_tooltip": "How many times your business appeared in search results, even if the customer didn't click.",
+          "search_appearances_tooltip": "How many times customers reached your page from search results. Appearances without a click are not counted.",
           "whatsapp_clicks": "WhatsApp clicks",
-          "contact_clicks": "Contact clicks"
+          "whatsapp_clicks_tooltip": "How many times the WhatsApp button was clicked. A click is not necessarily a message sent.",
+          "contact_clicks": "Contact clicks (non-WhatsApp)",
+          "contact_clicks_tooltip": "Clicks on phone, Instagram, website, or email. WhatsApp is counted separately."
         },
         "simple_cards": {
           "followers_label": "Followers",
@@ -4219,6 +4221,24 @@
         "clear_cta": "Clear hours",
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
         "invalid_range": "Closing time must be after opening time"
+      },
+      "order_window": {
+        "heading": "Order window",
+        "subtitle": "Until what time each day you accept orders. Separate from opening hours.",
+        "empty_state": "No order window set — your business page won't show order hours.",
+        "toggle_label": "accepting orders this day",
+        "toggle_closed": "Not accepting orders",
+        "from_label": "opening time",
+        "to_label": "closing time",
+        "invalid_range": "Closing time must be after opening time",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "save_success": "Order window saved",
+        "save_error": "Save failed. Please try again.",
+        "revert_cta": "Discard changes",
+        "clear_cta": "Clear all",
+        "summary_empty": "Not set",
+        "summary_set": "{count, plural, one {1 day a week} other {# days a week}}"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",

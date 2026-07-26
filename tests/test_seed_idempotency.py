@@ -1,10 +1,19 @@
 """MEH-1107 — category seed idempotency.
 
-Proves the root-cause fix for the MEH-1104 production duplicate: re-seeding
-the category taxonomy updates rows in place by stable id instead of inserting
-a duplicate row when a category's name changes. Uses the shared Postgres test
-DB via the `db` fixture; `_clean_tables` (conftest) TRUNCATEs with RESTART
+Guards the MEH-1104 production duplicate: re-seeding the taxonomy must never
+insert a second row when a category's name changes. Uses the shared Postgres
+test DB via the `db` fixture; `_clean_tables` (conftest) TRUNCATEs with RESTART
 IDENTITY before each test, so ids start at 1.
+
+MEH-1530 note: the *mechanism* changed — seeding is now insert-only
+(`ON CONFLICT DO NOTHING`) rather than an id-keyed update-in-place, because the
+positional id mapping was itself a bug (it crashed on every staging boot). The
+no-duplicate guarantee this module exists to protect is unchanged and is now
+structural. The old `test_reseed_after_rename_updates_in_place` was removed with
+that mechanism: it asserted the update-in-place rename and the `print(...)`
+observability line, neither of which exists any more. Renames are Alembic's
+responsibility now — see `tests/test_seed_categories_idempotent.py`
+(`test_seed_issues_no_update_so_renames_are_a_noop`) for the inverted guard.
 """
 from seed_data import CATEGORIES, seed_categories
 
@@ -13,7 +22,6 @@ from app.models.models import Category
 # 12th entry in CATEGORIES == id 12 in production (the MEH-1104 cream row).
 CREAM_ID = 12
 CREAM_NAME = CATEGORIES[CREAM_ID - 1][0]  # tracks the live seed name automatically
-OLD_CREAM_NAME = "pre-meh1098-old-name"   # any string that differs from CREAM_NAME
 
 
 def _rows(db):
@@ -41,24 +49,18 @@ def test_reseed_is_idempotent(db):
     assert db.query(Category).count() == len(CATEGORIES)
 
 
-def test_reseed_after_rename_updates_in_place(db, capsys):
-    """The exact MEH-1104 incident: a renamed row must update, not duplicate."""
+def test_reseed_never_duplicates_a_name(db):
+    """The MEH-1104 guarantee, kept — now enforced structurally.
+
+    Replaces `test_reseed_after_rename_updates_in_place` (MEH-1530): the
+    update-in-place rename it asserted no longer exists, so the assertion moved
+    to the property that actually matters and still holds — a re-seed cannot
+    produce a duplicate name, because ON CONFLICT DO NOTHING makes it impossible.
+    """
+    seed_categories(db)
     seed_categories(db)
 
-    # Simulate the pre-rename production state: id=12 still carries the OLD name.
-    cream = db.get(Category, CREAM_ID)
-    cream.name = OLD_CREAM_NAME
-    db.commit()
-
-    # Re-seed with CATEGORIES carrying the NEW name at position 12.
-    seed_categories(db)
-
-    # No duplicate row, and the existing row was updated in place.
+    names = [r.name for r in _rows(db)]
+    assert len(names) == len(set(names)), f"duplicate names: {names}"
     assert db.query(Category).count() == len(CATEGORIES)
     assert db.get(Category, CREAM_ID).name == CREAM_NAME
-    assert (
-        db.query(Category).filter(Category.name == OLD_CREAM_NAME).first() is None
-    )
-    # The in-place name change is surfaced (observability of rename/collision).
-    out = capsys.readouterr().out
-    assert f"id={CREAM_ID}" in out and OLD_CREAM_NAME in out and CREAM_NAME in out
