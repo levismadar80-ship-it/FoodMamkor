@@ -69,6 +69,9 @@ export default function MapPane({
   // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
   showSecondaryLayer,
   onToggleSecondaryLayer,
+  // MEH-1611: id of the selected business (focus-on-select demote). Pure
+  // pass-through — MapClient owns the state, MapComponent renders the effect.
+  focusedProducerId,
   // overlay state + handlers
   mapMoved,
   onSearchThisArea,
@@ -101,6 +104,7 @@ export default function MapPane({
         mapRef={mapRef}
         visitedIds={visitedIds}
         showSecondaryLayer={showSecondaryLayer}
+        focusedProducerId={focusedProducerId}
       />
       {/* MEH-1412 (MEH-1388 chunk 3): pickup / market_stand layer toggle. Logical
           props (start-*) — this is a UI control, not a geographic map control, so
