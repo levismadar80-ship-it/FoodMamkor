@@ -779,7 +779,9 @@
           "open": "Open for orders",
           "closed": "Not taking orders right now",
           "vacation": "On break · back on {date}",
-          "vacation_no_date": "On break"
+          "vacation_no_date": "On break",
+          "orders_closed": "Orders are closed now · reopening {day} at {time}",
+          "orders_open": "Open for orders · until {time}"
         },
         "excerpt_footer": "From the reviews",
         "excerpt_all": "All reviews"
@@ -817,6 +819,19 @@
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
+      },
+      "order_window": {
+        "strip_label": "Accepting orders:",
+        "cta_note": "You can send a message now — it'll be answered when orders reopen",
+        "days_short": {
+          "sun": "Sun",
+          "mon": "Mon",
+          "tue": "Tue",
+          "wed": "Wed",
+          "thu": "Thu",
+          "fri": "Fri",
+          "sat": "Sat"
+        }
       }
     },
     "card": {
