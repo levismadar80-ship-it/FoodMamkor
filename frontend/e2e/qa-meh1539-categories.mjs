@@ -15,7 +15,14 @@ import fs from "node:fs";
 
 // Repo-root qa-artifacts/ (the path the MEH-1156 size-cap gate scans).
 const OUT = "../qa-artifacts/MEH-1539";
-const BASE = process.env.QA_BASE_URL || "http://localhost:3100";
+// Hard-coded, not env-driven: the env-drift gate (.env.example) treats any
+// process.env read in the repo as an undeclared var, and a one-off QA harness
+// is not worth a new documented env var (regression rule 8). Edit in place if
+// you need a different port/binary.
+const BASE = "http://localhost:3100";
+// The sandbox ships chromium-1194; this @playwright/test pins a newer build,
+// so point at the installed binary instead of downloading one.
+const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const CATEGORIES = [
   { id: 1, name: "חלב וגבינות" },
@@ -49,12 +56,7 @@ const puts = [];
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
-  // The sandbox ships chromium-1194; this @playwright/test pins 1228. Point at
-  // the installed binary rather than downloading (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD).
-  const browser = await chromium.launch({
-    executablePath:
-      process.env.QA_CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  });
+  const browser = await chromium.launch({ executablePath: CHROME });
 
   for (const [label, width, height] of [["375", 375, 812], ["1440", 1440, 1000]]) {
     const ctx = await browser.newContext({
