@@ -577,6 +577,11 @@ export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
 //     200 {"bio":""} fail-open / other.
 // ============================================================
 
+// Deliberately TIGHTER than the schemas.py sanitize caps (description 2000,
+// short_description 160/200) — product-length choices, not mirrors. The
+// invariant that must hold is client <= server (otherwise the UI accepts
+// input the server silently truncates); enforced by
+// scripts/checks/length-cap-sync-guard.sh (MEH-1393).
 const DESC_MAX = 150;
 const TAGLINE_MAX = 160;
 const HIGHLIGHT_MS = 2500;
@@ -902,7 +907,9 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
 // ImagesCard uploadFiles (upload error surface via detailToMessage).
 // ============================================================
 
-// Server-side sanitize cap (schemas.py owner_bio validator) — keep in sync.
+// Mirrors the schemas.py owner_bio sanitize cap — equality is mechanically
+// enforced by scripts/checks/length-cap-sync-guard.sh (MEH-1393), so a drift
+// on either side reds the Repo-guards CI job instead of shipping silently.
 const OWNER_BIO_MAX = 300;
 
 // Exported for isolation tests (EditTabOwnerStoryCard.test.jsx) — see CategoriesCard.
