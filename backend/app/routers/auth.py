@@ -550,8 +550,12 @@ async def register_producer(
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)
-        # No verify/welcome email — the user already has a verified consumer
-        # account; she's just adding producer capability.
+        # MEH-1553: no verify/welcome email on the upgrade path. Verification
+        # is NOT enforced here — a logged-in but *unverified* consumer can still
+        # add producer capability (the guard above only requires a valid JWT).
+        # That unverified state is covered downstream by the verify banner
+        # (VerifyBanner.jsx) and the require_verified_producer dep (auth.py),
+        # not by this handler.
 
         whatsapp_expected = bool(
             p_phone
@@ -900,6 +904,13 @@ def register_producer_oauth(
                 "role": "consumer",
                 "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
+                # MEH-1553: the OAuth provider already verified the email, so
+                # stamp email_verified=True — one-to-one with the /auth/google
+                # and /auth/apple new-user siblings. Without it the new user
+                # falls back to the column default (False), sees the verify
+                # banner, and is blocked by require_verified_producer (MEH-170
+                # gap; MEH-1164 turned that into a money-path blocker).
+                "email_verified": True,
             }
             if provider == "google":
                 kwargs["avatar_url"] = _upload_google_avatar_or_none(
