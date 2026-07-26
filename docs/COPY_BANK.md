@@ -796,3 +796,54 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 | **CTA** | `גלו בתי עסק באזור שלכם` → `/producers` (locale-aware) |
 | **Sources line** | `מקורות: Sustain UK — What is local food and why does it matter? (2025) · CollectiveCrop — Fresh-Picked vs Supermarket Produce (2026)` — both titles are live links: Sustain → `https://www.sustainweb.org/blogs/jul25-what-is-local-food/`; CollectiveCrop → `https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter` |
 | **Status** | ✅ MEH-1289 |
+
+## Section 12 — Producer-page directory disclaimer, plain-language rewrite (MEH-1548)
+
+> **Status: 🕐 PENDING — awaiting Sapir's pick. No copy has been changed yet.**
+> Surface: `components/DirectoryDisclaimer.jsx`, mounted once at
+> `app/[locale]/producer/[id]/components/ProducerSections.jsx:522` (producer detail page only;
+> home-product surfaces were deferred under MEH-543). Renders as
+> `[BRAND_NAME] + brand_is_prefix + directory_only + prices_set_by_businesses`.
+>
+> **Why:** QA 26/07 — "מה זאת אומרת מדריך??". The word "מדריך" is the legal positioning
+> (an editorial guide, not a marketplace), but it is not everyday Hebrew, and if the founder
+> re-reads it twice a consumer will not read it at all. The **substance does not change** —
+> only the wording spreads out, with the full legal weight staying on `/terms`
+> (layered disclosure).
+
+### Current copy (verbatim, unchanged on staging)
+
+| Field | Value |
+|---|---|
+| **he (rendered)** | `מהמקור הוא מדריך בלבד. האחריות על הפריטים והרישוי חלה על בית העסק בלבד. המחירים נקבעים על ידי בתי העסק.` |
+| **en (rendered)** | `מהמקור presents business information only. The business bears full responsibility for items and licensing. Prices are set by the businesses themselves.` |
+| **i18n keys** | `directory.disclaimer.brand_is_prefix` · `.directory_only` · `.prices_set_by_businesses` |
+
+### Proposed variants — line 1 (pick ONE, or edit)
+
+Every variant is derived from existing `/terms` wording; **no new legal claim is introduced**
+and the declared verification scope is **not** widened (over-claim guard):
+`terms.sections.service` ("מציגה מידע בלבד: היא אינה מוכרת מוצרים, אינה צד לעסקה… כל עסקה נעשית
+ישירות בין המוכרת לקונה"), `terms.sections.responsibility` ("כל מוצר… באחריות המוכרת בלבד"),
+`terms.sections.licensing` ("האחריות לציות חלה על המוכרת בלבד").
+
+| # | he | en twin |
+|---|---|---|
+| **A** — closest to `/terms` §1 | `מהמקור מציגה בתי עסק — לא מוכרת ולא צד לעסקה. הקנייה נעשית ישירות מול בית העסק, והאחריות על המוצרים, על הרישוי ועל המחירים היא שלו.` | `Mehamakor lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which sets its prices and is responsible for its products and licensing.` |
+| **B** — shortest | `מהמקור מציגה בתי עסק ואינה מוכרת. הקנייה, המחירים והאחריות על המוצרים ועל הרישוי — ישירות מול בית העסק.` | `Mehamakor lists businesses and does not sell. Purchases, prices, and responsibility for products and licensing sit with the business.` |
+| **C** — reader-facing "you" (ADR-024 voice) | `אנחנו מציגות כאן בתי עסק, לא מוכרות. את קונה ישירות מבית העסק — הוא קובע את המחיר ואחראי על המוצרים ועל הרישוי.` | `We list businesses here — we don't sell. You buy directly from the business, which sets its prices and is responsible for its products and licensing.` |
+
+### Proposed line 2 — link to the full terms (all variants)
+
+| Field | Value |
+|---|---|
+| **he** | `לפרטים המלאים — תנאי השימוש` → `/terms` |
+| **en** | `Full details — Terms of Use` → `/terms` |
+
+### Notes for the decision
+
+- All three drop "מדריך" and instead say plainly what the platform **does** ("מציגה בתי עסק").
+- All three keep the three facts the current line carries: not the seller, responsibility for
+  products + licensing sits with the business, and prices are set by the business.
+- Whichever line is chosen, the final wording joins the agenda for the pending lawyer review of
+  the terms/privacy documents before it is treated as settled legal copy.
