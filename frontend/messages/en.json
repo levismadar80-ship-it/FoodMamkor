@@ -482,7 +482,7 @@
       "heading": "Three steps",
       "step01_title": "Find",
       "step01_text": "Discover businesses near you",
-      "step02_title": "Connect",
+      "step02_title": "Contact the business",
       "step02_text": "Talk directly with the business",
       "step03_title": "Buy",
       "step03_text": "Straight from the source, however suits you"
@@ -541,9 +541,6 @@
     },
     "info_tooltip": {
       "trigger_aria": "More info"
-    },
-    "parallax_quote": {
-      "aria": "Quote"
     },
     "skeleton": {
       "loading_businesses": "Loading fresh businesses"
@@ -778,6 +775,7 @@
         "vacation_back": "Back on {date}",
         "vacation_back_soon": "Back soon",
         "new_mark": "New",
+        "since_prefix": "Since",
         "status": {
           "open": "Open for orders",
           "closed": "Not taking orders right now",
@@ -846,7 +844,8 @@
       },
       "badges": {
         "delivery_only": "Delivery only",
-        "available_today": "🛒 Coming today"
+        "available_today": "🛒 Coming today",
+        "overflow_aria": "Show {count} more badges"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
     }
@@ -1229,8 +1228,8 @@
       "back_home": "← Back to site",
       "error_loading": "Error loading data",
       "error_generic": "Error",
-      "no_data": "No data to display",
-      "no_results": "No data",
+      "no_data": "No data yet",
+      "no_results": "No data yet",
       "items_pending_label": "{count} items awaiting approval",
       "items_pending_title": "{count} items awaiting approval",
       "brand_admin": "Mehamakor Admin"
@@ -1290,7 +1289,7 @@
       },
       "activity": {
         "heading": "Recent activity",
-        "empty": "No data to display",
+        "empty": "No data yet",
         "added_producer": "Business added:"
       },
       "weekly": {
@@ -1554,6 +1553,8 @@
           "top_product_placeholder": "Grass-fed beef",
           "price_range": "Starting price",
           "price_range_placeholder": "from ₪65/kg",
+          "established_year": "Founding year",
+          "established_year_placeholder": "1940",
           "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "Accepting orders",
@@ -1914,7 +1915,6 @@
       "title": "Settings",
       "load_error": "Error loading settings — try refreshing the page.",
       "sections": {
-        "notifications": "Notifications",
         "holiday": "Holiday window",
         "holiday_tooltip": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses are not accepting orders this week'. Disable after the holiday.",
         "holiday_tooltip_label": "Holiday window info",
@@ -1942,8 +1942,6 @@
         "categories_link": "Go to content →"
       },
       "fields": {
-        "admin_email": "Admin email for notifications",
-        "admin_whatsapp": "Admin WhatsApp number (E.164)",
         "holiday_key_label": "Holiday key for testing (empty = auto-detect by date)",
         "holiday_none": "— No override —",
         "holiday_pesach": "Passover",
@@ -1977,7 +1975,7 @@
       "categories": {
         "name_placeholder": "Category name",
         "add": "+ Add",
-        "empty": "No data to display",
+        "empty": "No data yet",
         "save": "Save",
         "delete": "Delete",
         "confirm_delete": "Delete '{name}' — {count} associated businesses",
@@ -2045,8 +2043,8 @@
       "legend_producers": "Businesses",
       "legend_users": "Users",
       "top_categories": "Popular categories",
-      "no_data": "No data",
-      "no_data_display": "No data to display",
+      "no_data": "No data yet",
+      "no_data_display": "No data yet",
       "top_cities": "Top cities",
       "top_producers_favorites": "Businesses with the most favorites",
       "geographic": "Geographic distribution",
@@ -3907,7 +3905,7 @@
         "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
       "analytics": {
-        "stats_window_label": "7 days / 30 days / total",
+        "stats_window_label": "7 days / in the last 30 days / total",
         "kpi": {
           "whatsapp_leads": "WhatsApp clicks",
           "contact_clicks": "Contact clicks (non-WhatsApp)",
@@ -3924,10 +3922,10 @@
           "whatsapp_clicks_sub": "Last 7 days",
           "conversion_label": "Conversion %",
           "conversion_tooltip": "Share of views that turned into a WhatsApp click in the last 30 days. The higher it goes, the more persuasive the profile.",
-          "conversion_sub": "View → WhatsApp (30 days)",
+          "conversion_sub": "View → WhatsApp in the last 30 days",
           "rank_label": "City rank",
           "rank_tooltip": "Your rank in the city by views in the last 30 days. Updates automatically.",
-          "rank_sub": "By views (30 days)"
+          "rank_sub": "By views in the last 30 days"
         },
         "eligible_weekly_title": "You're a candidate for business of the week — contact the team",
         "eligible_weekly_tooltip": "The team picks a business of the week from those ranked first in their city with high profile strength. If you're a candidate, a message will appear here.",
@@ -4260,6 +4258,8 @@
         "bio_label": "A few words about you",
         "bio_where": "Shown on your page",
         "bio_placeholder": "What led you to do what you do?",
+        "year_label": "Founding year (optional)",
+        "year_helper": "The year the business started operating",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4535,6 +4535,7 @@
     },
     "locations": {
       "section_heading": "Locations",
+      "intro": "Your business's location points — a shop, a stall or a pickup spot. They appear on your page and on the map, with tap-to-navigate.",
       "add_cta": "Add location",
       "add_heading": "New location",
       "edit_heading": "Edit location",
@@ -4551,14 +4552,25 @@
       },
       "form": {
         "kind_label": "Type",
+        "kind_helper": "Branch — a fixed shop or point of sale. Pickup point — where customers collect an order. Market stand — a stall at a market on set days.",
         "label_label": "Label",
+        "label_hint": "The name customers see next to the point",
+        "label_placeholder": "e.g. The stall at Hanamal Market",
         "city_label": "City",
+        "city_placeholder": "e.g. Haifa",
         "address_label": "Address",
+        "address_placeholder": "e.g. 12 Ha'atzmaut St",
+        "place_hint": "Shown on your page and in navigation",
         "lat_label": "Latitude",
         "lng_label": "Longitude",
+        "coords_summary": "Manual coordinates",
+        "coords_hint": "Optional. Fill these in only if the map pin isn't sitting in the right place.",
         "hours_label": "Hours",
+        "hours_placeholder": "e.g. Sun–Thu, 9:00–17:00",
         "phone_label": "Phone",
+        "phone_placeholder": "e.g. 050-1234567",
         "precision_label": "Precision",
+        "precision_helper": "Exact — customers see a pin at the full location; Approximate — a pin in the area only, without an address.",
         "precision_exact": "Exact",
         "precision_approximate": "Approximate",
         "primary_label": "Primary location"
