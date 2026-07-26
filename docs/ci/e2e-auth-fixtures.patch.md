@@ -54,8 +54,17 @@ Add three env vars to the **"Run E2E tests"** step (`e2e.yml:150-159`):
           DEMO_ADMIN_PASSWORD: ${{ secrets.DEMO_ADMIN_PASSWORD }}
 ```
 
-Also update the header comment at `e2e.yml:28` — "Required secrets: none" stops
-being true.
+### Second edit — do not stop at the block above
+
+The header comment at `e2e.yml:28` reads "Required secrets: none." That stops
+being true the moment the env block is applied, so change it in the same edit:
+
+```
+# Required secrets: DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD /
+# DEMO_ADMIN_PASSWORD — MEH-999, they unlock the authenticated specs; without
+# them global-setup skips provisioning and those specs skip with a reason.
+# VERCEL_AUTOMATION_BYPASS_SECRET is still unused —
+```
 
 ### Prerequisites — check both before applying
 
