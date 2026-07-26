@@ -1183,10 +1183,14 @@ class ProducerPageView(Base):
     city = Column(String(100), nullable=True)
     # Where the view came from — lets the producer dashboard answer
     # "how often did people find me via search" without a separate impression
-    # table. NULL = direct/unknown.
+    # table. NULL = direct/unknown, or a value outside the allowlist.
+    # MEH-1558: the allowlist is the authority (services/analytics.py
+    # track_producer_view) — this comment mirrors it and must be updated
+    # with it. Anything not listed there is stored as NULL.
     referrer = Column(
         String(30), nullable=True
-    )  # search | map | category | home | None
+    )  # search | map | category | home | favorites | follow
+    # | producers-index | similar | nearby | None
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
