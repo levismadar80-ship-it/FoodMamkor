@@ -634,12 +634,6 @@
       "og_title": "המועדפים שלי במהמקור",
       "og_description": "בתי העסק והמוצרים השמורים — מחכים במקום אחד."
     },
-    "upgrade": {
-      "title": "שדרוג לחשבון פרימיום | מהמקור",
-      "description": "השוואת מסלולים לבעלי עסק במהמקור — חינמי מול פרימיום: מוצרים ללא הגבלה, תמונות נוספות, סטטיסטיקות ועוד.",
-      "og_title": "שדרוג לפרימיום במהמקור",
-      "og_description": "הצגת בית העסק בגדול — מוצרים ללא הגבלה, גלריית תמונות וסטטיסטיקות."
-    },
     "map": {
       "title": "מפת בתי עסק מקומיים — מהמקור",
       "description": "בתי עסק מקומיים מתחום המזון על המפה. כולם במקום אחד, בלי לחפש שעות.",
@@ -1188,7 +1182,7 @@
       "geo_invalid": "המיקום שהתקבל אינו תקין",
       "geo_failure": "לא הצלחנו לקבל את המיקום",
       "marker_singular": "עסק",
-      "marker_plural": "עסק"
+      "marker_plural": "עסקים"
     },
     "producer_card": {
       "verified": "מאומת",
@@ -1923,7 +1917,6 @@
       "load_error": "שגיאה בטעינת הגדרות — נסו לרענן את הדף.",
       "sections": {
         "notifications": "התראות",
-        "freemium": "Freemium",
         "holiday": "חלון חג",
         "holiday_tooltip": "הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג.",
         "holiday_tooltip_label": "מידע על חלון חג",
@@ -1953,8 +1946,6 @@
       "fields": {
         "admin_email": "אימייל אדמין לקבלת התראות",
         "admin_whatsapp": "מספר וואטסאפ אדמין (E.164)",
-        "premium_price": "מחיר חודשי לפרמיום (₪)",
-        "free_image_limit": "מספר תמונות בחבילת חינם",
         "holiday_key_label": "מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)",
         "holiday_none": "— ללא עקיפה —",
         "holiday_pesach": "פסח",
@@ -2862,41 +2853,11 @@
     "owner_empty_description": "לקוחות שיצרו איתכם קשר בוואטסאפ יכולים להשאיר ביקורת מאומתת. שתפו את הקישור לעמוד שלכם — זה הדרך הכי מהירה לביקורת ראשונה.",
     "owner_empty_cta": "לשיתוף העמוד",
     "empty_message": "עדיין אין ביקורות כאן.",
-    "empty_gate_hint": "הזמנתן? נשמח לשמוע — כתיבת ביקורת נפתחת אחרי יצירת קשר ב-WhatsApp.",
+    "empty_gate_hint": "יצרתן קשר בוואטסאפ? נשמח לשמוע — כתיבת ביקורת נפתחת אחרי לחיצה על כפתור הוואטסאפ.",
     "pagination": {
       "prev_aria": "עמוד קודם",
       "next_aria": "עמוד הבא"
     }
-  },
-  "upgrade": {
-    "title": "שדרגו לפרמיום",
-    "subtitle": "קבלו יותר חשיפה ויותר אפשרויות לעסק שלכם",
-    "free_plan": {
-      "name": "חינם",
-      "feature_map": "✓ הופעה במפה",
-      "feature_3_images": "✓ עד 3 תמונות",
-      "feature_contact": "✓ פרטי קשר",
-      "feature_delivery": "✓ אזורי משלוח",
-      "missing_products": "✗ מוצרים ללא הגבלה",
-      "missing_images": "✗ תמונות ללא הגבלה",
-      "missing_stats": "✗ סטטיסטיקות"
-    },
-    "premium_plan": {
-      "recommended": "מומלץ",
-      "name": "פרמיום",
-      "price_pending": "בקרוב",
-      "feature_map": "✓ הופעה במפה",
-      "feature_unlimited_images": "✓ תמונות ללא הגבלה",
-      "feature_contact": "✓ פרטי קשר",
-      "feature_delivery": "✓ אזורי משלוח",
-      "feature_unlimited_products": "✓ רשימת מוצרים מלאה",
-      "feature_stats": "✓ סטטיסטיקות צפיות",
-      "feature_badge": "✓ תגית פרמיום"
-    },
-    "notify_success": "🎉 נרשמת! נעדכן אותך כשפרמיום יושק.",
-    "email_placeholder": "האימייל שלך",
-    "notify_cta": "עדכנו אותי כשיושק",
-    "notify_submitting": "בשליחה..."
   },
   "newsletter_unsubscribe": {
     "meta_title": "ביטול הרשמה לניוזלטר · מהמקור",
@@ -3933,10 +3894,6 @@
         "saved_vacation": "נשמר — בהפסקה עד {date}"
       },
       "quick_links": {
-        "add_event": {
-          "title": "הוספת אירוע",
-          "sub": "סדנה, סיור, ימי פתיחה ועוד"
-        },
         "group_buys": {
           "title": "ניהול קבוצות רכש",
           "sub": "נהלו קבוצות רכש ופתחו חדשות"
@@ -3974,7 +3931,7 @@
         "stats_window_label": "7 ימים / 30 ימים / סה״כ",
         "kpi": {
           "whatsapp_leads": "קליקים בוואטסאפ",
-          "contact_clicks": "יצירת קשר",
+          "contact_clicks": "קליקים ליצירת קשר (בלי וואטסאפ)",
           "rating": "דירוג",
           "views": "צפיות",
           "window_7d": "7 הימים האחרונים",
@@ -3998,11 +3955,13 @@
         "eligible_weekly_sub": "דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!",
         "windowed": {
           "profile_views": "צפיות בפרופיל",
-          "profile_views_tooltip": "כמה פעמים לקוחות נכנסו לעמוד העסק שלך. נספרת צפייה אחת ללקוחה ביום.",
+          "profile_views_tooltip": "כמה פעמים נטען עמוד העסק שלך. כל כניסה נספרת, כולל ביקורים חוזרים.",
           "search_appearances": "הופעות בחיפוש",
-          "search_appearances_tooltip": "כמה פעמים העסק שלך הופיע ברשימת תוצאות חיפוש, גם אם הלקוחה לא לחצה.",
+          "search_appearances_tooltip": "כמה פעמים לקוחות הגיעו לעמוד העסק שלך מתוך תוצאות חיפוש. לא כולל הופעות שלא נלחצו.",
           "whatsapp_clicks": "לחיצות וואטסאפ",
-          "contact_clicks": "לחיצות יצירת קשר"
+          "whatsapp_clicks_tooltip": "כמה פעמים נלחץ כפתור הוואטסאפ. קליק אינו בהכרח הודעה שנשלחה.",
+          "contact_clicks": "קליקים ליצירת קשר (בלי וואטסאפ)",
+          "contact_clicks_tooltip": "קליקים על טלפון, אינסטגרם, אתר או אימייל. וואטסאפ נספר בנפרד."
         },
         "simple_cards": {
           "followers_label": "עוקבות",
@@ -4240,6 +4199,24 @@
         "clear_cta": "ניקוי השעות",
         "unparseable": "הפורמט הקיים לא זוהה — הזינו את השעות מחדש",
         "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה"
+      },
+      "order_window": {
+        "heading": "חלון הזמנות",
+        "subtitle": "עד איזו שעה בכל יום מקבלים הזמנות. נפרד משעות הפתיחה.",
+        "empty_state": "לא הגדרת חלון הזמנות — עמוד העסק לא יציג שעות הזמנה.",
+        "toggle_label": "מקבלים הזמנות ביום זה",
+        "toggle_closed": "לא מקבלים הזמנות",
+        "from_label": "פתיחה",
+        "to_label": "סגירה",
+        "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה",
+        "save_cta": "שמירה",
+        "saving": "בשמירה…",
+        "save_success": "חלון ההזמנות נשמר",
+        "save_error": "השמירה נכשלה. נסו שוב.",
+        "revert_cta": "ביטול שינויים",
+        "clear_cta": "ניקוי הכל",
+        "summary_empty": "לא הוגדר",
+        "summary_set": "{count, plural, one {יום אחד בשבוע} two {יומיים בשבוע} other {# ימים בשבוע}}"
       },
       "custom_questions": {
         "heading": "שאלות שמופיעות בדף שלך",
