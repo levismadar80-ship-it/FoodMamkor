@@ -1974,7 +1974,9 @@
         "confirm_delete": "Delete '{name}' — {count} associated businesses",
         "producer_count": "{count} businesses",
         "deleting": "Deleting…",
-        "delete_error": "Failed to delete the category. Please try again."
+        "delete_error": "Failed to delete the category. Please try again.",
+        "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The emoji can still be updated.",
+        "name_taken_error": "A category with this name already exists"
       },
       "page_editor": {
         "title_placeholder": "Title",
