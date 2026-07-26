@@ -90,6 +90,7 @@ Zero guards found is a `NOTICE` and exit **0**, not a failure.
 |---|---|---|
 | [`ui-pattern-guard.sh`](./ui-pattern-guard.sh) | Producer-dashboard pages hand-rolling `EmptyState` / `BackLink` / text arrows in `he.json` back keys | MEH-999 |
 | [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves all three cases. | MEH-1602 |
+| [`length-cap-sync-guard.sh`](./length-cap-sync-guard.sh) | Frontend length-cap constants drifting from their backend schema caps: `OWNER_BIO_MAX` must **equal** the `owner_bio` sanitize cap; `DESC_MAX`/`TAGLINE_MAX` must stay **≤** every `description`/`short_description` cap (they are deliberately tighter UX caps). `--self-test` proves both directions + the missing-extraction fail-loud. | MEH-1393 |
 
 ### File taxonomy — what `changelog-branch-guard.sh` calls "docs"
 
