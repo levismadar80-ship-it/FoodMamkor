@@ -26,8 +26,16 @@ import { useEffect } from "react";
 // the default-locale page (same fix as edit/page.js:37).
 import { usePathname, Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { SquaresFour, PencilSimple, ChartLine, Wrench, Eye } from "@phosphor-icons/react";
+import {
+  SquaresFour,
+  PencilSimple,
+  ChartLine,
+  Wrench,
+  Eye,
+  Storefront,
+} from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
+import EmptyState from "@/components/ui/EmptyState";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -41,20 +49,52 @@ const TABS = [
 
 export default function ProducerDashboardLayout({ children }) {
   const t = useTranslations("dashboard.producer.nav");
+  const tDenied = useTranslations("errors.access_denied.producer");
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
 
+  // MEH-1599: 401 and 403 are DIFFERENT outcomes and must not share a branch.
+  //   - unauthenticated (401) → /login, now carrying ?redirect= so she lands
+  //     back on the page she asked for instead of the homepage.
+  //   - authenticated, wrong role (403) → NO redirect. The denied state below
+  //     renders in place.
+  // The old bare push("/login") collapsed both into the redirect: an
+  // authenticated consumer hit LoginClient.jsx:89-91, which replace()s an
+  // already-authenticated visitor to redirectTo (default "/"), so she landed
+  // silently on the homepage with no explanation. `pathname` comes from
+  // @/i18n/navigation, so it is locale-STRIPPED ("/producer/dashboard/edit")
+  // and LoginClient re-adds the locale on the way back.
+  const isUnauthenticated = !authLoading && !user;
+  const isDenied = !authLoading && !!user && user.role !== "producer";
+
   // The single UX gate for the whole dashboard subtree. Real auth is enforced
   // server-side (require_producer); this only keeps non-producers off the UI.
   useEffect(() => {
-    if (authLoading) return;
-    if (!user || user.role !== "producer") {
-      router.push("/login");
-    }
-  }, [user, authLoading, router]);
+    if (!isUnauthenticated) return;
+    router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+  }, [isUnauthenticated, pathname, router]);
 
-  if (authLoading || !user || user.role !== "producer") return null;
+  if (authLoading || isUnauthenticated) return null;
+
+  // 403 — in-app denied state with a route forward, not a browser redirect.
+  // The subtree's child pages carry their own duplicate role guards, but this
+  // returns before `children` mounts, so exactly ONE denied state can render.
+  if (isDenied) {
+    return (
+      <div data-testid="access-denied" className="max-w-3xl mx-auto px-4">
+        <EmptyState
+          icon={Storefront}
+          title={tDenied("heading")}
+          description={tDenied("message")}
+          ctaLabel={tDenied("cta")}
+          ctaHref="/register/producer"
+          secondaryLabel={tDenied("home")}
+          secondaryHref="/"
+        />
+      </div>
+    );
+  }
 
   const isActive = (tab) =>
     tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
