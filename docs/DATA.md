@@ -100,6 +100,9 @@ producers (
   contact_name, top_product_name,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
+  -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
+  -- (app-validated 1800..current year; NULL = line absent from DOM)
+  established_year integer nullable,
   -- MEH-1471: self-reported attribution (admin-only; English key + free-text "other")
   referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   starting_price_label, price_range,
