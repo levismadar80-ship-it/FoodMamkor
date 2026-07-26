@@ -89,6 +89,19 @@ Zero guards found is a `NOTICE` and exit **0**, not a failure.
 | Guard | Guards against | Ticket |
 |---|---|---|
 | [`ui-pattern-guard.sh`](./ui-pattern-guard.sh) | Producer-dashboard pages hand-rolling `EmptyState` / `BackLink` / text arrows in `he.json` back keys | MEH-999 |
+| [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves all three cases. | MEH-1602 |
+
+### The one guard that needs a diff
+
+`changelog-branch-guard.sh` is the first guard here that reasons about the
+**PR's diff** rather than the working tree, which the `repo-guards` job does not
+hand it: that job checks out shallow (depth 1) and passes no base SHA. The guard
+therefore resolves its own base — `$CHANGELOG_GUARD_BASE`, else
+`$GITHUB_BASE_REF` (fetched at `--depth=1` when absent), else the local default
+branch — and **exits non-zero if it can resolve none**, rather than reporting OK
+for a check it never ran. If you write another diff-based guard, reuse that
+ladder; a guard that silently passes when it cannot see the diff is worse than
+no guard.
 
 ## Not run from here
 
