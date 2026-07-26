@@ -1108,7 +1108,9 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
   return (
     <div>
       {/* Chrome + heading live in the EditAccordionCard header (MEH-1116). */}
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      <p className="text-xs text-fg-muted mb-1">{t("subtitle")}</p>
+      {/* MEH-1539 T2: what "top product" means + where the pair surfaces. */}
+      <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
 
       <div className="space-y-3">
         <Input
@@ -1126,6 +1128,7 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
           maxLength={60}
           onChange={(e) => setPriceRange(e.target.value)}
           placeholder={t("price_range_placeholder")}
+          helperText={t("price_hint")}
         />
       </div>
 
