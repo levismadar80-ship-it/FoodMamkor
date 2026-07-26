@@ -816,6 +816,15 @@
           "external_order": "Order form",
           "whatsapp_group": "WhatsApp group"
         },
+        "single": {
+          "phone": "Call us",
+          "instagram": "Instagram",
+          "website": "Visit the website",
+          "email": "Send an email",
+          "facebook": "Facebook",
+          "external_order": "Order form",
+          "whatsapp_group": "WhatsApp group"
+        },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
         "reveal_phone": "Show phone number",
