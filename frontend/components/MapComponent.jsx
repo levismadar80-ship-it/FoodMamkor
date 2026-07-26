@@ -36,6 +36,14 @@ import { categoryGlyphSvg } from "@/lib/marker-glyph";
  * doesn't reliably forward refs).
  */
 
+// MEH-1568: cluster radius by zoom. Below zoom 11 the map shows a region, so a
+// wide 60px grid keeps the country readable; from 11 up the user is inside a
+// town and a 40px grid stops neighbouring-but-distinct pins from being welded
+// together. Named (not inline) per exec §10 / eslint no-magic-numbers.
+const CLUSTER_TIGHT_RADIUS_ZOOM = 11;
+const CLUSTER_RADIUS_WIDE = 60;
+const CLUSTER_RADIUS_TIGHT = 40;
+
 // docs/archive/MAP_IMPROVEMENTS.md #5 — category color + icon lookup lives in
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
@@ -211,6 +219,51 @@ function createSecondaryMarker(
     className: "mehamakor-marker-wrap mehamakor-marker-secondary",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
+  });
+}
+
+// MEH-1568: a cluster whose leaves ALL belong to one business is not a "1" —
+// it is that business shown N times. The old badge rendered the unique-business
+// count (correct semantics, MEH-1412) which read as a bug on a 9-pickup cluster:
+// a green circle saying "1". This renders the business's own category marker
+// (same visual language as createCategoryMarker: 36px circle, category colour +
+// glyph from styleForProducer, 2px primary border) with a small count dot
+// carrying the MARKER count, so "9 points of one business" is legible at a
+// glance. No photo — a cluster is a group of places, not the business identity
+// portrait, and the glyph fallback is already the no-photo language (MEH-936).
+// Inline hex is the same divIcon raw-HTML exception documented above
+// createCategoryMarker; #2e6853 = primary, #fff = surface. The count dot's
+// physical `right`/`top` are raw CSS inside a Leaflet divIcon (not Tailwind
+// logical props) — same exception as createCategoryMarker's verified badge.
+function createSingleBusinessClusterIcon(producer, markerCount) {
+  const size = 36;
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const html = `
+    <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="
+        width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;
+        border:2px solid #2e6853;
+        box-shadow:0 2px 8px rgba(0,0,0,0.2);
+        display:flex;align-items:center;justify-content:center;
+        background:${categoryColor};
+      ">${categoryGlyphSvg(GlyphIcon)}</div>
+      <div style="
+        position:absolute;top:-4px;right:-4px;
+        min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;
+        border-radius:9px;background:#2e6853;border:2px solid #fff;
+        display:flex;align-items:center;justify-content:center;
+        font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;
+        line-height:1;color:#fff;pointer-events:none;
+      ">${markerCount}</div>
+    </div>`;
+  return L.divIcon({
+    html,
+    // Keeps `mehamakor-cluster` so globals.css:276 (transparent background) and
+    // the marker-presence specs (15-map-markers.spec.ts:28) still match; the
+    // modifier lets 24-producer-locations.spec.ts scope the unique-business
+    // badge invariant to MULTI-business clusters only.
+    className: "mehamakor-cluster mehamakor-cluster-single",
+    iconSize: [size, size],
   });
 }
 
@@ -430,18 +483,45 @@ export default function MapComponent({
       // was dead anyway: singular addLayer never engaged chunking.)
       chunkedLoading: false,
       showCoverageOnHover: false,
-      maxClusterRadius: 60,
-      disableClusteringAtZoom: 11,
+      // MEH-1568: radius tightens once the user is zoomed into a town — 60px
+      // over-clusters at street level, where the point of zooming in is to pull
+      // neighbouring pins apart. markercluster accepts a zoom->radius function
+      // (leaflet.markercluster-src.js:971-985).
+      maxClusterRadius: (zoom) =>
+        zoom >= CLUSTER_TIGHT_RADIUS_ZOOM ? CLUSTER_RADIUS_TIGHT : CLUSTER_RADIUS_WIDE,
+      // MEH-1568: `disableClusteringAtZoom: 11` REMOVED — it was the map's dead
+      // zone. It caps the group's internal _maxZoom at 10
+      // (leaflet.markercluster-src.js:975-976), which switches clustering off
+      // above zoom 11 AND makes the spiderfy path unreachable: _zoomOrSpiderfy
+      // only spiderfies when a cluster survives down to _maxZoom
+      // (leaflet.markercluster-src.js:868-888). Consequence: two markers at
+      // identical coordinates stacked forever and the lower one was
+      // permanently unclickable at EVERY zoom — certain once a business owns
+      // several pickup points (MEH-1388). With the option gone, clustering runs
+      // at every zoom and a cluster that cannot be split by zooming spiderfies
+      // its leaves into a clickable ring instead.
+      // spiderfyOnMaxZoom is left at its default `true`
+      // (leaflet.markercluster-src.js:25) — verified in the installed 1.5.3,
+      // not assumed; stated here so the dependency is explicit.
       iconCreateFunction: (cluster) => {
         // MEH-1412 (MEH-1388 chunk 3): the cluster badge counts UNIQUE
         // businesses, not markers — a 10-location producer contributes 1, not
         // 10. Each marker carries `producerId` (set in the marker loop); dedupe
         // the cluster's leaf markers by it. getAllChildMarkers() flattens nested
         // sub-clusters, so the count is correct at every zoom.
-        const uniqueBusinesses = new Set(
-          cluster.getAllChildMarkers().map((m) => m.producerId),
-        );
+        const childMarkers = cluster.getAllChildMarkers();
+        const uniqueBusinesses = new Set(childMarkers.map((m) => m.producerId));
         const count = uniqueBusinesses.size;
+        // MEH-1568: one business, many points → its category marker + a point
+        // count, instead of a green circle reading "1" (which looked like a
+        // broken badge). `producer` is tagged onto every marker in the loop
+        // below alongside producerId.
+        if (count === 1 && childMarkers[0]?.producer) {
+          return createSingleBusinessClusterIcon(
+            childMarkers[0].producer,
+            childMarkers.length,
+          );
+        }
         return L.divIcon({
           html: `
             <div style="
@@ -598,6 +678,9 @@ export default function MapComponent({
         // MEH-1412: tag the marker with its business id so the cluster badge can
         // dedupe by producer (unique-business count, not marker count).
         marker.producerId = p.id;
+        // MEH-1568: the producer itself, so a single-business cluster can render
+        // that business's category marker (colour + glyph) rather than a "1".
+        marker.producer = p;
 
         // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
         // role + accessible name on each marker's element via the `add` event
