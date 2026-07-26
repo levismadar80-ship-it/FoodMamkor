@@ -16,6 +16,53 @@
 - **Open follow-up (not filed yet, needs a ticket):** the 2% tolerance on a **full-viewport** shot means VRT cannot detect a component-sized regression on producer-detail at all — the same blindness that hid MEH-1551 from VRT originally and let MEH-1552 freeze it. Either tighten `maxDiffPixelRatio` or scope the interaction shots to the ContactCard element (`locator.toHaveScreenshot()`) so the denominator is the component, not the page. Not done here: it would move every existing baseline.
 - **Worth remembering — CC cannot dispatch `vrt-update.yml`.** `actions_run_trigger` returns **403 Resource not accessible by integration**, so the SAPIR GATE is a real capability boundary, not a convention. Also: the bot's baseline commit is pushed with `GITHUB_TOKEN` and never triggers the required gates (MEH-1112/1113), so a follow-up commit as yourself is always needed before the merge signal is real.
 - **MEH-1584 — Phase 0 done, recommended Canceled** (full evidence on the ticket): `CATEGORY_CARDS` is a hardcoded 10-entry literal (`lib/home-categories.js:33-48`) and `matchCategoryId` is a length-preserving `.map()` with no filter in the chain (`lib/use-home-page.js:569` → `app/[locale]/page.js:172`). `categoryCards.length` is always 10 — the 0/1/3 counts the ticket asks to guard are unreachable, and 10 tiles cleanly at both breakpoints.
+## 2026-07-27 — established_year end-to-end + VRT /map determinism (4 merges) — 3 permanent lessons
+
+**Merged:** PR #2146 (AccountSheet language label → full native names, squash `ec426dd4`) · PR #2166 (`producers.established_year` + the quiet "מאז {שנה}" masthead line, `f437b2b5`) · PR #2198 (that field's client-side `max` moved from the browser clock to the Israel-tz year, `640fc329`) · PR #2210 (VRT `/map` network mock for `/producers` + `/categories`, `a22c4a85`).
+
+The ticket list is the small part of this session. Three lessons below are the part worth re-reading.
+
+### Lesson 1 — the Alembic "CC hands over the revision, Sapir applies manually" rule is DEAD, and manual apply is now *unsafe*
+
+**Current truth, verified:** `docs/MIGRATIONS.md:113` (MEH-836) removed the `backend/alembic/versions/**` deny — CC authors hand-written revisions itself — and `backend/Dockerfile:61` is
+`CMD ["sh","-c","alembic upgrade head && exec … uvicorn …"]`, so **the apply happens automatically on every Railway boot. There is no manual apply step.** MIGRATIONS.md:113 says so in as many words: "אין צעד ידני להחלת המיגרציה".
+
+**Why this is a hazard and not just stale paperwork:** any DDL applied **out of band** — a hand-run `ALTER TABLE … ADD COLUMN` against the live DB — leaves `alembic_version` behind while the column already exists. The next boot replays the revision's `op.add_column`, Postgres raises **`DuplicateColumn`**, `alembic upgrade head` exits non-zero, and the `&&` means **uvicorn never starts**. A container that will not boot, from a step that felt like "just helping the migration along". Alembic is the only sanctioned path (ADR-003; the MEH-265 post-mortem in `docs/INCIDENTS/2026-04-migrate-columns-drift.md` is the same family).
+
+**What actually happened here, stated precisely so nobody re-derives it wrong:** the stale gate did not come from a rules file — it was baked into the **ticket prompt**, which said to provide the revision "VERBATIM in chat" and *"DO NOT create file under alembic/versions (**settings deny**)"*. That parenthetical was **factually false**: `.claude/settings.json` carries no such deny (only `Bash(alembic …)` allow entries). CC followed the prompt and stopped at a gate that no longer exists, costing a round-trip until Sapir lifted it mid-task.
+
+**Two corrections of record** (searched before writing, so the next session doesn't hunt for ghosts):
+- **There is no standing rule in `HANDOFF.md` to delete.** This file is a pure reverse-chronological session log with no rules/conventions section — the manual-apply pattern appears only inside *historical* entries (e.g. the 20/07 MEH-759/762 landing note), which are records of what happened on those dates and are left intact per the file-preservation rule. The durable fix belongs in the **ticket-prompt template**, which must stop emitting the "(settings deny)" gate.
+- **No `ALTER TABLE` instruction was issued this session.** What was handed over was "commit the revision file + run `alembic upgrade head`", which is idempotent (Alembic tracks `alembic_version`) and does *not* produce `DuplicateColumn`. The DuplicateColumn scenario above is the hazard that makes the dead rule dangerous — not something that fired here.
+
+### Lesson 2 — a VRT regen is not the answer to data drift. Test the diff's *shape* first
+
+Before regenerating any baseline, decide which of two things the diff is:
+- **a pure vertical shift** — a row appeared or disappeared, everything below moved by a constant → the shot is photographing **live data**, and a regen only freezes an arbitrary sample that breaks again on the next approve/deactivate;
+- **a genuine visual change** — geometry/colour/copy moved → a regen is the correct ratification.
+
+**The tell on `/map`:** shift-aligning the two baselines scored **0.19** against **33.94** at the same offset for a **124px** vertical shift; dimensions identical (1440×900), map canvas byte-identical, count row `13 → 12`, first card gone. One business left the list. That is data, not design.
+
+**The fix that actually closes it** (PR #2210): intercept the data with `page.route()` + fixed fixtures — the MEH-1497 producer-detail pattern — for **both** `/api/producers` (collection) **and** `/api/categories`. Categories matter because the chip row is filtered by what the API returns (`useMapFilters.js:346` — a chip whose category is absent is *hidden*), so mocking only producers would have reopened this within a week.
+
+Three things that generalise:
+- **Masking the rail was rejected on purpose.** A mask makes the shot stable by making it blind; the rail is real chrome we want under test. Mock the data, don't hide the region.
+- **Guard against the *stable-but-blank* baseline.** A fixture rejected by `ProducersResponseSchema` degrades to an empty list + toast (`useProducersFeed.js:36-40`), and an empty rail is perfectly stable — the baseline would bake a blank column and the suite would stay green while testing nothing. The spec now asserts card count ≥ fixture rows **and** that a fixture-specific business name rendered (count alone would also pass on live data).
+- **Only `map-desktop-linux.png` changed.** The dispatch ran `--grep "map"`, so both shots executed; the bot commit contained desktop only, because on mobile the bottom sheet is collapsed and the rail never reaches those pixels — the mobile shot was *already* data-independent. That is the mechanism behind the "desktop fails, mobile passes" asymmetry `parity.spec.ts` had recorded twice without explaining.
+
+### Lesson 3 — a merge does not prove the goal was met
+
+**MEH-1573 auto-closed to Done through a PR whose entire content was an empty placeholder commit.** PR #2193 merged (`fa002c5f`); its only branch commit `c077fd17` changed **zero files**; the vrt-update bot's regenerated PNG never landed on the branch before the merge. Verified after the fact: `map-desktop-linux.png` on `staging` was still from `3680b928` (23/07), an *ancestor* of the PR branch, and the bot commit was unreachable from `staging`. The drifted baseline never shipped — which is lucky, because the merge state said "done" either way.
+
+`Closes MEH-XXXX` + a merge flips Linear to Done regardless of whether anything shipped. **Verify the artifact, not the merge state:** `git show --stat <squash>` and confirm the file you care about actually changed. (This is also why MEH-1573's premise was refuted while its procedural finding — dispatch vrt-update on a feature branch, never `staging` — still stands.)
+
+### Open / next
+
+- **Expected conflict:** MEH-1598 is a sibling docs-backfill PR covering a different merge set (#2185 · #2201 + the `/health` `version` block) and it also touches `HANDOFF.md` + `docs/CHANGELOG.md`. Append-only collision is likely — resolve **Accept-Both** (rule 25).
+- **MEH-1372 (Done 26/07)** now forbids `CHANGELOG`/`HANDOFF` inside a code branch; backfill goes in a separate docs-only PR. PR #2166 predated that rule and carried both inline — that is why this entry ships on its own branch.
+- `[mobile] home` VRT stays red — pre-existing drift tracked in MEH-1519, deliberately untouched by the `/map` work.
+- **Sandbox VRT caveat, corrected:** untouched `login`/`about` baselines fail in the CC sandbox at ratios 0.19 / 0.11 / 0.04 (threshold 0.02) because CI installs chromium **v1228** (`e2e.yml:111`) and the sandbox only has **v1194** (`cdn.playwright.dev` is proxy-blocked). That does **not** generalise to the map shot — masking `.leaflet-container` removes most of the font-sensitive area, so the runner-generated map PNG validates locally too. Full-page text-heavy shots: trust the runner only. Masked shots: verifiable in both.
+
 ## 2026-07-26 — MEH-1570 Starlette CVE bump (0.49.3 → 1.3.1, deps-only)
 
 - **MEH-1570** (`feature/meh-1570-starlette-cve-bump`, `Closes MEH-1570`): closes **CVE-2026-54283** (urlencoded form DoS, CVSS 7.5) and 4 other Starlette advisories. Origin: my own self-audit during MEH-1553, deliberately not bundled into that bug fix. **Whole change = `backend/uv.lock`, 3 lines.** No app code, no FastAPI bump, no pyproject, no env/Alembic.
