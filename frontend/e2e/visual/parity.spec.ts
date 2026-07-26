@@ -18,6 +18,14 @@ const MINIMAL_FIXTURE = fs.readFileSync(
   path.join(__dirname, "fixtures", "producer-detail-minimal.json"),
   "utf-8"
 );
+// MEH-1583: exactly two channels (phone + instagram) — the one matrix cell
+// neither fixture above can reach. The 4-channel fixture never shows a reveal
+// and the minimal one has no surviving sibling, so "(many x open)" — the state
+// in Sapir's 26/07 screenshot — had no pixel coverage at all.
+const TWO_CHANNEL_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-detail-two-channel.json"),
+  "utf-8"
+);
 // Matches ONLY the detail call GET /api/producers/{uuid} — not the collection
 // (`/api/producers?…`, no id segment), the `…/reviews` sub-resource, or the
 // non-UUID siblings (`/count`, `/cities`, `/random`, `/by-slug/*`). Producer
@@ -187,27 +195,34 @@ test.describe("Visual parity — MEH-991", () => {
   // regenerated on-runner. Delta is confined to the hero region — the home shot
   // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
   // also merged 2026-07-18 sit below the fold and out of frame.
-  // MEH-999 (2026-07-26): home-mobile red-lines at 17,589 px (ratio 0.07) and
-  // the cause is UNIDENTIFIED. Do NOT regenerate this baseline until it is —
-  // a regen would silently bless whatever changed. What was ruled out:
-  //   1. Copy. A key-by-key diff of he.json between the baseline commit
-  //      (1eb89491) and the failing base (397f4466) gives 44 changed keys and
-  //      ZERO under home.hero / home.trust / home.stats / nav.*. The only
-  //      home.* change is home.producers.filter_prefix, which renders on
-  //      /producers, not here.
-  //   2. Above-the-fold components. Nothing in Header / HeroSearch / BottomNav /
-  //      page.js changed in that range.
-  //   3. The live /stats strip (page.js:112-140) — the leading hypothesis, and
-  //      WRONG. Measured on a real 375x812 render: the strip's bounding box is
-  //      y=1061, h=58, i.e. ~250px BELOW the 812px fold. This shot is
-  //      viewport-only (no fullPage), so the strip is out of frame and cannot
-  //      contribute a single pixel. (With live producers the grid above is
-  //      taller, pushing it further down still.) Masking it was implemented,
-  //      measured, and reverted.
-  // Next step is the diff image, not another guess: open home-diff.png in the
-  // playwright-report artifact of a failing run (run 30199607886 has one). The
-  // CC sandbox cannot download Actions artifacts — proxy-blocked, same limit
-  // recorded in the MEH-1440 note below.
+  // MEH-1519 (2026-07-26): home-mobile's 17,589 px (ratio 0.07) red line is
+  // RESOLVED and RATIFIED. An earlier revision of this note recorded the cause
+  // as UNIDENTIFIED and forbade regen; both statements are retracted. The diff
+  // was confined to y=466-696 — everything above (header, hero, H1, subtitle,
+  // search card) was pixel-identical — and it decomposes into exactly two
+  // INTENTIONAL product changes that the baseline predated:
+  //   1. MEH-1476 (af62123e, 2026-07-23) relocated "הפתיעו אותי" out of the hero
+  //      to the producers-grid end (HomeHero.jsx:49-51), collapsing the CTA row
+  //      from two rows to one and shifting everything below it up.
+  //   2. MEH-1410 (e4b725a0, 2026-07-21) restored ChatWidget to desktop-only —
+  //      ChatWidget.jsx:215 `if (!isDesktop) return null` returns null below
+  //      768px, so the chat FAB no longer renders on the mobile project
+  //      (Pixel 5, 393x851). The FAB survived in the baseline only because the
+  //      baseline predates that commit. NOT a hydration race: ChatWidgetLazy's
+  //      route gate does not cover "/", but the viewport gate one component
+  //      deeper does, deterministically, on every run.
+  // Ratified by RESTORING the blob 3680b928 already committed — the on-runner
+  // regen of 2026-07-23, captured after BOTH changes above, which 52ab77da
+  // ("undo PR #2102 contamination") reverted to a 2026-07-21 image by mistake.
+  // Restoring a runner-generated blob is why no new regen was needed here; a
+  // dev-machine capture is still forbidden (font stacks differ — see the
+  // "Baseline maintenance" note above).
+  // home-desktop-linux.png needed no change: 3680b928 regenerated 5 baselines
+  // and left it untouched, i.e. the runner's post-change desktop render was
+  // byte-identical to the existing image (blob 85ba6329 unchanged since
+  // bf71e303, 2026-07-11), and the desktop shot has stayed green throughout.
+  // Cause: MEH-1410 only gates <768px, and at 1440px the hero CTA row never
+  // wrapped, so MEH-1476's relocation cost it no vertical space.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
@@ -524,6 +539,40 @@ test.describe("Visual parity — MEH-991", () => {
     await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail-phone-revealed.png", {
+      ...SHOT,
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
+    });
+  });
+
+  // Desktop-only, MEH-1583: the missing matrix cell — (many x open). Two
+  // channels, phone revealed: the phone leaves the icon row and its number
+  // takes a full-width row, so the card must show ONE geometry, never a wide
+  // pill parked beside a 44px circle.
+  test("producer-detail-two-channel-revealed", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "phone reveal is desktop-only (>=1024px)");
+    await preparePage(page);
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: TWO_CHANNEL_FIXTURE,
+      });
+    });
+    const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
+      return;
+    }
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
+    // Two channels => circles, so the phone is reached by its own channel
+    // testid; the single-row testid only exists at exactly one channel.
+    await page.locator('[data-testid="contact-channel-phone"]:visible').first().click();
+    await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
+    await settle(page);
+    await expect(page).toHaveScreenshot("producer-detail-two-channel-revealed.png", {
       ...SHOT,
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
