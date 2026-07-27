@@ -35,6 +35,11 @@ const browser = await chromium.launch({
   ...(existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
 });
 
+// A fresh context per walk (no state shared between the /en and default-he
+// runs). The he-IL browser locale is deliberate for BOTH: routing.js sets
+// localeDetection:false, so next-intl ignores Accept-Language entirely and the
+// URL prefix is the only signal — keeping the header constant isolates the
+// prefix as the single variable under test.
 async function walk(localePrefix) {
   const ctx = await browser.newContext({ locale: "he-IL", viewport: { width: 1440, height: 900 } });
   await ctx.addInitScript(() => localStorage.setItem("token", "owner-token"));
@@ -50,7 +55,16 @@ async function walk(localePrefix) {
       .first();
     if ((await link.count()) === 0) { out.push(`${spoke}: CARD NOT FOUND`); continue; }
     await link.click();
-    await page.waitForTimeout(1200);
+    // Wait for the URL to actually LEAVE the tools page rather than sleeping a
+    // fixed interval. With a fixed wait, a slow navigation records the
+    // pre-click URL — and /en/producer/dashboard/tools itself contains "/en/",
+    // so pin A would report a false PASS on the page it never left.
+    try {
+      await page.waitForURL((u) => !u.pathname.endsWith("/tools"), { timeout: 20000 });
+    } catch {
+      out.push(`${spoke}: NAVIGATION DID NOT LEAVE /tools (still ${page.url().replace(BASE, "")})`);
+      continue;
+    }
     out.push(`${spoke} -> ${page.url().replace(BASE, "")}`);
   }
   await ctx.close();
@@ -60,7 +74,7 @@ async function walk(localePrefix) {
 // Pin A — /en must survive every spoke hop.
 {
   const hops = await walk("/en");
-  const ok = hops.every((h) => h.includes("-> /en/producer/dashboard/"));
+  const ok = hops.every((h) => h.includes("-> /en/producer/dashboard/"));  // a NAVIGATION-DID-NOT-LEAVE line fails this
   record("A /en/producer/dashboard/tools -> every spoke stays under /en/", ok, hops.join(" | "));
 }
 
