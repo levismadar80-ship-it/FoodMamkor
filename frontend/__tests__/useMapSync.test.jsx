@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 
@@ -62,6 +62,81 @@ describe("useMapSync — handleCardClick (MEH-1298: no page scroll)", () => {
     });
     expect(props.setActiveProducerId).not.toHaveBeenCalled();
     expect(props.setSelectedProducer).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-1663: the select→fly path resolved its "is there anything to fly to?"
+// question from Producer.lat/lng alone. Since MEH-1412 the pins are built from
+// locations[], so a delivery-only business with a pickup row (Producer.lat/lng
+// NULL — MEH-1402's reversal, seeded as `demo-delivery-pickup`) had a pin on
+// the map and a dead card: the guard returned before BOTH the selection and
+// the focusProducer call.
+//
+// These three cases discriminate old from new. The first is the bug and fails
+// on the pre-fix guard; the second and third are the behaviours the fix must
+// not disturb, and pass on both versions.
+describe("useMapSync — handleCardClick coordinate resolution (MEH-1663)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // The 250ms hop in handleCardClick is what actually reaches the camera.
+  function clickAndDrainFocus(result, producer) {
+    const focusProducer = vi.fn();
+    result.current.mapApiRef.current = { focusProducer };
+    act(() => {
+      result.current.handleCardClick(producer);
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    return focusProducer;
+  }
+
+  it("flies to a delivery-only producer whose only point is a pickup location", () => {
+    const { result, props } = setup();
+    // demo-delivery-pickup: no own coords, one pickup row in בנימינה.
+    const producer = {
+      id: "delivery-only",
+      lat: null,
+      lng: null,
+      locations: [{ kind: "pickup", lat: 32.519, lng: 34.953, is_primary: true }],
+    };
+    const focusProducer = clickAndDrainFocus(result, producer);
+
+    expect(props.setActiveProducerId).toHaveBeenCalledWith("delivery-only");
+    expect(props.setSelectedProducer).toHaveBeenCalledWith(producer);
+    // The camera target itself is resolved from the live markers inside
+    // MapComponent.focusProducer (flyTo for 1 point, fitBounds for 2+); this
+    // path's job is to reach it at all, which the old guard never did.
+    expect(focusProducer).toHaveBeenCalledWith("delivery-only");
+  });
+
+  it("still flies for a single-point business with only Producer.lat/lng (no regression)", () => {
+    const { result, props } = setup();
+    const producer = { id: "regular", lat: 32.08, lng: 34.78, locations: [] };
+    const focusProducer = clickAndDrainFocus(result, producer);
+
+    expect(props.setActiveProducerId).toHaveBeenCalledWith("regular");
+    expect(focusProducer).toHaveBeenCalledWith("regular");
+  });
+
+  it("does not fly for a producer with no usable point on either source", () => {
+    const { result, props } = setup();
+    // Coord-invalid rows must not count as pinnable — same test the marker
+    // loop applies before it builds a marker (MapComponent.jsx:762-771).
+    const focusProducer = clickAndDrainFocus(result, {
+      id: "pinless",
+      lat: null,
+      lng: null,
+      locations: [{ kind: "pickup", lat: null, lng: 34.9 }],
+    });
+
+    expect(props.setActiveProducerId).not.toHaveBeenCalled();
+    expect(focusProducer).not.toHaveBeenCalled();
   });
 });
 

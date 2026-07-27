@@ -49,6 +49,29 @@ import { HALF } from "@/components/MapBottomSheet";
  */
 const HOVER_DEBOUNCE_MS = 400;
 
+// MEH-1663: does this business have ANY point the map can fly to?
+//
+// The camera itself is resolved downstream — MapComponent.focusProducer reads
+// the producer's live marker coords (MapComponent.jsx:461-482) and picks flyTo
+// for one point / fitBounds for several. This helper only answers the question
+// the card handler needs: is there something to fly TO at all.
+//
+// Semantics mirror the marker loop's usable-coord test and its COALESCE
+// fallback, which in turn mirror the backend's haversine_min_km (nearest
+// producer_locations row, falling back to Producer.lat/lng — MEH-1402):
+// a delivery-only business (Producer.lat/lng NULL) that owns one pickup row IS
+// pinnable, and reading Producer.lat/lng alone declared it unreachable.
+// REUSES: frontend/components/MapComponent.jsx:762-771 (addMarker coord test)
+//         + :849-864 (the no-usable-location lat/lng fallback).
+// Bare `isNaN` (not Number.isNaN) is deliberate byte-parity with the marker
+// loop's test at MapComponent.jsx:764-768 — the two must agree exactly.
+const isUsableCoord = (value) => typeof value === "number" && !isNaN(value);
+function hasPinnablePoint(producer) {
+  const locations = Array.isArray(producer?.locations) ? producer.locations : [];
+  if (locations.some((loc) => isUsableCoord(loc?.lat) && isUsableCoord(loc?.lng))) return true;
+  return isUsableCoord(producer?.lat) && isUsableCoord(producer?.lng);
+}
+
 export function useMapSync({
   // from useMapFilters
   chipState,
@@ -109,7 +132,13 @@ export function useMapSync({
 
   // Card click → select + pin-sync + fly map to producer (NO page scroll).
   const handleCardClick = useCallback((producer) => {
-    if (!producer?.lat || !producer?.lng) return;
+    // MEH-1663: was `if (!producer?.lat || !producer?.lng) return;` — a
+    // Producer-only coord read. Since MEH-1412 the pins come from locations[],
+    // so a delivery-only business with a pickup row (Producer.lat/lng NULL,
+    // MEH-1402) had a visible pin but a completely dead card: this returned
+    // before the selection AND before the focusProducer call. hasPinnablePoint
+    // asks the same question against the same data the markers are built from.
+    if (!hasPinnablePoint(producer)) return;
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
     // MEH-1412: a sidebar-card selection is not location-specific — clear any
