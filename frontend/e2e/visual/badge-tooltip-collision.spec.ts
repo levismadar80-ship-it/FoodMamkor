@@ -175,10 +175,17 @@ async function mockCards(page: Page) {
  * exists — which surfaced as a bare "element(s) not found" on run 30251402510
  * (170 passed / 4 failed), a red that said nothing about collisions.
  *
- * So we borrow a REAL id the way parity.spec.ts:502-508 does. `page.request`
- * runs outside the page's route table, so this call reaches the real backend
- * while the detail response below is still served from the fixture — the
- * borrowed id only unlocks the route, the rendered content is always ours.
+ * So we borrow a REAL id the way parity.spec.ts's `producer-detail-minimal`
+ * test does. Anchored by test name, not line number: parity.spec.ts inlines
+ * this pattern at FIVE sites, every one of them carrying the skip reason
+ * "No producer on staging to borrow an id from" — grep that string to find
+ * them all. A line range was tried here twice and rotted both times, because
+ * it silently follows any edit made above it in that file.
+ *
+ * `page.request` runs outside the page's route table, so this call reaches
+ * the real backend while the detail response below is still served from the
+ * fixture — the borrowed id only unlocks the route, the rendered content is
+ * always ours.
  * Returns null when no producer can be borrowed, which is a DATA condition
  * (empty backend / unreachable sandbox), not a regression.
  */
