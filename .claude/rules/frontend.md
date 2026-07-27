@@ -16,6 +16,38 @@ lives in its own file — see [.claude/rules/rtl.md](./rtl.md).
 
 ---
 
+## Maintenance — 90-day prune (MEH-1637)
+
+**Review and prune this file every 90 days.** Rule files are not documentation:
+they are injected into every Claude Code session, and the agent trusts a stale
+line here over its own observation. Staleness is worse than silence, and volume
+is a cost — an ETH study found architecture prose in the context file *raised*
+inference cost and encouraged wide file scans without improving task success. The
+cadence matches Anthropic's own Claude Code maintenance check ("reviewed and
+pruned in the last 90 days").
+
+What the pass looks for, in order:
+
+1. **Claims about a dependency's behaviour** — the only kind that can rot without
+   anyone touching this repo. If a claim guides a code decision, it needs a test
+   that re-derives it from `node_modules`, not a sentence. Precedents:
+   `leaflet-inline-writers.test.js` (MEH-1637), `leaflet-attribution-default.test.js`
+   (MEH-1636).
+2. **Claims already enforced mechanically** — cite the guard and cut the prose to
+   a pointer. A rule and a guard saying the same thing is two owners for one fact
+   (workflow.md → Smell #1).
+3. **Incident history no longer shaping a decision** — move to
+   `docs/BUG_PATTERNS.md` or the audit doc and leave a link.
+
+**No per-line "last checked on ⟨date⟩" markers.** They were considered for this
+and rejected: a marker says "someone should check again", which manufactures work
+without producing truth, and pays for it in the file's one scarce resource.
+Either the claim is worth a test or it is worth deleting. The recurring
+PR-template checkbox is the cheap half of the same job — it catches drift at the
+moment it is introduced, which is the only moment anyone knows about it.
+
+---
+
 ## Stack
 
 Next.js 14 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
@@ -67,10 +99,24 @@ Two things go wrong that no static tool sees:
    Leaflet writes `transform`, `opacity`, `zIndex`, `width`, `height`, `visibility`,
    `display`, `left`, `top`, `margin{Top,Left}`, `bottom`, `position`
    (`DomUtil.setTransform` `leaflet-src.js:2532`, `setOpacity` `:2481`);
-   markercluster re-applies `opacity` on every marker it animates
-   (`clusterShow()` `leaflet.markercluster-src.js:1826-1836`). It writes **no**
-   `filter` — which is why a marker fade rides `filter: opacity()` and not the
-   `opacity` property.
+   markercluster re-applies `opacity` on every marker it animates — by
+   **delegating**, not by writing the style itself: `clusterShow()`
+   (`leaflet.markercluster-src.js:1834-1836`) calls `Marker.setOpacity` (`:8038`)
+   → `_updateOpacity` (`:8047`) → `DomUtil.setOpacity` (`:2481`).
+
+   **Neither writes `filter` on any path a browser reaches** — which is why a
+   marker fade rides `filter: opacity()` and not the `opacity` property. The one
+   exception is dead: `_setOpacityIE` (`leaflet-src.js:2506`) does write
+   `el.style.filter`, but `setOpacity` only calls it in the `else` arm taken when
+   `'opacity' in el.style` is false — IE 8, never a browser we support.
+   markercluster does not contain the word at all.
+
+   **Don't take this paragraph's word for any of it.**
+   `frontend/__tests__/leaflet-inline-writers.test.js` (MEH-1637) re-derives all
+   of the above from the installed bundles on every run, and reds if a release
+   starts writing `filter` on a live path. That negative is load-bearing and was
+   previously unchecked: if it breaks, the fade stops applying with no error and
+   no failing test — the MEH-1611 shape.
 2. **The selector matches nothing**, because the library's class names drifted or the
    state you're qualifying on stopped being a class.
 

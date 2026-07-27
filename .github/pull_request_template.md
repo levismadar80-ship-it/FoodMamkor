@@ -27,6 +27,7 @@ Example:
 ## Manual checks (required before marking Ready for Review)
 
 - [ ] `/adversarial-review` ran on all changed files — every REFEREE verdict fixed
+- [ ] `.claude/rules/` updated if this PR changed a dependency's behaviour or a build/test/deploy command (a stale rule line is injected into every session — see `.claude/rules/frontend.md` § Maintenance)
 - [ ] Tested on mobile: iOS Safari + Android Chrome (skip for docs-only)
 - [ ] Tested on desktop
 - [ ] CHANGELOG.md updated (skip for docs-only PRs)
