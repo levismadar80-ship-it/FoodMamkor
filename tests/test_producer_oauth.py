@@ -182,3 +182,79 @@ class TestProducerOAuthSignup:
             json={"provider": "facebook", "id_token": "x"},
         )
         assert resp.status_code == 422
+
+
+class TestPlainOAuthTakeoverGuard:
+    """MEH-1624 gap 2 — the MEH-166 takeover guard on the PLAIN OAuth login
+    endpoints (auth.py:767-771 for Google, :1098-1102 for Apple).
+
+    Only the step-0 twin (`/auth/register/producer/oauth`, pinned above at
+    test_email_collision_with_password_account_returns_409) had coverage. The
+    guard on `/auth/google` and `/auth/apple` is the one that stops a silent
+    account takeover on the ordinary login path: without it, anyone able to
+    mint an id_token for an address that is already a password account would
+    be linked straight into it.
+
+    These reuse this module's verifier fixtures — `_verify_google_token` /
+    `_verify_apple_token` are shared by all three endpoints, so the same stub
+    drives them.
+    """
+
+    def test_google_login_into_password_account_returns_409(
+        self, client, db, google_verified
+    ):
+        from conftest import make_user
+
+        make_user(db, email=EMAIL, name="Yael")
+        resp = client.post("/auth/google", json={"id_token": "whatever"})
+        assert resp.status_code == 409
+        # And no silent link happened.
+        db.expire_all()
+        user = db.query(User).filter(User.email == EMAIL).one()
+        assert user.google_id is None
+
+    def test_apple_login_into_password_account_returns_409(
+        self, client, db, apple_verified
+    ):
+        from conftest import make_user
+
+        make_user(db, email=EMAIL, name="Yael")
+        resp = client.post("/auth/apple", json={"id_token": "whatever"})
+        assert resp.status_code == 409
+        db.expire_all()
+        user = db.query(User).filter(User.email == EMAIL).one()
+        assert user.apple_id is None
+
+    def test_google_login_into_apple_account_returns_409(
+        self, client, db, google_verified
+    ):
+        """Cross-provider arm: the guard is `not user.google_id`, so an
+        Apple-only account must be refused a Google link too."""
+        db.add(
+            User(
+                email=EMAIL,
+                name="Yael",
+                apple_id="apple-sub-existing",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        resp = client.post("/auth/google", json={"id_token": "whatever"})
+        assert resp.status_code == 409
+
+    def test_google_login_relinks_own_account(self, client, db, google_verified):
+        """Control: a returning Google user is NOT blocked by the guard."""
+        db.add(
+            User(
+                email=EMAIL,
+                name="Yael",
+                google_id=GOOGLE_SUB,
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        resp = client.post("/auth/google", json={"id_token": "whatever"})
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]
