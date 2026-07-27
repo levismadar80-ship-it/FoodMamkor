@@ -7,6 +7,12 @@ import { fileURLToPath } from "url";
 
 const PHASE = process.argv[2];
 const WIDTH = parseInt(process.argv[3] || "1440", 10);
+// Fail fast: an unrecognised phase used to fall silently into the Phase-B branch,
+// so a typo produced a full run of the wrong assertions.
+if (!["a", "b"].includes(PHASE)) {
+  console.error("usage: node e2e/qa-meh1663-card-fly.mjs <a|b> [width]");
+  process.exit(1);
+}
 // Resolved from this file's own location, not the sandbox's absolute path — an
 // earlier version hard-coded /home/user/... and would have written somewhere
 // unintended on any other machine, silently.
@@ -170,10 +176,16 @@ const dist = (a, b) =>
   Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 93); // rough km
 
 (async () => {
-  // The sandbox ships Chromium build 1194; this Playwright expects 1228. Point at
-  // the pre-installed binary rather than downloading (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD).
+  // The CC sandbox ships Chromium build 1194 while this Playwright expects 1228,
+  // so it needs an explicit executablePath (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD is
+  // set there and `playwright install` is not to be run). Everywhere else that
+  // binary does not exist and Playwright's own resolution is correct — so probe
+  // rather than hard-wire, otherwise this fails to launch with no hint why.
+  const SANDBOX_CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
   const browser = await chromium.launch({
-    executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    ...(fs.existsSync(SANDBOX_CHROMIUM) ? { executablePath: SANDBOX_CHROMIUM } : {}),
+    // TLS 1.2 cap is the sandbox-vs-Vercel-edge workaround (.claude/rules/testing.md);
+    // harmless against a local next start.
     args: ["--ssl-version-max=tls1.2", "--no-sandbox"],
   });
   // hasTouch matters: MapBottomSheet listens for touch events only, and the
