@@ -114,6 +114,89 @@ def test_register_producer_accepts_po_box_address(client):
     assert r.status_code == 200, r.text
 
 
+# ---------- MEH-1623: producer_name floor + sanitize on the PUBLIC path ----------
+# ProducerRegister.producer_name carried NO validator at all while its
+# admin-side twin (ProducerCreate.name) has had _min_letters_validator since
+# MEH-555 — so the public registration path accepted "???", whitespace, and raw
+# HTML as a business name. Stacked bleach→floor, mirroring short_description.
+
+
+def test_register_producer_rejects_punctuation_only_producer_name(client):
+    # The MEH-555 pattern on the field it had never been applied to.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="???"),
+    )
+    assert r.status_code == 422
+    assert any("producer_name" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_rejects_whitespace_only_producer_name(client):
+    # sanitize_text strips to "" → returns None; _min_letters_validator coerces
+    # None → "" and raises a clean ValueError (422), NOT AttributeError (500).
+    # This is the HOT-003 path documented at schemas.py:59.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="   "),
+    )
+    assert r.status_code == 422
+    assert any("producer_name" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_strips_html_from_producer_name(client, db):
+    # Sanitization is observable only in what gets PERSISTED — the response is
+    # an anti-enumeration ack (MEH-328) that echoes nothing back.
+    from app.models.models import Producer
+
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="<b>מאפיית שקד</b>"),
+    )
+    assert r.status_code == 200, r.text
+    stored = db.query(Producer).one()
+    assert stored.name == "מאפיית שקד"
+
+
+def test_register_producer_rejects_html_wrapping_a_too_short_name(client):
+    # The ticket's literal example, pinned to its ACTUAL behaviour: bleach
+    # strips to "שם" = 2 letters, which is below the ≥3-letter floor → 422.
+    # The floor runs on the POST-sanitize value, so HTML cannot be used to pad
+    # a name past it.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="<b>שם</b>"),
+    )
+    assert r.status_code == 422
+    assert any("producer_name" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_accepts_legitimate_hebrew_producer_name(client):
+    # Regression floor: the fix must not reject a real business name.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="מאפיית שקד"),
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_producer_register_has_exactly_12_validated_fields():
+    """MEH-1623 verification_step: the AST count that proves the field is
+    actually wired, not just that a validator function exists.
+
+    Counts DISTINCT field names targeted by @field_validator on
+    ProducerRegister — 11 before this change, 12 after (producer_name).
+    Reads Pydantic's own validator registry rather than re-parsing the
+    source, so a validator declared but bound to a typo'd field name
+    cannot pass.
+    """
+    from app.schemas.schemas import ProducerRegister
+
+    validators = ProducerRegister.__pydantic_decorators__.field_validators
+    fields = {name for v in validators.values() for name in v.info.fields}
+    assert "producer_name" in fields, sorted(fields)
+    assert len(fields) == 12, sorted(fields)
+
+
 # ---------- favorites: orphaned row doesn't 500 ----------
 
 

@@ -378,6 +378,28 @@ class ProducerRegister(BaseModel):
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
+    # MEH-1623: producer_name is the PUBLIC registration path's business name
+    # and was the only ProducerRegister field with no validator at all — the
+    # admin-side twin (ProducerCreate.name) has carried _min_letters_validator
+    # since MEH-555. Stacked bleach→floor, same order as short_description
+    # below: sanitize_text strips HTML and caps at the DB column width
+    # (models.py:48 String(200)), then the ≥3-letter floor rejects "???" /
+    # whitespace-only. sanitize_text returns None when bleach empties the
+    # input; _min_letters_validator coerces that None to "" and raises a clean
+    # ValueError (→422) rather than AttributeError (→500) — the HOT-003 path
+    # documented at schemas.py:59.
+    # REUSES: backend/app/schemas/schemas.py:870 (ProducerCreate._validate_name_letters)
+    #       · backend/app/schemas/schemas.py:2944 (ContactIn._sanitize_name)
+    @field_validator("producer_name")
+    @classmethod
+    def _sanitize_producer_name(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("producer_name")
+    @classmethod
+    def _validate_producer_name_letters(cls, v):
+        return _min_letters_validator(v)
+
     @field_validator("description")
     @classmethod
     def _sanitize_description(cls, v):
