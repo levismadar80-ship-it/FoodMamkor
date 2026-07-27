@@ -451,7 +451,19 @@ export default function MapComponent({
     activeIdRef.current = id;
     if (prev) refreshMarkerIcon(prev);
     if (id) refreshMarkerIcon(id);
-    containerRef.current?.classList.toggle(MAP_FOCUSED_CLASS, id !== null);
+    // MEH-1663: demote the surroundings ONLY when the selected business actually
+    // owns a pin. The class fades every marker that is not tagged focused
+    // (globals.css:359), so selecting a business with zero markers would grey the
+    // whole map and highlight nothing — a worse read than no demote at all.
+    // Unreachable until MEH-1663: handleCardClick used to refuse any producer with
+    // NULL lat/lng, which is exactly the zero-marker population. Now that selection
+    // is (correctly) no longer gated on coordinates, a delivery-only business with
+    // NO location row at all — served by the non-geo /producers list, which applies
+    // no pinnable filter (producer_listing.py:138, require_physical is geo-only and
+    // defaults False) — reaches this line. It selects and navigates; it just must
+    // not pretend to have a point on the map.
+    const hasPins = id !== null && (markersRef.current.get(id)?.markers?.length ?? 0) > 0;
+    containerRef.current?.classList.toggle(MAP_FOCUSED_CLASS, hasPins);
   };
 
   // Expose imperative API via a callback prop
