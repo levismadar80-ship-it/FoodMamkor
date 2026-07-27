@@ -33,6 +33,34 @@ function SettingsLoadingFallback() {
   );
 }
 
+/**
+ * MEH-1638: what renders while useAuth() is still resolving /auth/me.
+ * Same class of fix as producer/dashboard/layout.js (PR #2300) but this page
+ * sits OUTSIDE the dashboard layout, so it needs its own placeholder.
+ * Shape-only, no text — mirrors the final geometry (heading mb-6 → pill tab
+ * bar mb-8 → content card) so the real page swaps in without a shift.
+ */
+function SettingsSkeleton({ label }) {
+  return (
+    <div
+      data-testid="settings-skeleton"
+      role="status"
+      aria-busy="true"
+      className="max-w-3xl mx-auto px-4 py-10"
+    >
+      <span className="sr-only">{label}</span>
+      {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
+      <div className="h-9 w-48 bg-border rounded-[12px] animate-pulse mb-6" />
+      {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
+      <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
+      <div className="space-y-4">
+        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
     <Suspense fallback={<SettingsLoadingFallback />}>
@@ -43,6 +71,7 @@ export default function SettingsPage() {
 
 function SettingsPageBody() {
   const tCommon = useTranslations("settings.common");
+  const tA11y = useTranslations("a11y");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -59,7 +88,13 @@ function SettingsPageBody() {
     if (!authLoading && !user) router.push("/login");
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return null;
+  // MEH-1638: authLoading and unauthenticated were one null-returning branch.
+  //   - authLoading → the answer is not back yet; show the page's shape.
+  //   - !user → the effect above is already redirecting to /login; returning
+  //     null is deliberate and UNCHANGED (rendering here would flash behind
+  //     the redirect). Same split as producer/dashboard/layout.js:125-132.
+  if (authLoading) return <SettingsSkeleton label={tA11y("loading")} />;
+  if (!user) return null;
 
   const selectTab = (next) => {
     setTab(next);
