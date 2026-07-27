@@ -213,11 +213,19 @@ def _normalize_instagram(value: str | None) -> str | None:
 
 
 def _url_scheme_validator(value: str | None) -> str | None:
+    # MEH-1626 chunk 3 (item 3): empty/whitespace now normalises to None, not
+    # "". The old "" return existed only so a cleared dashboard field would not
+    # 422 (see the MEH-1537 note above, which already cites this function as
+    # its precedent) — None satisfies that just as well and additionally stores
+    # NULL instead of an empty string, matching what contact_email / phone /
+    # whatsapp_group have done since MEH-1537. Every schema sharing this
+    # validator inherits the change; the owner PUT applies it through
+    # exclude_unset (producer_me.py:270), so clearing a URL still clears it.
     if value is None:
         return None
     stripped = value.strip()
     if stripped == "":
-        return stripped
+        return None
     if not stripped.lower().startswith(("http://", "https://")):
         raise ValueError("כתובת אתר חייבת להתחיל ב-http:// או https://")
     return stripped
@@ -359,9 +367,16 @@ def _sanitized_description(value: str) -> str | None:
 # CategoryRequestUpdate.admin_notes is a single field, so it stays an inline
 # @field_validator rather than becoming a third type.
 SanitizedDescriptionField = Annotated[str, AfterValidator(_sanitized_description)]
-# _url_scheme_validator returns "" (not None) for empty input, so unlike the
-# address/phone types this one is safe under an outer Field(max_length=…).
-SanitizedUrlField = Annotated[str, AfterValidator(_url_scheme_validator)]
+# MEH-1626 chunk 3: since item 3 made _url_scheme_validator return None for
+# empty input, this type joined the address/phone group whose validator CAN
+# return None — so it carries its own max_length (applied to the input, before
+# the validator) rather than relying on an outer Field(max_length=…), which
+# would raise "Unable to apply constraint 'max_length' to supplied value None".
+# 200 is the exact cap its two consumers (OutreachLeadCreate/Update.website)
+# already declared, so length behaviour is unchanged.
+SanitizedUrlField = Annotated[
+    str, Field(max_length=200), AfterValidator(_url_scheme_validator)
+]
 
 # The two types below carry their own max_length, unlike the three above.
 # Reason: they are the only ones whose validator can legitimately RETURN None
@@ -1032,7 +1047,14 @@ class ProductOut(BaseModel):
 class ProducerCreate(BaseModel):
     # MEH-229: cap at the DB column width (models.py name = String(200)) so an
     # over-length name returns a clean 422 instead of a DB-level 500.
-    name: str = Field(max_length=200)
+    # MEH-1626 chunk 3 (item 2): was floor-only — _validate_name_letters with
+    # no bleach — while its siblings ProducerAdminCreate.name and
+    # ProducerUpdate.name carry the full type. The AST scan could not see it:
+    # it tests PRESENCE of a validator, not equivalence of rule. Found in
+    # review of chunk 2. MEH-229 max_length stays: the type's validator never
+    # returns None (the floor raises), so the outer cap is safe here and still
+    # yields a clean 422 instead of a DB-level 500.
+    name: SanitizedBusinessNameField = Field(max_length=200)
     description: SanitizedDescriptionField | None = None
     city: str | None = None
     lat: float | None = None
@@ -1049,11 +1071,6 @@ class ProducerCreate(BaseModel):
     # MEH-530: see ProducerRegister for the validation rationale.
     producer_license_number: str | None = Field(default=None, max_length=20)
     delivery_areas: list[DeliveryAreaCreate] = []
-
-    @field_validator("name")
-    @classmethod
-    def _validate_name_letters(cls, v: str) -> str:
-        return _min_letters_validator(v)
 
     # MEH-296 3d: http(s) scheme guard on the URL fields (reuse Chunk-2 helper).
     @field_validator("website", "facebook", "external_order_form")
@@ -1085,7 +1102,10 @@ class ProducerAdminCreate(BaseModel):
 
     # MEH-229: mirror ProducerCreate — cap at the String(200) column width.
     name: SanitizedBusinessNameField = Field(max_length=200)
-    contact_name: str | None = None
+    # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
+    # asymmetry scan — both siblings were equally unvalidated, so the pair
+    # looked symmetric and was invisible to a comparison-based check.
+    contact_name: SanitizedPersonNameField | None = None
     description: str | None = None
     short_description: str | None = None
     city: str | None = None
@@ -1102,7 +1122,7 @@ class ProducerAdminCreate(BaseModel):
     facebook: str | None = None
     external_order_form: str | None = None
     slug: str | None = None
-    top_product_name: str | None = None
+    top_product_name: SanitizedLabelField | None = None
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
@@ -1233,7 +1253,10 @@ AVAILABILITY_STATES = (
 
 class ProducerUpdate(BaseModel):
     name: SanitizedBusinessNameField | None = None
-    contact_name: str | None = None
+    # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
+    # asymmetry scan — both siblings were equally unvalidated, so the pair
+    # looked symmetric and was invisible to a comparison-based check.
+    contact_name: SanitizedPersonNameField | None = None
     description: str | None = None
     short_description: str | None = None
     city: str | None = None
@@ -1259,7 +1282,7 @@ class ProducerUpdate(BaseModel):
     # write it — owners cannot self-map. Validated below (URL-safe charset,
     # ≤300). No rating value is ever accepted or stored (live-fetch only).
     google_place_id: str | None = None
-    top_product_name: str | None = None
+    top_product_name: SanitizedLabelField | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
     # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
@@ -2546,7 +2569,7 @@ class OutreachLeadCreate(BaseModel):
     name: SanitizedLabelField = Field(..., min_length=1, max_length=200)
     phone: PhoneNumberField | None = None
     instagram: str | None = Field(None, max_length=100)
-    website: SanitizedUrlField | None = Field(None, max_length=200)
+    website: SanitizedUrlField | None = None
     city: str | None = Field(None, max_length=100)
     category: str | None = Field(None, max_length=100)
     notes: str | None = None
@@ -2642,7 +2665,10 @@ class GroupBuyCreate(BaseModel):
     # all carry both. group_buys.py:202-203 persists both fields verbatim.
     title: SanitizedTitleField = Field(..., min_length=2, max_length=200)
     description: str | None = None
-    product_name: str = Field(..., min_length=1, max_length=200)
+    # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
+    # asymmetry scan — both siblings were equally unvalidated, so the pair
+    # looked symmetric and was invisible to a comparison-based check.
+    product_name: SanitizedLabelField = Field(..., min_length=1, max_length=200)
     unit: str | None = Field(None, max_length=50)
     price_per_unit_regular: Decimal = Field(..., gt=0)
     price_per_unit_group: Decimal = Field(..., gt=0)
