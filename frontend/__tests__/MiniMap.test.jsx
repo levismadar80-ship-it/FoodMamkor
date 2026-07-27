@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 // MEH-1233 B5: the mini-map navigation offers Waze next to Google on ALL
 // viewports (previously Waze was mobile-only, so the desktop audit saw only
@@ -14,34 +14,106 @@ vi.mock("next-intl", () => ({
       open_in_google: "מפות Google",
       open_in_waze_aria: "פתיחה ב-Waze",
       open_in_google_aria: "פתיחה במפות Google",
+      // MEH-1659: expand / close affordances.
+      expand_aria: "הגדלת המפה למסך מלא",
+      close_aria: "סגירת המפה במסך מלא",
+      expanded_aria: "מפה במסך מלא",
     };
     return map[key] ?? key;
   },
 }));
 
-// MEH-1611: Marker now renders its pin + tooltip, so the stub surfaces the
-// props the location pins are asserted on (it used to render null).
-vi.mock("react-leaflet", () => ({
-  MapContainer: ({ children }) => <div data-testid="map">{children}</div>,
-  TileLayer: () => null,
-  Marker: ({ children, title, icon }) => (
-    <div data-testid="marker" data-title={title} data-icon-class={icon?.options?.className ?? ""}>
-      {children}
-    </div>
-  ),
-  Tooltip: ({ children }) => <div data-testid="tooltip">{children}</div>,
-  useMap: () => ({
+// MEH-1659: every <MapContainer> that mounts registers a stub here, in mount
+// order, and each stub RECORDS what the component did to it — which gesture
+// handlers were enabled or disabled, and which Leaflet events were bound. That
+// is what lets a test assert the inline map is frozen and the overlay map is
+// live in the same run, instead of asserting one and assuming the other.
+// `data-stub-index` on the rendered div ties a DOM node back to its stub, so a
+// test can say "the map INSIDE the dialog" rather than "the second one".
+const leafletStubs = vi.hoisted(() => ({ maps: [] }));
+
+// MEH-1611: Marker renders its pin + tooltip, so the stub surfaces the props
+// the location pins are asserted on (it used to render null).
+vi.mock("react-leaflet", async () => {
+  const { createContext, useContext, useState } = await vi.importActual("react");
+  const MapStubContext = createContext(null);
+
+  // enabled starts `null` — "the component never touched this handler" is a
+  // distinct outcome from "it disabled it", and the tests rely on the
+  // difference (a no-op InteractionMode must not read as a frozen map).
+  const makeHandler = () => {
+    const handler = {
+      enabled: null,
+      enable() {
+        handler.enabled = true;
+      },
+      disable() {
+        handler.enabled = false;
+      },
+    };
+    return handler;
+  };
+
+  const makeMapStub = () => ({
     setView: () => {},
     fitBounds: () => {},
-    dragging: { disable() {} },
-    touchZoom: { disable() {} },
-    doubleClickZoom: { disable() {} },
-    scrollWheelZoom: { disable() {} },
-    boxZoom: { disable() {} },
-    keyboard: { disable() {} },
-    tap: { disable() {} },
-  }),
-}));
+    dragging: makeHandler(),
+    touchZoom: makeHandler(),
+    doubleClickZoom: makeHandler(),
+    scrollWheelZoom: makeHandler(),
+    boxZoom: makeHandler(),
+    keyboard: makeHandler(),
+    // Leaflet 1.9.4 ships NO `tap` handler (leaflet-src.js has only TapHold),
+    // so the stub omits it too — the component must tolerate its absence.
+    listeners: {},
+    on(type, fn) {
+      (this.listeners[type] ||= []).push(fn);
+    },
+    off(type, fn) {
+      this.listeners[type] = (this.listeners[type] ?? []).filter((f) => f !== fn);
+    },
+  });
+
+  const MapContainer = ({ children, zoomControl, attributionControl }) => {
+    const [stub] = useState(() => {
+      const created = makeMapStub();
+      leafletStubs.maps.push(created);
+      return created;
+    });
+    const index = leafletStubs.maps.indexOf(stub);
+    return (
+      <div
+        data-testid="map"
+        data-stub-index={index}
+        // `undefined` here is the assertion target: a present-and-false value
+        // on either prop is what MEH-1633 (attribution) and MEH-1659 (zoom)
+        // both turned out to be.
+        data-zoom-control={String(zoomControl)}
+        data-attribution-control={String(attributionControl)}
+      >
+        <MapStubContext.Provider value={stub}>{children}</MapStubContext.Provider>
+      </div>
+    );
+  };
+
+  return {
+    MapContainer,
+    TileLayer: ({ attribution }) => <div data-testid="tile-layer" data-attribution={attribution} />,
+    Marker: ({ children, title, icon, eventHandlers }) => (
+      <div
+        data-testid="marker"
+        data-title={title}
+        data-icon-class={icon?.options?.className ?? ""}
+        data-has-click={String(Boolean(eventHandlers?.click))}
+        onClick={eventHandlers?.click}
+      >
+        {children}
+      </div>
+    ),
+    Tooltip: ({ children }) => <div data-testid="tooltip">{children}</div>,
+    useMap: () => useContext(MapStubContext),
+  };
+});
 
 vi.mock("leaflet/dist/leaflet.css", () => ({}));
 vi.mock("leaflet", () => ({
@@ -187,5 +259,129 @@ describe("MEH-1611 — producer locations on the mini map", () => {
       "href",
       "https://waze.com/ul?ll=32.57,34.95&navigate=yes",
     );
+  });
+});
+
+/**
+ * MEH-1659 — the inline map stops being frozen (+/− zoom, no scroll-trap) and
+ * any tap on it opens a fullscreen overlay where every gesture works.
+ *
+ * The pair of assertions that carries this ticket is the gesture one: it reads
+ * BOTH maps in the same run and requires opposite states. Asserting only the
+ * overlay would pass just as well if the inline map had quietly become
+ * draggable too — which is the scroll-trap the ticket exists to avoid.
+ */
+describe("MEH-1659 — inline zoom + fullscreen expand", () => {
+  beforeEach(() => {
+    leafletStubs.maps.length = 0;
+  });
+
+  const EXPAND_LABEL = "הגדלת המפה למסך מלא";
+  const CLOSE_LABEL = "סגירת המפה במסך מלא";
+  const GESTURES = ["dragging", "touchZoom", "doubleClickZoom", "scrollWheelZoom", "boxZoom"];
+
+  const renderMini = () => render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
+  const stubFor = (node) => leafletStubs.maps[Number(node.dataset.stubIndex)];
+
+  it("renders exactly ONE expand button and ONE map before anything is opened", () => {
+    renderMini();
+    // Not `getByLabelText` — that passes on 1 and THROWS on 2, which reads as a
+    // failure of the wrong thing. The count is the assertion: a duplicated
+    // button is the shape a second MiniMap mount (or a stray render) takes.
+    expect(screen.getAllByLabelText(EXPAND_LABEL)).toHaveLength(1);
+    expect(screen.getAllByTestId("map")).toHaveLength(1);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens a fullscreen dialog on expand, focuses close, locks body scroll, and Esc closes it", () => {
+    renderMini();
+    fireEvent.click(screen.getAllByLabelText(EXPAND_LABEL)[0]);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAttribute("aria-label", "מפה במסך מלא");
+    // A SECOND MapContainer — the overlay gets a fresh instance rather than
+    // re-parenting the inline one (Leaflet must size against the final box).
+    expect(screen.getAllByTestId("map")).toHaveLength(2);
+    expect(within(dialog).getByLabelText(CLOSE_LABEL)).toHaveFocus();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("map")).toHaveLength(1);
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("closes on the X button as well as on Esc", () => {
+    renderMini();
+    fireEvent.click(screen.getAllByLabelText(EXPAND_LABEL)[0]);
+    fireEvent.click(screen.getByLabelText(CLOSE_LABEL));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("opens from a tap on the map CANVAS (Leaflet click), not only from the button", () => {
+    renderMini();
+    const inline = screen.getByTestId("map");
+    const bound = stubFor(inline).listeners.click ?? [];
+    expect(bound).toHaveLength(1);
+    act(() => {
+      for (const fn of bound) fn();
+    });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("opens from a tap on a PIN — Leaflet delivers marker clicks to the marker, not the map", () => {
+    renderMini();
+    const pin = screen.getByTestId("marker");
+    expect(pin).toHaveAttribute("data-has-click", "true");
+    fireEvent.click(pin);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("freezes every gesture INLINE while enabling every gesture in the OVERLAY", () => {
+    renderMini();
+    fireEvent.click(screen.getAllByLabelText(EXPAND_LABEL)[0]);
+
+    const dialog = screen.getByRole("dialog");
+    const overlayMap = within(dialog).getByTestId("map");
+    const inlineMap = screen.getAllByTestId("map").find((node) => !dialog.contains(node));
+    const inline = stubFor(inlineMap);
+    const overlay = stubFor(overlayMap);
+
+    for (const gesture of GESTURES) {
+      // `false` (not falsy): `null` would mean the handler was never touched.
+      expect(inline[gesture].enabled, `inline ${gesture}`).toBe(false);
+      expect(overlay[gesture].enabled, `overlay ${gesture}`).toBe(true);
+    }
+    // A pin in the overlay is already at its destination — no expand handler.
+    for (const marker of within(dialog).getAllByTestId("marker")) {
+      expect(marker).toHaveAttribute("data-has-click", "false");
+    }
+  });
+
+  it("keeps the +/− control AND the OSM attribution on both surfaces", () => {
+    renderMini();
+    fireEvent.click(screen.getAllByLabelText(EXPAND_LABEL)[0]);
+
+    const maps = screen.getAllByTestId("map");
+    expect(maps).toHaveLength(2);
+    for (const map of maps) {
+      // MEH-1633 / MEH-1659: the failure mode of both is a present-and-false
+      // prop that deletes the control a sibling prop configures. "undefined"
+      // is react-leaflet's default-on path.
+      expect(map.dataset.zoomControl).toBe("undefined");
+      expect(map.dataset.attributionControl).toBe("undefined");
+    }
+    const tiles = screen.getAllByTestId("tile-layer");
+    expect(tiles).toHaveLength(2);
+    for (const tile of tiles) expect(tile.dataset.attribution).toContain("OpenStreetMap");
+  });
+
+  it("still renders exactly TWO nav pills — Waze and Google, never a third", () => {
+    renderMini();
+    // The expand/close affordances are <button>s, so a new pill-shaped link
+    // sneaking into the nav row is the only way this count moves.
+    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 });
