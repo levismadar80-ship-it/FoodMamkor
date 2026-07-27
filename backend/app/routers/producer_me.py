@@ -266,6 +266,14 @@ def update_my_producer(
         # (1800..current year) in ProducerUpdate (schemas.py); this opens
         # the write path.
         "established_year",
+        # MEH-1577: owner states delivery cost + free-delivery threshold.
+        # Validated in ProducerUpdate (both >= 0; free_delivery_above > 0;
+        # delivery_fee 0 accepted = "משלוח חינם") — this only opens the write
+        # path. Explicit null in the body clears either one (present-but-None
+        # flows through model_dump(exclude_unset) and setattr writes NULL),
+        # matching order_window above.
+        "delivery_fee",
+        "free_delivery_above",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)

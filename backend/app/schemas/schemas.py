@@ -1146,6 +1146,13 @@ class ProducerUpdate(BaseModel):
     # 24h, close>open → 422 Hebrew). Owner-writable path opened in
     # producer_me.py (_PRODUCER_WRITABLE_FIELDS).
     order_window: dict | None = None
+    # MEH-1577: structured delivery cost (whole shekels, producer-level).
+    # Validated below — both reject negatives, free_delivery_above additionally
+    # rejects 0. delivery_fee=0 is ACCEPTED and meaningful ("משלוח חינם"), which
+    # is why the two rules differ. Explicit null clears the value. Owner-writable
+    # path opened in producer_me.py (_PRODUCER_WRITABLE_FIELDS).
+    delivery_fee: int | None = None
+    free_delivery_above: int | None = None
 
     # MEH-1297: cap categories at 3 (admin/owner update). None passes through.
     @field_validator("category_ids")
@@ -1349,6 +1356,35 @@ class ProducerUpdate(BaseModel):
             return None
         if v < 1800 or v > israel_today().year:
             raise ValueError("שנת ההקמה לא תקינה")
+        return v
+
+    # MEH-1577: the ONLY guard on these two columns. Migration c7e2a4b91f38
+    # deliberately ships no DB CHECK (app-layer enforcement, so a bad payload is
+    # a clean 422 rather than a 500 from a constraint violation) — which means
+    # if this validator is weakened, nothing downstream catches it. Both the
+    # owner PUT (producer_me.py) and the admin PUT (admin.py) build
+    # ProducerUpdate, so both paths are covered here.
+    @field_validator("delivery_fee")
+    @classmethod
+    def _validate_delivery_fee(cls, v):
+        if v is None:
+            return None
+        # 0 is legal and load-bearing: it is how an owner says "delivery is
+        # free", distinct from NULL ("not stated"). Only negatives are rejected.
+        if v < 0:
+            raise ValueError("עלות משלוח לא יכולה להיות שלילית")
+        return v
+
+    @field_validator("free_delivery_above")
+    @classmethod
+    def _validate_free_delivery_above(cls, v):
+        if v is None:
+            return None
+        # Stricter than delivery_fee by one value: a "free above ₪0" threshold
+        # says nothing (every order clears it), so 0 is rejected here while it
+        # is accepted above.
+        if v <= 0:
+            raise ValueError("סף למשלוח חינם חייב להיות גדול מאפס")
         return v
 
 
@@ -1583,6 +1619,16 @@ class ProducerDetailOut(ProducerListOut):
     # from the DOM. Inherited by ProducerAdminOut + ProducerOwnerOut (admin table
     # + owner dashboard prefill read the same value).
     established_year: int | None = None
+    # MEH-1577: structured delivery cost → the public DeliveryBlock line.
+    # Public, like established_year above. NULL = not stated → nothing renders.
+    # The two are INDEPENDENT: free_delivery_above set with delivery_fee NULL is
+    # a legal state (a business with a free-delivery threshold but no flat fee
+    # stated), so the frontend renders the threshold line alone rather than
+    # gating it on the fee. Read-only here; written via producer_me PUT.
+    # Inherited by ProducerAdminOut + ProducerOwnerOut (admin table + owner
+    # dashboard prefill read the same value).
+    delivery_fee: int | None = None
+    free_delivery_above: int | None = None
 
     model_config = {"from_attributes": True}
 
