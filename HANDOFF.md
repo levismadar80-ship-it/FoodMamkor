@@ -50,6 +50,52 @@ infra, not a required check; docs-only and spec-only diffs need no mobile QA.
 MEH-1629 remains blocked (see below) — unchanged by this session.
 
 ---
+## 2026-07-27 — MEH-1629 raw-palette lint guard (PRs #2283 `a3fcd979` + #2286 `b4810ec4`) — split RED execution
+
+**Shipped, in two lanes.** `no-restricted-syntax` gained a fourth selector that
+warns on Tailwind stock-palette shades (`text-red-600`, `bg-gray-100`, …) which
+are not Mehamakor tokens. `green-*` is exempt — it genuinely is a token. Level is
+`warn`, deliberately: the point is to catch *new* code before commit, not to fail
+a build on ~170 pieces of existing debt.
+
+**The split is the reusable part.** The entire deliverable was
+`frontend/eslint.config.mjs`, which `.claude/hooks/protect-lint-config.sh`
+(MEH-442) blocks CC from editing by design — self-protection so an AI cannot
+disable its own guardrails. My first attempt stopped there and reported rather
+than working around it.
+
+| Lane | Who | What |
+|---|---|---|
+| A — RED | Sapir, manually via GitHub UI | the selector (`a3fcd979`, PR #2283) |
+| B — GREEN | CC | read-only verification + `docs/DESIGN.md` (PR #2286) + these logs |
+
+No hook workaround was attempted — `sed`, python, or `git apply` would have been
+exactly the silent circumvention rule 30 forbids. **MEH-1629's section 4 has been
+rewritten in Linear as this split-RED model**, so the next lint-config ticket has
+a template instead of rediscovering the block.
+
+**Verification (read-only, against `a3fcd979`).** `grep -c "selector:"` = 4
+exactly · `npx eslint .` = 0 errors · 5508 warnings. A temp file with
+`text-red-600` fired the rule *at warning severity*; a temp file with
+`bg-green-50` did not fire. Both temps deleted, tree clean, and
+`git diff a3fcd979 -- frontend/eslint.config.mjs` empty — byte-identical to
+Sapir's version.
+
+**One measurement note worth keeping.** The 5335 baseline was taken on a staging
+that had since moved 7 commits, so subtracting totals would have credited the new
+rule with unrelated changes. Counting findings that carry the rule's own message
+via `--format json` gave the real figure: **170 warnings across 54 files**. The
+implied before (5338) differs from 5335 by exactly those 7 commits — consistent,
+not fudged.
+
+**Deliberately not done:** zero of the 170 existing violations were fixed, and no
+`--max-warnings` ratchet was added. The ratchet is MEH-1630, post-launch.
+
+**Note on branch naming.** Both this backfill and the DESIGN.md PR carry `meh-1629`
+in the branch name because the branch-name gate (MEH-1141) requires it. Per rule 29
+that can flip a closed issue back to In Progress via Linear's auto-link; on the
+MEH-1628 pair earlier today it did, and the merge restored it to Done ~1 min later.
+Worth watching, not worth blocking on.
 
 ## 2026-07-27 — MEH-1627 optional-auth strict 401 (PR #2281 merged `4fa95cdc`) — launch blocker closed
 
