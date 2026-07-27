@@ -3,6 +3,144 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — registration-hardening batch: MEH-1623 · MEH-1624 · MEH-1634 all merged
+
+**Three merges, backfilled here as one docs-only PR (rule 31).** None of the
+three code branches carried CHANGELOG or HANDOFF — `changelog-branch-guard.sh`
+under the required **Repo guards** job hard-fails that, which is the whole point
+of the rule.
+
+| Ticket | PR | Merge SHA | Shape |
+|---|---|---|---|
+| MEH-1623 | #2273 | `114612da` | backend-only — `producer_name` validator on the public registration path |
+| MEH-1624 | #2280 | `049fd32a` | tests-only, 9 pins — zero production-code change |
+| MEH-1634 | #2287 | `6d6b9515` | CI-only — guard base resolution + `docs/SECURITY.md` sync |
+
+**MEH-1623 — the asymmetry, not just the field.** `ProducerRegister.producer_name`
+was the only field on that schema with no validator at all, while its admin-side
+twin `ProducerCreate.name` has carried `_min_letters_validator` since MEH-555, so
+the public path accepted `"???"`, whitespace-only and raw HTML as a business name.
+Fixed with a stacked bleach→floor mirroring `short_description`: the ≥3-letter
+floor runs on the **post**-sanitize value, so HTML cannot pad a name past it.
+`sanitize_text` returning `None` is coerced to `""` and raises a clean 422 rather
+than a 500 (the HOT-003 path at `schemas.py:59`). No new helpers, no Alembic.
+
+**MEH-1624 — the safety net that had to land first.** 9 reachable behaviours in
+`auth.py` with nothing asserting them: apple-collision dispatch, MEH-166 takeover
+409s on both OAuth routes, the presence guards, the per-IP halves of both
+dual-key limiters, the non-upgrade missing-field arms, the `provider=None`
+defensive arm, and three absence-assertions each paired with a positive
+observation through the identical target string so none can pass vacuously.
+Widening the producer byte-identity test to a quad exposed that its 3/hour per-IP
+cap put the original triple exactly on the ceiling — rotated `X-Real-IP` under
+`TRUSTED_PROXY`.
+
+**MEH-1634 — the guard that had been reddening this batch.** It diffed
+`refs/pull/N/merge` two-dot against the base branch's *current* tip; GitHub
+rebuilds that merge ref on push, not continuously, so staging's churn appeared in
+reverse as though the branch had deleted it. Run `30248101409` is the proof — the
+guard claimed "47 code files" while the same run's paths-filter reported neither
+stack touched. Base resolution now prefers the merge ref's frozen first parent,
+every base carries a `frozen`/`moving` tag, and a comparison it cannot make
+soundly exits non-zero instead of answering. Fails closed.
+
+### Current state
+
+- **MEH-1626 Chunk 1 — pending, and it is the next thing to pick up.** Epic:
+  domain types (`SanitizedNameField` · `PhoneNumberField` · `SanitizedTitleField`
+  · `SanitizedAddressField`) beside the existing `PasswordField` precedent
+  (`schemas.py:326`), then migrating the **public** surfaces:
+  `ProducerLocationCreate/Update` (address+phone), `GroupBuyCommitRequest.phone`,
+  `GroupBuyCreate` title+description, `UserRegister.name`,
+  `ProfileUpdate.name/phone`, `EventCreate/Update.title`. MEH-1623's
+  `producer_name` becomes the first consumer of `SanitizedNameField`.
+  **HIGH-RISK, chunked** — numbered plan, then `go` per chunk; do not run it
+  end-to-end. Phase 0 is mandatory **per field**: the AST scan's own caveat is
+  that some of the 8 may already be filtered in the router or be inert, and each
+  such field must be documented and skipped rather than migrated blindly.
+  Chunks 2 and 3 (the remaining schemas + `admin_notes`, then the structural
+  pytest guard) stay untouched until Chunk 1 is approved.
+- **MEH-1625 — waiting on Sapir, manual QA, not CC.** Labelled `not-cc`: the P5
+  persona (every field filled, quote/apostrophe business name, emoji in the
+  description, long address, 3 categories, multi-location, every contact channel,
+  then post-approval activation of images / products / delivery / event / recipe)
+  run against **staging only**. Its dependency on MEH-1623 is now satisfied — the
+  matrix will exercise the new validator rather than trip over it. The docs-only
+  `MANUAL_TESTING.md` PR that adds P5 to the matrix has not been opened yet; CC
+  can prepare it on request.
+- **MEH-1634 self-test CI wiring — parked, RED route.** `run-all.sh` invokes each
+  guard with no arguments, so **no** guard's `--self-test` runs in CI — including
+  the new `mid_cycle_case` regression lock. Pre-existing and true of all four
+  guards, not something MEH-1634 introduced. Wiring it needs a `pr-checks.yml`
+  edit, and `.github/workflows/**` is CC-deny (MEH-671), so it belongs to Sapir
+  or to a patch-file ticket. Deliberately not folded into the fix.
+
+### Known-good / known-bad from this batch
+
+- **Vercel is at its free-tier daily deployment cap**
+  (`api-deployments-free-per-day`, >100/day). No preview URL on PR #2287, and it
+  will block the next UI PR until the window resets. Account-level infra, not a
+  code problem — nothing in this batch changed UI, so rule 9's mobile check did
+  not apply.
+- **Superseded-run false failures again** (rule 21 / MEH-1049). PR #2287 emitted
+  a `CI gate (required)` failure webhook whose siblings were all `cancelled` —
+  the draft→ready flip started a newer run that concurrency-cancelled the
+  in-flight one, and the aggregator maps `cancelled` deps to FAIL. Read the run
+  against the current head, not the webhook; do not push a no-op commit to
+  re-trigger (rule 30).
+
+### NEXT
+MEH-1626 Chunk 1 — Phase 0 per field (read-only), then a numbered plan, then wait
+for `go`. MEH-1629 remains blocked (see below), unchanged by this batch.
+
+---
+## 2026-07-27 — MEH-1629 raw-palette lint guard (PRs #2283 `a3fcd979` + #2286 `b4810ec4`) — split RED execution
+
+**Shipped, in two lanes.** `no-restricted-syntax` gained a fourth selector that
+warns on Tailwind stock-palette shades (`text-red-600`, `bg-gray-100`, …) which
+are not Mehamakor tokens. `green-*` is exempt — it genuinely is a token. Level is
+`warn`, deliberately: the point is to catch *new* code before commit, not to fail
+a build on ~170 pieces of existing debt.
+
+**The split is the reusable part.** The entire deliverable was
+`frontend/eslint.config.mjs`, which `.claude/hooks/protect-lint-config.sh`
+(MEH-442) blocks CC from editing by design — self-protection so an AI cannot
+disable its own guardrails. My first attempt stopped there and reported rather
+than working around it.
+
+| Lane | Who | What |
+|---|---|---|
+| A — RED | Sapir, manually via GitHub UI | the selector (`a3fcd979`, PR #2283) |
+| B — GREEN | CC | read-only verification + `docs/DESIGN.md` (PR #2286) + these logs |
+
+No hook workaround was attempted — `sed`, python, or `git apply` would have been
+exactly the silent circumvention rule 30 forbids. **MEH-1629's section 4 has been
+rewritten in Linear as this split-RED model**, so the next lint-config ticket has
+a template instead of rediscovering the block.
+
+**Verification (read-only, against `a3fcd979`).** `grep -c "selector:"` = 4
+exactly · `npx eslint .` = 0 errors · 5508 warnings. A temp file with
+`text-red-600` fired the rule *at warning severity*; a temp file with
+`bg-green-50` did not fire. Both temps deleted, tree clean, and
+`git diff a3fcd979 -- frontend/eslint.config.mjs` empty — byte-identical to
+Sapir's version.
+
+**One measurement note worth keeping.** The 5335 baseline was taken on a staging
+that had since moved 7 commits, so subtracting totals would have credited the new
+rule with unrelated changes. Counting findings that carry the rule's own message
+via `--format json` gave the real figure: **170 warnings across 54 files**. The
+implied before (5338) differs from 5335 by exactly those 7 commits — consistent,
+not fudged.
+
+**Deliberately not done:** zero of the 170 existing violations were fixed, and no
+`--max-warnings` ratchet was added. The ratchet is MEH-1630, post-launch.
+
+**Note on branch naming.** Both this backfill and the DESIGN.md PR carry `meh-1629`
+in the branch name because the branch-name gate (MEH-1141) requires it. Per rule 29
+that can flip a closed issue back to In Progress via Linear's auto-link; on the
+MEH-1628 pair earlier today it did, and the merge restored it to Done ~1 min later.
+Worth watching, not worth blocking on.
+
 ## 2026-07-27 — MEH-1627 optional-auth strict 401 (PR #2281 merged `4fa95cdc`) — launch blocker closed
 
 **Shipped (PR #2281).** `get_current_user_optional` swallowed every non-403
