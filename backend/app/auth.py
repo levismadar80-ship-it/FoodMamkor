@@ -275,12 +275,20 @@ def get_current_user_optional(
 ) -> User | None:
     """Optional auth with RFC 6750 semantics — three states, not two.
 
-    MEH-1627. "Optional" means the *header* is optional, never that a bad
-    token is acceptable:
+    MEH-1627. "Optional" means the *credential* is optional, never that a
+    bad token is acceptable:
 
-    - no Authorization header  → ``None`` (a genuine anonymous visitor)
-    - header present, valid    → the ``User``
-    - header present, invalid  → **401 propagated**, never swallowed
+    - no Bearer credential      → ``None`` (a genuine anonymous visitor)
+    - Bearer present, valid     → the ``User``
+    - Bearer present, invalid   → **401 propagated**, never swallowed
+
+    "No Bearer credential" is what ``oauth2_scheme`` (auto_error=False)
+    reports, and it covers a missing Authorization header *and* a header
+    carrying a different scheme (``Basic …``) — both yield ``None`` here.
+    That is not a hole: a non-Bearer credential grants exactly the
+    anonymous access the caller would have had with no header at all, so
+    nothing is escalated. Verified against the running backend: no header
+    → 200, ``Basic`` → 200, ``Bearer <expired|garbage|empty>`` → 401.
 
     The swallow this replaces collapsed states 1 and 3, so an expired
     token downgraded a logged-in user to anonymous *silently*. On
