@@ -1,0 +1,11 @@
+200 POST /api/auth/login
+200 GET /api/auth/me
+200 GET /api/users/me/favorites
+200 GET /api/auth/me
+200 GET /api/categories
+200 GET /api/users/me/favorites
+200 GET /api/cities
+401 POST /api/auth/register/producer
+200 POST /api/auth/refresh
+200 POST /api/auth/register/producer
+200 GET /api/auth/me
