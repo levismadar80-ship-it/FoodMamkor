@@ -278,7 +278,19 @@ describe("MEH-1659 — inline zoom + fullscreen expand", () => {
 
   const EXPAND_LABEL = "הגדלת המפה למסך מלא";
   const CLOSE_LABEL = "סגירת המפה במסך מלא";
-  const GESTURES = ["dragging", "touchZoom", "doubleClickZoom", "scrollWheelZoom", "boxZoom"];
+  // Every name in INTERACTION_HANDLERS that Leaflet 1.9.4 actually ships. `tap`
+  // is deliberately absent (the component's guard skips it — see
+  // leaflet-interaction-contract.test.js); `keyboard` is NOT, and its omission
+  // here was a real hole: deleting `"keyboard"` from INTERACTION_HANDLERS left
+  // the inline map arrow-pannable and every assertion still green.
+  const GESTURES = [
+    "dragging",
+    "touchZoom",
+    "doubleClickZoom",
+    "scrollWheelZoom",
+    "boxZoom",
+    "keyboard",
+  ];
 
   const renderMini = () => render(<MiniMap lat={32.57} lng={34.95} name="רוח השדה" />);
   const stubFor = (node) => leafletStubs.maps[Number(node.dataset.stubIndex)];
