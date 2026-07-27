@@ -47,9 +47,56 @@ const TABS = [
   { key: "tools", href: "/producer/dashboard/tools", Icon: Wrench },
 ];
 
+/**
+ * MEH-1638: what renders while useAuth() is still resolving /auth/me.
+ *
+ * Before this, the layout returned `null` for the whole authLoading window,
+ * so entering ANY dashboard route showed nothing at all — measured at ~780-870ms
+ * of empty body on a 700ms /auth/me round trip (MEH-1632 Phase 0, three routes).
+ * The chrome below is a shape-only stand-in: same sticky nav geometry, same
+ * container widths, so the real chrome swaps in without a layout jump.
+ *
+ * No visible text by design — copy that appears for <1s and vanishes reads as
+ * a flash of its own. The sr-only label is the a11y counterpart and follows the
+ * MEH-876 precedent in app/[locale]/loading.js:6-14 (reuses the existing
+ * `a11y.loading` key — no new copy).
+ */
+function DashboardChromeSkeleton({ label }) {
+  return (
+    <div
+      data-testid="dashboard-chrome-skeleton"
+      className="bg-background"
+      role="status"
+      aria-busy="true"
+    >
+      <span className="sr-only">{label}</span>
+      {/* Mirrors the real <nav> below: same sticky/blur/border and the same
+          max-w-5xl px-4 container, so the tab row does not shift on swap. */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+        <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto">
+          {TABS.map((tab) => (
+            <div key={tab.key} className="shrink-0 px-4 py-3">
+              <div className="h-5 w-20 bg-border rounded-[8px] animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 py-12 space-y-4">
+        <div className="h-8 w-48 bg-border rounded-[12px] animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 bg-border rounded-[16px] animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProducerDashboardLayout({ children }) {
   const t = useTranslations("dashboard.producer.nav");
   const tDenied = useTranslations("errors.access_denied.producer");
+  const tA11y = useTranslations("a11y");
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
@@ -75,7 +122,14 @@ export default function ProducerDashboardLayout({ children }) {
     router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
   }, [isUnauthenticated, pathname, router]);
 
-  if (authLoading || isUnauthenticated) return null;
+  // MEH-1638: these two were one branch returning null. They are different
+  // states and must not share it.
+  //   - authLoading → the answer is not back yet; show the chrome's shape.
+  //   - isUnauthenticated → the effect above is already redirecting to /login;
+  //     rendering anything here would flash behind that redirect. Returning
+  //     null is deliberate and UNCHANGED.
+  if (authLoading) return <DashboardChromeSkeleton label={tA11y("loading")} />;
+  if (isUnauthenticated) return null;
 
   // 403 — in-app denied state with a route forward, not a browser redirect.
   // The subtree's child pages carry their own duplicate role guards, but this
@@ -129,9 +183,17 @@ export default function ProducerDashboardLayout({ children }) {
           {/* MEH-1357: persistent "צפייה בדף" (GBP "See your profile") — replaces
               the removed tools-page הצגת-העסק card. NOT a tab (no active border):
               a quiet inline-end link. Targets the UUID route /producer/{id}, not
-              /p/{slug}: the owner-exception (producers.py:247-253) lets the owner
+              /p/{slug}: the owner-exception (producers.py:265-271) lets the owner
               view her OWN page while pending, whereas the slug route
-              (producers.py:204) is approved-only and would 404 pre-approval. */}
+              (producers.py:210-226) is approved-only and would 404 pre-approval.
+              MEH-1632: that reasoning is sound and this URL was always correct —
+              but between MEH-1398 and MEH-1632 it did NOT hold for the rendered
+              page. The edge existence-check added by MEH-1398 called the same
+              endpoint ANONYMOUSLY, so the owner-exception never applied and this
+              link hard-404'd for every pending business. The check no longer
+              covers /producer/{id} (middleware.js) and the owner-exception is
+              once again what decides. Do not "fix" this href — the edge was the
+              bug, not the URL. */}
           {user.producer_id && (
             <Link
               href={`/producer/${user.producer_id}`}
