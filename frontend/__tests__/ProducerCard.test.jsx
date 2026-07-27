@@ -16,7 +16,7 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "משלוחים בלבד",
-      "producer.card.badges.available_today": "🛒 מגיעה היום",
+      "producer.card.badges.available_today": "מגיעה היום",
       // MEH-1547: +N overflow disclosure aria.
       "producer.card.badges.overflow_aria": `הצגת עוד ${values.count} תגיות`,
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.

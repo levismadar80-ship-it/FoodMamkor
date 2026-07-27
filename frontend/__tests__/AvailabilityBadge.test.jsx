@@ -10,9 +10,9 @@ vi.mock("next-intl", () => ({
       "status_label.busy_week": "עמוס כרגע",
       "status_label.on_vacation": "בהפסקה",
       "card_label.open_orders": "פתוח להזמנות",
-      "card_label.available_today": "זמינה היום 🟢",
-      "card_label.busy_week": "עמוסה השבוע 🟠",
-      "card_label.on_vacation": "בהפסקה ⏸",
+      "card_label.available_today": "זמינה היום",
+      "card_label.busy_week": "עמוסה השבוע",
+      "card_label.on_vacation": "בהפסקה",
     };
     return flat[key] ?? key;
   },
