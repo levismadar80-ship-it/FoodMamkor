@@ -425,7 +425,7 @@
       "main_label": "דף הבית — גלו בתי עסק מקומיים",
       "search_area_label": "חיפוש בתי עסק",
       "near_me": "קרוב אליי",
-      "delivery_cta": "משלוחים אליי 📦",
+      "delivery_cta": "משלוחים אליי",
       "delivery_cta_city": "משלוחים ל{city}",
       "surprise_me": "הפתיעו אותי",
       "searching": "בחיפוש...",
@@ -766,8 +766,8 @@
           "shared": "מקום הייצור משותף עם גלוטן — לפי הצהרת בית העסק. אם יש צליאק, כדאי לוודא ישירות מול בית העסק.",
           "dedicated": "אין גלוטן במקום הייצור — לפי הצהרת בית העסק."
         },
-        "slow_response": "⏳ זמני תגובה ארוכים יותר השבוע",
-        "vacation": "🌙 בית עסק זה בהפסקה כרגע",
+        "slow_response": "זמני תגובה ארוכים יותר השבוע",
+        "vacation": "בית עסק זה בהפסקה כרגע",
         "vacation_return": "{label} — ניתן להשאיר הודעה",
         "vacation_back": "חוזרת ב-{date}",
         "vacation_back_soon": "חוזרת בקרוב",
@@ -852,7 +852,7 @@
       },
       "badges": {
         "delivery_only": "משלוחים בלבד",
-        "available_today": "🛒 מגיעה היום",
+        "available_today": "מגיעה היום",
         "overflow_aria": "הצגת עוד {count} תגיות"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
@@ -976,7 +976,7 @@
       "funded_title": "המחיר נפתח!",
       "funded_subtitle": "הקבוצה הגיעה ליעד! לתיאום ההזמנה צרו קשר עם {name}",
       "cancelled": "קבוצת הרכש בוטלה",
-      "fulfilled": "✅ קבוצת הרכש הושלמה",
+      "fulfilled": "קבוצת הרכש הושלמה",
       "by_producer": "מאת {name}",
       "unit_suffix": "/ {unit}",
       "discount_hint": "חיסכון של {discount}% במחיר קבוצתי",
@@ -991,7 +991,7 @@
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
       "login_required": "יש להתחבר כדי להצטרף לקבוצת רכש",
-      "committed_confirm": "✅ הצטרפת לקבוצת רכש זו",
+      "committed_confirm": "הצטרפת לקבוצת רכש זו",
       "committed_units": " ({count} יחידות)",
       "cancelling": "בביטול...",
       "cancel_cta": "בטלו את ההצטרפות",
@@ -1011,7 +1011,7 @@
         "open": "פתוחה",
         "funded": "ממומנת",
         "cancelled": "בוטלה",
-        "fulfilled": "הושלמה ✅"
+        "fulfilled": "הושלמה"
       },
       "back": "חזרה לכלים",
       "heading": "קבוצות הרכש שלי",
@@ -1063,9 +1063,9 @@
       },
       "card_label": {
         "open_orders": "פתוח להזמנות",
-        "available_today": "זמינה היום 🟢",
-        "busy_week": "עמוסה השבוע 🟠",
-        "on_vacation": "בהפסקה ⏸"
+        "available_today": "זמינה היום",
+        "busy_week": "עמוסה השבוע",
+        "on_vacation": "בהפסקה"
       }
     },
     "delivery": {
@@ -1350,8 +1350,8 @@
         "incomplete_title": "הצג רק עסקים שחסרים להם פרטים נדרשים",
         "show_all": "הצג הכל",
         "incomplete_label": "פרטים חסרים",
-        "export": "📤 ייצוא",
-        "import_excel": "📥 ייבא מ-Excel",
+        "export": "ייצוא",
+        "import_excel": "ייבא מ-Excel",
         "new_producer": "+ בית עסק חדש"
       },
       "import": {
@@ -1414,11 +1414,11 @@
           "activate": "הפעל",
           "remove_ambassador_title": "הסר תפקיד שגרירה",
           "set_ambassador_title": "הגדר כשגרירה",
-          "ambassador_active": "⭐ שגרירה",
+          "ambassador_active": "שגרירה",
           "ambassador_inactive": "☆ שגריר",
           "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
-          "story_card": "📸 סטורי",
+          "story_card": "סטורי",
           "delete": "מחקי",
           "menu_aria": "פעולות נוספות"
         },
@@ -1541,7 +1541,7 @@
           "organic_certified": "אורגני מוסמך",
           "grass_fed": "גראס פד",
           "verified": "מאומת",
-          "recommended": "⭐ מומלץ (תגית עורכת)",
+          "recommended": "מומלץ (תגית עורכת)",
           "kosher": "כשרות",
           "kosher_none": "—",
           "kosher_kosher": "כשר",
@@ -1553,16 +1553,16 @@
           "license_format_warning": "מספר רישיון יצרן הוא 7-10 ספרות",
           "license_registry_link": "בדיקה במאגר משרד הבריאות",
           "license_optional_toggle": "יש לי רישיון יצרן ↓",
-          "has_physical_location": "🏪 חנות פיזית (קבלת לקוחות)",
-          "offers_delivery": "🚚 משלוחים",
+          "has_physical_location": "חנות פיזית (קבלת לקוחות)",
+          "offers_delivery": "משלוחים",
           "type_validation": "חייב לסמן לפחות אחד מהשניים",
           "delivery_nationwide": "משלוחים לכל הארץ",
           "delivery_cities_label": "ערים שמשלוחים אליהן",
           "delivery_excluded_label": "חוץ מ:",
           "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
           "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
-          "has_delivery": "🚚 יש משלוחים",
-          "pickup_points": "📦 נקודות איסוף ברחבי הארץ",
+          "has_delivery": "יש משלוחים",
+          "pickup_points": "נקודות איסוף ברחבי הארץ",
           "delivery_area_cities": "ערי משלוח (מופרדות בפסיק)",
           "delivery_area_cities_placeholder": "תל אביב, חיפה, ירושלים",
           "short_description": "תיאור קצר (לכרטיסייה)",
@@ -1576,9 +1576,9 @@
           "opening_hours_label": "שעות פתיחה (פורמט: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "פתוח להזמנות",
-          "avail_today": "זמינה היום 🟢",
-          "avail_full": "עמוסה השבוע 🟠",
-          "avail_vacation": "בהפסקה ⏸",
+          "avail_today": "זמינה היום",
+          "avail_full": "עמוסה השבוע",
+          "avail_vacation": "בהפסקה",
           "vacation_until": "תאריך חזרה (אופציונלי)"
         }
       },
@@ -1616,7 +1616,7 @@
         "demote": "הסירי הרשאות",
         "protected_title": "לא ניתן להסיר הרשאות מהאדמין הראשי",
         "menu_aria": "פעולות נוספות",
-        "unblock": "🚫 שחרר חסימה",
+        "unblock": "שחרר חסימה",
         "block": "חסום"
       },
       "favorites": {
@@ -1881,7 +1881,7 @@
       "no_reports": "אין דיווחים פתוחים",
       "report_count": "{count} דיווחים",
       "actions": {
-        "suspend": "⏸️ השהה עסק",
+        "suspend": "השהה עסק",
         "ignore": "התעלם",
         "dismiss_confirm": "להתעלם מכל הדיווחים על {name}?",
         "dismissing": "מתעלמת…"
@@ -1893,7 +1893,7 @@
         "empty": "אין מוצרים בבדיקה כרגע",
         "default_reason": "סומן לבדיקה",
         "approve": "אשרי",
-        "remove": "❌ הסירי",
+        "remove": "הסירי",
         "removing": "מסירה…"
       },
       "hidden": {
@@ -2344,7 +2344,7 @@
       "status_pending": "החוויה שלך בהמתנה לאישור צוות מהמקור",
       "status_changes_requested": "נדרשים שינויים לפני שנוכל לפרסם",
       "status_rejected": "החוויה לא אושרה לפרסום",
-      "just_submitted": "✅ החוויה נשלחה לאישור! תקבלו אימייל כשהיא תתפרסם 🌿",
+      "just_submitted": "החוויה נשלחה לאישור! תקבלו אימייל כשהיא תתפרסם",
       "team_notes": "הערות הצוות:",
       "reason": "סיבה:",
       "requirements_title": "מה להביא / דרישות",
@@ -2688,7 +2688,7 @@
     },
     "expiry": {
       "valid_until": "תקף עד: {date}",
-      "near_expiry": "⚠️ תעודה פגה בקרוב"
+      "near_expiry": "תעודה פגה בקרוב"
     }
   },
   "opening_hours": {
@@ -2716,15 +2716,15 @@
       "tooltip": "מספר הטלפון של בית העסק אומת באמצעות קוד חד-פעמי"
     },
     "tier_3": {
-      "label": "✅ עסק מאומת",
+      "label": "עסק מאומת",
       "tooltip": "בית העסק עבר אימות ידני על ידי צוות מהמקור"
     },
     "tier_4": {
-      "label": "⭐ מובילת קהילה",
+      "label": "מובילת קהילה",
       "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
     },
     "tier_5": {
-      "label": "🏅 שגרירת מהמקור",
+      "label": "שגרירת מהמקור",
       "tooltip": "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור"
     }
   },
@@ -2893,7 +2893,7 @@
   "newsletter_unsubscribe": {
     "meta_title": "ביטול הרשמה לניוזלטר · מהמקור",
     "loading": "מבטלים את ההרשמה…",
-    "success_title": "הוסרת מרשימת התפוצה 🌿",
+    "success_title": "הוסרת מרשימת התפוצה",
     "success_body": "לא נשלח לך יותר ניוזלטר. תמיד אפשר לחזור — נשמח לראות אותך שוב.",
     "error_title": "הקישור אינו תקין",
     "error_body": "ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסי שוב מהמייל, או פני אלינו.",
@@ -2942,9 +2942,9 @@
       "submit_aria": "חפש",
       "loading": "טעינת תוצאות...",
       "no_results_for": "אין תוצאות עבור",
-      "section_producers": "🏪 בתי עסק",
-      "section_categories": "🏷️ קטגוריות",
-      "section_cities": "📍 ערים",
+      "section_producers": "בתי עסק",
+      "section_categories": "קטגוריות",
+      "section_cities": "ערים",
       "recent_heading": "חיפושים אחרונים",
       "trending_heading": "חיפושים פופולריים",
       "remove_recent_aria": "הסר {q} מהחיפושים האחרונים"
@@ -3104,7 +3104,7 @@
       "uploading": "בהעלאה...",
       "save_cloudinary": "שמרי ל-Cloudinary",
       "copy_caption": "העתקת caption",
-      "copied": "✅ הועתק!"
+      "copied": "הועתק!"
     }
   },
   "footer": {
@@ -3825,8 +3825,8 @@
       "error_availability_update": "לא הצלחנו לעדכן את מצב הזמינות — נסו שוב בעוד רגע",
       "error_questions_save": "שגיאה בשמירה — נסו שוב",
       "vanity_link": {
-        "label": "🔗 הלינק שלי",
-        "copied": "✅ הועתק!",
+        "label": "הלינק שלי",
+        "copied": "הועתק!",
         "copy_cta": "העתיקו לינק",
         "share_cta": "שתפו בוואטסאפ",
         "wa_text_template": "הפרופיל שלי במהמקור: {url}"
@@ -3857,7 +3857,7 @@
           "body": "הצוות שלנו בודק את הפרטים — לרוב לוקח עד 3 ימי עסקים. פרופילים מלאים מאושרים מהר יותר."
         },
         "rejected": {
-          "title": "⚠️ הבקשה לא אושרה",
+          "title": "הבקשה לא אושרה",
           "body": "צרו קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
           "tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
           "tip_photos": "הוסיפו תמונות ברורות של המוצרים",
@@ -4045,7 +4045,7 @@
         "label_weak": "הפרופיל שלך חלש — לקוחות לא רואות אותך",
         "label_ok": "בסדר, אבל יש מה לשפר",
         "label_strong": "פרופיל חזק",
-        "label_perfect": "פרופיל מושלם ⭐",
+        "label_perfect": "פרופיל מושלם",
         "items": {
           "image": "תמונת פרופיל",
           "desc": "תיאור עסק (50+ תווים)",
@@ -4203,8 +4203,8 @@
         "heading": "משלוחים ואיסוף",
         "subtitle": "איך הלקוחות מקבלים מכם — חנות פיזית, משלוחים, או שניהם.",
         "scope_helper": "כתובת בית העסק מוגדרת בכרטיס המיקום — כאן בוחרים רק לאן מגיעים עם משלוחים. הרשימה תוצג ללקוחות בעמוד שלך.",
-        "has_physical_location": "🏪 חנות פיזית (קבלת לקוחות)",
-        "offers_delivery": "🚚 משלוחים",
+        "has_physical_location": "חנות פיזית (קבלת לקוחות)",
+        "offers_delivery": "משלוחים",
         "type_validation": "חייב לסמן לפחות אחד מהשניים",
         "delivery_nationwide": "משלוחים לכל הארץ",
         "delivery_cities_label": "ערים שמשלוחים אליהן",
