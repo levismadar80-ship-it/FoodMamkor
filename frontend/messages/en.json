@@ -410,6 +410,8 @@
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
       "near_me": "Near me",
+      "delivery_cta": "Deliveries to me 📦",
+      "delivery_cta_city": "Deliveries to {city}",
       "surprise_me": "Surprise me",
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
@@ -786,7 +788,7 @@
         },
         "excerpt_footer": "From the reviews",
         "excerpt_all": "All reviews",
-        "alerts_reentry": "Getting updates · Edit",
+        "alerts_reentry": "Getting updates",
         "alerts_reentry_aria": "Edit notification preferences"
       },
       "owner_card": {
@@ -825,7 +827,7 @@
       },
       "order_window": {
         "strip_label": "Accepting orders:",
-        "cta_note": "You can send a message now — it'll be answered when orders reopen",
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
         "days_short": {
           "sun": "Sun",
           "mon": "Mon",
@@ -977,7 +979,7 @@
       "back_to_list": "Back to group buys",
       "back_to_list_arrow": "← Back to group buys",
       "funded_title": "Price unlocked!",
-      "funded_subtitle": "{name} will contact the participants soon",
+      "funded_subtitle": "The group reached its goal! To arrange your order, contact {name}",
       "cancelled": "Group buy cancelled",
       "fulfilled": "✅ Group buy completed",
       "by_producer": "by {name}",
@@ -1076,6 +1078,9 @@
       "min_order": "Minimum",
       "delivery_day_label": "Delivery on {day}",
       "dispatch_days": "Dispatch on {day}",
+      "order_cutoff": "Orders accepted until {day} {time}",
+      "order_cutoff_with_day": "Orders accepted until {day} {time} · delivery on {delivery_day}",
+      "free": "Free",
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",

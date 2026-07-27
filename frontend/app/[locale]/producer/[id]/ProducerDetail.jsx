@@ -16,7 +16,7 @@ import ContactSidebar from "./components/ContactSidebar";
 // MEH-1546: informational weekly hours + the closed-state note that sits
 // BESIDE each primary CTA (never inside it — the CTA stays read-only and is
 // never disabled).
-import OrderWindowStrip, { OrderWindowCtaNote } from "./components/OrderWindowStrip";
+import OrderWindowStrip from "./components/OrderWindowStrip";
 import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -202,10 +202,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
-            {/* Directly ABOVE the card — the card opens with the WhatsApp
-                button, so this lands beside the CTA rather than below the
-                whole card (FAQ chips included). Never inside it. */}
-            <OrderWindowCtaNote orderWindow={producer.order_window} />
+            {/* MEH-1649: the closed-window note moved INSIDE ContactCard,
+                directly under the primary CTA. Above the card it sat on the
+                cream background, visually detached from the button it
+                explains — the same defect Sapir reported on desktop. The
+                earlier "never inside it" note here assumed the card's other
+                content would separate the line from the CTA; under the button
+                itself (above the FAQ chips) it is adjacent to exactly what it
+                describes. */}
             <ContactCard producer={producer} isVacation={isVacation} />
           </div>
           <ProducerSections

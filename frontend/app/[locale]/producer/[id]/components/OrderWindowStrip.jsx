@@ -4,8 +4,8 @@
  * Module:   OrderWindowStrip
  * Purpose:  Informational weekly order-acceptance hours on the public producer
  *           page (rendered as "accepting orders: Sun-Thu 9:00-14:00" in the
- *           active locale), plus the context line that sits BESIDE the
- *           WhatsApp CTA while orders are closed.
+ *           active locale), plus the context line that sits directly UNDER
+ *           the primary CTA, inside ContactCard, while orders are closed.
  * Does NOT: render any status colour or any open/closed verdict — the page's
  *           single status lives in ProducerHeader.jsx and only there
  *           (MEH-1334 / MEH-1546). It also never touches the CTA itself: the
@@ -74,10 +74,16 @@ export default function OrderWindowStrip({ orderWindow }) {
 }
 
 /**
- * The one context line beside the WhatsApp CTA while orders are closed: it
- * tells the visitor a message sent now will be answered when orders reopen.
+ * The one context line under the primary CTA while orders are closed: it tells
+ * the visitor the message will WAIT for the business until orders reopen.
  * Wolt's pre-order pattern adapted to an asynchronous channel — never block
  * the send, just set the expectation.
+ *
+ * MEH-1649: it describes what the message does, not what the business will do.
+ * The earlier "היא תיענה" promised a reply on the business's behalf, which the
+ * platform cannot guarantee (same principle as the dashboard copy-honesty
+ * fixes). Mounted by ContactCard, once, directly below the CTA — NOT by
+ * ContactSidebar or ProducerDetail, where it used to float outside the card.
  *
  * Time-derived, so it is mounted-guarded exactly like the header status:
  * renders nothing on the server pass, which also keeps a null-window producer

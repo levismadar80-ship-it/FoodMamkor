@@ -35,26 +35,32 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * S14 hero discipline: only the FRL-900 headline +
  * subtitle ride the `--scrim-ink` band on the photo; the pill search card then
  * rides the photo seam DOWN onto cream (negative margin overlap), and the CTAs
- * (גלו עסקים → #producers-grid · near-me MEH-41 · "how it works") land fully on
- * cream — far less overlay surface, AA for free.
+ * (גלו עסקים → #producers-grid · near-me MEH-41 · delivery-to-me MEH-1643 ·
+ * "how it works") land fully on cream — far less overlay surface, AA for free.
  *
  * Ken Burns = the kenburns-right layer (globals.css), opposite direction to the
  * kenburns-left dividers below; honors prefers-reduced-motion (animation:none).
  *
  * Does NOT: own search routing (HeroSearch), own the near-me handler
- * (onNearMe from use-home-page), or restyle the navbar (parallel track).
+ * (onNearMe from use-home-page), own the delivery-CTA city logic
+ * (onDeliveryCta from use-home-page — city apply vs LocationModal open),
+ * or restyle the navbar (parallel track).
  *
  * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2),
  * MEH-788 (#1055 Cloudinary+KB · #1063 scrim token · S14 capped-hero + cream
  * search/CTAs), MEH-1288 (surprise-me button beside near-me),
- * MEH-1476 (surprise-me relocated to the producers-grid end — hero now
- * carries only the filled primary + near-me ghost + "how it works" link).
+ * MEH-1476 (surprise-me relocated to the producers-grid end),
+ * MEH-1643 (delivery-to-me ghost CTA beside near-me — 4-item CTA row:
+ * filled primary + near-me ghost + delivery ghost + "how it works" link;
+ * label is dynamic: "משלוחים ל{city}" when localStorage user_city is set).
  */
 export function HomeHero({
   fridayMode,
   geoLoading,
   onNearMe,
   onScrollDown,
+  onDeliveryCta,
+  userCity,
 }) {
   const t = useTranslations();
   // Mirrors the use-home-page.js scrollToProducers pattern (getElementById +
@@ -174,6 +180,22 @@ export function HomeHero({
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
+        </button>
+
+        {/* MEH-1643: delivery-to-me ghost CTA — second .action-ghost beside
+            near-me (MEH-1369's "exactly ONE filled primary" holds: both are
+            ghosts). Two label states: with a saved user_city the label names
+            the city; without one the generic label opens the LocationModal
+            (routing decision lives in use-home-page handleDeliveryCta). */}
+        <button
+          type="button"
+          onClick={onDeliveryCta}
+          data-testid="hero-delivery-cta"
+          className="action-ghost inline-flex items-center gap-2 px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm focus-ring"
+        >
+          {userCity
+            ? t("home.hero.delivery_cta_city", { city: userCity })
+            : t("home.hero.delivery_cta")}
         </button>
 
         {/* MEH-1476: "how it works" is now the sole secondary text link — the

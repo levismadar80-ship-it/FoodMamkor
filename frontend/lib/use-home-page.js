@@ -508,6 +508,21 @@ export function useHomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // MEH-1643: hero "משלוחים אליי" CTA. With a saved user_city, apply the
+  // EXISTING delivery_city path — handleCitySelected already owns the MEH-1485
+  // write-back (setUserCity), the MEH-1269 geo mutual-exclusion, the
+  // ActiveFilterChip state, the MEH-1487 region fallback (driven by
+  // filters.delivery_city), and the scroll to the grid. Without a city, open
+  // the LocationModal the page mounts; its onSelectCity IS handleCitySelected,
+  // so the pick flows through the same single path.
+  const handleDeliveryCta = () => {
+    if (userCity) {
+      handleCitySelected(userCity);
+    } else {
+      setLocationModalOpen(true);
+    }
+  };
+
   // MEH-1269: dismiss the active location filter (geo OR city) from the chip's
   // ✕. Clears both modes (mutually exclusive, so at most one is set) and
   // reloads keeping any category + chip filters intact.
@@ -631,6 +646,7 @@ export function useHomePage() {
     // handlers
     handleNearMe,
     handleSurprise,
+    handleDeliveryCta,
     handleCitySelected,
     handleClearLocation,
     handleWhatsAppClick,

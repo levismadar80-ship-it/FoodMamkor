@@ -56,7 +56,7 @@ export default function HomePage() {
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
     featuredProducer, geoActive, cityActive, geoEmptyNotice,
-    handleNearMe, handleSurprise, handleCitySelected, handleClearLocation,
+    handleNearMe, handleSurprise, handleDeliveryCta, handleCitySelected, handleClearLocation,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
@@ -80,6 +80,8 @@ export default function HomePage() {
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
         onScrollDown={scrollToProducers}
+        onDeliveryCta={handleDeliveryCta}
+        userCity={userCity}
       />
 
       {/* MEH-538 + MEH-604: mini-map preview sits IMMEDIATELY after the hero

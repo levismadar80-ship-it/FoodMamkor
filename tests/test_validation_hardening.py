@@ -179,22 +179,77 @@ def test_register_producer_accepts_legitimate_hebrew_producer_name(client):
     assert r.status_code == 200, r.text
 
 
-def test_producer_register_has_exactly_12_validated_fields():
-    """MEH-1623 verification_step: the AST count that proves the field is
-    actually wired, not just that a validator function exists.
+def _validated_fields(model):
+    """Field names on `model` validated by EITHER a @field_validator OR an
+    Annotated domain type carrying an AfterValidator.
 
-    Counts DISTINCT field names targeted by @field_validator on
-    ProducerRegister — 11 before this change, 12 after (producer_name).
-    Reads Pydantic's own validator registry rather than re-parsing the
-    source, so a validator declared but bound to a typo'd field name
-    cannot pass.
+    Recursing into the annotation is load-bearing: an optional domain-typed
+    field is `Optional[Annotated[str, AfterValidator(...)]]`, so the marker
+    sits on the inner Annotated inside the Union, not on the field's own
+    metadata.
+    """
+
+    def has_after_validator(tp, depth=0):
+        if depth > 4:
+            return False
+        if any(type(m).__name__ == "AfterValidator" for m in getattr(tp, "__metadata__", ())):
+            return True
+        return any(has_after_validator(a, depth + 1) for a in getattr(tp, "__args__", ()))
+
+    decorated = {
+        name
+        for v in model.__pydantic_decorators__.field_validators.values()
+        for name in v.info.fields
+    }
+    typed = {
+        name
+        for name, f in model.model_fields.items()
+        if any(type(m).__name__ == "AfterValidator" for m in getattr(f, "metadata", []))
+        or has_after_validator(f.annotation)
+    }
+    return decorated | typed
+
+
+def test_producer_register_validated_field_count():
+    """MEH-1623's count pin, re-aimed by MEH-1626 chunk 1 — updated, never
+    deleted.
+
+    Two things changed under it, both deliberate:
+
+    1. HOW fields are validated. `producer_name` moved from a pair of inline
+       @field_validators to the shared `SanitizedBusinessNameField`. Counting
+       decorators alone would now report 11 and go red for a reason that has
+       nothing to do with coverage — so the count is by **type OR decorator**,
+       which is the property MEH-1623 actually cared about.
+    2. HOW MANY. Chunk 1 brought `name` (the account holder's person name)
+       under `SanitizedPersonNameField`, so the real number is 12 + 1 = 13.
+       Bumping the constant is only legitimate BECAUSE a field was added to
+       the validated set; it must never be bumped to chase a red test.
+
+    Renamed from test_producer_register_has_exactly_12_validated_fields — the
+    old name would have become a lie.
     """
     from app.schemas.schemas import ProducerRegister
 
-    validators = ProducerRegister.__pydantic_decorators__.field_validators
-    fields = {name for v in validators.values() for name in v.info.fields}
+    fields = _validated_fields(ProducerRegister)
     assert "producer_name" in fields, sorted(fields)
-    assert len(fields) == 12, sorted(fields)
+    assert "name" in fields, sorted(fields)
+    assert len(fields) == 13, sorted(fields)
+
+
+def test_producer_name_is_validated_by_type_not_decorator():
+    """Pins the MEH-1626 migration itself: producer_name's validation now
+    arrives via the shared domain type. Without this, a revert to inline
+    decorators would keep the count at 12 and go unnoticed."""
+    from app.schemas.schemas import ProducerRegister
+
+    decorated = {
+        name
+        for v in ProducerRegister.__pydantic_decorators__.field_validators.values()
+        for name in v.info.fields
+    }
+    assert "producer_name" not in decorated
+    assert "producer_name" in _validated_fields(ProducerRegister)
 
 
 # ---------- favorites: orphaned row doesn't 500 ----------
