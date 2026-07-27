@@ -108,8 +108,29 @@ export function useMapSync({
   }, []);
 
   // Card click → select + pin-sync + fly map to producer (NO page scroll).
+  //
+  // MEH-1663: this guard used to be `if (!producer?.lat || !producer?.lng) return;`
+  // — a Producer-level coordinate check standing in front of a selection that does
+  // not need coordinates at all. Since MEH-1412 chunk 3 a business is pinned from
+  // its `locations[]` rows, so a delivery-only business with a pickup point
+  // (has_physical_location=False, Producer.lat/lng NULL — MEH-1402's reversal, seeded
+  // as `demo-delivery-pickup`) has a visible pin while failing this test. The return
+  // fired BEFORE setActiveProducerId, so the card did not merely fail to fly: it never
+  // became active, which also disarmed the MEH-1243 Direction-B second-tap navigation.
+  // A fully dead card, on every real delivery-only-with-pickup business.
+  //
+  // DO NOT resolve coordinates here — `focusProducer` (MapComponent.jsx:461-483) is the
+  // single resolver: it reads the business's actual rendered markers via usablePoints()
+  // (Zod-checked, MEH-1611), which are built from locations[] with the Producer.lat/lng
+  // row as fallback (MapComponent.jsx:833-861) — the same COALESCE semantics as the
+  // backend's haversine_min_km. It already frames >= 2 points (fitBounds + FIT_MAX_ZOOM),
+  // already keeps the single-point flyTo, already no-ops on zero usable points, and
+  // already sets programmaticMoveRef first so the "חפשי באזור זה" banner stays down
+  // (MEH-78). A second resolver here would be the two-parallel-mechanisms smell
+  // (.claude/rules/workflow.md §Smell #1) and would drift the moment either side changed.
+  // The only precondition selection genuinely has is an id to select.
   const handleCardClick = useCallback((producer) => {
-    if (!producer?.lat || !producer?.lng) return;
+    if (!producer?.id) return;
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
     // MEH-1412: a sidebar-card selection is not location-specific — clear any
