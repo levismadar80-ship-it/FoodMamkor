@@ -294,6 +294,12 @@ def _sanitized_person_name(value: str) -> str:
     hardening. The only rejection is a value that sanitizes away to nothing,
     which must still raise rather than return None: users.name is NOT NULL
     (models.py:387), so a None would surface as a 500 instead of a 422.
+
+    MEH-1626 chunk 2: this same function now also backs SanitizedLabelField
+    (product / category / lead names, page titles). The rule is identical —
+    bleach, reject empty, no letter floor — and a 2-letter label is as
+    legitimate as a 2-letter given name ("תה"). Shared rather than copied so
+    the two can never drift.
     """
     cleaned = sanitize_text(value, max_length=200)
     if cleaned is None:
@@ -325,7 +331,37 @@ def _sanitized_address(value: str) -> str | None:
 
 SanitizedBusinessNameField = Annotated[str, AfterValidator(_sanitized_business_name)]
 SanitizedPersonNameField = Annotated[str, AfterValidator(_sanitized_person_name)]
+# MEH-1626 chunk 2: a SECOND alias over the SAME validator, not a copy of it.
+# The rule "bleach, reject empty, no letter floor" is identical for a person's
+# name and for a short label (product name, category name, lead name, page
+# title) — but the call sites read very differently, and the person-name
+# rationale (two-letter Hebrew given names) must not be mistaken for a generic
+# default. Two names, one implementation: nothing can drift between them.
+# The floor is deliberately absent here too — "תה" is a legitimate 2-letter
+# product name, so SanitizedBusinessNameField would be wrong for these.
+SanitizedLabelField = Annotated[str, AfterValidator(_sanitized_person_name)]
 SanitizedTitleField = Annotated[str, AfterValidator(_sanitized_title)]
+
+
+def _sanitized_description(value: str) -> str | None:
+    """Bleach at the 2000-char cap every long-form description in this module
+    already uses (ProducerRegister:—, EventCreate, HomeProductCreate). No
+    floor: a description is optional prose, and an emptied one is legitimately
+    None on every column that takes this type.
+    """
+    return sanitize_text(value, max_length=2000)
+
+
+# MEH-1626 chunk 2. Two more types, each earning its place under the
+# "≥2 fields need an identical rule" bar:
+#   description → ProducerCreate, ProductCreate, ProductUpdate (3)
+#   url         → OutreachLeadCreate.website, OutreachLeadUpdate.website (2)
+# CategoryRequestUpdate.admin_notes is a single field, so it stays an inline
+# @field_validator rather than becoming a third type.
+SanitizedDescriptionField = Annotated[str, AfterValidator(_sanitized_description)]
+# _url_scheme_validator returns "" (not None) for empty input, so unlike the
+# address/phone types this one is safe under an outer Field(max_length=…).
+SanitizedUrlField = Annotated[str, AfterValidator(_url_scheme_validator)]
 
 # The two types below carry their own max_length, unlike the three above.
 # Reason: they are the only ones whose validator can legitimately RETURN None
@@ -620,7 +656,7 @@ class GoogleAuthRequest(BaseModel):
 
 class AppleAuthRequest(BaseModel):
     id_token: str
-    name: str | None = None  # Apple only sends name on first auth
+    name: SanitizedPersonNameField | None = None  # Apple sends it once
 
 
 # MEH-170 — Step-0 OAuth on producer signup. Same shape as Google/Apple
@@ -630,7 +666,7 @@ class AppleAuthRequest(BaseModel):
 class ProducerOAuthSignupRequest(BaseModel):
     provider: str = Field(pattern="^(google|apple)$")
     id_token: str
-    name: str | None = None  # Apple only sends name on first auth
+    name: SanitizedPersonNameField | None = None  # Apple sends it once
 
 
 class LoginRequest(BaseModel):
@@ -870,8 +906,8 @@ class ProducerLocationOwnerOut(BaseModel):
 # min=50, later PUT sends only max=30) are NOT validated against
 # persisted state — frontend always sends both fields together.
 class ProductCreate(BaseModel):
-    name: str
-    description: str | None = None
+    name: SanitizedLabelField
+    description: SanitizedDescriptionField | None = None
     price_range: str | None = None  # legacy: removal tracked in MEH-295 follow-up
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
@@ -903,8 +939,8 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
+    name: SanitizedLabelField | None = None
+    description: SanitizedDescriptionField | None = None
     price_range: str | None = None  # legacy: removal tracked in MEH-295 follow-up
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
@@ -960,7 +996,7 @@ class ProducerCreate(BaseModel):
     # MEH-229: cap at the DB column width (models.py name = String(200)) so an
     # over-length name returns a clean 422 instead of a DB-level 500.
     name: str = Field(max_length=200)
-    description: str | None = None
+    description: SanitizedDescriptionField | None = None
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -1011,7 +1047,7 @@ class ProducerAdminCreate(BaseModel):
     """Used by admin form — pre-approved, supports all extended fields."""
 
     # MEH-229: mirror ProducerCreate — cap at the String(200) column width.
-    name: str = Field(max_length=200)
+    name: SanitizedBusinessNameField = Field(max_length=200)
     contact_name: str | None = None
     description: str | None = None
     short_description: str | None = None
@@ -1159,7 +1195,7 @@ AVAILABILITY_STATES = (
 
 
 class ProducerUpdate(BaseModel):
-    name: str | None = None
+    name: SanitizedBusinessNameField | None = None
     contact_name: str | None = None
     description: str | None = None
     short_description: str | None = None
@@ -1921,7 +1957,7 @@ class HomeProductCreate(BaseModel):
     # included in HomeProductOut. Use them for internal seller-only views.
     street: str | None = None
     zip_code: str | None = None
-    phone: str | None = None
+    phone: PhoneNumberField | None = None
     # Expanded fields (docs/archive/FIXES_V2.md fix 2)
     category: str | None = None
     prep_date: date | None = None
@@ -1982,7 +2018,7 @@ class HomeProductUpdate(BaseModel):
     city: str | None = None
     street: str | None = None
     zip_code: str | None = None
-    phone: str | None = None
+    phone: PhoneNumberField | None = None
     category: str | None = None
     prep_date: date | None = None
     expiry_date: date | None = None
@@ -2460,10 +2496,10 @@ class OutreachLeadOut(BaseModel):
 
 
 class OutreachLeadCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=200)
-    phone: str | None = Field(None, max_length=20)
+    name: SanitizedLabelField = Field(..., min_length=1, max_length=200)
+    phone: PhoneNumberField | None = None
     instagram: str | None = Field(None, max_length=100)
-    website: str | None = Field(None, max_length=200)
+    website: SanitizedUrlField | None = Field(None, max_length=200)
     city: str | None = Field(None, max_length=100)
     category: str | None = Field(None, max_length=100)
     notes: str | None = None
@@ -2483,10 +2519,10 @@ class OutreachLeadUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted. Status is
     enum-validated at the route layer."""
 
-    name: str | None = None
-    phone: str | None = None
+    name: SanitizedLabelField | None = None
+    phone: PhoneNumberField | None = None
     instagram: str | None = None
-    website: str | None = None
+    website: SanitizedUrlField | None = None
     city: str | None = None
     category: str | None = None
     notes: str | None = None
@@ -2631,6 +2667,15 @@ class CategoryRequestOut(BaseModel):
 class CategoryRequestUpdate(BaseModel):
     status: str = Field(..., pattern="^(pending|approved|rejected|merged)$")
     admin_notes: str | None = None
+
+    # MEH-1626 chunk 2: parity with ProducerAdminCreate._sanitize_admin_notes
+    # (schemas.py:1077), which already bleaches the same column on the sibling
+    # write path. Persisted at category_requests.py:118. Inline rather than a
+    # domain type — it is the only field needing this exact rule.
+    @field_validator("admin_notes")
+    @classmethod
+    def _sanitize_admin_notes(cls, v):
+        return sanitize_text(v, max_length=1000)
 
 
 # --- Event ---
@@ -2853,7 +2898,7 @@ class UserRoleUpdate(BaseModel):
 
 # Admin: Categories
 class CategoryIn(BaseModel):
-    name: str
+    name: SanitizedLabelField
     emoji: str | None = None
 
 
@@ -2868,7 +2913,7 @@ class StaticPageOut(BaseModel):
 
 
 class StaticPageUpdate(BaseModel):
-    title: str
+    title: SanitizedLabelField
     body: str
 
 
@@ -2879,14 +2924,20 @@ class StaticPageUpdate(BaseModel):
 class ProfileUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted."""
 
-    name: str | None = Field(None, min_length=1, max_length=200)
+    # MEH-1626 chunk 2: the two Chunk-1 SKIPs, now migrated together with the
+    # users_me.py gate that made them unsafe on their own. Keeping the outer
+    # Field constraints is safe for `name` (its validator raises rather than
+    # returning None) but NOT for `phone`, whose ""→None output would trip
+    # "Unable to apply constraint 'max_length' to supplied value None" — the
+    # same trap Chunk 1 hit and documented on the type itself.
+    name: SanitizedPersonNameField | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
     avatar_url: str | None = None
     city: str | None = Field(None, max_length=100)
     # MEH-1190: phone is the only UI path for OAuth users (who never pass
     # through UserRegister) to add a WhatsApp-alert number. Column already
     # exists (models.py:55, String(20)); no migration.
-    phone: str | None = Field(None, max_length=20)
+    phone: PhoneNumberField | None = None
 
 
 class PasswordChange(BaseModel):
