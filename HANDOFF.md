@@ -3,6 +3,97 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1577 structured delivery cost (RED, chunked) — PR #2334 open, awaiting merge approval
+
+**PR #2334 is OPEN as a draft, NOT merged.** RED tier: migration `c7e2a4b91f38`
+was shown verbatim, applied to staging by Sapir, and confirmed before chunks 2–3
+were written. Merge approval is Sapir's.
+
+**Branch:** `feature/meh-1577-delivery-fee-fields` (5 commits + a staging merge).
+**Docs branch:** `feature/meh-1577-docs-backfill` — this file + CHANGELOG, kept
+out of the code branch under rule 31.
+
+### What shipped
+`producers.delivery_fee` + `producers.free_delivery_above`, both nullable
+INTEGER. Owner edits them in the dashboard delivery card; `DeliveryBlock` renders
+one cost line above the city list. Six render states + a seventh combined state.
+
+### Decisions made this session (all Sapir's, recorded so they are not re-litigated)
+| Decision | Outcome |
+|---|---|
+| Column type | **INTEGER**, not `NUMERIC(10,2)`. CC proposed NUMERIC on money-convention grounds; rejected — `delivery_areas.min_order` is the closest analogous field, and two adjacent delivery-money fields with different types fork serialization (`Decimal` vs `int`), rendering, and fixtures. |
+| Scope | **Producer-level**, not per-`delivery_areas` row. |
+| Ordering vs MEH-1646 | **MEH-1577 first**; 1646 merged onto this line. |
+| Sync mechanism | **`git merge origin/staging`** (rule 25), not rebase. |
+| ProducerCard fee display | **Deferred → MEH-1678** (frontend-only; no schema work needed). |
+
+### Open items — Sapir
+1. **Merge approval on PR #2334.** No auto-merge (RED).
+2. **`Builder-Model:` trailer is absent from every commit on both branches.** The
+   guard warns and exits 0 (warn-only until **2026-08-17**, then blocking). CC did
+   not add it: this session runs under a harness instruction forbidding its model
+   identifier in commit messages / PR titles / PR bodies, which contradicts the
+   template requirement. CC declined to pick a side on a convention Sapir owns.
+   Note the guard's substantive purpose is already met — it exists to catch
+   *builder == reviewer*, and the reviewer pin is `claude-sonnet-4-6`.
+3. **No Vercel preview URL.** Account is at the free-tier cap
+   (`api-deployments-free-per-day`, 100/24h) — same condition as earlier today.
+   Mobile QA cannot be done from a preview until that clears.
+4. **`/adversarial-review` has not been run** on PR #2334.
+5. **Four meta-patterns rules were referenced but never supplied** — see below.
+
+### ⚠️ Missing input, not forgotten
+The instruction for this docs PR named "the four meta-patterns rules I supplied
+earlier". **No such rules appear anywhere in the session transcript.** They were
+not written to `.claude/rules/meta-patterns.md` here, and inventing four
+plausible-sounding rules for a file that shapes every future session is exactly
+the failure mode that file warns about. Awaiting the actual text.
+
+### Two findings worth carrying forward
+1. **A clean linter does not mean a clean diff.** Moving fields between schema
+   classes left an orphaned comment above `model_config` with no code under it;
+   `ruff check` and `ruff format` both passed. Reading the diff caught it.
+2. **Invisible characters land in `textContent`.** Unicode bidi isolates
+   (U+2066/U+2069) are correct and invisible on screen, but they silently break
+   `getByText` / Playwright assertions written against rendered copy. `<bdi>` is
+   equivalent and leaves the text clean — measured, not assumed
+   (`frontend/e2e/qa-meh1577-bidi-probe.mjs`).
+
+### Process note
+Two concurrent `pytest` runs deadlocked on the suite's `TRUNCATE`-between-tests
+fixture; the first reported **completed, exit 0, with an empty log**. That is the
+false-green shape rule 21 describes. Never run two backend suites against
+`mehamakor_test` at once, and never accept a green you cannot read.
+
+### NEXT
+Sapir merges #2334 (or requests changes), then MEH-1626 chunk 1 remains the
+queued epic (unchanged from the previous handoff).
+## 2026-07-27 — MEH-1626 epic הושלם: domain types + guard מבני (3 chunks)
+
+**האפיק סגור.** שלושת ה-chunks מוזגו ב-squash על gates נדרשים ירוקים, כל chunk ב-PR נפרד עם WAIT ביניהם.
+
+| Chunk | PR | Merge SHA | תוכן |
+|---|---|---|---|
+| 1 | #2296 | `d87f3e86` | 5 domain types + המשטחים הציבוריים |
+| 2 | #2320 | `679eca9a` | 29 שדות פנימיים (19/8/2) + ProfileUpdate schema+router + חקירת admin_notes |
+| 3 | #2333 | `9ba59795` | ה-guard המבני + ProducerCreate.name + website ""→None |
+
+**מצב סופי:** 7 domain types ב-`schemas.py` · guard חי ב-`tests/test_schema_symmetry.py` (רץ ב-job הנדרש Backend tests — זו החיווט, לא נגענו ב-workflow YAML) · **allowlist = 4 שורות**, כל אחת עם נימוק · backlog מיגרציה = 31 שדות decorator-based, מדווח ולא-מכשיל · pytest 2127 ירוקים.
+
+**הכרעות שננעלו:** person vs business name (רצפת ≥3 אותיות רק לעסקים — שמות פרטיים עבריים בני 2 אותיות לגיטימיים, הכרעת ספיר ב-chunk 1) · שתי ההחמרות של chunk 1 (`GroupBuyCreate.title`, `EventCreate.title`) **נשארות** · `admin_notes` **אינו** באג — ה-allowlist ב-`producer_me.py:289` חוסם אותו.
+
+### ⚠️ פעולות ממתינות לספיר
+
+1. **סטטוס האפיק ב-Linear** — chunks 1 ו-2 נשאו `Refs`/ללא `Closes` במכוון, אך ה-slug של ה-branch לבדו סוגר את הכרטיס אוטומטית (MEH-1615). אחרי chunk 3 מצב Done **נכון** — אין צורך בשחזור. אם הכרטיס נסגר מוקדם ב-chunks 1/2 ושוחזר ידנית, זה היה תקין.
+2. **Vercel חסום ב-cap יומי** (`more than 100 per day`, free tier) — אדים status על כל PR היום. אינו gate נדרש; PRs של backend בלבד אינם מושפעים.
+
+### Follow-up שנפתח בתיעוד בלבד (טרם ticket)
+
+- **31 שדות decorator-based** — מוגנים כהלכה אך לא דרך domain type. ה-guard מדווח את המספר בכל ריצה כדי שיירד בכוונה ולא באקראי. אין דחיפות: תכונת הבטיחות מכוסה.
+- **`OutreachLeadUpdate.website`** — לפני chunk 3 האילוץ 200 היה קיים רק ברמת עמודת ה-DB, לא ב-Pydantic; chunk 3 יישר אותם. תועד ב-review של #2333.
+
+---
+
 ## 2026-07-27 — delivery-features batch: ארבעה merges (הירו CTA · DeliveryBlock · יום משלוח מובנה · פילטר יום)
 
 **כל הארבעה מוזגו ב-squash auto-merge על gates נדרשים ירוקים** (ADR-016 v2 end-to-end authority). הלוגים כאן כי אף branch קוד לא נושא אותם (rule 31).
@@ -193,14 +284,42 @@ not have (403, no workflows scope).
    a local build. `git grep` returned 0. Any "0 occurrences remain" claim should use
    `git grep`, not `grep -rn`.
 
-**Environment notes.** Vercel hit its free-tier 100-deploys/day cap mid-batch — no PR
-previews for ~24h, so MEH-1660's self-QA ran against staging post-merge instead of a
-preview, and MEH-1661's screenshots are still owed. A **parallel session** was pushing
-`feature/meh-1644-delivery-day-capture` at 18:29Z (rule 1 single-session flag) — different
-ticket, no file overlap.
+**Environment notes — corrected 27/07, the first version of this paragraph named the
+wrong cause.** It said "Vercel hit its free-tier 100-deploys/day cap mid-batch". That
+error is real and does appear on the **feature-branch preview** comments, but it is
+**not** what blocks staging, and generalising from one to the other was an inference
+with no evidence behind it. Verified against `list_deployments`:
 
-**Next task.** Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited
-red shot, then decide the ☆/ambassador question above.
+- **Deploys are being created continuously right now** — there is no active quota stall.
+- **Feature-branch `CANCELED` is the MEH-1044 `ignoreCommand` gate**, i.e. by design.
+- **The real fault: the `staging` target has not rebuilt since `ad5f7560`** (MEH-1639,
+  PR #2307) — even though #2318, #2326, #2333, #2337 and #2339 all merged into it.
+
+**The blast radius is the whole 27/07 batch, not one screenshot.** Any post-merge
+staging QA for this batch is invalid until a staging deploy lands *newer than the sweep
+merge*, because `staging.mehamakor.online` is still serving the pre-sweep bundle —
+independently confirmed to still contain `📦 ⭐ 🏅 🚚 ✅ 🛒 🌙 🟢 📤`.
+
+**Precondition before any future staging screenshot:** fetch the staging URL and assert
+`📦` is **absent** from `/he`. Shoot nothing until that passes.
+
+**One exception, and it holds.** MEH-1660's post-merge verification is still valid: it
+was a **backend** change deployed by **Railway**, not Vercel, and the live payload
+returned `days_since_created: 5` / `favorites_count: 2` — fields that are *definitionally*
+absent before that fix, so their presence proves the fixed backend was serving. The card
+render in those shots does not depend on the sweep.
+
+MEH-1661's screenshots (PR #2339) were therefore rendered from the **merged code built
+locally against staging's live API**, and labelled as such; its **admin-surface** shots
+are still owed. A **parallel session** was pushing `feature/meh-1644-delivery-day-capture`
+at 18:29Z (rule 1 single-session flag) — different ticket, no file overlap.
+
+**Next task.** (1) Get the `staging` Vercel target rebuilding — that unblocks batch QA.
+(2) Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited red shot.
+(3) MEH-1681 (gated on 2) supersedes the ☆/ambassador question: Sapir declined both
+options and identified the real root cause — `AdminProducersTable.jsx:244` renders STATE
+copy on an ACTION item, and ☆ was carrying the directional meaning. The guard stays
+untouched; `Extended_Pictographic` is the deliberate boundary.
 
 ## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
 

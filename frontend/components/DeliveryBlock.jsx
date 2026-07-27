@@ -258,6 +258,7 @@ export default function DeliveryBlock({
         nationwide={nationwide}
         excluded={excluded}
         areas={areas}
+        producer={producer}
       />
 
       {nationwide ? (
