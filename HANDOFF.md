@@ -3,6 +3,56 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — docs backfill for PR #2324 (builder-model guard)
+
+**Shipped.** The CHANGELOG entry for PR #2324 (`d8c75e13`), which could not carry
+its own logs: the branch touched `scripts/checks/**` and
+`.github/pull_request_template.md`, so `changelog-branch-guard.sh` under the
+required **Repo guards** job blocks them (rule 31). Verified against the commit,
+not from memory — 5 files, 677 insertions.
+
+**⚠️ Scope was cut from two PRs to one. #2303 is deliberately NOT backfilled.**
+The request named #2303 and #2324. #2303 is already covered: `docs/CHANGELOG.md`
+carries its entry, written by PR #2322, **and** the record correction is already
+there too — #2303's diff was docs-only (`docs/CLAUDE-REVIEW.md` +
+`docs/ci/adversarial-review.patch.md`), both under `docs/`, which
+`changelog-branch-guard.sh`'s `is_docs_path()` classifies as docs. It was never
+blocked; it was free to carry its logs and simply didn't. A second entry would
+have produced exactly the duplicated, contradictory pair MEH-1602 exists to
+prevent — the precedent being the two conflicting MEH-1569 entries on PR #2207,
+which only a human reading the log caught. **The ticket that stated all three of
+its PRs were guard-blocked (the #2276/#2293/#2303 backfill) is wrong about #2303
+only; the repo record is already right.**
+
+**Three defects worth carrying, none of which were in the source ticket:**
+
+1. **`git log -1 --format=%B` reads the wrong commit in CI.** `repo-guards` runs
+   `actions/checkout@v7` with no `ref:` and no `fetch-depth`, so HEAD is
+   `refs/pull/N/merge` — a synthetic merge commit. Demonstrated in run
+   `30295332674`, not argued.
+2. **A PR's head is the SECOND parent of the merge ref, not the first.** Parent 1
+   is the base — what `changelog-branch-guard.sh` wants and the exact opposite of
+   what a builder-identity guard needs.
+3. **Rule 25 makes a sync merge the usual branch tip**, and a sync merge carries
+   no trailer, so the guard would have redded precisely the branches that obeyed
+   the rule. Caught by the CI negative control; the four local controls could not
+   see it structurally, because they all run on a normal checkout where HEAD is
+   the commit itself.
+
+**The methodological lesson, which generalises past this guard:** local green is
+not evidence for anything that reads git metadata, because local-vs-CI *is* the
+variable under test. And a negative control that cannot discriminate is not a
+control — run 5b passed while warn-only, which exits 0 whether or not the fix
+works. The gap was closed by a separate enforcing run on a sync-merge tip
+(PR #2328, closed unmerged) where PASS was only possible if the walk worked.
+
+### NEXT
+The guard's warn-only window closes **2026-08-17**, mechanically. Before then,
+commits should start carrying `Builder-Model:` trailers or that date reds open
+PRs. Part 2 (`docs/ci/adversarial-review-blocking.patch.md`) is Sapir's to apply,
+and must land **before** the `continue-on-error: false` flip — otherwise the
+required check gates on "did the reviewer run", not "was the diff clean".
+
 ## 2026-07-27 — batch MEH-1660 · MEH-1661 · MEH-1662 (end-to-end authority, ADR-016 v2)
 
 **Shipped.** Four PRs merged: #2308 (MEH-1660 fix) · #2321 (MEH-1660 qa-artifacts) ·
