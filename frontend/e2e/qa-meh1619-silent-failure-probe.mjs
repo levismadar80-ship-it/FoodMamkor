@@ -20,6 +20,12 @@ const PRODUCERS_RE = /\/api\/producers(?:\?[^#]*)?$/;
 const DEMO_ID = "1a1a1a1a-1111-4111-8111-111111111111";
 const PRODUCER_DETAIL_RE = new RegExp(`/api/producers/${DEMO_ID}(?:\\?[^#]*)?$`);
 
+// Hebrew literals below are MOCK API PAYLOAD, not UI copy — they stand in for
+// rows the backend would serve, so they are deliberately not routed through
+// next-intl. The i18n rule targets hardcoded Hebrew in rendered components; a
+// fixture that mirrors real data is the documented exception, and using Latin
+// placeholders here would make the probe less faithful (Hebrew labels are what
+// actually flow into `title` on the rendered pins, which is what B-1/B-2 read).
 const demoLocations = [
   { kind: "branch", label: "הסניף", lat: 32.08, lng: 34.78, is_primary: true, precision: "exact" },
   ...Array.from({ length: 9 }, (_, i) => ({
