@@ -19,6 +19,27 @@ Example:
 
 ---
 
+## Builder model (MEH-1668)
+
+Every commit carries a `Builder-Model:` trailer naming the model the session ran
+as. `scripts/checks/builder-model-guard.sh` reads it and fails when it equals the
+adversarial reviewer's pinned model — that collision means the review has no
+evidentiary value, because the model judging the diff is the model that wrote it.
+
+```
+Builder-Model: claude-opus-5
+```
+
+Last block of the commit message, beside `Closes MEH-XXXX`. Amend with
+`git commit --amend` if the guard flags it. **Warn-only until 2026-08-17; it
+blocks after that** — the date is checked by the guard itself, not by anyone
+remembering.
+
+- [ ] Every commit in this PR carries a `Builder-Model:` trailer
+- [ ] The declared model differs from the pin in `.github/workflows/claude-review.yml`
+
+---
+
 ## Automated checks (CI enforced — must pass before merge)
 
 - [ ] `npm run build` green

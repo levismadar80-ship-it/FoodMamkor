@@ -513,6 +513,53 @@ _Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns`
 drift broke production login; the hotfix PR bundled a 7-call-site
 refactor under pressure._
 
+### `Builder-Model:` trailer — required on every commit (MEH-1668)
+
+Every commit declares the model the session ran as, as a git trailer in the
+last block of the message:
+
+```
+Builder-Model: claude-opus-5
+```
+
+**Why a trailer and not a line in the PR body:** it is readable by
+`git log -1 --format=%B`, it survives squash-merge into the commit body, and it
+needs no `.github/workflows/` edit to enforce (CC-deny, MEH-671) — the guard is
+picked up by `scripts/checks/run-all.sh` on its own.
+
+**What enforces it:** `scripts/checks/builder-model-guard.sh`, under the required
+**Repo guards** job. It fails when the trailer is absent, and when its value
+**equals** the adversarial reviewer's pin parsed live out of
+`.github/workflows/claude-review.yml`. That collision is the condition where the
+review carries no evidentiary value at all: the model judging the diff is the
+model that wrote it. Dependabot commits are exempt — no CC session authors them.
+
+**It inspects the last *authored* commit, not the branch tip.** Rule 25 requires
+`git merge origin/staging` before every push, so a compliant tip is frequently a
+sync merge — which is not authored work and carries no trailer. The guard walks
+first parents past any merge commits on top (staying on this branch, since a sync
+merge's parent 1 is the branch's own previous tip) and inspects the first
+non-merge commit. **Only that commit is checked**, so a trailer-less commit
+buried mid-branch passes; the tip is the declaration that counts.
+
+**Warn-only until `2026-08-17`, then blocking — the guard checks the date
+itself.** No follow-up ticket, nobody remembering. An expiry a human has to
+action is a promise, and this repo already has the empty MEH-487 calibration
+tally to show for that class.
+
+**This does not verify the claim, only that it exists and does not collide.** A
+session that writes a false model id defeats the guard, and nothing in this repo
+can tell. It replaces "Sapir reads a declaration in every PR body and judges"
+with a mechanical check of the same declaration — a weaker guarantee than it
+looks, and still strictly better than the manual one it replaces.
+
+_Source: MEH-1654 (2026-07-27) declared `Model: Sonnet 4.6`, ran as
+`claude-opus-5`, and proposed pinning the reviewer to `claude-opus-5` — builder
+and reviewer identical on the PR whose subject was reviewer identity. CC reported
+it unprompted, which is exactly what must not be the mechanism. Codified in
+MEH-1668, whose §2ד adds the corollary: **template 06's `Model:` field documents
+intent, not what CC actually runs** — the trailer is the only trustworthy source._
+
 ---
 
 ## PR approval guide

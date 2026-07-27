@@ -8,6 +8,10 @@ No full-text index yet — plain ILIKE is fine at this scale (~hundreds of
 producers). If this grows past ~10k rows we'd swap to pg_trgm GIN.
 
 MEH-460 Pkg 3: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
+
+MEH-1664: matching is per-token, not one literal substring — the shared
+tokenisation + variant rules live in the helper imported below, and all four
+sub-queries here share those semantics with /producers?q=.
 """
 
 import time
@@ -22,7 +26,8 @@ from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
 from app.schemas.schemas import CategoryHit, ProducerHit, ProductHit, SearchOut
-from app.utils.sql import LIKE_ESCAPE, escape_like
+from app.utils.hebrew_search import token_patterns, tokenize
+from app.utils.sql import LIKE_ESCAPE
 
 logger = structlog.get_logger(__name__)
 
@@ -37,20 +42,41 @@ def _empty() -> SearchOut:
     return SearchOut()
 
 
-# MEH-252 — Hebrew single-letter prefix strip. ILIKE already handles the
-# common singular→plural case ("%גבינה%" matches "גבינות") because the
-# singular is a substring of the plural. What it does *not* handle is the
-# prefix-letter case: "הגבינה" is not a substring of "גבינה", so the user
-# sees "no results" after typing the definite article. Strip one of the
-# usual מש״ה כל״ב prefix letters when the remaining word is at least 3
-# characters — short enough to skip false strips like "הוא" → "וא".
-_HEBREW_PREFIXES = ("ה", "ב", "ל", "מ", "ש", "כ", "ו")
+# MEH-252 / MEH-1664 — Hebrew matching now runs per token, and the prefix
+# strip lives in the shared helper imported above, so both search paths agree.
+#
+# MEH-252 originally applied the strip to single-word queries only, on the
+# reasoning that "stripping every word's first letter is too aggressive and
+# over-matches". That is superseded: the over-match it feared came from OR-ing
+# a widened query, whereas the design here ANDs across tokens — every token
+# must independently hit some field of the row — so widening one token's
+# variant set cannot pull in a row that fails another token. That is what lets
+# the strip (and the ה/ת stem) apply to every word of a multi-word query.
+#
+# MEH-252's other claim was that ILIKE "already handles the singular→plural
+# case". True in one direction only: "גבינה" is a substring of "גבינות", so
+# singular→plural works — but plural→singular never did, and neither did
+# smichut ("גבינת" vs "גבינה"). The ה/ת stem covers smichut in both
+# directions; plural→singular stays uncovered by design (see the helper's
+# module docstring).
 
 
-def _strip_hebrew_prefix(word: str) -> str:
-    if len(word) >= 4 and word[0] in _HEBREW_PREFIXES:
-        return word[1:]
-    return word
+def _token_conditions(tokens: list[str], columns: list) -> list:
+    """One condition per token: OR over (variant x column). AND-ed by .filter().
+
+    Every pattern is escape_like-escaped by token_patterns; escape=LIKE_ESCAPE
+    here is the other half of that contract (MEH-1176).
+    """
+    return [
+        or_(
+            *[
+                column.ilike(pattern, escape=LIKE_ESCAPE)
+                for pattern in token_patterns(token)
+                for column in columns
+            ]
+        )
+        for token in tokens
+    ]
 
 
 @router.get("/search", response_model=SearchOut)
@@ -64,24 +90,16 @@ def smart_search(
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
-    # MEH-252 — for single-word Hebrew queries, fall back to the
-    # prefix-stripped form so "הגבינה" finds "גבינה". For multi-word
-    # queries we keep the literal — stripping every word's first letter
-    # is too aggressive and over-matches.
-    if " " not in q_clean:
-        q_clean = _strip_hebrew_prefix(q_clean)
-    like = f"%{escape_like(q_clean)}%"
+    # MEH-1664 — tokenise once; every sub-query below AND-s the same per-token
+    # conditions over its own column set. q_clean stays the raw cleaned query
+    # so the relevance boosts keep comparing against what the user typed.
+    tokens = tokenize(q_clean)
 
     # -------- Producers (approved only, name + description) --------
     producer_rows = (
         db.query(Producer)
         .filter(Producer.status == "approved")
-        .filter(
-            or_(
-                Producer.name.ilike(like, escape=LIKE_ESCAPE),
-                Producer.description.ilike(like, escape=LIKE_ESCAPE),
-            )
-        )
+        .filter(*_token_conditions(tokens, [Producer.name, Producer.description]))
         # Exact-name match first, then alphabetically. SQLite doesn't
         # support nullslast everywhere, so we use a simple CASE.
         .order_by((Producer.name != q_clean), Producer.name.asc())
@@ -107,12 +125,7 @@ def smart_search(
         .options(joinedload(Product.producer))
         .join(Producer, Producer.id == Product.producer_id)
         .filter(Producer.status == "approved")
-        .filter(
-            or_(
-                Product.name.ilike(like, escape=LIKE_ESCAPE),
-                Product.description.ilike(like, escape=LIKE_ESCAPE),
-            )
-        )
+        .filter(*_token_conditions(tokens, [Product.name, Product.description]))
         .order_by((Product.name != q_clean), Product.name.asc())
         .limit(limit)
         .all()
@@ -133,14 +146,14 @@ def smart_search(
     city_rows = (
         db.query(Producer.city)
         .filter(Producer.status == "approved")
-        .filter(Producer.city.ilike(like, escape=LIKE_ESCAPE))
+        .filter(*_token_conditions(tokens, [Producer.city]))
         .distinct()
         .limit(limit)
         .all()
     )
     delivery_city_rows = (
         db.query(DeliveryArea.city)
-        .filter(DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE))
+        .filter(*_token_conditions(tokens, [DeliveryArea.city]))
         .distinct()
         .limit(limit)
         .all()
@@ -153,7 +166,7 @@ def smart_search(
     # -------- Categories --------
     category_rows = (
         db.query(Category)
-        .filter(Category.name.ilike(like, escape=LIKE_ESCAPE))
+        .filter(*_token_conditions(tokens, [Category.name]))
         .order_by(Category.name.asc())
         .limit(limit)
         .all()
