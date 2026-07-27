@@ -116,9 +116,7 @@ def _maybe_notify_funded(
     # db.commit(), not inside the background task's try/except. Matches the
     # defensive convention already used for this exact query shape elsewhere
     # (admin.py:522,566,632).
-    owner_row = (
-        db.query(User.email).filter(User.producer_id == gb.producer_id).first()
-    )
+    owner_row = db.query(User.email).filter(User.producer_id == gb.producer_id).first()
     owner_email = owner_row[0] if owner_row else None
 
     # MEH-1454: naive datetime. sa.DateTime() is naive and this module uses
