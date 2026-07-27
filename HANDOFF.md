@@ -3,6 +3,60 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — badge-popover collision · alerts re-entry · state-visibility audit
+
+**Shipped.** MEH-1592 (`93ff325d`, PR #2223) — the MEH-1547 "+N" badge-overflow
+Popover no longer opens over sibling badge pills or the card title/rating row.
+`ui/Popover` gained an **opt-in** `overlay` mode (portal → `<body>`, `position:
+fixed`, flip/shift against a caller-supplied `avoidRef`); `ProducerCard` is its
+only consumer and passes the whole badge strip, which is what makes *wrapped*
+siblings safe. Every other Popover consumer is untouched. MEH-1609 (`08aa06e0`,
+PR #2240) — the producer page gained a third quiet control (Bell + "מקבלת
+עדכונים · לעריכה") that re-opens the MEH-54 AlertPrefsPanel, closing the
+visibility gap MEH-1362 decision A left behind.
+
+**Audit (read-only, no code).** MEH-1610 — state-visibility & zombie sweep over
+live staging `08aa06e0`: **172 routes enumerated, 24 zero-caller → 16 true
+zombies + 8 zero-caller by design.** Full verdict table with `file:line` per row
+lives in the MEH-1610 SYNC block. Headlines: the 4 ProducerFollower endpoints are
+still live while MEH-1394 (their removal contract) sits **archived** — needs
+Sapir's call whether that archive was intentional; `/messages` is **no longer
+orphaned** (`AboutClient.jsx:436`), so that MEH-1311 leftover can close; a user
+still **cannot find her own review** (no `/users/me/reviews` exists anywhere);
+and `alert_log` remains append-only with no retention owner.
+
+**Lesson 1 — a passing numeric assertion is not a correct one.** MEH-1592's first
+implementation read text direction from the *trigger*, which carries its own
+`dir="ltr"` for the "+2" numeral, while `insetInlineStart` resolves against the
+portalled panel's containing block (`<body>`, `dir="rtl"`). The panel anchored to
+the opposite edge of the screen — measured **982px** from its own trigger — and
+*both* numeric assertions (0 intersections, inside viewport) still passed, because
+flinging a panel far away also satisfies "doesn't overlap". Caught by adversarial
+review, not by the suite. **Generalisation: when an assertion is a negative ("does
+not overlap"), pair it with a positive one ("is where it belongs") — otherwise the
+degenerate solution passes.**
+
+**Lesson 2 — a draft PR's green is not a signal, and CC cannot re-fire it.** On
+PR #2223 the draft-time run reported `CI gate` green while `Frontend build`,
+`vitest` and `lint` all showed `skipped` (they gate on `draft == false`), and
+`ci-gate`'s `ok()` counts `skipped` as pass even when `FRONTEND_TOUCHED=true`.
+Marking the PR ready via the GitHub App token produced **no new run** — App-token
+events don't trigger workflows, the same mechanic CLAUDE.md already documents for
+`GITHUB_TOKEN` pushes (MEH-991). Only a real push re-fired it. **Open code PRs
+non-draft from the start** (matches the pending #2197 note); MEH-1609 did, and its
+first run was genuine.
+
+**Lesson 3 — verify a bot's "Must Fix" before acting on it.** An automated review
+on PR #2223 reported that the diff deleted the `.ai/diagrams/api-routes.md` health
+section. The file was not in the PR's 12-file diff at all: the bot had compared the
+branch against a staging that gained MEH-1598 *after* the branch's base, and read
+"lacks content it never had" as a deletion. Staging was verified intact before the
+claim was dismissed.
+
+**Next:** MEH-1614 (this docs backfill) · MEH-1593 (badge popover/tooltip audit —
+Phase 0 inventory done: 5 live surfaces, `MapProducerCard`/`MobileSheetSelectedCard`
+render no badges, `ui/Badge` is dead code; surface measurement still pending).
+
 ## 2026-07-27 — MEH-1611 (both chunks merged: `f25b1a24` PR #2246 · `0b76ed8d` PR #2251)
 
 **Shipped, overnight autonomous run.** Picking a business on `/map` now demotes
