@@ -313,7 +313,9 @@ export default function ProducerGroupBuysPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
+      {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
+          when the button unmounts. */}
+      <div className="flex items-center justify-between mb-6 min-h-[44px]">
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:92). */}
           <BackLink href="/producer/dashboard/tools" label={t("back")} />
@@ -330,8 +332,10 @@ export default function ProducerGroupBuysPage() {
             exception — keep the disabled button + aria-describedby hint
             (MEH-1350 / MEH-1165): EmptyState self-hides its CTA there, so hiding
             the header button too would orphan the hint's aria-describedby target
-            and leave zero affordance. */}
-        {!(items?.length === 0 && !showForm && !notApproved) && (
+            and leave zero affordance. MEH-1655: also hidden while loading
+            (items === null) — it used to render then jump to the EmptyState
+            CTA on an empty result. */}
+        {items !== null && !(items.length === 0 && !showForm && !notApproved) && (
           <button
             onClick={() => setShowForm((v) => !v)}
             disabled={notApproved}
