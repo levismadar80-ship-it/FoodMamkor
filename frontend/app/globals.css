@@ -299,11 +299,27 @@ body.sheet-open .cookie-banner {
   background: transparent !important;
   border: none !important;
 }
-@media (hover: hover) {
-  .mehamakor-marker:not(.selected):not(.visited):hover {
-    transform: scale(1.15);
-  }
-}
+/* MEH-1619: a hover-media block sat here scaling up a marker on hover, and it had
+   never once applied. Measured, not reasoned: on a live /map with 11 un-clustered
+   markers its selector matched 0 elements — it named the bare marker class, while
+   the class Leaflet actually renders is the wrap class above — and its two state
+   qualifiers matched 0 as well, since marker state has been baked into the divIcon
+   HTML since MEH-763 rather than carried as classes.
+
+   DO NOT re-add a `transform` rule on this element. Leaflet owns the wrap's
+   transform: it writes `transform: translate3d(x, y, 0)` INLINE on every marker to
+   position it (DomUtil.setTransform, leaflet-src.js:2532, called from Marker._setPos).
+   Inline beats a class rule, so such a rule is dead on arrival — and in the one case
+   where it did win it would REPLACE the positioning transform and throw the pin to
+   the pane origin. A hover scale, if ever wanted, has to target the INNER div of the
+   icon HTML, which Leaflet does not touch.
+
+   Nothing was lost by the removal: hovering a marker produced no visual change
+   before it either (measured — icon HTML unchanged). The hover affordance that does
+   work is the JS one on the CARD path (useMapSync.js:162-168 -> refreshMarkerIcon ->
+   box-shadow ring; measured 0 -> 1 rings on card hover). Marker-hover having no
+   affordance of its own is a real UX gap, but it is a design decision, not this
+   audit's to make. Full evidence: docs/audits/silent-failure-audit.md (row A-10). */
 .mehamakor-cluster {
   background: transparent !important;
   border: none !important;
