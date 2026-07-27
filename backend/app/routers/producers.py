@@ -5,7 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.auth import get_current_user_optional, require_verified_email
+from app.auth import (
+    get_current_user_lenient,
+    get_current_user_optional,
+    require_verified_email,
+)
 from app.database import get_db
 from app.models import (
     Category,
@@ -311,7 +315,12 @@ def record_whatsapp_click(
     request: Request,
     producer_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    # MEH-1627: lenient, NOT get_current_user_optional. The frontend fires
+    # this via navigator.sendBeacon as the tab hands off to wa.me — there is
+    # no response handler, so a 401 could not be refreshed-and-retried and
+    # the click would simply be lost. An expired token degrades to an
+    # unattributed click; losing attribution beats losing the click.
+    current_user: User | None = Depends(get_current_user_lenient),
 ):
     """Log a WhatsApp CTA click for the producer dashboard.
 
@@ -343,7 +352,9 @@ def record_contact_click(
     producer_id: UUID,
     data: ContactClickIn,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    # MEH-1627: lenient — same keepalive/sendBeacon rationale as
+    # whatsapp-click above. Fire-and-forget telemetry cannot retry.
+    current_user: User | None = Depends(get_current_user_lenient),
 ):
     """Log a contact-method click for the producer dashboard.
 
