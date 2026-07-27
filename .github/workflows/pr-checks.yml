@@ -34,7 +34,10 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  # MEH-1653: ready_for_review מקבל group נפרד כדי שלא יבטל ריצת synchronize
+  # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
+  # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event.action == 'ready_for_review' }}
   cancel-in-progress: true
 
 jobs:
