@@ -2334,6 +2334,16 @@ class OutreachLeadCreate(BaseModel):
     category: str | None = Field(None, max_length=100)
     notes: str | None = None
 
+    # MEH-1616: same failure as MEH-1608, different table. The admin list
+    # composes https://instagram.com/{instagram} from the stored value
+    # (admin/outreach/page.jsx:223), so a pasted profile URL or a leading
+    # @ produces a dead link. Forgiving in input, canonical in storage.
+    # REUSES: backend/app/schemas/schemas.py:196 — _normalize_instagram
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
+
 
 class OutreachLeadUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted. Status is
@@ -2347,6 +2357,12 @@ class OutreachLeadUpdate(BaseModel):
     category: str | None = None
     notes: str | None = None
     status: str | None = None
+
+    # MEH-1616: see OutreachLeadCreate above — PATCH writes the same column.
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
 
 
 class OutreachPrefillResponse(BaseModel):
