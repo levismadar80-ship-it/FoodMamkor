@@ -24,8 +24,14 @@ Probe harnesses (committed, re-runnable):
 | **A** | Our CSS on library-managed DOM, on a property the library writes **inline** | **13** rules | **1** dead | PR #2262 |
 | **B** | Props that are type-valid but whose effect is conditional on runtime element type | **8** instances | **2** inert | PR #2263 |
 | **C** | Assertions where one disjunct alone can pass a broken state | **103** `||`, **5** in assertion position | **1** weak | PR #2266 |
+| **B′** | Two individually-valid props that contradict — one deletes what the other configures | **3** map surfaces | **1** inert | MEH-1633 |
 
-**4 findings, 4 fixed.** Every other row was measured effective and deliberately left alone.
+**5 findings, 5 fixed.** Every other row was measured effective and deliberately left alone.
+
+**B′ was added after the fact** (MEH-1633, 27/07): it is a *second* shape that the
+original class-B definition did not reach, found in an already-audited file. Recorded as
+its own sub-class rather than folded into B, so the reason the first sweep missed it stays
+legible.
 
 ---
 
@@ -123,6 +129,65 @@ A divIcon renders a `<div>`, so `alt` is dropped. **This is a data point for MEH
 A stale file-header in `MapComponent.jsx` had listed *"Set `alt: producer.name`
 explicitly"* as one of the fixes for bug #10. It was wrong the day it was written; the
 header now records that, rather than quietly dropping the line.
+
+---
+
+## Sub-class B′ — the class-B definition was too narrow (MEH-1633, 27/07/2026)
+
+**The original class-B definition did not cover this, and that is the finding.** Class B
+was scoped to *one prop whose effect is conditional on the runtime element type* — the
+`alt`-on-a-divIcon shape. Written that way, the sweep above asked of each prop "does
+this one land?" and never asked "is something **else** switching it off?". B′ is the
+second shape: **two props, each individually valid, that contradict each other.** One
+supplies a value; another, elsewhere in the tree, deletes the element that value renders
+into.
+
+Because `attributionControl` is not conditional on anything at runtime — it does exactly
+what it says — it could not surface under a definition about runtime-conditional props.
+It sat inside the audited component, one line from an audited prop, through a sweep of
+that very file. Scope, not diligence, is what missed it.
+
+| # | Site | Props | Measured on the rendered element | Verdict |
+|---|---|---|---|---|
+| **B′-1** | `MiniMap.jsx:257` + `:261` | `attributionControl={false}` on `<MapContainer>` vs `attribution='…'` on the child `<TileLayer>` | `.leaflet-control-attribution` count **0** (container present, `hasContainer: true`) at 1440 **and** 375 | **inert — prop removed** |
+| B′-2 | `HomepageMiniMap.jsx:233` + `:236` | `attributionControl={true}` + `attribution` | count **1** | effective (the correct pattern; the fix copies its string byte-for-byte) |
+| B′-3 | `MapComponent.jsx:576-578` | imperative `L.tileLayer(…, { attribution })`, no control suppressed | count **1** | effective |
+
+**Measured before → after**, same probe, same build pipeline, only the prop differing —
+so the probe is shown discriminating, not merely green (testing.md § "Every new guard
+test must be shown failing"):
+
+| Surface / viewport | before (prop present) | after (prop removed) |
+|---|---|---|
+| producer page @1440 | count `0`, text `null`, hrefs `[]` | count `1`, `"Leaflet \| © OpenStreetMap"`, hrefs `["https://leafletjs.com/", "https://www.openstreetmap.org/copyright"]` |
+| producer page @375 | count `0`, `margin-bottom: null` | count `1`, `margin-bottom: 10px` |
+| after SPA nav from `/map` @375 | count `0` | count `1`, `margin-bottom: 10px`, `--map-sheet-h` empty |
+
+`11/11` checks pass after, `1/11` before — and the single "before" pass is the
+navigation-type assertion, which is unrelated to the bug. Tiles render grey in these
+captures: OSM tile egress is blocked from the CC sandbox (measured `HTTP 000`). The
+attribution control is DOM, not a tile, so the measurement is unaffected.
+
+**Why this one was not merely cosmetic.** Class A cost a dead hover ring and class B an
+unimplemented `alt`. B′ served OSM tiles with no visible attribution — an ODbL and OSM
+tile-usage-policy violation whose operational penalty is tile-blocking of the domain.
+
+**Mechanical guard, not just a note:** `scripts/checks/map-attribution-guard.sh`, picked
+up automatically by `scripts/checks/run-all.sh` under the required *Repo guards* job.
+Shown failing by construction: reintroducing the prop reds it with
+`VIOLATION frontend/components/MiniMap.jsx:257`.
+
+> **Adjacent finding — reported, deliberately NOT fixed here.** Leaflet's own default
+> `margin-bottom` for this control is **`0`, not `10px`**:
+> `.leaflet-container .leaflet-control-attribution { margin: 0 }` (`leaflet.css:413-417`)
+> is equal in specificity to `.leaflet-bottom .leaflet-control { margin-bottom: 10px }`
+> (`:166-168`) and comes later, so it wins. Measured: `0px` at 1440 (where our rule does
+> not apply) and `10px` at 375 (where it does). The `10px` at 375 is therefore **our
+> `globals.css` floor**, not a Leaflet default. Row A-7 above and the MEH-1365 comment in
+> `globals.css:226,233` both describe that floor as "Leaflet's own default margin" — that
+> characterisation is wrong, though the *value* and the sheet-closed behaviour they
+> describe are correct and unchanged. Left alone: `globals.css` is outside this ticket's
+> scope and nothing renders differently. Worth its own ticket.
 
 ---
 
