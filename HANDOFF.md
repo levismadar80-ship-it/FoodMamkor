@@ -3,6 +3,51 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1628 favorites copy holes (PR #2274 merged `85db63e0`) · MEH-1629 BLOCKED
+
+**Shipped (PR #2274).** Two `/favorites` strings had lost their grammatical object
+when MEH-990's Emoji-LOCK sweep stripped ❤️ and 🔔 out of them. The glyph now lives
+*inside* the sentence as a next-intl rich-text component — a form a character-level
+sweep cannot reach — rather than being restored as an emoji. Also: `HeartStraight`
+replaces a generic `Leaf` in the empty state (the copy said "press the heart"), and
+the duplicate first-visit tip is gone, leaving exactly one helper paragraph.
+
+**Why nothing caught it.** Every assertion in the suite verifies *presence*. A hole
+is an absence, so a removal-shaped bug is invisible to them. The new
+`FavoritesEmptyState.test.jsx` asserts the negative side in **equalities** — `>= 1`
+would pass on the broken state too — and was observed failing 5/7 against the
+pre-fix component before the fix landed.
+
+**Two spec contradictions, both reported rather than quietly resolved:**
+1. The DoD demanded `grep -c "<Bell"` = 1 in the file. That number is wrong: the
+   second instance is the per-card alerts bell in `FavoriteCardWrapper`, a different
+   component, out of scope. F3's actual wording ("the row renders exactly one Bell")
+   is satisfied. File-wide count stays 2 deliberately.
+2. `<file_locations>` asked for CHANGELOG + HANDOFF in the code branch, which
+   `changelog-branch-guard.sh` (required **Repo guards** job, rule 31) hard-fails.
+   The gate wins — this entry is that deferred backfill.
+
+### ⛔ NEXT — MEH-1629 is blocked by a hook, needs Sapir
+
+MEH-1629 (ESLint `no-restricted-syntax` selector for raw Tailwind palette shades)
+**cannot be done by CC.** Its entire deliverable is editing
+`frontend/eslint.config.mjs`, and `.claude/hooks/protect-lint-config.sh` (MEH-442)
+blocks Edit/Write/MultiEdit on `eslint.config.*` by design — the hook's own message
+says *"If a rule blocks your task, REPORT to user with explanation. Do NOT modify
+config."* Self-protection so an AI cannot disable its own guardrails.
+
+Phase 0 ran clean before the block and the numbers are ready for whoever applies it:
+
+- `grep -c "selector:" frontend/eslint.config.mjs` → **3** (matches the ticket's expectation)
+- `npx eslint .` baseline → **5335 problems, 0 errors, 5335 warnings**
+- `tailwind.tokens.json` confirms `green-50/100/300/500/700/900` **are** tokens (flat
+  keys, not a nested `green` object) and `error: #b3261e` exists — so `green` must be
+  absent from the flagged-palette list, exactly as G3 requires.
+
+**First step for Sapir:** apply the fourth selector to the existing
+`no-restricted-syntax` array in `frontend/eslint.config.mjs` (the block at :69-89),
+mirroring the three RTL selectors. Nothing else in the ticket is blocked.
+
 ## 2026-07-27 — MEH-1619 (4 PRs merged: `deb96817` · `7ac508fc` · `1be7aa64` · `33f20853`)
 
 **Shipped.** A systematic sweep for code that is valid, type-valid, lint-clean,
