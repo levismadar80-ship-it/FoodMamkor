@@ -1913,6 +1913,32 @@ class KashrutRequestOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# --- MEH-1673: kashrut expiry reminders (admin-triggered, dry-run first) ---
+class KashrutExpiryReminderRow(BaseModel):
+    """One business inside the 30-day expiry window.
+
+    `phone_masked` is deliberately the ONLY phone field: the admin needs
+    enough to recognise the number, not the number itself. The full value
+    never leaves the backend (mask via `app.utils.pii.mask_phone`).
+    """
+
+    producer_id: UUID
+    name: str
+    phone_masked: str
+    expires_at: datetime
+    sent: bool | None = None
+    error: str | None = None
+
+
+class KashrutExpiryReminderOut(BaseModel):
+    dry_run: bool
+    window_days: int
+    total: int
+    sent_count: int = 0
+    failed_count: int = 0
+    rows: list[KashrutExpiryReminderRow] = []
+
+
 class KashrutApproveIn(BaseModel):
     pass
 

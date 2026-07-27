@@ -1868,6 +1868,19 @@
         "shmitta": "Shmita",
         "kilayim": "Without kilayim",
         "artisan_dairy": "Farm dairy products"
+      },
+      "reminders": {
+        "title": "Certificate expiry reminders",
+        "subtitle": "Businesses whose kashrut certificate expires within 30 days. Always previewed before sending.",
+        "preview": "Preview",
+        "loading": "Loading…",
+        "none": "No businesses with a certificate expiring in the next 30 days.",
+        "preview_summary": "{count} businesses would receive a reminder. Nothing sent yet.",
+        "result_summary": "Sent {sent} · failed {failed}",
+        "send_now": "Send now",
+        "row_sent": "Sent",
+        "row_failed": "Failed",
+        "sent_toast": "Sent {count} reminders"
       }
     },
     "reports": {
