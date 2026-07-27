@@ -483,6 +483,11 @@
       "onboarding1": "סננו לפי אורגני, כשר, משלוח ועוד — לחצו על אחד מהכפתורים למעלה",
       "geo_chip": "בתי עסק ליד המיקום שלך",
       "city_chip": "עסקים באזור {city}",
+      "city_day_chip": "משלוח ל{city} · יום {day}",
+      "day_row_label": "יום משלוח:",
+      "day_option_aria": "סינון משלוח ליום {day}",
+      "day_empty_suggestion": "אין כרגע עסקים עם משלוח ביום {day} ל{city} — אולי בימים אחרים",
+      "day_empty_clear_cta": "הסרת סינון היום",
       "clear_location_filter": "הסרת סינון מיקום",
       "geo_empty": "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק",
       "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:"
@@ -730,7 +735,7 @@
         "about": "אודות",
         "location": "הגעה ומיקום",
         "similar": {
-          "heading": "עסקים דומים",
+          "heading": "בתי עסק דומים",
           "in_area": "{category} · באזור שלך"
         },
         "nearby": {
@@ -1090,6 +1095,10 @@
         "yes_nationwide": "כן! משלוחים לכל הארץ — כולל {city}",
         "yes": "כן, מגיעים ל{city}",
         "no": "לצערנו לא מגיעים ל{city} כרגע"
+      },
+      "coverage_cta": {
+        "known_city": "לא מגיעים ל{city}? אפשר לשאול את בית העסק",
+        "prefill": "היי! אני מ{city} — אשמח לדעת אם יש אפשרות למשלוח לאזור"
       }
     },
     "friday_delivery": {
@@ -1870,6 +1879,19 @@
         "shmitta": "שמיטה",
         "kilayim": "ללא כלאיים",
         "artisan_dairy": "מוצרי חלב מהחווה"
+      },
+      "reminders": {
+        "title": "תזכורות פקיעת תעודה",
+        "subtitle": "בתי עסק שתעודת הכשרות שלהם פוקעת ב-30 הימים הקרובים. תמיד מציגות תצוגה מקדימה לפני שליחה.",
+        "preview": "תצוגה מקדימה",
+        "loading": "טוענת…",
+        "none": "אין בתי עסק עם תעודה שפוקעת ב-30 הימים הקרובים.",
+        "preview_summary": "{count} בתי עסק יקבלו תזכורת. עדיין לא נשלח דבר.",
+        "result_summary": "נשלחו {sent} · נכשלו {failed}",
+        "send_now": "שלחי עכשיו",
+        "row_sent": "נשלח",
+        "row_failed": "נכשל",
+        "sent_toast": "נשלחו {count} תזכורות"
       }
     },
     "reports": {
