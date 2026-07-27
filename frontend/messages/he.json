@@ -425,6 +425,8 @@
       "main_label": "דף הבית — גלו בתי עסק מקומיים",
       "search_area_label": "חיפוש בתי עסק",
       "near_me": "קרוב אליי",
+      "delivery_cta": "משלוחים אליי 📦",
+      "delivery_cta_city": "משלוחים ל{city}",
       "surprise_me": "הפתיעו אותי",
       "searching": "בחיפוש...",
       "scroll_down_label": "גלול לרשימת בתי העסק",
@@ -781,7 +783,7 @@
         },
         "excerpt_footer": "מתוך הביקורות",
         "excerpt_all": "לכל הביקורות",
-        "alerts_reentry": "מקבלת עדכונים · לעריכה",
+        "alerts_reentry": "מקבלת עדכונים",
         "alerts_reentry_aria": "עריכת העדפות עדכונים"
       },
       "owner_card": {
