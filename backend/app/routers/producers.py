@@ -499,7 +499,7 @@ def get_kashrut_cert(
     try:
         upstream = httpx.get(match.cert_url, timeout=10.0, follow_redirects=True)
     except Exception:
-        log.warning("kashrut cert fetch failed", producer_id=str(producer_id))
+        logger.warning("kashrut cert fetch failed", producer_id=str(producer_id))
         raise HTTPException(status_code=502, detail="לא ניתן לטעון את התעודה כרגע")
     if upstream.status_code != 200:
         raise HTTPException(status_code=404, detail="לא נמצא")
