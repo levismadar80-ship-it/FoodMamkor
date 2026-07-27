@@ -245,7 +245,12 @@ function PickupRows({ locations, t, tMap }) {
 // Playwright assertion written against the rendered copy. <bdi> leaves the text
 // clean. The sentinel split is what lets a translated string carry an element in
 // the middle without next-intl rich-text plumbing for a two-word line.
-const AMOUNT_SENTINEL = " ";
+// Written as the ESCAPE "\u0000", never a literal NUL byte in the source: a
+// raw NUL makes grep classify this file as binary, so the repo's documented
+// navigation recipe (code-execution.md §15, `grep -rE "// MEH-[0-9]+:"`)
+// prints "binary file matches" instead of this file's sentinel anchors and
+// silently drops it from every such sweep. Same runtime value, ASCII source.
+const AMOUNT_SENTINEL = "\u0000";
 
 function splitAroundAmount(text) {
   const [before, after = ""] = text.split(AMOUNT_SENTINEL);
