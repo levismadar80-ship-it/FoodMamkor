@@ -1,0 +1,338 @@
+[
+  {
+    "id": "0 pre-step: 'ניקוי הכל' clears the column to null",
+    "ok": true,
+    "measured": null,
+    "expected": null
+  },
+  {
+    "id": "1a dashboard hard-reload: Sun-Thu toggled ON, Fri/Sat OFF",
+    "ok": true,
+    "measured": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "id": "1b dashboard hard-reload: 5 rows x 09:00/14:00 persisted",
+    "ok": true,
+    "measured": [
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00"
+    ],
+    "expected": [
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00",
+      "09:00",
+      "14:00"
+    ]
+  },
+  {
+    "id": "1c public backend JSON order_window exact shape (key-order-insensitive)",
+    "ok": true,
+    "measured": {
+      "monday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "sunday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "tuesday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "thursday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "wednesday": {
+        "open": "09:00",
+        "close": "14:00"
+      }
+    },
+    "expected": {
+      "sunday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "monday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "tuesday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "wednesday": {
+        "open": "09:00",
+        "close": "14:00"
+      },
+      "thursday": {
+        "open": "09:00",
+        "close": "14:00"
+      }
+    }
+  },
+  {
+    "id": "2a @375 open: statusElements === 1",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  },
+  {
+    "id": "2b @375 open: status text contains \"עד\"",
+    "ok": true,
+    "measured": "פתוח להזמנות · עד 14:00",
+    "expected": "contains \"עד\""
+  },
+  {
+    "id": "2c @375 open: tone class is primary token",
+    "ok": true,
+    "measured": "font-semibold text-primary",
+    "expected": "includes text-primary"
+  },
+  {
+    "id": "2d @375 open: exactly 1 VISIBLE CTA, enabled, live href",
+    "ok": true,
+    "measured": {
+      "visibleCTAs": 1,
+      "ctaInDom": 2,
+      "ctaDisabled": false,
+      "tag": "A",
+      "href": "https://web.whatsapp.com/sen",
+      "ariaDisabled": null,
+      "pointerEvents": "auto",
+      "visible": true
+    },
+    "expected": {
+      "visibleCTAs": 1,
+      "ctaDisabled": false,
+      "ariaDisabled": null,
+      "pointerEvents": "!=none",
+      "visible": true,
+      "href": "non-empty"
+    }
+  },
+  {
+    "id": "2e @375 open: contextLines === 0",
+    "ok": true,
+    "measured": 0,
+    "expected": 0
+  },
+  {
+    "id": "3a @375 closed: statusElements === 1",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  },
+  {
+    "id": "3b @375 closed: text contains \"נפתחות\"",
+    "ok": true,
+    "measured": "ההזמנות סגורות עכשיו · נפתחות יום שלישי ב־09:00",
+    "expected": "contains \"נפתחות\""
+  },
+  {
+    "id": "3c @375 closed: tone is muted",
+    "ok": true,
+    "measured": "font-semibold text-muted",
+    "expected": "includes text-muted"
+  },
+  {
+    "id": "3d @375 closed: exactly 1 VISIBLE CTA, enabled, live href",
+    "ok": true,
+    "measured": {
+      "visibleCTAs": 1,
+      "ctaInDom": 2,
+      "ctaDisabled": false,
+      "tag": "A",
+      "href": "https://web.whatsapp.com/sen",
+      "ariaDisabled": null,
+      "pointerEvents": "auto",
+      "visible": true
+    },
+    "expected": {
+      "visibleCTAs": 1,
+      "ctaDisabled": false,
+      "ariaDisabled": null,
+      "pointerEvents": "!=none",
+      "visible": true,
+      "href": "non-empty"
+    }
+  },
+  {
+    "id": "3e @375 closed: contextLines === 1 (visible)",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  },
+  {
+    "id": "4a @375 null-window: status subtree byte-identical to pre-1546 baseline",
+    "ok": true,
+    "measured": "<span class=\"font-semibold text-primary\" data-testid=\"status-open\">פתוח להזמנות</span>",
+    "expected": "<span class=\"font-semibold text-primary\" data-testid=\"status-open\">פתוח להזמנות</span>"
+  },
+  {
+    "id": "4b @375 null-window: no strip in DOM",
+    "ok": true,
+    "measured": 0,
+    "expected": 0
+  },
+  {
+    "id": "4c @375 null-window: no context line in DOM",
+    "ok": true,
+    "measured": 0,
+    "expected": 0
+  },
+  {
+    "id": "4d @375 null-window: statusElements === 1",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  },
+  {
+    "id": "2a @1440 open: statusElements === 1",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  },
+  {
+    "id": "2b @1440 open: status text contains \"עד\"",
+    "ok": true,
+    "measured": "פתוח להזמנות · עד 14:00",
+    "expected": "contains \"עד\""
+  },
+  {
+    "id": "2c @1440 open: tone class is primary token",
+    "ok": true,
+    "measured": "font-semibold text-primary",
+    "expected": "includes text-primary"
+  },
+  {
+    "id": "2d @1440 open: exactly 1 VISIBLE CTA, enabled, live href",
+    "ok": true,
+    "measured": {
+      "visibleCTAs": 1,
+      "ctaInDom": 2,
+      "ctaDisabled": false,
+      "tag": "A",
+      "href": "https://web.whatsapp.com/sen",
+      "ariaDisabled": null,
+      "pointerEvents": "auto",
+      "visible": true
+    },
+    "expected": {
+      "visibleCTAs": 1,
+      "ctaDisabled": false,
+      "ariaDisabled": null,
+      "pointerEvents": "!=none",
+      "visible": true,
+      "href": "non-empty"
+    }
+  },
+  {
+    "id": "2e @1440 open: contextLines === 0",
+    "ok": true,
+    "measured": 0,
+    "expected": 0
+  },
+  {
+    "id": "3a @1440 closed: statusElements === 1",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  },
+  {
+    "id": "3b @1440 closed: text contains \"נפתחות\"",
+    "ok": true,
+    "measured": "ההזמנות סגורות עכשיו · נפתחות יום שלישי ב־09:00",
+    "expected": "contains \"נפתחות\""
+  },
+  {
+    "id": "3c @1440 closed: tone is muted",
+    "ok": true,
+    "measured": "font-semibold text-muted",
+    "expected": "includes text-muted"
+  },
+  {
+    "id": "3d @1440 closed: exactly 1 VISIBLE CTA, enabled, live href",
+    "ok": true,
+    "measured": {
+      "visibleCTAs": 1,
+      "ctaInDom": 2,
+      "ctaDisabled": false,
+      "tag": "A",
+      "href": "https://web.whatsapp.com/sen",
+      "ariaDisabled": null,
+      "pointerEvents": "auto",
+      "visible": true
+    },
+    "expected": {
+      "visibleCTAs": 1,
+      "ctaDisabled": false,
+      "ariaDisabled": null,
+      "pointerEvents": "!=none",
+      "visible": true,
+      "href": "non-empty"
+    }
+  },
+  {
+    "id": "3e' @1440 closed: contextLines visible (known desktop gap, informational)",
+    "ok": true,
+    "measured": 0,
+    "expected": "recorded, not gating"
+  },
+  {
+    "id": "4a @1440 null-window: status subtree byte-identical to pre-1546 baseline",
+    "ok": true,
+    "measured": "<span class=\"font-semibold text-primary\" data-testid=\"status-open\">פתוח להזמנות</span>",
+    "expected": "<span class=\"font-semibold text-primary\" data-testid=\"status-open\">פתוח להזמנות</span>"
+  },
+  {
+    "id": "4b @1440 null-window: no strip in DOM",
+    "ok": true,
+    "measured": 0,
+    "expected": 0
+  },
+  {
+    "id": "4c @1440 null-window: no context line in DOM",
+    "ok": true,
+    "measured": 0,
+    "expected": 0
+  },
+  {
+    "id": "4d @1440 null-window: statusElements === 1",
+    "ok": true,
+    "measured": 1,
+    "expected": 1
+  }
+]
