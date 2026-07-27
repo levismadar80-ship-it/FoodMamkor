@@ -175,7 +175,7 @@ async function mockCards(page: Page) {
  * exists — which surfaced as a bare "element(s) not found" on run 30251402510
  * (170 passed / 4 failed), a red that said nothing about collisions.
  *
- * So we borrow a REAL id the way parity.spec.ts:333-349 does. `page.request`
+ * So we borrow a REAL id the way parity.spec.ts:502-508 does. `page.request`
  * runs outside the page's route table, so this call reaches the real backend
  * while the detail response below is still served from the fixture — the
  * borrowed id only unlocks the route, the rendered content is always ours.
@@ -311,13 +311,16 @@ for (const vp of [
       // middleware existence check. Any producer works — the page content is
       // still the fixture's.
       const borrowedId = await borrowProducerId(page);
-      test.skip(
-        !borrowedId,
-        "S5 subject unreachable: could not borrow a real producer id from " +
-          "GET /api/producers, so middleware.js would 404 the /producer/[id] " +
-          "route before the masthead renders. This is a data/environment " +
-          "condition, not a collision regression — S1 and S3 still enforce.",
-      );
+      if (!borrowedId) {
+        test.skip(
+          true,
+          "S5 subject unreachable: could not borrow a real producer id from " +
+            "GET /api/producers, so middleware.js would 404 the /producer/[id] " +
+            "route before the masthead renders. This is a data/environment " +
+            "condition, not a collision regression — S1 and S3 still enforce.",
+        );
+        return;
+      }
 
       await mockMasthead(page);
       await page.goto(`/producer/${borrowedId}`);
