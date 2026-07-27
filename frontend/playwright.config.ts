@@ -15,8 +15,14 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
-  reporter: process.env.CI
-    ? [["html", { open: "never" }], ["list"]]
+ reporter: process.env.CI
+    ? [
+        ["html", { open: "never" }],
+        ["list"],
+        // MEH-1604: ה-JSON reporter הוא מקור האמת ל"כמה טסטים באמת רצו".
+        // ה-summary נקרא ע"י שלב "E2E coverage floor" ב-e2e.yml.
+        ["json", { outputFile: "playwright-report/results.json" }],
+      ]
     : [["list"]],
   // MEH-728: timing budgets raised for Vercel preview cold-start. The two
   // documented flakes (PR #885 waitForURL, #886 toBeVisible) hit the 10s
