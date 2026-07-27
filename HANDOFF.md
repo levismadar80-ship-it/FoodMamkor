@@ -3,6 +3,69 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — Leaflet inline-writer claim pinned; two of its own acceptance criteria were false (PR #2305)
+
+**Shipped and merged** (`eab51862`). The one claim in `.claude/rules/` that guides
+code decisions and nothing checked — which CSS properties Leaflet and markercluster
+write inline, and above all that neither writes `filter` — is now re-derived from
+the installed bundles on every vitest run. That negative is the sole reason a marker
+fade rides `filter: opacity()`; if a release starts writing `filter` inline the fade
+stops applying with no error and no failing test, which is the MEH-1611 shape.
+
+**The finding that matters: Phase 0 contradicted two of the ticket's own acceptance
+criteria, and the test was written to the packages rather than to the spec.**
+
+1. **`filter` is not absent from Leaflet.** `leaflet-src.js:2506` writes
+   `el.style.filter +=` inside `_setOpacityIE` — IE-8 dead code, reached only via
+   the `else if ('filter' in el.style)` arm that `setOpacity` takes when
+   `'opacity' in el.style` is false. The behavioural claim holds; the absolute one
+   does not. Criterion (d) as written would have failed on the untouched package.
+2. **`clusterShow` does not assign `opacity`.** It delegates —
+   `markercluster:1835` → `Marker.setOpacity` → `_updateOpacity` →
+   `DomUtil.setOpacity` → `el.style.opacity`. Its body has no style write at all.
+
+So (d) pins the exact shape (one write, inside `_setOpacityIE`, single guarded call
+site) and (c) pins the delegation chain. The rule file's three line citations were
+all **accurate** — the prose around them was not.
+
+**Negative control 1 caught a real defect, and it is the transferable lesson.** The
+declaration matcher was unanchored, so it matched Leaflet's
+`// @function setTransform(…)` doc comment sitting immediately above the real
+declaration, then brace-matched forward into the function and returned a body that
+looked perfectly valid. **Renaming `setTransform` left the guard green.** Anchoring
+to a line start fixed it. Same class as MEH-1619 C-1 and the MEH-1593 clipping
+detector: an assertion that cannot tell the healthy state from the broken one. All
+four controls ran against a mutated `node_modules` restored byte-identically
+(md5-verified), including the one that proves (d) is not a substring match — a bare
+`filter` in a comment leaves it green.
+
+**Two process notes worth carrying.**
+
+- **Draft green is not green (rule 21), and it nearly bit here.** At draft time both
+  required aggregators reported `success` while `Frontend build` / `Frontend unit
+  tests` showed `skipped`. The PR was marked ready and the merge waited for the
+  ready-time runs, where those legs actually executed.
+- **A stale check-run read almost became a false diagnosis.** The `get_check_run`
+  endpoint served `in_progress` for the vitest job long after it finished; the job
+  record showed it completed in 3m37s. Prefer the job/run record over the check-run
+  status when the two disagree.
+
+**Deliberately not in that PR:** CHANGELOG + HANDOFF (this entry). The branch touched
+`frontend/__tests__/**`, so `changelog-branch-guard.sh` under the required *Repo
+guards* job blocks the logs from riding along (rule 31). This docs-only PR is the
+backfill, tracked as its own ticket per the MEH-1614/1622/1642 precedent.
+
+**⚠️ Branch-naming note (MEH-1615).** This backfill branch carries its **own**
+ticket's identifier, not `meh-1637`. The branch slug alone auto-links in Linear and
+would have flipped the now-Done MEH-1637 back to In Progress even with the identifier
+kept out of the PR title and body — the trap MEH-1615 documents and rule 29 warns
+about. MEH-1637's identifier appears only inside the file content, which does not
+auto-link.
+
+### NEXT
+Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
+is still the next thing to pick up; MEH-1629 remains blocked.
+
 ## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
 
 **Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
