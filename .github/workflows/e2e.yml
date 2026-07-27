@@ -229,3 +229,52 @@ jobs:
             frontend/playwright-report/
             frontend/test-results/**/trace.zip
           retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────
+  # E2E GATE (MEH-1201) — required-check aggregator for the E2E suite.
+  # Mirrors ci-gate (pr-checks.yml) / deploy-gate (deploy.yml):
+  # `if: always()` + `needs`, so the gate reports its own status regardless of
+  # whether the E2E job ran, skipped, or failed. On a docs-only PR the `e2e`
+  # job skips via paths-filter (needs.filter.outputs.frontend == 'false') and a
+  # skipped need evaluates as pass here — so docs-only merges clean.
+  #
+  # MEH-892: a *skipped* job listed DIRECTLY in the protect-staging ruleset
+  # reads as "Expected" and BLOCKS merge (real 405 on a docs-only PR). That is
+  # why the E2E job must NOT be added to the ruleset — THIS aggregator is the
+  # required context instead.
+  # ─────────────────────────────────────────────────────────────────
+  e2e-gate:
+    name: E2E gate (required)
+    if: always()
+    needs: [filter, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Aggregate E2E required-check result
+        env:
+          R_FILTER: ${{ needs.filter.result }}
+          R_E2E: ${{ needs.e2e.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          ok() { case "$1" in success|skipped) return 0 ;; *) return 1 ;; esac; }
+          check() { if ok "$2"; then echo "  OK  $1: $2"; else echo "  FAIL $1: $2"; fail=1; fi; }
+
+          # Guard the paths-filter result first — mirrors ci-gate's R_CHANGES
+          # guard. If the filter itself broke we can't trust the e2e skip
+          # decision, so block.
+          if ! ok "$R_FILTER"; then
+            echo "::error::Paths-filter job did not succeed (result=$R_FILTER) — cannot determine E2E scope."
+            exit 1
+          fi
+
+          # success = mobile Pixel 5 + VRT specs green.
+          # skipped  = docs-only PR (paths-filter) or dependabot — pass.
+          # failure/cancelled = block.
+          check "Playwright E2E (Vercel preview)" "$R_E2E"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::E2E gate failed — Playwright E2E (mobile Pixel 5 + VRT) did not pass."
+            exit 1
+          fi
+          echo "E2E gate passed."
