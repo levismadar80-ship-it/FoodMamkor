@@ -153,7 +153,8 @@
       "reset_success": "הסיסמה עודכנה בהצלחה — אפשר להתחבר",
       "or": "או",
       "no_account": "אין לך חשבון?",
-      "register_cta": "הצטרפו ←"
+      "register_cta": "הצטרפו ←",
+      "email_placeholder": "name@example.com"
     },
     "oauth": {
       "google_error": "שגיאה בהתחברות עם Google",
@@ -2401,7 +2402,8 @@
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
-      "save_cta": "שמירה"
+      "save_cta": "שמירה",
+      "field_image_placeholder": "https://res.cloudinary.com/..."
     }
   },
   "errors": {
@@ -4431,7 +4433,8 @@
       "save_cta": "שמרו הגדרות",
       "saving": "בשמירה...",
       "save_success_toast": "הגדרות עודכנו",
-      "save_error_toast": "שגיאה בשמירה, נסו שוב"
+      "save_error_toast": "שגיאה בשמירה, נסו שוב",
+      "phone_placeholder": "050-1234567"
     },
     "layout": {
       "skip_to_main": "דילוג לתוכן"
@@ -4513,7 +4516,8 @@
       "email_change_hint": "לשינוי אימייל, פנו לתמיכה",
       "field_phone_label": "טלפון",
       "field_phone_hint": "לעדכונים בוואטסאפ מבתי עסק שאתם עוקבים אחריהם",
-      "field_phone_error": "מספר טלפון לא תקין"
+      "field_phone_error": "מספר טלפון לא תקין",
+      "field_phone_placeholder": "050-1234567"
     },
     "products": {
       "section_heading": "מוצרים",
@@ -4844,5 +4848,33 @@
     "sources_prefix": "מקורות:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
     "source_collectivecrop": "CollectiveCrop — Fresh-Picked vs Supermarket Produce"
+  },
+  "chat": {
+    "opening": "היי אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצו לדעת?",
+    "prompts": {
+      "register": "איך נרשמים כבית עסק?",
+      "find_nearby": "איך מוצאים עסקים קרובים אליי?",
+      "what_is": "מה זה מהמקור?",
+      "is_free": "האם האתר בחינם?",
+      "contact": "איך יוצרים קשר עם בית עסק?",
+      "approval_time": "כמה זמן לוקח האישור של העסק?"
+    },
+    "answers": {
+      "register": "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nהצוות שלנו בודק את הפרטים ומאשר את העסק שלך בדרך כלל עד 3 ימי עסקים, ואז הוא מופיע באתר.",
+      "find_nearby": "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשו לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר"
+    },
+    "fallback_reply": "לא הצלחתי להבין את השאלה — אפשר לנסח אותה שוב?",
+    "error_rate_limit": "שלחתם הרבה הודעות בזמן קצר — נסו שוב בעוד דקה",
+    "error_generic": "משהו השתבש — נסו שוב בעוד רגע",
+    "launcher_close_label": "סגרו את הצ׳אט",
+    "launcher_open_label": "שאלו אותנו",
+    "launcher_pill": "שאלה? שאלו אותי",
+    "panel_label": "עוזרת מהמקור",
+    "panel_title": "שאלו אותנו",
+    "panel_close_label": "סגרו את חלון העוזרת",
+    "log_label": "שיחה עם העוזרת",
+    "input_label": "הקלידו שאלה",
+    "input_placeholder": "הקלידו שאלה...",
+    "send_label": "שלחו שאלה"
   }
 }
