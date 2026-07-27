@@ -1,0 +1,15 @@
+=== self-test (classifier discriminates?) ===
+  PASS self-test: correct (note inside card, under CTA) → {"inDom":1,"visible":1,"outside":0,"descendant":true,"afterCta":true,"noteText":"note"}
+  PASS self-test: regression-shaped (note above/outside card) → {"inDom":1,"visible":1,"outside":1,"descendant":false,"afterCta":null,"noteText":"note"}
+  PASS self-test: neutral (no note at all) → {"inDom":0,"visible":0,"outside":0,"descendant":null,"afterCta":null,"noteText":null}
+
+=== real page ===
+[closed @375] FAIL inDom=2 visible=1 outsideCard=2 descendantOfCard=false afterCta=null text="אפשר לשלוח הודעה גם עכשיו — היא תיענה כשההזמנות ייפתחו"
+[closed @1440] FAIL inDom=2 visible=1 outsideCard=2 descendantOfCard=false afterCta=null text="אפשר לשלוח הודעה גם עכשיו — היא תיענה כשההזמנות ייפתחו"
+        sticky@1440 closed: y 348 → -107 (travel 455px vs actual scroll 769px; rest offset -107px vs lg:top-24=96px) NOT ENGAGED
+[open @375] PASS inDom=0 visible=0 outsideCard=0 descendantOfCard=null afterCta=null
+[open @1440] PASS inDom=0 visible=0 outsideCard=0 descendantOfCard=null afterCta=null
+        sticky@1440 open: y 340 → -91 (travel 431px vs actual scroll 769px; rest offset -91px vs lg:top-24=96px) NOT ENGAGED
+[null @375] PASS inDom=0 visible=0 outsideCard=0 descendantOfCard=null afterCta=null
+[null @1440] PASS inDom=0 visible=0 outsideCard=0 descendantOfCard=null afterCta=null
+        sticky@1440 null: y 340 → -91 (travel 431px vs actual scroll 741px; rest offset -91px vs lg:top-24=96px) NOT ENGAGED
