@@ -3,6 +3,47 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1593 badge popover/tooltip audit (merged `db4548e7`)
+
+**Shipped.** The MEH-1592 "+N" fix turned out to be one symptom of a family. All
+5 live badge popover/tooltip surfaces were measured at 375px and 1440px: **3
+defective, 2 clean**. `ui/Tooltip` gained an opt-in `overlay` mode mirroring the
+MEH-1592 Popover fix; `ProducerCard` threads its existing `badgeStripRef` into
+`BadgeRow` + `TrustBadge` so both card disclosures clear the whole strip;
+`ImageGallery`'s masthead panel escapes its clipping ancestor. Surfaces 2 and 4
+measured clean and were left alone, tests included. Tooltip and Popover remain
+separate primitives with no consumer moved between them (§2.5 / MEH-792 holds).
+Also removed a stray `= [` from `.gitignore:51` that made ripgrep emit
+`unclosed character class` on every invocation repo-wide.
+
+**Lesson 1 — a workaround that reads like a fix hides a live defect.** MEH-1459
+had already met surface 3's bubble and chose `bottom-start` + a responsive width
+— to stop it being *clipped*. That worked, and the code comment read as
+complete, so nobody went back. It never addressed the *overlap*, which was still
+being served to users months later. **A workaround comment must say what it did
+NOT fix, not only what it did.**
+
+**Lesson 2 — an assertion can invert silently.** A naive clipping detector
+("intersect every ancestor with `overflow != visible`") is wrong in both
+directions: it over-reports a `fixed` bottom sheet as clipped, and — the
+dangerous half — once a panel is portalled to `<body>` the walk finds no
+ancestors at all and returns "not clipped" **unconditionally**. The assertion
+becomes a vacuous false negative that would wave through a genuinely cut-off
+panel. The fix is to build the real clipping chain per CSS position semantics
+(only a containing-block-establishing ancestor can clip a `fixed` box) **plus** a
+positive liveness proof, because a zero is not evidence on its own.
+
+**⚠️ Open — staging E2E is red from this PR's own spec.** Run `30251402510`:
+170 passed / 4 failed / 26 skipped. All 4 are the S5 case, failing on
+`[data-testid='masthead-verified'] → element(s) not found` — not a collision
+failure. Cause: `middleware.js` existence-checks the producer id against the
+backend (the constraint `parity.spec.ts:302-307` documents). Locally the backend
+is unreachable so it fails OPEN (`middleware.js:45-48`) and a synthetic UUID
+renders; in CI it does not. S1/S3 target `/search`, which middleware does not
+gate — which is exactly why only S5 broke. Needs a forward fix on its own
+ticket: guard/skip S5 when the masthead cannot be reached, per the sanctioned
+`parity.spec.ts` skip-on-missing-id pattern.
+
 ## 2026-07-27 — MEH-1613 email-failure visibility (+ MEH-1612 verified, not re-done)
 
 - **MEH-1613** (YELLOW, backend-only, `feature/meh-1613-email-failure-visibility` off fresh `origin/staging`, `Closes MEH-1613`, **PR #2257 → `cd80067b`**): all three `send_email` swallow points now report to Sentry + log at ERROR. Contract untouched — same signature, same `None` return, zero of the 20 call sites edited.
