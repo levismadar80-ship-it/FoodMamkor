@@ -12,9 +12,8 @@
  * re-trigger moderation (experiences.py update guard).
  */
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { Sparkle, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
