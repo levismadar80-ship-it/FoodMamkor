@@ -20,6 +20,10 @@ vi.mock("next-intl", () => ({
     if (key === "order_cutoff") return `מקבלים הזמנות עד ${vars?.day ?? ""} ${vars?.time ?? ""}`;
     if (key === "order_cutoff_with_day")
       return `מקבלים הזמנות עד ${vars?.day ?? ""} ${vars?.time ?? ""} · משלוח ביום ${vars?.delivery_day ?? ""}`;
+    // MEH-1577: structured delivery-cost copy (amount is pre-formatted +
+    // bidi-isolated by the component, so the mock just interpolates).
+    if (key === "fee") return `משלוח: ${vars?.amount ?? ""}`;
+    if (key === "free_above") return `מעל ${vars?.amount ?? ""} — חינם`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
@@ -35,6 +39,9 @@ vi.mock("next-intl", () => ({
       // (the mock ignores namespaces, so opening_hours.weekdays.wed → "wed").
       "free": "חינם",
       "wed": "יום רביעי",
+      // MEH-1577: the fee=0 line. Deliberately NOT the bare "חינם" above —
+      // see the combined-state test at the bottom of this file.
+      "fee_free": "משלוח חינם",
     };
     return map[key] ?? key;
   },
@@ -364,5 +371,83 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     expect(screen.getAllByText("חינם")).toHaveLength(1); // fallback line
+  });
+
+  // ---------- MEH-1577: structured delivery cost ----------
+  //
+  // Six states, because delivery_fee=0 is a VALUE (free) and not an absence
+  // (not stated). A truthiness check would collapse those two into one and
+  // every other test here would stay green.
+  const withCost = (fee, above, extra = {}) => ({
+    ...producer,
+    delivery_fee: fee,
+    free_delivery_above: above,
+    ...extra,
+  });
+  const feeLine = () => screen.queryByTestId("delivery-fee-line");
+
+  it("MEH-1577 (1/6) both values → one combined line", () => {
+    render(
+      <DeliveryBlock nationwide areas={[]} pickup={false} producer={withCost(35, 250)} />,
+    );
+    expect(feeLine()).toHaveTextContent("משלוח: 35₪");
+    expect(feeLine()).toHaveTextContent("מעל 250₪ — חינם");
+  });
+
+  it("MEH-1577 (2/6) fee only → no threshold clause", () => {
+    render(
+      <DeliveryBlock nationwide areas={[]} pickup={false} producer={withCost(35, null)} />,
+    );
+    expect(feeLine()).toHaveTextContent("משלוח: 35₪");
+    expect(feeLine()).not.toHaveTextContent("מעל");
+  });
+
+  it("MEH-1577 (3/6) threshold ALONE is a legal state and renders on its own", () => {
+    render(
+      <DeliveryBlock nationwide areas={[]} pickup={false} producer={withCost(null, 200)} />,
+    );
+    expect(feeLine()).toHaveTextContent("מעל 200₪ — חינם");
+    expect(feeLine()).not.toHaveTextContent("משלוח:");
+  });
+
+  it("MEH-1577 (4/6) fee=0 renders 'משלוח חינם', never 'משלוח: 0₪'", () => {
+    render(
+      <DeliveryBlock nationwide areas={[]} pickup={false} producer={withCost(0, null)} />,
+    );
+    expect(feeLine()).toHaveTextContent("משלוח חינם");
+    expect(feeLine()).not.toHaveTextContent("0₪");
+  });
+
+  it("MEH-1577 (5/6) neither value → the line is absent from the DOM", () => {
+    render(
+      <DeliveryBlock nationwide areas={[]} pickup={false} producer={withCost(null, null)} />,
+    );
+    expect(feeLine()).not.toBeInTheDocument();
+  });
+
+  // The state neither MEH-1577 nor MEH-1646 could see alone: 1646 put a bare
+  // "חינם" tag on pickup rows, and fee=0 puts "חינם" in the cost line. Both are
+  // true and they mean DIFFERENT things (delivery is free / pickup is free).
+  // The disambiguator is that the cost line names its subject — "משלוח חינם" —
+  // while the pickup tag sits inside a row already headed "איסוף עצמי". This
+  // test pins exactly that: the two must not both be the bare word.
+  it("MEH-1577 (6/6) fee=0 WITH pickup rows — each 'חינם' names its own subject", () => {
+    render(
+      <DeliveryBlock
+        nationwide
+        areas={[]}
+        pickup={false}
+        producer={withCost(0, null, {
+          locations: [{ kind: "pickup", label: "החווה", city: "עתלית", lat: 32.7, lng: 34.9 }],
+        })}
+      />,
+    );
+    // The cost line is subject-bearing, so it does NOT join the bare-"חינם" set.
+    expect(feeLine()).toHaveTextContent("משלוח חינם");
+    expect(screen.getAllByText("חינם")).toHaveLength(1); // pickup row only
+    expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
+    // Regression lock: if the fee line were ever reduced to the bare word, the
+    // block would show "חינם" twice with nothing saying which is which.
+    expect(feeLine()).not.toHaveTextContent(/^חינם$/);
   });
 });

@@ -72,6 +72,9 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_nationwide: true,
         delivery_area_cities: [],
         delivery_excluded_cities: [],
+        // MEH-1577: the card always sends both cost fields; null = not stated.
+        delivery_fee: null,
+        free_delivery_above: null,
       }),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -108,9 +111,53 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_nationwide: true,
         delivery_area_cities: [],
         delivery_excluded_cities: ["אילת"],
+        delivery_fee: null,
+        free_delivery_above: null,
       }),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());
+  });
+
+  // MEH-1577: the ""-vs-0 mapping. An <input> holds strings, the column holds
+  // int-or-null, and the two collapse into each other under any truthiness
+  // shortcut — `Number(v) || null` turns a typed 0 into null, downgrading
+  // "delivery is free" to "cost not stated" with nothing to show for it.
+  it("MEH-1577: a typed 0 saves as 0, an empty field saves as null", async () => {
+    const { onSave } = renderCard(DeliveryCard, {
+      profile: {
+        has_physical_location: true,
+        offers_delivery: true,
+        delivery_nationwide: true,
+      },
+    });
+    fireEvent.change(screen.getByLabelText(D.fee_label), {
+      target: { value: "0" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: D.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith(
+        "/producers/me",
+        expect.objectContaining({
+          delivery_fee: 0, // NOT null — the whole point
+          free_delivery_above: null, // untouched field stays unstated
+        }),
+      ),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+  });
+
+  it("MEH-1577: a stored 0 re-seeds the field as 0, not as blank", () => {
+    renderCard(DeliveryCard, {
+      profile: {
+        has_physical_location: true,
+        offers_delivery: true,
+        delivery_nationwide: true,
+        delivery_fee: 0,
+      },
+    });
+    // `?? ""` keeps the 0; `|| ""` would blank it on every reopen and the
+    // owner's free-delivery setting would quietly disappear from the form.
+    expect(screen.getByLabelText(D.fee_label)).toHaveValue(0);
   });
 
   it("clearing both physical + delivery blocks save with the type-validation hint", () => {
