@@ -213,6 +213,74 @@ function PickupRows({ locations, t, tMap }) {
   );
 }
 
+// MEH-1577: the structured delivery-cost line. Producer-level (not per area —
+// delivery_areas.min_order owns the per-city dimension).
+//
+// Six inputs, because `0` is a VALUE here and not an absence: delivery_fee=0
+// means "delivery is free" and is distinct from NULL ("owner hasn't stated a
+// cost"). Every gate below is an explicit `!= null` — a truthiness check would
+// silently turn the free case into the not-stated case, which is the single
+// most likely way this line breaks.
+//
+//   fee > 0, no threshold   → "משלוח: 35₪"
+//   fee > 0, threshold      → "משלוח: 35₪ · מעל 250₪ — חינם"
+//   fee === 0               → "משלוח חינם"  (threshold SUPPRESSED — see below)
+//   no fee, threshold       → "מעל 250₪ — חינם"   (legal state; renders alone)
+//   neither                 → null → no line in the DOM at all
+//
+// fee===0 suppresses the threshold on purpose. Both can be set (the validators
+// allow it: fee >= 0, threshold > 0), but "delivery is free · free above 250₪"
+// states a condition on something already unconditional. The free fact wins.
+//
+// Returns an array of {before, amount, after} segments rather than a string, so
+// each ₪ amount can be rendered inside <bdi> — the HTML-native bidi isolate.
+//
+// Same intent as AreaRow's `<span dir="ltr">{formatPrice(...)}</span>` above
+// (MEH-1168 P1: RTL otherwise reorders "35₪"), but the amount here sits INSIDE a
+// Hebrew sentence, so dir="ltr" on the whole line would reorder the Hebrew
+// around it. <bdi> isolates the number alone and leaves the sentence RTL.
+//
+// Not the Unicode isolate characters (U+2066/U+2069): those work, but they land
+// in textContent, where they are invisible and silently break any getByText /
+// Playwright assertion written against the rendered copy. <bdi> leaves the text
+// clean. The sentinel split is what lets a translated string carry an element in
+// the middle without next-intl rich-text plumbing for a two-word line.
+// Written as the ESCAPE "\u0000", never a literal NUL byte in the source: a
+// raw NUL makes grep classify this file as binary, so the repo's documented
+// navigation recipe (code-execution.md §15, `grep -rE "// MEH-[0-9]+:"`)
+// prints "binary file matches" instead of this file's sentinel anchors and
+// silently drops it from every such sweep. Same runtime value, ASCII source.
+const AMOUNT_SENTINEL = "\u0000";
+
+function splitAroundAmount(text) {
+  const [before, after = ""] = text.split(AMOUNT_SENTINEL);
+  return { before, after };
+}
+
+function buildFeeSegments(fee, threshold, t) {
+  const hasFee = fee != null;
+  const hasThreshold = threshold != null;
+  if (!hasFee && !hasThreshold) return null;
+  // fee===0 suppresses the threshold on purpose. Both can be set (the
+  // validators allow fee >= 0 with threshold > 0), but "delivery is free ·
+  // free above 250₪" puts a condition on something already unconditional.
+  if (hasFee && fee === 0) return [{ before: t("fee_free"), amount: null, after: "" }];
+  const segments = [];
+  if (hasFee) {
+    segments.push({
+      ...splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL })),
+      amount: formatPrice(fee),
+    });
+  }
+  if (hasThreshold) {
+    segments.push({
+      ...splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL })),
+      amount: formatPrice(threshold),
+    });
+  }
+  return segments;
+}
+
 export default function DeliveryBlock({
   nationwide,
   excluded = [],
@@ -229,6 +297,12 @@ export default function DeliveryBlock({
   // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
   const cutoff = getSingleOrderCutoff(producer?.order_window);
   const cutoffDayLabel = cutoff ? tWeekdays(WEEKDAY_SHORT_KEYS[cutoff.dayIndex]) : null;
+  // MEH-1577: null when the owner stated neither value → no line renders.
+  const feeSegments = buildFeeSegments(
+    producer?.delivery_fee,
+    producer?.free_delivery_above,
+    t,
+  );
   // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
   // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
   const pickupLocations = (producer?.locations || []).filter(
@@ -260,6 +334,31 @@ export default function DeliveryBlock({
         areas={areas}
         producer={producer}
       />
+
+      {/* MEH-1577: cost before geography — the reader's first question is
+          "what does delivery cost", not "where do they go" (Baymard: surprise
+          costs are the #1 abandonment driver). Absent from the DOM entirely
+          when the owner has stated neither value. The ₪ amounts are bidi-
+          isolated for the same reason AreaRow's min_order is (MEH-1168 P1):
+          RTL otherwise reorders "35₪". */}
+      {feeSegments && (
+        <p
+          className="flex items-center gap-1.5 text-sm text-text mb-4"
+          data-testid="delivery-fee-line"
+        >
+          <Truck size={16} className="text-primary" aria-hidden="true" />
+          <span>
+            {feeSegments.map((seg, i) => (
+              <span key={seg.before || i}>
+                {i > 0 && " · "}
+                {seg.before}
+                {seg.amount != null && <bdi>{seg.amount}</bdi>}
+                {seg.after}
+              </span>
+            ))}
+          </span>
+        </p>
+      )}
 
       {nationwide ? (
         <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
