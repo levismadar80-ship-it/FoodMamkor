@@ -180,52 +180,58 @@ async function selfTest() {
     args: ["--ssl-version-max=tls1.2"],
     ...(fs.existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
   });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await page.route(PRODUCERS_RE, (r) =>
-    r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
-  await page.route(CATEGORIES_RE, (r) =>
-    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(categories) }));
-  await page.goto(`${BASE}/map`, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.__MAP_CENTER__ !== undefined, { timeout: 45_000 });
-  // A flat wait, not waitForSelector, ON PURPOSE: producers are mocked to `[]`
-  // here, so no marker will ever appear and a selector-wait would hang until it
-  // times out. `__MAP_CENTER__` above is the real readiness signal; this only
-  // lets the pane finish sizing. Do not "upgrade" this to a marker wait.
-  await page.waitForTimeout(1000);
+  // try/finally so a throw between here and the end still closes the browser.
+  // Without it a hung wait (waitForFunction is 45s) leaves a Chromium alive
+  // until the job is killed.
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.route(PRODUCERS_RE, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+    await page.route(CATEGORIES_RE, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(categories) }));
+    await page.goto(`${BASE}/map`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => window.__MAP_CENTER__ !== undefined, { timeout: 45_000 });
+    // A flat wait, not waitForSelector, ON PURPOSE: producers are mocked to `[]`
+    // here, so no marker will ever appear and a selector-wait would hang until it
+    // times out. `__MAP_CENTER__` above is the real readiness signal; this only
+    // lets the pane finish sizing. Do not "upgrade" this to a marker wait.
+    await page.waitForTimeout(1000);
 
-  // Fail loudly and specifically if the map never mounted. Without this the
-  // injection below throws on a null pane, or silently adds nothing, and all
-  // four assertions then report as classifier faults when the real problem is
-  // "the page didn't load" — a failure message that points at the wrong thing
-  // is its own kind of silent failure.
-  const injected = await page.evaluate(() => {
-    const pane = [...document.querySelectorAll(".leaflet-container")].find(
-      (c) => c.getBoundingClientRect().width > 0,
-    );
-    if (!pane) return 0;
-    const add = (id, cssText) => {
-      const el = document.createElement("div");
-      el.className = "mehamakor-marker-wrap";
-      el.id = id;
-      el.style.cssText = cssText;
-      pane.append(el);
-    };
-    add("st-filter-fade", "filter: grayscale(1) opacity(0.35);"); // correct demote
-    add("st-prop-fade", "filter: grayscale(1); opacity: 0.35;"); // the regression
-    add("st-none", ""); // full strength
-    return pane.querySelectorAll(".mehamakor-marker-wrap").length;
-  });
-  check("[self-test] the map pane mounted and took the synthetic pins",
-    injected === 3, `injected=${injected} (0 means the pane never mounted)`);
+    // Fail loudly and specifically if the map never mounted. Without this the
+    // injection below throws on a null pane, or silently adds nothing, and all
+    // four assertions then report as classifier faults when the real problem is
+    // "the page didn't load" — a failure message that points at the wrong thing
+    // is its own kind of silent failure.
+    const injected = await page.evaluate(() => {
+      const pane = [...document.querySelectorAll(".leaflet-container")].find(
+        (c) => c.getBoundingClientRect().width > 0,
+      );
+      if (!pane) return 0;
+      const add = (id, cssText) => {
+        const el = document.createElement("div");
+        el.className = "mehamakor-marker-wrap";
+        el.id = id;
+        el.style.cssText = cssText;
+        pane.append(el);
+      };
+      add("st-filter-fade", "filter: grayscale(1) opacity(0.35);"); // correct demote
+      add("st-prop-fade", "filter: grayscale(1); opacity: 0.35;"); // the regression
+      add("st-none", ""); // full strength
+      return pane.querySelectorAll(".mehamakor-marker-wrap").length;
+    });
+    check("[self-test] the map pane mounted and took the synthetic pins",
+      injected === 3, `injected=${injected} (0 means the pane never mounted)`);
 
-  const r = await readMarkers(page);
-  check("[self-test] classifier sees exactly the 3 synthetic pins", r.total === 3, `total=${r.total}`);
-  check("[self-test] filter-borne fade counts as demoted", r.demoted === 1, `demoted=${r.demoted}`);
-  check("[self-test] property-borne fade does NOT count as demoted",
-    r.full === 2, `full=${r.full} (expected the property-fade pin + the plain pin)`);
-  check("[self-test] property-borne fade is reported as the regression fingerprint",
-    r.propOnlyFade === 1, `propOnlyFade=${r.propOnlyFade}`);
-  await browser.close();
+    const r = await readMarkers(page);
+    check("[self-test] classifier sees exactly the 3 synthetic pins", r.total === 3, `total=${r.total}`);
+    check("[self-test] filter-borne fade counts as demoted", r.demoted === 1, `demoted=${r.demoted}`);
+    check("[self-test] property-borne fade does NOT count as demoted",
+      r.full === 2, `full=${r.full} (expected the property-fade pin + the plain pin)`);
+    check("[self-test] property-borne fade is reported as the regression fingerprint",
+      r.propOnlyFade === 1, `propOnlyFade=${r.propOnlyFade}`);
+  } finally {
+    await browser.close();
+  }
 }
 
 async function run(width, height, label) {
