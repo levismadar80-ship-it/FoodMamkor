@@ -3,6 +3,54 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
+
+**Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
+their own logs: PR #2275 (`772e1edf`, MEH-1631) and PR #2284 (`58cda106`,
+MEH-1593 follow-up). Both were spec branches — they touch a file outside
+`docs/**` / `HANDOFF.md` / `.claude/**` — so `changelog-branch-guard.sh` under
+the required **Repo guards** job blocks the logs from riding along (rule 31).
+This is the deferred backfill those PRs pointed at.
+
+**⚠️ #2272 was in the ticket's scope and is deliberately NOT backfilled.** The
+ticket listed three PRs and specifically said to verify #2272 against the commit
+rather than write from its title, since it did not come from that session. The
+verification's answer is that it needs nothing: `f220532b` changed 4 files —
+`HANDOFF.md`, `docs/CHANGELOG.md`, `docs/ci/e2e-gate.patch.md`, `ADR-028` — and
+**zero code files**. The guard only fires on a branch that also changes code, so
+#2272 was free to write its own logs, and did: `docs/CHANGELOG.md:36` plus a
+6-line HANDOFF correction (the stale "three manual items, all Sapir's" list),
+both accurate and complete. Adding a second entry would have produced exactly the
+duplicated, contradictory pair MEH-1602 exists to prevent — the precedent being
+the two conflicting MEH-1569 entries on PR #2207, which only a human reading the
+log caught. For that row the scope note *is* the deliverable.
+
+**Two lessons carried into the CHANGELOG, because they are the real content:**
+
+1. **A line-number cross-reference rots.** One citation, three repair attempts,
+   three different wrong answers — none canonical, because the pattern lives at
+   **5** sites in `parity.spec.ts` (451 · 505 · 530 · 564 · 593), not 2. The
+   replacement anchors on the enclosing test name plus the shared skip-reason
+   string; the string is the stronger of the two, surviving a rename and finding
+   all five sites at once.
+2. **An assertion that can only confirm is not an assertion.** The mandated
+   `grep "S5 subject unreachable" → 0` returned 0 — but would have returned 0
+   even if all four S5 instances had skipped, because Playwright's list reporter
+   prints a skip as `-  <n> …` and never prints the annotation's reason. What
+   actually carries the claim is the `✓` vs `-` marker per line. Same class as
+   the MEH-1593 clipping detector: an assertion that looks strict and cannot
+   tell the healthy state from the broken one.
+
+**Operational note, unchanged from earlier today.** Vercel is still at its
+free-tier cap (`api-deployments-free-per-day`, 100/24h), so neither #2275 nor
+#2284 has a preview URL, and this PR will not get one either. Account-level
+infra, not a required check; docs-only and spec-only diffs need no mobile QA.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
+
+---
+
 ## 2026-07-27 — MEH-1627 optional-auth strict 401 (PR #2281 merged `4fa95cdc`) — launch blocker closed
 
 **Shipped (PR #2281).** `get_current_user_optional` swallowed every non-403
