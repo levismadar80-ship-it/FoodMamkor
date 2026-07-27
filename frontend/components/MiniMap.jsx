@@ -122,8 +122,13 @@ function LocationPins({ points, producer, fallbackLabel }) {
         key={location.id ?? `${location.lat}-${location.lng}-${index}`}
         position={[location.lat, location.lng]}
         icon={locationIcon(location, producer)}
+        // MEH-1619: `title` only. An `alt` here would be type-valid and inert:
+        // Leaflet applies it ONLY when the icon element is an <img>
+        // (`if (icon.tagName === 'IMG') { icon.alt = options.alt || '' }`,
+        // leaflet-src.js:7907-7909), and a divIcon renders a <div>. Measured on
+        // the live page: the pin element is a DIV with no alt attribute at all.
+        // `title` is applied to any element (:7903) — measured present.
         title={label}
-        alt={label}
       >
         <Tooltip>
           <span className="font-medium">{label}</span>
