@@ -27,10 +27,15 @@ import { categoryGlyphSvg } from "@/lib/marker-glyph";
  * Bug fix (#10): the old marker had Leaflet's default `alt="Marker"`,
  * which on some hover tooltips shows up as "arker" after letter
  * truncation. Now we:
- *   - Set `alt: producer.name` explicitly
  *   - Set `title: producer.name` for the browser tooltip
  *   - Bind a Leaflet tooltip with the actual name
  *   - Defensively skip producers without name/lat/lng
+ *
+ * This list used to open with "Set `alt: producer.name` explicitly". That line
+ * was wrong from the day it was written — Leaflet only applies `alt` to an <img>
+ * icon, and these markers are divIcons, so the option was silently dropped
+ * (MEH-1619, measured). `title` is what actually carries the name here; the
+ * option itself is gone.
  *
  * Parent communicates via `registerApi` callback (not refs — next/dynamic
  * doesn't reliably forward refs).
@@ -778,8 +783,14 @@ export default function MapComponent({
           // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
           // sheet in MapClient (onProducerClickRef). ALL of a producer's markers
           // open the SAME producer card. Hover syncs card highlight, not a tooltip.
-          alt: markerLabel,
+          //
+          // MEH-1619: `alt: markerLabel` used to sit here and did nothing. Leaflet
+          // applies alt ONLY to an <img> icon (leaflet-src.js:7907-7909); these are
+          // divIcons, so it rendered a DIV with no alt attribute (measured). The
+          // accessible name comes from `title` (applied to any element, :7903) plus
+          // the role="button" + aria-label set in the `add` handler below (MEH-765).
           title: markerLabel,
+          // Effective, not decorative — measured tabindex="0" on the rendered pin.
           keyboard: true,
         });
         // MEH-1412: tag the marker with its business id so the cluster badge can
