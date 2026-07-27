@@ -108,31 +108,131 @@ const readMarkers = (page) =>
       (c) => c.getBoundingClientRect().width > 0,
     );
     const pane = panes[0];
-    if (!pane) return { total: 0, demoted: 0, full: 0, focusedClass: 0, containerFlag: false };
+    // Every field a caller reads must be present here too. `propOnlyFade` was
+    // missing at first, so the `propOnlyFade === 0` check read `undefined === 0`
+    // and logged a spurious failure on any run where the pane wasn't found —
+    // noise that looks like a finding, stacked on top of the real failure.
+    if (!pane) {
+      return { total: 0, demoted: 0, full: 0, propOnlyFade: 0, focusedClass: 0, containerFlag: false };
+    }
     const wraps = [...pane.querySelectorAll(".mehamakor-marker-wrap")];
     let demoted = 0;
     let full = 0;
+    let propOnlyFade = 0;
     for (const w of wraps) {
       const s = getComputedStyle(w);
-      // BOTH cues must be present, and the fade is asserted specifically.
-      // An `||` here would hide the exact regression this check exists for:
-      // markercluster's inline style.opacity beats a class-level `opacity`,
-      // so a demote expressed that way survives as grayscale-only after any
-      // zoom and an OR-based probe would still call it "demoted".
+      // A demoted pin must be BOTH desaturated AND faded, and the fade must be
+      // carried by `filter: opacity()` specifically.
+      //
+      // MEH-1619: this used to read `grayscaled && (fadedViaFilter || fadedViaProp)`
+      // — right next to a comment claiming the fade was asserted specifically. The
+      // OR made that false. `fadedViaProp` alone satisfied the fade half, and a
+      // property-borne fade is exactly the state MEH-1611 proved broken:
+      // markercluster writes `style.opacity` inline on every marker it animates, so
+      // a `opacity: 0.35` demote silently reverts to full strength on the first
+      // zoom. The old probe called that "demoted" for as long as it happened to be
+      // sampled before a zoom.
+      //
+      // A property-borne fade is now not merely insufficient — it is counted and
+      // reported, because it is the fingerprint of the regression, not a variant
+      // spelling of correct.
       const grayscaled = s.filter.includes("grayscale");
       const fadedViaFilter = /opacity\(0?\.\d+\)/.test(s.filter);
       const fadedViaProp = Number.parseFloat(s.opacity) < 0.9;
-      if (grayscaled && (fadedViaFilter || fadedViaProp)) demoted += 1;
+      if (grayscaled && fadedViaFilter) demoted += 1;
       else full += 1;
+      if (fadedViaProp && !fadedViaFilter) propOnlyFade += 1;
     }
     return {
       total: wraps.length,
       demoted,
       full,
+      propOnlyFade,
       focusedClass: pane.querySelectorAll(".mehamakor-marker-focused").length,
       containerFlag: pane.classList.contains("mehamakor-map-focused"),
     };
   });
+
+/**
+ * MEH-1619 — self-test for the demote classifier itself.
+ *
+ * The live checks below can only tell you the app is in the state you expect.
+ * They cannot tell you the CLASSIFIER would notice if it weren't — and a probe
+ * that cannot fail is not evidence. This injects three synthetic pins with
+ * known styling into the live pane and asserts how `readMarkers` classifies
+ * each, so the assertion is exercised against a broken state on every run
+ * instead of only when someone happens to break the CSS.
+ *
+ * Deterministic on purpose: inline styles, no cluster animation, no timing.
+ * It runs the REAL `readMarkers` against real elements — the classifier is not
+ * duplicated here, because a second copy would be free to drift from the one
+ * that matters, which is the failure family this whole ticket is about.
+ *
+ * Discriminating by construction: pin B (fade on the `opacity` PROPERTY) is the
+ * regression fingerprint. Under the previous `fadedViaFilter || fadedViaProp`
+ * form it counted as demoted, so this self-test would report demoted=2 and fail.
+ *
+ * Precedent for shipping a self-test beside the checker:
+ * `.claude/scripts/audit-skills.sh --self-test`.
+ */
+async function selfTest() {
+  const browser = await chromium.launch({
+    args: ["--ssl-version-max=tls1.2"],
+    ...(fs.existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
+  });
+  // try/finally so a throw between here and the end still closes the browser.
+  // Without it a hung wait (waitForFunction is 45s) leaves a Chromium alive
+  // until the job is killed.
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.route(PRODUCERS_RE, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+    await page.route(CATEGORIES_RE, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(categories) }));
+    await page.goto(`${BASE}/map`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => window.__MAP_CENTER__ !== undefined, { timeout: 45_000 });
+    // A flat wait, not waitForSelector, ON PURPOSE: producers are mocked to `[]`
+    // here, so no marker will ever appear and a selector-wait would hang until it
+    // times out. `__MAP_CENTER__` above is the real readiness signal; this only
+    // lets the pane finish sizing. Do not "upgrade" this to a marker wait.
+    await page.waitForTimeout(1000);
+
+    // Fail loudly and specifically if the map never mounted. Without this the
+    // injection below throws on a null pane, or silently adds nothing, and all
+    // four assertions then report as classifier faults when the real problem is
+    // "the page didn't load" — a failure message that points at the wrong thing
+    // is its own kind of silent failure.
+    const injected = await page.evaluate(() => {
+      const pane = [...document.querySelectorAll(".leaflet-container")].find(
+        (c) => c.getBoundingClientRect().width > 0,
+      );
+      if (!pane) return 0;
+      const add = (id, cssText) => {
+        const el = document.createElement("div");
+        el.className = "mehamakor-marker-wrap";
+        el.id = id;
+        el.style.cssText = cssText;
+        pane.append(el);
+      };
+      add("st-filter-fade", "filter: grayscale(1) opacity(0.35);"); // correct demote
+      add("st-prop-fade", "filter: grayscale(1); opacity: 0.35;"); // the regression
+      add("st-none", ""); // full strength
+      return pane.querySelectorAll(".mehamakor-marker-wrap").length;
+    });
+    check("[self-test] the map pane mounted and took the synthetic pins",
+      injected === 3, `injected=${injected} (0 means the pane never mounted)`);
+
+    const r = await readMarkers(page);
+    check("[self-test] classifier sees exactly the 3 synthetic pins", r.total === 3, `total=${r.total}`);
+    check("[self-test] filter-borne fade counts as demoted", r.demoted === 1, `demoted=${r.demoted}`);
+    check("[self-test] property-borne fade does NOT count as demoted",
+      r.full === 2, `full=${r.full} (expected the property-fade pin + the plain pin)`);
+    check("[self-test] property-borne fade is reported as the regression fingerprint",
+      r.propOnlyFade === 1, `propOnlyFade=${r.propOnlyFade}`);
+  } finally {
+    await browser.close();
+  }
+}
 
 async function run(width, height, label) {
   // executablePath: the sandbox ships Chromium at a fixed path that may not
@@ -203,6 +303,12 @@ async function run(width, height, label) {
   check(`[${label}] every full-strength pin belongs to the selected business`,
     selected.full === selected.focusedClass,
     `full=${selected.full} focused=${selected.focusedClass}`);
+  // MEH-1619: the fade must not be riding on the `opacity` PROPERTY. Any pin in
+  // that state is one zoom away from silently un-fading (markercluster writes
+  // style.opacity inline), so it is a failure the moment it appears — not a
+  // second acceptable spelling.
+  check(`[${label}] no pin fades via the opacity property (inline-override trap)`,
+    selected.propOnlyFade === 0, `propOnlyFade=${selected.propOnlyFade}`);
   await page.screenshot({ path: path.join(OUT, `map-${label}-02-selected.png`) });
 
   // Regression guard: a zoom cycle runs markercluster's animation path, which
@@ -242,6 +348,9 @@ async function run(width, height, label) {
 }
 
 fs.mkdirSync(OUT, { recursive: true });
+// Self-test FIRST: if the classifier can't tell a correct demote from the
+// broken one, nothing the live checks report afterwards is worth reading.
+await selfTest();
 await run(1440, 900, "1440");
 await run(375, 812, "375");
 
