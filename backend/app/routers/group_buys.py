@@ -110,9 +110,16 @@ def _maybe_notify_funded(
         .filter(GroupBuyCommit.group_buy_id == gb.id)
         .all()
     ]
-    owner_email = (
-        db.query(User.email).filter(User.producer_id == gb.producer_id).scalar()
+    # .first(), not .scalar(): no DB constraint stops two User rows from
+    # sharing a producer_id, and .scalar() raises MultipleResultsFound on a
+    # second match — which would 500 the commit itself, since this runs before
+    # db.commit(), not inside the background task's try/except. Matches the
+    # defensive convention already used for this exact query shape elsewhere
+    # (admin.py:522,566,632).
+    owner_row = (
+        db.query(User.email).filter(User.producer_id == gb.producer_id).first()
     )
+    owner_email = owner_row[0] if owner_row else None
 
     # MEH-1454: naive datetime. sa.DateTime() is naive and this module uses
     # datetime.utcnow() throughout — an aware value here breaks comparisons.
