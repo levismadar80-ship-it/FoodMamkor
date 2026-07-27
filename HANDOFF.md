@@ -3,6 +3,73 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1619 (4 PRs merged: `deb96817` · `7ac508fc` · `1be7aa64` · `33f20853`)
+
+**Shipped.** A systematic sweep for code that is valid, type-valid, lint-clean,
+review-approved — and does nothing. Three classes, 4 findings, 4 fixed, plus two
+rules so the classes get caught at review instead of a ticket later. Full evidence
+tables: `docs/audits/silent-failure-audit.md`.
+
+| Class | Scanned | Findings |
+|---|---|---|
+| A — our CSS on library-managed DOM | 13 rules | 1 dead |
+| B — type-valid but runtime-inert props | 8 instances | 2 inert |
+| C — assertions one disjunct can pass | 103 `\|\|`, 5 in assertion position | 1 weak |
+
+**The number that matters is 12, not 1.** Twelve of the thirteen class-A rules are
+live. The only way to tell them apart from the dead one was to measure each in a
+browser — which is exactly why the new rule demands a computed-style probe rather
+than a code read.
+
+**The measurement trap, twice.** Both times the first attempt produced a confident
+wrong answer:
+
+1. **Sampling the wrong state.** The first probe run reported `(missing)` for three
+   rows because at the default zoom every marker is inside a cluster — the marker
+   selector matches zero elements, so the probe measured the camera, not the rule.
+   Selecting a business first (which fitBounds and un-clusters) fixed it. This is
+   now written into the frontend rule.
+2. **The wrong instrument.** The no-op comparator hashed PNGs and reported /map as
+   differing. It wasn't: the same build captured twice also hashed differently, and
+   the pixel diff was 0. One step from "the deletion changed rendering, revert it".
+
+**The invalid proof is the most reusable lesson.** For class C I did what the ticket
+asked — reintroduced the broken CSS, re-ran, watched it go red. That looked like
+proof and wasn't: the OLD, weaker assertion failed on the same construction, because
+the library had already undone the broken state by sample time. A construction that
+both versions fail cannot justify replacing one with the other. What worked was a
+self-test feeding the real classifier synthetic inputs. **That clause — "the
+construction must discriminate" — is the load-bearing half of the new testing rule.**
+
+**Two rules added.** `.claude/rules/frontend.md` (CSS on third-party DOM needs a
+browser probe; deletions need a pixel diff, not a hash; lists what Leaflet and
+markercluster write inline, with file:line). `.claude/rules/testing.md` (new guard
+tests ship with a discriminating failing-by-construction run; ship a self-test when
+the assertion is a classifier; watch for `||` in a pass condition).
+
+**Open, flagged, not absorbed.**
+- **A producer-detail fault took out three E2E specs on every PR in this batch**
+  (`03`/`04`/`06`, all `#__next_error__`) while `staging` stayed green. Proven
+  unrelated to the diffs by an inert-delta A/B: #2262 passed on one commit and
+  failed on the next, where the entire delta was **11 comment lines** in two `.mjs`
+  files the app never imports and Playwright never runs. Could not be re-run (`403`)
+  or reproduced locally (Railway egress blocked, MEH-360). **Wants its own ticket** —
+  not opened from here, since rule 27 wants a duplicate search first.
+- **`E2E gate (required)` went live mid-run** (PR #2265 / MEH-1201) and immediately
+  reported red on those environmental failures — precondition B in
+  `.claude/rules/testing.md` warned about exactly this. It is not in the ruleset's
+  required contexts yet (`mergeable_state` stayed `unstable`, not `blocked`), so it
+  did not block. **Worth Sapir's eyes before it is added to the ruleset**, or every
+  PR blocks on a fault none of them caused.
+- **Marker-hover has no affordance at all.** The deleted rule never worked; only
+  card-hover rings a pin (measured 0→1). Restoring it is a design call, and it must
+  target the icon's inner div — never the Leaflet-positioned wrap.
+- **Vercel hit the 100-deploy/day cap again**, so no preview URLs for this batch.
+  The pixel-diff artifacts in `qa-artifacts/MEH-1619/` are the substitute evidence.
+
+**Next.** Nothing outstanding on this ticket. Stryker/mutation testing (the
+industrial version of class C) is the sibling post-launch ticket.
+
 ## 2026-07-27 — MEH-1593 badge popover/tooltip audit (merged `db4548e7`)
 
 **Shipped.** The MEH-1592 "+N" fix turned out to be one symptom of a family. All
@@ -67,7 +134,7 @@ The demo business is staging-gated by `_assert_not_production()` (`backend/scrip
 
 - **Four merges, one thread.** The VRT suite stopped being a source of permanent red. **PR #2221** ratified the home-mobile baseline by **restoring the `3680b928` blob** (`c01d43011917`) rather than regenerating — that blob was the on-runner regen of 23/07, captured after both MEH-1476 and MEH-1410, which `52ab77da` had reverted to a 21/07 image by mistake. **PR #2210** (MEH-1591) made `/map` deterministic with `page.route()` fixtures for the producers collection + `/categories`, and landed a regenerated `map-desktop-linux.png`. **PR #2230** (MEH-1599, **another session**) replaced the auth-gate redirect with an in-app denied state. **PR #2255** made the hero-search locator deterministic with `.first()`. Details for each are in the CHANGELOG; not repeated here.
 - **All three `E2E gate (required)` prerequisites are now satisfied** — A (docs-only actually skips) since 26/07, C (no permanently-red data-dependent spec) via #2210, B (suite green) via #2255. ⚠️ **CI had not reported on #2255 when it auto-merged** — E2E is still not a required gate, so the aggregators merged it first. The local evidence is 5/5 with `--retries=0`, but on sandbox chromium v1194 vs CI's v1228; the runner remains the authoritative signal.
-- **Three manual items left, all Sapir's** (`.github/workflows/**` is CC-deny, MEH-671): **(1)** apply `docs/ci/e2e-gate.patch.md` (the `e2e-gate` aggregator job); **(2)** apply `docs/ci/e2e-concurrency.patch.md` (MEH-1601 — without it a docs push to `staging` still cancels the preceding code run and erases coverage); **(3)** add the `E2E gate (required)` context to ruleset 15240090. Order matters: (2) before (3), or the gate inherits the coverage hole.
+- ~~**Three manual items left, all Sapir's**~~ — **all three are closed as of 27/07; this line was stale on every count.** Corrected under MEH-1201: **(1)** the `e2e-gate` aggregator **was applied** by Sapir manually on 27/07 — verified against staging: `e2e.yml` carries job `e2e-gate`, `name: E2E gate (required)`, `if: always()`, `needs: [filter, e2e]`. **(2)** the MEH-1601 concurrency fix **was applied** — `e2e.yml:49` is now `e2e-${{ github.head_ref || github.run_id }}`, so a docs push to `staging` no longer cancels the preceding code run (MEH-1601 is Done). **(3)** adding `E2E gate (required)` to ruleset 15240090 was **DECIDED AGAINST and will not happen** — E2E stays informational; the two required checks remain `CI gate` + `Deploy gate`. Rationale in [ADR-028](./docs/decisions/ADR-028-qa-gates-per-tier.md) § amendment 27/07: we rejected the **scope** (browser E2E against an external preview is the category industry sources keep informational, and locally the gate sat unenabled for two weeks, blocked each time by flaky or data-dependent reds — not by real product bugs), **not the mechanism** (the aggregator pattern is standard and stays in use). The "order matters: (2) before (3)" note is moot — there is no (3).
 - **New rule — `.claude/rules/workflow.md` "Provenance verification".** In a `--depth` clone, `git log -- <path>` and `git log -S` return the **graft commit** as though it introduced the file, silently. `git rev-parse --is-shallow-repository` must read `false` before any "last changed in X" claim. Corollary recorded with it: **blob identity beats commit identity** — `git rev-parse <commit>:<path>` is what exposed `52ab77da` as a revert rather than a write, which is the whole reason #2221 could restore instead of regenerate.
 - **⚠️ Pattern worth carrying forward — three claims this session came from an indirect signal rather than the authoritative source, and Phase 0 caught all three.** (a) **shallow-clone `git log`** put MEH-1410 and MEH-1476 *after* the baseline, inverting the diagnosis — until `--unshallow`. (b) **A test result read as behaviour**: "/admin redirects to /login, /producer/dashboard to /" came from one assertion passing and one failing; in code the two guards were **identical**, and the difference was a race against `LoginClient.jsx:90`. The passing assertion passed by luck. (c) **A cached raw fetch**: a read of `admin/layout.js` showing the old shape came from **`main`**, not `staging` — `origin/main:120` is verbatim the quoted line and `ae06a786` is not its ancestor (the `CLAUDE.md` line-1 default-branch trap). Each indirect signal was entirely plausible; only cross-checking the source (unshallowed git, the guard code, `git show <ref>:<path>`) exposed the gap. This is meta-patterns §1 earning its place three times in one night.
 - **⚠️ Parallel sessions are live on this repo.** MEH-1599/#2230 landed on the two files I was in Phase 0 on, and MEH-1601 rewrote `docs/ci/e2e-gate.patch.md` mid-task; the trigger list shows five other sessions active tonight. Both near-collisions were avoided only by re-checking before editing, not by any guard. Rule 1 (single session) / rule 16 (worktrees) apply.
@@ -241,6 +308,10 @@ the `DEMO_*` secrets (since `21ccecc`). Notably `docs/ci/e2e-auth-fixtures.patch
 was a patch doc telling Sapir to do work she had already done; it is now marked
 APPLIED. **The E2E gate is still blocked, but on precondition B alone** (suite
 not green) — A has been satisfied for some time and no doc said so.
+_(Superseded 27/07 — accurate as written on 26/07. B is since satisfied, the
+aggregator was applied, and the ruleset step was decided against; the E2E gate
+is not "blocked", it is deliberately informational. See the 27/07 entry and
+ADR-028 § amendment 27/07. Left as-written: this is a dated record.)_
 
 **Process note.** The `changelog-branch-guard` (MEH-1602) landed on `staging`
 mid-session and correctly rejected the CHANGELOG entry inside the MEH-1599 code
