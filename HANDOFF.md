@@ -3,6 +3,72 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1577 structured delivery cost (RED, chunked) — PR #2334 open, awaiting merge approval
+
+**PR #2334 is OPEN as a draft, NOT merged.** RED tier: migration `c7e2a4b91f38`
+was shown verbatim, applied to staging by Sapir, and confirmed before chunks 2–3
+were written. Merge approval is Sapir's.
+
+**Branch:** `feature/meh-1577-delivery-fee-fields` (5 commits + a staging merge).
+**Docs branch:** `feature/meh-1577-docs-backfill` — this file + CHANGELOG, kept
+out of the code branch under rule 31.
+
+### What shipped
+`producers.delivery_fee` + `producers.free_delivery_above`, both nullable
+INTEGER. Owner edits them in the dashboard delivery card; `DeliveryBlock` renders
+one cost line above the city list. Six render states + a seventh combined state.
+
+### Decisions made this session (all Sapir's, recorded so they are not re-litigated)
+| Decision | Outcome |
+|---|---|
+| Column type | **INTEGER**, not `NUMERIC(10,2)`. CC proposed NUMERIC on money-convention grounds; rejected — `delivery_areas.min_order` is the closest analogous field, and two adjacent delivery-money fields with different types fork serialization (`Decimal` vs `int`), rendering, and fixtures. |
+| Scope | **Producer-level**, not per-`delivery_areas` row. |
+| Ordering vs MEH-1646 | **MEH-1577 first**; 1646 merged onto this line. |
+| Sync mechanism | **`git merge origin/staging`** (rule 25), not rebase. |
+| ProducerCard fee display | **Deferred → MEH-1678** (frontend-only; no schema work needed). |
+
+### Open items — Sapir
+1. **Merge approval on PR #2334.** No auto-merge (RED).
+2. **`Builder-Model:` trailer is absent from every commit on both branches.** The
+   guard warns and exits 0 (warn-only until **2026-08-17**, then blocking). CC did
+   not add it: this session runs under a harness instruction forbidding its model
+   identifier in commit messages / PR titles / PR bodies, which contradicts the
+   template requirement. CC declined to pick a side on a convention Sapir owns.
+   Note the guard's substantive purpose is already met — it exists to catch
+   *builder == reviewer*, and the reviewer pin is `claude-sonnet-4-6`.
+3. **No Vercel preview URL.** Account is at the free-tier cap
+   (`api-deployments-free-per-day`, 100/24h) — same condition as earlier today.
+   Mobile QA cannot be done from a preview until that clears.
+4. **`/adversarial-review` has not been run** on PR #2334.
+5. **Four meta-patterns rules were referenced but never supplied** — see below.
+
+### ⚠️ Missing input, not forgotten
+The instruction for this docs PR named "the four meta-patterns rules I supplied
+earlier". **No such rules appear anywhere in the session transcript.** They were
+not written to `.claude/rules/meta-patterns.md` here, and inventing four
+plausible-sounding rules for a file that shapes every future session is exactly
+the failure mode that file warns about. Awaiting the actual text.
+
+### Two findings worth carrying forward
+1. **A clean linter does not mean a clean diff.** Moving fields between schema
+   classes left an orphaned comment above `model_config` with no code under it;
+   `ruff check` and `ruff format` both passed. Reading the diff caught it.
+2. **Invisible characters land in `textContent`.** Unicode bidi isolates
+   (U+2066/U+2069) are correct and invisible on screen, but they silently break
+   `getByText` / Playwright assertions written against rendered copy. `<bdi>` is
+   equivalent and leaves the text clean — measured, not assumed
+   (`frontend/e2e/qa-meh1577-bidi-probe.mjs`).
+
+### Process note
+Two concurrent `pytest` runs deadlocked on the suite's `TRUNCATE`-between-tests
+fixture; the first reported **completed, exit 0, with an empty log**. That is the
+false-green shape rule 21 describes. Never run two backend suites against
+`mehamakor_test` at once, and never accept a green you cannot read.
+
+### NEXT
+Sapir merges #2334 (or requests changes), then MEH-1626 chunk 1 remains the
+queued epic (unchanged from the previous handoff).
+
 ## 2026-07-27 — batch MEH-1660 · MEH-1661 · MEH-1662 (end-to-end authority, ADR-016 v2)
 
 **Shipped.** Four PRs merged: #2308 (MEH-1660 fix) · #2321 (MEH-1660 qa-artifacts) ·
