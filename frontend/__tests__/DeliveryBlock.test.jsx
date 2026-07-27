@@ -16,6 +16,10 @@ vi.mock("next-intl", () => ({
     if (key === "nationwide_except") return `משלוחים לכל הארץ (למעט ${vars?.cities ?? ""})`;
     // MEH-1435: compact city-list toggle copy.
     if (key === "show_all") return `הצג עוד ${vars?.count ?? ""} ערים`;
+    // MEH-1646 (a): order-cutoff copy — with and without the day promise.
+    if (key === "order_cutoff") return `מקבלים הזמנות עד ${vars?.day ?? ""} ${vars?.time ?? ""}`;
+    if (key === "order_cutoff_with_day")
+      return `מקבלים הזמנות עד ${vars?.day ?? ""} ${vars?.time ?? ""} · משלוח ביום ${vars?.delivery_day ?? ""}`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
@@ -27,6 +31,10 @@ vi.mock("next-intl", () => ({
       // MEH-1512: map.mini keys reused by the pickup-row Waze nav link.
       "open_in_waze": "Waze",
       "open_in_waze_aria": "פתיחה ב-Waze",
+      // MEH-1646: pickup free tag + weekday label used by the cutoff line
+      // (the mock ignores namespaces, so opening_hours.weekdays.wed → "wed").
+      "free": "חינם",
+      "wed": "יום רביעי",
     };
     return map[key] ?? key;
   },
@@ -264,5 +272,97 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     // No Waze nav link is rendered for the generic fallback line.
     expect(screen.queryByRole("link", { name: "פתיחה ב-Waze" })).not.toBeInTheDocument();
+  });
+
+  // MEH-1646 (a) — order-cutoff line, three states. Cutoff renders ONLY when
+  // order_window has exactly one open day (getSingleOrderCutoff); the day
+  // promise attaches ONLY in hoist mode (single shared delivery day).
+  const singleDayWindow = { wednesday: { open: "09:00", close: "14:00" } };
+  const hoistAreas = [
+    { id: 1, city: "זכרון יעקב", min_order: 100, delivery_day: "שישי" },
+    { id: 2, city: "עתלית", min_order: 120, delivery_day: "שישי" },
+  ];
+
+  it("MEH-1646 state 1: single-day window + single shared delivery day → combined cutoff line replaces dispatch_days", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={hoistAreas}
+        pickup={false}
+        producer={{ ...producer, order_window: singleDayWindow }}
+      />,
+    );
+    expect(
+      screen.getByText("מקבלים הזמנות עד יום רביעי 14:00 · משלוח ביום שישי"),
+    ).toBeInTheDocument();
+    // Replaced, not duplicated — the day is still stated exactly once.
+    expect(screen.queryByText("יוצאים בימי שישי")).not.toBeInTheDocument();
+  });
+
+  it("MEH-1646 state 2: single-day window + 2+ delivery days → cutoff WITHOUT a day promise", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי" },
+          { id: 2, city: "עכו", min_order: 80, delivery_day: "שלישי" },
+        ]}
+        pickup={false}
+        producer={{ ...producer, order_window: singleDayWindow }}
+      />,
+    );
+    expect(screen.getByText("מקבלים הזמנות עד יום רביעי 14:00")).toBeInTheDocument();
+    expect(screen.queryByText(/· משלוח ביום/)).not.toBeInTheDocument();
+  });
+
+  it("MEH-1646 state 3: no order_window → dispatch_days unchanged, no cutoff claim", () => {
+    render(
+      <DeliveryBlock nationwide={false} areas={hoistAreas} pickup={false} producer={producer} />,
+    );
+    expect(screen.getByText("יוצאים בימי שישי")).toBeInTheDocument();
+    expect(screen.queryByText(/מקבלים הזמנות עד/)).not.toBeInTheDocument();
+  });
+
+  it("MEH-1646 ambiguity guard: 2+ open window days → NO cutoff claim (dispatch_days kept)", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={hoistAreas}
+        pickup={false}
+        producer={{
+          ...producer,
+          order_window: {
+            wednesday: { open: "09:00", close: "14:00" },
+            thursday: { open: "09:00", close: "12:00" },
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText("יוצאים בימי שישי")).toBeInTheDocument();
+    expect(screen.queryByText(/מקבלים הזמנות עד/)).not.toBeInTheDocument();
+  });
+
+  // MEH-1646 (b) — pickup rows carry the "חינם" tag at the min_order hierarchy.
+  it("MEH-1646: pickup location rows and the generic fallback line both carry חינם", () => {
+    const { rerender } = render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={false}
+        producer={{
+          ...producer,
+          locations: [
+            { kind: "pickup", label: "החווה", city: "עתלית", lat: 32.7, lng: 34.9 },
+            { kind: "market_stand", label: "דוכן שוק", city: "חיפה", lat: 32.8, lng: 35 },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getAllByText("חינם")).toHaveLength(2); // one per pickup row
+    rerender(
+      <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={producer} />,
+    );
+    expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
+    expect(screen.getAllByText("חינם")).toHaveLength(1); // fallback line
   });
 });
