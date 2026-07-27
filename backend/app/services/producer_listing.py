@@ -218,6 +218,22 @@ def _delivery_city_condition(city: str):
     return or_(area_match, nationwide_match)
 
 
+def _delivery_day_condition(day: str, city: str | None = None):
+    """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
+    producers and day-less rows ("בתיאום מראש") are excluded from day
+    filtering; the integrity of "משלוח ביום X" beats recall.
+
+    With a city, the city AND the day must match on the SAME delivery_areas
+    row (one EXISTS). Two separate EXISTS would wrongly match a producer
+    whose חיפה row is day-less while its עכו row is on שישי — the day
+    promise would be attributed to the wrong city.
+    """
+    conds = [DeliveryArea.delivery_day == day]
+    if city:
+        conds.append(func.lower(DeliveryArea.city) == city.lower())
+    return Producer.delivery_areas.any(and_(*conds))
+
+
 def _kosher_condition(kosher: bool):
     """MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
     verified-only — it matches admin-verified kashrut (kashrut_verified_at,
@@ -332,15 +348,28 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     delivery_city = filters.get("delivery_city")
     delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
+    # MEH-1645: single canonical day (router 422s anything else). When a city
+    # is present the combined condition REPLACES _delivery_city_condition —
+    # v1 deliberately drops the nationwide OR-branch (no explicit day row =
+    # no day promise), so the shared MEH-1487 helper is untouched.
+    delivery_day = filters.get("delivery_day")
     if delivery_city:
-        # MEH-1255: nationwide producers now match any delivery_city EXCEPT
-        # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used so
-        # the OR branch isn't swallowed by join semantics; for area-based
-        # producers the result set is identical. Extracted to
-        # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
-        city_cond = _delivery_city_condition(delivery_city)
+        if delivery_day:
+            city_cond = _delivery_day_condition(delivery_day, delivery_city)
+        else:
+            # MEH-1255: nationwide producers now match any delivery_city EXCEPT
+            # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used
+            # so the OR branch isn't swallowed by join semantics; for area-based
+            # producers the result set is identical. Extracted to
+            # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
+            city_cond = _delivery_city_condition(delivery_city)
         q = q.filter(city_cond)
         count_q = count_q.filter(city_cond)
+    elif delivery_day:
+        # Day without a city — every explicit row with that day, any city.
+        day_cond = _delivery_day_condition(delivery_day)
+        q = q.filter(day_cond)
+        count_q = count_q.filter(day_cond)
     elif delivery_cities:
         # MEH-1487: region fallback — OR the SAME per-city condition across
         # the region's cities (nationwide-minus-excluded honoured per city).
@@ -522,7 +551,8 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
-    category, delivery_city, delivery_cities, has_delivery, verified, kosher, city,
+    category, delivery_city, delivery_cities, delivery_day (MEH-1645 — one
+    canonical Hebrew day; explicit-row matching only), has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)

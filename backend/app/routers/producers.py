@@ -24,6 +24,7 @@ from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
+    DELIVERY_DAYS,
     CategoryOut,
     ContactClickIn,
     ProducerCityOut,
@@ -74,6 +75,11 @@ def list_producers(
     # home empty-result "בתי עסק שמגיעים לאזור" section. delivery_city (single)
     # takes precedence when both are sent.
     delivery_cities: list[str] | None = Query(None),
+    # MEH-1645: single canonical Hebrew day (schemas.DELIVERY_DAYS). Explicit
+    # delivery_areas rows only — nationwide + day-less rows are excluded (v1
+    # semantics; see producer_listing._delivery_day_condition). Validated
+    # below with the router's manual-422 pattern (cf. sort).
+    delivery_day: str | None = None,
     has_delivery: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
@@ -117,6 +123,13 @@ def list_producers(
     # than silently falling back to newest.
     if sort is not None and sort not in ("newest", "rating"):
         raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
+    # MEH-1645: whitelist the day param against the canonical vocabulary —
+    # same list DeliveryAreaCreate validates on the write path (MEH-1644).
+    if delivery_day is not None and delivery_day not in DELIVERY_DAYS:
+        raise HTTPException(
+            status_code=422,
+            detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
+        )
     results, total_count = build_producers_query(
         db,
         lat=lat,
@@ -126,6 +139,7 @@ def list_producers(
         category=category,
         delivery_city=delivery_city,
         delivery_cities=delivery_cities,
+        delivery_day=delivery_day,
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
