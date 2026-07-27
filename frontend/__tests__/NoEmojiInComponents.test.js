@@ -13,11 +13,11 @@ import path from "node:path";
 //
 // SCOPE (deliberate):
 //   • components/**  app/**  — the rendered UI layer, .js/.jsx/.ts/.tsx.
-//   • NOT messages/*.json — the i18n dictionaries carry ~50 intentional,
-//     pre-existing emoji in copy (status badges, WhatsApp share text, admin
-//     buttons). De-emojifying that copy is a separate, Sapir-approval decision,
-//     out of this ticket's scope. The one message-file regression this ticket
-//     DOES lock — the diet chip labels — is asserted directly below.
+//   • NOT messages/*.json — guarded since MEH-1661 by the sibling
+//     NoEmojiInMessages.test.js (Sapir's 27/07 classification: UI strings
+//     stripped, outbound-message payloads exempt via justified allowlist).
+//     The one message-file regression THIS ticket locked — the diet chip
+//     labels — is still asserted directly below.
 //   • NOT lib/** — data modules (holidays.js holiday glyphs, etc.), not UI chrome.
 //   • NOT __tests__/** or e2e/** — tests/fixtures.
 //
