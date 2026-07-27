@@ -53,15 +53,34 @@ describe("ChatWidget desktop-only (MEH-1410)", () => {
     const { container } = renderWidget();
     expect(container).toBeEmptyDOMElement();
     // The launcher aria-label must not exist anywhere on mobile.
-    expect(screen.queryByLabelText("שאלו אותנו")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(he.chat.launcher_open_label)).not.toBeInTheDocument();
   });
 
   it("renders the launcher FAB on desktop (>= 768px)", () => {
     mockMatchMedia(true);
     renderWidget();
     // The effect flips isDesktop → true (flushed inside render's act()), so the
-    // launcher button (aria-label "שאלו אותנו" while closed) is present.
-    expect(screen.getByLabelText("שאלו אותנו")).toBeInTheDocument();
+    // closed-state launcher button is present.
+    expect(screen.getByLabelText(he.chat.launcher_open_label)).toBeInTheDocument();
+  });
+});
+
+describe("ChatWidget copy lock (MEH-1617)", () => {
+  // The assertions above read their expected text from he.json, which keeps
+  // them alive across a key rename but makes them blind to a copy CHANGE. This
+  // is the one place that pins the literal, because "the copy does not change"
+  // is the whole claim of the MEH-1617 move: these are the exact strings that
+  // were hardcoded in ChatWidget.jsx before it. Changing the Hebrew copy is a
+  // product decision and should red this test, not slip through an i18n edit.
+  it("keeps the pre-move Hebrew copy byte-for-byte", () => {
+    expect(he.chat.launcher_open_label).toBe("שאלו אותנו");
+    expect(he.chat.launcher_pill).toBe("שאלה? שאלו אותי");
+    expect(he.chat.input_placeholder).toBe("הקלידו שאלה...");
+    expect(he.chat.prompts.register).toBe("איך נרשמים כבית עסק?");
+    // Embedded newline, not a literal backslash-n — the escape-decoding bug
+    // this move originally shipped and then fixed.
+    expect(he.chat.answers.register).toContain("\n");
+    expect(he.chat.answers.register).not.toContain("\\n");
   });
 });
 
@@ -70,13 +89,13 @@ describe("ChatWidget i18n (MEH-1617)", () => {
     mockMatchMedia(true);
     renderWidget("en");
     // The launcher label resolves from en.json, not the old hardcoded Hebrew.
-    expect(screen.getByLabelText("Ask us")).toBeInTheDocument();
-    expect(screen.queryByLabelText("שאלו אותנו")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(en.chat.launcher_open_label)).toBeInTheDocument();
+    expect(screen.queryByLabelText(he.chat.launcher_open_label)).not.toBeInTheDocument();
   });
 
   it.each([
-    ["he", "שאלו אותנו", he.chat.prompts.register, he.chat.answers.register],
-    ["en", "Ask us", en.chat.prompts.register, en.chat.answers.register],
+    ["he", he.chat.launcher_open_label, he.chat.prompts.register, he.chat.answers.register],
+    ["en", en.chat.launcher_open_label, en.chat.prompts.register, en.chat.answers.register],
   ])(
     "answers a suggested prompt from the message file without an API call (%s)",
     (locale, launcherLabel, promptText, answerText) => {
