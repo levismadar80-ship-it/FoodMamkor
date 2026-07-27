@@ -5,16 +5,22 @@
  * one pending (owner: the logged-in user), one approved. Asserts the six pins
  * from the ticket, plus screenshots of the pending-owner page at 375 + 1440.
  *
- * Usage: node e2e/qa-meh1632-owner-404.mjs
- *   BASE          default http://localhost:3000
- *   CHROMIUM      path to a chromium binary (sandbox: /opt/pw-browsers/...)
+ * Usage: node e2e/qa-meh1632-owner-404.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 
-const BASE = process.env.BASE || "http://localhost:3000";
-const EXEC = process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-const OUT = "../qa-artifacts/MEH-1632";
+const OUT = process.argv[2] || "../qa-artifacts/MEH-1632";
+// REUSES: e2e/qa-meh1611-map-focus.mjs:25-29 — deliberately a constant +
+// optional argv override, NOT an env var: every `process.env.*` read in the
+// repo must be declared in .env.example or the "Env drift" gate blocks the PR
+// (scripts/check_env_drift.sh), and a one-off QA harness is not worth a new
+// documented env var (regression rule 8). An earlier version of this file read
+// those two values from the environment and reddened that gate on PR #2295 —
+// note the gate scans for the literal read, so do not name one in a comment
+// either.
+const BASE = process.argv[3] || "http://localhost:3000";
+const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const PENDING = "11111111-1111-4111-8111-111111111111";
 const APPROVED = "22222222-2222-4222-8222-222222222222";
@@ -28,7 +34,9 @@ const record = (pin, pass, detail) => {
   console.log(`${pass ? "PASS" : "FAIL"}  ${pin}\n      ${detail}`);
 };
 
-const browser = await chromium.launch({ executablePath: EXEC });
+const browser = await chromium.launch({
+  ...(existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
+});
 
 // ---------- anonymous context ----------
 const anon = await browser.newContext({ locale: "he-IL", viewport: { width: 1440, height: 900 } });
