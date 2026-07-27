@@ -37,7 +37,7 @@ import Popover from "@/components/ui/Popover";
  * Hebrew explainer. Outside click + Esc closes. Works on mobile
  * without requiring hover.
  */
-export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }) {
+export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
   const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
@@ -57,9 +57,9 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }
     >
       {badges.map((b) =>
         b.key === "verified" ? (
-          <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} />
+          <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} avoidRef={avoidRef} />
         ) : (
-          <Badge key={b.key} badge={b} surface={surface} />
+          <Badge key={b.key} badge={b} surface={surface} avoidRef={avoidRef} />
         ),
       )}
     </div>
@@ -106,7 +106,7 @@ function getVerifiedTooltip(producer, t) {
  * S12 verified chip/seal — gold seal glyph; the word "מאומת" only on the
  * hero surface (cards drop to icon-only so the name stays the hero).
  */
-function VerifiedTierBadge({ producer, surface, t }) {
+function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
   const tooltip = getVerifiedTooltip(producer, t);
   const ariaLabel = tooltip ? t("aria_verified", { tooltip }) : t("aria_verified_plain");
   const iconOnly = surface === "card";
@@ -183,7 +183,7 @@ function VerifiedTierBadge({ producer, surface, t }) {
   return (
     <span role="listitem" className="inline-block">
       {tooltip ? (
-        <Popover trigger={chip} contentTestId="badge-tooltip-verified" contentClassName="w-52">
+        <Popover trigger={chip} contentTestId="badge-tooltip-verified" contentClassName="w-52" overlay={Boolean(avoidRef)} avoidRef={avoidRef}>
           {tooltip}
         </Popover>
       ) : (
@@ -202,7 +202,7 @@ function VerifiedTierBadge({ producer, surface, t }) {
   );
 }
 
-function Badge({ badge, surface = "hero" }) {
+function Badge({ badge, surface = "hero", avoidRef = null }) {
   const colorClass = COLOR_CLASSES[badge.color] || COLOR_CLASSES.muted;
 
   // MEH-1492: on the HERO surface (producer detail), a badge with an aboutHref
@@ -233,6 +233,11 @@ function Badge({ badge, surface = "hero" }) {
       <Popover
         contentTestId={`badge-tooltip-${badge.key}`}
         contentClassName="w-52"
+        // MEH-1593: ProducerCard supplies the badge strip as the boundary, which
+        // switches this popover to the MEH-1592 overlay mode. Hero surfaces pass
+        // no ref and are byte-identical.
+        overlay={Boolean(avoidRef)}
+        avoidRef={avoidRef}
         trigger={
           // MEH-813: outer button = ≥24×24 hit-area (WCAG 2.5.8 AA); visible
           // pill in inner span keeps byte-identical bg/border/padding.
