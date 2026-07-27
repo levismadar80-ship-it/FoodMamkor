@@ -285,7 +285,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           ref={badgeStripRef}
           className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1.5"
         >
-          <BadgeRow producer={producer} limit={2} surface="card" />
+          <BadgeRow producer={producer} limit={2} surface="card" avoidRef={badgeStripRef} />
           {badgeCount(producer) > 2 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
             // MEH-1547: the +N counter becomes a Popover trigger listing the
@@ -351,7 +351,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               recognition tiers (4 community-leader, 5 ambassador), so it no
               longer duplicates the "מאומת" seal on the card. */}
           {(producer.trust_tier ?? 1) >= 4 && (
-            <TrustBadge tier={producer.trust_tier} compact />
+            <TrustBadge tier={producer.trust_tier} compact avoidRef={badgeStripRef} />
           )}
           {producer.has_physical_location === false && producer.offers_delivery && (
             // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string
