@@ -8,6 +8,7 @@ import {
   resolveCategoryId,
 } from "@/lib/map-chips";
 import { haversineKm } from "@/lib/distance";
+import { producerInBounds } from "@/lib/producerPoints";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's
@@ -82,6 +83,10 @@ export function useMapFilters({
   userCity,
   setUserCity,
   setShowCityPicker,
+  // MEH-1670: the pickup/market_stand layer toggle, owned by MapClient. The
+  // viewport filter needs it so the list drops a business at the same moment
+  // the map does — a producer whose only points are hidden pickups is off both.
+  showSecondaryLayer = true,
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -302,16 +307,14 @@ export function useMapFilters({
   // show everything.
   const visibleProducers = useMemo(() => {
     if (!committedBounds) return filteredByCategory;
-    return filteredByCategory.filter((p) => {
-      if (typeof p.lat !== "number" || typeof p.lng !== "number") return false;
-      return (
-        p.lat >= committedBounds.south &&
-        p.lat <= committedBounds.north &&
-        p.lng >= committedBounds.west &&
-        p.lng <= committedBounds.east
-      );
-    });
-  }, [filteredByCategory, committedBounds]);
+    // MEH-1670: was a direct Producer.lat/lng comparison, which dropped a
+    // delivery-only business (coords NULL, MEH-1402) out of the list while its
+    // pickup pin sat on screen. producerInBounds derives points the same way the
+    // marker layer does, so map and list agree by construction.
+    return filteredByCategory.filter((p) =>
+      producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
+    );
+  }, [filteredByCategory, committedBounds, showSecondaryLayer]);
 
   // MEH-722: per-category producer counts for the CURRENT viewport, computed
   // PRE category filter (from allProducers ∩ committedBounds, NOT visibleProducers
@@ -321,14 +324,10 @@ export function useMapFilters({
   const viewportCategoryCounts = useMemo(() => {
     const inView = !committedBounds
       ? allProducers
-      : allProducers.filter(
-          (p) =>
-            typeof p.lat === "number" &&
-            typeof p.lng === "number" &&
-            p.lat >= committedBounds.south &&
-            p.lat <= committedBounds.north &&
-            p.lng >= committedBounds.west &&
-            p.lng <= committedBounds.east,
+      // MEH-1670: same derivation as the list above — otherwise a chip could
+      // read 0 while its card is visible in the list.
+      : allProducers.filter((p) =>
+          producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
         );
     const counts = {};
     for (const p of inView) {
@@ -336,7 +335,7 @@ export function useMapFilters({
       if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
     }
     return counts;
-  }, [allProducers, committedBounds]);
+  }, [allProducers, committedBounds, showSecondaryLayer]);
 
   // Category chips visible in the current DB (hidden if no matching category loaded yet)
   const visibleCategoryChips = useMemo(
