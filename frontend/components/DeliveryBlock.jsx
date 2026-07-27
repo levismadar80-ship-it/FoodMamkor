@@ -7,7 +7,6 @@ import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
-import CoverageRequestCta from "@/components/CoverageRequestCta";
 
 // Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
@@ -259,6 +258,7 @@ export default function DeliveryBlock({
         nationwide={nationwide}
         excluded={excluded}
         areas={areas}
+        producer={producer}
       />
 
       {nationwide ? (
@@ -337,19 +337,6 @@ export default function DeliveryBlock({
       ) : (
         <p className="text-sm text-fg-muted mb-4">{t("arranged")}</p>
       )}
-
-      {/* MEH-1675: "לא מגיעים ל{עיר}?" — one CTA row directly below the city
-          list, for the visitor whose city is NOT covered. Self-gates on all
-          three of: a WhatsApp channel, a city list to be absent from, and a
-          "no" verdict from DeliveryChecker's matcher — so it renders at most
-          ONCE and never next to a positive answer. Everything above it is
-          untouched. */}
-      <CoverageRequestCta
-        producer={producer}
-        nationwide={nationwide}
-        excluded={excluded}
-        areas={areas}
-      />
 
       {/* Self-pickup (MEH-1512): render real pickup / market_stand rows from
           producer.locations[] when present — city · label · hours · Waze nav.

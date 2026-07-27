@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// MEH-1675: "לא מגיעים ל{עיר}?" CTA. The three render states are covered here
-// rather than only in Playwright because e2e runs unmocked against real staging
-// data (e2e/CLAUDE.md, MEH-417) and cannot guarantee a producer exists whose
-// city list excludes the visitor's saved city. These assertions are
-// deterministic and run in the required CI gate.
+// MEH-1675: "לא מגיעים ל{עיר}?" CTA. It lives on ONE state only — the
+// DeliveryChecker's negative verdict (MEH-1536) — so these tests drive the
+// checker, not the CTA in isolation: the thing worth locking is that the CTA
+// and the verdict above it can never disagree.
+//
+// Covered here rather than only in Playwright because e2e runs unmocked
+// against real staging data (e2e/CLAUDE.md, MEH-417) and cannot guarantee a
+// producer whose city list excludes a given visitor's city.
 
 vi.mock("next-intl", () => ({
   useTranslations: (ns) => (key, vars) => {
@@ -13,20 +16,29 @@ vi.mock("next-intl", () => ({
     if (ns === "whatsapp.question_chips") {
       return key === "source_line" ? "הגעתי דרך מהמקור" : key;
     }
+    if (key === "checker.yes_nationwide") return `כן! משלוחים לכל הארץ — כולל ${city}`;
+    if (key === "checker.yes") return `כן, מגיעים ל${city}`;
+    if (key === "checker.no") return `לצערנו לא מגיעים ל${city} כרגע`;
     if (key === "coverage_cta.known_city") return `לא מגיעים ל${city}? אפשר לשאול את בית העסק`;
-    if (key === "coverage_cta.no_city") return "האזור שלך לא ברשימה? אפשר לשאול את בית העסק";
     if (key === "coverage_cta.prefill")
       return `היי! אני מ${city} — אשמח לדעת אם יש אפשרות למשלוח לאזור`;
-    return key;
+    const map = {
+      "checker.label": "מגיעים אלייך?",
+      "checker.placeholder": "הקלידי עיר לבדיקה",
+      min_order: "מינימום",
+      placeholder: "עיר",
+      clear_aria: "ניקוי",
+    };
+    return map[key] ?? key;
   },
 }));
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { ChatCircle: Stub, X: Stub };
+  return { CheckCircle: Stub, XCircle: Stub, ChatCircle: Stub };
 });
 
-// The picker hydrates its city list from GET /cities; keep the unit test offline.
+// CitySearch hydrates its list from GET /cities; keep the unit test offline.
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })) },
 }));
@@ -34,111 +46,147 @@ vi.mock("@/lib/api", () => ({
 const ping = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/contact-tracking", () => ({ pingWhatsAppBeacon: ping }));
 
-import CoverageRequestCta from "@/components/CoverageRequestCta";
+import DeliveryChecker from "@/components/DeliveryChecker";
 
 const PRODUCER = { id: 7, phone: "050-1234567" };
 const AREAS = [
-  { id: 1, city: "חיפה", min_order: 150 },
+  { id: 1, city: "חיפה", min_order: 150, delivery_day: "חמישי" },
   { id: 2, city: "עתלית" },
 ];
 
-function setCity(value) {
+function setUserCity(value) {
   if (value) localStorage.setItem("user_city", value);
   else localStorage.removeItem("user_city");
 }
 
 function setup(props) {
-  render(
-    <CoverageRequestCta
-      producer={PRODUCER}
+  return render(
+    <DeliveryChecker
+      offersDelivery
       nationwide={false}
       excluded={[]}
       areas={AREAS}
+      producer={PRODUCER}
       {...props}
     />,
   );
 }
+
+// The verdict is committed, not live (DeliveryChecker.jsx:78) — type, then
+// pick the suggestion, exactly as a visitor does and exactly as
+// DeliveryChecker.test.jsx:52 drives it. Every city used here is in
+// ISRAEL_CITIES, so the option is always offered.
+function commitCity(value) {
+  fireEvent.change(screen.getByRole("combobox"), { target: { value } });
+  fireEvent.mouseDown(screen.getByRole("option", { name: value }));
+}
+
+const field = () => screen.getByRole("combobox");
 
 beforeEach(() => {
   localStorage.clear();
   ping.mockClear();
 });
 
-describe("CoverageRequestCta (MEH-1675)", () => {
-  it("renders when the saved city is NOT in the producer's list", () => {
-    setCity("רעננה");
+describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () => {
+  it("appears when a typed city is NOT served", async () => {
     setup();
-    const link = screen.getByTestId("coverage-request-link");
-    expect(link).toBeTruthy();
-    expect(screen.getByTestId("coverage-request-cta").textContent).toContain("לא מגיעים לרעננה?");
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
+    expect(screen.getByTestId("coverage-request-cta").textContent).toContain("לא מגיעים לנתניה?");
   });
 
-  it("is hidden when the saved city IS in the producer's list", () => {
-    setCity("חיפה");
+  it("is absent when the typed city IS served", async () => {
+    setup();
+    commitCity("חיפה");
+    await waitFor(() => expect(screen.getByText("כן, מגיעים לחיפה")).toBeTruthy());
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
+  });
+
+  it("is absent before any city is committed", () => {
     setup();
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
 
-  it("is hidden when there is no city list to be absent from", () => {
-    setCity("רעננה");
-    // No areas and not nationwide → the section renders "משלוחים בתיאום מראש",
-    // which makes no coverage claim for the CTA to answer.
-    setup({ areas: [] });
+  it("is absent for a nationwide YES", async () => {
+    setup({ nationwide: true, excluded: ["אילת"], areas: [] });
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getByText(/כן! משלוחים לכל הארץ/)).toBeTruthy());
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
 
-  // The count assertion the card asks for: exactly ONE CTA block, never two.
-  it("renders exactly one CTA block", () => {
-    setCity("רעננה");
-    setup();
-    expect(screen.getAllByTestId("coverage-request-cta")).toHaveLength(1);
-    expect(screen.queryByTestId("coverage-request-picker-trigger")).toBeNull();
+  it("appears for a city excluded from nationwide delivery", async () => {
+    setup({ nationwide: true, excluded: ["אילת"], areas: [] });
+    commitCity("אילת");
+    await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
   });
 
-  it("falls back to the generic picker variant when no city is saved", () => {
-    setCity(null);
+  // The count assert the card asks for.
+  it("renders exactly ONE CTA block in the negative state", async () => {
     setup();
-    expect(screen.getByTestId("coverage-request-picker-trigger")).toBeTruthy();
-    expect(screen.getByTestId("coverage-request-cta").textContent).toContain(
-      "האזור שלך לא ברשימה?",
-    );
-    // Generic variant has no href — the city is unknown until the picker commits.
-    expect(screen.queryByTestId("coverage-request-link")).toBeNull();
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getAllByTestId("coverage-request-cta")).toHaveLength(1));
   });
 
-  it("prefills the city AND the locked attribution marker in the wa.me href", () => {
-    setCity("רעננה");
+  it("prefills the city AND the locked attribution marker in the wa.me href", async () => {
     setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getByTestId("coverage-request-link")).toBeTruthy());
     const href = screen.getByTestId("coverage-request-link").getAttribute("href");
     const text = decodeURIComponent(href.split("text=")[1]);
-    expect(text).toContain("אני מרעננה");
-    // MEH-1524 marker, on its own final line — asserted separately from the
-    // body so losing either one reds the test (no `||` carrying the assertion).
+    // Asserted separately, not with `||`, so losing either one reds the test.
+    expect(text).toContain("אני מנתניה");
     expect(text.endsWith("הגעתי דרך מהמקור")).toBe(true);
   });
 
-  it("is hidden when the producer has no WhatsApp channel", () => {
-    setCity("רעננה");
-    setup({ producer: { id: 7, phone: null } });
-    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
-  });
-
-  it("is hidden for nationwide delivery with no exclusions", () => {
-    setCity("רעננה");
-    setup({ nationwide: true, areas: [] });
-    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
-  });
-
-  it("renders for a city excluded from nationwide delivery", () => {
-    setCity("אילת");
-    setup({ nationwide: true, excluded: ["אילת"], areas: [] });
-    expect(screen.getByTestId("coverage-request-link")).toBeTruthy();
-  });
-
-  it("pings the existing whatsapp-click counter on click", () => {
-    setCity("רעננה");
+  it("pings the existing whatsapp-click counter on click", async () => {
     setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getByTestId("coverage-request-link")).toBeTruthy());
     screen.getByTestId("coverage-request-link").click();
     expect(ping).toHaveBeenCalledWith(7);
+  });
+
+  it("is absent when the producer has no WhatsApp channel", async () => {
+    setup({ producer: { id: 7, phone: null } });
+    commitCity("נתניה");
+    await waitFor(() => expect(screen.getByText(/לצערנו לא מגיעים/)).toBeTruthy());
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
+  });
+});
+
+describe("user_city seed (MEH-1675 addition)", () => {
+  it("a saved uncovered city answers — and shows the CTA — with zero typing", async () => {
+    setUserCity("נתניה");
+    setup();
+    await waitFor(() => expect(screen.getByText("לצערנו לא מגיעים לנתניה כרגע")).toBeTruthy());
+    expect(screen.getByTestId("coverage-request-cta")).toBeTruthy();
+    expect(field().value).toBe("נתניה");
+  });
+
+  it("a saved COVERED city answers yes with zero typing and shows no CTA", async () => {
+    setUserCity("חיפה");
+    setup();
+    await waitFor(() => expect(screen.getByText("כן, מגיעים לחיפה")).toBeTruthy());
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
+  });
+
+  it("seeds once — the visitor's own edit is not overwritten", async () => {
+    setUserCity("נתניה");
+    setup();
+    await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
+    // She retypes; a later user_city change event must not yank her verdict back.
+    commitCity("חיפה");
+    await waitFor(() => expect(screen.getByText("כן, מגיעים לחיפה")).toBeTruthy());
+    window.dispatchEvent(new CustomEvent("mehamakor:city-changed"));
+    await waitFor(() => expect(field().value).toBe("חיפה"));
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
+  });
+
+  it("no saved city → no seed, no verdict, no CTA", () => {
+    setUserCity(null);
+    setup();
+    expect(field().value).toBe("");
+    expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
 });

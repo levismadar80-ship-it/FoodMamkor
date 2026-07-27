@@ -1,5 +1,7 @@
 /**
  * MEH-1675 self-QA harness — "לא מגיעים ל{עיר}?" coverage-request CTA.
+ * The CTA lives on the DeliveryChecker's negative verdict; `user_city` seeds
+ * the checker so the "no" state is reached with zero typing.
  * Run manually against a local `next start` (NOT part of the e2e suite):
  *   node e2e/qa-meh1675-coverage-cta.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox, so the producer API is
@@ -64,7 +66,11 @@ async function shot(name, viewport, userCity) {
     .getByTestId("coverage-request-link")
     .getAttribute("href")
     .catch(() => null);
-  console.log(`${name} | user_city=${userCity ?? "(none)"} | blocks=${count}`);
+  const verdict = await page
+    .getByTestId("delivery-checker-result")
+    .getAttribute("data-result")
+    .catch(() => null);
+  console.log(`${name} | user_city=${userCity ?? "(none)"} | verdict=${verdict} | blocks=${count}`);
   console.log(`   text: ${JSON.stringify(text)}`);
   console.log(`   href: ${href ? decodeURIComponent(href) : "(none)"}`);
 
@@ -74,13 +80,14 @@ async function shot(name, viewport, userCity) {
   await ctx.close();
 }
 
-// (א) city NOT in the list → CTA present, href carries city + marker.
-await shot("coverage-cta-375-uncovered", { width: 375, height: 812 }, "רעננה");
-await shot("coverage-cta-1440-uncovered", { width: 1440, height: 900 }, "רעננה");
-// (ב) city IS in the list → CTA absent.
+// (א) saved city NOT served → checker seeds, answers "no", CTA present.
+await shot("coverage-cta-375-uncovered", { width: 375, height: 812 }, "נתניה");
+await shot("coverage-cta-1440-uncovered", { width: 1440, height: 900 }, "נתניה");
+// (ב) saved city IS served → checker answers "yes", CTA absent.
 await shot("coverage-cta-375-covered", { width: 375, height: 812 }, "חיפה");
 await shot("coverage-cta-1440-covered", { width: 1440, height: 900 }, "חיפה");
-// no saved city → generic variant (picker trigger, no href).
+// no saved city → no seed, no verdict, no CTA (the known gap is only that
+// she must type; the checker itself is unchanged from MEH-1536).
 await shot("coverage-cta-375-nocity", { width: 375, height: 812 }, null);
 
 await browser.close();

@@ -1095,7 +1095,6 @@
       },
       "coverage_cta": {
         "known_city": "Not delivering to {city}? You can ask the business",
-        "no_city": "Your area isn't listed? You can ask the business",
         "prefill": "Hi! I'm from {city} — I'd love to know if delivery to my area is possible"
       }
     },
