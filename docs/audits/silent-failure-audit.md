@@ -191,6 +191,13 @@ revert it", which would have been the wrong call for the right-looking reason.
   fail". Sibling ticket, post-launch. Failing-by-construction is the manual form.
 - **MEH-916 (axe)** — the existing precedent for "assert the effect, not the prop".
 - **Marker-hover affordance** — see the A-10 note. Needs a design call.
+- **`run()` in `qa-meh1611-map-focus.mjs` has no `try/finally`** around
+  `browser.close()`, so a mid-assert throw leaks a Chromium until the process exits.
+  `selfTest()` was given one when it was written (#2266); `run()` is pre-existing and
+  was left alone, because widening an audit PR into unrelated cleanup is how audits
+  stop being reviewable. Low stakes — these `qa-*.mjs` harnesses are run by hand, not
+  by CI (`e2e.yml` runs `*.spec.ts`), so nothing leaks on a runner. Worth folding into
+  the next edit of that file rather than its own ticket.
 - **Producer-detail E2E fault** — three specs (`03`/`04`/`06`) failed across every PR in
   this batch with `#__next_error__`, while `staging` stayed green. Proven unrelated to
   these diffs by an inert-delta A/B (a comment-only commit flipped a passing suite red).
