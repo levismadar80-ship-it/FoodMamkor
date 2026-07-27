@@ -45,6 +45,41 @@ swapped to `GET /auth/me` (a real route, not in `SKIP_REFRESH`)._
 
 ---
 
+## Every new guard test must be shown failing (MEH-1619)
+
+A guard test that has never been observed failing is not evidence — it is a green light
+of unknown wiring. Any new or strengthened assertion (unit, e2e, or QA harness) ships
+with a **demonstrated failing-by-construction run**: break the thing it guards, show it
+goes red, restore, show it goes green. Put the two outcomes in the PR body.
+
+**The construction has to discriminate.** This is the part that is easy to get wrong.
+Showing "I broke it and the suite went red" proves nothing about *your change* if the
+**previous** version of the assertion also went red on that same construction. Before
+citing a failing run as justification, ask: would the old assertion have passed this?
+If you can't answer yes, the run is not evidence for the change.
+
+_MEH-1619, C-1: reintroducing a known-broken CSS form turned the suite red — and the old,
+weaker assertion failed on it too, because by sample time the library had already undone
+the broken state. The construction couldn't tell the two apart. What did: a **self-test**
+feeding the real classifier three synthetic inputs (correct / regression-shaped / neutral)
+and asserting how it sorts them. Deterministic — no animation, no timing — and it isolates
+exactly the changed condition._
+
+**Where the assertion is a classifier, ship the self-test.** Run it **first**: if the
+classifier can't tell a correct state from a broken one, nothing it reports afterwards is
+worth reading. Exercise the **real** implementation, never a copy — a second copy is free
+to drift from the one that matters. Repo precedent: `.claude/scripts/audit-skills.sh
+--self-test`, which CI asserts must exit 1.
+
+**Watch the shape of the pass condition.** An `||` between two cues lets either one carry
+the assertion, so losing the other is undetectable — that is how a probe signs off on a
+broken state. Prefer `&&`, or split into separate named checks so the failure message says
+which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
+
+Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/audits/silent-failure-audit.md).
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files. Fix every REFEREE
