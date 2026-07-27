@@ -147,6 +147,43 @@ describe("useMapSync — handleCardClick reaches the map for a delivery-only bus
       vi.useRealTimers();
     }
   });
+
+  // Adopted from the parallel MEH-1663 branch (commit 508a52ec), adapted to the
+  // reconciled semantics. That branch asserted a pinless business is not selected
+  // either; this one asserts the ticket's stated constraint — "0 usable points →
+  // defensive no-op, KEEP selection". Selection is what arms the MEH-1243 second-tap
+  // navigation, so refusing it is what made the card dead in the first place. The
+  // camera is what must stay put, and it does: focusProducer no-ops because
+  // markersRef holds no entry for a business with no marker.
+  it("keeps the selection but moves no camera for a business with no usable point", () => {
+    vi.useFakeTimers();
+    try {
+      const { result, props, focusProducer } = setupWithMap();
+      const pinless = {
+        id: "pinless",
+        lat: null,
+        lng: null,
+        // A coord-invalid row is not a point — same test the marker loop applies
+        // before it builds a marker (MapComponent.jsx:764-770).
+        locations: [{ kind: "pickup", lat: null, lng: 34.9 }],
+      };
+      act(() => {
+        result.current.handleCardClick(pinless);
+      });
+      act(() => {
+        vi.advanceTimersByTime(250);
+      });
+      expect(props.setActiveProducerId).toHaveBeenCalledWith("pinless");
+      expect(props.setSelectedProducer).toHaveBeenCalledWith(pinless);
+      // focusProducer is still called — it is the resolver, and it is the thing
+      // that decides there is nothing to fly to (MapComponent.jsx:463,467). The
+      // camera assertion for this case lives in MapFocusOnSelect.test.jsx, which
+      // holds the real MapComponent: no flyTo, no fitBounds, and no map demote.
+      expect(focusProducer).toHaveBeenCalledWith("pinless");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 // MEH-1412 (MEH-1388 chunk 3): a marker click carries the clicked LOCATION so
