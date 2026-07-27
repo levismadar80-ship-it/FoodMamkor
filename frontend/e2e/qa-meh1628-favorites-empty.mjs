@@ -7,12 +7,13 @@
  * route-intercepted at the network layer — the component, its i18n messages and
  * its CSS are all the shipped ones. Nothing about the render is stubbed.
  *
- * Usage: node e2e/qa-meh1628-favorites-empty.mjs [baseURL]
+ * Usage: node e2e/qa-meh1628-favorites-empty.mjs [baseURL] [chromiumPath]
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://localhost:3111";
+const CHROMIUM = process.argv[3] || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const OUT = "qa-artifacts/MEH-1628";
 const USER = { id: "u1", email: "qa@mehamakor.test", name: "QA", role: "user", city: "תל אביב" };
 
@@ -46,10 +47,11 @@ mkdirSync(OUT, { recursive: true });
 // The sandbox ships Chromium 1194; @playwright/test here wants 1228 and
 // `playwright install` is disabled in this environment, so point at the
 // pre-installed binary. CI runners use their own bundled browser — unaffected.
-const browser = await chromium.launch({
-  executablePath:
-    process.env.QA_CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-});
+// Overridable by argv, deliberately NOT by an env var: a new env var read in
+// code has to be documented in .env.example or the Env-drift gate blocks the
+// PR (MEH-491), and regression rule 8 puts new env vars behind explicit
+// approval. A local QA convenience does not warrant either.
+const browser = await chromium.launch({ executablePath: CHROMIUM });
 let failures = 0;
 
 for (const shot of shots) {
