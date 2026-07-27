@@ -222,15 +222,20 @@ body.sheet-open .cookie-banner {
      locked by history: 1 → header covered it (MEH-15/30), 600 is the sheet
      token). Spatial fix, not another z-index round: MapBottomSheet publishes
      --map-sheet-h every drag frame / snap (MEH-970, NearMePill precedent);
-     fallback 0vh = no sheet mounted (desktop, other map surfaces) → the 10px
-     floor below IS Leaflet's own default margin, so those surfaces are
-     byte-identical. !important because Leaflet's
-     `.leaflet-bottom .leaflet-control { margin-bottom: 10px }` outranks this
-     single-class selector (measured: without it the margin never applies).
+     fallback 0vh = no sheet mounted (desktop, other map surfaces) → the max()
+     collapses to the 10px floor below.
+     MEH-1636: that 10px floor is OURS, not an inherited Leaflet value, and the
+     sheet-closed state is NOT equivalent to having no rule here. Leaflet ships
+     two competing rules and the LATER one wins on equal specificity, so its
+     effective default for this control is `margin: 0`. !important is therefore
+     needed to outrank `.leaflet-container .leaflet-control-attribution`
+     (measured: without it the margin never applies). Pinned executably —
+     frontend/__tests__/leaflet-attribution-default.test.js reads the installed
+     leaflet.css and reds if that cascade ever shifts; read the test, not this
+     comment, for the current fact.
      Mobile-only: the sheet is a <lg surface but it publishes --map-sheet-h
      whenever mounted, so an unscoped rule would lift the DESKTOP attribution
-     too (measured 78px). +6px clears the sheet's rounded top edge; the 10px
-     floor IS Leaflet's default margin (sheet-closed state = byte-identical).
+     too (measured 78px). +6px clears the sheet's rounded top edge.
      --map-sheet-anim keeps snap smooth (300ms), drag 1:1 (0ms). */
 }
 @media (max-width: 1023.98px) {

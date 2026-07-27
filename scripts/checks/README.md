@@ -89,7 +89,7 @@ Zero guards found is a `NOTICE` and exit **0**, not a failure.
 | Guard | Guards against | Ticket |
 |---|---|---|
 | [`ui-pattern-guard.sh`](./ui-pattern-guard.sh) | Producer-dashboard pages hand-rolling `EmptyState` / `BackLink` / text arrows in `he.json` back keys | MEH-999 |
-| [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves all three cases. | MEH-1602 |
+| [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves six classification cases plus two end-to-end base-resolution cases (MEH-1634). | MEH-1602 |
 | [`length-cap-sync-guard.sh`](./length-cap-sync-guard.sh) | Frontend length-cap constants drifting from their backend schema caps: `OWNER_BIO_MAX` must **equal** the `owner_bio` sanitize cap; `DESC_MAX`/`TAGLINE_MAX` must stay **≤** every `description`/`short_description` cap (they are deliberately tighter UX caps). `--self-test` proves both directions + the missing-extraction fail-loud. | MEH-1393 |
 
 ### File taxonomy — what `changelog-branch-guard.sh` calls "docs"
@@ -149,12 +149,25 @@ in.
 `changelog-branch-guard.sh` is the first guard here that reasons about the
 **PR's diff** rather than the working tree, which the `repo-guards` job does not
 hand it: that job checks out shallow (depth 1) and passes no base SHA. The guard
-therefore resolves its own base — `$CHANGELOG_GUARD_BASE`, else
-`$GITHUB_BASE_REF` (fetched at `--depth=1` when absent), else the local default
-branch — and **exits non-zero if it can resolve none**, rather than reporting OK
-for a check it never ran. If you write another diff-based guard, reuse that
-ladder; a guard that silently passes when it cannot see the diff is worse than
-no guard.
+therefore resolves its own base — `$CHANGELOG_GUARD_BASE`, else the **first
+parent of `refs/pull/N/merge`**, else `$GITHUB_BASE_REF` (fetched at
+`--depth=1` when absent), else the local default branch — and **exits non-zero
+if it can resolve none**, rather than reporting OK for a check it never ran. If
+you write another diff-based guard, reuse that ladder; a guard that silently
+passes when it cannot see the diff is worse than no guard.
+
+**MEH-1634 — a resolvable base is not automatically a *correct* one.** The
+first three rungs above used to be two, and the guard diffed the merge ref
+against whatever the base branch's tip happened to be at run time. Those are
+different commits: GitHub rebuilds `refs/pull/N/merge` on push, not
+continuously, so anything that lands on `staging` in between shows up in a
+two-dot diff **in reverse**, as though the branch had deleted it. Run
+`30248101409` (27/07) red-lined a docs-only PR over "47 code files" while the
+same run's paths-filter reported neither stack touched. So each base now carries
+a `frozen` / `moving` tag: two-dot is only used against a frozen base (where it
+is exact), a moving base requires a real merge base and three-dot, and a guard
+that can do neither **fails loudly instead of answering**. Any diff-based guard
+you add inherits this problem — resolve the PR's own merge base, not a tip.
 
 ## Not run from here
 
