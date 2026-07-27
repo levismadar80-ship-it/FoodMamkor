@@ -23,9 +23,9 @@ vi.mock("next-intl", () => ({
       "status_label.busy_week": "עמוס כרגע",
       "status_label.on_vacation": "בהפסקה",
       "card_label.open_orders": "פתוח להזמנות",
-      "card_label.available_today": "זמינה היום 🟢",
-      "card_label.busy_week": "עמוסה השבוע 🟠",
-      "card_label.on_vacation": "בהפסקה ⏸",
+      "card_label.available_today": "זמינה היום",
+      "card_label.busy_week": "עמוסה השבוע",
+      "card_label.on_vacation": "בהפסקה",
     };
     return flat[key] ?? key;
   },
@@ -39,9 +39,9 @@ const dotOf = () =>
 describe("AvailabilityBadge — MEH-291 new states (expansion B7)", () => {
   describe("available_today", () => {
     // Kills FB-1: color #2e6853 → #22c55e
-    it("renders on card with the dark-green dot (#2e6853) and emoji label", () => {
+    it("renders on card with the dark-green dot (#2e6853) and label", () => {
       render(<AvailabilityBadge status="available_today" variant="card" />);
-      expect(screen.getByText("זמינה היום 🟢")).toBeInTheDocument();
+      expect(screen.getByText("זמינה היום")).toBeInTheDocument();
       expect(dotOf()).toHaveStyle({ background: "#2e6853" });
       expect(screen.getByTestId("availability-badge")).toHaveAttribute(
         "data-status",
@@ -59,18 +59,18 @@ describe("AvailabilityBadge — MEH-291 new states (expansion B7)", () => {
   });
 
   describe("full_this_week", () => {
-    it("renders with the orange dot (#f97316) and emoji label on card", () => {
+    it("renders with the orange dot (#f97316) and label on card", () => {
       render(<AvailabilityBadge status="full_this_week" variant="card" />);
-      expect(screen.getByText("עמוסה השבוע 🟠")).toBeInTheDocument();
+      expect(screen.getByText("עמוסה השבוע")).toBeInTheDocument();
       expect(dotOf()).toHaveStyle({ background: "#f97316" });
     });
   });
 
   describe("on_vacation", () => {
     // Kills FB-2: color #9ca3af → #22c55e
-    it("renders with the gray dot (#9ca3af) and pause-emoji label on card", () => {
+    it("renders with the gray dot (#9ca3af) and pause label on card", () => {
       render(<AvailabilityBadge status="on_vacation" variant="card" />);
-      expect(screen.getByText("בהפסקה ⏸")).toBeInTheDocument();
+      expect(screen.getByText("בהפסקה")).toBeInTheDocument();
       expect(dotOf()).toHaveStyle({ background: "#9ca3af" });
     });
 
