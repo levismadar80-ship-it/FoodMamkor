@@ -3,6 +3,180 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — 4-ticket sequential queue (loading-state batch) — 3 merged, 1 STOP
+
+**Queue per Sapir grant 27/07 (end-to-end authority, ADR-016).** Sequential, each
+branch off fresh `origin/staging`, auto-merge on green, no CHANGELOG/HANDOFF in
+code branches (rule 31) — this is the docs-only backfill PR those merges pointed
+at.
+
+| Ticket | Branch | PR | Outcome |
+|---|---|---|---|
+| MEH-1655 loading-CTA jump ×4 manage lists | `feature/meh-1655-loading-cta-jump` | #2304 | **merged** 13:56Z |
+| MEH-1656 admin/users empty flash | `feature/meh-1656-admin-users-empty-flash` | #2306 | **merged** 14:01Z |
+| MEH-1638 entry skeleton — `/settings` half | `feature/meh-1638-dashboard-entry-skeleton` | #2311 | **merged** 18:20Z |
+| MEH-1657 event/experience axis | — none — | — | **STOP (a)** — see below |
+
+**Gate evidence (MEH-1582 discipline):** on every merged head both required
+aggregators (`CI gate`, `Deploy gate`) succeeded with the real legs RUN, not
+skipped — #2304 head `a22f54bc`: Frontend build 54s / vitest 3m57s / RTL lint /
+Repo guards / qa-size cap all `success`; #2306 head `89bdfb65`: build 53s /
+vitest 4m17s `success`. Backend legs `skipped` on both = paths-filter (no
+backend file in either diff), the documented docs-only-style skip, not the
+draft skip-green hole. `Playwright E2E` failed on both runs with **exactly the
+pre-existing known red** — `parity.spec.ts:226 › home` (mobile), 173 passed —
+the same failure `.claude/rules/testing.md` records as precondition-B blocker;
+E2E gate is not in ruleset 15240090, and none of the three diffs touches a VRT
+route. #2311 head `87544f94` (run `30292884267`): build/vitest/tsc/Knip/lint
+all `success`, same single pre-existing parity red (24012px, home mobile), and
+the settings-touching specs (password-policy settings card, role-reachability)
+all passed on it.
+
+**MEH-1657 STOP (a) — data decision needed, Sapir runs the DML.** The ticket's
+own first step: query staging for events in the categories being removed.
+`GET /events?from_date=2000-01-01` (via the Vercel-proxied `/api`) returned
+exactly one live event and it is category **סדנה**:
+`d886c4df-d541-44ce-af08-b8190cd94153` · "סדנת אפיית לחם מחמצת למתחילות" ·
+מאפיית רוח השדה (`2e9aa40f-1d5f-4a85-8d10-c87aafb12cf2`) · 2026-08-11 · זכרון
+יעקב · `is_active: true`. Removing סדנה from `VALID_CATEGORIES` (events.py:33)
+with that row live would strand real data. No branch was created, no file
+touched. `/events/mine` for the demo producer was NOT checked (no
+`DEMO_*_PASSWORD` in this session) — after the DML, re-check it before
+re-dispatching the ticket. The locked copy + category spec stays in the ticket,
+ready to execute once staging is clean.
+
+**Session-discovered follow-ups (not filed, per rule 27 — search Linear first):**
+- MapCardList.jsx:73 empty state flashes during producers load on the DESKTOP
+  sidebar only (`MapClient.jsx:512` unguarded; mobile sheet protected by
+  MEH-1054). Read-only finding required by the MEH-1656 ticket, reported in PR
+  #2306's body.
+- Reviewer suggestion on #2304 (arrived pre-merge, landed after): the 3-state
+  CTA-count vitest block covers only the events page; experiences/recipes/
+  group-buys are covered by the e2e harness but not in CI's vitest. Optional
+  parameterized-test follow-up.
+- Reviewer nits on #2306 (post-merge, cosmetic): two Hebrew strings quoted in
+  code comments; loading/empty rows use `text-center` vs the table's `text-end`.
+
+### NEXT
+Sapir: run the DML for the סדנה event (or approve recategorizing it), then
+re-dispatch MEH-1657 from its Linear description unchanged.
+## 2026-07-27 — Leaflet inline-writer claim pinned; two of its own acceptance criteria were false (PR #2305)
+
+**Shipped and merged** (`eab51862`). The one claim in `.claude/rules/` that guides
+code decisions and nothing checked — which CSS properties Leaflet and markercluster
+write inline, and above all that neither writes `filter` — is now re-derived from
+the installed bundles on every vitest run. That negative is the sole reason a marker
+fade rides `filter: opacity()`; if a release starts writing `filter` inline the fade
+stops applying with no error and no failing test, which is the MEH-1611 shape.
+
+**The finding that matters: Phase 0 contradicted two of the ticket's own acceptance
+criteria, and the test was written to the packages rather than to the spec.**
+
+1. **`filter` is not absent from Leaflet.** `leaflet-src.js:2506` writes
+   `el.style.filter +=` inside `_setOpacityIE` — IE-8 dead code, reached only via
+   the `else if ('filter' in el.style)` arm that `setOpacity` takes when
+   `'opacity' in el.style` is false. The behavioural claim holds; the absolute one
+   does not. Criterion (d) as written would have failed on the untouched package.
+2. **`clusterShow` does not assign `opacity`.** It delegates —
+   `markercluster:1835` → `Marker.setOpacity` → `_updateOpacity` →
+   `DomUtil.setOpacity` → `el.style.opacity`. Its body has no style write at all.
+
+So (d) pins the exact shape (one write, inside `_setOpacityIE`, single guarded call
+site) and (c) pins the delegation chain. The rule file's three line citations were
+all **accurate** — the prose around them was not.
+
+**Negative control 1 caught a real defect, and it is the transferable lesson.** The
+declaration matcher was unanchored, so it matched Leaflet's
+`// @function setTransform(…)` doc comment sitting immediately above the real
+declaration, then brace-matched forward into the function and returned a body that
+looked perfectly valid. **Renaming `setTransform` left the guard green.** Anchoring
+to a line start fixed it. Same class as MEH-1619 C-1 and the MEH-1593 clipping
+detector: an assertion that cannot tell the healthy state from the broken one. All
+four controls ran against a mutated `node_modules` restored byte-identically
+(md5-verified), including the one that proves (d) is not a substring match — a bare
+`filter` in a comment leaves it green.
+
+**Two process notes worth carrying.**
+
+- **Draft green is not green (rule 21), and it nearly bit here.** At draft time both
+  required aggregators reported `success` while `Frontend build` / `Frontend unit
+  tests` showed `skipped`. The PR was marked ready and the merge waited for the
+  ready-time runs, where those legs actually executed.
+- **A stale check-run read almost became a false diagnosis.** The `get_check_run`
+  endpoint served `in_progress` for the vitest job long after it finished; the job
+  record showed it completed in 3m37s. Prefer the job/run record over the check-run
+  status when the two disagree.
+
+**Deliberately not in that PR:** CHANGELOG + HANDOFF (this entry). The branch touched
+`frontend/__tests__/**`, so `changelog-branch-guard.sh` under the required *Repo
+guards* job blocks the logs from riding along (rule 31). This docs-only PR is the
+backfill, tracked as its own ticket per the MEH-1614/1622/1642 precedent.
+
+**⚠️ Branch-naming note (MEH-1615).** This backfill branch carries its **own**
+ticket's identifier, not `meh-1637`. The branch slug alone auto-links in Linear and
+would have flipped the now-Done MEH-1637 back to In Progress even with the identifier
+kept out of the PR title and body — the trap MEH-1615 documents and rule 29 warns
+about. MEH-1637's identifier appears only inside the file content, which does not
+auto-link.
+
+### NEXT
+Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
+is still the next thing to pick up; MEH-1629 remains blocked.
+
+## 2026-07-27 — copy-honesty batch: three follow-ups merged (docs backfill)
+
+**Three merges, backfilled here as one docs-only PR (rule 31).** None of the three
+code branches carried CHANGELOG or HANDOFF — `changelog-branch-guard.sh` under the
+required **Repo guards** job hard-fails that, which is the whole point of the rule.
+
+| PR | Merge SHA | Shape |
+|---|---|---|
+| #2299 | `fdc2e642` | copy-only — reentry label drops "· לעריכה" |
+| #2301 | `f6e2d4d1` | copy-only — `funded_subtitle` stops promising a callback |
+| #2309 | `8c354f54` | YELLOW — closed-window note moves inside ContactCard + honest copy |
+
+**The batch's real finding is about assertions, not copy.** Two of the three
+exposed a check that could not fail. #2299's label test used
+`toHaveTextContent`, which matches **substrings** — it stayed green with the
+removed suffix still present. The fix is exact equality, and the evidence that
+matters is that the *old* assertion passed 6/6 on the identical construction
+that reds the new one. #2309's first sticky probe compared scroll travel against
+an **assumed** 900px rather than the 769px that actually happened; that shape can
+call a non-scrollable element "stuck". Both are the class
+`.claude/rules/testing.md` names: an assertion that looks strict and cannot tell
+the healthy state from the broken one.
+
+**#2309 carries a stated deviation from its own acceptance criteria.** The
+criteria asked for "exactly ONE note in the DOM", but `ContactCard` renders twice
+(mobile `lg:hidden` + sidebar `hidden lg:block`, both always in the DOM). A closed
+window therefore yields 2 in the DOM and 1 visible — a count **unchanged** by the
+fix, since the two prior mounts were `ProducerDetail:208` and `ContactSidebar:22`.
+The invariant the harness locks is exactly one **visible** note, inside the card,
+after the CTA, `outsideCard === 0`. Written into the PR body rather than quietly
+reinterpreted.
+
+**A new QA harness landed:** `frontend/e2e/qa-meh1649-cta-note.mjs`, which
+self-tests its own classifier against three synthetic DOM shapes before it
+measures the page, and whose baseline run against unmodified `staging` fails
+exactly as it should. Reusable shape for any future placement assertion.
+
+### Current state
+
+- **Vercel is still at its free-tier cap** (`api-deployments-free-per-day`,
+  100/24h), so none of the three PRs got a preview URL. Account-level infra, not
+  a required check; the GREEN/YELLOW tier waivers covered preview-first, and
+  Sapir verifies on staging after merge.
+- **MEH-1651 (group-buy owner blind on `funded`) is untouched and still the real
+  gap** — #2301 fixed only the copy that over-promised. MEH-1652 likewise
+  untouched (decision-gated).
+- **MEH-1615 is now load-bearing, not theoretical.** It says a docs-only PR's
+  **branch slug alone** reopens a Done ticket even when the identifier is kept out
+  of title and body. That is why this backfill has its own ticket rather than
+  reusing any of the three numbers — the branch-name gate demands `meh-NNNN` in
+  the slug, so the slug had to belong to something legitimately active.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
 ## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
 
 **Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
