@@ -1209,7 +1209,10 @@
       "open_in_waze": "Waze",
       "open_in_google": "Google Maps",
       "open_in_waze_aria": "Open in Waze",
-      "open_in_google_aria": "Open in Google Maps"
+      "open_in_google_aria": "Open in Google Maps",
+      "expand_aria": "Expand map to full screen",
+      "close_aria": "Close full screen map",
+      "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
