@@ -18,6 +18,60 @@ Branch-protection wiring lives in [DEPLOYMENT.md](./DEPLOYMENT.md) §C.
 
 ---
 
+## NON-GOALS (MEH-1654) — what this reviewer must never be asked
+
+The reviewer answers exactly one question: **"what is broken in this diff?"**
+
+It must never be asked, and its output must never be read as an answer to:
+
+- **"are we ready to launch?"**
+- **"what is missing?"**
+- **"is this feature complete?"**
+- **"is the spec fully covered?"**
+
+**This is a measured limit, not a stylistic preference.** TriAdReview (75
+experiments) measured **+27.6%** on security review and **+20.8%** on code
+generation — and **−7.5% on completeness-oriented tasks**, because adversarial
+review carries a structural bias toward simplification. Pointed at "what is
+missing," it does not merely underperform; it makes the answer *worse* than not
+asking. A reviewer optimized to attack what exists is the wrong instrument for
+judging what does not exist.
+
+**Where completeness lives instead:** with Sapir, and with the Definition of Done
+(`.claude/rules/testing.md`, `bash .claude/skills/mehamakor-dod/check.sh`). Neither
+is delegated to this job, and a green adversarial review is never evidence that a
+ticket's `acceptance_criteria` are met.
+
+This is also why the gate is scoped to `staging → main` rather than used as a
+launch gate: it blocks on defects found, and stays silent on scope.
+
+---
+
+## Fresh context — anti-anchoring (MEH-1654)
+
+Two structural requirements, both from the same finding: a reviewer that inherits
+the author's reasoning re-derives the author's conclusions.
+
+1. **Different model.** The reviewer runs a model **different from the one that
+   wrote the diff** (maker ≠ checker, the banking rule: the agent that writes a
+   change never approves it). A model that rationalized a shortcut while
+   implementing rationalizes it again while reviewing — not a limitation a better
+   prompt repairs. Current state, the swap, and the collision case (a CC session
+   that itself ran the reviewer's model) are in
+   [`docs/ci/adversarial-review.patch.md`](./ci/adversarial-review.patch.md) §2.
+2. **No inherited narrative.** The reviewer's inputs are the **diff, the tests in
+   the diff, and the repo rule files** — never the PR body, existing PR comments,
+   or commit messages. Never recycle a critic session; anchoring bias is real in
+   models too. Each `claude-code-action@v1` run is already a fresh process with no
+   carried state — keep it that way.
+
+Every PR body states the model the CC session ran as. **If it equals the reviewer's
+model, that PR's adversarial review is treated as unrun, not as clean** — there is
+no way for the workflow to detect this on its own, so the declaration is the
+guarantee.
+
+---
+
 ## The review prompt (canonical)
 
 > Use the full text below. The workflow YAML carries a thin pointer; this
@@ -49,10 +103,15 @@ a fresh-eyes safety net catching what the author CC session missed.
    ADR-003). Any new column MUST appear in the matching `*Out` schema in
    `backend/app/schemas/` (per ADR-006 R1+R2). Schema-changing PRs should
    follow expand-contract (per ADR-007 once it lands).
-4. **Scope creep.** PR title/body must reference `MEH-XXX`. Compare every
-   changed file to that ticket's stated scope. Flag files outside scope
-   even if the change is otherwise good — they belong in their own PR
-   (CLAUDE.md workflow rule "One PR = one logical change").
+4. **Scope creep.** Take the `MEH-XXXX` identifier from the PR title and
+   **nothing else from the PR narrative** (MEH-1654 anti-anchoring — reading
+   the body to learn "the ticket's stated scope" is exactly the inherited
+   reasoning the fresh-context rule forbids). Judge scope from the diff's own
+   coherence: does every changed file serve one logical change? Flag files that
+   do not, even if the change is otherwise good — they belong in their own PR
+   (CLAUDE.md workflow rule "One PR = one logical change"). Note this is a
+   narrower question than "does this match the spec" — completeness against a
+   spec is a NON-GOAL (see above).
 5. **Hebrew copy in code.** Hebrew strings in JS/TS/Python source (not
    JSX user-facing text — that's expected) — flag. Hebrew belongs in
    Linear descriptions, code comments stay English.
@@ -108,6 +167,25 @@ three above. No greeting, no summary, no "great work" filler.
 
 ## Calibration plan
 
+> ### ⚠️ Tally read-out, 2026-07-27 (MEH-1654) — **the tally was never kept**
+>
+> Read directly, not inferred, because MEH-1654 gates a blocking flip on it:
+>
+> | Source | Expected | Actual |
+> | -- | -- | -- |
+> | the table below | one row per PR | **5 empty placeholder rows** — the only non-blank cell is the `(this PR)` row MEH-487 shipped with |
+> | `HANDOFF.md` → "Claude Review calibration" (pointed at below) | the live tally | **the subsection does not exist** — `grep -c "Claude Review calibration" HANDOFF.md` → `0` |
+>
+> **PRs tallied: 0. Useful rate: unknown — unmeasured, not zero. `>70% useful`:
+> NOT MET**, and not currently meetable: an empty dataset cannot cross a
+> threshold. The job has run on many PRs since 2026-05-07 and HANDOFF records
+> outcomes in prose, but no PR was ever scored, so there is no denominator.
+>
+> **Consequence:** the MEH-1654 **model swap lands regardless** (it is not
+> tally-gated); the **blocking flip stays PENDING** this threshold. Resuming the
+> tally — five scored rows in the table below — is now itself the open work.
+> Full patch + order of application: [`docs/ci/adversarial-review.patch.md`](./ci/adversarial-review.patch.md).
+
 | PR # | Useful findings | Noise findings | Verdict | Notes |
 |---|---|---|---|---|
 | (this PR) | _ | _ | _ | first run — wires the action |
@@ -121,7 +199,12 @@ After the 5th PR run:
 - **Signal:noise > 70% useful** → file follow-up to flip
   `continue-on-error: false` (blocking). Update DEPLOYMENT.md branch
   protection table to add `Adversarial review (calibration)` (renamed)
-  as a required check.
+  as a required check. **MEH-1654 scopes this: the check goes on
+  `protect-main` only** — required on `staging → main`, advisory on
+  `feature → staging` — and the trigger-level `paths-ignore` must be
+  deleted first, or the check becomes absent on docs-only PRs and blocks
+  `main` forever (`DEPLOYMENT.md:252`, MEH-892). Exact YAML + order of
+  application: [`docs/ci/adversarial-review.patch.md`](./ci/adversarial-review.patch.md).
 - **30–70%** → tune the prompt in this file, run another 5 PRs. Each
   tuning commit must touch only this file + (optionally) the workflow
   YAML if a structural fix is needed.
@@ -149,4 +232,6 @@ calibration history shows up in `git log docs/CLAUDE-REVIEW.md`.
 - [ADR-006](./decisions/ADR-006-schema-parity-discipline.md)
 - ADR-007 — `docs/decisions/ADR-007-expand-contract-schema-changes.md` (lands when MEH-486 merges)
 - [anthropics/claude-code-action README](https://github.com/anthropics/claude-code-action)
+- [docs/ci/adversarial-review.patch.md](./ci/adversarial-review.patch.md) — MEH-1654 maker ≠ checker patch (model swap + scoped blocking flip)
 - MEH-487 (this file's source ticket)
+- MEH-1654 (NON-GOALS + fresh context + the tally read-out above)
