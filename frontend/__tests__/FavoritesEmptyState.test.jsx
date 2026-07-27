@@ -165,18 +165,14 @@ describe("MEH-1628 · favorites empty state", () => {
 
 describe("MEH-1628 · favorites list alerts hint", () => {
   it("renders EXACTLY ONE bell in the hint row, interpolated inside the sentence", async () => {
-    api.get.mockImplementation(() => Promise.resolve({ data: [] }));
-    const { container } = render(<FavoritesClient />);
-    await screen.findByText("favorites.empty_title");
-
-    // Re-render with a populated list so the hint row mounts.
+    // A populated list is what mounts the hint row (the empty state replaces it).
     api.get.mockImplementation(() =>
       Promise.resolve({ data: [{ producer_id: "p1", producer: { id: "p1", name: "טסט" } }] }),
     );
-    const { container: c2 } = render(<FavoritesClient />);
-    await waitFor(() => expect(c2.querySelector("p[dir='rtl']")).toBeTruthy());
+    const { container } = render(<FavoritesClient />);
+    await waitFor(() => expect(container.querySelector("p[dir='rtl']")).toBeTruthy());
 
-    const hint = c2.querySelector("p[dir='rtl']");
+    const hint = container.querySelector("p[dir='rtl']");
     // Two bells was the bug shape the sibling-glyph deletion closes: one from
     // the old standalone <Bell>, one from the interpolated tag.
     expect(hint.querySelectorAll('[data-icon="Bell"]')).toHaveLength(1);
@@ -184,7 +180,9 @@ describe("MEH-1628 · favorites list alerts hint", () => {
     // not a leading sibling. Its text must not be empty on either side.
     const parts = hint.textContent.split(/\s+/).filter(Boolean);
     expect(parts.length).toBeGreaterThan(3);
-    expect(container).toBeTruthy();
+    // The bell is not the row's first node — text precedes it. This is what
+    // separates "interpolated into the sentence" from "sibling glyph in front".
+    expect(hint.firstChild.textContent.trim()).not.toBe("");
   });
 });
 
