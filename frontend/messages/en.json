@@ -827,7 +827,7 @@
       },
       "order_window": {
         "strip_label": "Accepting orders:",
-        "cta_note": "You can send a message now — it'll be answered when orders reopen",
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
         "days_short": {
           "sun": "Sun",
           "mon": "Mon",
@@ -1212,7 +1212,10 @@
       "open_in_waze": "Waze",
       "open_in_google": "Google Maps",
       "open_in_waze_aria": "Open in Waze",
-      "open_in_google_aria": "Open in Google Maps"
+      "open_in_google_aria": "Open in Google Maps",
+      "expand_aria": "Expand map to full screen",
+      "close_aria": "Close full screen map",
+      "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
@@ -4190,6 +4193,10 @@
         "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+        "delivery_days_label": "Delivery day per city (optional)",
+        "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
+        "day_select_aria": "Delivery day for {city}",
+        "day_arranged": "By arrangement",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",

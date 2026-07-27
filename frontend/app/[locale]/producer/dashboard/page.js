@@ -1,11 +1,10 @@
 "use client";
 
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { EnvelopeSimple, Eye, LockSimple, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
-import { Link as LocaleLink } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -512,13 +511,13 @@ export default function ProducerDashboardPage() {
             <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
             <div>
               <p className="font-semibold text-text">{h.dashboardHint}</p>
-              <Link
+              <LocaleLink
                 href="/producer/dashboard"
                 className="text-xs mt-1 inline-block hover:underline"
                 style={{ color: h.color }}
               >
                 {t("holiday_catalog_cta")}
-              </Link>
+              </LocaleLink>
             </div>
           </div>
         );
