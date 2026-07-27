@@ -788,7 +788,7 @@
         },
         "excerpt_footer": "From the reviews",
         "excerpt_all": "All reviews",
-        "alerts_reentry": "Getting updates · Edit",
+        "alerts_reentry": "Getting updates",
         "alerts_reentry_aria": "Edit notification preferences"
       },
       "owner_card": {
@@ -979,7 +979,7 @@
       "back_to_list": "Back to group buys",
       "back_to_list_arrow": "← Back to group buys",
       "funded_title": "Price unlocked!",
-      "funded_subtitle": "{name} will contact the participants soon",
+      "funded_subtitle": "The group reached its goal! To arrange your order, contact {name}",
       "cancelled": "Group buy cancelled",
       "fulfilled": "✅ Group buy completed",
       "by_producer": "by {name}",
