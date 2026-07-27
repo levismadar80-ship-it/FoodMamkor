@@ -19,10 +19,20 @@ const PICK = { street: "הרצל 1", lat: 32.1, lng: 34.8, city: "תל אביב"
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), post: vi.fn() },
 }));
+// MEH-1639: the dashboard pages import Link/useRouter from the locale-aware
+// wrapper now, so the mock has to live on @/i18n/navigation. The
+// next/navigation mock below stays for useParams/useSearchParams, which
+// createNavigation does not export.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
   useParams: () => ({}),
   useSearchParams: () => new URLSearchParams(),
+}));
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>
+  ),
 }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: { id: "u1", role: "producer" }, loading: false }),

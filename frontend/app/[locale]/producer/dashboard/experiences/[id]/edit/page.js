@@ -8,8 +8,9 @@
  * <ExperienceForm mode="edit">. On save, returns to the manage list.
  */
 
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";

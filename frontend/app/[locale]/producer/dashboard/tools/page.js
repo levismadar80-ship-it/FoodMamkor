@@ -26,9 +26,8 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
