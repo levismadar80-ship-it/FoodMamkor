@@ -827,7 +827,7 @@
       },
       "order_window": {
         "strip_label": "Accepting orders:",
-        "cta_note": "You can send a message now — it'll be answered when orders reopen",
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
         "days_short": {
           "sun": "Sun",
           "mon": "Mon",
