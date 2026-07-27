@@ -136,6 +136,31 @@ function dateFromOffset(now, minutesAhead) {
 }
 
 /**
+ * MEH-1646: the single unambiguous order cutoff, or null.
+ *
+ * Returns {dayIndex, close} ONLY when the weekly window has exactly one valid
+ * open day — that is the one case where "מקבלים הזמנות עד {day} {time}" states
+ * a fact rather than a guess. With 2+ open days the "until" day depends on
+ * which dispatch the order feeds (business logic the data does not encode),
+ * so the caller must not render a cutoff claim at all (Phase 0 decision,
+ * MEH-1646 — window→day is not derivable unambiguously in the general case).
+ *
+ * Clock-free like getOrderWindowRanges, so it is SSR-safe — no mounted guard
+ * needed at the call site.
+ */
+export function getSingleOrderCutoff(orderWindow) {
+  if (isEmptyWindow(orderWindow)) return null;
+  let found = null;
+  for (let i = 0; i < 7; i += 1) {
+    const range = dayRange(orderWindow, i);
+    if (!range) continue;
+    if (found) return null; // 2+ open days → ambiguous
+    found = { dayIndex: i, close: orderWindow[ORDER_DAY_KEYS[i]].close };
+  }
+  return found;
+}
+
+/**
  * Compress the weekly window into display ranges, merging CONSECUTIVE days
  * that share identical hours: [{fromDay: 0, toDay: 4, open, close}, …].
  * Days are indices into DAY_KEYS so the caller supplies localized labels.
