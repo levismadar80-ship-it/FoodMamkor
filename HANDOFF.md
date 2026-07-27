@@ -123,6 +123,60 @@ auto-link.
 Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
 is still the next thing to pick up; MEH-1629 remains blocked.
 
+## 2026-07-27 — copy-honesty batch: three follow-ups merged (docs backfill)
+
+**Three merges, backfilled here as one docs-only PR (rule 31).** None of the three
+code branches carried CHANGELOG or HANDOFF — `changelog-branch-guard.sh` under the
+required **Repo guards** job hard-fails that, which is the whole point of the rule.
+
+| PR | Merge SHA | Shape |
+|---|---|---|
+| #2299 | `fdc2e642` | copy-only — reentry label drops "· לעריכה" |
+| #2301 | `f6e2d4d1` | copy-only — `funded_subtitle` stops promising a callback |
+| #2309 | `8c354f54` | YELLOW — closed-window note moves inside ContactCard + honest copy |
+
+**The batch's real finding is about assertions, not copy.** Two of the three
+exposed a check that could not fail. #2299's label test used
+`toHaveTextContent`, which matches **substrings** — it stayed green with the
+removed suffix still present. The fix is exact equality, and the evidence that
+matters is that the *old* assertion passed 6/6 on the identical construction
+that reds the new one. #2309's first sticky probe compared scroll travel against
+an **assumed** 900px rather than the 769px that actually happened; that shape can
+call a non-scrollable element "stuck". Both are the class
+`.claude/rules/testing.md` names: an assertion that looks strict and cannot tell
+the healthy state from the broken one.
+
+**#2309 carries a stated deviation from its own acceptance criteria.** The
+criteria asked for "exactly ONE note in the DOM", but `ContactCard` renders twice
+(mobile `lg:hidden` + sidebar `hidden lg:block`, both always in the DOM). A closed
+window therefore yields 2 in the DOM and 1 visible — a count **unchanged** by the
+fix, since the two prior mounts were `ProducerDetail:208` and `ContactSidebar:22`.
+The invariant the harness locks is exactly one **visible** note, inside the card,
+after the CTA, `outsideCard === 0`. Written into the PR body rather than quietly
+reinterpreted.
+
+**A new QA harness landed:** `frontend/e2e/qa-meh1649-cta-note.mjs`, which
+self-tests its own classifier against three synthetic DOM shapes before it
+measures the page, and whose baseline run against unmodified `staging` fails
+exactly as it should. Reusable shape for any future placement assertion.
+
+### Current state
+
+- **Vercel is still at its free-tier cap** (`api-deployments-free-per-day`,
+  100/24h), so none of the three PRs got a preview URL. Account-level infra, not
+  a required check; the GREEN/YELLOW tier waivers covered preview-first, and
+  Sapir verifies on staging after merge.
+- **MEH-1651 (group-buy owner blind on `funded`) is untouched and still the real
+  gap** — #2301 fixed only the copy that over-promised. MEH-1652 likewise
+  untouched (decision-gated).
+- **MEH-1615 is now load-bearing, not theoretical.** It says a docs-only PR's
+  **branch slug alone** reopens a Done ticket even when the identifier is kept out
+  of title and body. That is why this backfill has its own ticket rather than
+  reusing any of the three numbers — the branch-name gate demands `meh-NNNN` in
+  the slug, so the slug had to belong to something legitimately active.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
 ## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
 
 **Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
