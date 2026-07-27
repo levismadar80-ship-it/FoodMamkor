@@ -99,7 +99,7 @@ set -uo pipefail
 # the pin is expected to flip sonnet-4-6 -> opus-5, so the collision arm gets
 # exercised on real traffic while it is still only a warning.
 # ---------------------------------------------------------------------------
-ENFORCE_FROM="2026-08-17"
+ENFORCE_FROM="2026-07-01"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # `|| exit 1` is load-bearing (SC2164): an unguarded cd that fails leaves the
