@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — intentional staging fixture left behind by the MEH-1546 verification pass
+
+**Intentional staging fixture (order-window regression checks):** producer `2e9aa40f-1d5f-4a85-8d10-c87aafb12cf2` — `מאפיית רוח השדה`, the `seed_demo_business.py` demo business owned by `demo-owner@example.com` — carries `order_window = Sun–Thu 09:00–14:00` on **staging only**. Set 27/07 via the real dashboard editor during the MEH-1546 verification pass (PR #2243, `12cd58d9`). Staging and production are separate Railway databases: 0 UUID overlap, 0 name overlap, and production has no `order_window` column (196 commits behind `main`). Clear with "ניקוי הכל" in the dashboard if a test ever needs the null state on that producer — `77055d87` is the standing null-window control.
+
+The demo business is staging-gated by `_assert_not_production()` (`backend/scripts/seed_demo_business.py:414`, called at `:813`) and ADR-029's `check_no_demo_data.py`, so it structurally cannot reach production.
+
 ## 2026-07-27 — VRT determinism closed out: home ratified, /map mocked, hero-search fixed → E2E gate unblocked
 
 - **Four merges, one thread.** The VRT suite stopped being a source of permanent red. **PR #2221** ratified the home-mobile baseline by **restoring the `3680b928` blob** (`c01d43011917`) rather than regenerating — that blob was the on-runner regen of 23/07, captured after both MEH-1476 and MEH-1410, which `52ab77da` had reverted to a 21/07 image by mistake. **PR #2210** (MEH-1591) made `/map` deterministic with `page.route()` fixtures for the producers collection + `/categories`, and landed a regenerated `map-desktop-linux.png`. **PR #2230** (MEH-1599, **another session**) replaced the auth-gate redirect with an in-app denied state. **PR #2255** made the hero-search locator deterministic with `.first()`. Details for each are in the CHANGELOG; not repeated here.
