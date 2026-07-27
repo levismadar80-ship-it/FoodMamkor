@@ -129,9 +129,17 @@ export default function ProducerDashboardLayout({ children }) {
           {/* MEH-1357: persistent "צפייה בדף" (GBP "See your profile") — replaces
               the removed tools-page הצגת-העסק card. NOT a tab (no active border):
               a quiet inline-end link. Targets the UUID route /producer/{id}, not
-              /p/{slug}: the owner-exception (producers.py:247-253) lets the owner
+              /p/{slug}: the owner-exception (producers.py:265-271) lets the owner
               view her OWN page while pending, whereas the slug route
-              (producers.py:204) is approved-only and would 404 pre-approval. */}
+              (producers.py:210-226) is approved-only and would 404 pre-approval.
+              MEH-1632: that reasoning is sound and this URL was always correct —
+              but between MEH-1398 and MEH-1632 it did NOT hold for the rendered
+              page. The edge existence-check added by MEH-1398 called the same
+              endpoint ANONYMOUSLY, so the owner-exception never applied and this
+              link hard-404'd for every pending business. The check no longer
+              covers /producer/{id} (middleware.js) and the owner-exception is
+              once again what decides. Do not "fix" this href — the edge was the
+              bug, not the URL. */}
           {user.producer_id && (
             <Link
               href={`/producer/${user.producer_id}`}
