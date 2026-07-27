@@ -63,7 +63,7 @@ Line numbers are `globals.css` as of the audit (pre-#2262).
 | A-4 | `.leaflet-control-zoom` :198 | `z-index !important` | no inline (competes with Leaflet's own stylesheet) | `1000` | effective |
 | A-5 | `.leaflet-top.leaflet-{left,right}` :201 | `z-index !important` | no inline | `1000` | effective |
 | A-6 | `.leaflet-control-attribution` :216 | font-size / z-index / color | no inline | z `1001` | effective |
-| A-7 | `.leaflet-control-attribution` @<1024 :238 | `margin-bottom !important` | Leaflet stylesheet `.leaflet-bottom .leaflet-control` | `119.68px` with `--map-sheet-h: 14vh` — exactly `14vh + 6px` | effective; the MEH-1365 "measured" note still holds |
+| A-7 | `.leaflet-control-attribution` @<1024 :238 | `margin-bottom !important` | no inline writer; competes with Leaflet's **`.leaflet-container .leaflet-control-attribution { margin: 0 }`** — the later, winning rule (corrected in MEH-1636; this cell previously named `.leaflet-bottom .leaflet-control`) | `119.68px` with `--map-sheet-h: 14vh` — exactly `14vh + 6px` | effective; the 10px floor is **ours**, not a Leaflet default — pinned by `frontend/__tests__/leaflet-attribution-default.test.js` |
 | A-8 | `.leaflet-control-attribution a` :242 | `color` | no | inherit | effective |
 | A-9 | `.mehamakor-marker-wrap` :298 | background/border `!important` | no inline (competes with `.leaflet-div-icon`) | bg transparent, border `0px` | effective |
 | **A-10** | `.mehamakor-marker:not(.selected):not(.visited):hover` :303 | **`transform`** | **YES — `translate3d(680px, 633px, 0px)`** | selector matched **0** elements (11 matched `-wrap`); `.selected` **0**, `.visited` **0** | **DEAD — removed** |
@@ -177,17 +177,22 @@ up automatically by `scripts/checks/run-all.sh` under the required *Repo guards*
 Shown failing by construction: reintroducing the prop reds it with
 `VIOLATION frontend/components/MiniMap.jsx:257`.
 
-> **Adjacent finding — reported, deliberately NOT fixed here.** Leaflet's own default
+> **Adjacent finding — surfaced here, closed in MEH-1636.** Leaflet's own default
 > `margin-bottom` for this control is **`0`, not `10px`**:
 > `.leaflet-container .leaflet-control-attribution { margin: 0 }` (`leaflet.css:413-417`)
 > is equal in specificity to `.leaflet-bottom .leaflet-control { margin-bottom: 10px }`
 > (`:166-168`) and comes later, so it wins. Measured: `0px` at 1440 (where our rule does
 > not apply) and `10px` at 375 (where it does). The `10px` at 375 is therefore **our
-> `globals.css` floor**, not a Leaflet default. Row A-7 above and the MEH-1365 comment in
-> `globals.css:226,233` both describe that floor as "Leaflet's own default margin" — that
-> characterisation is wrong, though the *value* and the sheet-closed behaviour they
-> describe are correct and unchanged. Left alone: `globals.css` is outside this ticket's
-> scope and nothing renders differently. Worth its own ticket.
+> `globals.css` floor**, not a Leaflet default, and the sheet-closed state is **not**
+> equivalent to having no rule at all.
+>
+> Four sites asserted the opposite in prose (row A-7 above, two sentences in
+> `globals.css`, and `.claude/rules/rtl.md:99`). All four are corrected. Correcting prose
+> with prose would only have re-minted the same unverifiable claim, so the fix is
+> executable: **`frontend/__tests__/leaflet-attribution-default.test.js`** reads the
+> installed `leaflet.css` on every run and asserts the four facts the conclusion rests on
+> — both declared values, the source order, and the equal specificity. It is the single
+> place this fact now lives; every corrected site points at it rather than restating it.
 
 ---
 
