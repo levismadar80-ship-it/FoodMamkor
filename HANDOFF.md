@@ -3,6 +3,181 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — docs backfill for PR #2324 (builder-model guard)
+
+**Shipped.** The CHANGELOG entry for PR #2324 (`d8c75e13`), which could not carry
+its own logs: the branch touched `scripts/checks/**` and
+`.github/pull_request_template.md`, so `changelog-branch-guard.sh` under the
+required **Repo guards** job blocks them (rule 31). Verified against the commit,
+not from memory — 5 files, 677 insertions.
+
+**⚠️ Scope was cut from two PRs to one. #2303 is deliberately NOT backfilled.**
+The request named #2303 and #2324. #2303 is already covered: `docs/CHANGELOG.md`
+carries its entry, written by PR #2322, **and** the record correction is already
+there too — #2303's diff was docs-only (`docs/CLAUDE-REVIEW.md` +
+`docs/ci/adversarial-review.patch.md`), both under `docs/`, which
+`changelog-branch-guard.sh`'s `is_docs_path()` classifies as docs. It was never
+blocked; it was free to carry its logs and simply didn't. A second entry would
+have produced exactly the duplicated, contradictory pair MEH-1602 exists to
+prevent — the precedent being the two conflicting MEH-1569 entries on PR #2207,
+which only a human reading the log caught. **The ticket that stated all three of
+its PRs were guard-blocked (the #2276/#2293/#2303 backfill) is wrong about #2303
+only; the repo record is already right.**
+
+**Three defects worth carrying, none of which were in the source ticket:**
+
+1. **`git log -1 --format=%B` reads the wrong commit in CI.** `repo-guards` runs
+   `actions/checkout@v7` with no `ref:` and no `fetch-depth`, so HEAD is
+   `refs/pull/N/merge` — a synthetic merge commit. Demonstrated in run
+   `30295332674`, not argued.
+2. **A PR's head is the SECOND parent of the merge ref, not the first.** Parent 1
+   is the base — what `changelog-branch-guard.sh` wants and the exact opposite of
+   what a builder-identity guard needs.
+3. **Rule 25 makes a sync merge the usual branch tip**, and a sync merge carries
+   no trailer, so the guard would have redded precisely the branches that obeyed
+   the rule. Caught by the CI negative control; the four local controls could not
+   see it structurally, because they all run on a normal checkout where HEAD is
+   the commit itself.
+
+**The methodological lesson, which generalises past this guard:** local green is
+not evidence for anything that reads git metadata, because local-vs-CI *is* the
+variable under test. And a negative control that cannot discriminate is not a
+control — run 5b passed while warn-only, which exits 0 whether or not the fix
+works. The gap was closed by a separate enforcing run on a sync-merge tip
+(PR #2328, closed unmerged) where PASS was only possible if the walk worked.
+
+### NEXT
+The guard's warn-only window closes **2026-08-17**, mechanically. Before then,
+commits should start carrying `Builder-Model:` trailers or that date reds open
+PRs. Part 2 (`docs/ci/adversarial-review-blocking.patch.md`) is Sapir's to apply,
+and must land **before** the `continue-on-error: false` flip — otherwise the
+required check gates on "did the reviewer run", not "was the diff clean".
+## 2026-07-27 — MEH-1664 Hebrew search tokenization (end-to-end authority, הכרעת ספיר)
+
+**Shipped.** PR #2323 merged to `staging` (squash) on verified-green required gates.
+This is the docs-only backfill (rule 31 — the logs never ride in a code branch).
+
+| Ticket | PR | Shape | Gate note |
+|---|---|---|---|
+| MEH-1664 | #2323 | backend, 2 search paths + new shared helper | green: `CI gate` · `Deploy gate` · `Backend tests (pytest)` all success |
+
+**What changed.** Both search paths matched the whole query as one literal substring.
+Now every query is tokenized and each token expands to variants; a row matches iff
+**every** token hits ≥1 of its searchable fields — AND across tokens, OR across
+(variant × field). One shared helper, `backend/app/utils/hebrew_search.py`, so
+`/search` and `/producers?q=` can no longer disagree. `has_product` on the listing
+path also gained `Product.description` (it had only matched `Product.name`, which is
+why a description-only term was reachable from `/search` but invisible on
+`/producers?q=`). 6 files, +500/−68, zero frontend paths.
+
+**Four findings worth keeping.**
+
+1. **A negative guard often cannot be proven by reverting — only by breaking what it
+   guards.** Against the old implementation 5 of the 7 behavioral tests fail, but
+   tests 4 and 5 pass on it too. That is not a weak test, it is the wrong experiment:
+   test 5 is a *negative* assertion the old literal behavior also satisfied. Proving
+   it required flipping AND→OR across tokens, which fails **only test 5** while the
+   other 22 tests in the file — every pre-existing MEH-99 assertion included — stay
+   green. That asymmetry is the discrimination MEH-1619 asks for: it shows the old
+   assertion set would not have caught the regression. A revert-based run alone would
+   have signed off on test 5 without evidence.
+2. **The draft skip-green trap fires in practice, not just in theory (rule 21).** The
+   first CI run showed all three required gates `success` while `Backend tests
+   (pytest)` and `Backend lint (ruff)` were `skipped` — backend jobs gate on
+   `draft == false`, and a skipped leg aggregates to success. Merging there would have
+   merged on a run in which **nothing executed**. Marking the PR ready produced the
+   real signal. Treat a required-gate green on a draft as *no information*.
+3. **Escape-after-transform is load-bearing and invisible.** `token_variants` runs the
+   prefix strip and the ה/ת stem on the **raw** token; `escape_like` runs afterwards in
+   `token_patterns`. The reverse order — escape then chop — could sever a `\` from
+   `\%` and emit a dangling escape. Nothing in the type system or the linter would say
+   so, so `test_escaping_survives_the_variant_transforms` pins it directly.
+4. **Two concurrent pytest runs share one test DB and silently corrupt each other.**
+   `_clean_tables` TRUNCATEs between tests, so a second run mid-flight wipes the first
+   run's fixtures and the failures look like real regressions. Also: a `nohup`'d pytest
+   in this sandbox gets reaped and leaves a truncated log that reads like a completed
+   run. Use the harness's tracked background mode and check for a live process before
+   trusting any suite output.
+
+**Known limitation, deliberately shipped.** Plural→singular does not work: the ה/ת stem
+takes `גבינות` to `גבינו`, which reaches nothing, and ים/ות stripping was out of scope.
+`test_plural_to_singular_is_not_covered` pins it. If search logs show users typing
+plurals and getting nothing, that is the first thing to revisit — as its own ticket,
+not as a quiet widening of the rule.
+
+**Open item carried forward.** `backend/app/schemas/schemas.py:2944` still says
+`_strip_hebrew_prefix` "stays in search.py"; it now lives in the shared helper. Stale
+but harmless — it was outside the ticket's file list. Fix on next touch of that file.
+
+**Next task.** MEH-1665 (frontend, signal-gated) is the declared sibling of this work
+and was explicitly excluded here. First concrete step: confirm with Sapir whether the
+signal for it has been met before any frontend change.
+
+## 2026-07-27 — batch MEH-1660 · MEH-1661 · MEH-1662 (end-to-end authority, ADR-016 v2)
+
+**Shipped.** Four PRs merged: #2308 (MEH-1660 fix) · #2321 (MEH-1660 qa-artifacts) ·
+#2318 (MEH-1661 sweep + guard) · #2326 (MEH-1662 heading). This PR is the docs-only
+backfill (rule 31 — the logs never ride in a code branch).
+
+| Ticket | PR | Shape | Gate note |
+|---|---|---|---|
+| MEH-1660 | #2308 + #2321 | backend + new pytest; qa-artifacts | green, auto-merged |
+| MEH-1661 | #2318 | messages sweep + new vitest guard | merged on Sapir's explicit "MERGE" with `E2E gate` red |
+| MEH-1662 | #2326 | one he.json key | green |
+
+**Open item carried forward — MEH-1661's `home-mobile` VRT baseline is still stale.**
+The hero CTA lost its 📦, which moves unmasked pixels, so `[mobile] › visual/parity
+home` fails (173 passed, 1 failed). It merged anyway on explicit instruction, which
+means **`staging` now carries a knowingly-red VRT shot**: the next PR that runs the
+suite inherits the failure and it will read as *that* PR's regression. Closing it needs
+one `vrt-update` dispatch (`route=home`) on `staging` — a permission this session does
+not have (403, no workflows scope).
+
+**Three findings worth keeping.**
+
+1. **A local VRT regen would have been wrong, and only a self-test showed it.** Before
+   considering a locally-generated baseline I built the *base* (unchanged) content and
+   ran the spec against the committed baseline: **0.25 pixel ratio difference on content
+   that had not changed** — sandbox Chromium 1194 vs runner 1228. Had I skipped that
+   check, I would have committed a baseline that ratifies sandbox rendering for every
+   future run. This is the MEH-1552 candidate-baseline trap reached by a different road:
+   there the bot froze a broken state, here the *environment* would have.
+2. **The ☆ "survivor" report was half right — and the half that was wrong would have
+   shipped a defect.** Mid-batch verification reported `ambassador_inactive` ("☆ שגריר")
+   as a missed emoji and asked to widen the guard to `U+2600–U+27BF`. The survivor is
+   real; the premise is not — **U+2606 is NOT `Extended_Pictographic`** (verified against
+   Node/ICU 17.0; so is `★` U+2605, while `⭐` U+2B50 is). The count of 5 was correct for
+   the ticket's own stated definition. Two things stopped the "fix":
+   - **The proposed range would red ~80 lines per locale** — every `✓ נשמר`, `✗ לא מוגדר`,
+     `הבא ←`, `→ חזרה`. The sibling MEH-1472 guard *explicitly* allows those, and
+     `app/[locale]/admin/reviews/page.jsx:129-132` shows MEH-1472 **deliberately
+     converted ⭐ → ★ as "the repo's typographic star"**. Widening would have contradicted
+     a decision the repo made on purpose and created two definitions of "emoji" in two
+     sibling guards (workflow.md smell #1).
+   - **Stripping ☆ alone collides in English.** `ambassador_active` is "Ambassador" after
+     the sweep; `ambassador_inactive` is "☆ Ambassador". Remove the glyph and both read
+     **"Ambassador"** — the toggle's two states become indistinguishable. The glyph
+     carries the meaning, which is the MEH-1628 case where the spec itself says replace
+     with a word, not delete. That needs approved copy (rule 22), so I reverted and
+     stopped rather than inventing it.
+   - **Decision owed to Sapir:** either keep ☆ as the approved typographic twin of ★
+     (zero work, consistent with MEH-1472), or approve distinguishing English copy —
+     `set_ambassador_title` / `remove_ambassador_title` already exist in the same
+     namespace, **approved but unused**, and would fit if the component is repointed.
+3. **Grep verification has to distinguish source from build output.** MEH-1662's
+   grep-absence proof returned 2 false hits from a gitignored `.next/` directory left by
+   a local build. `git grep` returned 0. Any "0 occurrences remain" claim should use
+   `git grep`, not `grep -rn`.
+
+**Environment notes.** Vercel hit its free-tier 100-deploys/day cap mid-batch — no PR
+previews for ~24h, so MEH-1660's self-QA ran against staging post-merge instead of a
+preview, and MEH-1661's screenshots are still owed. A **parallel session** was pushing
+`feature/meh-1644-delivery-day-capture` at 18:29Z (rule 1 single-session flag) — different
+ticket, no file overlap.
+
+**Next task.** Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited
+red shot, then decide the ☆/ambassador question above.
+
 ## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
 
 **Shipped.** CHANGELOG entries for the three 27/07 attribution-chain merges. Every
