@@ -271,6 +271,39 @@ class TestNoBehaviourChangeForValidSessions:
         assert res.status_code == 200
         assert "WWW-Authenticate" not in res.headers
 
+    def test_missing_credential_challenge_omits_the_error_code(self, client, db):
+        """A protected route hit with NO credential → bare Bearer challenge.
+
+        RFC 6750 §3: a request that "lacks any authentication information"
+        SHOULD NOT get an error code, because `invalid_token` means a
+        credential was presented and rejected. Sending it here would collapse
+        "you sent nothing" into "your token is bad" — the same conflation this
+        module exists to pin apart, one layer up in the header.
+
+        GET /auth/me takes get_current_user directly, so unlike the optional
+        endpoints above a missing header reaches the 401 rather than being
+        served anonymously.
+        """
+        res = client.get("/auth/me")
+
+        assert res.status_code == 401
+        challenge = res.headers.get("WWW-Authenticate", "")
+        assert "realm=" in challenge
+        assert "invalid_token" not in challenge, (
+            "a request that presented no credential must not be told its "
+            "token was rejected"
+        )
+
+    def test_presented_but_invalid_still_carries_invalid_token(self, client, db):
+        """The other half of the same distinction, on the same endpoint —
+        so the pair discriminates rather than each passing in isolation."""
+        user = make_user(db)
+
+        res = client.get("/auth/me", headers=bearer(expired_token(user)))
+
+        assert res.status_code == 401
+        assert "invalid_token" in res.headers.get("WWW-Authenticate", "")
+
     def test_403_carries_no_invalid_token_challenge(self, client, db):
         """A blocked user is refused, not re-challenged — telling the client
         to refresh here would send it into a pointless retry."""

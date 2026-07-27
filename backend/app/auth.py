@@ -147,6 +147,17 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
 # WWW-Authenticate there would tell the client to retry a hopeless refresh.
 _INVALID_TOKEN_HEADERS = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
 
+# MEH-1627: the *missing* credential carries a bare challenge, no error code.
+# RFC 6750 §3 is explicit: "If the request lacks any authentication
+# information … the resource server SHOULD NOT include an error code or other
+# error information", because `invalid_token` means a credential was presented
+# and rejected. Emitting it for a request that presented nothing would collapse
+# "you sent no token" into "your token is bad" — the exact conflation this
+# ticket exists to remove, reproduced in the header while the body gets it
+# right. A client that reads the challenge would suppress its "please
+# authenticate" flow and try to refresh a token it never had.
+_NO_CREDENTIAL_HEADERS = {"WWW-Authenticate": 'Bearer realm="mehamakor"'}
+
 
 def _validate_access_scope(claims: dict) -> None:
     # MEH-326: only access-scope tokens are valid here. Refresh tokens go
@@ -228,7 +239,7 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
-            headers=_INVALID_TOKEN_HEADERS,
+            headers=_NO_CREDENTIAL_HEADERS,
         )
     try:
         token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
