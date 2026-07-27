@@ -3,6 +3,344 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — batch MEH-1660 · MEH-1661 · MEH-1662 (end-to-end authority, ADR-016 v2)
+
+**Shipped.** Four PRs merged: #2308 (MEH-1660 fix) · #2321 (MEH-1660 qa-artifacts) ·
+#2318 (MEH-1661 sweep + guard) · #2326 (MEH-1662 heading). This PR is the docs-only
+backfill (rule 31 — the logs never ride in a code branch).
+
+| Ticket | PR | Shape | Gate note |
+|---|---|---|---|
+| MEH-1660 | #2308 + #2321 | backend + new pytest; qa-artifacts | green, auto-merged |
+| MEH-1661 | #2318 | messages sweep + new vitest guard | merged on Sapir's explicit "MERGE" with `E2E gate` red |
+| MEH-1662 | #2326 | one he.json key | green |
+
+**Open item carried forward — MEH-1661's `home-mobile` VRT baseline is still stale.**
+The hero CTA lost its 📦, which moves unmasked pixels, so `[mobile] › visual/parity
+home` fails (173 passed, 1 failed). It merged anyway on explicit instruction, which
+means **`staging` now carries a knowingly-red VRT shot**: the next PR that runs the
+suite inherits the failure and it will read as *that* PR's regression. Closing it needs
+one `vrt-update` dispatch (`route=home`) on `staging` — a permission this session does
+not have (403, no workflows scope).
+
+**Three findings worth keeping.**
+
+1. **A local VRT regen would have been wrong, and only a self-test showed it.** Before
+   considering a locally-generated baseline I built the *base* (unchanged) content and
+   ran the spec against the committed baseline: **0.25 pixel ratio difference on content
+   that had not changed** — sandbox Chromium 1194 vs runner 1228. Had I skipped that
+   check, I would have committed a baseline that ratifies sandbox rendering for every
+   future run. This is the MEH-1552 candidate-baseline trap reached by a different road:
+   there the bot froze a broken state, here the *environment* would have.
+2. **The ☆ "survivor" report was half right — and the half that was wrong would have
+   shipped a defect.** Mid-batch verification reported `ambassador_inactive` ("☆ שגריר")
+   as a missed emoji and asked to widen the guard to `U+2600–U+27BF`. The survivor is
+   real; the premise is not — **U+2606 is NOT `Extended_Pictographic`** (verified against
+   Node/ICU 17.0; so is `★` U+2605, while `⭐` U+2B50 is). The count of 5 was correct for
+   the ticket's own stated definition. Two things stopped the "fix":
+   - **The proposed range would red ~80 lines per locale** — every `✓ נשמר`, `✗ לא מוגדר`,
+     `הבא ←`, `→ חזרה`. The sibling MEH-1472 guard *explicitly* allows those, and
+     `app/[locale]/admin/reviews/page.jsx:129-132` shows MEH-1472 **deliberately
+     converted ⭐ → ★ as "the repo's typographic star"**. Widening would have contradicted
+     a decision the repo made on purpose and created two definitions of "emoji" in two
+     sibling guards (workflow.md smell #1).
+   - **Stripping ☆ alone collides in English.** `ambassador_active` is "Ambassador" after
+     the sweep; `ambassador_inactive` is "☆ Ambassador". Remove the glyph and both read
+     **"Ambassador"** — the toggle's two states become indistinguishable. The glyph
+     carries the meaning, which is the MEH-1628 case where the spec itself says replace
+     with a word, not delete. That needs approved copy (rule 22), so I reverted and
+     stopped rather than inventing it.
+   - **Decision owed to Sapir:** either keep ☆ as the approved typographic twin of ★
+     (zero work, consistent with MEH-1472), or approve distinguishing English copy —
+     `set_ambassador_title` / `remove_ambassador_title` already exist in the same
+     namespace, **approved but unused**, and would fit if the component is repointed.
+3. **Grep verification has to distinguish source from build output.** MEH-1662's
+   grep-absence proof returned 2 false hits from a gitignored `.next/` directory left by
+   a local build. `git grep` returned 0. Any "0 occurrences remain" claim should use
+   `git grep`, not `grep -rn`.
+
+**Environment notes.** Vercel hit its free-tier 100-deploys/day cap mid-batch — no PR
+previews for ~24h, so MEH-1660's self-QA ran against staging post-merge instead of a
+preview, and MEH-1661's screenshots are still owed. A **parallel session** was pushing
+`feature/meh-1644-delivery-day-capture` at 18:29Z (rule 1 single-session flag) — different
+ticket, no file overlap.
+
+**Next task.** Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited
+red shot, then decide the ☆/ambassador question above.
+
+## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
+
+**Shipped.** CHANGELOG entries for the three 27/07 attribution-chain merges. Every
+claim below was **read from the commit**, per the ticket's instruction — none of the
+three came from this session.
+
+| PR | Merge | Shape |
+|---|---|---|
+| #2276 | `2792495f` | code — `MiniMap.jsx` + new `scripts/checks/map-attribution-guard.sh` + 6 qa-artifacts |
+| #2293 | `cb00d1d0` | code — new `frontend/__tests__/leaflet-attribution-default.test.js` + `globals.css` comments |
+| #2303 | `1a5ecfbc` | **docs-only** — `docs/CLAUDE-REVIEW.md` + `docs/ci/adversarial-review.patch.md` |
+
+**⚠️ The ticket's premise is wrong for one of the three, and verification is the only
+reason it surfaced.** MEH-1669 states that all three branches touched code and were
+therefore blocked by `changelog-branch-guard.sh`. True for #2276 and #2293. **#2303 is
+docs-only** — both its files sit under `docs/`, which the guard classifies as docs
+(`changelog-branch-guard.sh:123`: `docs/*|.claude/*|.ai/*|HANDOFF.md`). It was free to
+carry its own logs and simply didn't. Same distinction MEH-1642 recorded for #2272, in
+the opposite direction — there the PR was free and *did* write them, so a second entry
+would have duplicated. Here it was free and didn't, so the backfill is still owed. The
+row belongs in this PR either way; the stated reason does not.
+
+**Two content corrections against the commits.**
+
+1. **#2276 changed the attribution *string*, not only the control.** The ticket's table
+   says the prop was deleted and the string was inert. The diff also replaces
+   `'© OpenStreetMap contributors'` with
+   `'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'`,
+   byte-identical to `HomepageMiniMap.jsx:236`. So even had the control rendered, the
+   old string carried no link — two defects, not one.
+2. **The `leaflet.css` line numbers that look contradictory are not.** #2293's commit
+   message cites `:167`/`:416` in one sentence and `(413 > 166)` in the next, and the
+   ticket repeats `413`/`166`. Read against the installed leaflet 1.9.4: `166` and `413`
+   are the **selector** lines (what source order compares), `167` and `416` the
+   **declaration** lines (`margin-bottom: 10px`, `margin: 0`). Both pairs are correct
+   for what they cite. Worth knowing before someone "fixes" one of them.
+
+**The lessons the entries carry**, all three of the same family — an assertion or a
+scan that cannot see what it claims to cover:
+
+- **Class B′ was a definition gap, not a missed scan.** MEH-1619's class B was scoped to
+  props conditional on runtime element type, so a prop that *deletes what another prop
+  configures* fell outside it structurally.
+- **A claim whose subject is `node_modules` is invisible to every tool in the pipeline.**
+  `tsc`, `eslint`, `knip`, `run-all.sh` all check the code against itself. A test that
+  reads the installed package is the only instrument.
+- **`grep -c` on mentions is not a count of claims** — the `.claude/rules` Leaflet-claim
+  count fell 13 → 2 → 1 across two narrowings.
+- **`continue-on-error: false` blocks a step failure, not findings.** The review action
+  is advisory by construction, so the flip has to gate on "did the reviewer run", not
+  "was the diff clean". Carried into MEH-1668.
+
+**Coverage ledger, so the next backfill doesn't double-write:** MEH-1642 = #2272/#2275/#2284 ·
+MEH-1666 = #2305 · MEH-1667 = #2299/#2301/#2309 · **MEH-1669 = #2276/#2293/#2303**.
+Verified before writing: no existing CHANGELOG entry mentions MEH-1633, MEH-1636,
+MEH-1654, or any of the three PR numbers.
+
+### NEXT
+Unchanged by this session — see the queue entry below.
+
+## 2026-07-27 — 4-ticket sequential queue (loading-state batch) — 3 merged, 1 STOP
+
+**Queue per Sapir grant 27/07 (end-to-end authority, ADR-016).** Sequential, each
+branch off fresh `origin/staging`, auto-merge on green, no CHANGELOG/HANDOFF in
+code branches (rule 31) — this is the docs-only backfill PR those merges pointed
+at.
+
+| Ticket | Branch | PR | Outcome |
+|---|---|---|---|
+| MEH-1655 loading-CTA jump ×4 manage lists | `feature/meh-1655-loading-cta-jump` | #2304 | **merged** 13:56Z |
+| MEH-1656 admin/users empty flash | `feature/meh-1656-admin-users-empty-flash` | #2306 | **merged** 14:01Z |
+| MEH-1638 entry skeleton — `/settings` half | `feature/meh-1638-dashboard-entry-skeleton` | #2311 | **merged** 18:20Z |
+| MEH-1657 event/experience axis | — none — | — | **STOP (a)** — see below |
+
+**Gate evidence (MEH-1582 discipline):** on every merged head both required
+aggregators (`CI gate`, `Deploy gate`) succeeded with the real legs RUN, not
+skipped — #2304 head `a22f54bc`: Frontend build 54s / vitest 3m57s / RTL lint /
+Repo guards / qa-size cap all `success`; #2306 head `89bdfb65`: build 53s /
+vitest 4m17s `success`. Backend legs `skipped` on both = paths-filter (no
+backend file in either diff), the documented docs-only-style skip, not the
+draft skip-green hole. `Playwright E2E` failed on both runs with **exactly the
+pre-existing known red** — `parity.spec.ts:226 › home` (mobile), 173 passed —
+the same failure `.claude/rules/testing.md` records as precondition-B blocker;
+E2E gate is not in ruleset 15240090, and none of the three diffs touches a VRT
+route. #2311 head `87544f94` (run `30292884267`): build/vitest/tsc/Knip/lint
+all `success`, same single pre-existing parity red (24012px, home mobile), and
+the settings-touching specs (password-policy settings card, role-reachability)
+all passed on it.
+
+**MEH-1657 STOP (a) — data decision needed, Sapir runs the DML.** The ticket's
+own first step: query staging for events in the categories being removed.
+`GET /events?from_date=2000-01-01` (via the Vercel-proxied `/api`) returned
+exactly one live event and it is category **סדנה**:
+`d886c4df-d541-44ce-af08-b8190cd94153` · "סדנת אפיית לחם מחמצת למתחילות" ·
+מאפיית רוח השדה (`2e9aa40f-1d5f-4a85-8d10-c87aafb12cf2`) · 2026-08-11 · זכרון
+יעקב · `is_active: true`. Removing סדנה from `VALID_CATEGORIES` (events.py:33)
+with that row live would strand real data. No branch was created, no file
+touched. `/events/mine` for the demo producer was NOT checked (no
+`DEMO_*_PASSWORD` in this session) — after the DML, re-check it before
+re-dispatching the ticket. The locked copy + category spec stays in the ticket,
+ready to execute once staging is clean.
+
+**Session-discovered follow-ups (not filed, per rule 27 — search Linear first):**
+- MapCardList.jsx:73 empty state flashes during producers load on the DESKTOP
+  sidebar only (`MapClient.jsx:512` unguarded; mobile sheet protected by
+  MEH-1054). Read-only finding required by the MEH-1656 ticket, reported in PR
+  #2306's body.
+- Reviewer suggestion on #2304 (arrived pre-merge, landed after): the 3-state
+  CTA-count vitest block covers only the events page; experiences/recipes/
+  group-buys are covered by the e2e harness but not in CI's vitest. Optional
+  parameterized-test follow-up.
+- Reviewer nits on #2306 (post-merge, cosmetic): two Hebrew strings quoted in
+  code comments; loading/empty rows use `text-center` vs the table's `text-end`.
+
+### NEXT
+Sapir: run the DML for the סדנה event (or approve recategorizing it), then
+re-dispatch MEH-1657 from its Linear description unchanged.
+## 2026-07-27 — Leaflet inline-writer claim pinned; two of its own acceptance criteria were false (PR #2305)
+
+**Shipped and merged** (`eab51862`). The one claim in `.claude/rules/` that guides
+code decisions and nothing checked — which CSS properties Leaflet and markercluster
+write inline, and above all that neither writes `filter` — is now re-derived from
+the installed bundles on every vitest run. That negative is the sole reason a marker
+fade rides `filter: opacity()`; if a release starts writing `filter` inline the fade
+stops applying with no error and no failing test, which is the MEH-1611 shape.
+
+**The finding that matters: Phase 0 contradicted two of the ticket's own acceptance
+criteria, and the test was written to the packages rather than to the spec.**
+
+1. **`filter` is not absent from Leaflet.** `leaflet-src.js:2506` writes
+   `el.style.filter +=` inside `_setOpacityIE` — IE-8 dead code, reached only via
+   the `else if ('filter' in el.style)` arm that `setOpacity` takes when
+   `'opacity' in el.style` is false. The behavioural claim holds; the absolute one
+   does not. Criterion (d) as written would have failed on the untouched package.
+2. **`clusterShow` does not assign `opacity`.** It delegates —
+   `markercluster:1835` → `Marker.setOpacity` → `_updateOpacity` →
+   `DomUtil.setOpacity` → `el.style.opacity`. Its body has no style write at all.
+
+So (d) pins the exact shape (one write, inside `_setOpacityIE`, single guarded call
+site) and (c) pins the delegation chain. The rule file's three line citations were
+all **accurate** — the prose around them was not.
+
+**Negative control 1 caught a real defect, and it is the transferable lesson.** The
+declaration matcher was unanchored, so it matched Leaflet's
+`// @function setTransform(…)` doc comment sitting immediately above the real
+declaration, then brace-matched forward into the function and returned a body that
+looked perfectly valid. **Renaming `setTransform` left the guard green.** Anchoring
+to a line start fixed it. Same class as MEH-1619 C-1 and the MEH-1593 clipping
+detector: an assertion that cannot tell the healthy state from the broken one. All
+four controls ran against a mutated `node_modules` restored byte-identically
+(md5-verified), including the one that proves (d) is not a substring match — a bare
+`filter` in a comment leaves it green.
+
+**Two process notes worth carrying.**
+
+- **Draft green is not green (rule 21), and it nearly bit here.** At draft time both
+  required aggregators reported `success` while `Frontend build` / `Frontend unit
+  tests` showed `skipped`. The PR was marked ready and the merge waited for the
+  ready-time runs, where those legs actually executed.
+- **A stale check-run read almost became a false diagnosis.** The `get_check_run`
+  endpoint served `in_progress` for the vitest job long after it finished; the job
+  record showed it completed in 3m37s. Prefer the job/run record over the check-run
+  status when the two disagree.
+
+**Deliberately not in that PR:** CHANGELOG + HANDOFF (this entry). The branch touched
+`frontend/__tests__/**`, so `changelog-branch-guard.sh` under the required *Repo
+guards* job blocks the logs from riding along (rule 31). This docs-only PR is the
+backfill, tracked as its own ticket per the MEH-1614/1622/1642 precedent.
+
+**⚠️ Branch-naming note (MEH-1615).** This backfill branch carries its **own**
+ticket's identifier, not `meh-1637`. The branch slug alone auto-links in Linear and
+would have flipped the now-Done MEH-1637 back to In Progress even with the identifier
+kept out of the PR title and body — the trap MEH-1615 documents and rule 29 warns
+about. MEH-1637's identifier appears only inside the file content, which does not
+auto-link.
+
+### NEXT
+Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
+is still the next thing to pick up; MEH-1629 remains blocked.
+
+## 2026-07-27 — MEH-1659: מיני-מפה עם זום + מסך מלא (PR #2310 + #2317), ו-docs backfill
+
+**נשלח ומוזג.** PR #2310 (`e671aa84`) — המיני-מפה ב"הגעה ומיקום" חדלה להיות קפואה:
+פקד +/− inline, והקשה על המפה (רקע או פין) פותחת overlay על כל המסך עם כל המחוות.
+שלושת הצרכנים (producer · events · experiences) דרך props API ללא שינוי. PR #2317
+סגר מיד חור ב-guard שה-reviewer האוטומטי מצא (`keyboard` חסר ממערך ה-GESTURES).
+
+**שלוש נקודות שראוי שיישרדו את הסשן:**
+
+1. **הנחת המוצא של הכרטיס על `map.tap` הייתה מיושנת.** Leaflet 1.9.4 אינו כולל handler
+   בשם `tap` כלל (רק `TapHold`) — `if (map.tap) map.tap.disable()` שירד עכשיו מהקוד היה
+   מת מאז השדרוג. לכן `click` נייטיב מגיע ללא הפרעה ואין צורך ב-fallback ברמת container.
+   אומת ב-`page.tap()` אמיתי, לא בהיסק.
+2. **מה שמונע פתיחה בטעות של ה-overlay אינו קוד שלנו** אלא
+   `DomEvent.disableClickPropagation` של Leaflet על מיכלי הפקדים. שתי הטענות
+   התלויות-בספרייה ננעלו ב-`frontend/__tests__/leaflet-interaction-contract.test.js`
+   לפי `.claude/rules/frontend.md` § Maintenance — שנחת ב-staging באמצע העבודה על הענף.
+3. **חריגה מודעת מה-spec, מתועדת ב-PR body:** כפתורי ההגדלה/סגירה לוקחים פינה **פיזית**
+   (`right-3`, `rtl-ok`) ולא לוגית, כי Leaflet מצמיד את +/− לשמאל-פיזי בשני הכיוונים —
+   `start-*` היה מתנגש איתו ב-`/en` ו-`end-*` בעברית.
+
+**⚠️ שני דברים פתוחים שהם לא באג בקוד הזה:**
+
+- **אין preview URL לשני ה-PRs.** Vercel בתקרת ה-free tier
+  (`api-deployments-free-per-day`, 100/24h) — חשבון, לא בדיקה נדרשת. **בדיקת מובייל
+  אמיתית (iOS Safari / Android Chrome) עדיין לא נעשתה** ואי אפשר לעשות אותה מה-sandbox;
+  ה-QA שכן רץ הוא Chromium ב-375 ו-1440 עם מכשיר מגע (26/26). המקרים למובייל נוספו
+  ל-`docs/MANUAL_TESTING.md`.
+- **`parity.spec.ts › home` (mobile) אדום — קיים מראש, לא רגרסיה.** אותו spec ואותו סדר
+  גודל (24012px, יחס 0.09) נכשל גם על `8c354f54` ב-staging, שאינו מכיל את השינוי. כל
+  spec של producer-detail עבר בשני ה-viewports. תואם לזוג ה-VRT האדום שכבר מתועד
+  ב-`.claude/rules/testing.md`. **ה-baseline של `home-mobile-linux.png` עדיין צריך
+  הכרעה אנושית** — לא נגעתי בו: baseline הוא candidate ולא אמת, ומי שמחדש אותו צריך
+  לפתוח את ה-PNG ולסקור ויזואלית (CLAUDE.md § 5-state).
+
+### NEXT
+MEH-1629 עדיין חסום (ללא שינוי). אם מחליטים לטפל ב-`home` mobile VRT — זה כרטיס נפרד,
+ובו רענון baseline עם סקירה ויזואלית, לא merge של bot.
+
+## 2026-07-27 — copy-honesty batch: three follow-ups merged (docs backfill)
+
+**Three merges, backfilled here as one docs-only PR (rule 31).** None of the three
+code branches carried CHANGELOG or HANDOFF — `changelog-branch-guard.sh` under the
+required **Repo guards** job hard-fails that, which is the whole point of the rule.
+
+| PR | Merge SHA | Shape |
+|---|---|---|
+| #2299 | `fdc2e642` | copy-only — reentry label drops "· לעריכה" |
+| #2301 | `f6e2d4d1` | copy-only — `funded_subtitle` stops promising a callback |
+| #2309 | `8c354f54` | YELLOW — closed-window note moves inside ContactCard + honest copy |
+
+**The batch's real finding is about assertions, not copy.** Two of the three
+exposed a check that could not fail. #2299's label test used
+`toHaveTextContent`, which matches **substrings** — it stayed green with the
+removed suffix still present. The fix is exact equality, and the evidence that
+matters is that the *old* assertion passed 6/6 on the identical construction
+that reds the new one. #2309's first sticky probe compared scroll travel against
+an **assumed** 900px rather than the 769px that actually happened; that shape can
+call a non-scrollable element "stuck". Both are the class
+`.claude/rules/testing.md` names: an assertion that looks strict and cannot tell
+the healthy state from the broken one.
+
+**#2309 carries a stated deviation from its own acceptance criteria.** The
+criteria asked for "exactly ONE note in the DOM", but `ContactCard` renders twice
+(mobile `lg:hidden` + sidebar `hidden lg:block`, both always in the DOM). A closed
+window therefore yields 2 in the DOM and 1 visible — a count **unchanged** by the
+fix, since the two prior mounts were `ProducerDetail:208` and `ContactSidebar:22`.
+The invariant the harness locks is exactly one **visible** note, inside the card,
+after the CTA, `outsideCard === 0`. Written into the PR body rather than quietly
+reinterpreted.
+
+**A new QA harness landed:** `frontend/e2e/qa-meh1649-cta-note.mjs`, which
+self-tests its own classifier against three synthetic DOM shapes before it
+measures the page, and whose baseline run against unmodified `staging` fails
+exactly as it should. Reusable shape for any future placement assertion.
+
+### Current state
+
+- **Vercel is still at its free-tier cap** (`api-deployments-free-per-day`,
+  100/24h), so none of the three PRs got a preview URL. Account-level infra, not
+  a required check; the GREEN/YELLOW tier waivers covered preview-first, and
+  Sapir verifies on staging after merge.
+- **MEH-1651 (group-buy owner blind on `funded`) is untouched and still the real
+  gap** — #2301 fixed only the copy that over-promised. MEH-1652 likewise
+  untouched (decision-gated).
+- **MEH-1615 is now load-bearing, not theoretical.** It says a docs-only PR's
+  **branch slug alone** reopens a Done ticket even when the identifier is kept out
+  of title and body. That is why this backfill has its own ticket rather than
+  reusing any of the three numbers — the branch-name gate demands `meh-NNNN` in
+  the slug, so the slug had to belong to something legitimately active.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
 ## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
 
 **Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry

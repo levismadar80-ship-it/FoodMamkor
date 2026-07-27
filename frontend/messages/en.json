@@ -410,7 +410,7 @@
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
       "near_me": "Near me",
-      "delivery_cta": "Deliveries to me 📦",
+      "delivery_cta": "Deliveries to me",
       "delivery_cta_city": "Deliveries to {city}",
       "surprise_me": "Surprise me",
       "searching": "Searching...",
@@ -771,8 +771,8 @@
           "shared": "Gluten is present in the production facility — as declared by the business. If you have celiac disease, please confirm directly with the business.",
           "dedicated": "No gluten in the production facility — as declared by the business."
         },
-        "slow_response": "⏳ Longer response times this week",
-        "vacation": "🌙 This business is on break right now",
+        "slow_response": "Longer response times this week",
+        "vacation": "This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
         "vacation_back_soon": "Back soon",
@@ -857,7 +857,7 @@
       },
       "badges": {
         "delivery_only": "Delivery only",
-        "available_today": "🛒 Coming today",
+        "available_today": "Coming today",
         "overflow_aria": "Show {count} more badges"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
@@ -981,7 +981,7 @@
       "funded_title": "Price unlocked!",
       "funded_subtitle": "The group reached its goal! To arrange your order, contact {name}",
       "cancelled": "Group buy cancelled",
-      "fulfilled": "✅ Group buy completed",
+      "fulfilled": "Group buy completed",
       "by_producer": "by {name}",
       "unit_suffix": "/ {unit}",
       "discount_hint": "Save {discount}% at the group price",
@@ -996,7 +996,7 @@
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
       "login_required": "You must sign in to join a group buy",
-      "committed_confirm": "✅ You joined this group buy",
+      "committed_confirm": "You joined this group buy",
       "committed_units": " ({count} units)",
       "cancelling": "Cancelling...",
       "cancel_cta": "Cancel my commitment",
@@ -1016,7 +1016,7 @@
         "open": "Open",
         "funded": "Funded",
         "cancelled": "Cancelled",
-        "fulfilled": "Completed ✅"
+        "fulfilled": "Completed"
       },
       "back": "Back to tools",
       "heading": "My group buys",
@@ -1065,9 +1065,9 @@
       },
       "card_label": {
         "open_orders": "Open for orders",
-        "available_today": "Available today 🟢",
-        "busy_week": "Busy this week 🟠",
-        "on_vacation": "On break ⏸"
+        "available_today": "Available today",
+        "busy_week": "Busy this week",
+        "on_vacation": "On break"
       }
     },
     "delivery": {
@@ -1215,7 +1215,10 @@
       "open_in_waze": "Waze",
       "open_in_google": "Google Maps",
       "open_in_waze_aria": "Open in Waze",
-      "open_in_google_aria": "Open in Google Maps"
+      "open_in_google_aria": "Open in Google Maps",
+      "expand_aria": "Expand map to full screen",
+      "close_aria": "Close full screen map",
+      "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
@@ -1351,8 +1354,8 @@
         "incomplete_title": "Show only businesses missing required details",
         "show_all": "Show all",
         "incomplete_label": "Missing details",
-        "export": "📤 Export",
-        "import_excel": "📥 Import from Excel",
+        "export": "Export",
+        "import_excel": "Import from Excel",
         "new_producer": "+ New business"
       },
       "import": {
@@ -1415,11 +1418,11 @@
           "activate": "Activate",
           "remove_ambassador_title": "Remove ambassador role",
           "set_ambassador_title": "Set as ambassador",
-          "ambassador_active": "⭐ Ambassador",
+          "ambassador_active": "Ambassador",
           "ambassador_inactive": "☆ Ambassador",
           "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
-          "story_card": "📸 Story",
+          "story_card": "Story",
           "delete": "Delete",
           "menu_aria": "More actions"
         },
@@ -1542,7 +1545,7 @@
           "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
           "verified": "Verified",
-          "recommended": "⭐ Recommended (editor's pick)",
+          "recommended": "Recommended (editor's pick)",
           "kosher": "Kosher",
           "kosher_none": "—",
           "kosher_kosher": "Kosher",
@@ -1554,16 +1557,16 @@
           "license_format_warning": "Producer license number is 7-10 digits",
           "license_registry_link": "Check the Ministry of Health registry",
           "license_optional_toggle": "I have a producer license ↓",
-          "has_physical_location": "🏪 Physical store (welcomes customers)",
-          "offers_delivery": "🚚 Delivery",
+          "has_physical_location": "Physical store (welcomes customers)",
+          "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
           "delivery_nationwide": "Delivery nationwide",
           "delivery_cities_label": "Cities delivered to",
           "delivery_excluded_label": "Except:",
           "delivery_excluded_hint": "Optional — cities you don't deliver to",
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
-          "has_delivery": "🚚 Offers delivery",
-          "pickup_points": "📦 Pickup points across the country",
+          "has_delivery": "Offers delivery",
+          "pickup_points": "Pickup points across the country",
           "delivery_area_cities": "Delivery cities (comma-separated)",
           "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
           "short_description": "Short description (for the card)",
@@ -1577,9 +1580,9 @@
           "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "Accepting orders",
-          "avail_today": "Available today 🟢",
-          "avail_full": "Busy this week 🟠",
-          "avail_vacation": "On break ⏸",
+          "avail_today": "Available today",
+          "avail_full": "Busy this week",
+          "avail_vacation": "On break",
           "vacation_until": "Return date (optional)"
         }
       },
@@ -1617,7 +1620,7 @@
         "demote": "Remove permissions",
         "protected_title": "Cannot remove permissions from the primary admin",
         "menu_aria": "More actions",
-        "unblock": "🚫 Unblock",
+        "unblock": "Unblock",
         "block": "Block"
       },
       "favorites": {
@@ -1882,7 +1885,7 @@
       "no_reports": "No open reports",
       "report_count": "{count} reports",
       "actions": {
-        "suspend": "⏸️ Suspend business",
+        "suspend": "Suspend business",
         "ignore": "Ignore",
         "dismiss_confirm": "Dismiss all reports for {name}?",
         "dismissing": "Dismissing…"
@@ -1894,7 +1897,7 @@
         "empty": "No products under review right now",
         "default_reason": "Flagged for review",
         "approve": "Approve",
-        "remove": "❌ Remove",
+        "remove": "Remove",
         "removing": "Removing…"
       },
       "hidden": {
@@ -2326,7 +2329,7 @@
       "status_pending": "Your experience is waiting for review by the Mehamakor team",
       "status_changes_requested": "Changes are required before we can publish",
       "status_rejected": "This experience was not approved for publication",
-      "just_submitted": "✅ Experience submitted for review! You'll get an email when it's published 🌿",
+      "just_submitted": "Experience submitted for review! You'll get an email when it's published",
       "team_notes": "Team notes:",
       "reason": "Reason:",
       "requirements_title": "What to bring / requirements",
@@ -2670,7 +2673,7 @@
     },
     "expiry": {
       "valid_until": "Valid until: {date}",
-      "near_expiry": "⚠️ Certificate expires soon"
+      "near_expiry": "Certificate expires soon"
     }
   },
   "opening_hours": {
@@ -2698,15 +2701,15 @@
       "tooltip": "The business owner's phone number was verified via a one-time code"
     },
     "tier_3": {
-      "label": "✅ Verified business",
+      "label": "Verified business",
       "tooltip": "The business was manually verified by the Mehamakor team"
     },
     "tier_4": {
-      "label": "⭐ Community leader",
+      "label": "Community leader",
       "tooltip": "10+ reviews with an average rating of 4.5 or above"
     },
     "tier_5": {
-      "label": "🏅 Mehamakor ambassador",
+      "label": "Mehamakor ambassador",
       "tooltip": "The leading business owner in the area — selected manually by Mehamakor"
     }
   },
@@ -2875,7 +2878,7 @@
   "newsletter_unsubscribe": {
     "meta_title": "Unsubscribe from the newsletter · Mehamakor",
     "loading": "Unsubscribing…",
-    "success_title": "You've been unsubscribed 🌿",
+    "success_title": "You've been unsubscribed",
     "success_body": "You won't receive the newsletter anymore. You're always welcome back.",
     "error_title": "This link isn't valid",
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
@@ -2924,9 +2927,9 @@
       "submit_aria": "Search",
       "loading": "Loading results...",
       "no_results_for": "No results for",
-      "section_producers": "🏪 Businesses",
-      "section_categories": "🏷️ Categories",
-      "section_cities": "📍 Cities",
+      "section_producers": "Businesses",
+      "section_categories": "Categories",
+      "section_cities": "Cities",
       "recent_heading": "Recent searches",
       "trending_heading": "Trending searches",
       "remove_recent_aria": "Remove {q} from recent searches"
@@ -3086,7 +3089,7 @@
       "uploading": "Uploading...",
       "save_cloudinary": "Save to Cloudinary",
       "copy_caption": "Copy caption",
-      "copied": "✅ Copied!"
+      "copied": "Copied!"
     }
   },
   "footer": {
@@ -3807,8 +3810,8 @@
       "error_availability_update": "We couldn't update your availability — try again in a moment",
       "error_questions_save": "Save error — please try again",
       "vanity_link": {
-        "label": "🔗 My link",
-        "copied": "✅ Copied!",
+        "label": "My link",
+        "copied": "Copied!",
         "copy_cta": "Copy link",
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
@@ -3839,7 +3842,7 @@
           "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster."
         },
         "rejected": {
-          "title": "⚠️ Application not approved",
+          "title": "Application not approved",
           "body": "Contact us for more details and a re-review.",
           "tip_details": "Make sure all business details are complete and accurate",
           "tip_photos": "Add clear product photos",
@@ -4027,7 +4030,7 @@
         "label_weak": "Your profile is weak — customers don't see you",
         "label_ok": "OK, but there's room to improve",
         "label_strong": "Strong profile",
-        "label_perfect": "Perfect profile ⭐",
+        "label_perfect": "Perfect profile",
         "items": {
           "image": "Profile photo",
           "desc": "Business description (50+ chars)",
@@ -4185,8 +4188,8 @@
         "heading": "Delivery & pickup",
         "subtitle": "How customers get your products — physical store, delivery, or both.",
         "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
-        "has_physical_location": "🏪 Physical store (welcomes customers)",
-        "offers_delivery": "🚚 Delivery",
+        "has_physical_location": "Physical store (welcomes customers)",
+        "offers_delivery": "Delivery",
         "type_validation": "Must select at least one of the two",
         "delivery_nationwide": "Delivery nationwide",
         "delivery_cities_label": "Cities delivered to",
@@ -4199,6 +4202,10 @@
         "free_above_label": "Free delivery over (₪)",
         "free_above_hint": "Optional — shown next to the delivery fee on your business page.",
         "free_above_placeholder": "250",
+        "delivery_days_label": "Delivery day per city (optional)",
+        "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
+        "day_select_aria": "Delivery day for {city}",
+        "day_arranged": "By arrangement",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",

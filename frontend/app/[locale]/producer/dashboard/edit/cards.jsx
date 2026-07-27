@@ -45,6 +45,7 @@ import CategoryRequestModal from "@/components/CategoryRequestModal";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import HoursEditor from "./HoursEditor";
 
 // ============================================================
@@ -1601,9 +1602,15 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
 // admin ProducerForm "business_type" section (physical-store toggle, delivery
 // toggle, nationwide-or-cities via CitiesAutocomplete). The owner now writes
 // has_physical_location / offers_delivery / delivery_nationwide (previously
-// admin-only) plus delivery_area_cities. Client blocks the invalid states the
-// backend ProducerUpdate._validate_location_mode also 422s (neither type;
+// admin-only). Client blocks the invalid states the backend
+// ProducerUpdate._validate_location_mode also 422s (neither type;
 // nationwide + cities). REUSES: components/admin/ProducerForm.jsx:491-543.
+// MEH-1644: saves STRUCTURED delivery_areas rows (city · delivery_day ·
+// min_order) instead of the flat delivery_area_cities list — each city gets
+// an optional canonical-day select (lib/delivery-days.js mirrors the backend
+// whitelist), and registration-captured min_order survives the save instead
+// of being wiped by the flat delete+insert path. The admin form still uses
+// the flat list (it has no day input — nothing to align).
 // ============================================================
 
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx).
@@ -1622,7 +1629,24 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     // `||` would blank the field every time the owner reopened the form.
     fee: profile?.delivery_fee ?? "",
     freeAbove: profile?.free_delivery_above ?? "",
+    // MEH-1644: optional per-city dispatch day (canonical Hebrew values —
+    // lib/delivery-days.js mirrors the backend whitelist). "" = no day
+    // ("בתיאום מראש"). Legacy free-text values not in the vocabulary load as
+    // "" so the select never offers an unstorable value; the stored row is
+    // only rewritten on the next save (expand-only).
+    days: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, DELIVERY_DAYS.includes(d.delivery_day) ? d.delivery_day : ""]),
+    ),
   };
+  // MEH-1644: min_order isn't editable here, but the structured save must not
+  // wipe values registration captured — carry them through per city.
+  const minOrders = Object.fromEntries(
+    (profile?.delivery_areas ?? [])
+      .filter((d) => d.city && d.min_order != null)
+      .map((d) => [d.city, d.min_order]),
+  );
   const [baseline, setBaseline] = useState(initial);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -1646,7 +1670,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     // form holds input strings, and 35 !== "35" would keep the card
     // permanently dirty (blocking the unsaved-changes guard from ever clearing).
     String(form.fee) !== String(baseline.fee) ||
-    String(form.freeAbove) !== String(baseline.freeAbove);
+    String(form.freeAbove) !== String(baseline.freeAbove) ||
+    // MEH-1644: a day change on any currently-chosen city is a real edit.
+    form.cities.some((c) => (form.days[c] || "") !== (baseline.days[c] || ""));
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
@@ -1682,13 +1708,23 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       // nationwide/cities above, same normalisation rule.
       fee: form.offersDelivery ? toNullableInt(form.fee) : null,
       freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
+      days: form.days,
     };
+    // MEH-1644: structured rows replace the flat delivery_area_cities send —
+    // each city carries its optional canonical day ("" → null = בתיאום מראש)
+    // and preserves any registration-captured min_order (previously wiped by
+    // the flat delete+insert path).
+    const rows = normalized.cities.map((c) => ({
+      city: c,
+      delivery_day: normalized.days[c] || null,
+      min_order: minOrders[c] ?? null,
+    }));
     try {
       await api.put("/producers/me", {
         has_physical_location: normalized.hasPhysical,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
-        delivery_area_cities: normalized.cities,
+        delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
@@ -1698,7 +1734,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         has_physical_location: normalized.hasPhysical,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
-        delivery_areas: normalized.cities.map((c) => ({ city: c })),
+        delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
@@ -1780,6 +1816,43 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   <p className="text-xs text-red-600 mt-1">
                     {t("delivery_cities_required")}
                   </p>
+                )}
+                {/* MEH-1644: optional per-city dispatch day — select-from-
+                    canonical (lib/delivery-days.js), never free text. Empty
+                    option = "בתיאום מראש" (stored as null). Dashboard field
+                    standard: label + where-it-appears hint + select. */}
+                {form.cities.length > 0 && (
+                  <div className="mt-3">
+                    <span className="block text-sm text-muted mb-0.5">
+                      {t("delivery_days_label")}
+                    </span>
+                    <p className="text-xs text-fg-muted mb-2">
+                      {t("delivery_days_hint")}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {form.cities.map((c) => (
+                        <li key={c} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="min-w-0 truncate">{c}</span>
+                          <select
+                            value={form.days[c] || ""}
+                            aria-label={t("day_select_aria", { city: c })}
+                            data-testid={`delivery-day-select-${c}`}
+                            onChange={(e) =>
+                              set({ days: { ...form.days, [c]: e.target.value } })
+                            }
+                            className="border border-border rounded-[8px] px-2 py-1 text-sm bg-surface"
+                          >
+                            <option value="">{t("day_arranged")}</option>
+                            {DELIVERY_DAYS.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             )}

@@ -8,9 +8,8 @@
  * Create is reachable from the header CTA.
  */
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { CalendarPlus, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";

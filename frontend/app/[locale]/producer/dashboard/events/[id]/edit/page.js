@@ -7,8 +7,9 @@
  * renders <EventForm mode="edit">. On save, returns to the manage list.
  */
 
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
