@@ -47,7 +47,18 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { Truck: Stub, Package: Stub, WhatsappLogo: Stub, CaretDown: Stub, CaretUp: Stub, NavigationArrow: Stub };
+  // MEH-1675 added ChatCircle to the icons this tree reaches: DeliveryChecker
+  // renders CoverageRequestCta on a negative verdict. The stub list is
+  // exhaustive, so a missing name throws rather than rendering nothing.
+  return {
+    Truck: Stub,
+    Package: Stub,
+    WhatsappLogo: Stub,
+    CaretDown: Stub,
+    CaretUp: Stub,
+    NavigationArrow: Stub,
+    ChatCircle: Stub,
+  };
 });
 
 import DeliveryBlock from "@/components/DeliveryBlock";
