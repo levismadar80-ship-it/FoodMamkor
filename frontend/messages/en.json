@@ -990,8 +990,6 @@
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_prefix": "Pickup & delivery: ",
       "quantity_label": "Quantity",
-      "phone_label": "Contact phone",
-      "phone_placeholder": "050-1234567",
       "submitting": "Joining...",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",

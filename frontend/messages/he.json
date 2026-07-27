@@ -985,8 +985,6 @@
       "deadline_prefix": "מועד אחרון: {date}",
       "fulfillment_prefix": "איסוף ומשלוח: ",
       "quantity_label": "כמות",
-      "phone_label": "טלפון ליצירת קשר",
-      "phone_placeholder": "050-1234567",
       "submitting": "בצירוף...",
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
