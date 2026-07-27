@@ -16,7 +16,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     if (key === "producer.detail.header.review_count") return `${vars?.count} ביקורות`;
-    if (key === "producer.detail.header.alerts_reentry") return "מקבלת עדכונים · לעריכה";
+    if (key === "producer.detail.header.alerts_reentry") return "מקבלת עדכונים";
     if (key === "producer.detail.header.alerts_reentry_aria") return "עריכת העדפות עדכונים";
     return key;
   },
@@ -128,7 +128,11 @@ describe("ProducerHeader — AlertPrefsPanel re-entry (MEH-1609)", () => {
     expect(screen.getAllByTestId("alerts-reentry")).toHaveLength(1);
     expect(control).toHaveAttribute("aria-expanded", "false");
     expect(control).toHaveAttribute("aria-label", "עריכת העדפות עדכונים");
-    expect(control).toHaveTextContent("מקבלת עדכונים · לעריכה");
+    // MEH-1648: exact, not toHaveTextContent — that matches substrings, so it
+    // stayed green with the removed "· לעריכה" suffix still present. The state
+    // IS the button (Google "Following" / YouTube bell), so the label is the
+    // state alone; the edit affordance lives in alerts_reentry_aria.
+    expect(control.textContent.trim()).toBe("מקבלת עדכונים");
     // Collapsed by default — the panel is a disclosure, not an auto-open.
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
   });

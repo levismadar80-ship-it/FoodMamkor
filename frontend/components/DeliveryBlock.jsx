@@ -5,7 +5,12 @@ import { Truck, Package, CaretDown, CaretUp, NavigationArrow } from "@phosphor-i
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
+import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
+
+// Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
+// dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
+const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 /**
  * MEH-213 / MEH-1146 chunk B: editorial delivery section shown on
@@ -26,6 +31,17 @@ import DeliveryChecker from "@/components/DeliveryChecker";
  *
  * Plus an optional self-pickup line (invention-fix 6, gated on pickup_points).
  * min_order is rendered via formatPrice (MEH-1140 canonical shekel format).
+ *
+ * MEH-1646: (a) order-cutoff line — ONLY when order_window has exactly one
+ * open day (getSingleOrderCutoff; 2+ days → the "until" day is ambiguous, so
+ * no cutoff claim renders — Phase 0 decision). In hoist mode it REPLACES the
+ * dispatch_days subline ("מקבלים הזמנות עד {day} {time} · משלוח ביום {day}" —
+ * the day is still stated exactly once, MEH-1305 discipline); in group mode
+ * it renders WITHOUT the day promise. The MEH-1546 OrderWindowStrip (weekly
+ * hours near the header) is NOT duplicated — this line is cutoff framing,
+ * that one is a weekly schedule. (b) pickup rows carry a "חינם" tag at the
+ * min_order hierarchy (pickup is always free; delivery rows show cost info,
+ * pickup rows now do too).
  *
  * MEH-1466: the tertiary WhatsApp order CTA was removed. All three
  * producer-detail WhatsApp CTAs opened the same wa.me, so the delivery
@@ -116,7 +132,7 @@ function CompactCities({ areas, t }) {
 // producer's locations[] — label (falls back to city) · city · opening_hours ·
 // an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
 // second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
-function PickupRow({ loc, tMap }) {
+function PickupRow({ loc, t, tMap }) {
   const hasCoords =
     loc.lat != null && loc.lng != null && !isNaN(Number(loc.lat)) && !isNaN(Number(loc.lng));
   const wazeUrl = hasCoords ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : null;
@@ -129,18 +145,23 @@ function PickupRow({ loc, tMap }) {
         {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
         {loc.opening_hours && <p className="text-[13px] text-fg-muted">{loc.opening_hours}</p>}
       </div>
-      {wazeUrl && (
-        <a
-          href={wazeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={tMap("open_in_waze_aria")}
-          className="flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
-        >
-          <NavigationArrow size={16} aria-hidden="true" />
-          {tMap("open_in_waze")}
-        </a>
-      )}
+      <div className="flex-shrink-0 flex items-center gap-3">
+        {/* MEH-1646 (b): pickup is free — stated at the same hierarchy as the
+            delivery rows' min_order cost info (muted end-of-row text). */}
+        <span className="text-fg-muted">{t("free")}</span>
+        {wazeUrl && (
+          <a
+            href={wazeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={tMap("open_in_waze_aria")}
+            className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          >
+            <NavigationArrow size={16} aria-hidden="true" />
+            {tMap("open_in_waze")}
+          </a>
+        )}
+      </div>
     </li>
   );
 }
@@ -170,7 +191,7 @@ function PickupRows({ locations, t, tMap }) {
       </p>
       <ul className="divide-y divide-border border-y border-border">
         {visible.map((loc, i) => (
-          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} tMap={tMap} />
+          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} t={t} tMap={tMap} />
         ))}
       </ul>
       {overLimit && (
@@ -201,7 +222,13 @@ export default function DeliveryBlock({
 }) {
   const t = useTranslations("group_buys.delivery");
   const tMap = useTranslations("map.mini");
+  // MEH-1646 (a): weekday labels for the cutoff day ("יום רביעי").
+  const tWeekdays = useTranslations("opening_hours.weekdays");
   const hasAreas = areas.length > 0;
+  // MEH-1646 (a): non-null ONLY when order_window has exactly one open day —
+  // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
+  const cutoff = getSingleOrderCutoff(producer?.order_window);
+  const cutoffDayLabel = cutoff ? tWeekdays(WEEKDAY_SHORT_KEYS[cutoff.dayIndex]) : null;
   // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
   // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
   const pickupLocations = (producer?.locations || []).filter(
@@ -248,9 +275,20 @@ export default function DeliveryBlock({
               in a subline; group: a header per distinct day; flat: no day data. */}
           {grouped.mode === "hoist" && (
             <>
-              <p className="flex items-center gap-1.5 text-sm text-fg-muted mb-2">
+              <p
+                className="flex items-center gap-1.5 text-sm text-fg-muted mb-2"
+                data-testid="delivery-order-cutoff"
+              >
                 <Truck size={16} className="text-primary" aria-hidden="true" />
-                {t("dispatch_days", { day: grouped.day })}
+                {/* MEH-1646 (a): with a single-day order window the cutoff line
+                    REPLACES dispatch_days — day still stated exactly once. */}
+                {cutoff
+                  ? t("order_cutoff_with_day", {
+                      day: cutoffDayLabel,
+                      time: cutoff.close,
+                      delivery_day: grouped.day,
+                    })
+                  : t("dispatch_days", { day: grouped.day })}
               </p>
               <ul className="divide-y divide-border border-y border-border">
                 {grouped.rows.map((da) => (
@@ -270,6 +308,17 @@ export default function DeliveryBlock({
 
           {grouped.mode === "group" && (
             <div className="flex flex-col gap-4">
+              {/* MEH-1646 (a): 2+ distinct delivery days → no single day to
+                  promise, so the cutoff renders WITHOUT the delivery half. */}
+              {cutoff && (
+                <p
+                  className="flex items-center gap-1.5 text-sm text-fg-muted -mb-2"
+                  data-testid="delivery-order-cutoff"
+                >
+                  <Truck size={16} className="text-primary" aria-hidden="true" />
+                  {t("order_cutoff", { day: cutoffDayLabel, time: cutoff.close })}
+                </p>
+              )}
               {grouped.groups.map((g) => (
                 <AreaGroup
                   key={g.day}
@@ -300,6 +349,9 @@ export default function DeliveryBlock({
           <p className="flex items-center gap-2 text-sm text-text mb-4">
             <Package size={18} className="text-primary" aria-hidden="true" />
             {t("pickup")}
+            {/* MEH-1646 (b): the generic fallback line carries the same tag
+                as the location rows — no producer shape misses it. */}
+            <span className="text-fg-muted">{t("free")}</span>
           </p>
         )
       )}
