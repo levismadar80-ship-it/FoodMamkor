@@ -347,7 +347,9 @@ export function ProfileTab() {
           // progress — surface the invalid-phone reason immediately instead of
           // leaving the Save button dead with no message until blur.
           onPaste={() => setPhoneTouched(true)}
-          placeholder="050-1234567"
+          // MEH-1617: value moved to settings.profile.field_phone_placeholder,
+          // alongside its field_phone_label / _hint / _error siblings.
+          placeholder={t("field_phone_placeholder")}
           dir="ltr"
         />
 

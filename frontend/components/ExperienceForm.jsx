@@ -262,7 +262,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         dir="ltr"
         value={form.image_url}
         onChange={setField("image_url")}
-        placeholder="https://res.cloudinary.com/..."
+        // MEH-1617: value moved to experiences.new.field_image_placeholder,
+        // matching the field_title_placeholder naming already in that namespace.
+        placeholder={t("field_image_placeholder")}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

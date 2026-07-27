@@ -152,7 +152,8 @@
       "reset_success": "Password updated successfully — you can sign in",
       "or": "or",
       "no_account": "Don't have an account?",
-      "register_cta": "Join →"
+      "register_cta": "Join →",
+      "email_placeholder": "name@example.com"
     },
     "oauth": {
       "google_error": "Google sign-in failed",
@@ -2380,7 +2381,8 @@
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
       "error_generic": "Error submitting the experience. Please try again.",
-      "save_cta": "Save"
+      "save_cta": "Save",
+      "field_image_placeholder": "https://res.cloudinary.com/..."
     }
   },
   "errors": {
@@ -4410,7 +4412,8 @@
       "save_cta": "Save settings",
       "saving": "Saving…",
       "save_success_toast": "Settings updated",
-      "save_error_toast": "Save error, please try again"
+      "save_error_toast": "Save error, please try again",
+      "phone_placeholder": "050-1234567"
     },
     "layout": {
       "skip_to_main": "Skip to content"
@@ -4492,7 +4495,8 @@
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
       "field_phone_hint": "For WhatsApp updates from businesses you follow",
-      "field_phone_error": "Invalid phone number"
+      "field_phone_error": "Invalid phone number",
+      "field_phone_placeholder": "050-1234567"
     },
     "products": {
       "section_heading": "Products",
@@ -4823,5 +4827,33 @@
     "sources_prefix": "Sources:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
     "source_collectivecrop": "CollectiveCrop — Fresh-Picked vs Supermarket Produce"
+  },
+  "chat": {
+    "opening": "Hi, I'm here to help! You can ask me how to register or how to find businesses. What would you like to know?",
+    "prompts": {
+      "register": "How do I register as a business?",
+      "find_nearby": "How do I find businesses near me?",
+      "what_is": "What is Mehamakor?",
+      "is_free": "Is the site free?",
+      "contact": "How do I contact a business?",
+      "approval_time": "How long does approval take?"
+    },
+    "answers": {
+      "register": "You register through a simple 3-step form — completely free!\nOur team checks the details and approves your business usually within 3 business days, and then it appears on the site.",
+      "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
+    },
+    "fallback_reply": "I couldn't understand the question — could you rephrase it?",
+    "error_rate_limit": "You sent a lot of messages in a short time — try again in a minute",
+    "error_generic": "Something went wrong — try again in a moment",
+    "launcher_close_label": "Close the chat",
+    "launcher_open_label": "Ask us",
+    "launcher_pill": "A question? Ask me",
+    "panel_label": "Mehamakor assistant",
+    "panel_title": "Ask us",
+    "panel_close_label": "Close the assistant window",
+    "log_label": "Conversation with the assistant",
+    "input_label": "Type a question",
+    "input_placeholder": "Type a question...",
+    "send_label": "Send question"
   }
 }
