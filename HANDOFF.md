@@ -3,6 +3,30 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — delivery-features batch: ארבעה merges (הירו CTA · DeliveryBlock · יום משלוח מובנה · פילטר יום)
+
+**כל הארבעה מוזגו ב-squash auto-merge על gates נדרשים ירוקים** (ADR-016 v2 end-to-end authority). הלוגים כאן כי אף branch קוד לא נושא אותם (rule 31).
+
+| Ticket | PR | Merge SHA | צורה |
+|---|---|---|---|
+| MEH-1643 | #2297 | `6f050547` | frontend-only — CTA רביעי בהירו, מסלול delivery_city קיים |
+| MEH-1646 | #2302 | `fd6ec3f8` | frontend-only — cutoff הזמנות (יום-פתוח-יחיד בלבד) + "חינם" לאיסוף |
+| MEH-1644 | #2314 | `c9330d08` | backend+frontend — whitelist ימים קנוני, DeliveryCard rows, סקריפט נורמליזציה |
+| MEH-1645 | #2329 | `549f8b1b` | backend+frontend — ?delivery_day= (EXISTS יחיד, v1 explicit-rows-only) + DeliveryDayRow בבית |
+
+### ⚠️ פעולות ממתינות לספיר
+
+1. **backfill awaiting Sapir run on staging→prod** — `scripts/normalize_delivery_days.py` ממפה delivery_day חופשי-טקסט לאוצר הקנוני. dry-run ברירת מחדל; `--apply` כותב; מסרב ל-DATABASE_URL לא-מקומי בלי `--allow-remote`. **לעולם לא מ-CC session** (MEH-408). דו"ח dry-run סינתטי מקומי ב-PR #2314; ערכים UNMAPPED ("שישי בבוקר", "בתיאום") נשארים כמות-שהם להכרעה ידנית.
+2. **VRT home baseline regen** — ה-CTA של #2297 הסיח את baseline ה-home (mobile); parity `home.png` אדום מאז (הכשל היחיד בסוויטה — 172/173 פונקציונליים ירוקים). regen במסלול MEH-991 (vrt-update) + פוש re-trigger ידני.
+3. **Copy ה-empty state של פילטר היום** (`day_empty_suggestion` / `day_empty_clear_cta`, #2329) — copy פונקציונלי חדש שלא ננעל ב-spec; ממתין לאישור/ניסוח ספיר.
+
+### Follow-up שנפתח בתיעוד בלבד (טרם ticket)
+
+- **חיווט alert אזור-משלוח מה-empty state של סינון עיר** — MEH-1360 הוא העדפת favorite פר-עסק; חיווט מה-empty state דורש endpoint חדש ברמת עיר + UX. תועד ב-PR #2302; פתיחת ticket כשספיר תרצה.
+
+### NEXT
+הבאטץ' סגור. MEH-1577 (delivery_fee, RED) הוא ריצה נפרדת — לא הותחל בכוונה.
+
 ## 2026-07-27 — docs backfill for PR #2324 (builder-model guard)
 
 **Shipped.** The CHANGELOG entry for PR #2324 (`d8c75e13`), which could not carry
