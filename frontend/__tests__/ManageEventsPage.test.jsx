@@ -19,7 +19,17 @@ vi.mock("@/lib/api", () => ({
 // renders; returning a fresh object here would re-fire the [..., router] effect
 // and re-fetch, masking the optimistic list mutations under test.
 const ROUTER = { push: vi.fn() };
+// MEH-1639: the dashboard pages import Link/useRouter from the locale-aware
+// wrapper now, so the mock has to live on @/i18n/navigation. The
+// next/navigation mock below stays for useParams/useSearchParams, which
+// createNavigation does not export.
 vi.mock("next/navigation", () => ({ useRouter: () => ROUTER }));
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ROUTER,
+  Link: ({ href, children, ...rest }) => (
+    <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>
+  ),
+}));
 // Stable user/auth ref — the real useAuth holds `user` in useState (stable
 // across renders). A fresh object here would re-fire the [user, …] effect and
 // re-fetch on every render, re-adding rows removed by the optimistic mutations.

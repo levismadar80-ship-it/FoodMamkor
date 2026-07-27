@@ -3,6 +3,66 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
+
+**Shipped.** CHANGELOG entries for the three 27/07 attribution-chain merges. Every
+claim below was **read from the commit**, per the ticket's instruction — none of the
+three came from this session.
+
+| PR | Merge | Shape |
+|---|---|---|
+| #2276 | `2792495f` | code — `MiniMap.jsx` + new `scripts/checks/map-attribution-guard.sh` + 6 qa-artifacts |
+| #2293 | `cb00d1d0` | code — new `frontend/__tests__/leaflet-attribution-default.test.js` + `globals.css` comments |
+| #2303 | `1a5ecfbc` | **docs-only** — `docs/CLAUDE-REVIEW.md` + `docs/ci/adversarial-review.patch.md` |
+
+**⚠️ The ticket's premise is wrong for one of the three, and verification is the only
+reason it surfaced.** MEH-1669 states that all three branches touched code and were
+therefore blocked by `changelog-branch-guard.sh`. True for #2276 and #2293. **#2303 is
+docs-only** — both its files sit under `docs/`, which the guard classifies as docs
+(`changelog-branch-guard.sh:123`: `docs/*|.claude/*|.ai/*|HANDOFF.md`). It was free to
+carry its own logs and simply didn't. Same distinction MEH-1642 recorded for #2272, in
+the opposite direction — there the PR was free and *did* write them, so a second entry
+would have duplicated. Here it was free and didn't, so the backfill is still owed. The
+row belongs in this PR either way; the stated reason does not.
+
+**Two content corrections against the commits.**
+
+1. **#2276 changed the attribution *string*, not only the control.** The ticket's table
+   says the prop was deleted and the string was inert. The diff also replaces
+   `'© OpenStreetMap contributors'` with
+   `'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'`,
+   byte-identical to `HomepageMiniMap.jsx:236`. So even had the control rendered, the
+   old string carried no link — two defects, not one.
+2. **The `leaflet.css` line numbers that look contradictory are not.** #2293's commit
+   message cites `:167`/`:416` in one sentence and `(413 > 166)` in the next, and the
+   ticket repeats `413`/`166`. Read against the installed leaflet 1.9.4: `166` and `413`
+   are the **selector** lines (what source order compares), `167` and `416` the
+   **declaration** lines (`margin-bottom: 10px`, `margin: 0`). Both pairs are correct
+   for what they cite. Worth knowing before someone "fixes" one of them.
+
+**The lessons the entries carry**, all three of the same family — an assertion or a
+scan that cannot see what it claims to cover:
+
+- **Class B′ was a definition gap, not a missed scan.** MEH-1619's class B was scoped to
+  props conditional on runtime element type, so a prop that *deletes what another prop
+  configures* fell outside it structurally.
+- **A claim whose subject is `node_modules` is invisible to every tool in the pipeline.**
+  `tsc`, `eslint`, `knip`, `run-all.sh` all check the code against itself. A test that
+  reads the installed package is the only instrument.
+- **`grep -c` on mentions is not a count of claims** — the `.claude/rules` Leaflet-claim
+  count fell 13 → 2 → 1 across two narrowings.
+- **`continue-on-error: false` blocks a step failure, not findings.** The review action
+  is advisory by construction, so the flip has to gate on "did the reviewer run", not
+  "was the diff clean". Carried into MEH-1668.
+
+**Coverage ledger, so the next backfill doesn't double-write:** MEH-1642 = #2272/#2275/#2284 ·
+MEH-1666 = #2305 · MEH-1667 = #2299/#2301/#2309 · **MEH-1669 = #2276/#2293/#2303**.
+Verified before writing: no existing CHANGELOG entry mentions MEH-1633, MEH-1636,
+MEH-1654, or any of the three PR numbers.
+
+### NEXT
+Unchanged by this session — see the queue entry below.
+
 ## 2026-07-27 — 4-ticket sequential queue (loading-state batch) — 3 merged, 1 STOP
 
 **Queue per Sapir grant 27/07 (end-to-end authority, ADR-016).** Sequential, each
@@ -122,6 +182,45 @@ auto-link.
 ### NEXT
 Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
 is still the next thing to pick up; MEH-1629 remains blocked.
+
+## 2026-07-27 — MEH-1659: מיני-מפה עם זום + מסך מלא (PR #2310 + #2317), ו-docs backfill
+
+**נשלח ומוזג.** PR #2310 (`e671aa84`) — המיני-מפה ב"הגעה ומיקום" חדלה להיות קפואה:
+פקד +/− inline, והקשה על המפה (רקע או פין) פותחת overlay על כל המסך עם כל המחוות.
+שלושת הצרכנים (producer · events · experiences) דרך props API ללא שינוי. PR #2317
+סגר מיד חור ב-guard שה-reviewer האוטומטי מצא (`keyboard` חסר ממערך ה-GESTURES).
+
+**שלוש נקודות שראוי שיישרדו את הסשן:**
+
+1. **הנחת המוצא של הכרטיס על `map.tap` הייתה מיושנת.** Leaflet 1.9.4 אינו כולל handler
+   בשם `tap` כלל (רק `TapHold`) — `if (map.tap) map.tap.disable()` שירד עכשיו מהקוד היה
+   מת מאז השדרוג. לכן `click` נייטיב מגיע ללא הפרעה ואין צורך ב-fallback ברמת container.
+   אומת ב-`page.tap()` אמיתי, לא בהיסק.
+2. **מה שמונע פתיחה בטעות של ה-overlay אינו קוד שלנו** אלא
+   `DomEvent.disableClickPropagation` של Leaflet על מיכלי הפקדים. שתי הטענות
+   התלויות-בספרייה ננעלו ב-`frontend/__tests__/leaflet-interaction-contract.test.js`
+   לפי `.claude/rules/frontend.md` § Maintenance — שנחת ב-staging באמצע העבודה על הענף.
+3. **חריגה מודעת מה-spec, מתועדת ב-PR body:** כפתורי ההגדלה/סגירה לוקחים פינה **פיזית**
+   (`right-3`, `rtl-ok`) ולא לוגית, כי Leaflet מצמיד את +/− לשמאל-פיזי בשני הכיוונים —
+   `start-*` היה מתנגש איתו ב-`/en` ו-`end-*` בעברית.
+
+**⚠️ שני דברים פתוחים שהם לא באג בקוד הזה:**
+
+- **אין preview URL לשני ה-PRs.** Vercel בתקרת ה-free tier
+  (`api-deployments-free-per-day`, 100/24h) — חשבון, לא בדיקה נדרשת. **בדיקת מובייל
+  אמיתית (iOS Safari / Android Chrome) עדיין לא נעשתה** ואי אפשר לעשות אותה מה-sandbox;
+  ה-QA שכן רץ הוא Chromium ב-375 ו-1440 עם מכשיר מגע (26/26). המקרים למובייל נוספו
+  ל-`docs/MANUAL_TESTING.md`.
+- **`parity.spec.ts › home` (mobile) אדום — קיים מראש, לא רגרסיה.** אותו spec ואותו סדר
+  גודל (24012px, יחס 0.09) נכשל גם על `8c354f54` ב-staging, שאינו מכיל את השינוי. כל
+  spec של producer-detail עבר בשני ה-viewports. תואם לזוג ה-VRT האדום שכבר מתועד
+  ב-`.claude/rules/testing.md`. **ה-baseline של `home-mobile-linux.png` עדיין צריך
+  הכרעה אנושית** — לא נגעתי בו: baseline הוא candidate ולא אמת, ומי שמחדש אותו צריך
+  לפתוח את ה-PNG ולסקור ויזואלית (CLAUDE.md § 5-state).
+
+### NEXT
+MEH-1629 עדיין חסום (ללא שינוי). אם מחליטים לטפל ב-`home` mobile VRT — זה כרטיס נפרד,
+ובו רענון baseline עם סקירה ויזואלית, לא merge של bot.
 
 ## 2026-07-27 — copy-honesty batch: three follow-ups merged (docs backfill)
 
