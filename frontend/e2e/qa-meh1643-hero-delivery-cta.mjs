@@ -1,7 +1,7 @@
 /**
  * MEH-1643 self-QA harness — hero delivery-CTA screenshots + interaction probe.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1643-hero-delivery-cta.mjs [baseURL]
+ *   node e2e/qa-meh1643-hero-delivery-cta.mjs [baseURL] [chromiumPath]
  * Captures 375px + 1440px in both label states (no city / saved user_city)
  * and verifies the no-city click opens the LocationModal.
  * REUSES: frontend/e2e/qa-meh1619-visual-noop.mjs (manual QA-harness pattern).
@@ -13,7 +13,10 @@ const BASE = process.argv[2] || "http://localhost:3100";
 const OUT = new URL("../../qa-artifacts/MEH-1643", import.meta.url).pathname;
 fs.mkdirSync(OUT, { recursive: true });
 
-const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium" });
+// CC-sandbox chromium path by default (see .claude/rules/testing.md — the
+// sandbox pre-installs at /opt/pw-browsers); override via argv[3], NOT an env
+// var (the MEH-491 env-drift gate blocks undocumented process.env reads).
+const browser = await chromium.launch({ executablePath: process.argv[3] || "/opt/pw-browsers/chromium" });
 
 async function shot(name, viewport, city) {
   const ctx = await browser.newContext({ viewport, locale: "he" });
