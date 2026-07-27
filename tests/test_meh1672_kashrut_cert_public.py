@@ -1,0 +1,177 @@
+"""MEH-1672 — public kashrut-certificate proxy.
+
+`GET /producers/{id}/kashrut-cert/{badge_code}` streams an approved, in-date
+certificate photo. It is a PROXY, not a redirect, because `cert_url` points at
+a `type=upload` Cloudinary asset that is public forever to anyone holding the
+address (`upload.py:353-360` uploads with no `type=`). Handing that address to
+visitors would publish a link no expiry could revoke.
+
+Every unauthorized case is 404, never 403 — a 403 confirms that a
+pending/rejected/expired certificate exists, which is the queue state MEH-254
+keeps unenumerable.
+
+The four authorization states from the card's acceptance criterion 7, plus the
+counting assert from its <verification_step>: ZERO occurrences of cert_url /
+the raw Cloudinary address in any public API response.
+"""
+
+from datetime import datetime, timedelta
+
+import app.routers.producers as producers_module
+from app.models.models import KashrutBadgeRequest
+from conftest import make_producer, make_user
+
+CERT_URL = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/kashrut/abc123.jpg"
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"0" * 64
+
+
+class _FakeResponse:
+    def __init__(self, status_code=200, content=PNG_BYTES, content_type="image/jpeg"):
+        self.status_code = status_code
+        self.content = content
+        self.headers = {"content-type": content_type}
+
+
+def _stub_upstream(monkeypatch, response=None):
+    """Replace the outbound fetch so no test reaches Cloudinary."""
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(url)
+        return response or _FakeResponse()
+
+    monkeypatch.setattr(producers_module.httpx, "get", fake_get)
+    return calls
+
+
+def _certified(
+    db,
+    *,
+    status="approved",
+    req_status="approved",
+    expires_in_days=90,
+    badge_code="badatz",
+    cert_url=CERT_URL,
+):
+    producer = make_producer(db, status=status)
+    producer.kashrut_badges = [badge_code]
+    producer.kashrut_verified_at = datetime.utcnow()
+    producer.kashrut_expires_at = (
+        None if expires_in_days is None else datetime.utcnow() + timedelta(days=expires_in_days)
+    )
+    db.add(
+        KashrutBadgeRequest(
+            producer_id=producer.id,
+            badge_code=badge_code,
+            cert_url=cert_url,
+            status=req_status,
+        )
+    )
+    db.commit()
+    db.refresh(producer)
+    return producer
+
+
+def _fetch(client, producer, badge_code="badatz"):
+    return client.get(f"/producers/{producer.id}/kashrut-cert/{badge_code}")
+
+
+# --- the four authorization states -----------------------------------------
+
+
+def test_approved_and_in_date_serves_the_image(client, db, monkeypatch):
+    calls = _stub_upstream(monkeypatch)
+    producer = _certified(db)
+    resp = _fetch(client, producer)
+    assert resp.status_code == 200, resp.text
+    assert resp.content == PNG_BYTES
+    assert resp.headers["content-type"].startswith("image/")
+    # Proxied, not redirected: the upstream was fetched server-side and the
+    # client never saw a Location header.
+    assert calls == [CERT_URL]
+    assert "location" not in {k.lower() for k in resp.headers}
+
+
+def test_pending_or_rejected_request_is_404(client, db, monkeypatch):
+    _stub_upstream(monkeypatch)
+    for req_status in ("pending", "rejected"):
+        producer = _certified(db, req_status=req_status)
+        assert _fetch(client, producer).status_code == 404
+
+
+def test_expired_certificate_is_404(client, db, monkeypatch):
+    _stub_upstream(monkeypatch)
+    producer = _certified(db, expires_in_days=-1)
+    assert _fetch(client, producer).status_code == 404
+
+
+def test_unapproved_producer_is_404(client, db, monkeypatch):
+    _stub_upstream(monkeypatch)
+    for status in ("pending", "rejected", "inactive"):
+        producer = _certified(db, status=status)
+        assert _fetch(client, producer).status_code == 404
+
+
+# --- adjacent guards -------------------------------------------------------
+
+
+def test_a_badge_code_without_an_approved_cert_is_404(client, db, monkeypatch):
+    _stub_upstream(monkeypatch)
+    producer = _certified(db, badge_code="badatz")
+    # Same producer, different badge — must not serve the badatz certificate.
+    assert _fetch(client, producer, badge_code="mehadrin").status_code == 404
+
+
+def test_non_image_upstream_is_refused(client, db, monkeypatch):
+    """The column is plain text; the content-type check is the second lock."""
+    _stub_upstream(monkeypatch, _FakeResponse(content_type="text/html"))
+    producer = _certified(db)
+    assert _fetch(client, producer).status_code == 404
+
+
+def test_upstream_404_is_not_masked_as_success(client, db, monkeypatch):
+    _stub_upstream(monkeypatch, _FakeResponse(status_code=404))
+    producer = _certified(db)
+    assert _fetch(client, producer).status_code == 404
+
+
+def test_legacy_null_expiry_still_serves(client, db, monkeypatch):
+    """Matches KashrutBadgeStrip.jsx:40 — a NULL expiry stays visible."""
+    _stub_upstream(monkeypatch)
+    producer = _certified(db, expires_in_days=None)
+    assert _fetch(client, producer).status_code == 200
+
+
+# --- the counting assert: no URL ever crosses the wire ---------------------
+
+
+def test_public_detail_lists_badge_codes_and_never_a_url(client, db, monkeypatch):
+    _stub_upstream(monkeypatch)
+    producer = _certified(db)
+    resp = client.get(f"/producers/{producer.id}")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["kashrut_certs"] == [{"badge_code": "badatz"}]
+    # ZERO occurrences of the raw address, its host, or the column name.
+    raw = resp.text
+    assert CERT_URL not in raw
+    assert "res.cloudinary.com/demo/image/upload/v1/mehamakor/kashrut" not in raw
+    assert "cert_url" not in raw
+    assert "secure_url" not in raw
+
+
+def test_expired_producer_advertises_no_certs(client, db, monkeypatch):
+    """The list and the proxy agree — one rule, two call sites."""
+    _stub_upstream(monkeypatch)
+    producer = _certified(db, expires_in_days=-1)
+    resp = client.get(f"/producers/{producer.id}")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["kashrut_certs"] == []
+
+
+def test_pending_request_advertises_no_certs(client, db, monkeypatch):
+    _stub_upstream(monkeypatch)
+    producer = _certified(db, req_status="pending")
+    resp = client.get(f"/producers/{producer.id}")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["kashrut_certs"] == []
