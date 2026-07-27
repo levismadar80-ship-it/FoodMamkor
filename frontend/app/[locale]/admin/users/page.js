@@ -17,6 +17,9 @@ export default function AdminUsersPage() {
   const { user: me } = useAuth();
   const { run, isBusy } = useAdminAction();
   const [users, setUsers] = useState([]);
+  // MEH-1656: the page had no loading state at all, so the "אין משתמשים" row
+  // flashed during every fetch. Gated like admin/reviews/page.jsx (!loading &&).
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [expanded, setExpanded] = useState(null);
@@ -39,7 +42,11 @@ export default function AdminUsersPage() {
     const params = {};
     if (search) params.search = search;
     if (role !== "all") params.role = role;
-    api.get("/admin/users", { params }).then((r) => setUsers(r.data)).catch(() => setUsers([]));
+    setLoading(true);
+    api.get("/admin/users", { params })
+      .then((r) => setUsers(r.data))
+      .catch(() => setUsers([]))
+      .finally(() => setLoading(false));
   };
 
   // MEH-228: role change routes through useAdminAction — per-key in-flight
@@ -136,12 +143,19 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 && (
+              {/* MEH-1656: loading row (copy per admin/category-requests) so the
+                  empty row cannot flash while the fetch is in flight. */}
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-muted">{t("common.loading_f")}</td>
+                </tr>
+              )}
+              {!loading && users.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-muted">{t("users.empty")}</td>
                 </tr>
               )}
-              {pagedUsers.map((u) => (
+              {!loading && pagedUsers.map((u) => (
                 <>
                   <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
