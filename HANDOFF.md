@@ -123,6 +123,45 @@ auto-link.
 Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
 is still the next thing to pick up; MEH-1629 remains blocked.
 
+## 2026-07-27 — MEH-1659: מיני-מפה עם זום + מסך מלא (PR #2310 + #2317), ו-docs backfill
+
+**נשלח ומוזג.** PR #2310 (`e671aa84`) — המיני-מפה ב"הגעה ומיקום" חדלה להיות קפואה:
+פקד +/− inline, והקשה על המפה (רקע או פין) פותחת overlay על כל המסך עם כל המחוות.
+שלושת הצרכנים (producer · events · experiences) דרך props API ללא שינוי. PR #2317
+סגר מיד חור ב-guard שה-reviewer האוטומטי מצא (`keyboard` חסר ממערך ה-GESTURES).
+
+**שלוש נקודות שראוי שיישרדו את הסשן:**
+
+1. **הנחת המוצא של הכרטיס על `map.tap` הייתה מיושנת.** Leaflet 1.9.4 אינו כולל handler
+   בשם `tap` כלל (רק `TapHold`) — `if (map.tap) map.tap.disable()` שירד עכשיו מהקוד היה
+   מת מאז השדרוג. לכן `click` נייטיב מגיע ללא הפרעה ואין צורך ב-fallback ברמת container.
+   אומת ב-`page.tap()` אמיתי, לא בהיסק.
+2. **מה שמונע פתיחה בטעות של ה-overlay אינו קוד שלנו** אלא
+   `DomEvent.disableClickPropagation` של Leaflet על מיכלי הפקדים. שתי הטענות
+   התלויות-בספרייה ננעלו ב-`frontend/__tests__/leaflet-interaction-contract.test.js`
+   לפי `.claude/rules/frontend.md` § Maintenance — שנחת ב-staging באמצע העבודה על הענף.
+3. **חריגה מודעת מה-spec, מתועדת ב-PR body:** כפתורי ההגדלה/סגירה לוקחים פינה **פיזית**
+   (`right-3`, `rtl-ok`) ולא לוגית, כי Leaflet מצמיד את +/− לשמאל-פיזי בשני הכיוונים —
+   `start-*` היה מתנגש איתו ב-`/en` ו-`end-*` בעברית.
+
+**⚠️ שני דברים פתוחים שהם לא באג בקוד הזה:**
+
+- **אין preview URL לשני ה-PRs.** Vercel בתקרת ה-free tier
+  (`api-deployments-free-per-day`, 100/24h) — חשבון, לא בדיקה נדרשת. **בדיקת מובייל
+  אמיתית (iOS Safari / Android Chrome) עדיין לא נעשתה** ואי אפשר לעשות אותה מה-sandbox;
+  ה-QA שכן רץ הוא Chromium ב-375 ו-1440 עם מכשיר מגע (26/26). המקרים למובייל נוספו
+  ל-`docs/MANUAL_TESTING.md`.
+- **`parity.spec.ts › home` (mobile) אדום — קיים מראש, לא רגרסיה.** אותו spec ואותו סדר
+  גודל (24012px, יחס 0.09) נכשל גם על `8c354f54` ב-staging, שאינו מכיל את השינוי. כל
+  spec של producer-detail עבר בשני ה-viewports. תואם לזוג ה-VRT האדום שכבר מתועד
+  ב-`.claude/rules/testing.md`. **ה-baseline של `home-mobile-linux.png` עדיין צריך
+  הכרעה אנושית** — לא נגעתי בו: baseline הוא candidate ולא אמת, ומי שמחדש אותו צריך
+  לפתוח את ה-PNG ולסקור ויזואלית (CLAUDE.md § 5-state).
+
+### NEXT
+MEH-1629 עדיין חסום (ללא שינוי). אם מחליטים לטפל ב-`home` mobile VRT — זה כרטיס נפרד,
+ובו רענון baseline עם סקירה ויזואלית, לא merge של bot.
+
 ## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
 
 **Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
