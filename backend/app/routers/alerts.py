@@ -327,6 +327,11 @@ def fire_alerts(
         # already delivered to this (user, producer) within the last 24h. The
         # AlertLog row is written only after a non-raising send, so a failed
         # send doesn't suppress the next attempt.
+        # MEH-1373: the cap check and the AlertLog write are NOT atomic — safe
+        # only while the backend runs a single replica (true on Railway today).
+        # Scale-out lets two workers pass _recently_sent concurrently and
+        # double-send; closing it needs a unique constraint on
+        # (user_id, producer_id, channel, window-bucket) or an advisory lock.
         if alert.push_subscription and not _recently_sent(
             db, alert.user_id, producer_id, _CHANNEL_PUSH
         ):
@@ -367,9 +372,13 @@ def fire_alerts(
 # spaces, and a leading emoji weakens the UTILITY-category classification.
 # Strip a leading emoji/symbol run, then collapse every whitespace run to a
 # single space.
+# MEH-1373: ZWJ + VS16 as explicit escapes — the first version carried them
+# as INVISIBLE literals inside the character class, a trap for the next
+# editor (copy-paste, linter, merge all silently drop or duplicate them).
+_ZWJ = "\u200d"  # zero-width joiner
+_VS16 = "\ufe0f"  # variation selector-16 (emoji presentation)
 _LEADING_EMOJI = re.compile(
-    "^[\\s‍️"  # whitespace + ZWJ (U+200D) + variation-selector-16 (U+FE0F)
-    "\U0001f300-\U0001faff"
+    "^[\\s" + _ZWJ + _VS16 + "\U0001f300-\U0001faff"
     "\U00002600-\U000027bf"
     "\U0001f1e6-\U0001f1ff"
     "]+"
