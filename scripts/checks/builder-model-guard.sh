@@ -99,7 +99,7 @@ set -uo pipefail
 # the pin is expected to flip sonnet-4-6 -> opus-5, so the collision arm gets
 # exercised on real traffic while it is still only a warning.
 # ---------------------------------------------------------------------------
-ENFORCE_FROM="2026-07-01"
+ENFORCE_FROM="2026-08-17"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # `|| exit 1` is load-bearing (SC2164): an unguarded cd that fails leaves the
@@ -183,13 +183,51 @@ pr_head_sha() {
 }
 
 # ---------------------------------------------------------------------------
+# skip_sync_merges <rev> — walk first parents past any merge commits sitting on
+# top of the branch, and echo the first commit that is not a merge.
+#
+# WHY: rule 25 REQUIRES `git merge origin/staging` before every push, so a
+# compliant branch tip is very often a sync merge — and a sync merge is not
+# authored work, so it carries no trailer and never will. Inspecting it would
+# red exactly the branches that followed the rule. Caught by MEH-1668's own CI
+# negative control 5a, which redded on its own sync merge (08c295c) rather than
+# on the commit under test; the four local controls could not see it, because
+# locally the tip is a plain commit.
+#
+# First parent is the right direction and the safe one: on a feature-branch
+# sync merge, parent 1 is the branch's OWN previous tip and parent 2 is
+# origin/staging, so the walk stays on this branch's work and cannot wander
+# into base history. Bounded at 20 hops — a branch buried under 20 consecutive
+# merges with no commit of its own is not a case worth guessing at, and an
+# unbounded loop on a malformed history is worse than an honest give-up.
+# ---------------------------------------------------------------------------
+skip_sync_merges() {
+  local rev="$1" hops=0 parents
+  while [ "$hops" -lt 20 ]; do
+    parents="$(git cat-file commit "$rev" 2>/dev/null | sed -n '/^$/q; s/^parent //p')"
+    [ "$(printf '%s\n' "$parents" | grep -c .)" -ge 2 ] || { printf '%s\n' "$rev"; return 0; }
+    rev="$(printf '%s\n' "$parents" | head -n 1)"
+    have_commit "$rev" || fetch_commit "$rev" || return 1
+    hops=$(( hops + 1 ))
+  done
+  return 1
+}
+
+# ---------------------------------------------------------------------------
 # Resolve the commit under inspection.
 # ---------------------------------------------------------------------------
 if target="$(pr_head_sha)" && [ -n "$target" ]; then
   how="refs/pull/N/merge second parent (PR head)"
 else
-  target="HEAD"
+  target="$(git rev-parse HEAD 2>/dev/null)"
   how="HEAD (not a PR-merge checkout)"
+fi
+
+if [ -n "$target" ] && authored="$(skip_sync_merges "$target")" && [ -n "$authored" ]; then
+  if [ "$authored" != "$target" ]; then
+    how="$how -> first non-merge ancestor (skipped sync merge)"
+  fi
+  target="$authored"
 fi
 
 if ! have_commit "$target"; then

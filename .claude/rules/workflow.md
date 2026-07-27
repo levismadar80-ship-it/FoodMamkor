@@ -534,6 +534,14 @@ picked up by `scripts/checks/run-all.sh` on its own.
 review carries no evidentiary value at all: the model judging the diff is the
 model that wrote it. Dependabot commits are exempt — no CC session authors them.
 
+**It inspects the last *authored* commit, not the branch tip.** Rule 25 requires
+`git merge origin/staging` before every push, so a compliant tip is frequently a
+sync merge — which is not authored work and carries no trailer. The guard walks
+first parents past any merge commits on top (staying on this branch, since a sync
+merge's parent 1 is the branch's own previous tip) and inspects the first
+non-merge commit. **Only that commit is checked**, so a trailer-less commit
+buried mid-branch passes; the tip is the declaration that counts.
+
 **Warn-only until `2026-08-17`, then blocking — the guard checks the date
 itself.** No follow-up ticket, nobody remembering. An expiry a human has to
 action is a promise, and this repo already has the empty MEH-487 calibration
