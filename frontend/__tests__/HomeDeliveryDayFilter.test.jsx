@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { renderHook, act, render, screen, fireEvent } from "@testing-library/react";
 import { useHomePage } from "@/lib/use-home-page";
 import { ActiveFilterChip, DeliveryDayRow } from "@/app/[locale]/home/ActiveFilterChip";
 import api from "@/lib/api";
@@ -78,6 +77,21 @@ describe("useHomePage delivery-day filter (MEH-1645)", () => {
     window.history.replaceState(null, "", `/?day=${encodeURIComponent("רביעי")}`);
     const { result: dayOnly } = renderHook(() => useHomePage());
     expect(dayOnly.current.dayActive).toBeNull();
+  });
+
+  it("drops a NON-CANONICAL ?day= on hydration (would 422 → silently stale grid)", () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/?city=${encodeURIComponent("חיפה")}&day=not-a-real-day`,
+    );
+    const { result } = renderHook(() => useHomePage());
+    expect(result.current.dayActive).toBeNull();
+    // And the initial fetch must NOT carry the invalid value.
+    const badCall = api.get.mock.calls.find(
+      ([path, opts]) => path === "/producers" && opts?.params?.delivery_day,
+    );
+    expect(badCall).toBeUndefined();
   });
 
   it("clearing the location filter clears the day with it", () => {

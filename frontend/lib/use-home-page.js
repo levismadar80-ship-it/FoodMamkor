@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { mapKey } from "@/lib/i18n-key-map";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { getUserLocation, setUserLocation } from "@/lib/user-location";
 import { showToast } from "@/lib/toast";
 import { buildChipParams } from "@/lib/producer-filters";
@@ -159,9 +160,12 @@ export function useHomePage() {
       delivery_city: p.get("city") || "",
       has_delivery: p.get("delivery") === "1",
       // MEH-1645 (MEH-1083 pattern): ?day= survives refresh/share — but only
-      // beside a city; a day-only URL would be an invisible filter (the
-      // MEH-1269 lesson), so the day is dropped when no city rides along.
-      delivery_day: p.get("city") ? p.get("day") || "" : "",
+      // beside a city (a day-only URL would be an invisible filter, the
+      // MEH-1269 lesson) AND only a canonical value: a crafted ?day= would
+      // 422 on the backend, which loadProducers swallows into a silently
+      // stale grid. Same whitelist the API validates against.
+      delivery_day:
+        p.get("city") && DELIVERY_DAYS.includes(p.get("day")) ? p.get("day") : "",
     };
     // MEH-1083: hydrate all 7 CHIPS_CONFIG keys — gluten_free/vegan/
     // lactose_free filtered results without surviving refresh/share
