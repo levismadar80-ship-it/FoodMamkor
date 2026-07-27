@@ -42,6 +42,10 @@ const browser = await chromium.launch({
 // prefix as the single variable under test.
 async function walk(localePrefix) {
   const ctx = await browser.newContext({ locale: "he-IL", viewport: { width: 1440, height: 900 } });
+  // Requires a backend that accepts this token and answers GET /auth/me with a
+  // producer. Without one the layout redirects to /login and EVERY spoke reports
+  // CARD NOT FOUND — indistinguishable from a genuinely missing card, so the
+  // goto below asserts we actually landed on the dashboard first.
   await ctx.addInitScript(() => localStorage.setItem("token", "owner-token"));
   const page = await ctx.newPage();
   const out = [];
@@ -49,7 +53,15 @@ async function walk(localePrefix) {
     await page.goto(`${BASE}${localePrefix}/producer/dashboard/tools`, {
       waitUntil: "domcontentloaded",
     });
-    await page.waitForSelector('a[href*="/producer/dashboard/group-buys"]', { timeout: 25000 });
+    try {
+      await page.waitForSelector('a[href*="/producer/dashboard/group-buys"]', { timeout: 25000 });
+    } catch {
+      out.push(
+        `${spoke}: TOOLS TAB NEVER RENDERED (at ${page.url().replace(BASE, "")}) —` +
+          " backend unreachable or token rejected, NOT a missing card"
+      );
+      continue;
+    }
     const link = page
       .locator(`div.grid.md\\:grid-cols-3 > a[href$="/producer/dashboard/${spoke}"]`)
       .first();
@@ -88,3 +100,7 @@ async function walk(localePrefix) {
 await browser.close();
 console.log(`\n${results.filter((r) => r.verdict === "PASS").length}/${results.length} pins pass`);
 console.log(JSON.stringify(results, null, 2));
+// Exit non-zero on any failing pin so a wrapper or CI step cannot read a
+// failure as success. (The MEH-1632 and MEH-1638 harnesses, already merged,
+// still exit 0 unconditionally — same gap, worth a follow-up sweep.)
+process.exit(results.some((r) => r.verdict === "FAIL") ? 1 : 0);
