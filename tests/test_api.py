@@ -459,10 +459,13 @@ class TestAuth:
         )
         db.commit()
 
-        # MEH-1624: the per-IP cap here is 3/hour (auth.py:378), so the
-        # original triple sat exactly ON the ceiling — a 4th request from one
-        # IP returns 429 and proves nothing about response bytes. Rotate the
-        # source IP so each branch gets its own bucket. Same technique as
+        # MEH-1624: the per-IP cap on auth.py:378 is what forced this — when
+        # it was 3/hour the original triple sat exactly ON the ceiling, and a
+        # 4th request from one IP returned 429, proving nothing about response
+        # bytes. MEH-1635 widened that cap to 10/hour, so the triple no longer
+        # brushes it; the IP rotation stays regardless, because it makes this
+        # test independent of the per-IP value instead of merely far enough
+        # below it. Same technique as
         # TestRegisterPerEmailRateLimit below; the emails are all distinct, so
         # the per-email bucket never accumulates either. Request headers do
         # not affect the response body being compared.
@@ -630,11 +633,20 @@ class TestRegisterPerEmailRateLimit:
     def test_register_producer_per_email_rate_limit_blocks_after_5_attempts(
         self, client, monkeypatch
     ):
-        """Per-IP=3/hour (tight) + per-email=5/15min. Per-IP would trip
-        first from a single client, so this test rotates IPs via X-Real-IP
-        (TRUSTED_PROXY=1 to honor the header in get_real_client_ip).
-        Each request hits a fresh per-IP bucket; only per-email accumulates.
-        Sixth request from a 6th distinct IP, same email → 429.
+        """Per-IP=10/hour (auth.py:378) + per-email=5/15min (auth.py:379).
+
+        This test rotates IPs via X-Real-IP (TRUSTED_PROXY=1 to honor the
+        header in get_real_client_ip) so each request hits a fresh per-IP
+        bucket and only per-email accumulates. Sixth request from a 6th
+        distinct IP, same email → 429, and the 429 can only have come from
+        the per-email half.
+
+        The rotation was originally required: under the old 3/hour per-IP cap
+        (MEH-1635 widened it to 10/hour) a single client tripped per-IP first
+        and the test could not tell the two limiters apart. At 10/hour six
+        requests no longer reach the per-IP ceiling, so rotation is no longer
+        strictly necessary — it is kept because it pins the per-EMAIL cap
+        independently of whatever the per-IP value happens to be.
         """
         monkeypatch.setenv("TRUSTED_PROXY", "1")
         monkeypatch.setattr(
@@ -1084,7 +1096,8 @@ class TestRegisterProducerRequiredFieldsNonUpgrade:
 
 class TestRegisterPerIpRateLimit:
     """MEH-1624 gap 4 — the per-IP halves of the dual-key limiters
-    (auth.py:262 register = 10/hour, auth.py:378 producer = 3/hour).
+    (auth.py:262 register = 10/hour, auth.py:378 producer = 10/hour since
+    MEH-1635; it was 3/hour when this class was written).
 
     The MEH-624 tests pin only the per-EMAIL half. These rotate the email so
     the per-email bucket never saturates, leaving per-IP as the only limiter
@@ -1122,9 +1135,14 @@ class TestRegisterPerIpRateLimit:
         assert statuses[:10] == [200] * 10
         assert statuses[10] == 429
 
-    def test_register_producer_per_ip_limit_trips_on_4th(
+    def test_register_producer_per_ip_limit_trips_on_11th(
         self, client, monkeypatch
     ):
+        # MEH-1635: widened 3/hour -> 10/hour (auth.py:378). Keying
+        # registration abuse on IP punished shared-IP users (CGNAT), and the
+        # allowance was further eaten by the MEH-1627 refresh-retry
+        # double-count and by resubmits after a 422. The per-EMAIL cap is
+        # unchanged and remains the primary anti-spam key.
         self._stub_side_effects(monkeypatch)
         base = valid_producer_register_payload() | {
             "name": "שרה",
@@ -1139,10 +1157,10 @@ class TestRegisterPerIpRateLimit:
                     "producer_name": f"חוות מספר {i}",
                 },
             ).status_code
-            for i in range(4)
+            for i in range(11)
         ]
-        assert statuses[:3] == [200] * 3
-        assert statuses[3] == 429
+        assert statuses[:10] == [200] * 10
+        assert statuses[10] == 429
 
 
 class TestLoginTimingEqualization:
