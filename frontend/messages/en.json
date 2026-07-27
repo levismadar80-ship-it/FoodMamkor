@@ -469,6 +469,11 @@
       "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
+      "city_day_chip": "Delivery to {city} · {day}",
+      "day_row_label": "Delivery day:",
+      "day_option_aria": "Filter deliveries on {day}",
+      "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
+      "day_empty_clear_cta": "Remove day filter",
       "clear_location_filter": "Remove location filter",
       "geo_empty": "No businesses found nearby — showing all businesses",
       "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
