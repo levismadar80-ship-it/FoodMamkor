@@ -222,6 +222,31 @@ describe("MEH-1611 — focus-on-select demotes, never removes", () => {
     expect(demoted.every((m) => m.marker.producerId !== "p-multi")).toBe(true);
   });
 
+  // MEH-1663 (adversarial-review finding): selecting a business with NO pin must not
+  // demote the map. The demote rule fades every marker that is not tagged focused
+  // (globals.css:359) — with zero markers for the selection, that greys everything and
+  // highlights nothing. Reachable only since MEH-1663 lifted the lat/lng gate off
+  // selection: the non-geo /producers list applies no pinnable filter, so a
+  // delivery-only business with no location row IS in the card list.
+  it("does NOT demote the map for a selected business that owns no pin at all", () => {
+    const pinless = { id: "p-pinless", name: "משלוחים בלבד, בלי נקודת איסוף", lat: null, lng: null, locations: [] };
+    // One array identity across both renders — a fresh literal would re-run the
+    // marker effect and rebuild the whole layer, which is not what this asserts.
+    const feed = [...ALL, pinless];
+    const { container, rerender } = render(
+      <MapComponent producers={feed} focusedProducerId={null} />,
+    );
+    const mapEl = container.firstChild;
+
+    rerender(<MapComponent producers={feed} focusedProducerId="p-pinless" />);
+
+    expect(mapEl.classList.contains("mehamakor-map-focused")).toBe(false);
+    // and nothing was falsely tagged as the focus target
+    expect(focusedMarkers()).toHaveLength(0);
+    // the surrounding supply is untouched — no pin lost, none faded
+    expect(recorder.markers).toHaveLength(TOTAL_MARKERS);
+  });
+
   it("puts the demote class on the map container while selected, and takes it off on deselect", () => {
     const { container, rerender } = render(
       <MapComponent producers={ALL} focusedProducerId={null} />,
@@ -298,6 +323,35 @@ describe("MEH-1611 — focusProducer frames all of a business's points", () => {
     expect(recorder.fitBounds).toHaveLength(0);
     expect(recorder.flyTo).toHaveLength(1);
     expect(recorder.flyTo[0][0]).toEqual([31.8, 35.2]);
+    expect(recorder.flyTo[0][1]).toBe(14);
+  });
+
+  // MEH-1663: the other half of the delivery-only fix. Every fixture above owns a
+  // non-null Producer.lat, so nothing here proved that a business pinned SOLELY by a
+  // locations[] row reaches the camera at all. It does: MapComponent builds the marker
+  // from the location row (:833-846, the lat/lng fallback at :852-861 never fires
+  // because the row was usable), so usablePoints() resolves the pickup point and the
+  // single-point flyTo branch takes it. The Producer's own NULL coords are never read.
+  //
+  // This is the unit-level form of the ticket's first acceptance criterion — the
+  // camera lands on (32.5190, 34.9530), the Benyamina pickup from
+  // backend/scripts/seed_demo_business.py:346-354.
+  it("flies to a delivery-only business's pickup point when its own lat/lng are NULL", () => {
+    const deliveryOnly = {
+      id: "demo-delivery-pickup",
+      name: "משק החלב של דנה (משלוחים + איסוף)",
+      lat: null,
+      lng: null,
+      locations: [
+        { kind: "pickup", label: "איסוף — מרכז בנימינה", lat: 32.519, lng: 34.953, is_primary: true, precision: "exact" },
+      ],
+    };
+    render(<MapComponent producers={[...ALL, deliveryOnly]} registerApi={registerApi} />);
+    api.focusProducer("demo-delivery-pickup");
+
+    expect(recorder.fitBounds).toHaveLength(0); // one usable point → the flyTo branch
+    expect(recorder.flyTo).toHaveLength(1);
+    expect(recorder.flyTo[0][0]).toEqual([32.519, 34.953]);
     expect(recorder.flyTo[0][1]).toBe(14);
   });
 

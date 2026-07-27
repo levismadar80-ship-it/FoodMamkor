@@ -3,6 +3,71 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — batch MEH-1660 · MEH-1661 · MEH-1662 (end-to-end authority, ADR-016 v2)
+
+**Shipped.** Four PRs merged: #2308 (MEH-1660 fix) · #2321 (MEH-1660 qa-artifacts) ·
+#2318 (MEH-1661 sweep + guard) · #2326 (MEH-1662 heading). This PR is the docs-only
+backfill (rule 31 — the logs never ride in a code branch).
+
+| Ticket | PR | Shape | Gate note |
+|---|---|---|---|
+| MEH-1660 | #2308 + #2321 | backend + new pytest; qa-artifacts | green, auto-merged |
+| MEH-1661 | #2318 | messages sweep + new vitest guard | merged on Sapir's explicit "MERGE" with `E2E gate` red |
+| MEH-1662 | #2326 | one he.json key | green |
+
+**Open item carried forward — MEH-1661's `home-mobile` VRT baseline is still stale.**
+The hero CTA lost its 📦, which moves unmasked pixels, so `[mobile] › visual/parity
+home` fails (173 passed, 1 failed). It merged anyway on explicit instruction, which
+means **`staging` now carries a knowingly-red VRT shot**: the next PR that runs the
+suite inherits the failure and it will read as *that* PR's regression. Closing it needs
+one `vrt-update` dispatch (`route=home`) on `staging` — a permission this session does
+not have (403, no workflows scope).
+
+**Three findings worth keeping.**
+
+1. **A local VRT regen would have been wrong, and only a self-test showed it.** Before
+   considering a locally-generated baseline I built the *base* (unchanged) content and
+   ran the spec against the committed baseline: **0.25 pixel ratio difference on content
+   that had not changed** — sandbox Chromium 1194 vs runner 1228. Had I skipped that
+   check, I would have committed a baseline that ratifies sandbox rendering for every
+   future run. This is the MEH-1552 candidate-baseline trap reached by a different road:
+   there the bot froze a broken state, here the *environment* would have.
+2. **The ☆ "survivor" report was half right — and the half that was wrong would have
+   shipped a defect.** Mid-batch verification reported `ambassador_inactive` ("☆ שגריר")
+   as a missed emoji and asked to widen the guard to `U+2600–U+27BF`. The survivor is
+   real; the premise is not — **U+2606 is NOT `Extended_Pictographic`** (verified against
+   Node/ICU 17.0; so is `★` U+2605, while `⭐` U+2B50 is). The count of 5 was correct for
+   the ticket's own stated definition. Two things stopped the "fix":
+   - **The proposed range would red ~80 lines per locale** — every `✓ נשמר`, `✗ לא מוגדר`,
+     `הבא ←`, `→ חזרה`. The sibling MEH-1472 guard *explicitly* allows those, and
+     `app/[locale]/admin/reviews/page.jsx:129-132` shows MEH-1472 **deliberately
+     converted ⭐ → ★ as "the repo's typographic star"**. Widening would have contradicted
+     a decision the repo made on purpose and created two definitions of "emoji" in two
+     sibling guards (workflow.md smell #1).
+   - **Stripping ☆ alone collides in English.** `ambassador_active` is "Ambassador" after
+     the sweep; `ambassador_inactive` is "☆ Ambassador". Remove the glyph and both read
+     **"Ambassador"** — the toggle's two states become indistinguishable. The glyph
+     carries the meaning, which is the MEH-1628 case where the spec itself says replace
+     with a word, not delete. That needs approved copy (rule 22), so I reverted and
+     stopped rather than inventing it.
+   - **Decision owed to Sapir:** either keep ☆ as the approved typographic twin of ★
+     (zero work, consistent with MEH-1472), or approve distinguishing English copy —
+     `set_ambassador_title` / `remove_ambassador_title` already exist in the same
+     namespace, **approved but unused**, and would fit if the component is repointed.
+3. **Grep verification has to distinguish source from build output.** MEH-1662's
+   grep-absence proof returned 2 false hits from a gitignored `.next/` directory left by
+   a local build. `git grep` returned 0. Any "0 occurrences remain" claim should use
+   `git grep`, not `grep -rn`.
+
+**Environment notes.** Vercel hit its free-tier 100-deploys/day cap mid-batch — no PR
+previews for ~24h, so MEH-1660's self-QA ran against staging post-merge instead of a
+preview, and MEH-1661's screenshots are still owed. A **parallel session** was pushing
+`feature/meh-1644-delivery-day-capture` at 18:29Z (rule 1 single-session flag) — different
+ticket, no file overlap.
+
+**Next task.** Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited
+red shot, then decide the ☆/ambassador question above.
+
 ## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
 
 **Shipped.** CHANGELOG entries for the three 27/07 attribution-chain merges. Every

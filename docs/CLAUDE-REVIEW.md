@@ -140,8 +140,40 @@ order:
 
 **Always post a comment, even when all 3 sections are empty. Empty
 sections must read `None.`** This gives us confirmation the action fired
-(vs silent no-op anxiety during calibration). After calibration flips to
-blocking, we may relax to "post only when findings exist."
+(vs silent no-op anxiety during calibration).
+
+> **This rule is permanent — it does NOT relax after the blocking flip
+> (MEH-1668).** Until now this paragraph ended with *"After calibration flips
+> to blocking, we may relax to 'post only when findings exist.'"* That clause
+> is **deleted**, because a gate that parses this contract has to treat silence
+> as failure: if "no comment" were a legitimate way to say "clean", then an
+> action that crashed, timed out, hit a budget cap, or never called the posting
+> tool would be indistinguishable from a clean review — and would merge. That
+> is the MEH-506 silent-no-op class exactly, and it is the failure mode the
+> contract was written to close in the first place. **Silence must never read
+> as clean.** A blocking gate makes the clause dangerous, not obsolete.
+
+**Which comment is the review (MEH-1668 — author + shape).** A parser needs to
+identify the review unambiguously, and "the comment containing `### Must Fix`"
+is not enough: a human quoting the format in discussion would match, and so
+would this very document if it were ever pasted into a thread. **Both** rules
+must hold:
+
+1. **Author** — the comment is authored by the identity the action posts under
+   (the `claude-code-action` bot). A comment from any human account is never
+   the review, regardless of its shape.
+2. **Shape** — the body contains all three headings, `### Must Fix`,
+   `### Should Consider` and `### Minor`, each exactly once, in that order.
+
+Where several comments satisfy both, the **most recent** wins — re-review after
+a push is the normal case, and the latest verdict is the operative one. Where
+**none** does, a parser must treat that as "the reviewer did not speak" and
+fail; it must not fall back to a looser match.
+
+> The two rules are `AND`, deliberately. An `||` between them would let either
+> cue carry the whole identification, so losing the other becomes undetectable —
+> the pass-condition shape `.claude/rules/testing.md` calls out as how a probe
+> signs off on a broken state.
 
 **Posting the comment (MEH-506 fix).** The action does NOT auto-post.
 You MUST call the GitHub MCP tool explicitly:
