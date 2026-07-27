@@ -86,6 +86,12 @@ export default [
           message:
             "Avoid physical padding classes. Use logical equivalents (ps-*, pe-*). If intentional (e.g. password-input padding pair), add // rtl-ok comment and use eslint-disable-next-line.",
         },
+        {
+          selector:
+            "JSXAttribute[name.name='className'] > Literal[value=/\\b(bg|text|border|ring|divide|from|via|to)-(red|orange|amber|yellow|lime|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|gray|slate|zinc|neutral|stone)-[0-9]/]",
+          message:
+            "Raw Tailwind palette shade is not a Mehamakor token. Use a semantic token (text-error, bg-surface, border-border, text-fg-muted, text-muted). green-* IS a token and is exempt. If a raw shade is genuinely required, add // token-ok and eslint-disable-next-line.",
+        },
       ],
     },
   },
