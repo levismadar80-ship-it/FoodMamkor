@@ -96,6 +96,43 @@ Precedent + full evidence tables: [docs/audits/silent-failure-audit.md](../../do
 
 ---
 
+## Sub-class B′ — a prop that deletes the thing another prop configures (MEH-1633)
+
+Class B above is *one* prop whose effect is conditional on the runtime element type
+(`alt` on a divIcon). **B′ is a different shape: two props that are individually valid
+and jointly contradictory.** One prop supplies a value; a second, elsewhere in the tree,
+removes the element that value would have rendered into. Each reads correct in
+isolation, which is why review passes — the reviewer's eye lands on the configuring
+prop, sees the string it wants, and never looks for the switch that discards it.
+
+The instance: `<MapContainer attributionControl={false}>` next to
+`<TileLayer attribution='…' />`. react-leaflet builds no attribution control at all, so
+the string has nowhere to go. **Measured on the producer page before the fix: `0`
+`.leaflet-control-attribution` elements** — while the source still displayed a
+perfectly good ODbL notice two lines down.
+
+**Why B′ is worse than B.** A class-B inert prop costs an unimplemented nicety. B′ costs
+a legal obligation: serving OSM tiles without visible attribution violates the ODbL and
+the OSM tile usage policy, and the operational penalty is tile-blocking of the whole
+domain. The failure is also *invisible by construction* — the fix and the bug live in
+the same JSX block, so a grep for the attribution string finds it and reports health.
+
+**The review question B′ adds:** for any prop that supplies a value to a library, ask
+**what renders it, and is that thing still switched on?** A `*Control={false}`,
+`show*={false}`, `disable*`, or `render*={null}` sibling anywhere in the same component
+tree is the thing to look for. It is not enough that the value is present and correct.
+
+**Evidence bar:** the same as class A — count the rendered element. Not "the string is
+in the source". `document.querySelectorAll('.leaflet-control-attribution').length` must
+be exactly `1` inside the map container: `0` is the deletion, `2` is a double-mount.
+
+**Mechanical guard:** `scripts/checks/map-attribution-guard.sh` (runs under the required
+*Repo guards* job via `scripts/checks/run-all.sh`) reds any
+`attributionControl={false}` under `frontend/`. It checks that ONE pattern — it cannot
+tell a valid attribution string from a plausible one, and does not try.
+
+---
+
 ## Map z-index tokens
 
 Quick reference (canonical ledger + full context in [.claude/rules/rtl.md](./rtl.md)

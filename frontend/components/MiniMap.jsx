@@ -254,11 +254,23 @@ export default function MiniMap({ lat, lng, name, locations, producer = null }) 
           zoom={SINGLE_POINT_ZOOM}
           style={{ height: "100%", width: "100%" }}
           zoomControl={false}
-          attributionControl={false}
         >
+          {/* MEH-1633: a falsy `attributionControl` prop used to sit next to
+              `zoomControl` above. It DELETES the control that the sibling
+              `attribution` prop below feeds — the prop stayed type-valid and
+              the string stayed right here in the source, so nothing errored
+              and review read the attribution as present. The rendered mini-map
+              carried ZERO `.leaflet-control-attribution` elements: an ODbL /
+              OSM tile-policy violation with a real tile-blocking risk.
+              react-leaflet defaults the prop to true, so its ABSENCE is the
+              fix — do not re-add it in any form;
+              scripts/checks/map-attribution-guard.sh reds the PR if you do.
+              The string below is byte-identical to HomepageMiniMap.jsx:236 —
+              legal text, never translated.
+              REUSES: frontend/components/HomepageMiniMap.jsx:233,236 */}
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='© OpenStreetMap contributors'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
           {/* MEH-1611: one pin per point of THIS business — branch → filled
               category pin, pickup / market_stand → hollow outline. When the
