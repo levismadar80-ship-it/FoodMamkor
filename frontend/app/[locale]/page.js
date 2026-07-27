@@ -55,8 +55,8 @@ export default function HomePage() {
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
-    featuredProducer, geoActive, cityActive, geoEmptyNotice,
-    handleNearMe, handleSurprise, handleDeliveryCta, handleCitySelected, handleClearLocation,
+    featuredProducer, geoActive, cityActive, dayActive, geoEmptyNotice,
+    handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleCitySelected, handleClearLocation,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
@@ -197,6 +197,8 @@ export default function HomePage() {
         hasProducers={statsProducersCount > 0}
         geoActive={geoActive}
         cityActive={cityActive}
+        dayActive={dayActive}
+        onSelectDay={handleDaySelected}
         geoEmptyNotice={geoEmptyNotice}
         regionFallback={regionFallback}
       />

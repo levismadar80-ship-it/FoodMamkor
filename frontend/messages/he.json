@@ -483,6 +483,11 @@
       "onboarding1": "סננו לפי אורגני, כשר, משלוח ועוד — לחצו על אחד מהכפתורים למעלה",
       "geo_chip": "בתי עסק ליד המיקום שלך",
       "city_chip": "עסקים באזור {city}",
+      "city_day_chip": "משלוח ל{city} · יום {day}",
+      "day_row_label": "יום משלוח:",
+      "day_option_aria": "סינון משלוח ליום {day}",
+      "day_empty_suggestion": "אין כרגע עסקים עם משלוח ביום {day} ל{city} — אולי בימים אחרים",
+      "day_empty_clear_cta": "הסרת סינון היום",
       "clear_location_filter": "הסרת סינון מיקום",
       "geo_empty": "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק",
       "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:"
@@ -730,7 +735,7 @@
         "about": "אודות",
         "location": "הגעה ומיקום",
         "similar": {
-          "heading": "עסקים דומים",
+          "heading": "בתי עסק דומים",
           "in_area": "{category} · באזור שלך"
         },
         "nearby": {

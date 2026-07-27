@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { mapKey } from "@/lib/i18n-key-map";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { getUserLocation, setUserLocation } from "@/lib/user-location";
 import { showToast } from "@/lib/toast";
 import { buildChipParams } from "@/lib/producer-filters";
@@ -81,7 +82,11 @@ export function useHomePage() {
   // sessionStorage) are read in the initial useEffect below to avoid React
   // #418 hydration mismatches caused by lazy initializers running on the client
   // but not on the server.
-  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
+  // MEH-1645: delivery_day — a refinement of the delivery_city filter (one
+  // canonical Hebrew day, lib/delivery-days.js). Only meaningful WITH a city:
+  // the day row is progressive-disclosure UI, so a day can never be set
+  // without a city, and clearing the city clears the day.
+  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false, delivery_day: "" });
   // MEH-23 — persist visibleCount + scrollY across navigations so the
   // "Load more" expansion isn't lost when a user opens a producer and
   // returns via the back button. Read on mount only; subsequent changes
@@ -154,6 +159,13 @@ export function useHomePage() {
       category: p.get("category") || "",
       delivery_city: p.get("city") || "",
       has_delivery: p.get("delivery") === "1",
+      // MEH-1645 (MEH-1083 pattern): ?day= survives refresh/share — but only
+      // beside a city (a day-only URL would be an invisible filter, the
+      // MEH-1269 lesson) AND only a canonical value: a crafted ?day= would
+      // 422 on the backend, which loadProducers swallows into a silently
+      // stale grid. Same whitelist the API validates against.
+      delivery_day:
+        p.get("city") && DELIVERY_DAYS.includes(p.get("day")) ? p.get("day") : "",
     };
     // MEH-1083: hydrate all 7 CHIPS_CONFIG keys — gluten_free/vegan/
     // lactose_free filtered results without surviving refresh/share
@@ -191,6 +203,7 @@ export function useHomePage() {
     const initParams = {};
     if (initFilters.category) initParams.category = initFilters.category;
     if (initFilters.delivery_city) initParams.delivery_city = initFilters.delivery_city;
+    if (initFilters.delivery_day) initParams.delivery_day = initFilters.delivery_day;
     const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
     loadProducers(initParams);
@@ -275,6 +288,8 @@ export function useHomePage() {
     const p = new URLSearchParams();
     if (f.category) p.set("category", f.category);
     if (f.delivery_city) p.set("city", f.delivery_city);
+    // MEH-1645: day serialized only beside its city (never a day-only URL).
+    if (f.delivery_city && f.delivery_day) p.set("day", f.delivery_day);
     if (c.kosher) p.set("kosher", "1");
     // MEH-1259: organic param no longer written — chip + filter removed.
     // MEH-1083: diet keys were missing from the serializer — param names
@@ -385,6 +400,8 @@ export function useHomePage() {
     const params = buildChipParams(next);
     if (filters.category) params.category = filters.category;
     if (filters.delivery_city) params.delivery_city = filters.delivery_city;
+    // MEH-1645: keep the day refinement through chip toggles (city kept above).
+    if (filters.delivery_city && filters.delivery_day) params.delivery_day = filters.delivery_day;
     const newFilters = key === "has_delivery"
       ? { ...filters, has_delivery: next.has_delivery }
       : filters;
@@ -443,7 +460,8 @@ export function useHomePage() {
   // (lat/lng are intentionally NOT persisted — over-engineering guard), and
   // scroll to the grid.
   const applyGeoFilter = ({ lat, lng }) => {
-    const newFilters = { ...filters, delivery_city: "" };
+    // MEH-1645: the day rides the city filter — geo mode clears both.
+    const newFilters = { ...filters, delivery_city: "", delivery_day: "" };
     setFilters(newFilters);
     setGeoFilter({ lat, lng });
     updateURL(newFilters);
@@ -504,8 +522,32 @@ export function useHomePage() {
     const newFilters = { ...filters, delivery_city: city };
     setFilters(newFilters);
     updateURL(newFilters);
-    loadProducers({ delivery_city: city, ...buildChipParams(chips) });
+    // MEH-1645: an active day refinement survives a city switch — it is an
+    // explicit choice, visible in the chip, and re-applies to the new city.
+    loadProducers({
+      delivery_city: city,
+      ...(newFilters.delivery_day ? { delivery_day: newFilters.delivery_day } : {}),
+      ...buildChipParams(chips),
+    });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // MEH-1645: set / toggle-off the delivery-day refinement. Only reachable
+  // while a city filter is active (the day row is progressive-disclosure UI
+  // — DeliveryDayRow renders null without cityActive). Selecting the active
+  // day again clears it.
+  const handleDaySelected = (day) => {
+    if (!filters.delivery_city) return;
+    setGeoEmptyNotice(false);
+    const next = filters.delivery_day === day ? "" : day;
+    const newFilters = { ...filters, delivery_day: next };
+    setFilters(newFilters);
+    updateURL(newFilters);
+    loadProducers({
+      delivery_city: newFilters.delivery_city,
+      ...(next ? { delivery_day: next } : {}),
+      ...buildChipParams(chips),
+    });
   };
 
   // MEH-1643: hero "משלוחים אליי" CTA. With a saved user_city, apply the
@@ -530,7 +572,8 @@ export function useHomePage() {
     setGeoFilter(null);
     // MEH-1282: clearing the location filter also clears the empty-near-me notice.
     setGeoEmptyNotice(false);
-    const newFilters = { ...filters, delivery_city: "" };
+    // MEH-1645: the day refinement falls with its city.
+    const newFilters = { ...filters, delivery_city: "", delivery_day: "" };
     setFilters(newFilters);
     updateURL(newFilters);
     const params = buildChipParams(chips);
@@ -605,6 +648,9 @@ export function useHomePage() {
   // so at most one is truthy. cityActive carries the city name for the label.
   const geoActive = geoFilter !== null;
   const cityActive = filters.delivery_city || null;
+  // MEH-1645: active day refinement (null when unset) — only ever set
+  // alongside cityActive (progressive disclosure + the hydration guard).
+  const dayActive = filters.delivery_day || null;
 
   return {
     // i18n + auth
@@ -642,11 +688,13 @@ export function useHomePage() {
     featuredProducer,
     geoActive,
     cityActive,
+    dayActive,
     geoEmptyNotice,
     // handlers
     handleNearMe,
     handleSurprise,
     handleDeliveryCta,
+    handleDaySelected,
     handleCitySelected,
     handleClearLocation,
     handleWhatsAppClick,
