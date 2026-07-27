@@ -174,7 +174,7 @@ three above. No greeting, no summary, no "great work" filler.
 > | Source | Expected | Actual |
 > | -- | -- | -- |
 > | the table below | one row per PR | **5 empty placeholder rows** — the only non-blank cell is the `(this PR)` row MEH-487 shipped with |
-> | `HANDOFF.md` → "Claude Review calibration" (pointed at below) | the live tally | **the subsection does not exist** — `grep -c "Claude Review calibration" HANDOFF.md` → `0` |
+> | `HANDOFF.md` → "Claude Review calibration" (the pointer this file used to carry, now retired below) | the live tally | **the subsection does not exist** — `grep -c "Claude Review calibration" HANDOFF.md` → `0` |
 >
 > **PRs tallied: 0. Useful rate: unknown — unmeasured, not zero. `>70% useful`:
 > NOT MET**, and not currently meetable: an empty dataset cannot cross a
@@ -212,8 +212,15 @@ After the 5th PR run:
   follow-up "investigate why review quality is poor on mehamakor diffs"
   before retrying.
 
-Tally lives in `HANDOFF.md` under the "Claude Review calibration"
-subsection — every PR gets a row before merge.
+**The tally lives in the table above — one owner, and this file is it.** Every PR
+gets a row before merge.
+
+> Until MEH-1654 this line pointed at a "Claude Review calibration" subsection in
+> `HANDOFF.md`. **That subsection was never created**, so the pointer sent every
+> reader to an empty place while the table here sat unfilled — two owners for one
+> fact, neither holding it (MEH-271 smell #1). The pointer is retired rather than
+> repaired: a tally split across two files is how this one went eleven weeks
+> unrecorded.
 
 ---
 

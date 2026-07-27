@@ -92,8 +92,15 @@ supposed to live were checked directly:
 
 | Source | Expected | Actual |
 | -- | -- | -- |
-| `docs/CLAUDE-REVIEW.md:111-117` "Calibration plan" table | rows per PR | **5 empty placeholder rows.** The only non-blank cell is `(this PR) \| _ \| _ \| _ \| first run — wires the action` — the row MEH-487 shipped with. Zero data. |
-| `HANDOFF.md` → "Claude Review calibration" subsection (`CLAUDE-REVIEW.md:132`, `CHANGELOG.md:3906`) | the live tally | **The subsection does not exist.** `grep -c "Claude Review calibration" HANDOFF.md` → `0`. |
+| `docs/CLAUDE-REVIEW.md` → the table under `## Calibration plan` | rows per PR | **5 empty placeholder rows.** The only non-blank cell is `(this PR) \| _ \| _ \| _ \| first run — wires the action` — the row MEH-487 shipped with. Zero data. |
+| `HANDOFF.md` → a "Claude Review calibration" subsection, per the pointer MEH-487 left in `CLAUDE-REVIEW.md` and `CHANGELOG.md` | the live tally | **The subsection does not exist.** `grep -c "Claude Review calibration" HANDOFF.md` → `0`. The dangling pointer is retired in this PR; the table above is now the single owner. |
+
+> **No line numbers in the two rows above, deliberately.** The first draft cited
+> `CLAUDE-REVIEW.md:111-117` and `:132` — and **this PR's own edit to that file
+> pushed the table from 111 to 189**, so both citations were stale before the
+> branch was pushed. Section headings and quoted strings survive edits that line
+> numbers do not (MEH-1642). The same reasoning applies to `CHANGELOG.md`, where
+> entries are prepended and every line number below the top drifts on each merge.
 
 **Read-out:**
 
@@ -204,13 +211,78 @@ introduce reuse.
 That single flag is the whole code change. **The scoping is done entirely in the
 ruleset**, and this is worth being explicit about because it is easy to over-build:
 
-* `continue-on-error: false` makes the job report a real `failure` on **every** PR.
+* The check **already reports red today** when the job fails — job-level
+  `continue-on-error: true` stops the *workflow run* from being marked failed, it
+  does not mask the check's conclusion. Repo evidence: HANDOFF records merges with
+  *"only the non-required `Adversarial review (calibration)` red"* and *"two
+  non-blocking reds at merge … (continue-on-error by design)"*, with
+  `mergeable_state: unstable`, not `blocked` (PR #793). So the flag is **not** what
+  makes the check visible; it is what stops a red review from leaving a green
+  workflow run.
 * A failing check blocks **only** where a ruleset requires it.
 * Listing the check on `protect-main` **and not** on `protect-staging` gives exactly
-  the ticket's split: **blocking on `staging → main`, advisory (red but harmless) on
-  `feature → staging`.**
+  the ticket's split: **blocking on `staging → main`, advisory (red but harmless,
+  `unstable`) on `feature → staging`.**
 
-No `if:` expression, no per-branch conditional, no second job.
+No `if:` expression, no per-branch conditional, no second job. Patch A and Patch B
+touch disjoint line ranges (the step at the tail vs. the flag at `:56`), so they can
+be applied in either order.
+
+### 🔴 The gap that decides whether any of this blocks anything
+
+**Findings do not fail the job. Nothing in the current YAML converts a non-empty
+"Must Fix" section into a failed step.** The action succeeds whenever the agent runs
+and posts its comment — an all-clear review and a review listing six Must Fix items
+produce the *same* green check. Confirmed against the action's own documentation:
+
+> **Submit PR Reviews**: Claude cannot submit formal GitHub PR reviews
+> **Approve PRs**: For security reasons, Claude cannot approve pull requests
+> — `anthropics/claude-code-action` → `docs/capabilities-and-limitations.md`
+
+The docs describe no input, flag, or tool by which the agent's conclusions set the
+step's exit code. The action is **advisory by construction**; enforcement is
+explicitly left to branch protection — and branch protection can only enforce on the
+signal it is given, which here is "did the action run," not "was the diff clean."
+
+**Consequence for MEH-1654 as written:** applying Patch B and adding the ruleset
+entry produces a gate that blocks on **action infrastructure failure** — a timeout,
+an API error, budget exhaustion, a bad model string — and **not** on review findings.
+That is a real gate for "the reviewer didn't run," which is worth having (it closes
+the MEH-506 silent-no-op class). It is **not** the gate the ticket describes.
+
+**The missing piece, stated so nobody discovers it after the flip:** a step, after
+the action, that reads back the posted comment and exits 1 when its `### Must Fix`
+section is anything other than `None.` — using the same `mcp__github__` credentials
+already present, adding a *step*, not a job:
+
+```yaml
+      # MEH-1654 gap-closer: the action is advisory by construction, so findings
+      # must be turned into an exit code here or the required check gates on
+      # nothing but infrastructure. Reads back the review comment the step above
+      # posted and fails when its Must Fix section is non-empty.
+      #
+      # NOT YET SPECIFIED IN DETAIL — needs the comment-identification rule
+      # decided first (latest comment by the action's bot identity on this PR,
+      # matching the three-section contract in docs/CLAUDE-REVIEW.md). Writing it
+      # blind risks a step that silently passes on a missed match, which is the
+      # same silent-no-op class as MEH-506.
+```
+
+**This is Sapir's call, and it is a scope question, not a detail.** The ticket's
+`over_engineering_guard` forbids new machinery, and this is machinery. Three honest
+options:
+
+1. **Flip anyway, accept the narrower gate.** Blocks "the reviewer didn't run."
+   Cheapest, honest, and the DoD line about blocking must be reworded to say so.
+2. **Specify the gap-closer step properly** (its own ticket — it needs a comment-
+   identification rule and a demonstrated fail→pass run per `.claude/rules/testing.md`
+   "Every new guard test must be shown failing").
+3. **Leave Patch B unapplied** and keep the reviewer advisory, as ADR-028 § amendment
+   27/07 concluded for the E2E gate on comparable grounds.
+
+Recommending **(2) as a follow-up ticket with (1) in the interim** — the model swap
+in Patch A is the change that actually removes the same-model defect, and it does not
+depend on any of this.
 
 ### ⚠️ Hard precondition — `paths-ignore` must go first, or `main` locks forever
 
@@ -301,7 +373,8 @@ this repo:
 | 3 | Confirm one PR run posts a review comment under `claude-opus-5` | Sapir | — |
 | 4 | Resume the tally: score each PR into `docs/CLAUDE-REVIEW.md` "Calibration plan" | Sapir | 5 PRs |
 | 5 | If `>70% useful` — delete `paths-ignore` (`:27-31`) | **Sapir** | step 4 |
-| 6 | Apply **Patch B** (`continue-on-error: false`) | **Sapir** | step 5 |
+| 5b | **Decide the §5 gap**: findings do not fail the job, so a required check here gates on "did the reviewer run", not "was the diff clean" | **Sapir** | before 6 — it changes what step 7 buys |
+| 6 | Apply **Patch B** (`continue-on-error: false`) | **Sapir** | steps 5 + 5b |
 | 7 | Add `Adversarial review (calibration)` to **`protect-main`** only | **Sapir** | step 6 + one reported run |
 
 Steps 5–7 are a single decision point. If the tally lands at 30–70%, the
