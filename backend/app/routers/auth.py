@@ -363,9 +363,33 @@ async def register(
 # decorator-level response_model is single-shape and would strip fields
 # from one of the two — we let Pydantic serialise each return as-is.
 @router.post("/register/producer")
-# MEH-624: dual-key throttling. Per-IP cap (3/hour) + per-email cap
-# stops a botnet rotating IPs from spamming the OWASP duplicate-attempt
-# email at one victim.
+# MEH-624: dual-key throttling. Per-IP cap + per-email cap stops a botnet
+# rotating IPs from spamming the OWASP duplicate-attempt email at one victim.
+#
+# MEH-1635: the per-IP half moved 3/hour -> 10/hour. It was never the
+# anti-spam primitive — the per-email cap below is, and it is UNCHANGED.
+# Keying registration abuse on IP punishes the wrong people, and three
+# separate effects stack against a single legitimate producer:
+#
+#   1. Shared IPs. CGNAT (most Israeli mobile carriers), office NAT, and
+#      a co-working space all present one IP. Three women registering
+#      their businesses from the same cafe wifi exhausted the hour.
+#   2. Refresh-retry double-count (MEH-1627). slowapi's middleware runs
+#      BEFORE dependencies, so a request rejected at the auth layer has
+#      already burned its unit: an expired token costs 2 units for one
+#      submit (401 -> refresh -> replay), halving the real allowance.
+#   3. Resubmit after a 422 (MEH-1623 producer_name validation). Every
+#      corrected resubmit is another unit, and a 422 is exactly the case
+#      where a user retries immediately.
+#
+# 3/hour could therefore be spent without a single successful
+# registration. 10/hour keeps a per-IP ceiling on automated floods while
+# leaving room for the shared-IP + retry case.
+#
+# DO NOT copy this widening to the other 3/hour limits: auth.py:1270
+# (resend-verify, sends email) and auth.py:1289 (DELETE /me, irreversible)
+# are authenticated and deliberately stay tight — they are not shared-IP
+# bound and were not in MEH-1635's scope.
 #
 # Upgrade path trade-off (acknowledged, not blocking): authenticated
 # producer upgrades send email=None in the payload, so they all share
@@ -375,7 +399,7 @@ async def register(
 # validation REQUIRES email and the per-email key is meaningful.
 # JWT-gate makes the empty bucket uninteresting to attackers.
 # REUSES: backend/app/routers/auth.py:972-973 — same dual-key shape.
-@limiter.limit("3/hour")  # SECURITY FIX #2
+@limiter.limit("10/hour")  # SECURITY FIX #2; widened by MEH-1635
 @limiter.limit("5/15 minutes", key_func=email_from_body)
 async def register_producer(
     request: Request,
