@@ -1,11 +1,16 @@
 // MEH-1663 local-stack QA. Phase A (pre-fix discriminator) + Phase B (post-fix AC).
-// Usage: node qa.mjs <phase: a|b> <width>
+// Usage (from frontend/): node e2e/qa-meh1663-card-fly.mjs <phase: a|b> <width>
 import { chromium } from "playwright";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const PHASE = process.argv[2];
 const WIDTH = parseInt(process.argv[3] || "1440", 10);
-const OUT = "/home/user/FoodMamkor/qa-artifacts/MEH-1663";
+// Resolved from this file's own location, not the sandbox's absolute path — an
+// earlier version hard-coded /home/user/... and would have written somewhere
+// unintended on any other machine, silently.
+const OUT = path.resolve(fileURLToPath(new URL(".", import.meta.url)), "../../qa-artifacts/MEH-1663");
 fs.mkdirSync(OUT, { recursive: true });
 
 const DELIVERY_NAME = "משק החלב של דנה";       // demo-delivery-pickup, lat/lng NULL
