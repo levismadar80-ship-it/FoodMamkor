@@ -444,6 +444,17 @@ def _require_categories_validator(value: list[int] | None) -> list[int]:
 # carry more from import, so there is no DB CHECK constraint (see migration).
 MAX_PRODUCER_CATEGORIES = 3
 
+# MEH-1577: upper bound for producers.delivery_fee / free_delivery_above.
+# Both are Postgres INTEGER (max 2147483647), and without a ceiling a larger
+# value clears the Pydantic layer and raises NumericValueOutOfRange at flush —
+# a 500 on a path whose whole design (no DB CHECK, see migration c7e2a4b91f38)
+# is to return a clean 422 instead. ₪1,000,000 is orders of magnitude above any
+# real delivery fee or free-delivery threshold, so it blocks the overflow AND
+# catches an extra-zero typo, while staying a product cap rather than a
+# storage-limit leak. Same posture as MAX_PRODUCER_CATEGORIES above: Pydantic
+# layer only, no DB CHECK.
+MAX_DELIVERY_MONEY = 1_000_000
+
 
 def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
     """MEH-1297: reject >3 categories. `None` (field omitted on a partial
@@ -1559,6 +1570,14 @@ class ProducerUpdate(BaseModel):
     # if this validator is weakened, nothing downstream catches it. Both the
     # owner PUT (producer_me.py) and the admin PUT (admin.py) build
     # ProducerUpdate, so both paths are covered here.
+    #
+    # The ceiling is not decoration. The columns are Postgres INTEGER (max
+    # 2147483647); without an upper bound a larger value passes validation and
+    # raises NumericValueOutOfRange at flush — a 500, which is exactly what the
+    # no-DB-CHECK design exists to avoid. MAX_DELIVERY_MONEY sits far below the
+    # INTEGER ceiling on purpose: any real delivery fee or free-delivery
+    # threshold is orders of magnitude under ₪1,000,000, so the bound doubles as
+    # a typo catch and is a product-level cap, not a storage-level one.
     @field_validator("delivery_fee")
     @classmethod
     def _validate_delivery_fee(cls, v):
@@ -1568,6 +1587,8 @@ class ProducerUpdate(BaseModel):
         # free", distinct from NULL ("not stated"). Only negatives are rejected.
         if v < 0:
             raise ValueError("עלות משלוח לא יכולה להיות שלילית")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("עלות משלוח גבוהה מדי")
         return v
 
     @field_validator("free_delivery_above")
@@ -1580,6 +1601,8 @@ class ProducerUpdate(BaseModel):
         # is accepted above.
         if v <= 0:
             raise ValueError("סף למשלוח חינם חייב להיות גדול מאפס")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("סף למשלוח חינם גבוה מדי")
         return v
 
 

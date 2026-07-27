@@ -174,6 +174,34 @@ def test_owner_put_negative_free_delivery_above_returns_422(client, db):
     assert resp.status_code == 422, resp.text
 
 
+def test_owner_put_absurd_delivery_fee_returns_422_not_500(client, db):
+    """The columns are Postgres INTEGER (max 2147483647) and the validators had
+    no upper bound, so a value above it passed validation and blew up at flush
+    time as `integer out of range` — a 500, not a 422.
+
+    That contradicts the reason the migration ships no DB CHECK in the first
+    place: enforcement lives at the API boundary precisely so a bad payload is
+    a clean 422. Without a ceiling the boundary only half-held.
+    """
+    user, _ = _producer_user(db)
+    resp = client.put(
+        "/producers/me",
+        json={"delivery_fee": 3_000_000_000},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_owner_put_absurd_free_delivery_above_returns_422_not_500(client, db):
+    user, _ = _producer_user(db)
+    resp = client.put(
+        "/producers/me",
+        json={"free_delivery_above": 3_000_000_000},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
 def test_owner_put_free_delivery_above_alone_is_legal(client, db):
     """The fields are independent: a threshold with no flat fee stated is a
     real state, and the frontend renders the threshold line on its own."""
