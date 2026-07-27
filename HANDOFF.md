@@ -193,14 +193,42 @@ not have (403, no workflows scope).
    a local build. `git grep` returned 0. Any "0 occurrences remain" claim should use
    `git grep`, not `grep -rn`.
 
-**Environment notes.** Vercel hit its free-tier 100-deploys/day cap mid-batch — no PR
-previews for ~24h, so MEH-1660's self-QA ran against staging post-merge instead of a
-preview, and MEH-1661's screenshots are still owed. A **parallel session** was pushing
-`feature/meh-1644-delivery-day-capture` at 18:29Z (rule 1 single-session flag) — different
-ticket, no file overlap.
+**Environment notes — corrected 27/07, the first version of this paragraph named the
+wrong cause.** It said "Vercel hit its free-tier 100-deploys/day cap mid-batch". That
+error is real and does appear on the **feature-branch preview** comments, but it is
+**not** what blocks staging, and generalising from one to the other was an inference
+with no evidence behind it. Verified against `list_deployments`:
 
-**Next task.** Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited
-red shot, then decide the ☆/ambassador question above.
+- **Deploys are being created continuously right now** — there is no active quota stall.
+- **Feature-branch `CANCELED` is the MEH-1044 `ignoreCommand` gate**, i.e. by design.
+- **The real fault: the `staging` target has not rebuilt since `ad5f7560`** (MEH-1639,
+  PR #2307) — even though #2318, #2326, #2333, #2337 and #2339 all merged into it.
+
+**The blast radius is the whole 27/07 batch, not one screenshot.** Any post-merge
+staging QA for this batch is invalid until a staging deploy lands *newer than the sweep
+merge*, because `staging.mehamakor.online` is still serving the pre-sweep bundle —
+independently confirmed to still contain `📦 ⭐ 🏅 🚚 ✅ 🛒 🌙 🟢 📤`.
+
+**Precondition before any future staging screenshot:** fetch the staging URL and assert
+`📦` is **absent** from `/he`. Shoot nothing until that passes.
+
+**One exception, and it holds.** MEH-1660's post-merge verification is still valid: it
+was a **backend** change deployed by **Railway**, not Vercel, and the live payload
+returned `days_since_created: 5` / `favorites_count: 2` — fields that are *definitionally*
+absent before that fix, so their presence proves the fixed backend was serving. The card
+render in those shots does not depend on the sweep.
+
+MEH-1661's screenshots (PR #2339) were therefore rendered from the **merged code built
+locally against staging's live API**, and labelled as such; its **admin-surface** shots
+are still owed. A **parallel session** was pushing `feature/meh-1644-delivery-day-capture`
+at 18:29Z (rule 1 single-session flag) — different ticket, no file overlap.
+
+**Next task.** (1) Get the `staging` Vercel target rebuilding — that unblocks batch QA.
+(2) Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited red shot.
+(3) MEH-1681 (gated on 2) supersedes the ☆/ambassador question: Sapir declined both
+options and identified the real root cause — `AdminProducersTable.jsx:244` renders STATE
+copy on an ACTION item, and ☆ was carrying the directional meaning. The guard stays
+untouched; `Extended_Pictographic` is the deliberate boundary.
 
 ## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
 
