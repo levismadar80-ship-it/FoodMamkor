@@ -375,9 +375,7 @@ def _delivery_day_validator(value: str) -> str | None:
     if not cleaned:
         return None
     if cleaned not in DELIVERY_DAYS:
-        raise ValueError(
-            "יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)"
-        )
+        raise ValueError("יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)")
     return cleaned
 
 
