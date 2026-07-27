@@ -38,6 +38,12 @@ const STATUS_ORDER = ["new", "contacted", "replied", "registered", "declined"];
 // placeholders survive verbatim for client-side replaceAll.
 const WA_TEMPLATE_KEYS = [{ key: "warm" }, { key: "professional" }, { key: "short" }];
 
+// MEH-1616: rows written before the server-side normalizer landed may hold
+// "@handle" or a full profile URL. The link is composed here, so an unstripped
+// value yields https://instagram.com/https://instagram.com/… — a dead link.
+// REUSES: frontend/app/[locale]/producer/[id]/components/ContactCard.jsx:107
+const instagramHandle = (raw) => (raw || "").trim().replace(/^@+/, "");
+
 export default function AdminOutreachPage() {
   const t = useTranslations("admin");
   const [leads, setLeads] = useState([]);
@@ -212,14 +218,14 @@ export default function AdminOutreachPage() {
                       )}
                     </td>
                     <td className="px-3 py-3 text-muted" dir="ltr">
-                      {lead.instagram ? (
+                      {instagramHandle(lead.instagram) ? (
                         <a
-                          href={`https://instagram.com/${lead.instagram}`}
+                          href={`https://instagram.com/${instagramHandle(lead.instagram)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary hover:underline"
                         >
-                          @{lead.instagram}
+                          @{instagramHandle(lead.instagram)}
                         </a>
                       ) : (
                         "—"
