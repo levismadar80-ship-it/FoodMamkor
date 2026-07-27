@@ -12,6 +12,7 @@ import pytest
 from app.config import settings
 from app.models import Producer, User
 from app.routers import auth as auth_router
+from conftest import make_user
 
 
 GOOGLE_SUB = "google-sub-123"
@@ -203,8 +204,6 @@ class TestPlainOAuthTakeoverGuard:
     def test_google_login_into_password_account_returns_409(
         self, client, db, google_verified
     ):
-        from conftest import make_user
-
         make_user(db, email=EMAIL, name="Yael")
         resp = client.post("/auth/google", json={"id_token": "whatever"})
         assert resp.status_code == 409
@@ -216,8 +215,6 @@ class TestPlainOAuthTakeoverGuard:
     def test_apple_login_into_password_account_returns_409(
         self, client, db, apple_verified
     ):
-        from conftest import make_user
-
         make_user(db, email=EMAIL, name="Yael")
         resp = client.post("/auth/apple", json={"id_token": "whatever"})
         assert resp.status_code == 409
@@ -256,5 +253,23 @@ class TestPlainOAuthTakeoverGuard:
         )
         db.commit()
         resp = client.post("/auth/google", json={"id_token": "whatever"})
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]
+
+    def test_apple_login_relinks_own_account(self, client, db, apple_verified):
+        """Control for the Apple arm. Added in review: the blocking case alone
+        would also pass against a guard that rejected EVERY Apple login, so the
+        success path is what proves the 409 above is selective."""
+        db.add(
+            User(
+                email=EMAIL,
+                name="Yael",
+                apple_id=APPLE_SUB,
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        resp = client.post("/auth/apple", json={"id_token": "whatever"})
         assert resp.status_code == 200
         assert resp.json()["access_token"]
