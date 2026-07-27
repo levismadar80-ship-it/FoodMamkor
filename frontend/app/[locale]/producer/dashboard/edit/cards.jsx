@@ -1597,6 +1597,11 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
   );
 }
 
+// MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
+// importable across the Python/JS boundary, so kept in sync by hand — the
+// ceiling exists to catch a typo before the round-trip 422, not as security.
+const MAX_DELIVERY_MONEY = 1_000_000;
+
 // ============================================================
 // MEH-1242 PR5: producer-facing location-mode + delivery editor. Mirrors the
 // admin ProducerForm "business_type" section (physical-store toggle, delivery
@@ -1623,6 +1628,12 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
     // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
     excluded: profile?.delivery_excluded_cities ?? [],
+    // MEH-1577: structured delivery cost. Held as STRINGS in form state (an
+    // <input> value must be), with "" meaning "not stated" → null on save.
+    // `?? ""` and not `|| ""`: a stored 0 is a real value ("משלוח חינם") and
+    // `||` would blank the field every time the owner reopened the form.
+    fee: profile?.delivery_fee ?? "",
+    freeAbove: profile?.free_delivery_above ?? "",
     // MEH-1644: optional per-city dispatch day (canonical Hebrew values —
     // lib/delivery-days.js mirrors the backend whitelist). "" = no day
     // ("בתיאום מראש"). Legacy free-text values not in the vocabulary load as
@@ -1660,6 +1671,11 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     form.cities.some((c, i) => c !== baseline.cities[i]) ||
     form.excluded.length !== baseline.excluded.length ||
     form.excluded.some((c, i) => c !== baseline.excluded[i]) ||
+    // MEH-1577: String() both sides — baseline holds numbers after a save,
+    // form holds input strings, and 35 !== "35" would keep the card
+    // permanently dirty (blocking the unsaved-changes guard from ever clearing).
+    String(form.fee) !== String(baseline.fee) ||
+    String(form.freeAbove) !== String(baseline.freeAbove) ||
     // MEH-1644: a day change on any currently-chosen city is a real edit.
     form.cities.some((c) => (form.days[c] || "") !== (baseline.days[c] || ""));
   useEffect(() => {
@@ -1682,12 +1698,21 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     const cities = form.offersDelivery && !form.nationwide ? form.cities : [];
     const excluded =
       form.offersDelivery && form.nationwide ? form.excluded : [];
+    // MEH-1577: "" → null (owner cleared the field / never filled it), any
+    // other value → Number. Written as an explicit ""-check rather than
+    // `Number(v) || null`, which would turn a legitimate 0 into null and
+    // silently downgrade "delivery is free" to "cost not stated".
+    const toNullableInt = (v) => (v === "" || v == null ? null : Number(v));
     const normalized = {
       hasPhysical: form.hasPhysical,
       offersDelivery: form.offersDelivery,
       nationwide: form.offersDelivery ? form.nationwide : false,
       cities,
       excluded,
+      // Cost is meaningless for a pickup-only business — cleared alongside
+      // nationwide/cities above, same normalisation rule.
+      fee: form.offersDelivery ? toNullableInt(form.fee) : null,
+      freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
       days: form.days,
     };
     // MEH-1644: structured rows replace the flat delivery_area_cities send —
@@ -1706,6 +1731,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
+        delivery_fee: normalized.fee,
+        free_delivery_above: normalized.freeAbove,
       });
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
@@ -1714,9 +1741,18 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         delivery_nationwide: normalized.nationwide,
         delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
+        delivery_fee: normalized.fee,
+        free_delivery_above: normalized.freeAbove,
       });
-      setBaseline(normalized);
-      setForm(normalized);
+      // MEH-1577: back to "" for the inputs — normalized carries null, and a
+      // null <input value> makes React warn about an uncontrolled component.
+      const asFields = {
+        ...normalized,
+        fee: normalized.fee ?? "",
+        freeAbove: normalized.freeAbove ?? "",
+      };
+      setBaseline(asFields);
+      setForm(asFields);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -1841,6 +1877,61 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 />
               </div>
             )}
+            {/* MEH-1577: structured delivery cost. Both optional — leaving them
+                empty keeps the public page exactly as it is today. Each field
+                carries a "where it appears" line + an example placeholder per
+                the dashboard field standard (docs/audits/dashboard-field-
+                guidance-audit.md, MEH-1539). min=0 on the fee (0 = free),
+                min=1 on the threshold, and max=MAX_DELIVERY_MONEY on both
+                mirror the server validators, so the browser catches the same
+                values the API would 422 on — the ceiling round-trips instead
+                of only surfacing after a submit. */}
+            <div className="space-y-3 pt-1">
+              <div>
+                <label
+                  htmlFor="delivery-fee"
+                  className="block text-sm text-muted mb-1"
+                >
+                  {t("fee_label")}
+                </label>
+                <p className="text-xs text-fg-muted mb-1">{t("fee_hint")}</p>
+                <input
+                  id="delivery-fee"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max={MAX_DELIVERY_MONEY}
+                  step="1"
+                  value={form.fee}
+                  onChange={(e) => set({ fee: e.target.value })}
+                  placeholder={t("fee_placeholder")}
+                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="free-delivery-above"
+                  className="block text-sm text-muted mb-1"
+                >
+                  {t("free_above_label")}
+                </label>
+                <p className="text-xs text-fg-muted mb-1">
+                  {t("free_above_hint")}
+                </p>
+                <input
+                  id="free-delivery-above"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={MAX_DELIVERY_MONEY}
+                  step="1"
+                  value={form.freeAbove}
+                  onChange={(e) => set({ freeAbove: e.target.value })}
+                  placeholder={t("free_above_placeholder")}
+                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
