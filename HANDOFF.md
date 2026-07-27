@@ -3,6 +3,47 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1593 badge popover/tooltip audit (merged `db4548e7`)
+
+**Shipped.** The MEH-1592 "+N" fix turned out to be one symptom of a family. All
+5 live badge popover/tooltip surfaces were measured at 375px and 1440px: **3
+defective, 2 clean**. `ui/Tooltip` gained an opt-in `overlay` mode mirroring the
+MEH-1592 Popover fix; `ProducerCard` threads its existing `badgeStripRef` into
+`BadgeRow` + `TrustBadge` so both card disclosures clear the whole strip;
+`ImageGallery`'s masthead panel escapes its clipping ancestor. Surfaces 2 and 4
+measured clean and were left alone, tests included. Tooltip and Popover remain
+separate primitives with no consumer moved between them (§2.5 / MEH-792 holds).
+Also removed a stray `= [` from `.gitignore:51` that made ripgrep emit
+`unclosed character class` on every invocation repo-wide.
+
+**Lesson 1 — a workaround that reads like a fix hides a live defect.** MEH-1459
+had already met surface 3's bubble and chose `bottom-start` + a responsive width
+— to stop it being *clipped*. That worked, and the code comment read as
+complete, so nobody went back. It never addressed the *overlap*, which was still
+being served to users months later. **A workaround comment must say what it did
+NOT fix, not only what it did.**
+
+**Lesson 2 — an assertion can invert silently.** A naive clipping detector
+("intersect every ancestor with `overflow != visible`") is wrong in both
+directions: it over-reports a `fixed` bottom sheet as clipped, and — the
+dangerous half — once a panel is portalled to `<body>` the walk finds no
+ancestors at all and returns "not clipped" **unconditionally**. The assertion
+becomes a vacuous false negative that would wave through a genuinely cut-off
+panel. The fix is to build the real clipping chain per CSS position semantics
+(only a containing-block-establishing ancestor can clip a `fixed` box) **plus** a
+positive liveness proof, because a zero is not evidence on its own.
+
+**⚠️ Open — staging E2E is red from this PR's own spec.** Run `30251402510`:
+170 passed / 4 failed / 26 skipped. All 4 are the S5 case, failing on
+`[data-testid='masthead-verified'] → element(s) not found` — not a collision
+failure. Cause: `middleware.js` existence-checks the producer id against the
+backend (the constraint `parity.spec.ts:302-307` documents). Locally the backend
+is unreachable so it fails OPEN (`middleware.js:45-48`) and a synthetic UUID
+renders; in CI it does not. S1/S3 target `/search`, which middleware does not
+gate — which is exactly why only S5 broke. Needs a forward fix on its own
+ticket: guard/skip S5 when the masthead cannot be reached, per the sanctioned
+`parity.spec.ts` skip-on-missing-id pattern.
+
 ## 2026-07-27 — MEH-1613 email-failure visibility (+ MEH-1612 verified, not re-done)
 
 - **MEH-1613** (YELLOW, backend-only, `feature/meh-1613-email-failure-visibility` off fresh `origin/staging`, `Closes MEH-1613`, **PR #2257 → `cd80067b`**): all three `send_email` swallow points now report to Sentry + log at ERROR. Contract untouched — same signature, same `None` return, zero of the 20 call sites edited.
@@ -26,7 +67,7 @@ The demo business is staging-gated by `_assert_not_production()` (`backend/scrip
 
 - **Four merges, one thread.** The VRT suite stopped being a source of permanent red. **PR #2221** ratified the home-mobile baseline by **restoring the `3680b928` blob** (`c01d43011917`) rather than regenerating — that blob was the on-runner regen of 23/07, captured after both MEH-1476 and MEH-1410, which `52ab77da` had reverted to a 21/07 image by mistake. **PR #2210** (MEH-1591) made `/map` deterministic with `page.route()` fixtures for the producers collection + `/categories`, and landed a regenerated `map-desktop-linux.png`. **PR #2230** (MEH-1599, **another session**) replaced the auth-gate redirect with an in-app denied state. **PR #2255** made the hero-search locator deterministic with `.first()`. Details for each are in the CHANGELOG; not repeated here.
 - **All three `E2E gate (required)` prerequisites are now satisfied** — A (docs-only actually skips) since 26/07, C (no permanently-red data-dependent spec) via #2210, B (suite green) via #2255. ⚠️ **CI had not reported on #2255 when it auto-merged** — E2E is still not a required gate, so the aggregators merged it first. The local evidence is 5/5 with `--retries=0`, but on sandbox chromium v1194 vs CI's v1228; the runner remains the authoritative signal.
-- **Three manual items left, all Sapir's** (`.github/workflows/**` is CC-deny, MEH-671): **(1)** apply `docs/ci/e2e-gate.patch.md` (the `e2e-gate` aggregator job); **(2)** apply `docs/ci/e2e-concurrency.patch.md` (MEH-1601 — without it a docs push to `staging` still cancels the preceding code run and erases coverage); **(3)** add the `E2E gate (required)` context to ruleset 15240090. Order matters: (2) before (3), or the gate inherits the coverage hole.
+- ~~**Three manual items left, all Sapir's**~~ — **all three are closed as of 27/07; this line was stale on every count.** Corrected under MEH-1201: **(1)** the `e2e-gate` aggregator **was applied** by Sapir manually on 27/07 — verified against staging: `e2e.yml` carries job `e2e-gate`, `name: E2E gate (required)`, `if: always()`, `needs: [filter, e2e]`. **(2)** the MEH-1601 concurrency fix **was applied** — `e2e.yml:49` is now `e2e-${{ github.head_ref || github.run_id }}`, so a docs push to `staging` no longer cancels the preceding code run (MEH-1601 is Done). **(3)** adding `E2E gate (required)` to ruleset 15240090 was **DECIDED AGAINST and will not happen** — E2E stays informational; the two required checks remain `CI gate` + `Deploy gate`. Rationale in [ADR-028](./docs/decisions/ADR-028-qa-gates-per-tier.md) § amendment 27/07: we rejected the **scope** (browser E2E against an external preview is the category industry sources keep informational, and locally the gate sat unenabled for two weeks, blocked each time by flaky or data-dependent reds — not by real product bugs), **not the mechanism** (the aggregator pattern is standard and stays in use). The "order matters: (2) before (3)" note is moot — there is no (3).
 - **New rule — `.claude/rules/workflow.md` "Provenance verification".** In a `--depth` clone, `git log -- <path>` and `git log -S` return the **graft commit** as though it introduced the file, silently. `git rev-parse --is-shallow-repository` must read `false` before any "last changed in X" claim. Corollary recorded with it: **blob identity beats commit identity** — `git rev-parse <commit>:<path>` is what exposed `52ab77da` as a revert rather than a write, which is the whole reason #2221 could restore instead of regenerate.
 - **⚠️ Pattern worth carrying forward — three claims this session came from an indirect signal rather than the authoritative source, and Phase 0 caught all three.** (a) **shallow-clone `git log`** put MEH-1410 and MEH-1476 *after* the baseline, inverting the diagnosis — until `--unshallow`. (b) **A test result read as behaviour**: "/admin redirects to /login, /producer/dashboard to /" came from one assertion passing and one failing; in code the two guards were **identical**, and the difference was a race against `LoginClient.jsx:90`. The passing assertion passed by luck. (c) **A cached raw fetch**: a read of `admin/layout.js` showing the old shape came from **`main`**, not `staging` — `origin/main:120` is verbatim the quoted line and `ae06a786` is not its ancestor (the `CLAUDE.md` line-1 default-branch trap). Each indirect signal was entirely plausible; only cross-checking the source (unshallowed git, the guard code, `git show <ref>:<path>`) exposed the gap. This is meta-patterns §1 earning its place three times in one night.
 - **⚠️ Parallel sessions are live on this repo.** MEH-1599/#2230 landed on the two files I was in Phase 0 on, and MEH-1601 rewrote `docs/ci/e2e-gate.patch.md` mid-task; the trigger list shows five other sessions active tonight. Both near-collisions were avoided only by re-checking before editing, not by any guard. Rule 1 (single session) / rule 16 (worktrees) apply.
@@ -200,6 +241,10 @@ the `DEMO_*` secrets (since `21ccecc`). Notably `docs/ci/e2e-auth-fixtures.patch
 was a patch doc telling Sapir to do work she had already done; it is now marked
 APPLIED. **The E2E gate is still blocked, but on precondition B alone** (suite
 not green) — A has been satisfied for some time and no doc said so.
+_(Superseded 27/07 — accurate as written on 26/07. B is since satisfied, the
+aggregator was applied, and the ruleset step was decided against; the E2E gate
+is not "blocked", it is deliberately informational. See the 27/07 entry and
+ADR-028 § amendment 27/07. Left as-written: this is a dated record.)_
 
 **Process note.** The `changelog-branch-guard` (MEH-1602) landed on `staging`
 mid-session and correctly rejected the CHANGELOG entry inside the MEH-1599 code

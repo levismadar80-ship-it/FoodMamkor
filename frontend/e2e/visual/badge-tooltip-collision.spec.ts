@@ -165,13 +165,40 @@ async function mockCards(page: Page) {
     }));
 }
 
+/**
+ * Surface 5 lives behind `/producer/[id]`, and `middleware.js` existence-checks
+ * that id against the backend before the page renders. A synthetic UUID works
+ * locally ONLY by accident: with no backend reachable the check fails OPEN
+ * (`middleware.js:45-48`) and the page renders anyway. In CI the server runs
+ * with NEXT_PUBLIC_API_URL pointed at real staging (`e2e.yml:136`), so the
+ * synthetic id 404s, middleware rewrites to not-found, and the masthead never
+ * exists — which surfaced as a bare "element(s) not found" on run 30251402510
+ * (170 passed / 4 failed), a red that said nothing about collisions.
+ *
+ * So we borrow a REAL id the way parity.spec.ts:333-349 does. `page.request`
+ * runs outside the page's route table, so this call reaches the real backend
+ * while the detail response below is still served from the fixture — the
+ * borrowed id only unlocks the route, the rendered content is always ours.
+ * Returns null when no producer can be borrowed, which is a DATA condition
+ * (empty backend / unreachable sandbox), not a regression.
+ */
+async function borrowProducerId(page: Page): Promise<string | null> {
+  try {
+    const res = await page.request.get("/api/producers", { params: { limit: 1 } });
+    if (!res.ok()) return null;
+    const list = await res.json().catch(() => []);
+    return (Array.isArray(list) && list[0]?.id) || null;
+  } catch {
+    return null;
+  }
+}
+
 async function mockMasthead(page: Page) {
   const d = mastheadFixture();
   await page.route("**/api/**", (r) =>
     r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   await page.route(/\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/, (r) =>
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(d) }));
-  return d.id as string;
 }
 
 /** The four assertions every fixed surface must satisfy. */
@@ -280,10 +307,30 @@ for (const vp of [
     });
 
     test("S5 — masthead verified seal panel escapes its clipping ancestor", async ({ page }) => {
-      const id = await mockMasthead(page);
-      await page.goto(`/producer/${id}`);
+      // Borrow BEFORE mocking: this must reach the real backend to satisfy the
+      // middleware existence check. Any producer works — the page content is
+      // still the fixture's.
+      const borrowedId = await borrowProducerId(page);
+      test.skip(
+        !borrowedId,
+        "S5 subject unreachable: could not borrow a real producer id from " +
+          "GET /api/producers, so middleware.js would 404 the /producer/[id] " +
+          "route before the masthead renders. This is a data/environment " +
+          "condition, not a collision regression — S1 and S3 still enforce.",
+      );
+
+      await mockMasthead(page);
+      await page.goto(`/producer/${borrowedId}`);
+
+      // The masthead only exists for an IMAGELESS verified producer (the
+      // `!images.length` branch, ImageGallery.jsx:78) — which the fixture
+      // guarantees. If the seal is missing now, the subject rendered and the
+      // seal genuinely is not there: a real failure, not an unreachable one.
       const seal = page.locator("[data-testid='masthead-verified']");
-      await expect(seal).toBeVisible();
+      await expect(
+        seal,
+        "masthead seal missing on a page that DID render — real regression, not an unreachable subject",
+      ).toBeVisible();
       await seal.click();
 
       const panel = page
