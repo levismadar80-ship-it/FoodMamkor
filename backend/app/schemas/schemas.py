@@ -388,8 +388,8 @@ class ProducerRegister(BaseModel):
     # input; _min_letters_validator coerces that None to "" and raises a clean
     # ValueError (→422) rather than AttributeError (→500) — the HOT-003 path
     # documented at schemas.py:59.
-    # REUSES: backend/app/schemas/schemas.py:846 (ProducerCreate._validate_name_letters)
-    #       · backend/app/schemas/schemas.py:2922 (ContactIn._sanitize_name)
+    # REUSES: backend/app/schemas/schemas.py:870 (ProducerCreate._validate_name_letters)
+    #       · backend/app/schemas/schemas.py:2944 (ContactIn._sanitize_name)
     @field_validator("producer_name")
     @classmethod
     def _sanitize_producer_name(cls, v):
