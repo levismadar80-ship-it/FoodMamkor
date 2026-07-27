@@ -108,7 +108,13 @@ const readMarkers = (page) =>
       (c) => c.getBoundingClientRect().width > 0,
     );
     const pane = panes[0];
-    if (!pane) return { total: 0, demoted: 0, full: 0, focusedClass: 0, containerFlag: false };
+    // Every field a caller reads must be present here too. `propOnlyFade` was
+    // missing at first, so the `propOnlyFade === 0` check read `undefined === 0`
+    // and logged a spurious failure on any run where the pane wasn't found —
+    // noise that looks like a finding, stacked on top of the real failure.
+    if (!pane) {
+      return { total: 0, demoted: 0, full: 0, propOnlyFade: 0, focusedClass: 0, containerFlag: false };
+    }
     const wraps = [...pane.querySelectorAll(".mehamakor-marker-wrap")];
     let demoted = 0;
     let full = 0;
@@ -181,12 +187,22 @@ async function selfTest() {
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(categories) }));
   await page.goto(`${BASE}/map`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.__MAP_CENTER__ !== undefined, { timeout: 45_000 });
+  // A flat wait, not waitForSelector, ON PURPOSE: producers are mocked to `[]`
+  // here, so no marker will ever appear and a selector-wait would hang until it
+  // times out. `__MAP_CENTER__` above is the real readiness signal; this only
+  // lets the pane finish sizing. Do not "upgrade" this to a marker wait.
   await page.waitForTimeout(1000);
 
-  await page.evaluate(() => {
+  // Fail loudly and specifically if the map never mounted. Without this the
+  // injection below throws on a null pane, or silently adds nothing, and all
+  // four assertions then report as classifier faults when the real problem is
+  // "the page didn't load" — a failure message that points at the wrong thing
+  // is its own kind of silent failure.
+  const injected = await page.evaluate(() => {
     const pane = [...document.querySelectorAll(".leaflet-container")].find(
       (c) => c.getBoundingClientRect().width > 0,
     );
+    if (!pane) return 0;
     const add = (id, cssText) => {
       const el = document.createElement("div");
       el.className = "mehamakor-marker-wrap";
@@ -197,7 +213,10 @@ async function selfTest() {
     add("st-filter-fade", "filter: grayscale(1) opacity(0.35);"); // correct demote
     add("st-prop-fade", "filter: grayscale(1); opacity: 0.35;"); // the regression
     add("st-none", ""); // full strength
+    return pane.querySelectorAll(".mehamakor-marker-wrap").length;
   });
+  check("[self-test] the map pane mounted and took the synthetic pins",
+    injected === 3, `injected=${injected} (0 means the pane never mounted)`);
 
   const r = await readMarkers(page);
   check("[self-test] classifier sees exactly the 3 synthetic pins", r.total === 3, `total=${r.total}`);
