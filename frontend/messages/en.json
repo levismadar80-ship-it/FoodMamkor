@@ -2952,9 +2952,8 @@
     "title": "My favorites",
     "empty_title": "You haven't saved any businesses yet",
     "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
-    "first_visit_tip": "Tap on a business card to save it here",
     "empty_cta": "Discover businesses",
-    "list_alerts_hint": "Tap on any card to get alerts about new events and products",
+    "list_alerts_hint": "Tap the <icon></icon> on any card to get alerts about new events and products",
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
