@@ -247,6 +247,10 @@ export default function ProducerHeader({
             badges={producer.kashrut_badges}
             verified_at={producer.kashrut_verified_at}
             expires_at={producer.kashrut_expires_at}
+            /* MEH-1672: badge codes only — the certificate itself is fetched
+               through our proxy, so no Cloudinary URL reaches the client. */
+            certs={producer.kashrut_certs}
+            producerId={producer.id}
           />
         ) : producer.kashrut_verified_at ? (
           <p className="flex items-center gap-1.5 text-[12.5px] text-muted">

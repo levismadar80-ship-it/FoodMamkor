@@ -1,5 +1,7 @@
+from datetime import datetime
 from uuid import UUID
 
+import httpx
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
@@ -14,6 +16,7 @@ from app.database import get_db
 from app.models import (
     Category,
     ContactClick,
+    KashrutBadgeRequest,
     Producer,
     ProducerWhatsAppClick,
     Report,
@@ -24,9 +27,10 @@ from app.routers.producer_follows import router as producer_follows_router
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
-    DELIVERY_DAYS,
     CategoryOut,
     ContactClickIn,
+    DELIVERY_DAYS,
+    KashrutCertRef,
     ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
@@ -253,6 +257,11 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
+    result.kashrut_certs = [
+        KashrutCertRef(badge_code=c.badge_code)
+        for c in _servable_kashrut_certs(db, producer)
+    ]
     return result
 
 
@@ -304,6 +313,11 @@ def get_producer(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
+    result.kashrut_certs = [
+        KashrutCertRef(badge_code=c.badge_code)
+        for c in _servable_kashrut_certs(db, producer)
+    ]
 
     # feature/producer-analytics: track the view. Best-effort; swallows
     # all exceptions so tracking glitches can never break the response.
@@ -417,3 +431,91 @@ def create_producer(
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.id).all()
+
+
+# MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
+# Both call sites use it — the serializer that lists which badges have a cert,
+# and the proxy that streams the bytes — so a badge can never be advertised as
+# viewable while the proxy refuses it, or vice versa.
+def _servable_kashrut_certs(db: Session, producer: Producer) -> list[KashrutBadgeRequest]:
+    """Approved requests with a cert, for an approved producer, not yet expired.
+
+    Expiry is checked against `producer.kashrut_expires_at` — the same field
+    KashrutBadgeStrip hides the whole strip on (MEH-1260). A legacy NULL
+    expiry stays visible, matching that component exactly.
+    """
+    if producer.status != "approved":
+        return []
+    expires_at = producer.kashrut_expires_at
+    if expires_at is not None and expires_at <= datetime.utcnow():
+        return []
+    return (
+        db.query(KashrutBadgeRequest)
+        .filter(
+            KashrutBadgeRequest.producer_id == producer.id,
+            KashrutBadgeRequest.status == "approved",
+            KashrutBadgeRequest.cert_url.isnot(None),
+            KashrutBadgeRequest.cert_url != "",
+        )
+        .all()
+    )
+
+
+@router.get("/producers/{producer_id}/kashrut-cert/{badge_code}")
+@limiter.limit("30/minute")
+def get_kashrut_cert(
+    request: Request,
+    producer_id: UUID,
+    badge_code: str,
+    db: Session = Depends(get_db),
+):
+    """MEH-1672: stream an approved, in-date kashrut certificate photo.
+
+    A proxy, not a redirect: `cert_url` points at a `type=upload` Cloudinary
+    asset, which is public forever to anyone holding the address
+    (`upload.py:353-360` uploads with no `type=`). Handing that address to
+    every visitor would publish a link no expiry could ever revoke. Streaming
+    the bytes keeps the address inside the backend, so authorisation is
+    re-evaluated on every single request and revocation is immediate.
+
+    Every failure is **404**, never 403: a 403 would confirm that a
+    pending/rejected/expired certificate exists for this business, which is
+    exactly the queue state MEH-254 keeps unenumerable.
+
+    Full-hardening (`type=authenticated` + asset migration) is a separate
+    post-launch ticket; this closes the exposure we would otherwise create.
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    match = next(
+        (c for c in _servable_kashrut_certs(db, producer) if c.badge_code == badge_code),
+        None,
+    )
+    if match is None:
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    try:
+        upstream = httpx.get(match.cert_url, timeout=10.0, follow_redirects=True)
+    except Exception:
+        log.warning("kashrut cert fetch failed", producer_id=str(producer_id))
+        raise HTTPException(status_code=502, detail="לא ניתן לטעון את התעודה כרגע")
+    if upstream.status_code != 200:
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    content_type = upstream.headers.get("content-type", "application/octet-stream")
+    # Only ever serve an image — the upload route sniffs magic bytes, but the
+    # column is plain text, so this is the second lock rather than the first.
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    return Response(
+        content=upstream.content,
+        media_type=content_type,
+        headers={
+            # Private + short: a shared cache must not keep serving a
+            # certificate after the admin revokes or it expires.
+            "Cache-Control": "private, max-age=300",
+        },
+    )
