@@ -1,11 +1,18 @@
 import re
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import urlparse
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
@@ -245,6 +252,104 @@ def _image_url_validator(value: str | None) -> str | None:
     return stripped
 
 
+# ---------------------------------------------------------------------------
+# MEH-1626 chunk 1 — reusable domain types (Pydantic "annotated pattern").
+#
+# These WRAP the helpers above; they add no validation logic of their own.
+# The point is to stop copy-pasting @field_validator between sibling input
+# schemas, which is the mechanism that produced MEH-1623 (producer_name
+# protected on the admin schema, wide open on the public one).
+#
+# They live here rather than beside PasswordField in schemas/password.py
+# because they wrap the helpers defined above in THIS module — importing
+# them from password.py would make schemas.py ↔ password.py circular.
+#
+# Usage: an OPTIONAL field declares `Type | None = None`. The None branch of
+# the union short-circuits before the AfterValidator runs, so an omitted
+# field stays None and the wrapped helper never sees it.
+#
+# REUSES: backend/app/schemas/password.py:31 (PasswordField — the precedent)
+# ---------------------------------------------------------------------------
+
+
+def _sanitized_business_name(value: str) -> str:
+    """Bleach → ≥3-letter floor. Mirrors ProducerCreate._validate_name_letters
+    stacked on ContactIn._sanitize_name, which is exactly what MEH-1623
+    shipped for ProducerRegister.producer_name — that field's behaviour must
+    stay byte-identical through this migration.
+
+    The floor is also what makes this safe on a NOT NULL column: sanitize_text
+    returns None when bleach empties the input, and _min_letters_validator
+    coerces that None to "" and raises a clean ValueError (422) instead of
+    letting None reach the DB as a 500 (the HOT-003 path, schemas.py:59).
+    """
+    return _min_letters_validator(sanitize_text(value, max_length=200))
+
+
+def _sanitized_person_name(value: str) -> str:
+    """Bleach only — deliberately NO letter floor.
+
+    Hebrew given names of two letters are common and legitimate (גל, טל, בר,
+    רן), so a ≥3-letter floor here would be a product regression, not a
+    hardening. The only rejection is a value that sanitizes away to nothing,
+    which must still raise rather than return None: users.name is NOT NULL
+    (models.py:387), so a None would surface as a 500 instead of a 422.
+    """
+    cleaned = sanitize_text(value, max_length=200)
+    if cleaned is None:
+        raise ValueError("שם לא יכול להיות ריק")
+    return cleaned
+
+
+def _sanitized_title(value: str) -> str:
+    """Bleach → ≥3-letter floor. Mirrors the _sanitize_title +
+    _validate_title_letters pair carried by every existing title-bearing
+    Create schema (HomeProductCreate:1826, ExperienceCreate:2042,
+    ProducerRecipeCreate:2218). max_length is the widest of those (300); each
+    field keeps its own narrower Field(max_length=…) constraint, which runs
+    first, so per-field length behaviour is unchanged.
+    """
+    return _min_letters_validator(sanitize_text(value, max_length=300))
+
+
+def _sanitized_address(value: str) -> str | None:
+    """Bleach → ≥1 alphanumeric. Mirrors ProducerRegister's
+    _sanitize_address + _validate_address_alnum pair (schemas.py:394-425).
+    The alnum floor rather than the letter floor is deliberate (MEH-870):
+    "ת.ד. 123" and "רח' הרצל 5" are valid addresses a ≥3-letter floor would
+    reject. Returns None for input that sanitizes away — every consumer of
+    this type has a nullable address column.
+    """
+    return _min_alnum_validator(sanitize_text(value, max_length=255))
+
+
+SanitizedBusinessNameField = Annotated[str, AfterValidator(_sanitized_business_name)]
+SanitizedPersonNameField = Annotated[str, AfterValidator(_sanitized_person_name)]
+SanitizedTitleField = Annotated[str, AfterValidator(_sanitized_title)]
+
+# The two types below carry their own max_length, unlike the three above.
+# Reason: they are the only ones whose validator can legitimately RETURN None
+# (empty input → None, the MEH-1537 convention). A per-field
+# `Field(None, max_length=N)` on an optional domain-typed field applies its
+# constraint to the validator's OUTPUT, so that None then blows up with
+# "Unable to apply constraint 'max_length' to supplied value None" — a 500 on
+# the ordinary act of clearing an address or phone. Declaring the cap inside
+# the Annotated instead applies it to the INPUT string, before the validator
+# runs, which both fixes that and preserves the existing over-length 422.
+# The other three types never return None (their floors raise instead), so
+# their call sites keep their own narrower Field(max_length=…) safely.
+SanitizedAddressField = Annotated[
+    str, Field(max_length=255), AfterValidator(_sanitized_address)
+]
+# MEH-1537 semantics preserved verbatim: separators stripped, digit projection
+# validated, empty/whitespace → None. The 30-char cap is the widest existing
+# call site; the real bound is _PHONE_DIGITS_RE (≤13 digits), which is what
+# keeps every value inside the String(20) columns.
+PhoneNumberField = Annotated[
+    str, Field(max_length=30), AfterValidator(_phone_validator)
+]
+
+
 def _image_url_list_validator(value: list[str] | None) -> list[str] | None:
     # Drop blank entries, validate each surviving URL. Preserves order.
     if value is None:
@@ -284,14 +389,22 @@ def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
 # --- Auth ---
 class UserRegister(BaseModel):
     email: EmailStr
-    name: str
+    # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
+    # names (גל, טל, בר, רן) are legitimate, so the ≥3-letter floor used for
+    # BUSINESS names would be a product regression on a person's name.
+    name: SanitizedPersonNameField
     # MEH-306: PasswordField enforces the 12-char floor at the schema layer.
+    # (city/phone below: phone migrated in MEH-1626 chunk 1 — see the field.)
     # Deny-list / HIBP / reuse run inside the register handler via
     # app.services.password_policy.validate_password — Pydantic validators
     # are sync and cannot await HIBP. Replaces MEH-248's 8-char floor.
     password: PasswordField
     city: str | None = None
-    phone: str | None = None
+    # MEH-1626 chunk 1: surfaced by the asymmetry scan rather than the issue's
+    # list — same public signup body as `name` above, persisted at auth.py:313,
+    # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
+    # failure (a stored number no wa.me link can dial).
+    phone: PhoneNumberField | None = None
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -316,7 +429,13 @@ class ProducerRegister(BaseModel):
     # (MEH-143). Required for new (unauthenticated) registrations; the
     # router validates and raises 422 when they are absent in that case.
     email: EmailStr | None = None
-    name: str | None = None
+    # MEH-1626 chunk 1: the ACCOUNT-holder's person name (producer_name below
+    # is the business). Surfaced by the asymmetry scan, not the issue's list:
+    # UserRegister.name is sanitized, so leaving its twin on the producer
+    # signup body raw would recreate the very MEH-1623 shape this epic exists
+    # to kill. Optional — the MEH-143 upgrade path omits it, and the None
+    # branch of the union bypasses the validator.
+    name: SanitizedPersonNameField | None = None
     # MEH-457 — closes the MEH-306 sibling gap. PasswordField enforces
     # the 12-char floor + whitespace strip when a password is supplied
     # (new-registration path). The None case (authenticated user
@@ -325,7 +444,10 @@ class ProducerRegister(BaseModel):
     # app.services.password_policy.validate_password.
     password: PasswordField | None = None
     # Producer details
-    producer_name: str
+    # MEH-1626 chunk 1: was the MEH-1623 hand-rolled sanitize+floor pair; now
+    # the first consumer of the shared type. Behaviour is byte-identical —
+    # _sanitized_business_name is those two validators in the same order.
+    producer_name: SanitizedBusinessNameField
     description: str | None = None
     short_description: str | None = Field(default=None, max_length=160)
     city: str | None = None
@@ -378,28 +500,11 @@ class ProducerRegister(BaseModel):
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
-    # MEH-1623: producer_name is the PUBLIC registration path's business name
-    # and was the only ProducerRegister field with no validator at all — the
-    # admin-side twin (ProducerCreate.name) has carried _min_letters_validator
-    # since MEH-555. Stacked bleach→floor, same order as short_description
-    # below: sanitize_text strips HTML and caps at the DB column width
-    # (models.py:48 String(200)), then the ≥3-letter floor rejects "???" /
-    # whitespace-only. sanitize_text returns None when bleach empties the
-    # input; _min_letters_validator coerces that None to "" and raises a clean
-    # ValueError (→422) rather than AttributeError (→500) — the HOT-003 path
-    # documented at schemas.py:59.
-    # REUSES: backend/app/schemas/schemas.py:870 (ProducerCreate._validate_name_letters)
-    #       · backend/app/schemas/schemas.py:2944 (ContactIn._sanitize_name)
-    @field_validator("producer_name")
-    @classmethod
-    def _sanitize_producer_name(cls, v):
-        return sanitize_text(v, max_length=200)
-
-    @field_validator("producer_name")
-    @classmethod
-    def _validate_producer_name_letters(cls, v):
-        return _min_letters_validator(v)
-
+    # MEH-1623 shipped producer_name's bleach→floor pair as two inline
+    # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
+    # SanitizedBusinessNameField (declared on the field above) so the sibling
+    # schemas can share it instead of re-copying it. Same helpers, same order,
+    # same 422s — see _sanitized_business_name for the full rationale.
     @field_validator("description")
     @classmethod
     def _sanitize_description(cls, v):
@@ -690,11 +795,14 @@ class ProducerLocationCreate(BaseModel):
     kind: _LOCATION_KIND
     label: str | None = None
     city: str | None = Field(None, max_length=100)
-    address: str | None = Field(None, max_length=255)
+    # MEH-1626 chunk 1: these two were the 🔴 public asymmetry — the same
+    # address/phone pair is validated on ProducerRegister but was raw here,
+    # and producer_me.py:1271 persists this shape wholesale via **model_dump().
+    address: SanitizedAddressField | None = None
     lat: float | None = Field(None, ge=-90, le=90)
     lng: float | None = Field(None, ge=-180, le=180)
     opening_hours: str | None = None
-    phone: str | None = Field(None, max_length=20)
+    phone: PhoneNumberField | None = None
     is_primary: bool = False
     location_precision: _LOCATION_PRECISION = "exact"
 
@@ -712,11 +820,15 @@ class ProducerLocationUpdate(BaseModel):
     kind: _LOCATION_KIND | None = None
     label: str | None = None
     city: str | None = Field(None, max_length=100)
-    address: str | None = Field(None, max_length=255)
+    # MEH-1626 chunk 1: parity with the Create twin above. `exclude_unset=True`
+    # at producer_me.py:1291 means a supplied-but-emptied value still reaches
+    # setattr, so ""→None here CLEARS the column as before (unlike ProfileUpdate,
+    # whose handler gates on `is not None` — see the Phase 0 skip note in the PR).
+    address: SanitizedAddressField | None = None
     lat: float | None = Field(None, ge=-90, le=90)
     lng: float | None = Field(None, ge=-180, le=180)
     opening_hours: str | None = None
-    phone: str | None = Field(None, max_length=20)
+    phone: PhoneNumberField | None = None
     is_primary: bool | None = None
     location_precision: _LOCATION_PRECISION | None = None
 
@@ -2442,7 +2554,10 @@ class GroupBuyDetail(GroupBuyOut):
 
 
 class GroupBuyCreate(BaseModel):
-    title: str = Field(..., min_length=2, max_length=200)
+    # MEH-1626 chunk 1: title carried only a length constraint — no bleach, no
+    # letter floor — while sibling Create schemas (HomeProduct/Experience/Recipe)
+    # all carry both. group_buys.py:202-203 persists both fields verbatim.
+    title: SanitizedTitleField = Field(..., min_length=2, max_length=200)
     description: str | None = None
     product_name: str = Field(..., min_length=1, max_length=200)
     unit: str | None = Field(None, max_length=50)
@@ -2454,6 +2569,16 @@ class GroupBuyCreate(BaseModel):
     city: str | None = Field(None, max_length=100)
     # MEH-1457: optional free-text "מתי ואיך מקבלים" (OFN "Ready for").
     fulfillment_note: str | None = Field(None, max_length=1000)
+
+    # MEH-1626 chunk 1: description gets the same bleach every other
+    # description field in this module has (EventCreate:2528, HomeProductCreate,
+    # ProducerRegister). Left as a plain validator rather than a 6th domain type
+    # — the over-engineering guard caps this chunk at 5 types, and description
+    # differs only by max_length across schemas.
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
 
     @field_validator("deadline")
     @classmethod
@@ -2472,7 +2597,10 @@ class GroupBuyCreate(BaseModel):
 
 class GroupBuyCommitRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
-    phone: str | None = Field(None, max_length=30)
+    # MEH-1626 chunk 1: consumer-supplied phone persisted at group_buys.py:130
+    # and used to contact the participant — an unvalidated number here is a
+    # silently broken WhatsApp link, the MEH-1537 failure mode.
+    phone: PhoneNumberField | None = None
 
 
 # MEH-141: category request flow
@@ -2509,7 +2637,9 @@ class CategoryRequestUpdate(BaseModel):
 # MEH-458: relocated from routers/events.py per ADR-006 R1.
 # Pure relocation — fields, validators, model_config preserved verbatim.
 class EventCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=300)
+    # MEH-1626 chunk 1: the exact asymmetry the audit flagged — `description`
+    # below was bleached, `title` (the more visible field) was not.
+    title: SanitizedTitleField = Field(..., min_length=1, max_length=300)
     description: str | None = None
     event_date: date
     event_time: time | None = None
@@ -2541,7 +2671,10 @@ class EventCreate(BaseModel):
 
 
 class EventUpdate(BaseModel):
-    title: str | None = None
+    # MEH-1626 chunk 1: parity with the Create twin. Optional, so an omitted
+    # title stays None via the union's None branch and never reaches the
+    # validator.
+    title: SanitizedTitleField | None = None
     description: str | None = None
     event_date: date | None = None
     event_time: time | None = None
