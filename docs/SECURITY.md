@@ -1111,7 +1111,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 
 - **Both register endpoints (non-upgrade path) return identical 200 ack** regardless of branch:
   - `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}`
-  - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / oauth-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test).
+  - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / **google**-collision / **apple**-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test). **Quad, not triple, since MEH-1624** — the apple branch (`auth.py:338`, and `auth.py:695` on the producer endpoint) was absent from the set, so a divergence unique to Apple would have shipped green. The two test *names* still say `three_branches`: MEH-1624 was a tests-only PR and renaming was left out of it. Read them as the byte-identity tests, not as a branch count.
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
 - **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
@@ -1137,7 +1137,7 @@ Tests:
 
 ### Tests
 
-- **Identical-response-bytes invariant** asserted across all 3 non-upgrade branches for both `/register` (`test_register_three_branches_have_identical_response_bytes`) and `/register/producer` (`test_register_producer_three_branches_identical_response_bytes`).
+- **Identical-response-bytes invariant** asserted across all **4** non-upgrade branches — new / password-collision / google-collision / apple-collision — for both `/register` (`test_register_three_branches_have_identical_response_bytes`, `tests/test_api.py:156`) and `/register/producer` (`test_register_producer_three_branches_identical_response_bytes`, `tests/test_api.py:415`). MEH-1624 widened both from 3 to 4 and left the `three_branches` names in place (tests-only PR); the producer test also rotates the source IP per branch, because the endpoint's 3/hour per-IP cap (`auth.py:378`) put the original triple exactly on the ceiling and a 4th request would have returned 429 instead of a comparable body.
 - **Upgrade path regression** covered by pre-existing `test_logged_in_user_can_upgrade_to_producer` + `test_upgrade_twice_returns_409` — both kept passing post-refactor.
 - **`/email-exists` deletion** pinned by `test_email_exists_endpoint_removed` (404 regression guard).
 - **Cookie/token absence on non-upgrade** asserted by `test_register_no_longer_returns_access_token`, `test_register_no_longer_sets_fingerprint_cookie`, and the producer-sibling test.
