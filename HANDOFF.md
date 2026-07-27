@@ -3,6 +3,69 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1627 optional-auth strict 401 (PR #2281 merged `4fa95cdc`) — launch blocker closed
+
+**Shipped (PR #2281).** `get_current_user_optional` swallowed every non-403
+`HTTPException` and returned `None`, so an expired Bearer token was
+indistinguishable from no token at all — a logged-in user silently became a
+guest. It now propagates the 401, with `WWW-Authenticate: Bearer
+error="invalid_token"` (RFC 6750). The old swallow survives as
+`get_current_user_lenient` on exactly 2 endpoints: the `sendBeacon` /
+`keepalive` click-tracking routes, which have no response handler and so
+cannot be refreshed-and-retried — losing attribution beats losing the event.
+8 endpoints are strict; no router body needed editing.
+
+**Why it was a launch blocker.** On `POST /auth/register/producer` the swallow
+set `upgrade_path=False`, dropping the request into the anonymous-registration
+branch, which 422s on the absent email. A 422 never reaches the refresh
+interceptor, so the user was stuck on "אימייל, שם וסיסמה הם שדות חובה" with no
+way forward. Same shape on the owner-bypass guard: a pending producer's own
+owner got the enumeration 404 — terminal, no reason for the client to refresh.
+
+**⚠️ The ticket's premise was wrong, and it mattered.** It asked me to *confirm*
+`SKIP_REFRESH` covers none of the 8 strict endpoints. It covered one — the exact
+one in the blocker. `SKIP_REFRESH` matches with `startsWith`, and both
+`"/auth/register"` and `"/auth/register/producer"` catch the upgrade POST.
+Without an `api.js` fix the backend change would have converted an
+unrecoverable 422 into an equally unrecoverable 401 — no refresh, no retry, not
+even the `auth:expired` toast. Fixed with an exact-match allowlist that beats
+the prefix list; `/auth/register/producer/oauth` stays skipped.
+
+**Proven end-to-end, not just in units.** Real Chromium against a real local
+stack (`next start` → `uvicorn` → Postgres), nothing route-mocked, 11/11:
+`401 POST /auth/register/producer` → `200 POST /auth/refresh` → `200 POST` —
+the submit succeeds and never reaches the 422.
+
+**Two deviations from the ticket, both deliberate:**
+1. CHANGELOG + HANDOFF are NOT in the code PR — `changelog-branch-guard.sh`
+   (required **Repo guards**, rule 31) hard-fails that. This entry is the
+   deferred backfill. Same collision MEH-1628 hit yesterday; the gate wins.
+2. `frontend/e2e/qa-meh1627-optional-auth.mjs` is a new file beyond the
+   ticket's list. Self-QA was required and the repo commits these harnesses;
+   an uncommitted one can't be re-run.
+
+**Two operational notes for whoever picks this up:**
+- `POST /auth/register/producer` is rate-limited 3/hour per IP and slowapi runs
+  before dependencies, so a refresh+retry submit burns **2** units, not 1.
+  Observed (a 429 during repeated self-QA runs), not theoretical. Did not touch
+  a security-relevant limit inside this PR — flagging it rather than changing it.
+- Vercel hit its free-tier daily deployment cap
+  (`api-deployments-free-per-day`) during this PR, so there is **no preview
+  URL** for it. Account-level infra, not a code problem; no UI changed here, so
+  rule 9's mobile check is not applicable, but it will block the next UI PR
+  until the window resets.
+
+**CI note.** Several `CI gate` / `E2E gate` red webhooks on this PR were
+superseded-run false failures (rule 21 / MEH-1049) — the logs showed only
+`cancelled` deps with every other leg `success`, caused by my own rapid
+follow-up pushes concurrency-cancelling in-flight runs. Read the run against
+the current head, not the webhook.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
+
+---
+
 ## 2026-07-27 — MEH-1628 favorites copy holes (PR #2274 merged `85db63e0`) · MEH-1629 BLOCKED
 
 **Shipped (PR #2274).** Two `/favorites` strings had lost their grammatical object
