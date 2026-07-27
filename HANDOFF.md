@@ -3,6 +3,73 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1611 (both chunks merged: `f25b1a24` PR #2246 · `0b76ed8d` PR #2251)
+
+**Shipped, overnight autonomous run.** Picking a business on `/map` now demotes
+every other business's pins instead of removing them, and frames **all** of the
+selected business's points with `fitBounds`. Its own page shows every point it
+owns on the existing mini-map. Both PRs merged on green required gates.
+
+**The direction is the part worth keeping.** Demote, don't hide — the Airbnb
+map-search pattern. A discovery map that hides non-selected pins lies about
+what is in the area; full isolation belongs on the **entity page** (store
+locator). That split is exactly why this was two chunks and not one.
+
+**The bug that would have shipped silently, and how it was caught.** The
+`/map` demote first expressed its fade as the CSS `opacity` property. That is
+wrong here: `leaflet.markercluster` writes `style.opacity` **inline** on every
+marker it animates (`clusterShow()` -> `setOpacity`,
+`leaflet.markercluster-src.js:1826-1836`, called on every zoom and spiderfy),
+and inline beats a class rule — so the fade reverted to full strength the first
+time anyone zoomed while a business was selected, leaving grayscale as the only
+cue. Adversarial review raised it as a hypothesis; a browser probe confirmed it
+(`computed opacity: 1`), and the fix routes the fade through
+`filter: grayscale(1) opacity(0.35)`, which markercluster never touches.
+
+**The QA harness had the same blind spot, which is the real lesson.** Its demote
+probe was `opacity < 0.9 || grayscale` — an OR that would have called the broken
+state "demoted" and passed. A probe whose disjunction lets either half carry the
+assertion cannot detect the loss of one half. It is now an AND with the fade
+asserted specifically, plus a zoom-cycle step so the regression can't return.
+
+**Two review findings declined, with reasons.**
+1. Widening `parseHasLocation` to `|| producer.locations?.length > 0` (to make
+   MiniMap's no-lat/lng arm reachable) would bypass the
+   `has_physical_location !== false` check and put delivery-only businesses back
+   on a map — **MEH-213**. The arm stays as defensive depth; the comment now
+   forbids the "fix" explicitly.
+2. Nothing else — rounds 2 and 3 returned Must Fix: none.
+
+**Known nit, deliberately not chased into a third PR.** `LocationPins` passes
+`alt` to `<Marker>`, which Leaflet applies **only** when the icon element is an
+`<img>` (`leaflet-src.js:7907-7909`); a divIcon renders a `<div>`, so it is
+inert. Harmless, and a11y is carried by `title` + `<Tooltip>` — but whoever next
+edits that file should drop it rather than trust it. `MapComponent.jsx` carries
+the same inert `alt`, compensated there by the MEH-765 `add`-handler that sets
+`role` + `aria-label`.
+
+**Two environment blockers that are NOT resolved and need Sapir.**
+- **Vercel hit the free-tier cap** (`api-deployments-free-per-day`, 100/day), so
+  **neither PR ever produced a preview URL**. Workflow rule 9's mobile preview QA
+  did not happen. The committed 375 + 1440 screenshots in
+  `qa-artifacts/MEH-1611/` are substitute evidence, not a replacement — worth a
+  look at `/map` and a producer page on staging once the quota resets.
+- `pytest` cannot run in the CC sandbox (no backend deps). Both diffs touch
+  **zero** backend files, and CI ran it.
+
+**E2E: one red that resolved itself, recorded because the reasoning matters.**
+PR #2246 failed 3 producer-detail specs (`03`/`04`/`06`, all `#__next_error__`)
+— a page chunk 1 does not touch (`MapComponent` has exactly one importer,
+`MapPane.jsx:35`), and `staging` had passed the same suite on the identical base
+minutes earlier. It could not be re-run (`403`) or reproduced locally (Railway
+egress blocked, MEH-360), so it was reported as **suspected** flake, not proven.
+PR #2251 — which *does* touch the producer-detail page — then passed the full
+suite including those three. Confirmed flake.
+
+**Next.** Nothing outstanding on this ticket. If the three specs above go red on
+`staging` itself, they want their own ticket; they were green on every run after
+#2246.
+
 ## 2026-07-26 — MEH-1599 (merged `ae06a786`) + MEH-1601 (patch doc merged `c02d2e4c`, ticket stays open)
 
 **Shipped.** MEH-1599 — an authenticated-but-unauthorized visitor now gets an
