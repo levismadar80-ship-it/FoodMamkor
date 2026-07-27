@@ -4187,7 +4187,10 @@
         "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
-        "save_cta": "Save",
+        "delivery_days_label": "Delivery day per city (optional)",
+        "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
+        "day_select_aria": "Delivery day for {city}",
+        "day_arranged": "By arrangement",
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
