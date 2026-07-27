@@ -93,6 +93,32 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
             db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
+def _sync_delivery_areas(
+    db: Session,
+    producer: Producer,
+    delivery_rows: list[dict] | None,
+    delivery_cities: list[str] | None,
+) -> list[str]:
+    """MEH-1644: route the two delivery-area write shapes (structured rows
+    take precedence over the flat city list) and return the newly-added
+    cities for the MEH-54/MEH-1360 delivery_area alert — identical semantics
+    on both paths."""
+    if delivery_rows is None and delivery_cities is None:
+        return []
+    existing_cities = (
+        {da.city for da in producer.delivery_areas}
+        if producer.delivery_areas
+        else set()
+    )
+    if delivery_rows is not None:
+        _apply_delivery_rows(db, producer, delivery_rows)
+        sent_cities = [(r.get("city") or "").strip() for r in delivery_rows]
+    else:
+        _apply_delivery_cities(db, producer, delivery_cities)
+        sent_cities = delivery_cities
+    return [c for c in sent_cities if c and c not in existing_cities]
+
+
 def _apply_delivery_rows(db: Session, producer: Producer, rows: list[dict]):
     """MEH-1644: replace all delivery areas with structured rows
     (city · min_order · delivery_day). Same delete+insert semantics as
@@ -314,23 +340,9 @@ def update_my_producer(
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
 
-    # Handle delivery area cities (replaces existing areas like admin endpoint)
-    new_cities: list[str] = []
-    if delivery_rows is not None or delivery_cities is not None:
-        existing_cities = (
-            {da.city for da in producer.delivery_areas}
-            if producer.delivery_areas
-            else set()
-        )
-        if delivery_rows is not None:
-            # MEH-1644: structured replace — keeps the MEH-54/MEH-1360
-            # new-city alert semantics identical to the flat path.
-            _apply_delivery_rows(db, producer, delivery_rows)
-            sent_cities = [(r.get("city") or "").strip() for r in delivery_rows]
-        else:
-            _apply_delivery_cities(db, producer, delivery_cities)
-            sent_cities = delivery_cities
-        new_cities = [c for c in sent_cities if c and c not in existing_cities]
+    # Handle delivery areas (replaces existing rows like the admin endpoint).
+    # MEH-1644: structured rows take precedence over the flat city list.
+    new_cities = _sync_delivery_areas(db, producer, delivery_rows, delivery_cities)
 
     # Handle category updates
     if category_ids is not None:
