@@ -783,7 +783,7 @@
         },
         "excerpt_footer": "מתוך הביקורות",
         "excerpt_all": "לכל הביקורות",
-        "alerts_reentry": "מקבלת עדכונים · לעריכה",
+        "alerts_reentry": "מקבלת עדכונים",
         "alerts_reentry_aria": "עריכת העדפות עדכונים"
       },
       "owner_card": {
@@ -974,7 +974,7 @@
       "back_to_list": "חזרה לקבוצות הרכש",
       "back_to_list_arrow": "→ חזרה לקבוצות הרכש",
       "funded_title": "המחיר נפתח!",
-      "funded_subtitle": "{name} תצור קשר עם המשתתפות בקרוב",
+      "funded_subtitle": "הקבוצה הגיעה ליעד! לתיאום ההזמנה צרו קשר עם {name}",
       "cancelled": "קבוצת הרכש בוטלה",
       "fulfilled": "✅ קבוצת הרכש הושלמה",
       "by_producer": "מאת {name}",
@@ -1076,6 +1076,9 @@
       "min_order": "מינימום",
       "delivery_day_label": "משלוח ביום {day}",
       "dispatch_days": "יוצאים בימי {day}",
+      "order_cutoff": "מקבלים הזמנות עד {day} {time}",
+      "order_cutoff_with_day": "מקבלים הזמנות עד {day} {time} · משלוח ביום {delivery_day}",
+      "free": "חינם",
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
