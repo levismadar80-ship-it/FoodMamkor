@@ -3,6 +3,64 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — 4-ticket sequential queue (loading-state batch) — 3 merged, 1 STOP
+
+**Queue per Sapir grant 27/07 (end-to-end authority, ADR-016).** Sequential, each
+branch off fresh `origin/staging`, auto-merge on green, no CHANGELOG/HANDOFF in
+code branches (rule 31) — this is the docs-only backfill PR those merges pointed
+at.
+
+| Ticket | Branch | PR | Outcome |
+|---|---|---|---|
+| MEH-1655 loading-CTA jump ×4 manage lists | `feature/meh-1655-loading-cta-jump` | #2304 | **merged** 13:56Z |
+| MEH-1656 admin/users empty flash | `feature/meh-1656-admin-users-empty-flash` | #2306 | **merged** 14:01Z |
+| MEH-1638 entry skeleton — `/settings` half | `feature/meh-1638-dashboard-entry-skeleton` | #2311 | **merged** 18:20Z |
+| MEH-1657 event/experience axis | — none — | — | **STOP (a)** — see below |
+
+**Gate evidence (MEH-1582 discipline):** on every merged head both required
+aggregators (`CI gate`, `Deploy gate`) succeeded with the real legs RUN, not
+skipped — #2304 head `a22f54bc`: Frontend build 54s / vitest 3m57s / RTL lint /
+Repo guards / qa-size cap all `success`; #2306 head `89bdfb65`: build 53s /
+vitest 4m17s `success`. Backend legs `skipped` on both = paths-filter (no
+backend file in either diff), the documented docs-only-style skip, not the
+draft skip-green hole. `Playwright E2E` failed on both runs with **exactly the
+pre-existing known red** — `parity.spec.ts:226 › home` (mobile), 173 passed —
+the same failure `.claude/rules/testing.md` records as precondition-B blocker;
+E2E gate is not in ruleset 15240090, and none of the three diffs touches a VRT
+route. #2311 head `87544f94` (run `30292884267`): build/vitest/tsc/Knip/lint
+all `success`, same single pre-existing parity red (24012px, home mobile), and
+the settings-touching specs (password-policy settings card, role-reachability)
+all passed on it.
+
+**MEH-1657 STOP (a) — data decision needed, Sapir runs the DML.** The ticket's
+own first step: query staging for events in the categories being removed.
+`GET /events?from_date=2000-01-01` (via the Vercel-proxied `/api`) returned
+exactly one live event and it is category **סדנה**:
+`d886c4df-d541-44ce-af08-b8190cd94153` · "סדנת אפיית לחם מחמצת למתחילות" ·
+מאפיית רוח השדה (`2e9aa40f-1d5f-4a85-8d10-c87aafb12cf2`) · 2026-08-11 · זכרון
+יעקב · `is_active: true`. Removing סדנה from `VALID_CATEGORIES` (events.py:33)
+with that row live would strand real data. No branch was created, no file
+touched. `/events/mine` for the demo producer was NOT checked (no
+`DEMO_*_PASSWORD` in this session) — after the DML, re-check it before
+re-dispatching the ticket. The locked copy + category spec stays in the ticket,
+ready to execute once staging is clean.
+
+**Session-discovered follow-ups (not filed, per rule 27 — search Linear first):**
+- MapCardList.jsx:73 empty state flashes during producers load on the DESKTOP
+  sidebar only (`MapClient.jsx:512` unguarded; mobile sheet protected by
+  MEH-1054). Read-only finding required by the MEH-1656 ticket, reported in PR
+  #2306's body.
+- Reviewer suggestion on #2304 (arrived pre-merge, landed after): the 3-state
+  CTA-count vitest block covers only the events page; experiences/recipes/
+  group-buys are covered by the e2e harness but not in CI's vitest. Optional
+  parameterized-test follow-up.
+- Reviewer nits on #2306 (post-merge, cosmetic): two Hebrew strings quoted in
+  code comments; loading/empty rows use `text-center` vs the table's `text-end`.
+
+### NEXT
+Sapir: run the DML for the סדנה event (or approve recategorizing it), then
+re-dispatch MEH-1657 from its Linear description unchanged.
+
 ## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
 
 **Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
