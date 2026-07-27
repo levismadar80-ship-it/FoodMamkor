@@ -134,11 +134,14 @@ describe("MEH-1611 — producer locations on the mini map", () => {
     renderWith(demoLocations);
     const markers = screen.getAllByTestId("marker");
     expect(markers).toHaveLength(10);
-    const secondary = markers.filter((m) =>
-      m.getAttribute("data-icon-class").includes("mehamakor-minimap-pin-secondary"),
-    );
-    expect(secondary).toHaveLength(9);
-    expect(markers).toHaveLength(secondary.length + 1); // the branch is the only primary
+    const isSecondary = (m) =>
+      m.getAttribute("data-icon-class").includes("mehamakor-minimap-pin-secondary");
+    expect(markers.filter(isSecondary)).toHaveLength(9);
+    // Counted independently, not derived from the two assertions above: a
+    // `secondary.length + 1` check would be arithmetically guaranteed by them
+    // and could never fail on its own. This one falsifies if the branch row
+    // ever renders as a secondary pin (or a second primary appears).
+    expect(markers.filter((m) => !isSecondary(m))).toHaveLength(1);
   });
 
   it("renders ZERO foreign pins — the count never exceeds this producer's own points", () => {
