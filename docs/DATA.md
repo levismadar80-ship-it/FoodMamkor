@@ -103,6 +103,15 @@ producers (
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
   -- (app-validated 1800..current year; NULL = line absent from DOM)
   established_year integer nullable,
+  -- MEH-1577: structured delivery cost → public DeliveryBlock line. Whole
+  -- shekels (INTEGER, matching delivery_areas.min_order, not the NUMERIC(10,2)
+  -- of products.price — display-only, no cent arithmetic). delivery_fee = 0 is
+  -- a VALUE meaning "משלוח חינם" and is distinct from NULL ("not stated" → no
+  -- line renders); free_delivery_above rejects 0 (a threshold every order
+  -- clears says nothing). Independent: a threshold with no fee is legal.
+  -- App-validated in ProducerUpdate ONLY — no DB CHECK, so a bad payload is a
+  -- clean 422 rather than a 500. Declared on ProducerListOut (Detail inherits).
+  delivery_fee integer nullable, free_delivery_above integer nullable,
   -- MEH-1471: self-reported attribution (admin-only; English key + free-text "other")
   referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   starting_price_label, price_range,
