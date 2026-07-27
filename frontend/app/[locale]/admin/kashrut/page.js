@@ -36,6 +36,12 @@ export default function AdminKashrutPage() {
   const [rejectModal, setRejectModal] = useState(null); // request id
   const [rejectNotes, setRejectNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  // MEH-1673: expiry reminders. `reminders` holds the LAST response — dry-run
+  // or real — and `remindersSent` says which, so the panel can never show a
+  // preview and a result in the same state.
+  const [reminders, setReminders] = useState(null);
+  const [remindersSent, setRemindersSent] = useState(false);
+  const [remindersBusy, setRemindersBusy] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -74,6 +80,24 @@ export default function AdminKashrutPage() {
     setBusy(false);
   }
 
+  // MEH-1673: `send` false → dry-run preview; true → the real send. Both hit
+  // the same endpoint; only the query flag differs, so the preview the admin
+  // approves and the batch that goes out cannot drift apart.
+  async function runReminders(send) {
+    setRemindersBusy(true);
+    try {
+      const r = await api.post("/admin/kashrut/expiry-reminders", null, {
+        params: { dry_run: !send },
+      });
+      setReminders(r.data);
+      setRemindersSent(send);
+      if (send) showToast.success(t("kashrut.reminders.sent_toast", { count: r.data.sent_count }));
+    } catch (e) {
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("common.error_generic"));
+    }
+    setRemindersBusy(false);
+  }
+
   return (
     <div dir="rtl">
       <div className="mb-5">
@@ -100,6 +124,77 @@ export default function AdminKashrutPage() {
           {t("kashrut.portal_link")}
         </a>
       </div>
+      {/* MEH-1673: expiry reminders. Dry-run first, always — the send button
+          only appears once a preview exists, so nobody can fire the batch
+          without having seen exactly who receives it. */}
+      <div className="mb-6 rounded-[12px] border border-border p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-text">{t("kashrut.reminders.title")}</h2>
+            <p className="text-xs text-fg-muted mt-0.5">{t("kashrut.reminders.subtitle")}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => runReminders(false)}
+            disabled={remindersBusy}
+            className="bg-white border border-border text-text text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition disabled:opacity-50"
+          >
+            {remindersBusy ? t("kashrut.reminders.loading") : t("kashrut.reminders.preview")}
+          </button>
+        </div>
+
+        {reminders && (
+          <div className="mt-4" data-testid="expiry-reminders-result">
+            {reminders.total === 0 ? (
+              <p className="text-sm text-fg-muted">{t("kashrut.reminders.none")}</p>
+            ) : (
+              <>
+                <p className="text-sm text-text mb-2">
+                  {remindersSent
+                    ? t("kashrut.reminders.result_summary", {
+                        sent: reminders.sent_count,
+                        failed: reminders.failed_count,
+                      })
+                    : t("kashrut.reminders.preview_summary", { count: reminders.total })}
+                </p>
+                <ul className="divide-y divide-border border-y border-border text-sm">
+                  {reminders.rows.map((row) => (
+                    <li
+                      key={row.producer_id}
+                      className="flex flex-wrap items-center justify-between gap-2 py-2"
+                    >
+                      <span className="font-medium">{row.name}</span>
+                      <span className="text-fg-muted text-xs flex items-center gap-3">
+                        <span dir="ltr">{row.phone_masked}</span>
+                        <span>{formatDate(row.expires_at, locale)}</span>
+                        {row.sent === true && (
+                          <span className="text-primary">{t("kashrut.reminders.row_sent")}</span>
+                        )}
+                        {row.sent === false && (
+                          <span className="text-red-600">
+                            {row.error || t("kashrut.reminders.row_failed")}
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {!remindersSent && (
+                  <button
+                    type="button"
+                    onClick={() => runReminders(true)}
+                    disabled={remindersBusy}
+                    className="mt-3 bg-primary text-white text-sm px-4 py-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50"
+                  >
+                    {t("kashrut.reminders.send_now")}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="mb-6">
         <select
           value={statusFilter}
