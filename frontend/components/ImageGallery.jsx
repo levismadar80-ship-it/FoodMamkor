@@ -116,6 +116,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               <Popover
                 role="dialog"
                 sheetOnMobile
+                // MEH-1593 (surface 5): the masthead's own wrapper is
+                // `relative … overflow-hidden`, and it IS this panel's
+                // containing block — measured 27/07, 86.75px of the panel was
+                // cut off at 1440px (panel bottom 395px vs ancestor bottom
+                // 308px). `overlay` portals it out; no avoidRef needed, the
+                // panel already had 0 sibling intersections.
+                overlay
                 contentTestId="badge-tooltip-verified"
                 contentClassName="w-64 flex flex-col gap-1.5"
                 sheetContentClassName="flex flex-col gap-2"
