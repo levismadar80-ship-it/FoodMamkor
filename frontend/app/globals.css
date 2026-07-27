@@ -184,6 +184,44 @@ h1, h2, h3 {
   filter: none;
 }
 
+/* MEH-1682 — normalise the tooltip's positioning ORIGIN so Leaflet's own
+   placement math lands where it intends under `direction: rtl`.
+
+   Leaflet ships `.leaflet-tooltip { position: absolute }` with NO `left` and
+   no `right` (leaflet.css:577-579), so the box falls back to its STATIC
+   position — which CSS anchors to the containing block's inline start. In LTR
+   that is the left edge, which is the origin Leaflet's JS assumes when it
+   positions the tooltip with `transform: translate3d(x, …)`
+   (DomUtil.setPosition). Under RTL the static position anchors the box's RIGHT
+   edge instead, so the very same transform lands it exactly one tooltip-width
+   toward the inline start: detached from the pin, with a lateral gap.
+
+   Measured on the producer page, primary pin, 1440px — the transform is
+   BYTE-IDENTICAL in every row, so this is the CSS origin and not Leaflet's
+   arithmetic:
+
+     dir=rtl, no rule   → computed left: -138.672px, centre off by -139.3px
+     dir=ltr, no rule   → computed left:  0px,       centre off by   -0.7px
+     dir=ltr, this rule → computed left:  0px,       centre off by   -0.7px
+     dir=rtl, this rule → computed left:  0px,       centre off by   -0.7px
+
+   Row 2 vs 3 is why this is unconditional rather than `[dir="rtl"]`-scoped:
+   in LTR the declaration reproduces the value the cascade already computes,
+   so it is a measured no-op, and an attribute-scoped rule would only add a
+   way for the two to drift apart.
+
+   Physical `left` is REQUIRED and cannot be `inset-inline-start` — the whole
+   point is to pin the origin to one physical edge regardless of direction,
+   which is exactly what a logical property refuses to do. Same class of
+   documented exception as the map controls in .claude/rules/rtl.md.
+
+   Upstream: Leaflet #7201 (open since 2020, present in 1.9.4). Guarded by
+   frontend/e2e/qa-meh1682-tooltip-rtl.mjs, which measures the rendered
+   geometry rather than trusting this comment. */
+.leaflet-tooltip {
+  left: 0; /* rtl-ok: positioning origin, see the measured table above */
+}
+
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet
    is open. MapClient adds `body.sheet-open` when `selectedProducer` is
    set; without this the cookie banner peeks below the sheet's bottom
