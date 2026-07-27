@@ -3,6 +3,118 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1628 favorites copy holes (PR #2274 merged `85db63e0`) · MEH-1629 BLOCKED
+
+**Shipped (PR #2274).** Two `/favorites` strings had lost their grammatical object
+when MEH-990's Emoji-LOCK sweep stripped ❤️ and 🔔 out of them. The glyph now lives
+*inside* the sentence as a next-intl rich-text component — a form a character-level
+sweep cannot reach — rather than being restored as an emoji. Also: `HeartStraight`
+replaces a generic `Leaf` in the empty state (the copy said "press the heart"), and
+the duplicate first-visit tip is gone, leaving exactly one helper paragraph.
+
+**Why nothing caught it.** Every assertion in the suite verifies *presence*. A hole
+is an absence, so a removal-shaped bug is invisible to them. The new
+`FavoritesEmptyState.test.jsx` asserts the negative side in **equalities** — `>= 1`
+would pass on the broken state too — and was observed failing 5/7 against the
+pre-fix component before the fix landed.
+
+**Two spec contradictions, both reported rather than quietly resolved:**
+1. The DoD demanded `grep -c "<Bell"` = 1 in the file. That number is wrong: the
+   second instance is the per-card alerts bell in `FavoriteCardWrapper`, a different
+   component, out of scope. F3's actual wording ("the row renders exactly one Bell")
+   is satisfied. File-wide count stays 2 deliberately.
+2. `<file_locations>` asked for CHANGELOG + HANDOFF in the code branch, which
+   `changelog-branch-guard.sh` (required **Repo guards** job, rule 31) hard-fails.
+   The gate wins — this entry is that deferred backfill.
+
+### ⛔ NEXT — MEH-1629 is blocked by a hook, needs Sapir
+
+MEH-1629 (ESLint `no-restricted-syntax` selector for raw Tailwind palette shades)
+**cannot be done by CC.** Its entire deliverable is editing
+`frontend/eslint.config.mjs`, and `.claude/hooks/protect-lint-config.sh` (MEH-442)
+blocks Edit/Write/MultiEdit on `eslint.config.*` by design — the hook's own message
+says *"If a rule blocks your task, REPORT to user with explanation. Do NOT modify
+config."* Self-protection so an AI cannot disable its own guardrails.
+
+Phase 0 ran clean before the block and the numbers are ready for whoever applies it:
+
+- `grep -c "selector:" frontend/eslint.config.mjs` → **3** (matches the ticket's expectation)
+- `npx eslint .` baseline → **5335 problems, 0 errors, 5335 warnings**
+- `tailwind.tokens.json` confirms `green-50/100/300/500/700/900` **are** tokens (flat
+  keys, not a nested `green` object) and `error: #b3261e` exists — so `green` must be
+  absent from the flagged-palette list, exactly as G3 requires.
+
+**First step for Sapir:** apply the fourth selector to the existing
+`no-restricted-syntax` array in `frontend/eslint.config.mjs` (the block at :69-89),
+mirroring the three RTL selectors. Nothing else in the ticket is blocked.
+
+## 2026-07-27 — MEH-1619 (4 PRs merged: `deb96817` · `7ac508fc` · `1be7aa64` · `33f20853`)
+
+**Shipped.** A systematic sweep for code that is valid, type-valid, lint-clean,
+review-approved — and does nothing. Three classes, 4 findings, 4 fixed, plus two
+rules so the classes get caught at review instead of a ticket later. Full evidence
+tables: `docs/audits/silent-failure-audit.md`.
+
+| Class | Scanned | Findings |
+|---|---|---|
+| A — our CSS on library-managed DOM | 13 rules | 1 dead |
+| B — type-valid but runtime-inert props | 8 instances | 2 inert |
+| C — assertions one disjunct can pass | 103 `\|\|`, 5 in assertion position | 1 weak |
+
+**The number that matters is 12, not 1.** Twelve of the thirteen class-A rules are
+live. The only way to tell them apart from the dead one was to measure each in a
+browser — which is exactly why the new rule demands a computed-style probe rather
+than a code read.
+
+**The measurement trap, twice.** Both times the first attempt produced a confident
+wrong answer:
+
+1. **Sampling the wrong state.** The first probe run reported `(missing)` for three
+   rows because at the default zoom every marker is inside a cluster — the marker
+   selector matches zero elements, so the probe measured the camera, not the rule.
+   Selecting a business first (which fitBounds and un-clusters) fixed it. This is
+   now written into the frontend rule.
+2. **The wrong instrument.** The no-op comparator hashed PNGs and reported /map as
+   differing. It wasn't: the same build captured twice also hashed differently, and
+   the pixel diff was 0. One step from "the deletion changed rendering, revert it".
+
+**The invalid proof is the most reusable lesson.** For class C I did what the ticket
+asked — reintroduced the broken CSS, re-ran, watched it go red. That looked like
+proof and wasn't: the OLD, weaker assertion failed on the same construction, because
+the library had already undone the broken state by sample time. A construction that
+both versions fail cannot justify replacing one with the other. What worked was a
+self-test feeding the real classifier synthetic inputs. **That clause — "the
+construction must discriminate" — is the load-bearing half of the new testing rule.**
+
+**Two rules added.** `.claude/rules/frontend.md` (CSS on third-party DOM needs a
+browser probe; deletions need a pixel diff, not a hash; lists what Leaflet and
+markercluster write inline, with file:line). `.claude/rules/testing.md` (new guard
+tests ship with a discriminating failing-by-construction run; ship a self-test when
+the assertion is a classifier; watch for `||` in a pass condition).
+
+**Open, flagged, not absorbed.**
+- **A producer-detail fault took out three E2E specs on every PR in this batch**
+  (`03`/`04`/`06`, all `#__next_error__`) while `staging` stayed green. Proven
+  unrelated to the diffs by an inert-delta A/B: #2262 passed on one commit and
+  failed on the next, where the entire delta was **11 comment lines** in two `.mjs`
+  files the app never imports and Playwright never runs. Could not be re-run (`403`)
+  or reproduced locally (Railway egress blocked, MEH-360). **Wants its own ticket** —
+  not opened from here, since rule 27 wants a duplicate search first.
+- **`E2E gate (required)` went live mid-run** (PR #2265 / MEH-1201) and immediately
+  reported red on those environmental failures — precondition B in
+  `.claude/rules/testing.md` warned about exactly this. It is not in the ruleset's
+  required contexts yet (`mergeable_state` stayed `unstable`, not `blocked`), so it
+  did not block. **Worth Sapir's eyes before it is added to the ruleset**, or every
+  PR blocks on a fault none of them caused.
+- **Marker-hover has no affordance at all.** The deleted rule never worked; only
+  card-hover rings a pin (measured 0→1). Restoring it is a design call, and it must
+  target the icon's inner div — never the Leaflet-positioned wrap.
+- **Vercel hit the 100-deploy/day cap again**, so no preview URLs for this batch.
+  The pixel-diff artifacts in `qa-artifacts/MEH-1619/` are the substitute evidence.
+
+**Next.** Nothing outstanding on this ticket. Stryker/mutation testing (the
+industrial version of class C) is the sibling post-launch ticket.
+
 ## 2026-07-27 — MEH-1593 badge popover/tooltip audit (merged `db4548e7`)
 
 **Shipped.** The MEH-1592 "+N" fix turned out to be one symptom of a family. All
