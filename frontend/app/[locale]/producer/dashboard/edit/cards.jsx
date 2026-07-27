@@ -1597,6 +1597,11 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
   );
 }
 
+// MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
+// importable across the Python/JS boundary, so kept in sync by hand — the
+// ceiling exists to catch a typo before the round-trip 422, not as security.
+const MAX_DELIVERY_MONEY = 1_000_000;
+
 // ============================================================
 // MEH-1242 PR5: producer-facing location-mode + delivery editor. Mirrors the
 // admin ProducerForm "business_type" section (physical-store toggle, delivery
@@ -1876,9 +1881,11 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 empty keeps the public page exactly as it is today. Each field
                 carries a "where it appears" line + an example placeholder per
                 the dashboard field standard (docs/audits/dashboard-field-
-                guidance-audit.md, MEH-1539). min=0 on the fee (0 = free) and
-                min=1 on the threshold mirror the server validators, so the
-                browser catches the same values the API would 422 on. */}
+                guidance-audit.md, MEH-1539). min=0 on the fee (0 = free),
+                min=1 on the threshold, and max=MAX_DELIVERY_MONEY on both
+                mirror the server validators, so the browser catches the same
+                values the API would 422 on — the ceiling round-trips instead
+                of only surfacing after a submit. */}
             <div className="space-y-3 pt-1">
               <div>
                 <label
@@ -1893,6 +1900,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   type="number"
                   inputMode="numeric"
                   min="0"
+                  max={MAX_DELIVERY_MONEY}
                   step="1"
                   value={form.fee}
                   onChange={(e) => set({ fee: e.target.value })}
@@ -1915,6 +1923,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   type="number"
                   inputMode="numeric"
                   min="1"
+                  max={MAX_DELIVERY_MONEY}
                   step="1"
                   value={form.freeAbove}
                   onChange={(e) => set({ freeAbove: e.target.value })}
