@@ -1602,6 +1602,26 @@ class ProducerListOut(BaseModel):
     # is currently unused (live producers have it empty while the relation
     # has rows) — separate cleanup ticket, not addressed here.
     delivery_areas: list[DeliveryAreaOut] = []
+    # MEH-1577: structured delivery cost. Declared on LIST (not DETAIL) on
+    # purpose — ProducerDetailOut inherits from this class, so LIST-level
+    # declaration reaches BOTH surfaces, whereas the reverse strands the
+    # listing: ProducerCard would render a fee from a field the list response
+    # never carried. Same lift-it-up reasoning as delivery_areas directly above
+    # (MEH-902), and serialization-only — both are plain columns on the already
+    # -selected producer row, so no extra query and no N+1.
+    #
+    # NULL = not stated → nothing renders. delivery_fee=0 is NOT null and means
+    # "משלוח חינם" — a falsy check anywhere downstream is a bug, which is why
+    # both the list and detail read paths pin the 0 case in tests. The two are
+    # INDEPENDENT: free_delivery_above set with delivery_fee NULL is legal (a
+    # threshold with no flat fee stated), so the frontend renders the threshold
+    # line alone rather than gating it on the fee.
+    #
+    # Read-only here; written via producer_me PUT. Inherited by
+    # ProducerDetailOut → ProducerAdminOut + ProducerOwnerOut (admin table +
+    # owner dashboard prefill read the same value).
+    delivery_fee: int | None = None
+    free_delivery_above: int | None = None
     # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
     # market_stand). selectinload'd on both LIST branches + the DETAIL query
     # (producer_listing.py + producers.py) so from_attributes reads the loaded
@@ -1731,16 +1751,6 @@ class ProducerDetailOut(ProducerListOut):
     # from the DOM. Inherited by ProducerAdminOut + ProducerOwnerOut (admin table
     # + owner dashboard prefill read the same value).
     established_year: int | None = None
-    # MEH-1577: structured delivery cost → the public DeliveryBlock line.
-    # Public, like established_year above. NULL = not stated → nothing renders.
-    # The two are INDEPENDENT: free_delivery_above set with delivery_fee NULL is
-    # a legal state (a business with a free-delivery threshold but no flat fee
-    # stated), so the frontend renders the threshold line alone rather than
-    # gating it on the fee. Read-only here; written via producer_me PUT.
-    # Inherited by ProducerAdminOut + ProducerOwnerOut (admin table + owner
-    # dashboard prefill read the same value).
-    delivery_fee: int | None = None
-    free_delivery_above: int | None = None
 
     model_config = {"from_attributes": True}
 

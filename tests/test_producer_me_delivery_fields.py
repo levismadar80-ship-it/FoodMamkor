@@ -234,3 +234,36 @@ def test_public_detail_exposes_delivery_fee_fields(client, db):
     assert "free_delivery_above" in body, f"absent from public contract: {sorted(body)}"
     assert body["delivery_fee"] == 0
     assert body["free_delivery_above"] == 150
+
+
+def test_public_listing_exposes_delivery_fee_fields(client, db):
+    """The LIST contract is a separate claim from the DETAIL one, and the
+    detail test above cannot make it.
+
+    ProducerDetailOut inherits from ProducerListOut, so declaring the fields on
+    Detail satisfies `/producers/{id}` while leaving `/producers` without them —
+    a card-level fee would then render from a field the listing never carried,
+    and every other check in this suite stays green. Declaring on List covers
+    both; this test is what holds that placement in place, so a future move back
+    down to Detail reds here instead of shipping.
+
+    Pinned at delivery_fee=0 for the same reason as the detail test: it is the
+    value a falsy-filtering serializer drops without complaint.
+    """
+    user, producer = _producer_user(db)
+    resp = client.put(
+        "/producers/me",
+        json={"delivery_fee": 0, "free_delivery_above": 150},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+
+    listing = client.get("/producers")
+    assert listing.status_code == 200, listing.text
+    rows = listing.json()
+    row = next((r for r in rows if r["id"] == str(producer.id)), None)
+    assert row is not None, f"producer absent from listing: {rows}"
+    assert "delivery_fee" in row, f"absent from list contract: {sorted(row)}"
+    assert "free_delivery_above" in row, f"absent from list contract: {sorted(row)}"
+    assert row["delivery_fee"] == 0
+    assert row["free_delivery_above"] == 150
