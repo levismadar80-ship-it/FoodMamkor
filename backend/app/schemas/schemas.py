@@ -349,6 +349,38 @@ PhoneNumberField = Annotated[
     str, Field(max_length=30), AfterValidator(_phone_validator)
 ]
 
+# ---------------------------------------------------------------------------
+# MEH-1644: canonical delivery-day vocabulary.
+#
+# Canonical values are the bare Hebrew day names — existing DeliveryArea rows
+# are Hebrew free text ("שישי") and DeliveryBlock renders the raw string into
+# "יוצאים בימי {day}" / "ימי {day}", so the bare form (no "יום" prefix) is the
+# one that composes with every consumer copy. None stays legal and means
+# "בתיאום מראש" (the groupDeliveryAreas dayless bucket).
+#
+# Expand-only: this type is applied to the WRITE schema (DeliveryAreaCreate)
+# only. DeliveryAreaOut deliberately stays unvalidated — legacy rows carry
+# free-text variants ("ימי שישי", "friday", …) until the MEH-1644 backfill
+# script runs, and a read model that 422s its own stored data is a 500 on
+# every producer page. scripts/normalize_delivery_days.py maps the legacy
+# variants to this vocabulary.
+# ---------------------------------------------------------------------------
+DELIVERY_DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
+
+
+def _delivery_day_validator(value: str) -> str | None:
+    """Whitelist against DELIVERY_DAYS; blank → None (a select's empty option
+    means "בתיאום מראש", same as an omitted field), anything else → 422."""
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    if cleaned not in DELIVERY_DAYS:
+        raise ValueError("יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)")
+    return cleaned
+
+
+DeliveryDayField = Annotated[str, AfterValidator(_delivery_day_validator)]
+
 
 def _image_url_list_validator(value: list[str] | None) -> list[str] | None:
     # Drop blank entries, validate each surviving URL. Preserves order.
@@ -711,7 +743,12 @@ class ProducerRandomOut(BaseModel):
 class DeliveryAreaCreate(BaseModel):
     city: str
     min_order: int | None = None
-    delivery_day: str | None = None
+    # MEH-1644: whitelist (DELIVERY_DAYS) on the write path. Every row-write
+    # flows through this schema — ProducerRegister.delivery_areas (auth.py
+    # apple/google + producer_queries.register_producer) and
+    # ProducerUpdate.delivery_areas (producer_me PUT) — so one field covers
+    # them all. None allowed = "בתיאום מראש".
+    delivery_day: DeliveryDayField | None = None
 
 
 class DeliveryAreaOut(BaseModel):
@@ -1231,6 +1268,10 @@ class ProducerUpdate(BaseModel):
     delivery_area_cities: list[str] | None = (
         None  # admin form: simple list of city names
     )
+    # MEH-1644: structured rows from the dashboard DeliveryCard — carries the
+    # whitelist-validated delivery_day per city (DeliveryAreaCreate). Takes
+    # precedence over delivery_area_cities in producer_me when both are sent.
+    delivery_areas: list[DeliveryAreaCreate] | None = None
     # MEH-213 — location mode
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
@@ -1426,6 +1467,12 @@ class ProducerUpdate(BaseModel):
         # semantic, only the field source changed.
         dc = self.delivery_area_cities
         if dn and dc and len(dc) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1644: the structured-rows path (delivery_areas) is the same
+        # cities store — the nationwide XOR must hold for it too. Gated on
+        # model_fields_set so a partial update that omits the field (default
+        # []) is not misread as "no cities".
+        if dn and "delivery_areas" in self.model_fields_set and self.delivery_areas:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         # MEH-1255: excluded cities sent together with an explicit
         # nationwide=false is always invalid (partial-update effective-state
