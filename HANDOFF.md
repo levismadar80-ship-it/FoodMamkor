@@ -3,6 +3,32 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-27 — MEH-1626 epic הושלם: domain types + guard מבני (3 chunks)
+
+**האפיק סגור.** שלושת ה-chunks מוזגו ב-squash על gates נדרשים ירוקים, כל chunk ב-PR נפרד עם WAIT ביניהם.
+
+| Chunk | PR | Merge SHA | תוכן |
+|---|---|---|---|
+| 1 | #2296 | `d87f3e86` | 5 domain types + המשטחים הציבוריים |
+| 2 | #2320 | `679eca9a` | 29 שדות פנימיים (19/8/2) + ProfileUpdate schema+router + חקירת admin_notes |
+| 3 | #2333 | `9ba59795` | ה-guard המבני + ProducerCreate.name + website ""→None |
+
+**מצב סופי:** 7 domain types ב-`schemas.py` · guard חי ב-`tests/test_schema_symmetry.py` (רץ ב-job הנדרש Backend tests — זו החיווט, לא נגענו ב-workflow YAML) · **allowlist = 4 שורות**, כל אחת עם נימוק · backlog מיגרציה = 31 שדות decorator-based, מדווח ולא-מכשיל · pytest 2127 ירוקים.
+
+**הכרעות שננעלו:** person vs business name (רצפת ≥3 אותיות רק לעסקים — שמות פרטיים עבריים בני 2 אותיות לגיטימיים, הכרעת ספיר ב-chunk 1) · שתי ההחמרות של chunk 1 (`GroupBuyCreate.title`, `EventCreate.title`) **נשארות** · `admin_notes` **אינו** באג — ה-allowlist ב-`producer_me.py:289` חוסם אותו.
+
+### ⚠️ פעולות ממתינות לספיר
+
+1. **סטטוס האפיק ב-Linear** — chunks 1 ו-2 נשאו `Refs`/ללא `Closes` במכוון, אך ה-slug של ה-branch לבדו סוגר את הכרטיס אוטומטית (MEH-1615). אחרי chunk 3 מצב Done **נכון** — אין צורך בשחזור. אם הכרטיס נסגר מוקדם ב-chunks 1/2 ושוחזר ידנית, זה היה תקין.
+2. **Vercel חסום ב-cap יומי** (`more than 100 per day`, free tier) — אדים status על כל PR היום. אינו gate נדרש; PRs של backend בלבד אינם מושפעים.
+
+### Follow-up שנפתח בתיעוד בלבד (טרם ticket)
+
+- **31 שדות decorator-based** — מוגנים כהלכה אך לא דרך domain type. ה-guard מדווח את המספר בכל ריצה כדי שיירד בכוונה ולא באקראי. אין דחיפות: תכונת הבטיחות מכוסה.
+- **`OutreachLeadUpdate.website`** — לפני chunk 3 האילוץ 200 היה קיים רק ברמת עמודת ה-DB, לא ב-Pydantic; chunk 3 יישר אותם. תועד ב-review של #2333.
+
+---
+
 ## 2026-07-27 — delivery-features batch: ארבעה merges (הירו CTA · DeliveryBlock · יום משלוח מובנה · פילטר יום)
 
 **כל הארבעה מוזגו ב-squash auto-merge על gates נדרשים ירוקים** (ADR-016 v2 end-to-end authority). הלוגים כאן כי אף branch קוד לא נושא אותם (rule 31).
