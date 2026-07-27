@@ -4194,6 +4194,7 @@
         "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
         "day_select_aria": "Delivery day for {city}",
         "day_arranged": "By arrangement",
+        "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
