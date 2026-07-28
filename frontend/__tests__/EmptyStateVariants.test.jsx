@@ -142,12 +142,22 @@ describe("EmptyState — `size` variant (MEH-1630 decision 1)", () => {
     expect(el.querySelector("svg").getAttribute("width")).toBe("28");
   });
 
-  it("falls back to sm on an unknown value rather than crashing", () => {
-    const { container } = render(
-      <EmptyState circle size="enormous" icon={ShoppingCart} title="ריק" />,
-    );
-    expect(container.querySelector(".rounded-full").className).toContain("w-16 ");
-  });
+  // Adversarial review finding. "enormous" alone does NOT discriminate: it is
+  // absent from the prototype chain too, so a broken `CIRCLE_SIZES[size] || …`
+  // lookup passes it. The keys that expose the difference are the inherited
+  // ones — `CIRCLE_SIZES["constructor"]` is truthy, so `||` never fires and the
+  // disc renders `className="undefined …"` with an undefined icon size.
+  for (const bad of ["enormous", "constructor", "toString", "valueOf", "__proto__"]) {
+    it(`falls back to sm on size="${bad}" rather than rendering undefined`, () => {
+      const { container } = render(
+        <EmptyState circle size={bad} icon={ShoppingCart} title="ריק" />,
+      );
+      const el = container.querySelector(".rounded-full");
+      expect(el.className).toContain("w-16 ");
+      expect(el.className).not.toContain("undefined");
+      expect(el.querySelector("svg").getAttribute("width")).toBe("28");
+    });
+  }
 
   it("is inert without `circle` — size alone changes nothing", () => {
     const { container } = render(
