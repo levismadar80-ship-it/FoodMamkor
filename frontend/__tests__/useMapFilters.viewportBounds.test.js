@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMapFilters } from "@/app/[locale]/map/state/useMapFilters";
 
@@ -40,7 +40,7 @@ const FAR_AWAY = {
 
 const BOUNDS = { south: 32.4, north: 32.7, west: 34.8, east: 35.1 };
 
-function setup(allProducers) {
+function setup(allProducers, showSecondaryLayer = true) {
   const { result } = renderHook(() =>
     useMapFilters({
       allProducers,
@@ -49,6 +49,7 @@ function setup(allProducers) {
       userCity: null,
       setUserCity: vi.fn(),
       setShowCityPicker: vi.fn(),
+      showSecondaryLayer,
     }),
   );
   return result;
@@ -80,5 +81,21 @@ describe("useMapFilters — viewport bounds derive from locations[] (MEH-1670)",
       expect.arrayContaining(["delivery-only", "far-away"]),
     );
     expect(result.current.viewportCategoryCounts[BAKERY.name]).toBe(2);
+  });
+
+  // MEH-1670 adversarial finding (PR #2347 review): the unit test on
+  // producerInBounds() (producerPoints.test.js:114-118) proves the primitive
+  // honours includeSecondary; it does NOT prove this HOOK actually wires
+  // showSecondaryLayer through to it. A refactor that hardcoded
+  // `includeSecondary: true` at either call site would break "pickup-only
+  // business leaves the list when the layer is toggled off" with nothing here
+  // going red — this closes that gap at the integration level.
+  it("showSecondaryLayer=false removes a pickup-only business from BOTH outputs", () => {
+    const result = setup([DELIVERY_ONLY, FAR_AWAY], false);
+    act(() => result.current.setCommittedBounds(BOUNDS));
+
+    const ids = result.current.visibleProducers.map((p) => p.id);
+    expect(ids).not.toContain("delivery-only");
+    expect(result.current.viewportCategoryCounts[BAKERY.name]).toBeUndefined();
   });
 });
