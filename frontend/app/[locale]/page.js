@@ -113,16 +113,24 @@ export default function HomePage() {
           - S4 quiet-strip voice preserved: cream + hairline borders; numerals
             gold italic, LTR-isolated (bidi). Numbers from /stats, never
             hardcoded. Stats logic (use-home-page.js flags) unchanged.
+          MEH-1686: py-4 → py-8 on BOTH branches (skeleton + loaded) so the
+          strip reads as a deliberate band rather than a squeezed rule. Both,
+          not just the loaded one — a py-4 skeleton swapping to a py-8 section
+          would shift every block below it the moment /stats resolves.
+          The ticket also asked for a top divider; the section has carried one
+          since S4 (`border-y border-border`, measured 1px rgb(229,223,211) =
+          the border-border token on the live page at 375 + 1440), so there
+          was nothing to add and a second rule was NOT introduced.
           ========================= */}
       {!statsLoaded && (
-        <section className="bg-background border-y border-border py-4 text-center" aria-busy="true">
+        <section className="bg-background border-y border-border py-8 text-center" aria-busy="true">
           <p className="font-body-md text-base tracking-wide opacity-60">
             <span className="inline-block w-48 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
           </p>
         </section>
       )}
       {statsLoaded && (
-        <section className="bg-background border-y border-border py-4 text-center">
+        <section className="bg-background border-y border-border py-8 text-center">
           <p className="font-body-md text-base text-text tracking-wide">
             {t("home.trust.lead")}
           </p>
