@@ -327,30 +327,36 @@ export default function ProducerGroupBuysPage() {
         {/* MEH-1420: hide the header toggle in the approved empty state so the
             EmptyState CTA is the single create entry point (mirrors MEH-1097 F14
             in recipes/page.js:85). The button returns once a group exists, or
-            while the form is open (rendering as "close"). notApproved is the
-            exception — keep the disabled button + aria-describedby hint
-            (MEH-1350 / MEH-1165): EmptyState self-hides its CTA there, so hiding
-            the header button too would orphan the hint's aria-describedby target
-            and leave zero affordance. MEH-1655: also hidden while loading
-            (items === null) — it used to render then jump to the EmptyState
-            CTA on an empty result. */}
-        {items !== null && !(items.length === 0 && !showForm && !notApproved) && (
+            while the form is open (rendering as "close"). MEH-1655: also hidden
+            while loading (items === null) — it used to render then jump to the
+            EmptyState CTA on an empty result.
+            MEH-1709: notApproved is no longer the exception that kept a
+            *disabled* button + a separate aria-describedby hint (MEH-1350 /
+            MEH-1165). A muted control that does nothing is the only thing that
+            looks pressable on that screen (NN/g). The button is now absent
+            while unapproved, and the why-locked string moved into the
+            EmptyState description below — so the explanation still has a
+            home and nothing on screen invites a dead press. */}
+        {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            disabled={notApproved}
-            aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
-            className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>
         )}
       </div>
 
-      {/* MEH-1165: why-locked hint, aria-describedby-linked so it's announced
-          (availability-card idiom, dashboard/page.js:457-461). */}
-      {notApproved && (
+      {/* MEH-1165: why-locked hint (availability-card idiom,
+          dashboard/page.js:457-461).
+          MEH-1709: only when the list is NON-empty. In the empty state the same
+          string is now the EmptyState description, and rendering both would say
+          it twice. The `id` is gone with the button that pointed at it — the
+          aria-describedby target had exactly one consumer (grep: this file
+          only). This branch is the suspended-with-existing-groups case: no
+          create affordance, but the reason still has to be on screen. */}
+      {notApproved && items !== null && items.length > 0 && (
         <p
-          id="group-buy-approval-hint"
           data-testid="group-buy-approval-hint"
           className="text-xs text-fg-muted -mt-3 mb-6"
         >
@@ -379,10 +385,17 @@ export default function ProducerGroupBuysPage() {
           <EmptyState
             icon={ShoppingCart}
             title={t("empty_title")}
-            description={t("empty_description")}
-            ctaLabel={t("empty_cta")}
-            // MEH-1165: no CTA while unapproved — EmptyState self-hides the
-            // button when the handler is absent; the hint above carries why.
+            // MEH-1709: while unapproved the description IS the why-locked
+            // string — one region, one explanation, one (absent) affordance.
+            // Structural only: both strings already exist, neither is reworded
+            // here. The title still reads as a value proposition rather than a
+            // state; that is the copy convention MEH-1710 locks and MEH-1630
+            // applies, deliberately out of scope for this fix.
+            description={notApproved ? t("approval_required_hint") : t("empty_description")}
+            // MEH-1165 / MEH-1709: no CTA while unapproved — both props drop,
+            // so EmptyState renders no button at all (ctaLabel && (ctaHref ||
+            // ctaOnClick)).
+            ctaLabel={notApproved ? undefined : t("empty_cta")}
             ctaOnClick={notApproved ? undefined : () => setShowForm(true)}
           />
         )
