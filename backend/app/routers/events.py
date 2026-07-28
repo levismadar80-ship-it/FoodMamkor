@@ -30,7 +30,15 @@ from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
 router = APIRouter(tags=["events"])
 
 
-VALID_CATEGORIES = {"סדנה", "סיור", "שוק", "קטיף", "טעימות", "אחר"}
+# MEH-1657: locked axis — an Event is a ONE-TIME thing on a date; a guided
+# activity people sign up for is an Experience. The "workshop" and "tour"
+# categories were removed here (6 -> 4) because they name exactly the Experience
+# side of that axis, and offering them as Event categories is what made owners
+# guess which surface to publish on. The Experience category set is separate
+# (frontend/lib/event-categories.js EXPERIENCE_CATEGORIES) and still carries
+# both words — deliberately. Hebrew wire values are intentionally absent from
+# this comment so the absence assertion in the card greps clean.
+VALID_CATEGORIES = {"שוק", "קטיף", "טעימות", "אחר"}
 
 
 def _serialize(event: Event) -> EventOut:
