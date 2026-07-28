@@ -77,8 +77,15 @@ bash scripts/checks/ui-pattern-guard.sh   # just one, while iterating on it
 ```
 
 `run-all.sh` runs **every** guard even after one fails — one run tells you about
-all of them — then exits 1 if any failed. Passing guards stay quiet; a failing
-guard's own output is echoed inline, followed by a `PASS`/`FAIL` summary.
+all of them — then exits 1 if any failed. Each guard lands in one of three
+outcomes, summarised as `PASS` / `WARN` / `FAIL`: a guard that passes quietly
+prints nothing, and a guard that **fails**, or that **exits 0 having printed the
+word `WARNING` or `WARNED`**, has its own output echoed inline (MEH-1715).
+
+**Only a non-zero exit fails the run** — a `WARN` never does. To make a
+non-fatal finding visible, print `WARNING`/`WARNED` (also matched in the plural)
+and still `exit 0`; the match is case-sensitive and whole-word, so `WARN-ONLY`
+and lowercase `warning` in prose are deliberately ignored.
 
 Zero guards found is a `NOTICE` and exit **0**, not a failure.
 
