@@ -437,7 +437,9 @@ def list_categories(db: Session = Depends(get_db)):
 # Both call sites use it — the serializer that lists which badges have a cert,
 # and the proxy that streams the bytes — so a badge can never be advertised as
 # viewable while the proxy refuses it, or vice versa.
-def _servable_kashrut_certs(db: Session, producer: Producer) -> list[KashrutBadgeRequest]:
+def _servable_kashrut_certs(
+    db: Session, producer: Producer
+) -> list[KashrutBadgeRequest]:
     """Approved requests with a cert, for an approved producer, not yet expired.
 
     Expiry is checked against `producer.kashrut_expires_at` — the same field
@@ -490,7 +492,11 @@ def get_kashrut_cert(
         raise HTTPException(status_code=404, detail="לא נמצא")
 
     match = next(
-        (c for c in _servable_kashrut_certs(db, producer) if c.badge_code == badge_code),
+        (
+            c
+            for c in _servable_kashrut_certs(db, producer)
+            if c.badge_code == badge_code
+        ),
         None,
     )
     if match is None:
