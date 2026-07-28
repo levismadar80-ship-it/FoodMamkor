@@ -1136,9 +1136,10 @@ def create_my_product(
     db.commit()
     db.refresh(product)
 
-    # MEH-XXX: notify favoriting users who opted in for new-product alerts.
-    # Wires the previously-orphaned "new_product" alert_type
-    # (see _ALERT_COL in routers/alerts.py).
+    # PR #404 (3b7e3ea5, "audit Gap A"): notify favoriting users who opted in
+    # for new-product alerts. Wires the previously-orphaned "new_product"
+    # alert_type (see _ALERT_COL in routers/alerts.py). No Linear ticket was
+    # ever assigned — the original marker was a literal, unresolvable MEH-XXX.
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     producer_name = producer.name if producer else "בית העסק"
     from app.routers.alerts import AlertContent, fire_alerts
