@@ -40,8 +40,12 @@ behavior see `frontend/components/Header.jsx`.
   `next-intl`. Some components use `useTranslations`, others still call
   `useLanguage().t(...)`. Match the pattern of the file you're editing
   — do not bulk-rewrite.
-- **Zod before every map API call** (workflow rule 19) — `lib/schemas.js`
-  `safeParse()`, then `showToast.info(error.issues[0].message)`.
+- **Zod before consuming an API response** (workflow rule 19) — `safeParse()`
+  via `lib/schemas.js` or `lib/api-schemas.js` (which re-exports it). Covers
+  the home grid, `/map` and `/favorites`, and each routes failure to its own
+  error state — the `showToast.info(error.issues[0].message)` form is
+  **request-side only** (`LocationsEditor.jsx:105`). Full rule:
+  [.claude/rules/frontend.md](../../.claude/rules/frontend.md).
 - **RTL hook + allowlist** (`.claude/hooks/check-rtl.sh`): physical
   classes are blocked unless within ±1 line of an `rtl-ok` marker, or
   the file is path-exempted in `.claude/hooks/rtl-allowlist.txt`.

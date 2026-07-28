@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
+// MEH-1727: the font gate's decision lives in one place, shared with its
+// self-test, so the tested logic and the live logic cannot drift apart.
+import { judgeFonts } from "./font-gate";
 
 // MEH-1497: fixed producer-detail payload for the network-mocked shot (below).
 // Read from disk (not `import ... json`) so it works regardless of the spec
@@ -163,6 +166,18 @@ const VRT_FIXED_TIME = new Date("2026-07-15T09:00:00Z"); // Wed 12:00 IDT
  * clock (above) so wall-clock-dependent copy can't drift between runs.
  */
 async function preparePage(page: Page): Promise<void> {
+  // MEH-1727: start tallying font requests the browser could not fetch BEFORE
+  // the first navigation — a listener attached after goto() misses them all.
+  // In the broken state (extraHTTPHeaders leaking `x-vercel-skip-toolbar` into
+  // cross-origin preflights) this collects all 11 .woff2 files.
+  const fontFailures: string[] = [];
+  failedFontRequests.set(page, fontFailures);
+  page.on("requestfailed", (req) => {
+    if (req.resourceType() === "font") {
+      fontFailures.push(`${req.url()} — ${req.failure()?.errorText ?? "unknown"}`);
+    }
+  });
+
   // setFixedTime (not clock.install): Date.now()/new Date() return the pinned
   // instant while timers keep running normally, so the app's own polling —
   // e.g. use-home-page.js:131's 60s isFridayMode() re-check — still ticks and
@@ -178,9 +193,40 @@ async function preparePage(page: Page): Promise<void> {
   });
 }
 
-/** Wait for fonts + a settle beat so text renders identically run-to-run. */
+/**
+ * MEH-1727 — per-page tally of font requests the browser failed to fetch.
+ * Populated by preparePage(); read by settle().
+ */
+const failedFontRequests = new WeakMap<Page, string[]>();
+
+/**
+ * Wait for fonts + a settle beat so text renders identically run-to-run.
+ *
+ * MEH-1727 — `document.fonts.ready` is NOT a gate. It resolves even when every
+ * face failed to download, and (verified 28/07) it resolves with
+ * `status === "loaded"` while `document.fonts.size === 0`, i.e. it reports
+ * success for a page that loaded no font at all. A VRT baseline captured in
+ * that state freezes system-fallback typography as the truth — the MEH-1552
+ * candidate-baseline trap. So: keep the await (it still sequences correctly),
+ * then assert a POSITIVE count of loaded faces and zero failed font fetches.
+ */
 async function settle(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
+
+  const fonts = await page.evaluate(() => {
+    let loaded = 0;
+    document.fonts.forEach((face) => {
+      if (face.status === "loaded") loaded += 1;
+    });
+    return { total: document.fonts.size, loaded };
+  });
+
+  // Single owner for the decision: judgeFonts() is the same function the
+  // self-test exercises (frontend/__tests__/FontGate.test.js). Re-implementing
+  // the thresholds here would let the tested copy drift from the live one.
+  const verdict = judgeFonts(fonts, failedFontRequests.get(page) ?? []);
+  expect(verdict.ok, verdict.reason).toBe(true);
+
   await page.waitForLoadState("networkidle").catch(() => {
     /* long-polling/streaming must not fail the shot — fonts are the gate */
   });
