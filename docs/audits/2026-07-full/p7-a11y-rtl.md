@@ -79,6 +79,32 @@ of locale.
 
 **Fix S** (`text-right` → `text-start`). 🟢 GREEN — presentation only.
 
+> ### ⚠️ Correction (28/07, remediation Phase 0) — this prescription was a no-op
+>
+> `text-right` → `text-start` **fixes none of these on its own.** Phase 0 before
+> the fix found that **6 of the 8 sit beside an explicit `dir="rtl"`**, either on
+> the same element (`CategoryRequestModal.jsx:77, 90` · `ReportInfoModal.jsx:97,
+> 115` · `RecipeForm.jsx:182, 193, 210, 227`) or on the container that wraps them
+> (`CategoryRequestModal.jsx:62` · `ReportInfoModal.jsx:76-77`). **Inside
+> `dir="rtl"`, `text-start` resolves to right** — so the class swap changes
+> nothing and `/en` stays broken, while the diff looks like a fix.
+>
+> The `dir="rtl"` attribute is the actual defect, and §3's own text already said
+> so for `:62` ("hard-pinning the modal to RTL regardless of locale") without
+> carrying it into the prescription. Applied fix: `text-start` **and** drop the
+> hardcoded `dir="rtl"`, letting these inherit from `<html dir>` — a no-op in
+> `he` (the root is already `rtl`) and correct in `en`.
+>
+> **The 8th is a false positive.**
+> `app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:338` is a `dir="ltr"`
+> numeric quantity field — the *same* documented exception as the licence number
+> in F-5, where physical right genuinely is the inline start. It belongs in F-5
+> (correct use, `rtl-ok` marker missing), not here; `text-start` would misalign
+> it. **F-1 is 7 sites, not 8; F-5 is 5, not 4.**
+>
+> Recorded because a prescription that produces a plausible green diff while
+> fixing nothing is the same class as §1 of [`summary.md`](./summary.md).
+
 ### F-5 ⚪ Info — 4 correct uses that the hook will still flag
 
 `app/[locale]/register/producer/RegisterProducerClient.jsx:815-816, 887-888`
