@@ -2,7 +2,9 @@
 # write-deny-parity-guard.sh — MEH-1500 Phase B gate.
 #
 # WHAT: every `Edit(<path>)` entry in `.claude/settings.json`'s
-#       permissions.deny must have a `Write(<path>)` counterpart.
+#       permissions.deny must have BOTH a `Write(<path>)` and a
+#       `MultiEdit(<path>)` counterpart. All three tools overwrite content;
+#       denying one and allowing the others is a gap, not a policy.
 #
 # WHY: MEH-1500 Phase A established (by probe, 4 probes + 2 matched
 #      same-directory controls) that `permissions.deny` DOES fire on Edit()
@@ -18,8 +20,8 @@
 #      manual step. Without it the fix is another A2 hand-off, and A2 has
 #      failed 0-for-2 (MEH-1720).
 #
-# HOW TO SATISFY: add the missing Write() entries. The guard prints them
-#      paste-ready. A broader glob counts: `Write(.env*)` covers `Edit(.env)`.
+# HOW TO SATISFY: add the missing Write()/MultiEdit() entries. The guard prints
+#      them paste-ready. A broader glob counts: `Write(.env*)` covers `Edit(.env)`.
 #
 # Discovered automatically by scripts/checks/run-all.sh (MEH-999) — no
 # workflow edit, so no CC-deny surface touched.
@@ -113,13 +115,14 @@ if not edits:
     print("ZEROSCAN")
     sys.exit(0)
 
-missing = [e for e in edits if covered_by(e, writes) is None]
-mi_missing = [e for e in edits if covered_by(e, multis) is None]
+missing_w = [e for e in edits if covered_by(e, writes) is None]
+missing_m = [e for e in edits if covered_by(e, multis) is None]
 
-for m in missing:
-    print("MISS\t" + m)
-print("COUNT\t%d\t%d" % (len(missing), len(edits)))
-print("MULTI\t%d\t%d" % (len(mi_missing), len(edits)))
+for m in missing_w:
+    print("MISSW\t" + m)
+for m in missing_m:
+    print("MISSM\t" + m)
+print("COUNT\t%d\t%d\t%d" % (len(missing_w), len(missing_m), len(edits)))
 PY
 )"
   py_rc=$?
@@ -146,32 +149,34 @@ PY
     return 1
   fi
 
-  local missing_count total multi_count
-  missing_count="$(awk -F'\t' '/^COUNT/{print $2}' <<<"$report")"
-  total="$(awk -F'\t' '/^COUNT/{print $3}' <<<"$report")"
-  multi_count="$(awk -F'\t' '/^MULTI/{print $2}' <<<"$report")"
+  local miss_w miss_m total
+  miss_w="$(awk -F'\t' '/^COUNT/{print $2}' <<<"$report")"
+  miss_m="$(awk -F'\t' '/^COUNT/{print $3}' <<<"$report")"
+  total="$(awk -F'\t' '/^COUNT/{print $4}' <<<"$report")"
 
-  if [[ "$missing_count" -gt 0 ]]; then
-    echo "  FAIL $label — $missing_count of $total Edit() deny entries have no Write() counterpart."
-    echo "       Write() overwrites the whole file, so these paths are denied to"
-    echo "       the weaker tool and open to the stronger one."
+  # Both tools are ENFORCED as of the 28/07 decision. MultiEdit was previously
+  # reported-not-enforced, deliberately, to avoid widening policy unasked
+  # (the OVER-BROAD shape MEH-1708 filed). Sapir settled it on the repo's own
+  # convention: 6 of the 7 write-class PreToolUse matchers in settings.json are
+  # `Edit|Write|MultiEdit`, so this repo already treats the three as one class.
+  # Denying Edit(x) while allowing MultiEdit(x) is a gap, not a policy.
+  #
+  # (The 7th matcher is `Edit|Write|NotebookEdit`. NotebookEdit is NOT enforced
+  # here and that is not an oversight: it edits .ipynb, and none of the
+  # protected paths is a notebook, so cover would be vacuous. Revisit only if a
+  # notebook ever joins the protected set.)
+  if [[ "$miss_w" -gt 0 || "$miss_m" -gt 0 ]]; then
+    echo "  FAIL $label — protected paths are denied to Edit() but open to a stronger tool."
+    echo "       Write() and MultiEdit() both overwrite content Edit() is denied."
+    echo "       Missing: $miss_w Write(), $miss_m MultiEdit(), of $total Edit() entries."
     echo "       Add to permissions.deny in .claude/settings.json:"
     echo ""
-    awk -F'\t' '/^MISS/{printf "      \"Write(%s)\",\n", $2}' <<<"$report"
+    awk -F'\t' '/^MISSW/{printf "      \"Write(%s)\",\n", $2}' <<<"$report"
+    awk -F'\t' '/^MISSM/{printf "      \"MultiEdit(%s)\",\n", $2}' <<<"$report"
     echo ""
     rc=1
   else
-    echo "  ok   $label — all $total Edit() entries have Write() cover."
-  fi
-
-  # MultiEdit is REPORTED, not enforced. It is a separate policy decision
-  # (does this harness expose MultiEdit to this repo's sessions?), and a guard
-  # that silently widened the policy it was asked to enforce would be the same
-  # over-reach class MEH-1708 filed as OVER-BROAD.
-  if [[ "$multi_count" -gt 0 ]]; then
-    echo "  warn $label — $multi_count of $total Edit() entries also lack a MultiEdit() counterpart."
-    echo "       Not enforced here: whether MultiEdit needs the same cover is"
-    echo "       Sapir's call, not this guard's. Reported so the number is known."
+    echo "  ok   $label — all $total Edit() entries have Write() and MultiEdit() cover."
   fi
 
   return "$rc"
@@ -191,17 +196,26 @@ self_test() {
     else echo "  FAIL $3 — expected exit $2, got $got"; rc=1; fi
   }
 
-  _mk exact '{"permissions":{"deny":["Edit(a.py)","Write(a.py)"]}}'
-  _expect exact 0 "case 1 — exact Write cover"
+  _mk exact '{"permissions":{"deny":["Edit(a.py)","Write(a.py)","MultiEdit(a.py)"]}}'
+  _expect exact 0 "case 1 — full cover (Write + MultiEdit)"
 
   _mk gap '{"permissions":{"deny":["Edit(a.py)"]}}'
-  _expect gap 1 "case 2 — Edit with no Write"
+  _expect gap 1 "case 2 — Edit with neither counterpart"
 
-  _mk glob '{"permissions":{"deny":["Edit(.env.local)","Write(.env*)"]}}'
-  _expect glob 0 "case 3 — trailing-* glob covers"
+  _mk glob '{"permissions":{"deny":["Edit(.env.local)","Write(.env*)","MultiEdit(.env*)"]}}'
+  _expect glob 0 "case 3 — trailing-* glob covers both"
 
-  _mk partial '{"permissions":{"deny":["Edit(a.py)","Write(a.py)","Edit(b.py)"]}}'
+  _mk partial '{"permissions":{"deny":["Edit(a.py)","Write(a.py)","MultiEdit(a.py)","Edit(b.py)"]}}'
   _expect partial 1 "case 4 — one covered, one not"
+
+  # THE DISCRIMINATING CASE for the 28/07 decision. Under the previous
+  # warn-only behaviour this exact input exited 0 with a warn line. If this
+  # ever goes green again, MultiEdit enforcement has silently regressed.
+  _mk write_only '{"permissions":{"deny":["Edit(a.py)","Write(a.py)"]}}'
+  _expect write_only 1 "case 4b — Write cover but NO MultiEdit (was exit 0 pre-decision)"
+
+  _mk multi_only '{"permissions":{"deny":["Edit(a.py)","MultiEdit(a.py)"]}}'
+  _expect multi_only 1 "case 4c — MultiEdit cover but no Write"
 
   _mk zero '{"permissions":{"deny":["Bash(rm *)","Read(./.env)"]}}'
   _expect zero 1 "case 5 — zero Edit entries fails loud (anti-vacuity)"
@@ -212,7 +226,7 @@ self_test() {
   # The discrimination check (MEH-1619): a WRONG matcher — one that accepted
   # any Write() entry regardless of path — would pass case 2's shape if the
   # file merely contained some unrelated Write. Prove we reject that.
-  _mk decoy '{"permissions":{"deny":["Edit(a.py)","Write(totally-unrelated.py)"]}}'
+  _mk decoy '{"permissions":{"deny":["Edit(a.py)","Write(totally-unrelated.py)","MultiEdit(totally-unrelated.py)"]}}'
   _expect decoy 1 "case 7 — an unrelated Write() does NOT count as cover"
 
   # No _mk: the file is deliberately never created.
