@@ -2729,7 +2729,9 @@ class GroupBuyCommitOut(BaseModel):
     group_buy_id: UUID
     user_id: UUID
     quantity: int
-    phone: str | None = None
+    # MEH-1651: `phone` removed. The column is no longer written (Expand-
+    # Contract — the DROP is post-launch, Sapir-only), so exposing it here
+    # would strand a permanently-NULL field in the API contract.
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -2811,10 +2813,12 @@ class GroupBuyCreate(BaseModel):
 
 class GroupBuyCommitRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
-    # MEH-1626 chunk 1: consumer-supplied phone persisted at group_buys.py:130
-    # and used to contact the participant — an unvalidated number here is a
-    # silently broken WhatsApp link, the MEH-1537 failure mode.
-    phone: PhoneNumberField | None = None
+    # MEH-1651: `phone` removed. MEH-1626 chunk 1 had added a PhoneNumberField
+    # validator here on the premise that the number was "used to contact the
+    # participant" — it never was: nothing in the repo ever read the column.
+    # MEH-1626's intent (no silently broken WhatsApp link) is served better by
+    # not collecting the number than by validating one nobody dials. Amendment
+    # 13 also bars collecting a field that serves no purpose.
 
 
 # MEH-141: category request flow
