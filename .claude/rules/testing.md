@@ -100,6 +100,36 @@ green? If you cannot answer from reading it, run it against a build with the ele
 deleted. That two-run control is the only thing that distinguishes a guard from a
 decoration, and it is cheap.
 
+**Restoring an old artifact is not ratification.** A runner-generated image carries
+**credibility, not currency** — restoring it returns the first and not the second, and the
+file name looks identical either way. Before restoring any baseline, count the commits
+touching that surface since the blob was captured; if the answer is not zero, take a fresh
+capture instead.
+
+_Proven on `10ed80d7`, which restored a 3.5-day-old `home-mobile` blob across **36
+unmeasured home-render commits** — in a PR that cited the MEH-1552 candidate-baseline
+lesson while committing the same error in the one disguise that lesson doesn't name._
+
+**The class is wider than VRT: inheriting an artifact's authority without its currency.**
+Every instance has the same three parts — an artifact that was rigorously produced, a gap
+during which the world moved, and a reuse that carries the rigour forward while silently
+dropping the as-of. The artifact is not wrong; it is *stale*, and staleness has no visual
+tell. Same shape, different surfaces:
+
+- a **lockfile hash** or dependency pin re-pointed at a previously-audited version
+- a **cached CI layer** or fixture reused because it was built from a clean tree — once
+- an **audit verdict** (`approved` in `skills-allowlist.json`) carried across a content
+  change, which is exactly why MEH-420 made the hash the trust anchor and not the verdict
+- a **benchmark or perf number** requoted after the workload changed
+- a **screenshot in a ticket** used as current evidence of a live surface
+
+**The question that detects all of them:** *as of when was this true, and what has changed
+since?* If the answer needs a count and nobody has counted, the artifact is a claim about
+the past being presented as a claim about the present. **Reproduce, don't restore** — and
+where reproduction is expensive, record the as-of next to the artifact so the next reader
+can do the subtraction. An artifact whose as-of is unrecoverable cannot be ratified at all,
+only replaced.
+
 Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/audits/silent-failure-audit.md).
 
 ---
