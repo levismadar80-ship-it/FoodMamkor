@@ -415,12 +415,20 @@
       "surprise_me": "Surprise me",
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
-      "geo_failure": "We couldn't detect your location — you can pick a city manually"
+      "geo_failure": "We couldn't detect your location — you can pick a city manually",
+      "chips_prefix": "Searching now:",
+      "trust_line": "Every business is checked and approved by hand"
     },
     "search": {
       "placeholder": "Search fresh veggies, grass-fed beef...",
       "sr_label": "Search businesses and cities",
-      "submit": "Search"
+      "submit": "Search",
+      "placeholders": {
+        "q1": "Sourdough bread",
+        "q2": "Organic eggs",
+        "q3": "Goat cheese",
+        "q4": "Field-fresh vegetables"
+      }
     },
     "stats": {
       "businesses": "businesses joined so far",
@@ -995,8 +1003,6 @@
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_prefix": "Pickup & delivery: ",
       "quantity_label": "Quantity",
-      "phone_label": "Contact phone",
-      "phone_placeholder": "050-1234567",
       "submitting": "Joining...",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
@@ -1086,6 +1092,9 @@
       "order_cutoff": "Orders accepted until {day} {time}",
       "order_cutoff_with_day": "Orders accepted until {day} {time} · delivery on {delivery_day}",
       "free": "Free",
+      "fee": "Delivery: {amount}",
+      "fee_free": "Free delivery",
+      "free_above": "Free over {amount}",
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
@@ -1097,6 +1106,10 @@
         "yes_nationwide": "Yes! Nationwide delivery — including {city}",
         "yes": "Yes, we deliver to {city}",
         "no": "Sorry, we don't deliver to {city} right now"
+      },
+      "coverage_cta": {
+        "known_city": "Not delivering to {city}? You can ask the business",
+        "prefill": "Hi! I'm from {city} — I'd love to know if delivery to my area is possible"
       }
     },
     "friday_delivery": {
@@ -4211,6 +4224,12 @@
         "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+        "fee_label": "Delivery fee (₪)",
+        "fee_hint": "Optional — shown on your business page, in the delivery section. Enter 0 if delivery is free.",
+        "fee_placeholder": "35",
+        "free_above_label": "Free delivery over (₪)",
+        "free_above_hint": "Optional — shown next to the delivery fee on your business page.",
+        "free_above_placeholder": "250",
         "delivery_days_label": "Delivery day per city (optional)",
         "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
         "day_select_aria": "Delivery day for {city}",

@@ -245,6 +245,21 @@ class Producer(Base):
         default=[],
         server_default=text("'{}'::text[]"),
     )
+    # MEH-1577: structured delivery cost, producer-level (NOT per delivery_area
+    # — delivery_areas.min_order below already owns the per-city dimension).
+    # NULL = not stated → the public DeliveryBlock renders no line at all;
+    # delivery_fee=0 is a distinct, meaningful value ("free delivery").
+    # INTEGER to match delivery_areas.min_order (:605), the same conceptual
+    # cluster — NOT the NUMERIC(10,2) of products.price / price_per_person.
+    # Two adjacent delivery-money fields with different types would fork
+    # serialization (Decimal vs int in one Pydantic response), rendering and
+    # fixtures; these are display-only whole shekels, no cent arithmetic.
+    # Owner-writable via producer_me PUT; validated in schemas.ProducerUpdate
+    # (both >= 0, free_delivery_above > 0 when set → 422), no DB CHECK —
+    # app-layer enforcement mirroring order_window. Expand-only per ADR-007.
+    # Paired migration: c7e2a4b91f38.
+    delivery_fee = Column(Integer, nullable=True)
+    free_delivery_above = Column(Integer, nullable=True)
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
@@ -1324,6 +1339,14 @@ class GroupBuy(Base):
     fulfillment_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
+    # MEH-1651: one-way latch for the open->funded notification pair. NULL =
+    # never sent. `status` cannot carry this on its own because it legitimately
+    # flaps: cancelling below min_participants reverts it to "open" and the next
+    # join re-crosses the threshold, so a status-keyed send would re-spam every
+    # participant on every flap.
+    # DO NOT clear this on the funded->open revert path — that re-arms the
+    #        notification, which is the exact failure the column prevents.
+    funded_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     producer = relationship("Producer", backref="group_buys")
