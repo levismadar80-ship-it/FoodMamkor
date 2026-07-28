@@ -64,9 +64,34 @@ helper, don't bypass it.
 
 ---
 
-## Zod validation before every map API call (Rule 19)
+## Zod validation before consuming an API response (Rule 19)
 
-Import schema from `lib/schemas.js`. Call `safeParse()` before any
+Two sides, different failure handling. Both are Rule 19; the snippet below
+covers only one of them.
+
+**Response side — validate the payload before consuming it.** Not map-only:
+producer feeds reach three surfaces and all three parse — the home grid
+(`lib/use-home-page.js:326`, `:360`, `:430`), `/map`
+(`app/[locale]/map/state/useProducersFeed.js:49`), and `/favorites`
+(`app/[locale]/favorites/FavoritesClient.jsx:140`). Import from
+`lib/schemas.js` (canonical `ProducerSchema` / `ProducersResponseSchema`) or
+from `lib/api-schemas.js`, which re-exports those and adds the non-map
+schemas. One owner — never redeclare a producer schema.
+
+Each caller routes failure to **its own** error state; there is no shared
+handler and none of them uses the toast snippet below. `/map` empties the
+list and toasts a localized string (`useProducersFeed.js:36-39`); `/favorites`
+parses **per row** and drops only the bad row, reserving the error state for
+a non-array payload (`FavoritesClient.jsx:130-143`).
+
+**One deliberate exception, and it is load-bearing:** `/favorites` nests its
+producer as `ProducerSchema.loose()` (`lib/api-schemas.js:92`), because
+`ProducerSchema` is badge-complete, not a `ProducerListOut` mirror — a strict
+parse there strips nine fields `ProducerCard` renders (MEH-1713). The grid
+and `/map` keep their strict, all-or-nothing parse on purpose. Do not
+"tidy" the `.loose()` away, and do not propagate it to the other two.
+
+**Request side — validate params before the call.** `safeParse()` before any
 `api.get` / `api.post` or Leaflet mutation. On failure:
 
 ```js
@@ -74,8 +99,8 @@ showToast.info(error.issues[0].message);
 return;
 ```
 
-Never pass `NaN`, `null`, `0`, or values `> 50` to the API or to map
-functions.
+Live at `LocationsEditor.jsx:105` — the only site using this form. Never
+pass `NaN`, `null`, `0`, or values `> 50` to the API or to map functions.
 
 ---
 

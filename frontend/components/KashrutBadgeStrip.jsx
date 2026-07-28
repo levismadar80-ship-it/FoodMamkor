@@ -8,7 +8,7 @@ import { StarOfDavid, X } from "@phosphor-icons/react";
 // t(`kashrut.badges.${key}.label`/`tooltip`). The `code` axis is the
 // API contract from the backend (snake-cased in messages: `organic-kosher`
 // → `organic_kosher`, `artisan-dairy` → `artisan_dairy`).
-const CODE_TO_KEY = {
+export const CODE_TO_KEY = {
   rabanut: "rabanut",
   badatz: "badatz",
   chalak: "chalak",
