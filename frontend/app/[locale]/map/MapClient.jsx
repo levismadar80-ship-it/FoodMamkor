@@ -240,6 +240,9 @@ export default function MapPage() {
     userCity: userCityCtx.city,
     setUserCity: userCityCtx.setCity,
     setShowCityPicker,
+    // MEH-1670: the viewport filter derives points the same way the marker layer
+    // does, so it needs the same layer-toggle state.
+    showSecondaryLayer,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
