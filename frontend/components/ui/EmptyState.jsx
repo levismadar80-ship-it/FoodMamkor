@@ -1,5 +1,14 @@
 import Link from "next/link";
 
+// MEH-1630 chunk 1 (decision 1): disc geometry per `size`. Class strings are
+// literals so Tailwind's scanner sees w-16/w-20/w-24 — never build them by
+// concatenation, the JIT would drop them.
+const CIRCLE_SIZES = {
+  sm: { disc: "w-16 h-16", icon: 28 },
+  md: { disc: "w-20 h-20", icon: 32 },
+  lg: { disc: "w-24 h-24", icon: 40 },
+};
+
 export default function EmptyState({
   // MEH-979b: `icon` is the Emoji-LOCK-safe visual — pass a Phosphor icon
   // component (e.g. ShoppingCart). `emoji` is the legacy prop still used by
@@ -21,32 +30,38 @@ export default function EmptyState({
   // that nine inline empty-state blocks hand-rolled, so chunk 2 can delete them
   // rather than keep a second system alive. Off by default — every existing
   // call site renders the bare icon exactly as before.
-  // Disc geometry is w-16/size-32, byte-identical to the four blocks that
-  // already use it (ForgotPassword, ResetPassword ×2, VerifyEmail). The other
-  // five sit at w-20 (×1) and w-24 (×2) with 40px icons; whether those
-  // normalize down or the variant needs a size prop is a CHUNK 2 decision, and
-  // deliberately not pre-empted here.
   circle = false,
+  // MEH-1630 chunk 1 (decision 1): disc size, so chunk 2 can migrate each block
+  // at the geometry it already has instead of normalizing. Normalization is
+  // deferred to chunk 3 and is blocked by MEH-1727 (webfonts blocked in E2E →
+  // VRT regeneration is untrustworthy, must not be run).
+  // Inert unless `circle` is set.
+  size = "sm",
   // MEH-1630 chunk 1 (decision 4): `gated` is a blocked action — NN/g's rule is
   // that it gets no control at all, not a disabled one. Suppresses the primary
   // CTA even when ctaLabel + a handler are passed, so a caller cannot half-gate
-  // a surface by forgetting to strip props. `secondaryHref` survives as a plain
-  // text link: the description says why it is locked, the link says where to go
-  // to unlock it. Off by default.
+  // a surface by forgetting to strip props. Off by default.
   gated = false,
+  // MEH-1630 chunk 1 (decision 3): the way out of a gated state has its own
+  // pair, separate from `secondaryLabel`/`secondaryHref` — those keep their
+  // existing meaning for the NON-gated case only. One prop, one rendering.
+  unblockLabel,
+  unblockHref,
 }) {
   // Gating wins over any CTA the caller passed — see the `gated` note above.
   const showCta = !gated && ctaLabel && (ctaHref || ctaOnClick);
-  const showGatedLink = gated && secondaryLabel && secondaryHref;
+  const showUnblockLink = gated && unblockLabel && unblockHref;
+  // Unknown size falls back to the default rather than crashing on undefined.
+  const disc = CIRCLE_SIZES[size] || CIRCLE_SIZES.sm;
 
   return (
     <div className="text-center py-12 px-6">
       {Icon && circle ? (
         <div
-          className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
+          className={`${disc.disc} rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center`}
           aria-hidden="true"
         >
-          <Icon size={32} className="text-primary" />
+          <Icon size={disc.icon} className="text-primary" />
         </div>
       ) : Icon ? (
         <Icon size={56} className="text-primary mx-auto mb-4" aria-hidden="true" />
@@ -64,16 +79,16 @@ export default function EmptyState({
           {example}
         </div>
       )}
-      {showGatedLink && (
+      {showUnblockLink && (
         // Tap-target floor (DESIGN.md "≥ 44 × 44px"): a bare text link is ~20px
         // tall, and in a gated state it is the ONLY control on screen. Same
         // shape and same fix as WhatsThis.jsx:29 — min-h-[44px] + inline-flex
         // enlarges the hit area without changing the visual treatment.
         <Link
-          href={secondaryHref}
+          href={unblockHref}
           className="min-h-[44px] inline-flex items-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
         >
-          {secondaryLabel}
+          {unblockLabel}
         </Link>
       )}
       {showCta && (
