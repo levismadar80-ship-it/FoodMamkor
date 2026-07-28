@@ -280,7 +280,7 @@ wrong answer.
     separate frontend PR for same feature; open new branch for bug
     discovered during existing feature work; leave related fixes on
     different branches requiring later merging.
-19. **Zod validation before every map API call.** See
+19. **Zod validation before consuming an API response.** See
     [.claude/rules/frontend.md](./frontend.md).
 20. **Review order — CI before adversarial (mandatory).** See
     [.claude/rules/testing.md](./testing.md).
