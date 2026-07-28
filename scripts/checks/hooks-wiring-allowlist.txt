@@ -17,4 +17,6 @@
 # then lives next to the thing. CC cannot: .claude/hooks/** is deny-enforced
 # (verified by probe, MEH-1500 Phase A), which is why this file exists.
 
+check-bash-safety.selftest.sh :: NOT a hook — it is the self-test FOR check-bash-safety.sh (MEH-1500 Phase C), invoked as `bash .claude/hooks/check-bash-safety.selftest.sh .claude/hooks/check-bash-safety.sh`, never as a PreToolUse entry. Wiring it would run the test suite on every Bash call. It lives beside the hook because that is where the thing it tests lives; the `guard-ok:` marker cannot be used because .claude/hooks/** is deny-enforced for CC. Resolve this entry only if the self-test moves out of .claude/hooks/ — not by wiring it.
+
 check-branch-base.sh :: Unwired pending Sapir's wire-or-delete decision (MEH-1720). Its own header states "unwired by default"; wiring needs .claude/settings.json, which CC cannot edit, and deleting a rule labelled (CRITICAL) in .claude/rules/workflow.md:10 is not CC's call. Listed so the guard is green on a KNOWN gap rather than red on an undecided one — the decision is tracked in MEH-1720, not deferred silently here.
