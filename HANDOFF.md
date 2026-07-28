@@ -3,6 +3,55 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-28 — testing rule: "a green with two causes is not a signal" (GREEN, docs-only) — PARKED, do not merge
+
+**Branch:** `feature/meh-1732-cancelling-faults-rule`. Opened and **parked deliberately** —
+the merge queue is frozen (adversarial reviewer dead repo-wide, E2E red on staging,
+DO-NOT-MERGE markers). Not blocked on anything technical.
+
+### What shipped
+One rule in `.claude/rules/testing.md`, beside the MEH-1619 discrimination rule, plus these
+two log entries (rule 31: append-only logs belong in a docs-only PR, and this is one).
+MEH-1619 asks whether an assertion goes red when the guarded thing breaks. The new rule asks
+the mirror question — **when it is green, is "the code is correct" the only explanation?**
+Four instances in one day, on four surfaces, in a session that had MEH-1619 loaded throughout.
+
+### The VRT regen — state as of this handoff
+Baselines are stale on **five** specs, not two: `home` (desktop + mobile), `about`
+(desktop + mobile), `login` (mobile). `home` is the hard one — content drift **and** fonts.
+The other three are fonts-only and only started failing when MEH-1727's fix (`35ce2619`)
+made the runs correct while the baselines stayed wrong.
+
+**CC cannot run the regen.** `vrt-update.yml` is `workflow_dispatch`-only and its own header
+states the GitHub MCP integration in CC sessions lacks `actions:write`; a local capture is
+forbidden *and* invalid, since the same header names **the CC sandbox** as rendering a
+different font stack. It also has no dry-run: committing the PNGs to the ref it runs on is
+its only mechanism, so the reviewable state is *unmerged*, never *uncommitted*.
+
+**The contact sheet needs no regen.** Run `30373662792` (staging, 15:30Z, post-font-fix)
+already holds runner-generated `-actual` and `-diff` for all five, artifact
+`playwright-report` ID `8694181006`, 75 MB. CC cannot fetch it — **HTTP 403** measured both
+anonymously and with the env token (length 14, not a usable GitHub token). Sapir is pulling
+it from the Actions tab; CC builds the side-by-side when the zip lands.
+
+### `home` drift enumeration — two things Sapir wants on record
+1. **This is ratification of shipped work, not a blind sign-off on rot.** Per Sapir, every
+   entry maps to a closed ticket. *(Recorded as her determination — CC enumerated the
+   commits but did not independently verify the state of all 48 tickets.)*
+2. **Four entries dated 11/07 — the same day as the desktop baseline `bf71e303` — stay
+   flagged UNCERTAIN.** Whether they precede or follow the capture within that day is
+   unresolved. **Resolve by timestamp or not at all; do not resolve by inference.**
+
+Counts: desktop `bf71e303` (11/07) → now = **48** product-visible commits + **231** touching
+`he.json`. Mobile blob `3680b928` (23/07) → now = **9** + **74**. Full grouped list in the
+session transcript and in the PR body when the contact sheet is posted.
+
+### Open items — Sapir
+1. Fetch artifact `8694181006` → hand to CC for the five-way side-by-side.
+2. Dispatch `vrt-update.yml` from the Actions tab **on a feature branch** (not staging —
+   MEH-1689 / GH013). Commit the baselines there; do not merge.
+3. This rule PR stays parked until the queue unfreezes.
+
 ## 2026-07-28 — MEH-1710 brand rule: empty-state copy convention (LOW-RISK, docs-only) — PR #2361 merged
 
 **Branch:** `feature/meh-1710-brand-empty-state-copy-rule` (2 commits: the section + a staging merge).
