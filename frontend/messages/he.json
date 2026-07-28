@@ -430,12 +430,20 @@
       "surprise_me": "הפתיעו אותי",
       "searching": "בחיפוש...",
       "scroll_down_label": "גלול לרשימת בתי העסק",
-      "geo_failure": "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית"
+      "geo_failure": "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית",
+      "chips_prefix": "מחפשות עכשיו:",
+      "trust_line": "כל בית עסק נבדק ואושר ידנית"
     },
     "search": {
       "placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
       "sr_label": "חיפוש בתי עסק וערים",
-      "submit": "חיפוש"
+      "submit": "חיפוש",
+      "placeholders": {
+        "q1": "לחם מחמצת",
+        "q2": "ביצים אורגניות",
+        "q3": "גבינת עיזים",
+        "q4": "ירקות מהשדה"
+      }
     },
     "stats": {
       "businesses": "בתי עסק שהצטרפו עד היום",
@@ -990,8 +998,6 @@
       "deadline_prefix": "מועד אחרון: {date}",
       "fulfillment_prefix": "איסוף ומשלוח: ",
       "quantity_label": "כמות",
-      "phone_label": "טלפון ליצירת קשר",
-      "phone_placeholder": "050-1234567",
       "submitting": "בצירוף...",
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
@@ -1084,6 +1090,9 @@
       "order_cutoff": "מקבלים הזמנות עד {day} {time}",
       "order_cutoff_with_day": "מקבלים הזמנות עד {day} {time} · משלוח ביום {delivery_day}",
       "free": "חינם",
+      "fee": "משלוח: {amount}",
+      "fee_free": "משלוח חינם",
+      "free_above": "מעל {amount} — חינם",
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
@@ -1095,6 +1104,10 @@
         "yes_nationwide": "כן! משלוחים לכל הארץ — כולל {city}",
         "yes": "כן, מגיעים ל{city}",
         "no": "לצערנו לא מגיעים ל{city} כרגע"
+      },
+      "coverage_cta": {
+        "known_city": "לא מגיעים ל{city}? אפשר לשאול את בית העסק",
+        "prefill": "היי! אני מ{city} — אשמח לדעת אם יש אפשרות למשלוח לאזור"
       }
     },
     "friday_delivery": {
@@ -4232,6 +4245,12 @@
         "delivery_excluded_label": "משלוחים לכל הארץ, חוץ מהערים האלה:",
         "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
         "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
+        "fee_label": "עלות משלוח (₪)",
+        "fee_hint": "אופציונלי — מופיע בעמוד העסק שלכן, בקטע המשלוחים. אפשר לרשום 0 אם המשלוח חינם.",
+        "fee_placeholder": "35",
+        "free_above_label": "משלוח חינם מעל (₪)",
+        "free_above_hint": "אופציונלי — מופיע לצד עלות המשלוח בעמוד העסק.",
+        "free_above_placeholder": "250",
         "delivery_days_label": "יום משלוח לכל עיר (לא חובה)",
         "delivery_days_hint": "מוצג ללקוחות בעמוד העסק — למשל \"יוצאים בימי שישי\". בלי בחירה יוצג \"בתיאום מראש\".",
         "day_select_aria": "יום משלוח ל{city}",

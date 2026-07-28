@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -21,6 +21,7 @@ from app.schemas.schemas import (
     GroupBuyDetail,
     GroupBuyOut,
 )
+from app.services.group_buy_notifications import send_funded_notifications
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
 admin_router = APIRouter(prefix="/admin/group-buys", tags=["admin-group-buys"])
@@ -82,10 +83,61 @@ def get_group_buy(
     return _enrich(gb, current_user)
 
 
+def _maybe_notify_funded(
+    gb: GroupBuy, db: Session, background_tasks: BackgroundTasks
+) -> None:
+    """MEH-1651: latch + queue the open->funded notification pair.
+
+    Guarded by `funded_notified_at IS NULL` — a one-way latch, so the
+    funded -> open -> funded flap around `min_participants` notifies exactly
+    once. Caller holds the `gb` row lock (MEH-773) and owns the commit; this
+    only stamps the marker in the same transaction, so the stamp and the
+    threshold crossing can never diverge.
+
+    Recipients are resolved HERE, while the request-scoped Session is open, and
+    handed to the background task as plain strings — a background task must
+    never touch `db`, which is closed once the response is sent.
+    """
+    if gb.funded_notified_at is not None:
+        return
+
+    # Requires the caller to have flushed the new commit, or the participant
+    # who triggered the funding is missing from their own notification.
+    participant_emails = [
+        email
+        for (email,) in db.query(User.email)
+        .join(GroupBuyCommit, GroupBuyCommit.user_id == User.id)
+        .filter(GroupBuyCommit.group_buy_id == gb.id)
+        .all()
+    ]
+    # .first(), not .scalar(): no DB constraint stops two User rows from
+    # sharing a producer_id, and .scalar() raises MultipleResultsFound on a
+    # second match — which would 500 the commit itself, since this runs before
+    # db.commit(), not inside the background task's try/except. Matches the
+    # defensive convention already used for this exact query shape elsewhere
+    # (admin.py:522,566,632).
+    owner_row = db.query(User.email).filter(User.producer_id == gb.producer_id).first()
+    owner_email = owner_row[0] if owner_row else None
+
+    # MEH-1454: naive datetime. sa.DateTime() is naive and this module uses
+    # datetime.utcnow() throughout — an aware value here breaks comparisons.
+    gb.funded_notified_at = datetime.utcnow()
+
+    background_tasks.add_task(
+        send_funded_notifications,
+        owner_email,
+        participant_emails,
+        gb.title,
+        gb.producer.name if gb.producer else "",
+        str(gb.id),
+    )
+
+
 @router.post("/{group_buy_id}/commit", status_code=201)
 def commit_to_group_buy(
     group_buy_id: UUID,
     data: GroupBuyCommitRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -123,18 +175,26 @@ def commit_to_group_buy(
     if existing:
         raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכש זו")
 
+    # MEH-1651: `phone` is no longer collected or written. Nothing ever read
+    # the column, and after the funded notification the participant is reached
+    # by email anyway. The column itself stays until the post-launch DROP
+    # (Expand-Contract, ADR-007 — Sapir-only).
     commit = GroupBuyCommit(
         group_buy_id=group_buy_id,
         user_id=current_user.id,
         quantity=data.quantity,
-        phone=data.phone or current_user.phone,
     )
     db.add(commit)
+    # Flush so the just-added commit is visible to the participant-email query
+    # in _maybe_notify_funded — without it the joining participant would be
+    # missing from the notification that their own join triggered.
+    db.flush()
 
     # Auto-fund when min_participants reached
     new_count = current_count + 1
     if new_count >= gb.min_participants:
         gb.status = "funded"
+        _maybe_notify_funded(gb, db, background_tasks)
 
     db.commit()
     db.refresh(commit)
@@ -170,6 +230,10 @@ def cancel_commit(
     remaining = len(gb.commits) - 1
     if gb.status == "funded" and remaining < gb.min_participants:
         gb.status = "open"
+        # DO NOT clear gb.funded_notified_at here (MEH-1651) — the status is
+        #        allowed to flap, the notification is not. Clearing it re-arms
+        #        the send, so re-crossing the threshold would re-spam every
+        #        participant. The latch is deliberately one-way.
     db.commit()
     return {"detail": "ההצטרפות בוטלה"}
 
