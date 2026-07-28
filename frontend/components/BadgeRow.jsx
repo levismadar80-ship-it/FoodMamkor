@@ -59,6 +59,26 @@ function kosherLabel(producer, tKashrut, fallback) {
   return tKashrut(`badges.${CODE_TO_KEY[codes[0]]}.label`);
 }
 
+/**
+ * The one entry point every surface that renders a badge label must call.
+ *
+ * MEH-1711 resolved the label inside BadgeRow's own `.map`, which fixed the
+ * visible pills and left one surface behind: ProducerCard builds the `+N`
+ * overflow list straight from `allBadges(producer)` (ProducerCard.jsx:349-356)
+ * and reads `b.label` off BADGE_CONFIG, never passing through BadgeRow at all.
+ * A kosher pill in position 3+ therefore said the fallback while the detail
+ * page said "חלק" — the original three-surface contradiction surviving on the
+ * one surface nobody was looking at.
+ *
+ * Exported rather than duplicated so the overflow cannot drift from the pill:
+ * the resolution rule (filter through CODE_TO_KEY, then count) lives here once.
+ * Every other badge is returned untouched — this is a label resolver, not a
+ * badge filter, and it must not become one.
+ */
+export function resolveBadgeLabel(badge, producer, tKashrut) {
+  return badge.key === "kosher" ? kosherLabel(producer, tKashrut, badge.label) : badge.label;
+}
+
 export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
@@ -89,9 +109,7 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
           // changes what the pill says, never who earns it.
           <Badge
             key={b.key}
-            badge={
-              b.key === "kosher" ? { ...b, label: kosherLabel(producer, tKashrut, b.label) } : b
-            }
+            badge={{ ...b, label: resolveBadgeLabel(b, producer, tKashrut) }}
             surface={surface}
             avoidRef={avoidRef}
           />
