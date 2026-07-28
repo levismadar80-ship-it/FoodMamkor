@@ -38,22 +38,53 @@ check_settings() {
   local label="${2:-$settings}"
   local rc=0
 
+  # python3 absence must not be reported as a JSON problem — a wrong diagnosis
+  # costs more debugging time than no diagnosis.
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "  FAIL $label — python3 not on PATH; cannot parse settings. Fail-closed."
+    return 1
+  fi
+
   if [[ ! -f "$settings" ]]; then
     echo "  FAIL $label — no such file. Fail-closed: cannot verify parity."
     return 1
   fi
 
-  # Fail-closed on unparseable JSON rather than treating it as "no entries".
-  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$settings" 2>/dev/null; then
-    echo "  FAIL $label — not valid JSON. Fail-closed."
-    return 1
-  fi
-
-  local report
-  report="$(python3 - "$settings" <<'PY'
+  # ONE python invocation that validates shape AND computes, so there is no
+  # window where validity passed and computation silently died. Every shape
+  # error exits non-zero with an ERR line; bash checks that status below.
+  #
+  # This replaced a two-call version where a valid-JSON-but-wrong-SHAPE file
+  # (root is a list, permissions is a string, a non-string inside deny) passed
+  # the validity call, threw AttributeError in the compute call, and left
+  # $report empty — after which `[[ "" -gt 0 ]]` is FALSE in bash arithmetic
+  # context and the guard printed "ok". Four of five malformed shapes reported
+  # success, including one that hid a real Edit-without-Write gap. A guard
+  # against silent failure that fails silently is worse than none.
+  local report py_rc
+  report="$(python3 - "$settings" 2>&1 <<'PY'
 import json, sys
 
-deny = json.load(open(sys.argv[1])).get("permissions", {}).get("deny", [])
+def die(msg):
+    print("ERR\t" + msg)
+    sys.exit(3)
+
+try:
+    doc = json.load(open(sys.argv[1]))
+except Exception as exc:
+    die("not valid JSON: %s" % exc)
+
+if not isinstance(doc, dict):
+    die("top level is %s, expected an object" % type(doc).__name__)
+perms = doc.get("permissions", {})
+if not isinstance(perms, dict):
+    die("permissions is %s, expected an object" % type(perms).__name__)
+deny = perms.get("deny", [])
+if not isinstance(deny, list):
+    die("permissions.deny is %s, expected a list" % type(deny).__name__)
+nonstr = [i for i, e in enumerate(deny) if not isinstance(e, str)]
+if nonstr:
+    die("permissions.deny has non-string entries at index %s" % nonstr)
 
 def entries(tool):
     p = tool + "("
@@ -91,6 +122,22 @@ print("COUNT\t%d\t%d" % (len(missing), len(edits)))
 print("MULTI\t%d\t%d" % (len(mi_missing), len(edits)))
 PY
 )"
+  py_rc=$?
+
+  # Fail-closed on ANY non-zero exit or empty output. This is the check whose
+  # absence produced the false green described above.
+  if [[ $py_rc -ne 0 || -z "$report" ]]; then
+    echo "  FAIL $label — could not parse settings (python exit $py_rc). Fail-closed."
+    [[ -n "$report" ]] && sed 's/^/       /' <<<"$report"
+    return 1
+  fi
+
+  # Belt-and-braces: the COUNT line is what every threshold below reads. If the
+  # emit shape ever drifts, refuse rather than compare against empty strings.
+  if ! grep -q '^COUNT' <<<"$report" && ! grep -q '^ZEROSCAN$' <<<"$report"; then
+    echo "  FAIL $label — report carried no COUNT line; parse shape drifted. Fail-closed."
+    return 1
+  fi
 
   if grep -q '^ZEROSCAN$' <<<"$report"; then
     echo "  FAIL $label — parsed 0 Edit() deny entries."
@@ -168,8 +215,25 @@ self_test() {
   _mk decoy '{"permissions":{"deny":["Edit(a.py)","Write(totally-unrelated.py)"]}}'
   _expect decoy 1 "case 7 — an unrelated Write() does NOT count as cover"
 
-  [[ ! -f "$tmp/missing.json" ]]
+  # No _mk: the file is deliberately never created.
   _expect missing 1 "case 8 — absent settings.json fails closed"
+
+  # Cases 9-12: VALID JSON, WRONG SHAPE. A distinct class from case 6, and the
+  # one that used to fail OPEN. Case 6 (unparseable) passing is not evidence
+  # that these do — that assumption is exactly what shipped the false green.
+  _mk root_list '[]'
+  _expect root_list 1 "case 9 — root is a list, not an object"
+
+  _mk root_string '"just-a-string"'
+  _expect root_string 1 "case 10 — root is a bare string"
+
+  _mk perms_string '{"permissions":"not-an-object"}'
+  _expect perms_string 1 "case 11 — permissions is a string"
+
+  # The nastiest: a real Edit-without-Write gap alongside a stray non-string.
+  # Pre-fix this printed "ok" and hid the gap.
+  _mk deny_nonstring '{"permissions":{"deny":["Edit(a.py)",42]}}'
+  _expect deny_nonstring 1 "case 12 — non-string inside deny (hid a real gap)"
 
   return "$rc"
 }
