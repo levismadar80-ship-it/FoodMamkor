@@ -100,19 +100,49 @@ const NAIVE_SCHEMA = z.object({
   created_at: z.string().nullable().optional(),
 });
 
+// MEH-1719: the contrast basis, and the one thing in this file that is NOT a
+// real field.
+//
+// What it proves: `.loose()` retains keys the schema does not declare, while a
+// plain `z.object` drops them. That is the single property the shipped
+// FavoriteWithProducerSchema depends on, and the self-test below is the only
+// assertion that measures it directly.
+//
+// Why synthetic rather than a real backend field: this contrast originally ran
+// on the nine card fields, which were undeclared on 28/07 and are declared as
+// of MEH-1719 — so the assertion went red the moment that ticket landed, not
+// because anything broke but because its basis had gone stale. Any REAL field
+// carries the same expiry. `delivery_cities` was proposed as a replacement on
+// the grounds that schemas.js:51-52 documents it as deliberately undeclared,
+// and rejected: MEH-902 declared `delivery_areas`, its direct sibling, after
+// that field was stripped, so the next delivery or map ticket collapses this
+// assertion again in exactly the same way. "Documented as intentional" is not
+// the same as "cannot be declared."
+//
+// `__schema_strip_probe` is not serialized by ProducerListOut, is not read by
+// any component, and has no meaning to declare — so no future ticket has a
+// reason to add it to ProducerSchema, and the contrast cannot go stale.
+// DO NOT declare this key in lib/schemas.js — doing so would silently disarm
+// the assertion below rather than fail it.
+const STRIP_PROBE_KEY = "__schema_strip_probe";
+
 describe("MEH-1713 self-test — the fixture discriminates", () => {
   it("sorts the naive (stripping) schema apart from the shipped (.loose) one", () => {
-    const naive = NAIVE_SCHEMA.parse(row(RICH_PRODUCER));
-    const shipped = FavoriteWithProducerSchema.parse(row(RICH_PRODUCER));
+    // Spread rather than mutate: RICH_PRODUCER feeds the six assertions below
+    // and none of them should see the probe.
+    const probed = { ...RICH_PRODUCER, [STRIP_PROBE_KEY]: "strip-me" };
+    const naive = NAIVE_SCHEMA.parse(row(probed));
+    const shipped = FavoriteWithProducerSchema.parse(row(probed));
 
     // Both parses SUCCEED — that is the whole danger. The difference is not
     // validity, it is what survives, which is why "does it parse?" is not an
     // assertion worth making here.
-    const naiveKept = UNDECLARED_CARD_FIELDS.filter((f) => f in naive.producer);
-    const shippedKept = UNDECLARED_CARD_FIELDS.filter((f) => f in shipped.producer);
-
-    expect(naiveKept).toEqual([]); // the bug, reproduced
-    expect(shippedKept).toEqual(UNDECLARED_CARD_FIELDS); // the fix
+    expect(STRIP_PROBE_KEY in naive.producer, "plain z.object must drop an undeclared key").toBe(
+      false,
+    ); // the bug, reproduced
+    expect(shipped.producer[STRIP_PROBE_KEY], ".loose() must retain an undeclared key").toBe(
+      "strip-me",
+    ); // the fix
   });
 });
 
