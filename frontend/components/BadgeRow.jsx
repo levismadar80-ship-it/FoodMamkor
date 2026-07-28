@@ -144,8 +144,8 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
   // MEH-1334: the hero seal gets the richer verification popover — the manual
   // approval + licensing story (DNA-LOCK differentiator) was invisible behind
   // a date-only tooltip. Content = the LOCKED v3 copy exactly: title + body +
-  // link to /about#verification (placeholder target until MEH-1336 ships the
-  // section). The pre-existing MEH-762 doc-date line is intentionally dropped
+  // link to /about#verification (MEH-1336 shipped the section — live target).
+  // The pre-existing MEH-762 doc-date line is intentionally dropped
   // here — the locked copy is dateless (chunk-2 CLARIFY c). The verified SEAL
   // itself only renders for verification_tier === "verified" (badges.js:140),
   // so this popover can never make a false trust claim on a non-verified
