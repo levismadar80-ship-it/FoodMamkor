@@ -65,9 +65,13 @@ export default function EmptyState({
         </div>
       )}
       {showGatedLink && (
+        // Tap-target floor (DESIGN.md "≥ 44 × 44px"): a bare text link is ~20px
+        // tall, and in a gated state it is the ONLY control on screen. Same
+        // shape and same fix as WhatsThis.jsx:29 — min-h-[44px] + inline-flex
+        // enlarges the hit area without changing the visual treatment.
         <Link
           href={secondaryHref}
-          className="text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition"
+          className="min-h-[44px] inline-flex items-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
         >
           {secondaryLabel}
         </Link>
