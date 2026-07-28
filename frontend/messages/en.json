@@ -839,17 +839,7 @@
         "vacation_msg": "Send a message — they will respond soon"
       },
       "order_window": {
-        "strip_label": "Accepting orders:",
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
-        "days_short": {
-          "sun": "Sun",
-          "mon": "Mon",
-          "tue": "Tue",
-          "wed": "Wed",
-          "thu": "Thu",
-          "fri": "Fri",
-          "sat": "Sat"
-        }
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen"
       }
     },
     "card": {
