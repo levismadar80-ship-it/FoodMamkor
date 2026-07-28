@@ -115,7 +115,19 @@ export const BADGE_CONFIG = {
   },
   kosher: {
     key: "kosher",
-    label: "כשר",
+    // MEH-1711: "כשר" was our own synthesized label — the bare word claims a
+    // kashrut standard without naming which one, the over-claim MEH-1418
+    // already rejected once for the filter chip (attribute-labels.js:61,
+    // Sapir-LOCKED per MEH-1087) without taking the badge in the same round.
+    // This is now the FALLBACK only: BadgeRow resolves the actual certification
+    // name ("חלק", "בדצ״ה", …) from producer.kashrut_badges when there is
+    // exactly one code, and falls back to this string on zero or 2+ codes —
+    // where naming a single certificate would itself be a misstatement.
+    // Industry precedent: ACM/Booking.com 2024 — the objection was to the
+    // self-synthesized label, and the remedy was naming the third-party
+    // certification instead. Hardcoded Hebrew matches every sibling entry in
+    // this file; no new i18n key, so the MEH-978 en-parity guard is untouched.
+    label: "כשרות מאומתת",
     tooltip: "המוצרים תחת השגחת כשרות.",
     color: "muted",
   },
