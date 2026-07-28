@@ -158,6 +158,8 @@ Phrasings that survived to production once and must be caught in review:
 
 **הערה לקוד:** האכיפה מתוכננת כ-lexicon check ב-CI (MEH-1652, חצי ב').
 
+**ADR מגבה:** [ADR-031](./decisions/ADR-031-outbound-contact-unobservable.md) — הערוץ היוצא בלתי-נצפה, ומכאן מגבלת הקופי ושער ה-lexicon.
+
 ## 8 · How brand decisions are recorded
 
 The brand record is split across three document types:
