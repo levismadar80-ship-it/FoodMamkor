@@ -33,6 +33,9 @@
 import { chromium } from "@playwright/test";
 import http from "http";
 
+/** Optional Chromium path, argv only (see the launch call below). */
+const BROWSER_PATH = process.argv[2];
+
 const FONT_CSS =
   "https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700" +
   "&family=Heebo:wght@400;700&family=DM+Sans:wght@400&display=swap";
@@ -55,12 +58,15 @@ const url = `http://127.0.0.1:${server.address().port}/`;
 
 /** @param {Record<string,string>} extraHTTPHeaders */
 async function probe(label, extraHTTPHeaders) {
-  // Sandbox pins an older Chromium build than @playwright/test expects; use the
-  // preinstalled binary rather than downloading (see environment notes).
-  const browser = await chromium.launch({
-    executablePath:
-      process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  });
+  // Optional browser path via ARGV, never an env var — a new `process.env.*`
+  // read here is a new undocumented variable and the Env drift gate (MEH-491)
+  // reds it. Exactly this happened to MEH-1643's harness with this exact name
+  // (`PW_CHROMIUM`, CHANGELOG.md:54); the fix there was argv, and this matches
+  // it rather than inventing a second convention. Regression rule 8.
+  //   node e2e/qa-meh1727-font-cors.mjs [/path/to/chrome]
+  const browser = await chromium.launch(
+    BROWSER_PATH ? { executablePath: BROWSER_PATH } : {}
+  );
   const context = await browser.newContext({ extraHTTPHeaders });
   const page = await context.newPage();
 
