@@ -110,7 +110,20 @@ vi.mock("react-leaflet", async () => {
         {children}
       </div>
     ),
-    Tooltip: ({ children }) => <div data-testid="tooltip">{children}</div>,
+    // MEH-1682: the stub used to swallow `direction` and `offset`, so the
+    // tooltip's placement was invisible to every test here — which is exactly
+    // how a bare, `direction:'auto'` tooltip shipped. `String(direction)` keeps
+    // "undefined" (the buggy default-inheriting form) assertable rather than
+    // dropping the attribute.
+    Tooltip: ({ children, direction, offset }) => (
+      <div
+        data-testid="tooltip"
+        data-direction={String(direction)}
+        data-offset-y={String(offset?.[1])}
+      >
+        {children}
+      </div>
+    ),
     useMap: () => useContext(MapStubContext),
   };
 });
@@ -395,5 +408,95 @@ describe("MEH-1659 — inline zoom + fullscreen expand", () => {
     // The expand/close affordances are <button>s, so a new pill-shaped link
     // sneaking into the nav row is the only way this count moves.
     expect(screen.getAllByRole("link")).toHaveLength(2);
+  });
+});
+
+/**
+ * MEH-1682 — the pin tooltip is anchored VERTICALLY, on purpose.
+ *
+ * Leaflet's default `direction: 'auto'` chooses a horizontal side from the
+ * marker's container x, and that choice is broken under `html { direction: rtl }`
+ * (Leaflet #7201, open upstream, present in 1.9.4): the tooltip floats detached
+ * beside the pin with a lateral gap and no arrow. `direction="top"` removes the
+ * horizontal decision from the equation.
+ *
+ * Two independent properties are asserted, because either one alone passes on a
+ * shape the ticket exists to prevent: a `direction="top"` with the wrong offset
+ * buries the tooltip inside the pin, and a correct offset with `direction`
+ * unset is still the RTL bug.
+ */
+describe("MEH-1682 — tooltip anchored above the pin, not auto-placed", () => {
+  const PRIMARY_PIN_PX = 32;
+  const SECONDARY_PIN_PX = 24;
+
+  // Deliberately NOT imported from the component: these mirror its constants so
+  // that resizing a pin without revisiting the offset reds this test instead of
+  // silently shifting the tooltip onto the pin.
+  const locations = [
+    { id: "a", kind: "branch", label: "הסניף", lat: 32.57, lng: 34.95, is_primary: true },
+    { id: "b", kind: "pickup", label: "איסוף", lat: 32.58, lng: 34.96 },
+    { id: "c", kind: "market_stand", label: "דוכן", lat: 32.59, lng: 34.97 },
+  ];
+  const producer = { id: "p1", name: "רוח השדה", categories: [{ id: 4, name: "לחמים ואפייה" }] };
+
+  const renderPins = () =>
+    render(
+      <MiniMap
+        lat={32.57}
+        lng={34.95}
+        name="רוח השדה"
+        locations={locations}
+        producer={producer}
+      />,
+    );
+
+  // Each tooltip paired with the pin it belongs to, so the offset is checked
+  // against that pin's real size rather than against a global expectation.
+  const tooltipsWithPinSize = () =>
+    screen.getAllByTestId("marker").map((marker) => ({
+      tooltip: within(marker).getByTestId("tooltip"),
+      pinPx: marker.getAttribute("data-icon-class").includes("mehamakor-minimap-pin-secondary")
+        ? SECONDARY_PIN_PX
+        : PRIMARY_PIN_PX,
+    }));
+
+  it("gives EVERY tooltip an explicit vertical direction — never Leaflet's 'auto'", () => {
+    renderPins();
+    const pairs = tooltipsWithPinSize();
+    expect(pairs).toHaveLength(3);
+    for (const { tooltip } of pairs) {
+      // "undefined" is the bare form that inherits `auto`; "auto" is it spelled
+      // out. Both are the bug, and asserting equality with "top" rejects the
+      // horizontal values ("left" / "right") too.
+      expect(tooltip.dataset.direction).toBe("top");
+    }
+  });
+
+  it("offsets every tooltip clear of its OWN pin — bigger pin, bigger offset", () => {
+    renderPins();
+    for (const { tooltip, pinPx } of tooltipsWithPinSize()) {
+      const offsetY = Number(tooltip.dataset.offsetY);
+      // Upward is negative in Leaflet's offset space.
+      expect(offsetY).toBeLessThan(0);
+      // The invariant that matters: the tooltip's anchor edge sits ABOVE the
+      // circle. iconAnchor is the pin CENTRE, so anything within half the pin
+      // renders on top of it. This is what rejects reusing HomepageMiniMap's
+      // -8 (correct for its 24px pin, 8 < 16 = inside the 32px primary pin).
+      expect(Math.abs(offsetY)).toBeGreaterThan(pinPx / 2);
+    }
+  });
+
+  it("uses two DISTINCT offsets — the primary and secondary pins are not interchangeable", () => {
+    renderPins();
+    const pairs = tooltipsWithPinSize();
+    const primary = pairs.filter((p) => p.pinPx === PRIMARY_PIN_PX);
+    const secondary = pairs.filter((p) => p.pinPx === SECONDARY_PIN_PX);
+    expect(primary).toHaveLength(1);
+    expect(secondary).toHaveLength(2);
+    // Exact values, so collapsing both sizes onto one shared constant fails
+    // here even though it would still satisfy the clears-the-pin check above
+    // (a single -18 clears both pins, but floats the 24px one too high).
+    expect(primary[0].tooltip.dataset.offsetY).toBe("-18");
+    for (const { tooltip } of secondary) expect(tooltip.dataset.offsetY).toBe("-14");
   });
 });
