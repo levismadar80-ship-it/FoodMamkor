@@ -34,31 +34,56 @@ both SHAs, and the drift is entirely frontend. `git rev-parse --is-shallow-repos
 
 ## 2 · Findings summary
 
+> ### ⚠️ CORRECTION — 2026-07-28, after publication (MEH-1743)
+>
+> **F-1, F-2 and F-3 were originally rated 🟠 High / 🟡 Low and described as "live on `main`".
+> That was wrong. All three are unreachable, and their corrected severity is ⚪ latent.**
+>
+> The `home_products` router is **not mounted**: the module is absent from the import tuple
+> (`backend/app/router_registry.py:30-36`) *and* `app.include_router(home_products.router)` is
+> commented out (`:61`), disabled under **MEH-1406 per the brand LOCK** (licensed businesses
+> only). `TestHomeProductsKillSwitch` (`tests/test_api.py:4265-4296`) asserts every
+> `/home-products*` endpoint returns **404**. No request reaches those handlers.
+>
+> **Root cause of the error — code identity was mistaken for reachability.** The original pass
+> verified `git diff 114e4c84 origin/main -- backend/app/routers/home_products.py` was empty and
+> concluded "live in production". The file *is* identical on `main`; it is simply never routed to.
+> The authorization matrix was built from `@router.<verb>` decorators inside `routers/` and never
+> consulted `router_registry.py`, so an unmounted module is indistinguishable from a mounted one.
+> **This is a structural blind spot of the method, not a typo** — see §4.1a, and P2–P8 must
+> include a mount check.
+>
+> The underlying code defects are real and the analysis of them stands; they are **dead code**
+> while the router stays unmounted, and would become live if it is ever re-mounted.
+
 | Severity | Count |
 |---|---:|
 | 🔴 Critical | **0** |
-| 🟠 High | **2** |
-| 🟡 Low | **2** |
-| ⚪ Info | **2** |
+| 🟠 High | **0** ~~2~~ |
+| 🟡 Low | **1** ~~2~~ |
+| ⚪ Info / latent | **5** ~~2~~ |
 | **Total** | **6** |
 
 **STOP condition not triggered.** The epic's rule is *"🔴 Critical exposed on production (`main`)
 → halt the sweep and report before continuing."* No finding reached Critical, so the sweep ran to
-completion. **Both 🟠 High findings are present on `main` and therefore live in production** —
-verified by diffing the file against `origin/main`, not inferred. They are flagged here rather
-than escalated mid-sweep because neither is an authentication bypass, data breach, or RCE.
+completion. After the correction above, **no finding is live in production at all**.
 
-| ID | Sev | Title | OWASP / CWE | On `main`? | Fix |
+| ID | Sev (corrected) | Title | OWASP / CWE | Reachable? | Fix |
 |---|---|---|---|---|---|
-| **F-1** | 🟠 High | Rating aggregate and its auto-hide trigger are manipulable by a single user | A04:2025 Insecure Design / CWE-840 | **Yes** | M |
-| **F-2** | 🟠 High | Click endpoint discloses the phone of hidden/deactivated listings, bypassing the MEH-386 BOLA gate | A01:2025 Broken Access Control / CWE-639 | **Yes** | S |
-| **F-3** | 🟡 Low | Public unauthenticated write with no rate limit (`POST /home-products/rate/{token}`) | A04:2025 / CWE-770 | Yes | S |
-| **F-4** | 🟡 Low | PII prefill lookup has no rate limit | A01:2025 / CWE-770 | Yes | S |
+| **F-1** | ⚪ latent ~~🟠 High~~ | Rating aggregate and its auto-hide trigger are manipulable by a single user | A04:2025 Insecure Design / CWE-840 | **No — router unmounted** | M |
+| **F-2** | ⚪ latent ~~🟠 High~~ | Click endpoint discloses the phone of hidden/deactivated listings, bypassing the MEH-386 BOLA gate | A01:2025 Broken Access Control / CWE-639 | **No — router unmounted** | S |
+| **F-3** | ⚪ latent ~~🟡 Low~~ | Public unauthenticated write with no rate limit (`POST /home-products/rate/{token}`) | A04:2025 / CWE-770 | **No — router unmounted** | S |
+| **F-4** | 🟡 Low | PII prefill lookup has no rate limit | A01:2025 / CWE-770 | **Yes** — `prefill_router` mounted at `router_registry.py:82` | S |
 | **F-5** | ⚪ Info | Comment in `verify_google_token` contradicts the code's (safe) behaviour | — | Yes | S |
 | **F-6** | ⚪ Info | Git-history secret scan **not measured** — `gitleaks` unavailable | — | n/a | — |
 
 Every fix is **RED risk-tier** (`auth`/`security` → never auto-merge), per the epic §5 and
 `.claude/rules/workflow.md` → Risk-tiered review frequency.
+
+**Remediation status.** F-1/F-2/F-3 are blocked at **MEH-1743**: ADR-017 §3.1 requires an
+exploit-proving test that fails before the fix, which cannot be written against a 404, and
+mounting the router to enable one is hard stop §4.1 (LOCK). F-4 is being fixed. Running log:
+[remediation-log.md](./remediation-log.md).
 
 ---
 
@@ -108,6 +133,9 @@ files declaring more than one router report correct paths).
 | Routes with **no** auth dependency | 51 |
 | Routes carrying a `@limiter.limit` | 68 |
 
+> **⚠️ These 191 are routes *declared*, not routes *reachable*. 14 of them are in unmounted
+> modules — see §4.1a. Reachable total is 177.**
+
 **Reconciliation (the P0 truncation lesson applied).** The three auth buckets sum to
 `130 + 10 + 51 = 191` — the extractor's own total, no row unaccounted for. The route count was
 cross-checked against an independent grep, which initially disagreed (188 vs 191); the 3-route
@@ -124,6 +152,32 @@ The dependency histogram is likewise cross-checked against a raw `grep -o 'Depen
 `require_admin` 64 · `get_current_user` 33 · `require_producer` 27 · `require_verified_producer` 3 ·
 `require_verified_email` 3 · `get_current_user_optional` 8 · `get_current_user_lenient` 2 — both
 methods agree.
+
+### 4.1a Mounted vs declared — the blind spot this pass had (added by the MEH-1743 correction)
+
+A `@router.get(...)` decorator proves a handler *exists*. It does not prove the handler is
+*reachable*: FastAPI only serves it if `app.include_router(...)` is called for that router in
+`backend/app/router_registry.py`. The original pass never checked that file, so an unmounted
+module looked exactly like a mounted one — which is how F-1/F-2/F-3 were rated as live.
+
+Corrected inventory:
+
+| Metric | Value |
+|---|---:|
+| Router modules on disk | 34 |
+| Modules actually mounted | 32 |
+| **Unmounted modules** | **2** — `home_products`, `producer_follows` |
+| Routes declared | 191 |
+| Routes in unmounted modules | 14 (`home_products` 10 · `producer_follows` 4) |
+| **Routes reachable** | **177** |
+
+| Module | Why unmounted |
+|---|---|
+| `home_products` | **Deliberate.** `router_registry.py:55-61` — commented out under MEH-1406, *"disabled per brand LOCK (licensed businesses only)"*. A reversible unmount requiring **both** the import and the include to be restored; neither is. Pinned by `TestHomeProductsKillSwitch`. |
+| `producer_follows` | **Not referenced at all** — absent from both the import tuple and the include block, with no explanatory comment. Whether that is deliberate or drift is **not determined by this pass**; it carries no P1 finding because nothing in it is reachable. Worth a look in P5 (dead code). |
+
+**Every later pass must apply this check.** The rule: a finding's severity is capped by its
+reachability, and reachability is decided in `router_registry.py`, not in the router file.
 
 ### 4.2 The auth dependency vocabulary
 
@@ -310,12 +364,18 @@ gate.
 
 ## 11 · Findings
 
-### F-1 · 🟠 High — Rating aggregate and auto-hide trigger are manipulable by a single user
+### F-1 · ⚪ latent (~~🟠 High~~) — Rating aggregate and auto-hide trigger are manipulable by a single user
+
+> **CORRECTED (MEH-1743): not reachable.** `home_products` is unmounted per the brand LOCK
+> (`router_registry.py:61`), so every route below returns 404 and this cannot be exploited. The
+> mechanism analysis stands and is accurate — it describes **dead code**. Severity drops from
+> 🟠 High to ⚪ latent. Blocked from remediation: an exploit-proving test (ADR-017 §3.1) cannot
+> be written against a 404, and mounting the router to enable one is hard stop §4.1 (LOCK).
 
 - **Files:** `backend/app/routers/home_products.py:333` (token minting) · `:117` (rating
   submission) · `:150-158` (auto-hide) · `backend/app/models/models.py:1149` (the constraint)
 - **OWASP:** A04:2025 Insecure Design · **CWE-840** Business Logic Errors
-- **On production (`main`): yes** — file identical to baseline.
+- **Reachable: no** — router unmounted. ~~On production (`main`): yes.~~
 - **Fix size:** M · **Risk tier: RED**
 
 **Vector.** Three collaborating design choices, each defensible alone:
@@ -346,12 +406,17 @@ product, not per click.
 
 ---
 
-### F-2 · 🟠 High — Click endpoint discloses the phone of hidden/deactivated listings
+### F-2 · ⚪ latent (~~🟠 High~~) — Click endpoint discloses the phone of hidden/deactivated listings
+
+> **CORRECTED (MEH-1743): not reachable.** Same root cause as F-1 — `home_products` is unmounted
+> per the brand LOCK. `POST /home-products/{product_id}/whatsapp-click` returns 404, so no phone
+> number is disclosed to anyone. The gap between the two sibling routes is real in the source and
+> would matter on a re-mount; today it is dead code. Blocked for the same reason as F-1.
 
 - **File:** `backend/app/routers/home_products.py:333-350`, disclosure at `:350`
 - **OWASP:** A01:2025 Broken Access Control · **CWE-639** Authorization Bypass Through
   User-Controlled Key
-- **On production (`main`): yes** — verified identical to baseline.
+- **Reachable: no** — router unmounted. ~~On production (`main`): yes.~~
 - **Fix size:** S · **Risk tier: RED**
 
 **Vector.** The sibling read route `GET /home-products/{product_id}` (`:181-197`) carries an
@@ -374,10 +439,16 @@ hidden, and this finding says hiding does not stop the phone disclosure.
 
 ---
 
-### F-3 · 🟡 Low — Public unauthenticated write with no rate limit
+### F-3 · ⚪ latent (~~🟡 Low~~) — Public unauthenticated write with no rate limit
+
+> **CORRECTED (MEH-1743): not reachable.** Also in the unmounted `home_products` router — 404.
+> This means the statement below that it is "the only unauthenticated, unrate-limited,
+> state-mutating route in the backend" is **wrong as written**: among *reachable* routes there is
+> no such route at all. Blocked for the same reason as F-1/F-2.
 
 - **File:** `backend/app/routers/home_products.py:117` (`submit_rating`)
 - **OWASP:** A04:2025 · **CWE-770** Allocation Without Limits
+- **Reachable: no** — router unmounted.
 - **Fix size:** S · **Risk tier: RED**
 
 The only unauthenticated, unrate-limited, state-mutating route in the backend that is not
