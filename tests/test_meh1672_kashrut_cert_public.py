@@ -25,22 +25,43 @@ CERT_URL = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/kashrut/ab
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 
 
-class _FakeResponse:
-    def __init__(self, status_code=200, content=PNG_BYTES, content_type="image/jpeg"):
+class _FakeStream:
+    """Context-manager stand-in for httpx.stream()'s return value — the
+    proxy streams + caps DURING download (adversarial review), so the fake
+    must support the same `with ... as upstream: upstream.iter_bytes()`
+    shape rather than a plain response object."""
+
+    def __init__(self, status_code=200, content=PNG_BYTES, content_type="image/jpeg", chunk_size=32):
         self.status_code = status_code
-        self.content = content
         self.headers = {"content-type": content_type}
+        self._content = content
+        self._chunk_size = chunk_size
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
+    def iter_bytes(self):
+        size = self._chunk_size or max(len(self._content), 1)
+        for i in range(0, len(self._content), size):
+            yield self._content[i : i + size]
 
 
-def _stub_upstream(monkeypatch, response=None):
-    """Replace the outbound fetch so no test reaches Cloudinary."""
+def _stub_upstream(monkeypatch, response=None, *, capture_kwargs=None):
+    """Replace httpx.stream so no test reaches Cloudinary. `capture_kwargs`,
+    if given, records each call's (method, url, kwargs) instead of url only."""
     calls = []
 
-    def fake_get(url, **kwargs):
-        calls.append(url)
-        return response or _FakeResponse()
+    def fake_stream(method, url, **kwargs):
+        if capture_kwargs is not None:
+            calls.append((method, url, kwargs))
+        else:
+            calls.append(url)
+        return response or _FakeStream()
 
-    monkeypatch.setattr(producers_module.httpx, "get", fake_get)
+    monkeypatch.setattr(producers_module.httpx, "stream", fake_stream)
     return calls
 
 
@@ -124,7 +145,7 @@ def test_a_badge_code_without_an_approved_cert_is_404(client, db, monkeypatch):
 
 def test_non_image_upstream_is_refused(client, db, monkeypatch):
     """The column is plain text; the content-type check is the second lock."""
-    _stub_upstream(monkeypatch, _FakeResponse(content_type="text/html"))
+    _stub_upstream(monkeypatch, _FakeStream(content_type="text/html"))
     producer = _certified(db)
     assert _fetch(client, producer).status_code == 404
 
@@ -136,26 +157,41 @@ def test_a_non_cloudinary_cert_url_is_refused_before_any_fetch(client, db, monke
     calls = _stub_upstream(monkeypatch)
     producer = _certified(db, cert_url="https://169.254.169.254/latest/meta-data/")
     assert _fetch(client, producer).status_code == 404
-    assert calls == []  # never reached httpx.get at all
+    assert calls == []  # never reached httpx.stream at all
 
 
 def test_upstream_fetch_does_not_follow_redirects(client, db, monkeypatch):
     """A cloudinary-hosted URL that redirects off-host must not be followed —
     the allowlist check happens before the fetch, so a redirect can't defeat it."""
-    calls = []
-
-    def fake_get(url, **kwargs):
-        calls.append((url, kwargs.get("follow_redirects")))
-        return _FakeResponse()
-
-    monkeypatch.setattr(producers_module.httpx, "get", fake_get)
+    calls = _stub_upstream(monkeypatch, capture_kwargs=True)
     producer = _certified(db)
     assert _fetch(client, producer).status_code == 200
-    assert calls == [(CERT_URL, False)]
+    assert calls == [("GET", CERT_URL, {"timeout": 10.0, "follow_redirects": False})]
+
+
+def test_oversized_upstream_body_is_capped_not_buffered(client, db, monkeypatch):
+    """Adversarial review: httpx.get().content would buffer the whole body
+    before any size check could run — streaming + capping DURING download is
+    the only way a check actually bounds memory. A body over _MAX_CERT_BYTES
+    must 502, not 200 with a giant response."""
+    oversized = PNG_BYTES + b"0" * producers_module._MAX_CERT_BYTES
+    _stub_upstream(monkeypatch, _FakeStream(content=oversized, chunk_size=4096))
+    producer = _certified(db)
+    resp = _fetch(client, producer)
+    assert resp.status_code == 502, resp.text
+
+
+def test_a_body_under_the_cap_still_serves_correctly(client, db, monkeypatch):
+    """The cap doesn't break normal-sized certs streamed in multiple chunks."""
+    _stub_upstream(monkeypatch, _FakeStream(chunk_size=7))  # forces several chunks
+    producer = _certified(db)
+    resp = _fetch(client, producer)
+    assert resp.status_code == 200, resp.text
+    assert resp.content == PNG_BYTES
 
 
 def test_upstream_404_is_not_masked_as_success(client, db, monkeypatch):
-    _stub_upstream(monkeypatch, _FakeResponse(status_code=404))
+    _stub_upstream(monkeypatch, _FakeStream(status_code=404))
     producer = _certified(db)
     assert _fetch(client, producer).status_code == 404
 
