@@ -415,12 +415,20 @@
       "surprise_me": "Surprise me",
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
-      "geo_failure": "We couldn't detect your location — you can pick a city manually"
+      "geo_failure": "We couldn't detect your location — you can pick a city manually",
+      "chips_prefix": "Searching now:",
+      "trust_line": "Every business is checked and approved by hand"
     },
     "search": {
       "placeholder": "Search fresh veggies, grass-fed beef...",
       "sr_label": "Search businesses and cities",
-      "submit": "Search"
+      "submit": "Search",
+      "placeholders": {
+        "q1": "Sourdough bread",
+        "q2": "Organic eggs",
+        "q3": "Goat cheese",
+        "q4": "Field-fresh vegetables"
+      }
     },
     "stats": {
       "businesses": "businesses joined so far",
