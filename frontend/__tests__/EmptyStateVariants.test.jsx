@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { ShoppingCart, Lock } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";

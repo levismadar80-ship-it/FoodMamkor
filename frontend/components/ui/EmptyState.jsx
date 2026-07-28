@@ -17,10 +17,38 @@ export default function EmptyState({
   // rendered under the description. Presentational only — aria-hidden and
   // non-interactive; existing consumers that omit it are unaffected.
   example,
+  // MEH-1630 chunk 1 (decision 2): `circle` puts the icon inside the green disc
+  // that nine inline empty-state blocks hand-rolled, so chunk 2 can delete them
+  // rather than keep a second system alive. Off by default — every existing
+  // call site renders the bare icon exactly as before.
+  // Disc geometry is w-16/size-32, byte-identical to the four blocks that
+  // already use it (ForgotPassword, ResetPassword ×2, VerifyEmail). The other
+  // five sit at w-20 (×1) and w-24 (×2) with 40px icons; whether those
+  // normalize down or the variant needs a size prop is a CHUNK 2 decision, and
+  // deliberately not pre-empted here.
+  circle = false,
+  // MEH-1630 chunk 1 (decision 4): `gated` is a blocked action — NN/g's rule is
+  // that it gets no control at all, not a disabled one. Suppresses the primary
+  // CTA even when ctaLabel + a handler are passed, so a caller cannot half-gate
+  // a surface by forgetting to strip props. `secondaryHref` survives as a plain
+  // text link: the description says why it is locked, the link says where to go
+  // to unlock it. Off by default.
+  gated = false,
 }) {
+  // Gating wins over any CTA the caller passed — see the `gated` note above.
+  const showCta = !gated && ctaLabel && (ctaHref || ctaOnClick);
+  const showGatedLink = gated && secondaryLabel && secondaryHref;
+
   return (
     <div className="text-center py-12 px-6">
-      {Icon ? (
+      {Icon && circle ? (
+        <div
+          className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <Icon size={32} className="text-primary" />
+        </div>
+      ) : Icon ? (
         <Icon size={56} className="text-primary mx-auto mb-4" aria-hidden="true" />
       ) : emoji ? (
         <p className="text-5xl mb-4" aria-hidden="true">
@@ -36,7 +64,15 @@ export default function EmptyState({
           {example}
         </div>
       )}
-      {ctaLabel && (ctaHref || ctaOnClick) && (
+      {showGatedLink && (
+        <Link
+          href={secondaryHref}
+          className="text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition"
+        >
+          {secondaryLabel}
+        </Link>
+      )}
+      {showCta && (
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           {ctaHref ? (
             <Link
