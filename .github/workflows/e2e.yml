@@ -38,6 +38,14 @@ on:
     branches: [staging]
   push:
     branches: [staging]
+  # MEH-1712 — manual run, for the MEH-1712 diagnostics artifact (the step
+  # added in PR #2376). It changes nothing automatic: no PR and no push
+  # triggers it, so it gates nothing and costs nothing until someone clicks
+  # Run workflow. The problem it solves is that a workflow-file-only diff is
+  # invisible to the paths filter below, so merging a capture step to staging
+  # produced no run that would execute it — the data waited on an unrelated
+  # future `frontend/**` push.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -82,8 +90,18 @@ jobs:
     # Cost sweep (May 2026): skip Dependabot PRs — they get lint/build only.
     # (Was `!startsWith(deployment.ref, 'dependabot/')`; with pull_request
     # events the actor is dependabot[bot] directly.)
+    #
+    # MEH-1712 — the workflow_dispatch escape is REQUIRED, not decorative. This
+    # condition is evaluated for every event, so a manual run would otherwise be
+    # decided by dorny/paths-filter's fallback for non-PR/push events (it diffs
+    # against the default branch, which IS `staging` here) — i.e. a dispatch on
+    # staging would inherit whatever the last commit happened to touch and skip
+    # on a docs push. A manual run is an explicit request; honour it verbatim.
+    # This does NOT widen the filter: no PR and no push reaches this branch of
+    # the OR, so which automatic runs execute E2E is byte-for-byte unchanged.
     if: |
-      needs.filter.outputs.frontend == 'true' &&
+      (needs.filter.outputs.frontend == 'true' ||
+       github.event_name == 'workflow_dispatch') &&
       github.actor != 'dependabot[bot]'
 
     steps:
