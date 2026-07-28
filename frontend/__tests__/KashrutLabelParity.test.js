@@ -35,12 +35,13 @@
  *      quietly move the line.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import he from "../messages/he.json";
 import { BADGE_CONFIG, allBadges } from "@/lib/badges";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import BadgeRow from "@/components/BadgeRow";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import ProducerCard from "@/components/ProducerCard";
 
 // Resolve real he.json strings so the comparison is between the strings users
 // actually see, not between two identical mock echoes.
@@ -53,6 +54,7 @@ vi.mock("next-intl", () => ({
     return typeof raw === "string" ? raw : full;
   },
   useFormatter: () => ({ dateTime: () => "01/01/2027" }),
+  useLocale: () => "he",
 }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...p }) => (
@@ -60,6 +62,33 @@ vi.mock("@/i18n/navigation", () => ({
       {children}
     </a>
   ),
+}));
+// ProducerCard's own dependencies — it is rendered here only to reach the +N
+// overflow popover, which is the surface under test.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), prefetch: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...p }) => (
+    <a href={href} {...p}>
+      {children}
+    </a>
+  ),
+}));
+vi.mock("next/image", () => ({ default: ({ src, alt }) => <img src={src} alt={alt} /> }));
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
+vi.mock("@/lib/api", () => ({ default: { post: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/toast", () => ({
+  showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+vi.mock("@/lib/post-login-action", () => ({ enqueueFavoriteOnLogin: vi.fn() }));
+vi.mock("@/lib/favorites-cache", () => ({
+  ensureFavoritesLoaded: () => Promise.resolve(new Set()),
+  isFavorited: () => false,
+  setFavoritedLocal: vi.fn(),
+  subscribeFavorites: () => () => {},
 }));
 
 const FUTURE = "2027-07-01T00:00:00Z";
@@ -191,5 +220,104 @@ describe("MEH-1711 — the bare word is gone, and the gates are not", () => {
         kashrut_expires_at: "2021-01-01T00:00:00Z",
       }),
     ).not.toContain("kosher");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FOLLOW-UP (no ticket — workspace at its issue limit; spec came from Sapir's
+// 28/07 message, recorded in the PR body).
+//
+// MEH-1711 resolved the label inside BadgeRow and left ONE surface behind: the
+// `+N` overflow popover, which ProducerCard builds from `allBadges(producer)`
+// directly (ProducerCard.jsx:349-356) and which therefore never passed through
+// the resolver. A kosher pill in position 3+ said the fallback while the detail
+// page said "חלק" — the original contradiction surviving on the one surface
+// nobody was rendering through BadgeRow.
+//
+// The assertion is THREE-WAY string equality: card == overflow == detail.
+// Whole tokens, never substrings — "כשרות מאומתת" contains "כשר" as a prefix,
+// so a substring check passes on the very string it is meant to reject.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The kosher row's visible text inside the +N overflow popover. */
+function overflowKosherLabel(producer) {
+  const { container } = render(<ProducerCard producer={producer} />);
+  const trigger = container.querySelector('[data-testid="badge-overflow"]');
+  if (!trigger) return null; // fewer than 3 badges — no overflow on this fixture
+  fireEvent.click(trigger);
+  const panel = document.querySelector('[data-testid="badge-overflow-popover"]');
+  if (!panel) return null;
+  const rows = [...panel.querySelectorAll('[role="listitem"]')].map((el) => el.textContent.trim());
+  // The overflow lists LABELS only, so identify the kosher row by matching the
+  // set of strings the resolver can produce — not by index, which would silently
+  // pass if the ordering changed.
+  const candidates = new Set([FALLBACK, ...Object.values(he.kashrut.badges).map((b) => b.label)]);
+  return rows.find((r) => candidates.has(r)) ?? null;
+}
+
+/** Enough badges that kosher is pushed past the max-2 cap into the overflow. */
+const overflowProducer = (codes) => ({
+  ...producerWith(codes),
+  verification_tier: "verified",
+  has_producer_license: true,
+  is_recommended: true,
+  days_since_created: 3,
+  grass_fed: true,
+  has_vegan_products: true,
+  has_delivery: true,
+  products_count: 12,
+  images: [],
+  categories: [],
+});
+
+describe("follow-up — +N overflow joins the parity, three-way", () => {
+  it("kosher is actually in the overflow on this fixture (the control)", () => {
+    // If kosher were among the 2 visible badges the assertions below would be
+    // vacuous — an overflow row that isn't there cannot disagree with anything.
+    const producer = overflowProducer(["chalak"]);
+    expect(allBadges(producer).findIndex((b) => b.key === "kosher")).toBeGreaterThan(1);
+  });
+
+  it("card == overflow == detail for a single certification", () => {
+    const producer = overflowProducer(["chalak"]);
+    const card = cardKosherLabel(producer);
+    const overflow = overflowKosherLabel(producer);
+    const detail = detailKashrutLabel(producer);
+
+    expect(overflow).toBe(he.kashrut.badges.chalak.label); // "חלק"
+    expect(overflow, "overflow disagrees with the visible pill").toBe(card);
+    expect(overflow, "overflow disagrees with the detail page").toBe(detail);
+  });
+
+  it("ZERO codes -> the fallback in the overflow too", () => {
+    expect(overflowKosherLabel(overflowProducer([]))).toBe(FALLBACK);
+  });
+
+  it("TWO-PLUS codes -> the fallback in the overflow too", () => {
+    expect(overflowKosherLabel(overflowProducer(["chalak", "badatz"]))).toBe(FALLBACK);
+  });
+
+  it("the whitelist holds in the overflow (garbage code dropped, not counted)", () => {
+    expect(overflowKosherLabel(overflowProducer(["chalak", "garbage"]))).toBe(
+      he.kashrut.badges.chalak.label,
+    );
+  });
+
+  it('the overflow never renders the bare "כשר" as its own token', () => {
+    for (const codes of [["chalak"], [], ["chalak", "badatz"]]) {
+      expect(overflowKosherLabel(overflowProducer(codes))).not.toBe("כשר");
+    }
+  });
+
+  it("the max-2 visible cap and the MEH-1714 heading are unaffected", () => {
+    const producer = overflowProducer(["chalak"]);
+    const { container } = render(<ProducerCard producer={producer} />);
+    // Exactly 2 visible badge pills, then the +N chip.
+    expect(container.querySelectorAll("[data-badge]").length).toBe(2);
+    const trigger = container.querySelector('[data-testid="badge-overflow"]');
+    expect(trigger).not.toBeNull();
+    fireEvent.click(trigger);
+    const panel = document.querySelector('[data-testid="badge-overflow-popover"]');
+    expect(panel.textContent).toContain(he.producer.card.badges.overflow_heading);
   });
 });
