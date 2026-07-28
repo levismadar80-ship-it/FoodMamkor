@@ -145,37 +145,45 @@ export default function KashrutBadgeStrip({
     if (shown.length === 0) return null;
     const tooltips = shown.map((code) => t(`badges.${CODE_TO_KEY[code]}.tooltip`));
     return (
-      <p
-        className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] text-muted"
-        title={[...tooltips, expiryText].filter(Boolean).join(" · ")}
-        data-testid="kashrut-quiet-line"
-      >
-        <StarOfDavid size={14} aria-hidden="true" />
-        {/* Same "label · label" row as before. MEH-1672 only changes the
-            labels that HAVE a certificate into buttons — the separator, the
-            order, and every label without a cert are untouched. */}
-        {shown.map((code, i) => {
-          const label = t(`badges.${CODE_TO_KEY[code]}.label`);
-          return (
-            <span key={code} className="flex items-center gap-x-1.5">
-              {i > 0 && <span aria-hidden="true">·</span>}
-              {certCodes.has(code) ? (
-                <button
-                  type="button"
-                  onClick={() => setOpenCert(code)}
-                  aria-haspopup="dialog"
-                  data-testid={`kashrut-cert-trigger-${code}`}
-                  className="underline underline-offset-2 hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
-                >
-                  {label}
-                </button>
-              ) : (
-                label
-              )}
-            </span>
-          );
-        })}
-        {nearExpiry && <span className="text-accent">· {t("expiry.near_expiry")}</span>}
+      // MEH-1672 fix (adversarial review): CertModal renders a <div>, which is
+      // invalid inside a <p> (HTML block-in-inline nesting — React's
+      // validateDOMNesting warns, and a browser would auto-close the <p>
+      // early and reparent siblings). The Fragment keeps the modal a SIBLING
+      // of the <p>, not a child, so the line stays a plain <p> exactly as
+      // before MEH-1672.
+      <>
+        <p
+          className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] text-muted"
+          title={[...tooltips, expiryText].filter(Boolean).join(" · ")}
+          data-testid="kashrut-quiet-line"
+        >
+          <StarOfDavid size={14} aria-hidden="true" />
+          {/* Same "label · label" row as before. MEH-1672 only changes the
+              labels that HAVE a certificate into buttons — the separator, the
+              order, and every label without a cert are untouched. */}
+          {shown.map((code, i) => {
+            const label = t(`badges.${CODE_TO_KEY[code]}.label`);
+            return (
+              <span key={code} className="flex items-center gap-x-1.5">
+                {i > 0 && <span aria-hidden="true">·</span>}
+                {certCodes.has(code) ? (
+                  <button
+                    type="button"
+                    onClick={() => setOpenCert(code)}
+                    aria-haspopup="dialog"
+                    data-testid={`kashrut-cert-trigger-${code}`}
+                    className="underline underline-offset-2 hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+                  >
+                    {label}
+                  </button>
+                ) : (
+                  label
+                )}
+              </span>
+            );
+          })}
+          {nearExpiry && <span className="text-accent">· {t("expiry.near_expiry")}</span>}
+        </p>
         {openCert && (
           <CertModal
             src={certSrc(openCert)}
@@ -184,7 +192,7 @@ export default function KashrutBadgeStrip({
             t={t}
           />
         )}
-      </p>
+      </>
     );
   }
 

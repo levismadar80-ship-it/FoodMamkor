@@ -129,6 +129,31 @@ def test_non_image_upstream_is_refused(client, db, monkeypatch):
     assert _fetch(client, producer).status_code == 404
 
 
+def test_a_non_cloudinary_cert_url_is_refused_before_any_fetch(client, db, monkeypatch):
+    """Adversarial review (SSRF): cert_url is producer-submitted and only
+    validated as https://, so the proxy must never fetch an off-host address —
+    169.254.169.254 (cloud metadata) stands in for "anywhere on the internet"."""
+    calls = _stub_upstream(monkeypatch)
+    producer = _certified(db, cert_url="https://169.254.169.254/latest/meta-data/")
+    assert _fetch(client, producer).status_code == 404
+    assert calls == []  # never reached httpx.get at all
+
+
+def test_upstream_fetch_does_not_follow_redirects(client, db, monkeypatch):
+    """A cloudinary-hosted URL that redirects off-host must not be followed —
+    the allowlist check happens before the fetch, so a redirect can't defeat it."""
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append((url, kwargs.get("follow_redirects")))
+        return _FakeResponse()
+
+    monkeypatch.setattr(producers_module.httpx, "get", fake_get)
+    producer = _certified(db)
+    assert _fetch(client, producer).status_code == 200
+    assert calls == [(CERT_URL, False)]
+
+
 def test_upstream_404_is_not_masked_as_success(client, db, monkeypatch):
     _stub_upstream(monkeypatch, _FakeResponse(status_code=404))
     producer = _certified(db)

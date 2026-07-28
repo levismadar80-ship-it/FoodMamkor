@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 from uuid import UUID
 
 import httpx
@@ -433,6 +434,14 @@ def list_categories(db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.id).all()
 
 
+# MEH-1672 (adversarial review): the only host the cert proxy will ever
+# fetch from. `cert_url` is producer-submitted (KashrutRequestCreate only
+# validates an https:// prefix), so the proxy is a server-side fetch of a
+# value the requester controls — an explicit host allowlist is the SSRF
+# defense, not a nice-to-have.
+_ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
+
+
 # MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
 # Both call sites use it — the serializer that lists which badges have a cert,
 # and the proxy that streams the bytes — so a badge can never be advertised as
@@ -502,8 +511,19 @@ def get_kashrut_cert(
     if match is None:
         raise HTTPException(status_code=404, detail="לא נמצא")
 
+    # Adversarial review (MEH-1672): cert_url is written by the producer's own
+    # kashrut-request submission and only validated to start with https://,
+    # so an explicit host allowlist makes the SSRF defense here explicit
+    # rather than resting on operational trust of the upload flow. No
+    # redirect-follow either — a redirect off-host would defeat the check.
+    if urlparse(match.cert_url).hostname not in _ALLOWED_CERT_HOSTS:
+        logger.warning(
+            "kashrut cert_url host not allowlisted", producer_id=str(producer_id)
+        )
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
     try:
-        upstream = httpx.get(match.cert_url, timeout=10.0, follow_redirects=True)
+        upstream = httpx.get(match.cert_url, timeout=10.0, follow_redirects=False)
     except Exception:
         logger.warning("kashrut cert fetch failed", producer_id=str(producer_id))
         raise HTTPException(status_code=502, detail="לא ניתן לטעון את התעודה כרגע")
