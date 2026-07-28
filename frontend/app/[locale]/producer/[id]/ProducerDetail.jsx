@@ -13,10 +13,6 @@ import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
-// MEH-1546: informational weekly hours + the closed-state note that sits
-// BESIDE each primary CTA (never inside it — the CTA stays read-only and is
-// never disabled).
-import OrderWindowStrip from "./components/OrderWindowStrip";
 import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -183,10 +179,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             hasImages={hasImages}
             shareUrl={shareUrl}
           />
-          {/* MEH-1546: weekly order-acceptance hours — informational only, no
-              status colour (the page's single status lives in ProducerHeader).
-              Renders nothing when order_window is null → zero layout shift. */}
-          <OrderWindowStrip orderWindow={producer.order_window} />
+          {/* MEH-1691: the weekly order-acceptance strip that used to render
+              here was removed — the order window is stated exactly once, as the
+              derived status inside ProducerHeader's meta line. DO NOT re-add a
+              second schedule render to this column (MEH-1305 A discipline). */}
           {/* Mobile/tablet inline contact card — the IntersectionObserver
               target for useStickyBar. Must stay the first child after
               ProducerHeader so the sticky bar fires at the same scroll
