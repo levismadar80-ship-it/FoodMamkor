@@ -576,8 +576,11 @@ def get_kashrut_cert(
         content=bytes(body),
         media_type=content_type,
         headers={
-            # Private + short: a shared cache must not keep serving a
-            # certificate after the admin revokes or it expires.
-            "Cache-Control": "private, max-age=300",
+            # Adversarial review: max-age=300 contradicted this endpoint's
+            # own "revocation is immediate" claim — a browser could still
+            # serve a stale image for up to 5 minutes after an admin
+            # rejects a badge or it expires. no-store means every open of
+            # the modal re-checks _servable_kashrut_certs for real.
+            "Cache-Control": "no-store",
         },
     )
