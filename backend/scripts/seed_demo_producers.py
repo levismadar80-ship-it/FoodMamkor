@@ -67,9 +67,14 @@ from app.models.models import Event, ProducerReview, User  # noqa: E402
 #
 # So: `--reset` sweeps the accumulated TEST rows below and nothing else. The
 # flagship demo business is owned by seed_demo_business.py and is spared.
-# DO NOT re-add it here — its lifecycle belongs to the script that owns it,
-# where a total wipe INCLUDING the flagship is still available, unchanged:
-#     python backend/scripts/seed_demo_business.py --refresh
+# DO NOT re-add it here — its lifecycle belongs to the script that owns it.
+#
+# Note what that does NOT give you: `seed_demo_business.py --refresh` REBUILDS
+# the flagship (delete, then recreate — see seed_demo_business.py:481-482, no
+# early return) and is therefore not a way to remove it. After this change no
+# script removes the flagship permanently; that is a deliberate manual DB
+# action. MEH-409 owns the deletion path for when the demo is swapped for a
+# real profile.
 # ============================================================================
 TEST_NAME_PATTERNS = [
     "יצרן לדוגמה",
