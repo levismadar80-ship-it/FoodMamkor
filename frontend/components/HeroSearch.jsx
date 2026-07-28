@@ -334,7 +334,12 @@ export default function HeroSearch({
         // MEH-1684: rounded-md → rounded-full. The Airbnb-editorial pill wants a
         // circle riding inside it, and with the "גלו בתי עסק" button gone from
         // the chips row this is the hero zone's ONE filled-primary control.
-        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-full transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center focus-ring"
+        // DO NOT add `.focus-ring` here — it sets `outline: none` and swaps in a
+        // 40%-opacity PRIMARY ring, which lands on the pill's white fill at
+        // ~1.6:1 and fails WCAG 1.4.11's 3:1 for focus indicators. On the cream
+        // chips the same ring is fine; on this control the browser default
+        // outline is the stronger indicator, so it is deliberately left alone.
+        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-full transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >
