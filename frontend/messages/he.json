@@ -863,7 +863,8 @@
       "badges": {
         "delivery_only": "משלוחים בלבד",
         "available_today": "מגיעה היום",
-        "overflow_aria": "הצגת עוד {count} תגיות"
+        "overflow_aria": "הצגת עוד {count} תגיות",
+        "overflow_heading": "עוד על העסק הזה"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
     }
