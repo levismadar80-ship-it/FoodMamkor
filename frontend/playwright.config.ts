@@ -1,5 +1,26 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// MEH-1044 — CI runs E2E against a local `next start`. PLAYWRIGHT_BASE_URL is
+// the explicit override; TEST_URL is kept for manual runs against
+// staging/preview URLs (testing.md TLS note).
+const BASE_URL =
+  process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_URL || "http://localhost:3000";
+
+// MEH-1727 — the two `x-vercel-*` headers below are sent by Playwright on
+// EVERY request, including cross-origin ones. A cross-origin @font-face fetch
+// is always CORS-mode, so it preflights, and fonts.gstatic.com does not list
+// `x-vercel-skip-toolbar` in Access-Control-Allow-Headers — the preflight is
+// rejected and ALL 11 .woff2 files fail. The page then renders in system
+// fallback fonts, which is what the VRT baselines were measuring.
+//
+// Both headers only ever meant anything against a Vercel-hosted target. Since
+// MEH-1044 the CI target is http://localhost:3000 (vrt-update.yml:119 sets it
+// explicitly), where there is no Deployment Protection to bypass and no Vercel
+// toolbar to suppress — so on a local target they are pure cost. Gate them on
+// the target instead of deleting them, so a manual run against a preview URL
+// still gets MEH-264's bypass and MEH-306 sub-B's toolbar suppression.
+const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(BASE_URL);
+
 export default defineConfig({
   testDir: "./e2e",
   // MEH-1241 / MEH-1528: provision authenticated storageState for the seeded QA
@@ -43,13 +64,7 @@ export default defineConfig({
     },
   },
   use: {
-    // MEH-1044 — CI runs E2E against a local `next start` (zero Vercel edge
-    // requests). PLAYWRIGHT_BASE_URL is the explicit override; TEST_URL is
-    // kept for manual runs against staging/preview URLs (testing.md TLS note).
-    baseURL:
-      process.env.PLAYWRIGHT_BASE_URL ||
-      process.env.TEST_URL ||
-      "http://localhost:3000",
+    baseURL: BASE_URL,
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
     actionTimeout: 20_000, // MEH-728: 10s→20s for preview cold-start headroom
@@ -74,11 +89,15 @@ export default defineConfig({
     // <vercel-live-feedback> widget from preview pages so its overlay
     // doesn't intercept pointer events during tests (per
     // https://vercel.com/docs/vercel-toolbar/managing-toolbar).
-    extraHTTPHeaders: {
-      "x-vercel-protection-bypass":
-        process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "",
-      "x-vercel-skip-toolbar": "1",
-    },
+    // MEH-1727: gated on the target — see isLocalTarget above. Empty object on
+    // localhost so cross-origin font preflights carry no unlisted header.
+    extraHTTPHeaders: isLocalTarget
+      ? {}
+      : {
+          "x-vercel-protection-bypass":
+            process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "",
+          "x-vercel-skip-toolbar": "1",
+        },
   },
   projects: [
     {
