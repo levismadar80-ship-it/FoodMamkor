@@ -15,8 +15,28 @@ Do not wait for pasted instructions. At session start, and whenever you finish
 an item, query Linear:
 
 ```
-state = In Progress · team = Mehamakor · NOT labeled `not-cc`
+state = In Progress · team = Mehamakor · labeled `cc-queue`
 ```
+
+**`In Progress` means started-and-unfinished, not assigned-to-CC.** The label is
+the only signal. **An unlabeled card is not yours even if it looks actionable.**
+
+**An empty queue is the expected steady state, not a failure.** Say so and stop.
+
+> **Why opt-in and not opt-out** (MEH-1760). The first version of this rule
+> excluded `not-cc` instead of requiring `cc-queue`. On its first run the query
+> returned **28** cards — epics used as board state, work paused for Sapir, and
+> one Urgent card explicitly marked HIGH-RISK with WAIT between chunks. The
+> label was applied to 3 of 31, so it filtered nothing.
+>
+> The failure modes are not symmetric:
+>
+> | Someone forgets to label | opt-out (`NOT not-cc`) | opt-in (`cc-queue`) |
+> |---|---|---|
+> | Result | **CC starts work nobody intended** | nothing happens |
+>
+> Same reasoning as §3.6 below: the safe property is the one that does not
+> depend on anyone remembering.
 
 Work them in **priority order** (Urgent → High → Normal → Low). Each card's
 description is the full spec — **§4 carries the XML prompt**. Authority is
@@ -34,7 +54,7 @@ description is the full spec — **§4 carries the XML prompt**. Authority is
 | **Blocked** | Move it back to **Backlog**, comment **why** in one paragraph, take the next item. |
 | **Needs Sapir's hands** — secrets, `.github/`, Railway, GitHub settings, VRT baselines | Label it **`not-cc`**, comment **exactly** what she must do, move on. |
 
-**Never idle, never wait for a message.** If the queue is empty, say so and stop.
+**Never idle, never wait for a message.**
 
 > **Why §3.6 sits in this section and not only in the ADR:** the queue is worked
 > autonomously, so nobody is standing between a card's prescription and its
