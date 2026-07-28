@@ -129,6 +129,41 @@ export const ProducerSchema = z.object({
   has_delivery: z.boolean().nullable().optional(),           // → delivery
   delivery_count: z.number().nullable().optional(),          // → delivery (fallback count)
   products_count: z.number().nullable().optional(),          // → products
+  // MEH-1719: the SEVENTH recurrence, and the first one that is not about
+  // badges at all. MEH-1704 declared what `badges.js::earnsBadge` reads and
+  // its guard derives the field list from that function — so these nine,
+  // which `ProducerCard` reads DIRECTLY, sat outside the guard's proof by
+  // construction. Every one is serialized by ProducerListOut
+  // (backend/app/schemas/schemas.py:1649-1738); each was stripped in silence
+  // on the two parsed feeds, home grid + /map.
+  //
+  // Checked before declaring, per MEH-1719 §2ד: schemas.js documents exactly
+  // TWO deliberate omissions — `delivery_cities` (:51-52) and the
+  // comment-only `organic_certified` / free-text `kosher` (:111-116). Neither
+  // covers any field below. **No documented rationale was found for any of
+  // these nine**, and they look exactly like the six prior recurrences, so
+  // they are declared rather than preserved.
+  //
+  // Permissive for the same reason as the badge block above: the /map feed
+  // parses all-or-nothing (app/[locale]/map/state/useProducersFeed.js:41), so
+  // one strict declaration drops a whole business from the feed. Deliberately
+  // `z.string()` and not `z.enum()` on the two availability fields — a new
+  // backend state value must cost a dot, never a producer.
+  trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"/"שגרירת מהמקור"), ProducerCard.jsx:353-354 gate `>= 4`
+  favorites_count: z.number().nullable().optional(),         // → heart counter seed, ProducerCard.jsx:161/:166
+  short_description: z.string().nullable().optional(),       // → card description line, ProducerCard.jsx:202
+  top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
+  availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:36
+  availability_status: z.string().nullable().optional(),     // → availability dot (legacy "vacation"), ProducerCard.jsx:37
+  is_available_today: z.boolean().nullable().optional(),     // → availability dot + fridayMode pill, ProducerCard.jsx:39/:435
+  has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
+  offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
+  // NOT read by ProducerCard today, so the card-derived guard below cannot
+  // reach it — declared on the backend contract instead (ProducerListOut,
+  // schemas.py:1725). MEH-1711's card kashrut label resolves from this array
+  // and CANNOT fire while z.object strips it; that ticket is blocked on this
+  // line. Covered by the round-trip assertion in the guard, not by extraction.
+  kashrut_badges: z.array(z.string()).nullable().optional(), // → MEH-1711 card kashrut label (certification name)
 });
 
 // MEH-779: response shape of GET /producers — an array of producers.

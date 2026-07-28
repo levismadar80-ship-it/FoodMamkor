@@ -13,7 +13,18 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
 ## Invariants
 
 - **JWT secret from env.** `JWT_SECRET_KEY` (or `SECRET_KEY`) is
-  **required** in production; ephemeral in dev only. HS256, 24h TTL.
+  **required** in production — a missing secret raises `RuntimeError` at
+  boot (`config.py:161-166`), it does not fall back. Ephemeral in dev
+  only (`config.py:171`). HS256 (`config.py:28`).
+  **TTL: 15-minute access token** (`config.py:35`), 14-day refresh
+  (`config.py:36`). _This line previously said "24h TTL", which was
+  stale by a factor of 96 and understated the posture; corrected from
+  measured values in the MEH-1724 (P1) audit, `docs/audits/2026-07-full/p1-security-backend.md` §5._
+  The access token additionally carries a `scope` claim, a
+  `token_version` counter for revocation, password-change invalidation,
+  and a request-fingerprint binding — all enforced inside
+  `get_current_user` (`auth.py:261-275`). Do not weaken any of these to
+  lengthen a session.
 - **Rate limiting via slowapi.** See `backend/app/rate_limit.py`.
   Per-route limits are set in the router file, not inline.
 - **IDOR ownership checks with admin override.** Every resource mutation
