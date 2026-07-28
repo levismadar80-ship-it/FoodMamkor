@@ -416,7 +416,7 @@
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
       "geo_failure": "We couldn't detect your location — you can pick a city manually",
-      "chips_prefix": "Searching now:",
+      "chips_prefix": "Popular now:",
       "trust_line": "Every business is checked and approved by hand"
     },
     "search": {
