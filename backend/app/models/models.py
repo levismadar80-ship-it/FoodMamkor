@@ -986,7 +986,7 @@ class Event(Base):
     lat = Column(Float)
     lng = Column(Float)
     image_url = Column(Text)
-    category = Column(String(30), nullable=False)  # סדנה|סיור|שוק|קטיף|טעימות|אחר
+    category = Column(String(30), nullable=False)  # שוק|קטיף|טעימות|אחר (MEH-1657)
     price = Column(Integer, default=0)  # 0 = free
     max_participants = Column(Integer, nullable=True)
     registration_url = Column(String(500), nullable=True)  # external signup link
@@ -1000,12 +1000,27 @@ class Experience(Base):
     """
     Community-submitted experiences (workshops, food tours, nutrition classes).
 
-    Intentionally separate from `Event`:
-      - Event    = farm event hosted by an approved producer. Simple, no
-                   moderation. Keyed on producer_id.
-      - Experience = community workshop hosted by any logged-in user.
-                   Requires Claude pre-moderation AND admin approval.
-                   Keyed on host_user_id — the host is a User, not a Producer.
+    Intentionally separate from `Event`. The axis is ONE-TIME vs SIGN-UP
+    (locked 27/07, reaffirmed 28/07 — MEH-1657):
+      - Event      = something that happens ONCE, on a date. An open day, a
+                     market stall, a seasonal harvest, a launch. Flat `price`,
+                     an external `registration_url`, and that's it.
+      - Experience = a guided activity people SIGN UP for. Priced per person,
+                     capped, and repeatable — which is why this model carries
+                     `is_recurring`, `recurring_schedule`, `price_per_person`,
+                     `participants_count`, `duration_minutes` and
+                     `requirements`, and Event carries none of them.
+
+    Industry precedent for the split: Airbnb Experiences (recurring, bookable,
+    per-person) vs Eventbrite (dated events, multiple dates resolved *inside*
+    one event rather than as a separate entity).
+
+    Host type is an IMPLEMENTATION DETAIL of that axis, not the definition:
+    an Experience is keyed on `host_user_id` (a User) while an Event is keyed
+    on `producer_id`, and an Experience additionally requires Claude
+    pre-moderation AND admin approval. This docstring previously stated the
+    axis WAS who hosts — that was stale, the fields had already overtaken it,
+    and it actively misled readers into thinking the two models overlap.
 
     Moderation flow:
       status: pending | approved | rejected | changes_requested
