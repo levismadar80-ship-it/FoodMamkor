@@ -51,8 +51,12 @@ export default function EmptyState({
   // Gating wins over any CTA the caller passed — see the `gated` note above.
   const showCta = !gated && ctaLabel && (ctaHref || ctaOnClick);
   const showUnblockLink = gated && unblockLabel && unblockHref;
-  // Unknown size falls back to the default rather than crashing on undefined.
-  const disc = CIRCLE_SIZES[size] || CIRCLE_SIZES.sm;
+  // Unknown size falls back to the default. `hasOwn`, not `CIRCLE_SIZES[size]
+  // || …`: a plain object inherits from Object.prototype, so `size="constructor"`
+  // (or toString / valueOf / __proto__) returns a TRUTHY non-config, the `||`
+  // never fires, and the disc renders as `className="undefined …"` with an
+  // undefined icon size. Own-key lookup is the only form that actually holds.
+  const disc = Object.hasOwn(CIRCLE_SIZES, size) ? CIRCLE_SIZES[size] : CIRCLE_SIZES.sm;
 
   return (
     <div className="text-center py-12 px-6">
