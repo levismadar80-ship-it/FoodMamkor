@@ -207,7 +207,6 @@ prefill_router = APIRouter(prefix="/register/producer/prefill", tags=["auth"])
 # so this is defence-in-depth, not the primary control — it caps automated
 # probing of a PII surface. 30/hour is generous for the real flow (an owner
 # opening a prefill link from outreach and refreshing a few times).
-@limiter.limit("30/hour")
 def get_prefill(request: Request, token: str, db: Session = Depends(get_db)):
     """Public lookup — the token IS the auth. Returns 404 for invalid /
     expired tokens so the registration form just renders empty (no leak).
