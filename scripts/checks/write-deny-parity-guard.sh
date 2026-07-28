@@ -88,6 +88,44 @@ nonstr = [i for i, e in enumerate(deny) if not isinstance(e, str)]
 if nonstr:
     die("permissions.deny has non-string entries at index %s" % nonstr)
 
+# A deny entry that LOOKS tool-scoped but does not parse is silently dropped by
+# entries() below — and a dropped Edit() entry silently loses its cover
+# requirement while the guard reports "ok". Measured 28/07: with several valid
+# entries present, `Edit(secret.py) ` (trailing space), `edit(secret.py)`
+# (lowercase) and `Edit(secret.py` (unclosed) each exited 0 saying "all 2 Edit()
+# entries have cover", leaving secret.py unprotected and unmentioned. The
+# ZEROSCAN check does not catch it: 16 entries minus one typo is 15, not 0.
+#
+# This is reachable by the exact action this guard gates — a human hand-pasting
+# 28 lines into settings.json. So malformed entries are a hard failure, not a
+# skip.
+import re
+
+_WELL_FORMED = re.compile(r'^([A-Za-z]+)\((.*)\)$')
+_CASE_SENSITIVE = {"Edit", "Write", "MultiEdit"}
+_LOWER = {t.lower(): t for t in _CASE_SENSITIVE}
+
+malformed = []
+for e in deny:
+    m = _WELL_FORMED.match(e)
+    if not m:
+        # Looks like it was meant to be tool-scoped (has a paren) but isn't.
+        if "(" in e or ")" in e:
+            malformed.append((e, "not of the form Tool(path)"))
+        continue
+    tool = m.group(1)
+    # A casing typo on the three tools THIS guard reasons about would otherwise
+    # read as an unknown-but-valid tool and be ignored.
+    if tool not in _CASE_SENSITIVE and tool.lower() in _LOWER:
+        malformed.append((e, "wrong case — did you mean %s(...)?" % _LOWER[tool.lower()]))
+
+if malformed:
+    for e, why in malformed:
+        print("BAD\t%s\t%s" % (e, why))
+    print("BADCOUNT\t%d" % len(malformed))
+    sys.exit(0)   # bash turns this into a hard failure; see the BADCOUNT branch
+
+
 def entries(tool):
     p = tool + "("
     return [e[len(p):-1] for e in deny if e.startswith(p) and e.endswith(")")]
@@ -132,6 +170,25 @@ PY
   if [[ $py_rc -ne 0 || -z "$report" ]]; then
     echo "  FAIL $label — could not parse settings (python exit $py_rc). Fail-closed."
     [[ -n "$report" ]] && sed 's/^/       /' <<<"$report"
+    return 1
+  fi
+
+  # ORDER MATTERS: malformed entries are checked FIRST. A BAD report carries no
+  # COUNT line, so the drift check below would fire on it and print
+  # "parse shape drifted" — a true statement about the wrong thing, sending the
+  # reader to this script when the fault is in their settings.json edit.
+  #
+  # Malformed entries fail before parity because a dropped entry makes the
+  # parity numbers a lie rather than merely incomplete.
+  if grep -q '^BADCOUNT' <<<"$report"; then
+    local bad_n
+    bad_n="$(awk -F'\t' '/^BADCOUNT/{print $2}' <<<"$report")"
+    echo "  FAIL $label — $bad_n deny entr(y/ies) look tool-scoped but do not parse."
+    echo "       A malformed entry is SILENTLY DROPPED: an Edit() that does not"
+    echo "       parse loses its cover requirement and this guard would report ok."
+    echo ""
+    awk -F'\t' '/^BAD\t/{printf "      %s\n          ^ %s\n", $2, $3}' <<<"$report"
+    echo ""
     return 1
   fi
 
@@ -248,6 +305,34 @@ self_test() {
   # Pre-fix this printed "ok" and hid the gap.
   _mk deny_nonstring '{"permissions":{"deny":["Edit(a.py)",42]}}'
   _expect deny_nonstring 1 "case 12 — non-string inside deny (hid a real gap)"
+
+  # Cases 13-16: MALFORMED tool-scoped entries alongside VALID ones.
+  # The suite passed 14/14 while this whole class was live, because every
+  # earlier case had a single Edit entry — so a typo dropped the count to zero
+  # and ZEROSCAN caught it by luck. The real file has 16; one typo leaves 15
+  # and ZEROSCAN never fires. Each case below carries two well-covered entries
+  # plus one typo'd entry whose cover requirement would silently vanish.
+  local VALID='"Edit(a.py)","Write(a.py)","MultiEdit(a.py)","Edit(b.py)","Write(b.py)","MultiEdit(b.py)"'
+
+  _mk t_trailspace "{\"permissions\":{\"deny\":[$VALID,\"Edit(secret.py) \"]}}"
+  _expect t_trailspace 1 "case 13 — trailing space after Edit(...)"
+
+  _mk t_lowercase "{\"permissions\":{\"deny\":[$VALID,\"edit(secret.py)\"]}}"
+  _expect t_lowercase 1 "case 14 — lowercase edit( instead of Edit("
+
+  _mk t_unclosed "{\"permissions\":{\"deny\":[$VALID,\"Edit(secret.py\"]}}"
+  _expect t_unclosed 1 "case 15 — missing closing paren"
+
+  # Control for 13-15: identical file, entry spelled correctly. Must ALSO fail,
+  # but for the parity reason. If this ever passed, the three above would be
+  # failing for the wrong cause and would prove nothing.
+  _mk t_control "{\"permissions\":{\"deny\":[$VALID,\"Edit(secret.py)\"]}}"
+  _expect t_control 1 "case 16 — control: correct spelling, genuine parity gap"
+
+  # And the anti-false-positive: a fully-covered file with NO typos must pass.
+  # Without this, cases 13-16 could be satisfied by a guard that reds everything.
+  _mk t_clean "{\"permissions\":{\"deny\":[$VALID]}}"
+  _expect t_clean 0 "case 17 — well-formed and fully covered still passes"
 
   return "$rc"
 }
