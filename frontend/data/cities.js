@@ -24,8 +24,6 @@
  *
  * SYNC DUTY (MEH-1349): backend/app/data/cities.py holds a byte-for-byte
  * copy of ISRAEL_CITIES. Any change here must land there in the same PR.
- * TODO(MEH-1343): the full CBS localities dataset replaces both copies
- * with one canonical source.
  */
 export const ISRAEL_CITIES = [
   // Major cities

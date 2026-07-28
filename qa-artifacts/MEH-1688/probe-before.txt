@@ -1,0 +1,18 @@
+before-blocks-375-count: 14
+before-blocks-375-heads: ["אוכל מקומי, במקום אחד","(div h=58)","(div h=42)","(div h=20)","(div h=44)","כל בית עסק על המפה","(section h=110)","(div h=68)","גלו לפי קטגוריה","בתי עסק מקומיים","בתי עסק חדשים","שלושה צעדים","מה שמשתנה בדרך","יש לך עסק? בואו אלינו"]
+before-new-section-present-375: true
+before-cards-375: [{"name":"מאפייה טרייה","badges":["new"]},{"name":"משק ותיק","badges":[]},{"name":"גבינות הגבול","badges":["new"]},{"name":"כוורת מעבר","badges":[]},{"name":"עסק 5","badges":[]},{"name":"עסק 6","badges":[]},{"name":"עסק 7","badges":[]},{"name":"עסק 8","badges":[]},{"name":"מאפייה טרייה","badges":["new"]},{"name":"משק ותיק","badges":[]},{"name":"גבינות הגבול","badges":["new"]},{"name":"כוורת מעבר","badges":[]}]
+before-new-badge-fresh-375: 1
+before-new-badge-old-375: 0
+before-new-badge-boundary-in-375: 1
+before-new-badge-boundary-out-375: 0
+before-cards-over-cap-375: []
+before-blocks-1440-count: 14
+before-blocks-1440-heads: ["אוכל מקומי, במקום אחד","(div h=58)","(div h=42)","(div h=20)","(div h=52)","כל בית עסק על המפה","(section h=90)","(div h=68)","גלו לפי קטגוריה","בתי עסק מקומיים","בתי עסק חדשים","שלושה צעדים","מה שמשתנה בדרך","יש לך עסק? בואו אלינו"]
+before-new-section-present-1440: true
+before-cards-1440: [{"name":"מאפייה טרייה","badges":["new"]},{"name":"משק ותיק","badges":[]},{"name":"גבינות הגבול","badges":["new"]},{"name":"כוורת מעבר","badges":[]},{"name":"עסק 5","badges":[]},{"name":"עסק 6","badges":[]},{"name":"עסק 7","badges":[]},{"name":"עסק 8","badges":[]},{"name":"מאפייה טרייה","badges":["new"]},{"name":"משק ותיק","badges":[]},{"name":"גבינות הגבול","badges":["new"]},{"name":"כוורת מעבר","badges":[]}]
+before-new-badge-fresh-1440: 1
+before-new-badge-old-1440: 0
+before-new-badge-boundary-in-1440: 1
+before-new-badge-boundary-out-1440: 0
+before-cards-over-cap-1440: []
