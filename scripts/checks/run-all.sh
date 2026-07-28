@@ -54,19 +54,22 @@
 #   emits one. There was therefore nothing to key on, and matching on output
 #   text is a heuristic rather than a protocol. It is deliberately narrow:
 #
-#     - case-sensitive, whole-word WARNING / WARNED only.
+#     - case-sensitive, whole-word WARNING / WARNED, plural accepted
+#       (WARNINGS / WARNEDS) so a guard that pluralises is not swallowed.
 #     - `mode: WARN-ONLY` does NOT match — builder-model-guard prints that
 #       line on every run including clean ones, so keying on bare `WARN` would
 #       mark a passing guard as warned on every single run. That near-miss is
 #       the reason the pattern is this specific.
+#     - NO `-i`. Lowercase `warning` is left unmatched on purpose: it is common
+#       in prose and help text, and matching it would surface guards that never
+#       warned — reintroducing noise in the name of removing silence.
 #     - a guard that exits 0 and prints neither token stays completely quiet,
 #       exactly as before.
 #
 #   A guard opts in simply by printing WARNING/WARNED. Nothing is required of
 #   the four guards that do not warn, and none of them were touched. The
-#   README contract should grow a "warnings" row to make this a real protocol
-#   rather than a convention encoded only here — deliberately left to a
-#   follow-up, since MEH-1715 scoped this change to a single file.
+#   convention is documented for guard authors in scripts/checks/README.md
+#   ("Running them"), which is the contract they actually read.
 #
 # USAGE
 #   bash scripts/checks/run-all.sh     # from the repo root or any other cwd
@@ -129,7 +132,7 @@ trap 'rm -f "$out_file"' EXIT
 
 # Whole-word, case-sensitive. Deliberately does NOT match `WARN-ONLY`, which
 # builder-model-guard prints on clean runs too — see WARN SURFACING above.
-WARN_TOKEN='(^|[^[:alnum:]_])WARN(ING|ED)([^[:alnum:]_]|$)'
+WARN_TOKEN='(^|[^[:alnum:]_])WARN(ING|ED)S?([^[:alnum:]_]|$)'
 
 summary=()
 failed=0
