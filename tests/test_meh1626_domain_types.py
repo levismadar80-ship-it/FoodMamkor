@@ -20,7 +20,6 @@ import pytest
 from app.schemas.schemas import (
     EventCreate,
     EventUpdate,
-    GroupBuyCommitRequest,
     GroupBuyCreate,
     ProducerLocationCreate,
     ProducerLocationUpdate,
@@ -112,13 +111,11 @@ def test_location_update_phone_garbage_rejected():
         ProducerLocationUpdate(phone="abc")
 
 
-def test_group_buy_commit_phone_garbage_rejected():
-    with pytest.raises(ValidationError):
-        GroupBuyCommitRequest(quantity=1, phone="12")
-
-
-def test_group_buy_commit_phone_valid_accepted():
-    assert GroupBuyCommitRequest(quantity=1, phone="0501234567").phone == "0501234567"
+# MEH-1651 removed the two GroupBuyCommitRequest phone tests that sat here.
+# The field itself is gone: nothing in the repo ever read the column, so
+# MEH-1626's intent — no silently broken WhatsApp link — is served by not
+# collecting the number rather than by validating one nobody dials. The other
+# validators in this module are untouched.
 
 
 def test_user_register_phone_garbage_rejected():
