@@ -214,9 +214,26 @@ test.describe("Visual parity — MEH-991", () => {
   // Ratified by RESTORING the blob 3680b928 already committed — the on-runner
   // regen of 2026-07-23, captured after BOTH changes above, which 52ab77da
   // ("undo PR #2102 contamination") reverted to a 2026-07-21 image by mistake.
-  // Restoring a runner-generated blob is why no new regen was needed here; a
-  // dev-machine capture is still forbidden (font stacks differ — see the
-  // "Baseline maintenance" note above).
+  // THAT RESTORE DID NOT HOLD, and the sentence that justified it has been
+  // removed rather than softened. It read: "restoring a runner-generated blob
+  // is why no new regen was needed here." True only while nothing
+  // rendering-relevant had landed since the blob was captured — a condition it
+  // never stated, so it read as a standing licence to restore instead of
+  // recapture, which is how it was used.
+  // By the time 10ed80d7 restored it (26/07 21:42Z) the blob was 3.5 days old
+  // and 36 commits touching home-render files had landed unmeasured against it.
+  // MEH-1643's fourth hero CTA (6f050547, 27/07 13:30Z) then landed on top, and
+  // MEH-1684's hero-search rewrite (96f0f532, 28/07 08:11Z) on top of that.
+  // home-mobile has been red since, and no single one of those is "the"
+  // regression — the delta accumulated against a reference that stopped
+  // tracking the code on 23/07.
+  // A runner-generated image carries CREDIBILITY, not CURRENCY. Restoring it
+  // returns the first and not the second, and the file name looks identical
+  // either way.
+  // Before restoring any baseline: count the commits touching that surface
+  // since the blob was captured. Non-zero means recapture, not restore.
+  // Recapture means on-runner (vrt-update.yml) — a dev-machine capture is
+  // still forbidden, font stacks differ, see "Baseline maintenance" above.
   // home-desktop-linux.png needed no change: 3680b928 regenerated 5 baselines
   // and left it untouched, i.e. the runner's post-change desktop render was
   // byte-identical to the existing image (blob 85ba6329 unchanged since
