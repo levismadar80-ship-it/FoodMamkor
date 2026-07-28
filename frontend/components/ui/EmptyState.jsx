@@ -84,13 +84,21 @@ export default function EmptyState({
         </div>
       )}
       {showUnblockLink && (
-        // Tap-target floor (DESIGN.md "≥ 44 × 44px"): a bare text link is ~20px
-        // tall, and in a gated state it is the ONLY control on screen. Same
-        // shape and same fix as WhatsThis.jsx:29 — min-h-[44px] + inline-flex
-        // enlarges the hit area without changing the visual treatment.
+        // Tap-target floor (DESIGN.md § "Tap-target floor (reach)"): a bare text
+        // link is ~20px tall, and in a gated state it is the ONLY control on
+        // screen. The floor is on the hit AREA — "≥ 44 × 44px … enlarged with
+        // `min-h-[44px] min-w-[44px]` plus `flex items-center justify-center`"
+        // — so BOTH axes are pinned, not just height. `unblockLabel` is a free
+        // prop on a component used across 20+ surfaces: a long label satisfies
+        // the width incidentally, a short one ("עוד") renders a ~25px-wide
+        // target under a 44px-tall box and misses the floor on the axis nobody
+        // checked. justify-center keeps a sub-44px label centred in the box
+        // rather than pinned to the inline start; it is a no-op once the label
+        // is wider. WhatsThis.jsx:37 carries the same half-fix — pre-existing,
+        // out of scope here, flagged rather than changed.
         <Link
           href={unblockHref}
-          className="min-h-[44px] inline-flex items-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
+          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
         >
           {unblockLabel}
         </Link>

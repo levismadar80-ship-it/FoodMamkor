@@ -227,11 +227,22 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
       />,
     );
     const link = container.querySelector('a[href="/producer/dashboard"]');
+    // Four cues, four assertions — never `&&`-ed into one, so a failure names
+    // exactly which one went missing (testing.md: an `||`/`&&` between cues
+    // lets one carry the assertion and hides the loss of the other).
     expect(link.className).toContain("min-h-[44px]");
     // min-h alone does nothing on an inline element — the box has to be
-    // inline-flex for the height to apply. Both cues are asserted separately
-    // so a failure names which one went missing.
+    // inline-flex for the height to apply.
     expect(link.className).toContain("inline-flex");
+    // Sonnet adversarial review: the floor is on the hit AREA, not its height.
+    // `unblockLabel` is a free prop — a short label ("עוד") renders a ~25px-wide
+    // target under a 44px-tall box, which misses 44×44 on the axis the original
+    // assertion never looked at.
+    expect(link.className).toContain("min-w-[44px]");
+    // …and centres a sub-44px label in that box instead of pinning it to the
+    // inline start. No-op once the label is wider — which is why it was easy
+    // to omit and impossible to notice on the one real consumer.
+    expect(link.className).toContain("justify-center");
   });
 
   // Decision 3: secondaryLabel/secondaryHref keep their meaning for the
