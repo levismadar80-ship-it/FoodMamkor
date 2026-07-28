@@ -795,9 +795,7 @@
           "orders_open": "פתוח להזמנות · עד {time}"
         },
         "excerpt_footer": "מתוך הביקורות",
-        "excerpt_all": "לכל הביקורות",
-        "alerts_reentry": "מקבלת עדכונים",
-        "alerts_reentry_aria": "עריכת העדפות עדכונים"
+        "excerpt_all": "לכל הביקורות"
       },
       "owner_card": {
         "heading": "מאחורי העסק"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
@@ -51,6 +51,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const { activeTab, sectionRefs, tabBarRef, scrollToSection } = useTabScroll();
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+
+  // MEH-1693: the post-save AlertPrefsPanel is owned HERE, not by either heart.
+  // The page has two hearts on different surfaces — the hero overlay circle
+  // (ImageGallery, mobile) and the quiet row (ProducerHeader, desktop) — and
+  // they are siblings, so this is their only common ancestor. Both call
+  // openAlerts; ProducerHeader renders the single panel (its mount sits in
+  // normal flow, clear of both the pinned row and the absolute hero overlay).
+  // One owner ⇒ exactly one panel in the DOM regardless of which heart fired.
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const openAlerts = useCallback(() => setAlertsOpen(true), []);
+  const closeAlerts = useCallback(() => setAlertsOpen(false), []);
 
   // MEH-1306: deep-link landing for the edit tab's "view on page" links. The
   // sections mount only after the client fetch resolves, so the browser's
@@ -128,6 +139,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           producerName={producer.name}
           verified={producer.verification_tier === "verified"}
           shareUrl={shareUrl}
+          onFavorited={openAlerts}
         />
         <div className="flex justify-end">
           <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
@@ -182,6 +194,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             primaryCategory={primaryCategory}
             hasImages={hasImages}
             shareUrl={shareUrl}
+            alertsOpen={alertsOpen}
+            onOpenAlerts={openAlerts}
+            onCloseAlerts={closeAlerts}
           />
           {/* MEH-1546: weekly order-acceptance hours — informational only, no
               status colour (the page's single status lives in ProducerHeader).
