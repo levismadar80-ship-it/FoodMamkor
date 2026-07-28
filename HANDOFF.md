@@ -6701,6 +6701,15 @@ heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2
 
 **What the hook does:** blocks `Edit`/`MultiEdit` when `file_path` does not exist on disk (catches orchestrator-claimed-wrong-path bugs, meta-patterns §1). Pass-through for `Write` (intentional file creation) and non-Edit/MultiEdit tools. Fail-open if `jq` missing. Exit 2 = block, exit 0 = allow. Field path `.tool_input.file_path` verified against `check-rtl.sh:43` (uniform for Edit + MultiEdit).
 
+> **⚠️ CORRECTION — 2026-07-28 (MEH-1720): the manual wiring below was never
+> performed.** `.claude/hooks/check-path-exists.sh` does not exist in the repo,
+> `.claude/settings.json` references it nowhere, and the hook has never run. The
+> steps are left in place as the record of what was asked for — they are **not**
+> a pending TODO anyone should now execute without first re-deciding whether the
+> hook is still wanted (its premise, meta-patterns §1, has moved on since May).
+> `docs/CHANGELOG.md` carries the matching correction. Detection for this class
+> now exists: `scripts/checks/hooks-wiring-guard.sh`.
+
 **Manual wiring (Sapir, post-merge — full copy-paste in PR body):**
 1. Save script from PR body → `.claude/hooks/check-path-exists.sh`; `chmod +x`.
 2. Add the `PreToolUse` JSON block (PR body) to `.claude/settings.json` as a new array entry (sibling matcher).

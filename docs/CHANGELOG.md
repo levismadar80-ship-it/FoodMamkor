@@ -1925,6 +1925,27 @@ PR description.
 
 Closes MEH-696.
 
+> **⚠️ CORRECTION — 2026-07-28 (MEH-1720). The hook above was never installed.**
+> `.claude/hooks/check-path-exists.sh` **does not exist in this repository** and
+> never has. The manual wiring step recorded in `HANDOFF.md` (2026-05-24 entry,
+> step 1) was written down and not performed, so the entry above describes a
+> deliverable that reached a PR body and stopped there. Path verification is
+> **not** in force — any session searching this log for that coverage will find
+> a positive answer that is false, which is why this correction is appended
+> rather than left to a future grep.
+>
+> The historical entry is deliberately **not** rewritten: it accurately records
+> what MEH-696 shipped *to the PR*, and editing it would erase the evidence that
+> the A2 hand-off can fail this way. **Verified 2026-07-28:** `ls` returns no
+> such file; `.claude/settings.json` references it nowhere; `HANDOFF.md:3523`
+> shows a later session rediscovering the absence with no follow-up.
+>
+> This is the second of two A2 failures (`MEH-1708` rows 12 + 12b). The first,
+> `check-branch-base.sh`, at least admits its state in its own header. Both are
+> now detected by `scripts/checks/hooks-wiring-guard.sh`, which fails when a
+> hook is on disk but unwired **or** wired but absent from disk — so this class
+> reports itself instead of reading as coverage.
+
 ### 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
 
 `docs(rules)`: new `.claude/rules/meta-patterns.md` with 5 cross-session
