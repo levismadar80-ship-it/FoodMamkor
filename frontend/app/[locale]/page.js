@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import ProducerCard from "@/components/ProducerCard";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
@@ -19,7 +18,6 @@ import {
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
-import { Sparkle } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
 import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
@@ -35,13 +33,16 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
   loading: () => <HomepageMiniMapSkeleton />,
 });
 
-// MEH-809: gate the "עסקים חדשים" section on catalog depth. With a thin catalog
-// the "last added" producers ARE the same businesses already shown in the
-// recommended grid above, so the section reads as a duplicate. Hide it until
-// the total distinct inventory is deep enough (the simpler of the two MEH-809
-// thresholds — total count, not a set-difference against the grid). Render
-// gate only; no producer API/data change.
-const NEW_SECTION_MIN_PRODUCERS = 8;
+// MEH-1688: the standalone "newest businesses" section is GONE, and with it
+// MEH-809's NEW_SECTION_MIN_PRODUCERS depth gate. MEH-809 hid the section on a
+// thin catalog because the "last added" producers were the same businesses
+// already in the grid above — a duplicate-content problem the gate could only
+// suppress, never solve. Moving the signal onto the card removes the duplicate
+// outright: the recency now rides the producer's own card as the "חדש" badge
+// (lib/badges.js — days_since_created <= 30), so it is visible wherever that
+// business appears and needs no second grid to carry it.
+// DO NOT reintroduce a standalone recency section — the card badge is the
+// single owner of this signal (MEH-1688).
 
 export default function HomePage() {
   const t = useTranslations();
@@ -54,7 +55,7 @@ export default function HomePage() {
     fridayMode, step0Visible, userCity,
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
+    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter,
     featuredProducer, geoActive, cityActive, dayActive, geoEmptyNotice,
     handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleCitySelected, handleClearLocation,
     // MEH-1684: `scrollToProducers` is no longer destructured here — the hero's
@@ -213,23 +214,6 @@ export default function HomePage() {
         geoEmptyNotice={geoEmptyNotice}
         regionFallback={regionFallback}
       />
-
-      {/* =========================
-          NEW PRODUCERS (last 4 added)
-          ========================= */}
-      {producers.length >= NEW_SECTION_MIN_PRODUCERS && newestProducers.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 pb-20">
-          <h2 className="font-headline-lg font-bold text-text mb-8 flex items-center gap-2" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
-            <Sparkle size={16} className="text-current" />
-            {t("home.new_businesses.heading")}
-          </h2>
-          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
-            {newestProducers.map((p) => (
-              <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" fridayMode={fridayMode} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* =========================
           MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended
