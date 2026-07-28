@@ -2723,6 +2723,13 @@
     "expiry": {
       "valid_until": "תקף עד: {date}",
       "near_expiry": "תעודה פגה בקרוב"
+    },
+    "cert": {
+      "dialog_label": "תעודת כשרות",
+      "close": "סגירה",
+      "image_alt": "צילום תעודת הכשרות",
+      "verified_by": "אומתה על ידי מהמקור",
+      "original_at_business": "התעודה המקורית מוצגת בבית העסק"
     }
   },
   "opening_hours": {

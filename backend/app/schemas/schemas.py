@@ -1629,6 +1629,19 @@ class ProducerUpdate(BaseModel):
         return v
 
 
+class KashrutCertRef(BaseModel):
+    """MEH-1672: a badge whose approved certificate photo can be served.
+
+    Intentionally ONE field. The certificate is fetched through
+    `GET /producers/{producer_id}/kashrut-cert/{badge_code}`, which re-checks
+    approval + expiry + producer status on every request. No URL crosses the
+    wire, so revocation is immediate and the permanent Cloudinary address is
+    never published.
+    """
+
+    badge_code: str
+
+
 class ProducerListOut(BaseModel):
     id: UUID
     name: str
@@ -1712,6 +1725,14 @@ class ProducerListOut(BaseModel):
     kashrut_badges: list[str] = []
     kashrut_verified_at: datetime | None = None
     kashrut_expires_at: datetime | None = None
+    # MEH-1672: which badges have a servable certificate photo. Carries the
+    # badge_code ONLY — never a URL. The client builds
+    # /producers/{id}/kashrut-cert/{badge_code} from it, and the raw
+    # Cloudinary address (which is public-forever, `type=upload`) stays
+    # inside the backend. Populated in producers.py's get_producer /
+    # get_producer_by_slug via `_servable_kashrut_certs()`.
+    # DO NOT add a url field here — that is the whole point of the proxy.
+    kashrut_certs: list[KashrutCertRef] = []
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
