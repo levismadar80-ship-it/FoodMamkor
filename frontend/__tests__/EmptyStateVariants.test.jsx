@@ -154,6 +154,29 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
     expect(link.className).not.toContain("rounded-full");
   });
 
+  // Adversarial review finding. In a gated state this link is the ONLY control
+  // on screen and it is the smallest — a bare text link is ~20px tall against
+  // the repo's ≥44px floor (docs/DESIGN.md "Tap-target floor (reach)", WCAG
+  // 2.5.5, IS 5568). Same shape, same fix as WhatsThis.jsx:29. jsdom computes
+  // no geometry, so the assertion is on the class that creates the hit area.
+  it("meets the 44px tap-target floor", () => {
+    const { container } = render(
+      <EmptyState
+        gated
+        icon={Lock}
+        title="נעול"
+        secondaryLabel="מה נדרש לאישור"
+        secondaryHref="/producer/dashboard"
+      />,
+    );
+    const link = container.querySelector('a[href="/producer/dashboard"]');
+    expect(link.className).toContain("min-h-[44px]");
+    // min-h alone does nothing on an inline element — the box has to be
+    // inline-flex for the height to apply. Both cues are asserted separately
+    // so a failure names which one went missing.
+    expect(link.className).toContain("inline-flex");
+  });
+
   it("keeps the description — it is what carries the reason", () => {
     const { getByText } = render(
       <EmptyState gated icon={Lock} title="נעול" description="ממתין לאישור העסק." />,
