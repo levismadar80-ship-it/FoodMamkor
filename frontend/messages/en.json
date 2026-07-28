@@ -510,9 +510,6 @@
       "body_l3": "We'd love to meet.",
       "button": "Add Your Business"
     },
-    "new_businesses": {
-      "heading": "New businesses"
-    },
     "events": {
       "heading": "Upcoming events",
       "all_events": "All events →",
@@ -869,7 +866,8 @@
       "badges": {
         "delivery_only": "Delivery only",
         "available_today": "Coming today",
-        "overflow_aria": "Show {count} more badges"
+        "overflow_aria": "Show {count} more badges",
+        "overflow_heading": "More about this business"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
     }

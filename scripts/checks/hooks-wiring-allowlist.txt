@@ -1,0 +1,20 @@
+# hooks-wiring-allowlist — deliberately-unwired hook scripts (MEH-1720)
+#
+# Format, one per line:
+#   <basename.sh> :: <reason>
+#
+# A REASON IS REQUIRED. An entry with an empty reason FAILS the guard — a bare
+# filename records that someone silenced the check and teaches the next reader
+# nothing, which is the state MEH-1720 exists to end.
+#
+# Being in this file means "unwired ON PURPOSE, and here is why". It is not a
+# parking space. An entry that outlives its reason should be resolved, not
+# renewed: the two A2 failures (MEH-1708 rows 12 + 12b) both looked like
+# coverage for weeks precisely because nothing forced a second look.
+#
+# The `guard-ok: <reason>` marker inside the hook itself also suppresses, per
+# scripts/checks/README.md. Prefer it when you can edit the hook — the reason
+# then lives next to the thing. CC cannot: .claude/hooks/** is deny-enforced
+# (verified by probe, MEH-1500 Phase A), which is why this file exists.
+
+check-branch-base.sh :: Unwired pending Sapir's wire-or-delete decision (MEH-1720). Its own header states "unwired by default"; wiring needs .claude/settings.json, which CC cannot edit, and deleting a rule labelled (CRITICAL) in .claude/rules/workflow.md:10 is not CC's call. Listed so the guard is green on a KNOWN gap rather than red on an undecided one — the decision is tracked in MEH-1720, not deferred silently here.

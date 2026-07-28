@@ -3,6 +3,99 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-28 — MEH-1710 brand rule: empty-state copy convention (LOW-RISK, docs-only) — PR #2361 merged
+
+**Branch:** `feature/meh-1710-brand-empty-state-copy-rule` (2 commits: the section + a staging merge).
+**Docs branch:** `feature/meh-1710-docs-backfill` — this file + CHANGELOG, kept out of the code branch under rule 31.
+
+### What shipped
+One `###` subsection at the end of `docs/BRAND.md` §7: title = the state, description
+= the explanation/benefit, primary CTA **inside** the empty state (and the equivalent
+top button not rendered), blocked action = **no button at all**, Emoji-LOCK v2 on every
+empty-state string with the icon passed as a Phosphor component. 31 insertions, 0
+deletions. Zero code files.
+
+### Two things Phase 0 found that the prompt had wrong
+| Assumption | Reality |
+|---|---|
+| "§7 is the MEH-1652 rule (PR #2354)" | §7 was **Anti-patterns**; MEH-1652 was unmerged (`f61fa0e9` lived only on its own branch). §7 *did* exist, so the stop condition did not fire. #2354 merged mid-session (`6d0261f6`). |
+| "MEH-1652 is the precedent for landing a brand rule without an ADR" | **False.** #2354 shipped **with ADR-031** and an explicit `**ADR מגבה:**` line. |
+
+### Open items — Sapir
+1. **ADR-032 decision.** `### מצבים ריקים` is currently the **only §7 rule without a
+   backing ADR**, which §8 says is not permitted. The basis is Sapir's 28/07 lock in
+   the ticket body. Opening an ADR was outside the ticket's `<scope>` (BRAND.md only),
+   so CC flagged rather than acted. If yes → add a matching `**ADR מגבה:**` line.
+2. **Drive copy (manual, per the ticket DoD).** Copy the section into
+   `Drive/03-Brand-Hub/02-מדריך-מותג.md`, replace `"לא מצאנו בינתיים — עדיין 🌱"` with an
+   emoji-free version, bump the guide changelog to v1.2. The full section text is
+   quoted verbatim in the PR body for exactly this.
+3. **`❌`/`✅` are emoji by the grep, not by convention.** U+274C/U+2705 sit inside the
+   `\x{2600}-\x{27BF}` range the ticket's own verification step checks, yet the rest of
+   §7 — including the MEH-1652 rule that landed the same day — uses them freely. The
+   new section uses bold **אסור**/**מותר** instead. **The §3-Emoji-LOCK-vs-verification
+   mismatch is unresolved**; existing sections were left untouched.
+
+### Worth carrying forward
+**A predicted conflict is still a conflict.** The first version of the PR body wrote
+down that #2354 and #2361 both append at the end of §7 and that whoever merges second
+needs Accept-Both. That is exactly what happened — `405 Pull Request has merge
+conflicts` on the first squash-merge attempt. Predicting it cost nothing and made the
+resolution mechanical (rule 25 / `resolve-conflicts`: first-landed rule first,
+0 deletions). Naming a foreseeable collision in the PR body is cheap; two branches
+appending to the same anchor is a standing hazard, not a surprise.
+## 2026-07-28 — MEH-1709 group-buys gated empty state (YELLOW, frontend) — PR #2364 merged
+
+**Branch:** `feature/meh-1709-group-buys-gated-empty-state` (2 commits: the fix + a staging merge).
+**Docs branch:** `feature/meh-1709-docs-backfill` — this file + CHANGELOG, kept out of the code branch under rule 31.
+
+### What shipped
+`frontend/app/[locale]/producer/dashboard/group-buys/page.js`, three blocks. Header
+button absent while `notApproved` (not disabled). Standalone hint paragraph now only
+when the list is non-empty. EmptyState takes `approval_required_hint` as its
+`description` and drops both `ctaLabel` and `ctaOnClick` while gated. Plus
+`frontend/__tests__/GroupBuysGatedEmptyState.test.jsx` (7 assertions), a browser probe,
+and 4 screenshots.
+
+### Phase 0 — the answer that changed the shape of the fix
+The muted button was **not** a leftover. MEH-1420's own code comment kept it
+deliberately: `EmptyState` self-hides a CTA whose handler is absent, so hiding the
+header button *too* would have orphaned the hint's `aria-describedby` target and left
+zero affordance. This ticket dissolves that dependency rather than overriding it — the
+explanation moves inside, the `aria-describedby` becomes unnecessary, and the button
+can go. The `id` went with it (grep: one consumer, same file).
+
+### Decisions made this session
+| Decision | Outcome |
+|---|---|
+| Unapproved **with** existing group buys | Not in F1/F2/F3. Button dropped, **hint paragraph kept** — no EmptyState exists there to carry the reason. Has its own test. |
+| `empty_title` still a value proposition | **Left as-is on purpose.** Zero-copy ticket; the convention is MEH-1710's and the application is MEH-1630's. Marked in a code comment so it doesn't read as an oversight. |
+| Screenshots | **Real browser**, not the sanctioned vitest substitute — `page.route()` stubs `/api`, token seeded pre-hydration. Probe: `disabledButtons: 0`, `gateStringOccurrences: 1`. |
+| Merge method | Sapir enabled **auto-merge with `merge`**, while the ticket specified squash. Her setting was left alone. |
+
+### Open items — Sapir
+1. **Staging QA.** The ticket's DoD waived the preview URL and mobile check (Vercel
+   quota); verification moves to staging post-merge. Two states to look at: unapproved
+   (no button anywhere, explanation under the cart) and approved-empty (one green CTA
+   inside, nothing in the header).
+2. **`Adversarial review (calibration)` reported failure on PR #2364 — infrastructural,
+   not a finding.** `duration_ms: 992`, `num_turns: 1`, `total_cost_usd: 0`, and
+   `ANTHROPIC_API_KEY:` **empty** in the job env. This is the workflow-rule-21 class
+   ("a failure you cannot read logs for is not a signal"). Not a required gate, so it
+   did not block. The fix is a repo secret + `.github/workflows/**`, both outside CC's
+   reach (MEH-671).
+3. **he/en message-key drift predates this work** — 37 he-only, 17 en-only. Untouched;
+   worth its own ticket.
+
+### Worth carrying forward
+**A sibling spec covering the same component is not coverage of the same states.**
+`DashboardEmptyStateFormExclusive` renders this exact page and passes on both the broken
+and the fixed version, because its mock producer carries no `status` field — so
+`notApproved` is never true and the gated branch is unreachable from it. The file list
+said "this page is tested". The state matrix said otherwise. When adding a guard, run
+the *existing* spec against the broken build too: if it stays green, that is the
+evidence the new assertion is worth having (MEH-1619's discrimination requirement).
+
 ## 2026-07-27 — MEH-1577 structured delivery cost (RED, chunked) — PR #2334 open, awaiting merge approval
 
 **PR #2334 is OPEN as a draft, NOT merged.** RED tier: migration `c7e2a4b91f38`
@@ -6700,6 +6793,15 @@ heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2
 **Why A2:** `permissions.deny` has `Edit(.claude/hooks/**)` covering the whole hooks dir — so neither the executable nor `README.md` can be committed from a CC session. Both go in the PR body; Sapir installs manually post-merge. (Spec assumed README.md was committable — corrected per meta-patterns §1, the exact pattern this hook mechanizes.)
 
 **What the hook does:** blocks `Edit`/`MultiEdit` when `file_path` does not exist on disk (catches orchestrator-claimed-wrong-path bugs, meta-patterns §1). Pass-through for `Write` (intentional file creation) and non-Edit/MultiEdit tools. Fail-open if `jq` missing. Exit 2 = block, exit 0 = allow. Field path `.tool_input.file_path` verified against `check-rtl.sh:43` (uniform for Edit + MultiEdit).
+
+> **⚠️ CORRECTION — 2026-07-28 (MEH-1720): the manual wiring below was never
+> performed.** `.claude/hooks/check-path-exists.sh` does not exist in the repo,
+> `.claude/settings.json` references it nowhere, and the hook has never run. The
+> steps are left in place as the record of what was asked for — they are **not**
+> a pending TODO anyone should now execute without first re-deciding whether the
+> hook is still wanted (its premise, meta-patterns §1, has moved on since May).
+> `docs/CHANGELOG.md` carries the matching correction. Detection for this class
+> now exists: `scripts/checks/hooks-wiring-guard.sh`.
 
 **Manual wiring (Sapir, post-merge — full copy-paste in PR body):**
 1. Save script from PR body → `.claude/hooks/check-path-exists.sh`; `chmod +x`.

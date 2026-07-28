@@ -334,6 +334,18 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                 </button>
               }
             >
+              {/* MEH-1714: the panel opened as a bare label list with no
+                  heading, so it read as an orphan pill floating over the
+                  photo (Sapir QA 28/07: "למה התג של הכשר נראה ככה"). The
+                  labels.md disclosure contract wants the affordance AND the
+                  copy that says what is behind it — MEH-1547 shipped the
+                  affordance, this is the copy. Muted + one step smaller than
+                  the labels so the list stays the primary content; the
+                  role="list"/"listitem" tree below is untouched, and the
+                  heading sits outside it so it is not announced as an item. */}
+              <span className="mb-1.5 block text-[10px] font-medium text-fg-muted">
+                {t("producer.card.badges.overflow_heading")}
+              </span>
               <span className="flex flex-col gap-1" role="list">
                 {allBadges(producer)
                   .slice(2)
