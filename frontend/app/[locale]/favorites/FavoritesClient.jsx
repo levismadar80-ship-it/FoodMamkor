@@ -6,6 +6,7 @@ import { Bell, Heart, HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { FavoriteWithProducerSchema } from "@/lib/api-schemas";
 import ProducerCard from "@/components/ProducerCard";
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -113,7 +114,33 @@ export default function FavoritesClient() {
       api
         .get("/users/me/favorites")
         .then((r) => {
-          setFavorites(r.data);
+          // MEH-1713: Rule-19 gap — this response went straight to render
+          // with no Zod parse at all, so a structurally broken payload
+          // reached ProducerCard instead of the error state below.
+          //
+          // PER-ROW filtering, deliberately NOT a whole-array parse. The two
+          // surfaces differ in what a failure costs: the map feed parses
+          // all-or-nothing (useProducersFeed.js:41) because a half-drawn map
+          // is worse than an empty one, but /favorites is a list the user
+          // curated by hand — dropping every saved business because one row
+          // is malformed reads as "your favorites are gone", the exact
+          // silent-blank class MEH-977/MEH-1479 built the error state for.
+          // One bad row costs one card; the rest still render.
+          const rows = Array.isArray(r.data) ? r.data : null;
+          if (!rows) {
+            // Not an array at all = structural failure of the whole
+            // response. Nothing to salvage per-row, so route to the error
+            // state rather than render an empty "no favorites yet" page,
+            // which would be indistinguishable from a real empty list.
+            setLoadError(true);
+            return;
+          }
+          setFavorites(
+            rows
+              .map((row) => FavoriteWithProducerSchema.safeParse(row))
+              .filter((res) => res.success)
+              .map((res) => res.data),
+          );
           setLoadError(false);
         })
         .catch(() => setLoadError(true))
