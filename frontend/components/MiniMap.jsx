@@ -56,6 +56,34 @@ function isSecondaryKind(kind) {
   return kind === "pickup" || kind === "market_stand";
 }
 
+// MEH-1682 — an unparameterised Tooltip inherits Leaflet's `direction: 'auto'`,
+// which chooses a horizontal side by comparing the marker's container x against
+// the map centre. Under `html { direction: rtl }` (globals.css) that
+// computation is wrong upstream: the tooltip renders detached beside the pin,
+// with a lateral gap and no arrow touching anything. Leaflet #7201 — open since
+// 2020, still present in the 1.9.4 we ship. Pinning an explicit VERTICAL
+// direction sidesteps the horizontal decision entirely, which is both the
+// upstream workaround and the pattern already in this repo.
+// REUSES: frontend/components/HomepageMiniMap.jsx:262 — same `direction="top"`
+// + negative-y offset idiom.
+//
+// That file is NOT a bug-free control group, though it was read as one: the
+// lateral half of this bug is a CSS-origin problem on `.leaflet-tooltip`
+// itself (see globals.css, MEH-1682), so it displaced the homepage tooltips by
+// their own width too. It escaped only the VERTICAL half, because it already
+// pinned a direction. The globals.css rule fixes both surfaces at once; this
+// prop pair is what stops THIS map from also picking a broken horizontal side.
+// Derived from the shared class + shared mechanism — not measured on the
+// homepage, whose map would not render under the sandbox's API mocks.
+//
+// The offset is what keeps the tooltip OFF the pin rather than on top of it:
+// iconAnchor is the pin's CENTRE (locationIcon() below), so the tooltip has to
+// rise by half the pin plus a small breath. Two pin sizes → two offsets; using
+// one value for both would bury the tooltip inside the 32px primary pin.
+const TOOLTIP_GAP_PX = 2;
+const PRIMARY_TOOLTIP_OFFSET_Y = -(PRIMARY_PIN_PX / 2 + TOOLTIP_GAP_PX);
+const SECONDARY_TOOLTIP_OFFSET_Y = -(SECONDARY_PIN_PX / 2 + TOOLTIP_GAP_PX);
+
 // REUSES: frontend/components/MapComponent.jsx:94-306 — same visual language
 // (category colour + glyph from styleForProducer, filled circle for the
 // business, hollow ring for a satellite point) built from the same shared
@@ -136,6 +164,9 @@ function FitToPoints({ points }) {
 function LocationPins({ points, producer, fallbackLabel, onExpand }) {
   return points.map((location, index) => {
     const label = location.label || fallbackLabel;
+    // MEH-1682: the same split locationIcon() uses to SIZE the pin, recomputed
+    // here because the tooltip's offset has to clear the pin it sits above.
+    const secondary = isSecondaryKind(location.kind);
     return (
       <Marker
         key={location.id ?? `${location.lat}-${location.lng}-${index}`}
@@ -155,7 +186,10 @@ function LocationPins({ points, producer, fallbackLabel, onExpand }) {
         // `title` is applied to any element (:7903) — measured present.
         title={label}
       >
-        <Tooltip>
+        <Tooltip
+          direction="top"
+          offset={[0, secondary ? SECONDARY_TOOLTIP_OFFSET_Y : PRIMARY_TOOLTIP_OFFSET_Y]}
+        >
           <span className="font-medium">{label}</span>
           {location.opening_hours && (
             <>
