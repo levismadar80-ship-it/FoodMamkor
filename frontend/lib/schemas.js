@@ -92,6 +92,43 @@ export const ProducerSchema = z.object({
     is_primary: z.boolean().nullable().optional(),
     precision: z.string().nullable().optional(),
   })).optional().default([]),
+  // MEH-1704: the 13 remaining badge inputs. `lib/badges.js::earnsBadge` reads
+  // 14 producer fields; only `verification_tier` (:25) was declared, so on both
+  // Zod-parsed feeds — home grid (use-home-page.js:326/:360/:430) and /map
+  // (app/[locale]/map/state/useProducersFeed.js:49) — z.object stripped the
+  // other 13 and 11 of the 12 badges in BADGE_PRIORITY could never light.
+  // Same mechanism as MEH-826 / MEH-901 / MEH-902 / MEH-766 ch5 / MEH-1412
+  // above; this is its fifth recurrence, which is why it now ships with a
+  // structural guard (__tests__/ProducerSchemaBadgeParity.test.js) rather than
+  // a sixth declaration and a hope.
+  //
+  // Permissive by construction — the feed parses all-or-nothing
+  // (useProducersFeed.js:41), so a required badge field would drop an entire
+  // producer from the grid rather than merely lose it a badge. Losing a badge
+  // is the bug being fixed; losing a business would be a worse one. The guard
+  // asserts this property directly, not just the declarations.
+  //
+  // NOT declared here, deliberately: `organic_certified` (badges.js:189) and
+  // the free-text `kosher` (:206, :209) appear ONLY in comments — MEH-1259
+  // removed the organic badge and MEH-986 ch2 made kosher render exclusively
+  // from admin-stamped `kashrut_verified_at`. Neither is read by executable
+  // code, so neither is a badge input.
+  has_producer_license: z.boolean().nullable().optional(),   // → license
+  is_recommended: z.boolean().nullable().optional(),         // → recommended (בחירת העורכת)
+  days_since_created: z.number().nullable().optional(),      // → new (חדש)
+  grass_fed: z.boolean().nullable().optional(),              // → grass_fed
+  has_gluten_free_products: z.boolean().nullable().optional(),   // → gluten_free
+  has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
+  has_vegan_products: z.boolean().nullable().optional(),         // → vegan
+  has_lactose_free_products: z.boolean().nullable().optional(),  // → lactose_free
+  // kosher pair — verified-only (MEH-986 ch2) + expiry (MEH-1260). Both are
+  // date-ish strings from the backend; `z.string()` not `z.date()` because the
+  // payload is JSON and badges.js:216 does its own `new Date(...)` comparison.
+  kashrut_verified_at: z.string().nullable().optional(),     // → kosher
+  kashrut_expires_at: z.string().nullable().optional(),      // → kosher (expiry)
+  has_delivery: z.boolean().nullable().optional(),           // → delivery
+  delivery_count: z.number().nullable().optional(),          // → delivery (fallback count)
+  products_count: z.number().nullable().optional(),          // → products
 });
 
 // MEH-779: response shape of GET /producers — an array of producers.
