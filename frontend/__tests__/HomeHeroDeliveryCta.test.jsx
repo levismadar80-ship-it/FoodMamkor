@@ -59,8 +59,15 @@ describe("HomeHero delivery CTA (MEH-1643)", () => {
     expect(onDeliveryCta).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the MEH-1369 single-filled-primary rule — the delivery CTA is a ghost", () => {
+  // MEH-1684 restyled this control from `.action-ghost` to the shared hero chip.
+  // The assertion tracks the INVARIANT, not the old class name: MEH-1369 says the
+  // delivery control must never carry a fill. `bg-action-primary` is the fill
+  // token, so its absence is the thing worth asserting — a rename of the ghost
+  // utility can no longer red this test, and a future fill still can.
+  it("keeps the MEH-1369 single-filled-primary rule — the delivery chip carries no fill", () => {
     render(<HomeHero {...baseProps} onDeliveryCta={vi.fn()} userCity={null} />);
-    expect(screen.getByTestId("hero-delivery-cta").className).toContain("action-ghost");
+    const cls = screen.getByTestId("hero-delivery-cta").className;
+    expect(cls).not.toContain("bg-action-primary");
+    expect(cls).toContain("border-primary/35");
   });
 });
