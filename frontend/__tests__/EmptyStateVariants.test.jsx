@@ -112,6 +112,53 @@ describe("EmptyState — `circle` variant (MEH-1630 decision 2)", () => {
   });
 });
 
+describe("EmptyState — `size` variant (MEH-1630 decision 1)", () => {
+  // Chunk 2 migrates each inline block at the geometry it already has, so the
+  // disc/icon pairing per size value is the contract that makes that possible.
+  // Normalization is chunk 3 and is blocked by MEH-1727.
+  const CASES = [
+    { size: "sm", disc: "w-16", icon: "28" },
+    { size: "md", disc: "w-20", icon: "32" },
+    { size: "lg", disc: "w-24", icon: "40" },
+  ];
+
+  for (const { size, disc, icon } of CASES) {
+    it(`size="${size}" renders a ${disc} disc with a ${icon}px icon`, () => {
+      const { container } = render(
+        <EmptyState circle size={size} icon={ShoppingCart} title="ריק" />,
+      );
+      const el = container.querySelector(".rounded-full");
+      expect(el.className).toContain(`${disc} `);
+      expect(el.className).toContain("bg-green-50");
+      // Phosphor maps `size` onto the svg's width/height attributes.
+      expect(el.querySelector("svg").getAttribute("width")).toBe(icon);
+    });
+  }
+
+  it("defaults to sm", () => {
+    const { container } = render(<EmptyState circle icon={ShoppingCart} title="ריק" />);
+    const el = container.querySelector(".rounded-full");
+    expect(el.className).toContain("w-16 ");
+    expect(el.querySelector("svg").getAttribute("width")).toBe("28");
+  });
+
+  it("falls back to sm on an unknown value rather than crashing", () => {
+    const { container } = render(
+      <EmptyState circle size="enormous" icon={ShoppingCart} title="ריק" />,
+    );
+    expect(container.querySelector(".rounded-full").className).toContain("w-16 ");
+  });
+
+  it("is inert without `circle` — size alone changes nothing", () => {
+    const { container } = render(
+      <EmptyState size="lg" icon={ShoppingCart} title="ריק" />,
+    );
+    expect(container.querySelector(".rounded-full")).toBeNull();
+    // Still the bare 56px icon every existing call site renders.
+    expect(container.querySelector("svg").getAttribute("width")).toBe("56");
+  });
+});
+
 describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
   // NN/g: a blocked action gets no control at all — not a disabled one.
   it("renders zero buttons even when a full CTA is passed", () => {
@@ -142,8 +189,8 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
         icon={Lock}
         title="נעול"
         description="תתאפשר לאחר אישור העסק."
-        secondaryLabel="מה נדרש לאישור"
-        secondaryHref="/producer/dashboard"
+        unblockLabel="מה נדרש לאישור"
+        unblockHref="/producer/dashboard"
       />,
     );
     const link = container.querySelector('a[href="/producer/dashboard"]');
@@ -165,8 +212,8 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
         gated
         icon={Lock}
         title="נעול"
-        secondaryLabel="מה נדרש לאישור"
-        secondaryHref="/producer/dashboard"
+        unblockLabel="מה נדרש לאישור"
+        unblockHref="/producer/dashboard"
       />,
     );
     const link = container.querySelector('a[href="/producer/dashboard"]');
@@ -175,6 +222,23 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
     // inline-flex for the height to apply. Both cues are asserted separately
     // so a failure names which one went missing.
     expect(link.className).toContain("inline-flex");
+  });
+
+  // Decision 3: secondaryLabel/secondaryHref keep their meaning for the
+  // NON-gated case ONLY. Without this, the rename would be cosmetic — the old
+  // pair would still render the way-out link and both spellings would work.
+  it("ignores secondaryLabel/secondaryHref when gated", () => {
+    const { container } = render(
+      <EmptyState
+        gated
+        icon={Lock}
+        title="נעול"
+        secondaryLabel="למפה"
+        secondaryHref="/map"
+      />,
+    );
+    expect(container.querySelector('a[href="/map"]')).toBeNull();
+    expect(container.querySelectorAll("a")).toHaveLength(0);
   });
 
   it("keeps the description — it is what carries the reason", () => {
