@@ -6,12 +6,18 @@ min_participants, revert-to-open on cancel, duplicate/closed/full/deadline
 error paths). Uses the shared conftest fixtures + a producer-user helper
 mirroring test_producer_recipes.py.
 """
+import re
 from datetime import datetime, timedelta, timezone
+from unittest import mock
 from uuid import uuid4
 
 from conftest import auth_header, make_producer, make_user
 
-from app.models.models import GroupBuy
+from app.models.models import GroupBuy, GroupBuyCommit
+from app.services.group_buy_notifications import (
+    notify_participant_funded,
+    notify_producer_funded,
+)
 
 
 def _producer_user(db, *, email="gbprod@test.com", status="approved"):
@@ -477,3 +483,243 @@ class TestFullLifecycle:
         reopened = client.get(f"/group-buys/{gb_id}").json()
         assert reopened["status"] == "open"
         assert reopened["commits_count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# MEH-1651 — funded notifications (both sides, zero contact details)
+# ---------------------------------------------------------------------------
+
+# The privacy guarantee is an ABSENCE claim, and a presence-only check cannot
+# detect a removal that never happened (MEH-1578). So the detector below is
+# exercised against synthetic inputs FIRST (test_contact_detector_self_test) —
+# if it cannot tell a leaking body from a clean one, nothing it reports about
+# the real templates is worth reading (MEH-1619).
+_PHONE_RE = re.compile(r"(?<!\d)0\d{1,2}-?\d{7}(?!\d)")
+
+
+def _contact_details_in(text: str) -> list[str]:
+    """Return every phone-shaped run and every email-shaped token in `text`."""
+    return _PHONE_RE.findall(text) + [tok for tok in text.split() if "@" in tok]
+
+
+# A fixed id keeps the absence assertion deterministic: a random uuid4 can
+# contain an all-digit run that trips a phone regex, which would make this
+# test flaky for a reason unrelated to what it guards.
+_FIXED_GB_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+
+class TestFundedNotificationPrivacy:
+    """Absence + presence assertions over the two rendered templates."""
+
+    def test_contact_detector_self_test(self):
+        # Regression-shaped inputs — MUST be caught.
+        assert _contact_details_in("צרו קשר ב-0501234567") == ["0501234567"]
+        assert _contact_details_in("טלפון: 050-1234567") == ["050-1234567"]
+        assert _contact_details_in("dana@example.com הצטרפה") == ["dana@example.com"]
+        # Correct-shaped input — MUST NOT be caught. Digits that are not a
+        # phone (a count, a price, a date) stay clean.
+        assert _contact_details_in("מספר משתתפות: 12\nמחיר: 90 שח 2026-07-27") == []
+
+    def test_producer_body_has_no_contact_details_and_pins_content(self):
+        sent = {}
+
+        def _capture(to, subject, body, html=None):
+            sent.update(to=to, subject=subject, body=body)
+
+        with mock.patch(
+            "app.services.group_buy_notifications.send_email", _capture
+        ):
+            notify_producer_funded(
+                "owner@test.com", "רכש קמח מלא", 7, _FIXED_GB_ID
+            )
+
+        # Absence: zero phone numbers, zero email addresses in the body.
+        assert _contact_details_in(sent["body"]) == []
+        # Presence (MEH-1592): a body that dropped its content also has no
+        # phone number — pin what BELONGS, not only what doesn't.
+        assert "7" in sent["body"]
+        assert f"/group-buys/{_FIXED_GB_ID}" in sent["body"]
+        assert "רכש קמח מלא" in sent["body"]
+
+    def test_participant_body_has_no_contact_details_and_pins_content(self):
+        sent = {}
+
+        def _capture(to, subject, body, html=None):
+            sent.update(to=to, subject=subject, body=body)
+
+        with mock.patch(
+            "app.services.group_buy_notifications.send_email", _capture
+        ):
+            notify_participant_funded(
+                "buyer@test.com", "רכש קמח מלא", "מאפיית הגליל", _FIXED_GB_ID
+            )
+
+        assert _contact_details_in(sent["body"]) == []
+        # The business NAME is the call to action (MEH-1650 wording), and the
+        # name is not a contact detail.
+        assert "מאפיית הגליל" in sent["body"]
+        assert f"/group-buys/{_FIXED_GB_ID}" in sent["body"]
+
+
+class TestFundedNotificationDispatch:
+    """Idempotency, recipient fan-out, and the best-effort contract."""
+
+    @staticmethod
+    def _capture_sends(monkeypatch):
+        sends = []
+        monkeypatch.setattr(
+            "app.services.group_buy_notifications.send_email",
+            lambda to, subject, body, html=None: sends.append(
+                {"to": to, "subject": subject, "body": body}
+            ),
+        )
+        return sends
+
+    def test_funded_notifies_both_sides_with_matching_count(
+        self, client, db, monkeypatch
+    ):
+        sends = self._capture_sends(monkeypatch)
+        producer, owner = _producer_user(db, email="gbowner_notify@test.com")
+        gb = _make_group_buy(db, producer, min_participants=2)
+
+        b1 = make_user(db, email="notify_b1@test.com")
+        b2 = make_user(db, email="notify_b2@test.com")
+
+        r1 = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(b1),
+        )
+        assert r1.status_code == 201, r1.text
+        # Below min → still open → nothing sent.
+        assert r1.json()["status"] == "open"
+        assert sends == []
+
+        r2 = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(b2),
+        )
+        assert r2.status_code == 201, r2.text
+        assert r2.json()["status"] == "funded"
+
+        # Exactly 2 message KINDS: one to the business, one per participant.
+        recipients = sorted(s["to"] for s in sends)
+        assert recipients == [
+            "gbowner_notify@test.com",
+            "notify_b1@test.com",
+            "notify_b2@test.com",
+        ]
+        owner_msg = next(s for s in sends if s["to"] == owner.email)
+        participant_msgs = [s for s in sends if s["to"] != owner.email]
+        assert len({m["subject"] for m in participant_msgs}) == 1
+        assert owner_msg["subject"] != participant_msgs[0]["subject"]
+
+        # The count in the business's body matches the real commit count.
+        commit_count = (
+            db.query(GroupBuyCommit)
+            .filter(GroupBuyCommit.group_buy_id == gb.id)
+            .count()
+        )
+        assert commit_count == 2
+        assert f"מספר משתתפות: {commit_count}" in owner_msg["body"]
+
+        # And no body of either kind carries a contact detail. The group URL is
+        # stripped first — a random uuid4 can contain a phone-shaped digit run,
+        # which would be a false positive about the URL, not about a leak.
+        for s in sends:
+            scrubbed = s["body"].replace(str(gb.id), "")
+            assert _contact_details_in(scrubbed) == [], s["body"]
+
+    def test_flap_around_threshold_sends_nothing_the_second_time(
+        self, client, db, monkeypatch
+    ):
+        sends = self._capture_sends(monkeypatch)
+        producer, _ = _producer_user(db, email="gbowner_flap@test.com")
+        gb = _make_group_buy(db, producer, min_participants=2)
+        b1 = make_user(db, email="flap_b1@test.com")
+        b2 = make_user(db, email="flap_b2@test.com")
+
+        client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(b1),
+        )
+        client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(b2),
+        )
+        first_round = len(sends)
+        assert first_round == 3  # 1 business + 2 participants
+
+        # funded -> cancel -> open
+        cancel = client.delete(
+            f"/group-buys/{gb.id}/commit", headers=auth_header(b2)
+        )
+        assert cancel.status_code == 200, cancel.text
+        assert client.get(f"/group-buys/{gb.id}").json()["status"] == "open"
+
+        # rejoin -> funded a SECOND time
+        rejoin = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(b2),
+        )
+        assert rejoin.status_code == 201, rejoin.text
+        assert rejoin.json()["status"] == "funded"
+
+        # The latch held: zero additional messages.
+        assert len(sends) == first_round
+
+        db.expire_all()
+        refreshed = db.query(GroupBuy).filter(GroupBuy.id == gb.id).first()
+        assert refreshed.funded_notified_at is not None
+
+    def test_email_failure_never_fails_the_commit(self, client, db, monkeypatch):
+        def _boom(*args, **kwargs):
+            raise RuntimeError("Resend is down")
+
+        monkeypatch.setattr(
+            "app.services.group_buy_notifications.send_email", _boom
+        )
+        producer, _ = _producer_user(db, email="gbowner_boom@test.com")
+        gb = _make_group_buy(db, producer, min_participants=1)
+        buyer = make_user(db, email="boom_b1@test.com")
+
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(buyer),
+        )
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["status"] == "funded"
+
+    def test_commit_no_longer_persists_a_phone(self, client, db):
+        """MEH-1651 removal guard — the column must stay NULL on write."""
+        producer, _ = _producer_user(db, email="gbowner_nophone@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        buyer = make_user(db, email="nophone_b1@test.com")
+
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit",
+            # An extra `phone` is ignored by the schema, not persisted — this
+            # is the shape a stale client would still send.
+            json={"quantity": 1, "phone": "0501234567"},
+            headers=auth_header(buyer),
+        )
+        assert resp.status_code == 201, resp.text
+
+        stored = (
+            db.query(GroupBuyCommit)
+            .filter(GroupBuyCommit.group_buy_id == gb.id)
+            .first()
+        )
+        assert stored.phone is None
+
+        # And the field is gone from the API contract entirely.
+        detail = client.get(
+            f"/group-buys/{gb.id}", headers=auth_header(buyer)
+        ).json()
+        assert detail["user_commit"] is not None
+        assert "phone" not in detail["user_commit"]

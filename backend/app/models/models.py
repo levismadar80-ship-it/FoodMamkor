@@ -1339,6 +1339,14 @@ class GroupBuy(Base):
     fulfillment_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
+    # MEH-1651: one-way latch for the open->funded notification pair. NULL =
+    # never sent. `status` cannot carry this on its own because it legitimately
+    # flaps: cancelling below min_participants reverts it to "open" and the next
+    # join re-crosses the threshold, so a status-keyed send would re-spam every
+    # participant on every flap.
+    # DO NOT clear this on the funded->open revert path — that re-arms the
+    #        notification, which is the exact failure the column prevents.
+    funded_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     producer = relationship("Producer", backref="group_buys")
