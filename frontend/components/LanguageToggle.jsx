@@ -15,16 +15,24 @@ import { useRouter, usePathname } from "@/i18n/navigation";
  * Does NOT: Persist to localStorage (next-intl middleware handles cookie
  *           — the localStorage path in lib/language-context.js is a
  *           pre-Wave-1 backward-compat shim, separate concern).
- *           Toggle does NOT lift `Disallow: /en/` from robots.txt —
- *           that's a separate post-Wave-6 PR.
  * Related:  frontend/i18n/routing.js (locales + as-needed prefix),
  *           frontend/i18n/navigation.js (router/pathname exports),
- *           frontend/components/AccountSheet.jsx (sole live consumer —
- *           embeds this via `variant="bare"`; Header dropped it in MEH-896).
+ *           frontend/components/Header.jsx:400-402 (desktop pill —
+ *           `variant="default"`, behind `hidden md:inline-flex`),
+ *           frontend/components/AccountSheet.jsx:191 (mobile menu row —
+ *           `variant="bare"`). TWO live consumers, one per viewport.
  * History:  MEH-475 (creation, 2026-05-19; closes the language toggle
  *           UI deliverable of Wave 5);
  *           MEH-1279 (variant="bare" — drops the 36px circle so the toggle
- *           sits flush inside a menu row next to size-19 sibling icons).
+ *           sits flush inside a menu row next to size-19 sibling icons);
+ *           MEH-1698 (desktop mount restored — MEH-896 removed it 21/06
+ *           "until the EN i18n wave (MEH-472)" and MEH-472 never did, so
+ *           /en was a one-way door on desktop for five weeks. This block
+ *           also carried two claims that had gone false: robots.txt was
+ *           said to hold `Disallow: /en/` — it does not and did not
+ *           (frontend/public/robots.txt; flagged stale in
+ *           docs/audits/2026-06-13-seo-meta.md:223) — and AccountSheet was
+ *           called the sole consumer, which the restore ended).
  */
 export default function LanguageToggle({ variant = "default", className = "", children }) {
   const t = useTranslations("nav");

@@ -54,9 +54,9 @@ const GEO_RADIUS_KM_RETRY = 30;
  *     did before extraction. handleCategoryCardClick was removed in
  *     MEH-1080 — category cards are real links to /producers?category=
  *     now; the ?category= deep-link path below stays for old shared URLs.
- *   - 7 derived values (visibleProducers, hasMore, categoryCards,
- *     statsProducersCount, statsCategoriesCount, statsLoaded,
- *     newestProducers)
+ *   - 6 derived values (visibleProducers, hasMore, categoryCards,
+ *     statsProducersCount, statsCategoriesCount, statsLoaded)
+ *     — was 7; MEH-1688 dropped newestProducers with the section it fed.
  *   - 2 thin adapter callbacks (handleClearCategory, handleLoadMore)
  *     wrap inline JSX-side calls so the producers grid component
  *     does not need setFilters / setVisibleCount / loadProducers /
@@ -633,10 +633,10 @@ export function useHomePage() {
   const statsCategoriesCount = stats?.categories_count || categories.length || 6;
   const showStatsCounter = statsLoaded && statsProducersCount >= STATS_DISPLAY_THRESHOLD;
 
-  // Newest producers (last 4 by created_at if available, else first 4)
-  const newestProducers = producers
-    .toSorted((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
-    .slice(0, 4);
+  // MEH-1688: `newestProducers` (last 4 by created_at) is GONE along with the
+  // standalone section it fed. Recency is now a per-card fact, not a separate
+  // grid — lib/badges.js lights "חדש" off days_since_created <= 30, which
+  // ProducerCard already surfaces through BadgeRow's top-2 cut.
 
   // MEH-542: light up §10 "Meet a Producer" from a real producer — reuse the
   // existing is_recommended flag (zero schema / zero new endpoint). Pure
@@ -684,7 +684,6 @@ export function useHomePage() {
     statsCategoriesCount,
     statsLoaded,
     showStatsCounter,
-    newestProducers,
     featuredProducer,
     geoActive,
     cityActive,

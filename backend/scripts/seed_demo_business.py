@@ -157,20 +157,25 @@ DEMO_RECIPE = {
     "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
 }
 
+# MEH-1657: this used to seed a bread-baking WORKSHOP as an Event — a sign-up
+# activity published on the one-time surface, i.e. the exact confusion the
+# locked axis resolves, hard-coded into the demo. It is now a genuine one-time
+# event: free and uncapped, which is what makes it read as "drop in on the day"
+# rather than "book a seat".
 DEMO_EVENT = {
-    "title": "סדנת אפיית לחם מחמצת למתחילות",
+    "title": "יום פתוח במאפייה — בוקר מחמצת",
     "description": (
-        "בואו ללוש, לקפל ולהבין סוף-סוף מה המחמצת רוצה מכן. "
-        "כוללת ארוחת בוקר מתוצרת המאפייה, וכל משתתפת חוזרת הביתה "
-        "עם מחמצת חיה וכיכר שאפתה בעצמה."
+        "פותחות את דלתות המאפייה לבוקר אחד: הצצה לתנור, טעימות מכל "
+        "הכיכרות שיוצאות באותו יום, וקפה על חשבון הבית. בלי הרשמה — "
+        "פשוט לבוא."
     ),
     "days_ahead": 21,  # event_date = seed-run date + N days (stays future)
     "event_time": "09:30",
     "location": "המאפייה, רחוב המייסדים 12",
-    "category": "סדנה",
-    "price": 120,
-    "max_participants": 12,
-    # Bread-baking workshop → reuse the hero (basket of assorted breads).
+    "category": "אחר",
+    "price": 0,
+    "max_participants": None,
+    # Open house at the bakery → reuse the hero (basket of assorted breads).
     "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero",
 }
 

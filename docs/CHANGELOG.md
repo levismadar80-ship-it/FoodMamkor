@@ -3,6 +3,28 @@
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
 ## Unreleased
+- **MEH-1710 — כלל מותג חדש "מצבים ריקים (empty states)" ב-`docs/BRAND.md` §7 (docs-only, PR #2361):** הכותרת אומרת מה המצב, התיאור אומר למה זה שווה, והפעולה יושבת בתוך המצב הריק. עד עכשיו §4 הכריע רק את ה**טון** של ריקנות (`"אין תוצאות"` מול `"לא מצאנו בינתיים"`) ולא את ה**מבנה** — ולכן כל כלי בדשבורד המציא אחד: בקבוצות רכש הכותרת היא הצעת ערך (`"קבוצות רכש = מחיר סיטונאי ללקוחות שלך"`), באירועים היא הצהרת מצב (`"עדיין אין אירועים"`). שתי תבניות לאותו מצב, בשני כלים באותו דשבורד.
+  - **חמשת הסעיפים:** כותרת=מצב · תיאור=הסבר/תועלת · CTA **בתוך** המצב הריק (Polaris) והכפתור העליון המקביל לא מרונדר · פעולה חסומה **בלי כפתור כלל**, לא מעומעם ולא פעיל (NN/g) · Emoji-LOCK v2 על כל מחרוזת, האייקון כקומפוננטת Phosphor ב-prop `icon`.
+  - **הכרעת מיקום ה-CTA (Polaris ולא Carbon) היא הכרעה על העובדות של מהמקור, לא העדפה:** Carbon מחזיק את ה-CTA מחוץ למצב הריק כדי לשמר מיקום קבוע בין מלא לריק — אבל בדשבורד של מהמקור **אין action bar קבוע**, הכפתור העליון קיים בחלק מהעמודים בלבד. העקביות שהיא מגנה עליה לא קיימת כאן ממילא, ולכן נשאר רק החיסרון: בעלת עסק מול מסך ריק בלי מוצא.
+  - **הפער שהכלל סוגר במפורש:** §8 מתיר emoji ב-content badges ואוסר בכפתורי UI. empty state הוא לא כפתור ולא badge, ולכן נפל בין הכיסאות — ובדיוק שם ישבה הדוגמה המאושרת ב-§4, `"לא מצאנו בינתיים — עדיין 🌱"`, שמפרה כלל שהפרויקט אוכף מאז MEH-987 / MEH-990 / MEH-1628. **מותג קודם לקוד → מתקנים את המסמך, לא מחזירים אימוג'י.**
+  - **שני תווים שהם emoji לפי ה-grep ולא לפי האינטואיציה:** `❌`/`✅` (U+274C/U+2705) נמצאים **בתוך** הטווח `\x{2600}-\x{27BF}` שה-verification בודקת, למרות ששאר §7 (כולל הכלל של MEH-1652 שנחת באותו יום) משתמש בהם בחופשיות. הסעיף החדש משתמש ב-**אסור**/**מותר** מודגשים במקומם ומאמת 0 hits על 31 השורות המוספות. **אי-ההתאמה בין §3 Emoji-LOCK ל-verification נשארה פתוחה** — סעיפים קיימים לא נגעו.
+  - **הקונפליקט נחזה ב-body של ה-PR לפני שקרה, ואז קרה:** #2354 (MEH-1652) ו-#2361 מוסיפים שניהם תת-סעיף `###` בדיוק בסוף §7. #2354 נמזג ראשון, ה-squash-merge כאן חזר `405 merge conflicts`, ונפתר ב-**Accept-Both** לפי rule 25 — הכלל שנחת ראשון קודם. `git diff origin/staging --stat` אחרי הפתרון: **31 הוספות · 0 מחיקות**, אף שורה של MEH-1652 לא נפגעה.
+  - **פער ADR פתוח, וזה תיקון לדגל שהועלה קודם:** §8 קובע ש"edits to this file without a backing ADR are not permitted". ה-PR העריך תחילה שהוא הולך בעקבות MEH-1652 ("brand-doc קודם, ADR אחר כך") — **וזה היה לא מדויק**: #2354 נחת **עם** ADR-031 ועם שורת `**ADR מגבה:**` בסופו. `### מצבים ריקים` הוא כרגע **הכלל היחיד ב-§7 בלי ADR**. הבסיס הוא הכרעת ספיר 28/07 בגוף הכרטיס; ADR-032 הוא להכרעתה, ופתיחתו הייתה מחוץ ל-`<scope>` שנעל את הכרטיס על `docs/BRAND.md` בלבד.
+  - **מה הכרטיס הזה לא עושה:** אף מחרוזת empty-state בקוד לא שונתה. הכלל הוא ה-input; MEH-1630 מחיל אותו על 20 המצבים הריקים, MEH-1709 יישם את המקרה הנעול (רץ במקביל, מבני-בלבד ולכן לא המתין לכלל).
+- **MEH-1709 — קבוצות רכש: הכפתור המת יורד, ההסבר עובר ל-empty state (YELLOW, frontend, PR #2364, `Closes MEH-1709`):** בעלת עסק שנכנסה ל"קבוצות הרכש שלי" לפני שהעסק אושר ראתה שני אזורים ריקים — ו**הפקד היחיד שנראה לחיץ במסך לא עשה כלום**: כפתור `+ קבוצת רכש חדשה` מעומעם בכותרת, שורת `approval_required_hint` בפסקה נפרדת מתחתיו, ו-empty state בלי כפתור בכלל (`EmptyState` מסתיר CTA שאין לו handler). מבנה בלבד: הכפתור **נעדר** כשלא מאושר (לא disabled — NN/g), וההסבר הופך ל-`description` של ה-EmptyState. אפס מחרוזות חדשות, `EmptyState.jsx` לא נגוע, ה-403 ב-backend לא נגוע.
+  - **ה-gate עצמו נכון וההבדל בין הכלים לגיטימי:** `group_buys.py:187` מחזיר 403 ל-`producer.status != "approved"`, בעוד `create_event` דורש `producer_id` בלבד. קבוצות רכש = פעולה נעולה, אירועים = פעולה פתוחה. **הביטוי ב-UI** הוא מה שהיה שבור, לא ה-gate.
+  - **הכפתור המעומעם לא היה שריד — הוא הושאר בכוונה, וזה מה ש-Phase 0 גילה.** הערת MEH-1420 בקוד קבעה ש-`notApproved` הוא החריג לכלל "כפתור אחד במצב ריק", **כי** `EmptyState` מסתיר CTA חסר-handler ולכן הסתרת הכפתור העליון גם הייתה מייתמת את יעד ה-`aria-describedby` של הרמז ומשאירה אפס affordance. הכרטיס פותר בדיוק את התלות הזאת: ההסבר נכנס פנימה, ה-`aria-describedby` מתייתר, והכפתור יכול לרדת. ה-`id` ירד איתו — grep אישר שהצרכן היחיד היה אותו `aria-describedby` באותו קובץ.
+  - **מצב אחד שלא הופיע ב-acceptance criteria והוכרע במפורש:** עסק **לא-מאושר שכבר יש לו קבוצות** (הושעה אחרי שיצר) אינו F1/F2/F3. אין שם EmptyState שיישא את ההסבר, ולכן הורדת הכפתור **וגם** הפסקה הייתה מוחקת את הסיבה מהמסך. הפסקה נשארת שם — ורק שם. נושא טסט ייעודי.
+  - **הכותרת נשארה `"קבוצות רכש = מחיר סיטונאי ללקוחות שלך"` במכוון** — הצעת ערך בתפקיד כותרת, בדיוק מה ש-MEH-1710 אוסר ו-MEH-1630 מיישם. הכרטיס מבני-בלבד ואפס copy; מסומן בהערה בקוד ליד ה-prop כדי שזה לא ייקרא כפספוס.
+  - **הבנייה הנכשלת מפלה, וזה החלק שקל לטעות בו (MEH-1619):** הספק החדש אדום מול `page.js` של staging (3 נכשלים — `expected <p id="group-buy-approval-hint"> to be null`, `expected <button disabled> to be null` ×2) וירוק אחרי (7/7). **הספק האחות שכבר כיסה את העמוד, `DashboardEmptyStateFormExclusive`, עובר על שתי הגרסאות** — ה-mock שלו מחזיר producer **בלי שדה `status`**, כך ש-`producerStatus` נשאר `null` ו-`notApproved` נשאר `false`, והענף הנעול לא נדרך שם מעולם. זו הראיה שהטענה החדשה מוסיפה כיסוי ולא חוזרת עליו.
+  - **ה-self-QA הוא דפדפן אמיתי, לא תחליף vitest.** הדשבורד נעול-auth ומגובה-backend וה-sandbox חסום מול Railway — ה-baseURL (`/api`, same-origin) יורט ב-`page.route()` וה-token נזרע לפני hydration, כך שכל מה שמתחת לגבול ה-API הוא העמוד הבנוי. probe על ה-DOM החי: `disabledButtons: 0` בכל ארבע הלכידות, `gateStringOccurrences: 1` (ההסבר מופיע **פעם אחת**, לא פעמיים). `frontend/e2e/qa-meh1709-gated-empty.mjs` + 4 צילומים ב-`frontend/qa-artifacts/MEH-1709/`, 162KB אחרי דחיסה.
+  - **ממצא לוואי שלא טופל:** יש drift קיים בין `he.json` ל-`en.json` ב-staging (37 מפתחות he-only, 17 en-only — `admin.whatsapp_failures`, `home.marquee`, `auth.register.producer.*`). קדם ל-PR הזה, לא נגעתי בו, ושווה כרטיס.
+  - build ירוק · eslint 0 errors · vitest מלא **244 קבצים / 1888 עוברים** · 5/5 repo guards · `git diff frontend/messages/` ריק · `git diff EmptyState.jsx` ריק.
+- **MEH-1652 (חצי א') — כלל מותג חדש "דיבור בשם בית העסק" ב-`docs/BRAND.md` §7 (docs-only):** אומרים מה האתר יודע, לא מה בית העסק יעשה. הכלל אוסר כל קופי שטוען טענה על התנהגות, זמינות או כוונה של בית העסק. **הסיבה שזה כלל ולא תיקון ניסוח:** כפתור הוואטסאפ הוא קישור `wa.me` — ההודעה עוברת מהטלפון של הלקוחה ישירות לבית העסק ואינה נוגעת בשרתים שלנו, ולכן לעולם לא נדע אם נקראה, נענתה או נעלמה. השורה `producer.orders_closed.cta_note` ("היא תמתין לבית העסק עד שההזמנות ייפתחו") תוקנה שלוש פעמים (MEH-1546 → MEH-1600 → MEH-1649) ונשארה לא נכונה בכל פעם, כי הניסוח מעולם לא היה הבעיה. הסעיף נוסף כתת-סעיף בתוך §7 (anti-patterns של קופי) ולא בסוף הקובץ, בתבנית של §4 ("Two voice rules from PR #682 precedent"): הכלל → הבעיה → ❌/✅ → מבחן מהיר → תקדים חיצוני (Google Business Profile chat, יולי 2024 · Yelp · Etsy) → הערה לקוד.
+  - **מה ה-PR הזה לא עושה, במכוון:** הקופי עצמו לא השתנה — `frontend/messages/he.json` ו-`en.json` לא נגעו. מחיקת `cta_note` היא PR נפרד שחוסם על MEH-1691. האכיפה כ-lexicon check ב-CI היא חצי ב' של MEH-1652 (RED, `.github/workflows/**` הוא CC-deny לפי MEH-671).
+  - **§8 של BRAND.md נסגר באותו PR — [ADR-031](./decisions/ADR-031-outbound-contact-unobservable.md).** §8 קובע ש"edits to this file without a backing ADR are not permitted"; הכלל נחת תחילה בלי ADR (ה-scope נעל שני קבצים), הפער סומן במפורש, וספיר הרחיבה את ה-scope לקובץ שלישי. ה-ADR ממוסגר **מבנית ולא כ"כלל קופי"**: הערוץ היוצא בלתי-נצפה, ומכאן — ולא מהעדפת ניסוח — נגזרות גם מגבלת הקופי וגם שער ה-lexicon. המסגור הזה **מכסה מראש את חצי ב'**, כך שהנחתת השער לא תדרוש רשומת החלטה שנייה.
+  - **ארבע העובדות ב-ADR אומתו מול הקוד (meta-patterns §1), לא הועתקו מהתדריך:** ה-CTA הוא deep link בצד לקוח (`contact-method.js:38-47` → `getWhatsAppHref`); `auto_reply_watchdog` מנטר את המספר של **מהמקור** בלבד וכבוי כברירת מחדל (`config.py:123` — `watchdog_enabled: bool = False`); ה-beacon `POST /producers/{id}/whatsapp-click` קיים (`producers.py:341`) ומודד **הקלקה**, לא מסירה; `_ALERT_COL` מחזיק בדיוק ארבעה טיפוסים (`alerts.py:162-169`), ולכן "הודיעו לי כשייפתח" נדחה כ-post-launch ולא לצמיתות.
+  - **מה ה-ADR לא עושה:** לא נכתב ADR נפרד לחצי ב', ואף ADR קיים לא נערך ולא סומן superseded.
 - **תיקון עובדתי ל-HANDOFF של מקבץ 27/07 — סיבה שגויה נרשמה כעובדה (docs-only):** הפסקה "Environment notes" קבעה ש-**Vercel חרג ממכסת 100 deploys/יום** ולכן ה-QA על staging חסום. השגיאה `api-deployments-free-per-day` אכן קיימת ומופיעה על תגובות ה-**preview של ענפי feature** — אבל היא **אינה** מה שחוסם את staging, וההכללה מזה לזה הייתה הסקה בלי ראיה. אומת מול `list_deployments`: (1) deploys **נוצרים ברצף כרגע**, אין עצירת מכסה פעילה; (2) `CANCELED` על ענפי feature הוא **שער ה-`ignoreCommand` של MEH-1044**, כלומר התנהגות מתוכננת; (3) התקלה האמיתית — **ה-target של `staging` לא נבנה מחדש מאז `ad5f7560`** (MEH-1639, PR #2307), למרות ש-#2318, #2326, #2333, #2337 ו-#2339 כולם מוזגו אליו.
   - **רדיוס הפגיעה רחב מצילום מסך אחד:** כל QA-אחרי-merge של מקבץ 27/07 אינו תקף עד ש-deploy של staging נוחת **חדש מ-merge ה-sweep**, כי `staging.mehamakor.online` עדיין מגיש את החבילה שלפני ה-sweep — אומת עצמאית שהיא עדיין מכילה `📦 ⭐ 🏅 🚚 ✅ 🛒 🌙 🟢 📤`.
   - **תנאי מוקדם לכל צילום staging עתידי:** לאחזר את ה-URL של staging ולוודא ש-`📦` **נעדר** מ-`/he`. לא לצלם כלום לפני שזה עובר.
@@ -1919,6 +1941,27 @@ deferred to PR body (same `Edit(.claude/hooks/**)` deny). Manual wiring
 PR description.
 
 Closes MEH-696.
+
+> **⚠️ CORRECTION — 2026-07-28 (MEH-1720). The hook above was never installed.**
+> `.claude/hooks/check-path-exists.sh` **does not exist in this repository** and
+> never has. The manual wiring step recorded in `HANDOFF.md` (2026-05-24 entry,
+> step 1) was written down and not performed, so the entry above describes a
+> deliverable that reached a PR body and stopped there. Path verification is
+> **not** in force — any session searching this log for that coverage will find
+> a positive answer that is false, which is why this correction is appended
+> rather than left to a future grep.
+>
+> The historical entry is deliberately **not** rewritten: it accurately records
+> what MEH-696 shipped *to the PR*, and editing it would erase the evidence that
+> the A2 hand-off can fail this way. **Verified 2026-07-28:** `ls` returns no
+> such file; `.claude/settings.json` references it nowhere; `HANDOFF.md:3523`
+> shows a later session rediscovering the absence with no follow-up.
+>
+> This is the second of two A2 failures (`MEH-1708` rows 12 + 12b). The first,
+> `check-branch-base.sh`, at least admits its state in its own header. Both are
+> now detected by `scripts/checks/hooks-wiring-guard.sh`, which fails when a
+> hook is on disk but unwired **or** wired but absent from disk — so this class
+> reports itself instead of reading as coverage.
 
 ### 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
 
