@@ -1729,9 +1729,10 @@ class ProducerListOut(BaseModel):
     # badge_code ONLY — never a URL. The client builds
     # /producers/{id}/kashrut-cert/{badge_code} from it, and the raw
     # Cloudinary address (which is public-forever, `type=upload`) stays
-    # inside the backend. Populated by attach_kashrut_certs().
+    # inside the backend. Populated in producers.py's get_producer /
+    # get_producer_by_slug via `_servable_kashrut_certs()`.
     # DO NOT add a url field here — that is the whole point of the proxy.
-    kashrut_certs: list["KashrutCertRef"] = []
+    kashrut_certs: list[KashrutCertRef] = []
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
