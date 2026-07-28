@@ -134,7 +134,7 @@ files declaring more than one router report correct paths).
 | Routes carrying a `@limiter.limit` | 68 |
 
 > **⚠️ These 191 are routes *declared*, not routes *reachable*. 14 of them are in unmounted
-> modules — see §4.1a. Reachable total is 177.**
+> module — see §4.1a. Reachable total is 181.**
 
 **Reconciliation (the P0 truncation lesson applied).** The three auth buckets sum to
 `130 + 10 + 51 = 191` — the extractor's own total, no row unaccounted for. The route count was
@@ -160,24 +160,54 @@ A `@router.get(...)` decorator proves a handler *exists*. It does not prove the 
 `backend/app/router_registry.py`. The original pass never checked that file, so an unmounted
 module looked exactly like a mounted one — which is how F-1/F-2/F-3 were rated as live.
 
+> **⚠️ SECOND CORRECTION — this section was wrong once too.** Its first version reported
+> **2** unmounted modules and **177** reachable routes, counting `producer_follows` as
+> unmounted. That was a false negative: `producer_follows` **is** mounted, *transitively*.
+> Corrected figures below. Detected from the coverage table of the MEH-1743 control run
+> (`producer_follows.py … 44%` — a genuinely unmounted module cannot accumulate coverage;
+> compare `home_products.py … 0%`). See §4.1b for why the first check missed it.
+
 Corrected inventory:
 
 | Metric | Value |
 |---|---:|
 | Router modules on disk | 34 |
-| Modules actually mounted | 32 |
-| **Unmounted modules** | **2** — `home_products`, `producer_follows` |
+| Modules mounted **directly** (`app.include_router` in `router_registry.py`) | 32 |
+| Modules mounted **transitively** (nested `router.include_router`) | 1 — `producer_follows` |
+| **Modules reachable** | **33** |
+| **Unmounted modules** | **1** — `home_products` |
 | Routes declared | 191 |
-| Routes in unmounted modules | 14 (`home_products` 10 · `producer_follows` 4) |
-| **Routes reachable** | **177** |
+| Routes in the unmounted module | 10 (all `home_products`) |
+| **Routes reachable** | **181** |
 
-| Module | Why unmounted |
+| Module | Status |
 |---|---|
-| `home_products` | **Deliberate.** `router_registry.py:55-61` — commented out under MEH-1406, *"disabled per brand LOCK (licensed businesses only)"*. A reversible unmount requiring **both** the import and the include to be restored; neither is. Pinned by `TestHomeProductsKillSwitch`. |
-| `producer_follows` | **Not referenced at all** — absent from both the import tuple and the include block, with no explanatory comment. Whether that is deliberate or drift is **not determined by this pass**; it carries no P1 finding because nothing in it is reachable. Worth a look in P5 (dead code). |
+| `home_products` | **Unmounted — deliberate.** `router_registry.py:55-61` — commented out under MEH-1406, *"disabled per brand LOCK (licensed businesses only)"*. A reversible unmount requiring **both** the import and the include to be restored; neither is. Pinned by `TestHomeProductsKillSwitch`. Remount preconditions are now recorded in that comment (PR #2387). |
+| `producer_follows` | **Mounted — transitively.** `producers.py:57` calls `router.include_router(producer_follows_router)`, and `producers.router` is registered at `router_registry.py:51`. The source even says so: *"FastAPI mounts these endpoints transitively when router_registry.py registers `producers.router` — no separate registration needed"* (`producers.py:54-56`). Its 4 routes are live. |
 
-**Every later pass must apply this check.** The rule: a finding's severity is capped by its
-reachability, and reachability is decided in `router_registry.py`, not in the router file.
+### 4.1b Why the first mount check produced a false negative
+
+The first pass at this section grepped only for `app.include_router(<mod>.<obj>)` inside
+`router_registry.py`. That misses **nested composition**: a router module may include another
+router, and everything under it inherits the parent's mount.
+
+So the check must resolve a **graph**, not a list:
+
+1. Seed with modules registered directly on the `FastAPI` app.
+2. For every `X.include_router(Y)` **inside a router module**, resolve `Y` to its source module
+   via the import statement, and mark it reachable if its parent is reachable.
+3. Repeat to a fixed point (nesting can be deeper than one level).
+
+Applied that way: 32 direct + 1 transitive = **33 reachable**, 1 unmounted.
+
+**Two independent signals agreed**, which is what makes this conclusion safer than the one it
+replaces: the import-graph resolution above, and the coverage table from a full CI run
+(`producer_follows` 44% vs `home_products` 0%). The first version of this section rested on a
+single grep and was wrong.
+
+**Every later pass must apply this check — in the graph form.** A finding's severity is capped
+by reachability; reachability is decided by the mount graph rooted at `router_registry.py`, not
+by the presence of a decorator and not by a flat grep of one file.
 
 ### 4.2 The auth dependency vocabulary
 

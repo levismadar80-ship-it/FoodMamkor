@@ -121,7 +121,22 @@ def _version_block(request: Request) -> dict:
     }
 
 
-@router.api_route("/health", methods=["GET", "HEAD"])
+# MEH-1750: two decorators, not one `api_route(methods=["GET", "HEAD"])`.
+# FastAPI emits ONE OpenAPI operation per method, but derives the operationId
+# from the ROUTE — and its default `generate_unique_id` suffixes with
+# `list(route.methods)[0]`. A single route carrying both methods therefore
+# produced the SAME operationId twice, which makes /openapi.json invalid for
+# every consumer (Swagger UI, any client generator), not just for us. Found via
+# MEH-1748's codegen spike: `orval --client zod` derives export names from
+# operationId and emitted a duplicate symbol, so the generated module did not
+# compile. Explicit `operation_id=` rather than relying on the default, so the
+# two ids are stated in the file instead of falling out of set iteration order.
+# The sibling routes at :52-53 and :58-59 already used this stacked shape; this
+# route was the only `api_route` in the file.
+# DO NOT merge these back into one decorator — the duplicate returns silently
+# (FastAPI only warns; the document still serves).
+@router.get("/health", operation_id="health_alias_get")
+@router.head("/health", operation_id="health_alias_head")
 def health_alias(request: Request) -> dict:
     """Backwards-compat alias. Pre-MEH-483 shape preserved verbatim.
 
