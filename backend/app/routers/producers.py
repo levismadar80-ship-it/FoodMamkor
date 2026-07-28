@@ -448,6 +448,13 @@ _ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
 # that a 5 MB+ file is legitimate.
 _MAX_CERT_BYTES = 8 * 1024 * 1024
 
+# MEH-1672 (adversarial review): exactly the formats `_sniff_image_type`
+# (upload.py:47-61) accepts at upload time — never SVG. Re-serving must not
+# be looser than what was accepted in.
+_ALLOWED_CERT_CONTENT_TYPES = frozenset(
+    {"image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"}
+)
+
 
 # MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
 # Both call sites use it — the serializer that lists which badges have a cert,
@@ -542,13 +549,21 @@ def get_kashrut_cert(
             if upstream.status_code != 200:
                 raise HTTPException(status_code=404, detail="לא נמצא")
 
-            content_type = upstream.headers.get(
-                "content-type", "application/octet-stream"
+            content_type = (
+                upstream.headers.get("content-type", "application/octet-stream")
+                .split(";")[0]
+                .strip()
+                .lower()
             )
-            # Only ever serve an image — the upload route sniffs magic bytes,
-            # but the column is plain text, so this is the second lock
-            # rather than the first.
-            if not content_type.startswith("image/"):
+            # Adversarial review: `startswith("image/")` admits
+            # `image/svg+xml`. This proxy serves on our own origin, and a
+            # browser navigated directly to the URL renders SVG as a
+            # top-level document and executes any inline <script> it
+            # carries — a stored-XSS vector `_sniff_image_type`
+            # (upload.py:47-61) already excludes at upload time. The
+            # allowlist here mirrors that same set exactly, so re-serving
+            # can never be looser than what we accepted.
+            if content_type not in _ALLOWED_CERT_CONTENT_TYPES:
                 raise HTTPException(status_code=404, detail="לא נמצא")
 
             # Adversarial review: httpx.get().content buffers the WHOLE body

@@ -150,6 +150,24 @@ def test_non_image_upstream_is_refused(client, db, monkeypatch):
     assert _fetch(client, producer).status_code == 404
 
 
+def test_svg_upstream_is_refused_despite_starting_with_image(client, db, monkeypatch):
+    """Adversarial review: image/svg+xml passes a naive startswith("image/")
+    check but is a stored-XSS vector when re-served on our own origin (a
+    direct navigation renders it as a document and runs inline <script>).
+    The allowlist must be exact-match, not a prefix check."""
+    _stub_upstream(monkeypatch, _FakeStream(content_type="image/svg+xml"))
+    producer = _certified(db)
+    assert _fetch(client, producer).status_code == 404
+
+
+def test_content_type_charset_param_does_not_defeat_the_allowlist(client, db, monkeypatch):
+    """A real upstream can append ; charset=... — the allowlist match must
+    strip parameters rather than exact-match the whole header value."""
+    _stub_upstream(monkeypatch, _FakeStream(content_type="image/jpeg; charset=binary"))
+    producer = _certified(db)
+    assert _fetch(client, producer).status_code == 200
+
+
 def test_a_non_cloudinary_cert_url_is_refused_before_any_fetch(client, db, monkeypatch):
     """Adversarial review (SSRF): cert_url is producer-submitted and only
     validated as https://, so the proxy must never fetch an off-host address —

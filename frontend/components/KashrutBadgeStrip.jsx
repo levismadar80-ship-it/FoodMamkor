@@ -37,8 +37,16 @@ function daysUntil(dateStr) {
  */
 function CertModal({ src, expiryText, onClose, t }) {
   const closeRef = useRef(null);
+  // MEH-1672 (adversarial review): split from the key-listener effect below.
+  // Both call sites pass an inline `() => setOpenCert(null)`, a new function
+  // identity every render — an effect keyed on it would re-fire on ANY
+  // parent re-render while the modal stays open, calling .focus() again and
+  // stealing keyboard focus from wherever the visitor had tabbed to. `[]`
+  // makes this genuinely mount-only.
   useEffect(() => {
     closeRef.current?.focus();
+  }, []);
+  useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
     };
