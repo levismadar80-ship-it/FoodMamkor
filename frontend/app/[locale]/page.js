@@ -57,7 +57,11 @@ export default function HomePage() {
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
     featuredProducer, geoActive, cityActive, dayActive, geoEmptyNotice,
     handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleCitySelected, handleClearLocation,
-    handleWhatsAppClick, scrollToProducers, toggleChip,
+    // MEH-1684: `scrollToProducers` is no longer destructured here — the hero's
+    // filled "גלו בתי עסק" button was its only consumer on this page and the
+    // search pill replaced it. The helper itself still lives in use-home-page
+    // (it fires after a near-me / city apply); only the prop pass-through went.
+    handleWhatsAppClick, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
 
@@ -79,7 +83,6 @@ export default function HomePage() {
         fridayMode={fridayMode}
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
-        onScrollDown={scrollToProducers}
         onDeliveryCta={handleDeliveryCta}
         userCity={userCity}
       />
