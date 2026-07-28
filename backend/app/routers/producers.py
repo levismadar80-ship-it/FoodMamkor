@@ -441,6 +441,13 @@ def list_categories(db: Session = Depends(get_db)):
 # defense, not a nice-to-have.
 _ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
 
+# MEH-1672 (adversarial review): the proxy streams and caps DURING download,
+# not after — httpx.get().content would buffer the whole body first
+# regardless of any check on the result. 8 MB gives headroom above the 5 MB
+# upload-time cap (upload.py:MAX_FILE_SIZE) for re-encoding, not a promise
+# that a 5 MB+ file is legitimate.
+_MAX_CERT_BYTES = 8 * 1024 * 1024
+
 
 # MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
 # Both call sites use it — the serializer that lists which badges have a cert,
@@ -489,9 +496,15 @@ def get_kashrut_cert(
     the bytes keeps the address inside the backend, so authorisation is
     re-evaluated on every single request and revocation is immediate.
 
-    Every failure is **404**, never 403: a 403 would confirm that a
-    pending/rejected/expired certificate exists for this business, which is
-    exactly the queue state MEH-254 keeps unenumerable.
+    Every AUTHORIZATION failure is **404**, never 403: a 403 would confirm
+    that a pending/rejected/expired certificate exists for this business,
+    which is exactly the queue state MEH-254 keeps unenumerable. That
+    boundary is fully evaluated (producer lookup, `_servable_kashrut_certs`,
+    host allowlist) before any network call — a 502 can therefore ONLY be
+    reached for a badge whose `kashrut_certs` entry is already public via
+    the producer's own serializer, so it reveals nothing 404 doesn't already
+    cover; it exists to distinguish "no such cert" from "cert exists but
+    Cloudinary is transiently unreachable" for operators, not visitors.
 
     Full-hardening (`type=authenticated` + asset migration) is a separate
     post-launch ticket; this closes the exposure we would otherwise create.
@@ -523,21 +536,44 @@ def get_kashrut_cert(
         raise HTTPException(status_code=404, detail="לא נמצא")
 
     try:
-        upstream = httpx.get(match.cert_url, timeout=10.0, follow_redirects=False)
+        with httpx.stream(
+            "GET", match.cert_url, timeout=10.0, follow_redirects=False
+        ) as upstream:
+            if upstream.status_code != 200:
+                raise HTTPException(status_code=404, detail="לא נמצא")
+
+            content_type = upstream.headers.get(
+                "content-type", "application/octet-stream"
+            )
+            # Only ever serve an image — the upload route sniffs magic bytes,
+            # but the column is plain text, so this is the second lock
+            # rather than the first.
+            if not content_type.startswith("image/"):
+                raise HTTPException(status_code=404, detail="לא נמצא")
+
+            # Adversarial review: httpx.get().content buffers the WHOLE body
+            # into memory regardless of any post-hoc size check on the
+            # result — only streaming and capping DURING the read actually
+            # bounds memory. _MAX_CERT_BYTES sits above the 5 MB upload cap
+            # (upload.py:MAX_FILE_SIZE) with headroom for re-encoding.
+            body = bytearray()
+            for chunk in upstream.iter_bytes():
+                body.extend(chunk)
+                if len(body) > _MAX_CERT_BYTES:
+                    logger.warning(
+                        "kashrut cert exceeded size cap", producer_id=str(producer_id)
+                    )
+                    raise HTTPException(
+                        status_code=502, detail="לא ניתן לטעון את התעודה כרגע"
+                    )
+    except HTTPException:
+        raise
     except Exception:
         logger.warning("kashrut cert fetch failed", producer_id=str(producer_id))
         raise HTTPException(status_code=502, detail="לא ניתן לטעון את התעודה כרגע")
-    if upstream.status_code != 200:
-        raise HTTPException(status_code=404, detail="לא נמצא")
-
-    content_type = upstream.headers.get("content-type", "application/octet-stream")
-    # Only ever serve an image — the upload route sniffs magic bytes, but the
-    # column is plain text, so this is the second lock rather than the first.
-    if not content_type.startswith("image/"):
-        raise HTTPException(status_code=404, detail="לא נמצא")
 
     return Response(
-        content=upstream.content,
+        content=bytes(body),
         media_type=content_type,
         headers={
             # Private + short: a shared cache must not keep serving a
