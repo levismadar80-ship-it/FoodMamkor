@@ -83,7 +83,7 @@ vi.mock("@phosphor-icons/react", () => ({
   MagnifyingGlass: (props) => <span data-testid="icon-search" {...props} />,
   // MEH-884/896: homepage trust strip glyph — mounts whenever pathname="/".
   SealCheck: (props) => <span data-testid="icon-seal" {...props} />,
-  // Glyph of the restored desktop LanguageToggle (Header.jsx:393-401). Without
+  // Glyph of the restored desktop LanguageToggle (Header.jsx:400-402). Without
   // it every test in this file throws at render: a vi.mock() factory replaces
   // the WHOLE module, so an unlisted export is a hard error, not undefined.
   Globe: (props) => <span data-testid="icon-globe" {...props} />,

@@ -390,13 +390,13 @@ export default function Header() {
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
-            {/* Desktop language toggle — restored. MEH-896 (b7919b39, 21/06)
-                removed it "until the EN i18n wave (MEH-472)"; MEH-472 never
-                reinstated it, so for 5 weeks the ONLY mount was AccountSheet's
-                mobile row (AccountSheet.jsx:191, `variant="bare"`) and /en was
-                a one-way door on desktop. `variant="default"` is the standalone
-                36px circle chip (LanguageToggle.jsx:75-77) — the bare variant
-                belongs to the menu row, not to the pill. */}
+            {/* MEH-1698: desktop language toggle restored. MEH-896 (b7919b39,
+                21/06) removed it "until the EN i18n wave (MEH-472)"; MEH-472
+                never reinstated it, so for 5 weeks the ONLY mount was the
+                AccountSheet mobile row (AccountSheet.jsx:191, variant="bare")
+                and /en was a one-way door on desktop. `variant="default"` is
+                the standalone 36px circle chip (LanguageToggle.jsx:75-77) —
+                the bare variant belongs to the menu row, not to the pill. */}
             <span className="hidden md:inline-flex">
               <LanguageToggle variant="default" />
             </span>
