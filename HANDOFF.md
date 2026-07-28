@@ -3,6 +3,47 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-28 — MEH-1710 brand rule: empty-state copy convention (LOW-RISK, docs-only) — PR #2361 merged
+
+**Branch:** `feature/meh-1710-brand-empty-state-copy-rule` (2 commits: the section + a staging merge).
+**Docs branch:** `feature/meh-1710-docs-backfill` — this file + CHANGELOG, kept out of the code branch under rule 31.
+
+### What shipped
+One `###` subsection at the end of `docs/BRAND.md` §7: title = the state, description
+= the explanation/benefit, primary CTA **inside** the empty state (and the equivalent
+top button not rendered), blocked action = **no button at all**, Emoji-LOCK v2 on every
+empty-state string with the icon passed as a Phosphor component. 31 insertions, 0
+deletions. Zero code files.
+
+### Two things Phase 0 found that the prompt had wrong
+| Assumption | Reality |
+|---|---|
+| "§7 is the MEH-1652 rule (PR #2354)" | §7 was **Anti-patterns**; MEH-1652 was unmerged (`f61fa0e9` lived only on its own branch). §7 *did* exist, so the stop condition did not fire. #2354 merged mid-session (`6d0261f6`). |
+| "MEH-1652 is the precedent for landing a brand rule without an ADR" | **False.** #2354 shipped **with ADR-031** and an explicit `**ADR מגבה:**` line. |
+
+### Open items — Sapir
+1. **ADR-032 decision.** `### מצבים ריקים` is currently the **only §7 rule without a
+   backing ADR**, which §8 says is not permitted. The basis is Sapir's 28/07 lock in
+   the ticket body. Opening an ADR was outside the ticket's `<scope>` (BRAND.md only),
+   so CC flagged rather than acted. If yes → add a matching `**ADR מגבה:**` line.
+2. **Drive copy (manual, per the ticket DoD).** Copy the section into
+   `Drive/03-Brand-Hub/02-מדריך-מותג.md`, replace `"לא מצאנו בינתיים — עדיין 🌱"` with an
+   emoji-free version, bump the guide changelog to v1.2. The full section text is
+   quoted verbatim in the PR body for exactly this.
+3. **`❌`/`✅` are emoji by the grep, not by convention.** U+274C/U+2705 sit inside the
+   `\x{2600}-\x{27BF}` range the ticket's own verification step checks, yet the rest of
+   §7 — including the MEH-1652 rule that landed the same day — uses them freely. The
+   new section uses bold **אסור**/**מותר** instead. **The §3-Emoji-LOCK-vs-verification
+   mismatch is unresolved**; existing sections were left untouched.
+
+### Worth carrying forward
+**A predicted conflict is still a conflict.** The first version of the PR body wrote
+down that #2354 and #2361 both append at the end of §7 and that whoever merges second
+needs Accept-Both. That is exactly what happened — `405 Pull Request has merge
+conflicts` on the first squash-merge attempt. Predicting it cost nothing and made the
+resolution mechanical (rule 25 / `resolve-conflicts`: first-landed rule first,
+0 deletions). Naming a foreseeable collision in the PR body is cheap; two branches
+appending to the same anchor is a standing hazard, not a surprise.
 ## 2026-07-28 — MEH-1709 group-buys gated empty state (YELLOW, frontend) — PR #2364 merged
 
 **Branch:** `feature/meh-1709-group-buys-gated-empty-state` (2 commits: the fix + a staging merge).
