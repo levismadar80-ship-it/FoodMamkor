@@ -329,6 +329,36 @@ jobs:
             frontend/test-results/**/trace.zip
           retention-days: 7
 
+      # MEH-1712 — the same content, in the one place a CC session can actually
+      # read it. An artifact download redirects to Azure blob storage
+      # (productionresultssa18.blob.core.windows.net); the GitHub API hands back
+      # a valid pre-signed URL and the fetch then dies with
+      # `curl: (56) CONNECT tunnel failed, response 403` because that host is
+      # outside the sandbox egress allowlist. No GitHub App permission changes
+      # that — it is the same class as the *.up.railway.app block, and it is
+      # permanent. The probe numbers were diagnosable today for exactly one
+      # reason: they went to the job log, not only to an artifact.
+      #
+      # So this is not a duplicate of the upload below. The upload keeps the
+      # whole file for a human; this step is what removes the human from the
+      # loop. Rule: a diagnostic value that exists only inside an artifact is,
+      # from a CC session, a value that does not exist.
+      #
+      # The empty case prints an explicit line rather than nothing. "No output"
+      # is indistinguishable from "step didn't run" — reporting absence as
+      # silence is the precise failure this ticket spent a day on.
+      - name: Print next-start log (capture-only, MEH-1712)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "=== /tmp/next-start.log — last 200 lines ==="
+          if [ -s /tmp/next-start.log ]; then
+            tail -200 /tmp/next-start.log
+          else
+            echo "(EMPTY OR MISSING) $(ls -l /tmp/next-start.log 2>&1)"
+          fi
+          echo "=== end /tmp/next-start.log ==="
+
       # MEH-1712 — the server's own stdout. `next start` has written to
       # /tmp/next-start.log since MEH-1044 (step "Start Next.js server"), but
       # nothing ever uploaded it, so every serverFetch failure it recorded was
