@@ -250,7 +250,7 @@ events (
   event_time time,                   -- HH:MM
   location, city, lat float, lng float,
   image_url text,                    -- single image
-  category: סדנה|סיור|שוק|קטיף|טעימות|אחר,
+  category: שוק|קטיף|טעימות|אחר,   -- MEH-1657: 6 → 4
   price int,                         -- 0 = free
   max_participants int,
   registration_url text,             -- external signup link
@@ -573,8 +573,18 @@ DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 No per-event moderation. An **approved** producer publishes and it's live;
 a **pending** producer's events exist but are invisible to the public until
 the business is approved (MEH-1161, audit F1). Designed for the
-"יום קטיף / סיור בחווה" calendar on producer pages. Category enum:
-`סדנה | סיור | שוק | קטיף | טעימות | אחר`.
+"יום קטיף / יום פתוח בחווה" calendar on producer pages. Category enum:
+`שוק | קטיף | טעימות | אחר`.
+
+**MEH-1657 — the axis, and why the enum is 4 and not 6.** An **Event** is
+something that happens **once, on a date**; an **Experience** is a guided
+activity people **sign up for** (per-person price, repeatable). `סדנה` and
+`סיור` name the Experience side exactly, so they were removed from the Event
+enum — offering them here is what made owners guess which surface to publish
+on. `Experience.category` is a **separate** set and still carries both words,
+deliberately. A row created before this change may still hold a removed value:
+the enum is enforced on **write** (`events.py` `VALID_CATEGORIES`, POST + PUT),
+not by a DB constraint, and no backfill was run.
 
 **MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
 "Event not found"**, not 403 — a foreign producer can't confirm an

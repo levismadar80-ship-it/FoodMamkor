@@ -2277,8 +2277,6 @@
     },
     "categories": {
       "all": "All",
-      "workshop": "Workshop",
-      "tour": "Tour",
       "market": "Market",
       "harvest": "Harvest",
       "tasting": "Tasting",
@@ -3955,11 +3953,11 @@
         },
         "manage_events": {
           "title": "My events",
-          "sub": "View, edit and cancel events"
+          "sub": "Open days, market stalls and launches — what happens once"
         },
         "manage_experiences": {
           "title": "My experiences",
-          "sub": "View, edit and delete experiences"
+          "sub": "Workshops and tours people sign up for"
         }
       },
       "pulse": {
@@ -4376,7 +4374,7 @@
         "heading": "My events",
         "create_cta": "New event",
         "empty_title": "No events yet",
-        "empty_description": "A workshop, a tour or an open day — an event appears on your business page and brings in new customers.",
+        "empty_description": "An open day, a market stall or a harvest — a one-time event that appears on your business page and brings in new customers.",
         "empty_cta": "New event",
         "loading": "Loading…",
         "back_to_tools": "Back to tools",
@@ -4504,10 +4502,10 @@
       "pending_success_dashboard": "Back to business management",
       "crumb_dashboard": "Business management",
       "crumb_current": "New event",
-      "subtitle": "Workshop, tour, market, harvest, or open days — publish here",
-      "info_paragraph": "Events = workshop, tour, open day, or any customer gathering. They show up on /events and on your page. Perfect for attracting new customers.",
+      "subtitle": "An open day, a market stall, a harvest or a launch — what happens once",
+      "info_paragraph": "An event is something that happens once, on a specific date — an open day, a market stall, a seasonal harvest or a launch. It appears on the events page and on your business page. A regular activity people sign up for, like a workshop or a tour, belongs under experiences.",
       "field_title_placeholder": "For example: cheese workshop",
-      "field_description_full_placeholder": "Events are shown to customers on /events and on your page. Describe: what will happen, who's invited, what's included in the price, what to bring.",
+      "field_description_full_placeholder": "Describe what will happen: what's included, who it suits and what to bring. For example: an open day at the dairy — tastings of every cheese and a look at the barn.",
       "field_city_placeholder": "Search a city…",
       "field_location_simple_placeholder": "At our farm / full address",
       "field_price_label_full": "Price (0 = free)",
