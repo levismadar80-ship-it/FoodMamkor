@@ -3,6 +3,58 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-28 — MEH-1709 group-buys gated empty state (YELLOW, frontend) — PR #2364 merged
+
+**Branch:** `feature/meh-1709-group-buys-gated-empty-state` (2 commits: the fix + a staging merge).
+**Docs branch:** `feature/meh-1709-docs-backfill` — this file + CHANGELOG, kept out of the code branch under rule 31.
+
+### What shipped
+`frontend/app/[locale]/producer/dashboard/group-buys/page.js`, three blocks. Header
+button absent while `notApproved` (not disabled). Standalone hint paragraph now only
+when the list is non-empty. EmptyState takes `approval_required_hint` as its
+`description` and drops both `ctaLabel` and `ctaOnClick` while gated. Plus
+`frontend/__tests__/GroupBuysGatedEmptyState.test.jsx` (7 assertions), a browser probe,
+and 4 screenshots.
+
+### Phase 0 — the answer that changed the shape of the fix
+The muted button was **not** a leftover. MEH-1420's own code comment kept it
+deliberately: `EmptyState` self-hides a CTA whose handler is absent, so hiding the
+header button *too* would have orphaned the hint's `aria-describedby` target and left
+zero affordance. This ticket dissolves that dependency rather than overriding it — the
+explanation moves inside, the `aria-describedby` becomes unnecessary, and the button
+can go. The `id` went with it (grep: one consumer, same file).
+
+### Decisions made this session
+| Decision | Outcome |
+|---|---|
+| Unapproved **with** existing group buys | Not in F1/F2/F3. Button dropped, **hint paragraph kept** — no EmptyState exists there to carry the reason. Has its own test. |
+| `empty_title` still a value proposition | **Left as-is on purpose.** Zero-copy ticket; the convention is MEH-1710's and the application is MEH-1630's. Marked in a code comment so it doesn't read as an oversight. |
+| Screenshots | **Real browser**, not the sanctioned vitest substitute — `page.route()` stubs `/api`, token seeded pre-hydration. Probe: `disabledButtons: 0`, `gateStringOccurrences: 1`. |
+| Merge method | Sapir enabled **auto-merge with `merge`**, while the ticket specified squash. Her setting was left alone. |
+
+### Open items — Sapir
+1. **Staging QA.** The ticket's DoD waived the preview URL and mobile check (Vercel
+   quota); verification moves to staging post-merge. Two states to look at: unapproved
+   (no button anywhere, explanation under the cart) and approved-empty (one green CTA
+   inside, nothing in the header).
+2. **`Adversarial review (calibration)` reported failure on PR #2364 — infrastructural,
+   not a finding.** `duration_ms: 992`, `num_turns: 1`, `total_cost_usd: 0`, and
+   `ANTHROPIC_API_KEY:` **empty** in the job env. This is the workflow-rule-21 class
+   ("a failure you cannot read logs for is not a signal"). Not a required gate, so it
+   did not block. The fix is a repo secret + `.github/workflows/**`, both outside CC's
+   reach (MEH-671).
+3. **he/en message-key drift predates this work** — 37 he-only, 17 en-only. Untouched;
+   worth its own ticket.
+
+### Worth carrying forward
+**A sibling spec covering the same component is not coverage of the same states.**
+`DashboardEmptyStateFormExclusive` renders this exact page and passes on both the broken
+and the fixed version, because its mock producer carries no `status` field — so
+`notApproved` is never true and the gated branch is unreachable from it. The file list
+said "this page is tested". The state matrix said otherwise. When adding a guard, run
+the *existing* spec against the broken build too: if it stays green, that is the
+evidence the new assertion is worth having (MEH-1619's discrimination requirement).
+
 ## 2026-07-27 — MEH-1577 structured delivery cost (RED, chunked) — PR #2334 open, awaiting merge approval
 
 **PR #2334 is OPEN as a draft, NOT merged.** RED tier: migration `c7e2a4b91f38`
