@@ -2702,6 +2702,13 @@
     "expiry": {
       "valid_until": "Valid until: {date}",
       "near_expiry": "Certificate expires soon"
+    },
+    "cert": {
+      "dialog_label": "Kashrut certificate",
+      "close": "Close",
+      "image_alt": "Photo of the kashrut certificate",
+      "verified_by": "Verified by Mehamakor",
+      "original_at_business": "The original is displayed at the business"
     }
   },
   "opening_hours": {
