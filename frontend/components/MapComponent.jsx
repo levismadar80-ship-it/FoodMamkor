@@ -15,6 +15,7 @@ import { setUserLocation } from "@/lib/user-location";
 import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
+import { producerPoints } from "@/lib/producerPoints";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -761,7 +762,6 @@ export default function MapComponent({
       // no row had usable coords, the post-loop fallback pins the producer's own
       // lat/lng mirror so no business disappears (parity with the chunk-2
       // backend COALESCE — Expand overlap + the all-coords-invalid edge).
-      const locations = Array.isArray(p.locations) ? p.locations : [];
 
       const markerLabel = p.name || t("marker_singular");
       const entryMarkers = [];
@@ -841,36 +841,15 @@ export default function MapComponent({
       // fallback below does not fire for a producer whose only points are hidden
       // pickups (it stays off-map while the layer is hidden rather than
       // reappearing as a primary pin).
-      let hadUsableLocation = false;
-      locations.forEach((loc) => {
-        const lat = loc?.lat;
-        const lng = loc?.lng;
-        const usable =
-          typeof lat === "number" &&
-          typeof lng === "number" &&
-          !isNaN(lat) &&
-          !isNaN(lng);
-        if (!usable) return;
-        hadUsableLocation = true;
-        const secondary = loc?.kind === "pickup" || loc?.kind === "market_stand";
-        if (secondary && !showSecondaryLayer) return; // hidden by the layer toggle
-        addMarker(loc);
-      });
-
-      // Fallback ONLY when the producer had NO usable location at all (empty
-      // locations[] or every row coord-invalid) — parity with the chunk-2
-      // COALESCE (adversarial-review finding). A producer whose usable points
-      // were merely toggled off is intentionally left off-map.
-      if (!hadUsableLocation) {
-        addMarker({
-          kind: "branch",
-          is_primary: true,
-          lat: p.lat,
-          lng: p.lng,
-          precision: "exact",
-          label: null,
-        });
-      }
+      // MEH-1670: the three rules above now live in producerPoints(), so the
+      // /map viewport filter derives points the same way instead of reading
+      // Producer.lat/lng on its own (which dropped a delivery-only business from
+      // the list while its pickup pin was on screen). Behaviour here is
+      // unchanged — including the synthesised fallback row, which the module
+      // builds with the same fields this loop used to inline.
+      producerPoints(p, { includeSecondary: showSecondaryLayer }).forEach(({ location }) =>
+        addMarker(location),
+      );
 
       if (entryMarkers.length === 0) return;
       markersRef.current.set(p.id, { markers: entryMarkers, producer: p });
