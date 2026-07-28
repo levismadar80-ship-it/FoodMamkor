@@ -76,6 +76,30 @@ the assertion, so losing the other is undetectable — that is how a probe signs
 broken state. Prefer `&&`, or split into separate named checks so the failure message says
 which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
 
+**Lifting a quarantine is not the fix.** A `count()===0` skip reports green against a
+control that does not exist — proven on MEH-1698, where the old spec skipped past a
+completely missing element with only `test.fixme` lifted.
+
+That last clause is the whole rule, and it is why "un-quarantine it" is the wrong first
+move on any silent spec. The MEH-1698 file carried **two** disablers stacked — a
+`test.fixme` and, under it, `if ((await toggle.count()) === 0) test.skip(...)`. The
+obvious reading is that the quarantine was the problem. It was not: run the spec with the
+`fixme` removed and the skip intact, against a Header from which the control had been
+deleted entirely, and it still reports **skipped — exit 0**. The quarantine was decoration
+on top of a guard that could never have failed.
+
+The defect class is a guard that **consults its own subject**. `count()` on the element
+under test, `length === 0 → skip`, `if (!el) return` — each reads as defensive
+hygiene and each converts "the thing is gone" (the exact condition worth failing on) into
+"nothing to check". Gate on something the product cannot move instead: a static project
+identity (`test.skip(testInfo.project.name !== "desktop")`, as
+`e2e/visual/parity.spec.ts:522` does), an env var, a fixture file's presence.
+
+**The review question:** if the element vanished entirely, does this test go red — or
+green? If you cannot answer from reading it, run it against a build with the element
+deleted. That two-run control is the only thing that distinguishes a guard from a
+decoration, and it is cheap.
+
 Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/audits/silent-failure-audit.md).
 
 ---
