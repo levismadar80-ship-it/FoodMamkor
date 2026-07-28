@@ -19,9 +19,9 @@ missing index, or a slow query. It was a **class**:
 > happened was "this was never checked at all" — and the two are
 > indistinguishable from the outside.
 
-This is not one bug. It is **six independent instances** in the same codebase,
-found by different passes looking for different things, plus a seventh found
-by turning the question on the audit itself.
+This is not one bug. It is **seven independent instances** in the same
+codebase, found by different passes looking for different things, plus an
+eighth found by turning the question on the audit itself.
 
 | # | Instance | Where | What green meant |
 |---|---|---|---|
@@ -31,6 +31,7 @@ by turning the question on the audit itself.
 | 4 | **A skipped job counts as passed — in all three required gates** | P8 · F-1 | `ok() { case "$1" in success\|skipped) return 0` — byte-identical at `pr-checks.yml:697`, `deploy.yml:394`, `e2e.yml:381`. On a draft PR touching backend, `CI gate` reports success with pytest never executed. |
 | 5 | **A scanner that reds without gating** | P8 · F-2 | `dependency-audit.yml` is blocking *internally* (`continue-on-error: false`) but is in no aggregator's `needs`, so it is not a required check. MEH-1585's 31 vulns and P2's 9 `next` advisories sit behind a red check that stops nothing. |
 | 6 | **A quarantine that was decoration** | MEH-1698 | A `test.fixme` stacked on a `count()===0` skip; removing the quarantine still reported *skipped* against a deleted element. |
+| 7 | **A prescribed fix that changes nothing** | P7 · F-1 | 6 of 8 `text-right` sites carried `dir="rtl"` on the same element, so the prescribed `text-start` swap would have rendered identically — green PR, ticket Done, `/en` still broken. **Caught in Phase 0 and fixed properly in `a1550fe6`.** See §1.3 — the only instance in the *remediation* layer. |
 
 A sibling session, working independently, titled a PR
 *"a green with two possible causes is not a signal."* That is the same
@@ -38,7 +39,7 @@ sentence, arrived at from a different direction, on the same day. When two
 independent efforts converge on one formulation, the formulation is the
 finding.
 
-### 1.1 · The seventh instance is this audit
+### 1.1 · The eighth instance is this audit
 
 **The audit's own detectors had the same disease, and at a higher rate than the
 code it was auditing.** Every one of these produced a confident, plausible,
@@ -85,6 +86,69 @@ This is now a locked rule, and it has precedent in both directions from
 showed their premise did not hold, and P4's mount-check reversal is the same
 lesson pointing the other way — a finding that looked absent and was real.
 
+### 1.3 · Instance 7 is in the **remediation** layer — the class is deeper than verification
+
+Instances 1–6 are all failures of *verification*: a test, a gate, a scanner
+reporting a pass it did not earn. **Instance 7 is the same disease one layer
+further down — in the fix itself.**
+
+P7 identified 8 hardcoded `text-right` sites that break `/en` and prescribed
+`text-right` → `text-start`. **Six of those sites carried an explicit
+`dir="rtl"` on the very same element.** `text-start` resolves against the
+*element's own* `dir`, not the document's — so at those six the prescribed
+change renders **identically**. A seventh (`GroupBuyDetailClient.jsx:338`,
+`dir="ltr"` numeric) was a **false positive** the same sweep would have
+actively broken.
+
+Executed as written, the result would have been:
+
+| | |
+|---|---|
+| The diff | applied exactly as specified |
+| CI | **green** |
+| The ticket | closed **Done** |
+| `/en` | **still broken** |
+
+Nothing in the pipeline would have registered a problem, because nothing in the
+pipeline was ever asked whether the bug was gone — only whether the prescribed
+edit was present.
+
+> **The class, restated at its real depth:** a green that means nothing is not
+> only a *check* that didn't run. It is any signal certifying **compliance with
+> a prescription** while the **condition the prescription existed to fix** is
+> untouched. Verification and remediation are the same shape.
+
+**This one did not ship, and how it was caught is the useful part.** The fix
+landed in `a1550fe6` with the right shape — `text-start` **and** dropping the
+hardcoded `dir="rtl"` so the elements inherit from `<html dir>`, with
+`GroupBuyDetailClient.jsx:338` correctly reclassified to F-5 and left alone.
+It was caught by a **Phase 0 that re-read the code**, not by one that merely
+confirmed the finding still reproduced.
+
+That distinction matters, because §1.2's rule as originally worded would **not**
+have caught it: *"does the finding still reproduce?"* — it does. All eight sites
+were still there. **A Phase 0 scoped to the finding alone passes an inert fix.**
+
+> **§1.2, amended:** Phase 0 re-verifies **the finding *and* the prescription** —
+> does the defect still reproduce, *and* does the proposed change actually remove
+> it? A finding that does not reproduce closes as not-applicable. A prescription
+> that does not remove the defect gets rewritten before any code is touched.
+
+And the mechanism that makes this hold under pressure is a property of the
+**test**, not of anyone's diligence:
+
+**ADR-017 §3.6** (added 2026-07-28): *the exploit-proving test asserts the
+behaviour, not that the prescribed change was applied.* A test anchored to the
+invariant — *"`/en` renders these fields left-aligned"* — cannot pass an inert
+diff. A test anchored to the prescription — *"`text-start` is present"* — passes
+one by construction.
+
+Same principle as the baseline rule beside it (CC fixes non-determinism, Sapir
+ratifies what the page should look like) and as MEH-1619's *"the construction
+has to discriminate."* An author writing both a fix and its proof will, with no
+bad intent, write a proof his fix satisfies. The proof has to be anchored to
+something the fix cannot move.
+
 ---
 
 ## 2 · The corollary: a check whose own changes aren't checked
@@ -128,7 +192,7 @@ Severity is per-report. Nothing in the epic is 🔴 Critical.
 | **P4** | `p4-performance.md` | 🟡 **25 live GET list endpoints with no `LIMIT`**. 🟡 One hero-sized image bypasses the Cloudinary helper. **0 critical, 0 high** — Leaflet is `dynamic({ssr:false})` everywhere, map shells reserve height, all 23 `<Image>` declare `sizes`. |
 | **P5** | `p5-code-quality.md` | 🟠 `schemas.py` — **3,405 LOC, MI 0.00, +231 % in 90 days**. 🟡 `register_producer()` — 331 lines, CC 38, builds `Producer(...)` twice. Average complexity **A (3.38)**; duplication **0.18 %**. |
 | **P6** | `p6-testing.md` | 🟠 `rtl.spec.ts` passes with zero assertions. 🟡 4 specs skip on their own subject. Backend **0 hollow tests / 1,898**; frontend **0 assert-less / 1,744**. All five critical paths covered. |
-| **P7** | `p7-a11y-rtl.md` | 🟡 8 hardcoded `text-right` break `/en` (a real route). 🟡 12 `aria-label` without `role` — **exactly MEH-1227's count, unchanged**. Contrast **passes AA on all 5 brand pairs**. `יצרן` fully resolved: all 18 are the regulatory licence term. |
+| **P7** | `p7-a11y-rtl.md` | 🟡 **7** hardcoded `text-right` broke `/en` — **fixed in `a1550fe6`**; 6 needed the hardcoded `dir="rtl"` removed, not the class swap (§1.3). 🟡 12 `aria-label` without `role` — **exactly MEH-1227's count, unchanged**. Contrast **passes AA on all 5 brand pairs**. `יצרן` fully resolved: all 18 are the regulatory licence term. |
 | **P8** | `p8-cicd-config.md` | 🟠 §1 instances #4 and #5. 🟡 `scripts/**` in no filter. 🟡 No secret scanning. ⚪ Branch protection unverifiable from the repo. |
 
 **What the epic did *not* find, stated deliberately:** no critical
@@ -143,16 +207,24 @@ concentrated and named.
 
 ### Autonomous (batched)
 
-1. **`rtl.spec.ts` real assertions** — first. RTL *is* the product; a suite
-   reporting coverage it does not have is worse than an empty one.
-2. **The 8 `text-right` breaking `/en`** — mechanical, logical-properties rule.
-3. **The 9 npm advisories** — one PR.
+1. ~~**`rtl.spec.ts` real assertions**~~ — **DONE** (`a1550fe6`). RTL *is* the
+   product; a suite reporting coverage it does not have is worse than an empty
+   one.
+2. ~~**The `text-right` sites breaking `/en`**~~ — **DONE** (`a1550fe6`), together
+   with real assertions in `rtl.spec.ts`. Both were caught to be deeper than the
+   report stated; see §1.3.
+3. **The 9 `next` advisories** — **MEH-1757**, and it is *not* a fix ticket: no
+   stable version closes them, so it is a launch decision. Phase 1 is
+   enumerating each GHSA and judging applicability — several apply only to
+   self-hosted image optimization, custom servers, or Turbopack, and may not
+   touch a Vercel deployment at all. **"9 high" is a count, not a risk
+   assessment.** GREEN, read-only, zero dependency changes.
 
-> **All three are currently blocked behind MEH-1733.** They touch frontend, so
-> Playwright will actually run — and it will hit the red `parity.spec` failures.
-> The audit PRs merged green because Playwright **skipped** them (§1 instance
-> #4 again, applied to this epic's own delivery). Writing the code before
-> MEH-1733 clears means writing code that cannot merge.
+> **Items 1–2 landed in `a1550fe6`.** Item 3 (MEH-1757) is read-only and **not**
+> blocked. Anything remaining that touches frontend *is* blocked behind
+> **MEH-1733** — Playwright will actually run and hit the red `parity.spec`.
+> Note the shape of that: the audit PRs merged green because Playwright
+> **skipped** them (§1 instance #4, applied to this epic's own delivery).
 >
 > **No baseline moves without Sapir** (ADR-017): fixing non-determinism is CC's;
 > deciding what the page should look like is hers. A baseline *is* the visual
