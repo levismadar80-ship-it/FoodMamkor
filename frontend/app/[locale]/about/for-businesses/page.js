@@ -52,12 +52,12 @@ export async function generateMetadata({ params }) {
 // numbers -> return). The locked copy fixes the Q1..Q10 order, and this array is
 // what produces render order, so each category must hold a CONTIGUOUS run of that
 // sequence — section order therefore follows the copy, not the previous grouping.
-// KNOWN MIS-FILE, pending Sapir: "difference" (Q10 — Instagram/delivery-app
-// contrast + who runs the site) sits under `time_effort` ("זמן ומאמץ") because it
-// is last in the locked order and `trust` is already spent on Q7/Q8. No 4-section
-// assignment of this sequence avoids at least one mis-file; this is the minimum.
-// Resolving it needs either approved heading copy or dropping the category layer
-// — both out of scope here (MEH-579: unauthorized heading change -> revert PR).
+// DO NOT collapse this back to 4 sections. Q10 ("difference") needs its own:
+// it lands after Q9, and `trust` — where it belongs by subject — is already spent
+// on Q7/Q8, so any 4-section arrangement of this sequence mis-files at least one
+// question. `categories.difference` ("ההבדל והאנשים") was approved for exactly
+// this slot; the 4 pre-existing headings are unchanged (MEH-579: an unauthorized
+// heading change cost a revert PR).
 const CATEGORIES = [
   {
     key: "money_value",
@@ -84,10 +84,11 @@ const CATEGORIES = [
   },
   {
     key: "time_effort",
-    items: [
-      { key: "time" },
-      { key: "difference" },
-    ],
+    items: [{ key: "time" }],
+  },
+  {
+    key: "difference",
+    items: [{ key: "difference" }],
   },
 ];
 
