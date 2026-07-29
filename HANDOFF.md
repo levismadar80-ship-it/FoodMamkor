@@ -3,6 +3,55 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-28 (evening) — MEH-1500 three-legged permissions work + 7 PRs merged
+
+**Branch at close:** none active. This entry is the docs-only backfill (rule 31).
+
+### Merged this session
+| PR | Ticket | What |
+|---|---|---|
+| #2348 | MEH-1686 | social-proof strip `py-4`→`py-8`. Auto-merged before the held PNG review — see "what went wrong" below |
+| #2371 | MEH-1720 | `hooks-wiring-guard.sh` + allowlist, auto-discovered by `run-all.sh` |
+| #2373 | MEH-1720 | corrected two records asserting `check-path-exists.sh`, a hook that never existed |
+| #2378 | MEH-1723 | Rule 19 prose corrected + both sibling pointers folded in |
+| #2380 | MEH-1727 | E2E font CORS — `extraHTTPHeaders` gated on target |
+| #2384 | MEH-1500 Phase B | `write-deny-parity-guard.sh`, red-by-design until the paste landed |
+| #2390 | MEH-1500 Phase C | `docs/ci/check-bash-safety.patch.md` — patch doc, NOT applied |
+
+Still open: **#2356** (MEH-1705 item 2) — marker gate now green after an authorized reword; remaining blockers are the normal gates.
+
+### Decisions made
+1. **MultiEdit enforced, not reported** (Sapir, 28/07). Grounds: 6 of 7 write-class `PreToolUse` matchers are `Edit|Write|MultiEdit`. The 7th is `Edit|Write|NotebookEdit` — the ticket said "every", which was wrong; corrected in-file. NotebookEdit deliberately NOT enforced: no protected path is a notebook, so cover would be vacuous.
+2. **Rule 30 §2 narrowing WITHDRAWN.** CC cannot reliably tell its own prose from a marker Sapir added — a PR body is a single field with no per-line authorship. Delegation runs through explicit per-PR authorization instead, which rule 30 already contemplates.
+3. **Rule 30 §3 to be rebased from mechanism to act** — wording drafted, not pushed. Close/reopen via `mcp__github__update_pull_request(state)` re-runs every gate with no commit, so banning "push a commit" bans one route, not the act.
+4. **`.claude/hooks/**` Write window closed** by the 28-line paste. CC found it, declined to use or probe it, and it is now denied to all three tools.
+
+### What went wrong, recorded so it isn't relearned
+- **#2348 auto-merged past a hold.** Auto-merge fired 2s after `CI gate` went green while `E2E gate` had not reported — and that gate then came back RED 113s later. This is the behavioural proof that `E2E gate (required)` is **not** in ruleset 15240090.
+- **Home VRT was regenerated (`e9a02c98`, MEH-1689) ~3h before the hold reached it.** It IS green — verified by reading the executed job steps, not the aggregate.
+- **Two false greens found in CC's own guard, both before merge.** (a) valid-JSON-wrong-shape fell through to `ok` because `[[ "" -gt 0 ]]` is false in bash; (b) a malformed deny entry (trailing space / lowercase / unclosed paren) was silently dropped and read as coverage — reachable by exactly the hand-paste the guard gates. Self-test 8 → 17 cases.
+- **A `read`-EOF bug in the Phase C hook patch** would have shipped a hook that allows everything, silently. Caught only because the patch was executed before being written into the doc.
+
+### Ticket premises that died on Phase 0 — verify before building on any of these
+- **MEH-1500 §2**: both original hypotheses refuted. `permissions.deny` DOES fire on `Edit()`; relative-path matching DOES work. Real gap was tool coverage.
+- **MEH-1723**: duplicate of MEH-1713, which merged 9 minutes before MEH-1723 was created. Re-scoped to the prose residue.
+- **MEH-514**: `git reset --hard` is blocked by `.claude/settings.json:284`, **not** by `check-bash-safety.sh` — the hook's `git` skip precedes every check, so it never sees the command. `docs/EXECUTION_PLAN.md:216` corrected; there is no hook allowlist to add to.
+- **MEH-1733 §ג**: ruled out non-determinism on "no Date/random/Intl". A `setInterval` needs none of those. See below.
+
+### Open, not filed, not fixed
+- **Hero placeholder rotates** — `HeroSearch.jsx:112-120`, `ROTATE_MS = 3500`, source `he.json:441-446`. Un-masked in the home VRT shot. Currently inert because `playwright.config.ts:72` sets `reducedMotion: "reduce"` and the component gates on it — **but that guard fails OPEN** (`HeroSearch.jsx:114`: optional chaining short-circuits the whole chain, so absent `matchMedia` ⇒ `undefined` ⇒ interval created). No test-side pin exists. Second visit to home non-determinism after MEH-1594 was retracted.
+- **`login-mobile` is a 1px DOCUMENT HEIGHT gate** (`393x1671`→`393x1670` in the regen). `toHaveScreenshot` rejects on dimension mismatch *before* comparing pixels, so `maxDiffPixelRatio` gives zero protection. One green run does not prove stability.
+- **`ProducerSchema` still strips 9 card fields** on the home grid and `/map` — corroborated independently by MEH-1713's commit message, which scopes it as deliberate there. Not ticketed by instruction.
+- **`frontend/e2e/CLAUDE.md`** still says `baseURL` comes from the Vercel deployment-status webhook — untrue since MEH-1044.
+
+### Governance contradiction — Sapir's call, do not act
+**MEH-1738** (from PR #2376) vs **MEH-1735**: four rule files call `.github/workflows/**` an absolute CC-deny, MEH-450's risk-tiering calls CI/workflow YAML LOW-RISK, and MEH-1735 opens by asserting the deny as fact. Two live tickets hold opposite premises about one directory, and **neither position is mechanically enforced** — the path appears in no `permissions.deny` entry and no `PreToolUse` hook. Read both before touching that area.
+
+### Next concrete step
+Apply `docs/ci/check-bash-safety.patch.md` (merged in #2390, **not yet applied**). Until it is, all three Bash-layer holes are live: the `git` prefix disables the whole hook, redirection to protected paths is unblocked, and missing `jq` fails open. Expect **18/18** from `bash .claude/hooks/check-bash-safety.selftest.sh .claude/hooks/check-bash-safety.sh` after applying; anything less means stop and re-paste.
+
+---
+
 ## 2026-07-28 — MEH-1710 brand rule: empty-state copy convention (LOW-RISK, docs-only) — PR #2361 merged
 
 **Branch:** `feature/meh-1710-brand-empty-state-copy-rule` (2 commits: the section + a staging merge).
