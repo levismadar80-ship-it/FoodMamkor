@@ -479,6 +479,7 @@
       "city_chip": "Businesses in {city}",
       "city_day_chip": "Delivery to {city} · {day}",
       "day_row_label": "Delivery day:",
+      "day_row_hint": "Choose an area to filter by delivery day",
       "day_option_aria": "Filter deliveries on {day}",
       "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
       "day_empty_clear_cta": "Remove day filter",
@@ -4850,7 +4851,9 @@
     "trigger": "What's this?",
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
-    "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty."
+    "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
+    "availability": "A temporary state you set by hand — a holiday or a pause, for example. Shown on your business page.",
+    "order_window": "The fixed weekly schedule in which you accept orders — Sunday–Wednesday 9:00–14:00, for example. Shown on your business page."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",
