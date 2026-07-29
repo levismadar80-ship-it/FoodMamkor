@@ -12,6 +12,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
+import WhatsThis from "@/components/WhatsThis";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
@@ -155,6 +156,10 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  // MEH-1773: explainer for the availability card below. Its twin lives on the
+  // order-window card in edit/page.js — the pair is the point, so if one moves
+  // the other has to follow.
+  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-956: track a failed dashboard fetch separately from the not-yet-loaded
@@ -551,6 +556,15 @@ export default function ProducerDashboardPage() {
         <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
+        {/* MEH-1773: owners could not tell "זמינות" from "חלון הזמנות" — both
+            read as "when am I open". This says the half that is only true
+            here: temporary, manual, an exception. The other half is stated on
+            the order-window card in edit/page.js. */}
+        <WhatsThis
+          content={tWhat("availability")}
+          className="mb-2"
+          testId="whats-this-availability"
+        />
         <div
           role="radiogroup"
           aria-label={t("availability.group_aria")}
