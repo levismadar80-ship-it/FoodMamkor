@@ -71,6 +71,46 @@
 ### NEXT
 
 ה-backfill הזה. **MEH-1700–1703 לא הותחלו במכוון.**
+## 2026-07-29 (midday) — three-ticket batch: one merged, one parked at its gate, one stopped
+
+**Branch at close:** `feature/meh-1772-docs-backfill-2907`. This entry is the docs-only backfill (rule 31).
+
+**One shipped, one waiting on Sapir, one blocked. None of the three is silently incomplete.**
+
+| Ticket | State | Where it stands |
+|---|---|---|
+| MEH-1773 | **Done** | PR #2432 merged (squash `641f8ac`). Both explainers live. |
+| MEH-1772 | **Chunk 1 awaiting "go"** | Branch `feature/meh-1772-per-area-delivery-fee`, commit `e02f1437`, pushed. **No PR opened, migration NOT applied.** |
+| MEH-1774 | **Blocked, in Backlog** | Nothing pushed; working tree restored. Phase 0 findings preserved on the card. |
+
+**MEH-1772 chunk 1 is deliberately parked, and the reason is mechanical, not caution.** Merging to staging *is* applying — the Dockerfile runs `alembic upgrade` on boot — so opening a mergeable PR would have converted the single human gate into a race. The revision file (`20260729_1200_a4f7c2e91b58_meh1772_delivery_area_fee.py`) adds one nullable INTEGER to `delivery_areas`, expand-only. Verified through alembic's own `ScriptDirectory` API rather than grep — **exactly one head** (`a4f7c2e91b58`), chain intact to base `ef8fb1858f5b` across 49 revisions — because a naive `^down_revision` grep reports phantom heads off prose inside the revision docstrings, the trap MEH-1577 documented. Offline `--sql` emits a single additive `ALTER TABLE`. It reverses MEH-1577's explicit producer-level ruling; the *why* (its qualifier was "no observed use", and observed use arrived 29/07) is written into the revision docstring so the next reader of `c7e2a4b91f38` doesn't hit a bare contradiction.
+
+**MEH-1774 stopped on a blocking hook, not on the feature.** Removing home's in-place attribute filtering touches 7 sites in `use-home-page.js`; editing them sequentially left the file mid-refactor and `lint-feedback.sh` counted 3 strikes and hard-stopped with *"Human review required."* **All 20 errors were transient `no-undef`** (`chips` / `setChips` / `buildChipParams` removed above, still used below) — the exact class `code-execution.md` exec §8 records from MEH-763. The prescribed remedy is a single atomic write; it was not attempted, because the hook was already blocking and the standing instruction is to STOP after 2 attempts rather than work around a blocking hook. `use-home-page.js` was restored to `origin/staging` (0 lint errors) so nothing broken was left behind.
+
+**Phase 0 for MEH-1774 is done and its findings are the valuable part** — two traps that would have shipped a silently broken feature:
+
+- **The URL contract is the literal string `"1"`.** `ProducersClient.jsx:53` tests `searchParams.get(chip.key) === "1"`, but `buildChipParams` (`producer-filters.js:38`) emits boolean `true` → `?vegan=true` → the chip would never light up. The deep-link must build `?key=1` itself.
+- **`has_delivery` is serialized as `?delivery=1` on home** (`use-home-page.js:301`) while `/producers` reads `has_delivery=1`. The link must follow the ProducersClient contract, not home's legacy name.
+- **An acceptance criterion was wrong:** it says `home_chip_navigate` "replaces the old toggle event" — there is no home toggle event; `producers_chip_toggle` lives at `ProducersClient.jsx:326`, inside the do-not-touch surface. It is an addition.
+- **Navigation must be locale-aware** — `use-home-page.js:5` imports `useRouter` from `next/navigation`, which would drop an `/en` session under `localePrefix: "as-needed"` (the class MEH-1157 closed on the dashboard).
+
+**Sandbox limits hit this session, both worked around rather than claimed past:**
+
+- **No usable Postgres.** `initdb` refuses to run as root and the docker daemon socket is absent, so no seeded full stack. Self-QA ran against a real `next start` with the API route-mocked (MEH-1591 pattern). Real components, stubbed data — stated as such in the PR.
+- **Playwright's pinned browser is absent**; `/opt/pw-browsers/chromium-1194` is what exists, so runs need an explicit `executablePath`.
+- The **harness branch was `claude/meh-1772-1773-1774-ea0yct`**, which rule 3 forbids and the `Branch name gate` blocks. All work went to `feature/meh-*` branches per the repo rule, which CLAUDE.md says wins over the harness prompt.
+
+**Decisions taken this session**
+
+| Decision | Why |
+|---|---|
+| Did not open a PR for MEH-1772 chunk 1 | Merge = apply. An open, green, mergeable PR would make the human gate racy rather than binding. |
+| Touched `dashboard/page.js` for MEH-1773 despite the scope line | The availability card is genuinely there; the same ticket asked for the path to be resolved in Phase 0 and the DoD needed both cards. Disclosed in PR + Linear rather than done quietly. |
+| Added no CI guard for the MEH-1773 wiring | Would mean a new file outside the ticket's stated scope. Flagged as a known gap instead of widening scope unasked. |
+| Restored rather than force-fixed `use-home-page.js` | Leaving a half-refactored file is worse than either finishing or reverting, and finishing meant overriding a blocking hook. |
+
+**Next:** Sapir's "go" on MEH-1772 chunk 1 → chunks 2 (API) and 3 (UI) run end-to-end with self-QA + auto-merge. MEH-1774 needs one word on whether to complete it as a single atomic write (Phase 0 is already done; the four findings above are locked) or split it into two PRs, which would leave `buildChipParams` imported and acceptance criterion 3 unmet.
+
 ## 2026-07-29 (morning) — queue run under the new opt-in rule + docs backfill
 
 **Branch at close:** `feature/meh-1762-docs-backfill-2807`. This entry is the docs-only backfill (rule 31).
