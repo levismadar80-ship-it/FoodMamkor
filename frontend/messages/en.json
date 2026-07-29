@@ -3208,7 +3208,8 @@
       "money_value": "Money and value",
       "time_effort": "Time and effort",
       "trust": "Trust in Mehamakor",
-      "control": "Control and stance"
+      "control": "Control and stance",
+      "difference": "Difference and people"
     },
     "faq": {
       "cost": {
@@ -3245,7 +3246,7 @@
       },
       "time": {
         "q": "How much time and effort does this take from me?",
-        "a": "Signing up is a simple 3-step form, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
+        "a": "Signing up is a short form, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
       },
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
