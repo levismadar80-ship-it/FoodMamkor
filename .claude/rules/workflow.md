@@ -40,7 +40,7 @@ the only signal. **An unlabeled card is not yours even if it looks actionable.**
 
 Work them in **priority order** (Urgent → High → Normal → Low). Each card's
 description is the full spec — **§4 carries the XML prompt**. Authority is
-**ADR-017** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
+**ADR-032** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
 
 - **§3.5** — RED items **stop before merge** until the adversarial reviewer runs.
 - **§3.6** — exploit-proving tests assert **behaviour**, not that the prescribed
