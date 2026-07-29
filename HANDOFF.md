@@ -3,6 +3,39 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-29 (afternoon) — delivery-fee chunks 1-2 shipped · home deep-links held on an unattributable E2E
+
+**Branch at close:** `feature/meh-1781-docs-backfill`. Docs-only backfill (rule 31).
+
+| Ticket | State | Where |
+|---|---|---|
+| MEH-1772 | **chunks 1-2 merged, chunk 3 NOT done** | #2439 `2da3de54` · #2441 `d0edd160`. Ticket deliberately still open. |
+| MEH-1773 | Done (earlier today) | #2432 |
+| MEH-1774 | **PR #2438 open, held** | Required gates green; E2E red and unattributed. |
+
+**The card's chunk split for MEH-1772 was not implementable, and this is the finding worth carrying forward.** Chunk 1 was specified as "Alembic revision only". Such a PR **can never go green**: `alembic check` (the MEH-836 drift gate) compares the post-migration DB against `models.py`, so a migration adding a column the ORM doesn't declare reads as drift *in the delete direction* — `Detected removed column 'delivery_areas.delivery_fee'` → `[('remove_column', …)]` → exit 255. Verified on run `30453602785`, not inferred: the table count passed at 38 and then `alembic check` failed. **A schema-only PR is not a shippable unit in this repo** — the `Column` line must ride with the migration. Everything else stayed in chunk 2.
+
+**A local Postgres IS obtainable in this sandbox** — contradicting what this file said this morning. `initdb` refuses to run as root, but `setpriv --reuid=1000 --regid=1000 --clear-groups /usr/lib/postgresql/16/bin/initdb …` works, and `pg_ctl -o "-k /tmp"` starts it. **The database must be created `-E UTF8 -T template0`**; the cluster default is SQL_ASCII and Hebrew payloads then fail with a `UnicodeEncodeError` that reads exactly like an application bug. That unlocked real `pytest` (15/15 on the new suite) instead of CI-only verification.
+
+**MEH-1774 is held, and the reason is rule 21, not doubt about the code.** Both required gates are green and the feature is verified end-to-end (both chips navigate, arrive with the chip **active**, fire a filtered request, back button intact; `/en` keeps its prefix). But `Playwright E2E` failed with 3 `[mobile]` specs — 03/04/06, all "navigation to a producer detail lands on `#__next_error__`". The diff touches none of that path, and E2E was **green** on #2432 forty-five minutes earlier; a rerun came back worse. **Two attempts did not attribute it**, and rule 21 forbids merging on a signal that can't be explained. Candidate causes not ruled out: the Railway staging redeploy triggered by MEH-1771 landing mid-run, and Vercel being **deployment rate-limited for 24h** ("retry in 24 hours"), which also means **no preview URL exists for any PR opened today**.
+
+**Decisions taken this session**
+
+| Decision | Why |
+|---|---|
+| No `Closes` on #2439 / #2441 | Chunk 3 is unshipped; a column nothing renders isn't a finished feature. The MEH-1698 false-Done. |
+| Moved the ORM `Column` into chunk 1 | The drift gate leaves no alternative; smallest change that keeps the chunk boundary otherwise intact. |
+| `DeliveryAreaOut` does not coalesce | Resolving server-side erases "overrides with the same number" vs "inherits" — the exact distinction chunk 3's "משלוח מ-X₪" line needs. |
+| Created MEH-1781 for this backfill | The branch-name gate forces `meh-NNNN` into the branch, and Linear auto-links it. Reusing MEH-1772 (open) would auto-**close** it — the PR #2433 failure Sapir had to undo by hand; reusing a Done id would auto-**reopen** it (rule 29). A dedicated ticket is the only option that breaks neither. |
+
+**Known issues found, not filed**
+
+- **Rule 29 is narrower than the failure class.** It bans a *Done* issue's identifier in a docs PR. PR #2433 showed the *open* direction is worse: MEH-1772 was auto-closed to Done at 12:19:12Z by a docs PR carrying its id, silently dissolving a human gate. Sapir reopened it. Proposed as a retro extension, not applied.
+- `ATTRIBUTE_LABELS` are hardcoded Hebrew, so `/en` renders Hebrew chip labels. Pre-existing; `attribute-labels.js` is do-not-touch for MEH-1774.
+- Evidence of a **concurrent session** (rule 1): branch `feature/meh-1780-docs-backfill-draft-banner` and PR #2434 (MEH-1771) landed mid-session. Not halted — the run is being directed live.
+
+**Next:** MEH-1772 **chunk 3** — `DeliveryBlock.jsx` per-area fee + the "משלוח מ-{min}₪" variance line, the dashboard `DeliveryCard` fee input, and a seeded demo producer with two differing fees. The API is merged and ready. Then MEH-1774 #2438: decide whether the E2E red is ambient (re-run once Vercel/Railway settle) or real.
+
 ## 2026-07-29 — MEH-1771 delivery-day discoverability (ghost state + hint + modal) — PR #2434
 
 - **MEH-1771** (`feature/meh-1771-delivery-day-discoverability`, ADR-016 v2 end-to-end authority per Sapir 29/07: Phase 0+1+2 → self-QA → auto-merge, **no deploy to main**). `DeliveryDayRow` — which lives in `app/[locale]/home/ActiveFilterChip.jsx`, not a file of its own — stopped returning `null` without a city. It is now a permanent anchor: muted pills + hint `"בחרו אזור כדי לסנן לפי יום משלוח"`, and a pill tap opens the `LocationModal`.
