@@ -2995,7 +2995,8 @@
       "clear_aria": "נקה עיר"
     },
     "address_search": {
-      "placeholder": "חפשו כתובת..."
+      "placeholder": "חפשו כתובת...",
+      "no_results_hint": "לא מצאנו הצעות לכתובת הזו. אפשר להקליד אותה ידנית — היא תישמר כרגיל."
     }
   },
   "favorites": {

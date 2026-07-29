@@ -15,11 +15,43 @@
  *           in components/AddressSearch.jsx (mints per autocomplete session,
  *           consumes on select).
  * Related:  components/AddressSearch.jsx (sole consumer).
- * History:  MEH-1234 (creation — Wolt-style Google Places + Nominatim fallback).
+ * History:  MEH-1234 (creation — Wolt-style Google Places + Nominatim fallback);
+ *           MEH-1766 (throw ProviderError on a rejected lookup instead of
+ *           returning [] — "provider said no" and "no such address" were
+ *           indistinguishable, so a disabled API key looked like a real
+ *           zero-result search on every surface).
  *
  * Suggestion = { id, primary, secondary, provider, raw }.
  * Place      = { street, neighborhood, city, postcode, lat, lng, displayName }.
  */
+
+/**
+ * A lookup the provider actively rejected (HTTP non-2xx) — as opposed to a
+ * successful lookup that legitimately matched nothing.
+ *
+ * MEH-1766: both cases used to `return []`, which is why a Places API (New)
+ * key that is present but not enabled for the endpoint (403 PERMISSION_DENIED)
+ * renders exactly like "דרך שרה matched nothing". The caller needs to tell
+ * them apart to log something actionable.
+ */
+export class ProviderError extends Error {
+  constructor(provider, status, detail) {
+    super(`${provider} address lookup rejected (HTTP ${status})`);
+    this.name = "ProviderError";
+    this.provider = provider;
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+/** Read a failed response's body for the log line, never throwing itself. */
+async function rejectionDetail(res) {
+  try {
+    return (await res.text()).slice(0, 300);
+  } catch {
+    return "";
+  }
+}
 
 // Read the NEXT_PUBLIC_* literal at call time (not module load) so Next inlines
 // it in the browser bundle AND vitest can toggle it via vi.stubEnv.
@@ -93,7 +125,10 @@ async function nominatimAutocomplete(query, { signal } = {}) {
     headers: { "Accept-Language": "he,en;q=0.8" },
     signal,
   });
-  if (!res.ok) return [];
+  // MEH-1766: reject loudly. An empty array here means "matched nothing".
+  if (!res.ok) {
+    throw new ProviderError("nominatim", res.status, await rejectionDetail(res));
+  }
   const data = await res.json();
   const rows = Array.isArray(data) ? data : [];
   const suggestions = rows.map((r, idx) => {
@@ -130,7 +165,13 @@ async function googleAutocomplete(query, { signal, sessionToken } = {}) {
       }),
     },
   );
-  if (!res.ok) return [];
+  // MEH-1766: a present-but-unauthorized key (Places API (New) not enabled on
+  // the project, or an HTTP-referrer restriction that misses the deployment
+  // domain) answers 403 here. Returning [] made that indistinguishable from a
+  // genuine no-match — throw so the caller can log which one it was.
+  if (!res.ok) {
+    throw new ProviderError("google", res.status, await rejectionDetail(res));
+  }
   const data = await res.json();
   const preds = (data.suggestions || [])
     .map((s) => s.placePrediction)
