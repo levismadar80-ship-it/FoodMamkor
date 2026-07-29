@@ -62,11 +62,32 @@ describe("useHomePage delivery-day filter (MEH-1645)", () => {
     expect(result.current.dayActive).toBeNull();
   });
 
-  it("ignores a day selection when no city filter is active", () => {
+  // MEH-1771: the city PRECONDITION is unchanged — a day never applies without
+  // a city. What changed is the response to the missing precondition: the old
+  // silent `return` became "open the LocationModal and ask for it".
+  it("does NOT apply a day without a city, and opens the LocationModal instead (MEH-1771)", () => {
     const { result } = renderHook(() => useHomePage());
+    expect(result.current.locationModalOpen).toBe(false);
     act(() => result.current.handleDaySelected("שישי"));
+    // Precondition still enforced — no filter, no URL param, no day fetch.
     expect(result.current.dayActive).toBeNull();
     expect(window.location.search).not.toContain("day=");
+    expect(
+      api.get.mock.calls.find(([p, o]) => p === "/producers" && o?.params?.delivery_day),
+    ).toBeUndefined();
+    // ...and the missing precondition is now asked for.
+    expect(result.current.locationModalOpen).toBe(true);
+  });
+
+  it("picking a city in the modal path then a day applies it normally (MEH-1771 end-to-end)", () => {
+    const { result } = renderHook(() => useHomePage());
+    act(() => result.current.handleDaySelected("שישי"));
+    expect(result.current.locationModalOpen).toBe(true);
+    // LocationModal.onSelectCity IS handleCitySelected — the one existing path.
+    act(() => result.current.handleCitySelected("חיפה"));
+    act(() => result.current.handleDaySelected("שישי"));
+    expect(result.current.dayActive).toBe("שישי");
+    expect(window.location.search).toContain(`day=${encodeURIComponent("שישי")}`);
   });
 
   it("hydrates ?city=&day= from the URL but DROPS a day-only URL (invisible-filter guard)", () => {
@@ -106,9 +127,47 @@ describe("useHomePage delivery-day filter (MEH-1645)", () => {
 });
 
 describe("DeliveryDayRow + chip label (MEH-1645)", () => {
-  it("renders nothing without an active city (progressive disclosure)", () => {
+  // MEH-1771: was "renders nothing without an active city". The row is now a
+  // permanent anchor (Baymard promoted-filters); without a city it renders a
+  // muted ghost row + hint whose pills are aria-disabled but still clickable.
+  it("renders the GHOST row without a city: hint + aria-disabled pills (MEH-1771)", () => {
     render(<DeliveryDayRow cityActive={null} dayActive={null} onSelectDay={vi.fn()} />);
-    expect(screen.queryByTestId("delivery-day-row")).not.toBeInTheDocument();
+    const row = screen.getByTestId("delivery-day-row");
+    expect(row).toBeInTheDocument();
+    expect(row).toHaveAttribute("data-ghost", "true");
+    expect(row.querySelectorAll("button")).toHaveLength(7);
+
+    const hint = screen.getByTestId("delivery-day-hint");
+    expect(hint).toHaveTextContent("home.producers.day_row_hint");
+
+    const pill = screen.getByTestId("delivery-day-pill-שישי");
+    expect(pill).toHaveAttribute("aria-disabled", "true");
+    // a11y: the hint is what explains the disabled state — it must be linked.
+    expect(pill).toHaveAttribute("aria-describedby", hint.id);
+    // aria-disabled, NOT the disabled attribute: the pill stays clickable so
+    // the click can open the LocationModal (MDN aria-disabled / Smashing).
+    expect(pill).not.toBeDisabled();
+  });
+
+  it("a ghost pill still forwards its click (routes to the LocationModal)", () => {
+    const onSelectDay = vi.fn();
+    render(<DeliveryDayRow cityActive={null} dayActive={null} onSelectDay={onSelectDay} />);
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
+    expect(onSelectDay).toHaveBeenCalledWith("שישי");
+  });
+
+  it("a ghost row never marks a day as pressed, even if dayActive leaks in", () => {
+    render(<DeliveryDayRow cityActive={null} dayActive="שישי" onSelectDay={vi.fn()} />);
+    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("with a city the row is NOT ghost: no hint, pills enabled (no MEH-1645 regression)", () => {
+    render(<DeliveryDayRow cityActive="חיפה" dayActive={null} onSelectDay={vi.fn()} />);
+    expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "false");
+    expect(screen.queryByTestId("delivery-day-hint")).not.toBeInTheDocument();
+    const pill = screen.getByTestId("delivery-day-pill-שישי");
+    expect(pill).toHaveAttribute("aria-disabled", "false");
+    expect(pill).not.toHaveAttribute("aria-describedby");
   });
 
   it("renders all 7 canonical pills with a city, marks the active day, forwards clicks", () => {
