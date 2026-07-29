@@ -7,6 +7,67 @@ summary + pointer here.
 
 ---
 
+## Working the queue
+
+**Linear is the channel. Nothing arrives by chat.**
+
+Do not wait for pasted instructions. At session start, and whenever you finish
+an item, query Linear:
+
+```
+state = In Progress · team = Mehamakor · labeled `cc-queue`
+```
+
+**`In Progress` means started-and-unfinished, not assigned-to-CC.** The label is
+the only signal. **An unlabeled card is not yours even if it looks actionable.**
+
+**An empty queue is the expected steady state, not a failure.** Say so and stop.
+
+> **Why opt-in and not opt-out** (MEH-1760). The first version of this rule
+> excluded `not-cc` instead of requiring `cc-queue`. On its first run the query
+> returned **28** cards — epics used as board state, work paused for Sapir, and
+> one Urgent card explicitly marked HIGH-RISK with WAIT between chunks. The
+> label was applied to 3 of 31, so it filtered nothing.
+>
+> The failure modes are not symmetric:
+>
+> | Someone forgets to label | opt-out (`NOT not-cc`) | opt-in (`cc-queue`) |
+> |---|---|---|
+> | Result | **CC starts work nobody intended** | nothing happens |
+>
+> Same reasoning as §3.6 below: the safe property is the one that does not
+> depend on anyone remembering.
+
+Work them in **priority order** (Urgent → High → Normal → Low). Each card's
+description is the full spec — **§4 carries the XML prompt**. Authority is
+**ADR-017** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
+
+- **§3.5** — RED items **stop before merge** until the adversarial reviewer runs.
+- **§3.6** — exploit-proving tests assert **behaviour**, not that the prescribed
+  change was applied.
+
+### Finishing, blocking, handing off
+
+| Situation | What to do |
+|---|---|
+| **Finished** | Set the card **Done**, post the batch summary as a **comment on the card**. |
+| **Blocked** | Move it back to **Backlog**, comment **why** in one paragraph, take the next item. |
+| **Needs Sapir's hands** — secrets, `.github/`, Railway, GitHub settings, VRT baselines | Label it **`not-cc`**, comment **exactly** what she must do, move on. |
+
+**Never idle, never wait for a message.**
+
+> **Why §3.6 sits in this section and not only in the ADR:** the queue is worked
+> autonomously, so nobody is standing between a card's prescription and its
+> merge. A test that asserts the prescribed *change was applied* passes an inert
+> fix by construction; a test that asserts the *behaviour* cannot. That property
+> is what makes unattended execution safe, and it does not depend on anyone's
+> diligence. Precedent: MEH-1721 P7 F-1, where a prescribed
+> `text-right` → `text-start` swap was inert at 6 of 7 sites because each carried
+> a hardcoded `dir="rtl"` — the diff would have applied, CI gone green, the card
+> closed Done, and `/en` stayed broken.
+
+---
+
 ## Branch-base verification (CRITICAL)
 
 Before any read/write tool call on a new ticket — and before any

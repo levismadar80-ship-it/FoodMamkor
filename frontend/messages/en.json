@@ -416,7 +416,7 @@
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
       "geo_failure": "We couldn't detect your location — you can pick a city manually",
-      "chips_prefix": "Searching now:",
+      "chips_prefix": "Popular now:",
       "trust_line": "Every business is checked and approved by hand"
     },
     "search": {
@@ -797,9 +797,7 @@
           "orders_open": "Open for orders · until {time}"
         },
         "excerpt_footer": "From the reviews",
-        "excerpt_all": "All reviews",
-        "alerts_reentry": "Getting updates",
-        "alerts_reentry_aria": "Edit notification preferences"
+        "excerpt_all": "All reviews"
       },
       "owner_card": {
         "heading": "Behind the business"
