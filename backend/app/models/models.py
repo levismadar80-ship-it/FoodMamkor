@@ -619,6 +619,16 @@ class DeliveryArea(Base):
     city = Column(String(100), nullable=False)
     min_order = Column(Integer)
     delivery_day = Column(String(50))
+    # MEH-1772: per-area OVERRIDE of producers.delivery_fee (MEH-1577).
+    # NULL = no override → the public page inherits the producer-level fee.
+    # 0 is NOT absence: it means "משלוח חינם" to this area specifically, so
+    # every read must gate on `is not None`, never on truthiness.
+    # INTEGER to match min_order above AND the producer-level column it
+    # overrides — a Decimal/int fork would serialize two JSON shapes for the
+    # same rendered "₪" (whole shekels, display-only; Sapir 27/07).
+    # DO NOT add the column here without the paired Alembic revision —
+    # Alembic is the sole schema authority since MEH-267 (a4f7c2e91b58).
+    delivery_fee = Column(Integer)
 
     producer = relationship("Producer", back_populates="delivery_areas")
 
