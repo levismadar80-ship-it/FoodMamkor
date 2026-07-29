@@ -48,33 +48,45 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// MEH-1770: FAQ set replaced 8 -> 10 (research-backed; money -> ownership ->
+// numbers -> return). The locked copy fixes the Q1..Q10 order, and this array is
+// what produces render order, so each category must hold a CONTIGUOUS run of that
+// sequence — section order therefore follows the copy, not the previous grouping.
+// KNOWN MIS-FILE, pending Sapir: "difference" (Q10 — Instagram/delivery-app
+// contrast + who runs the site) sits under `time_effort` ("זמן ומאמץ") because it
+// is last in the locked order and `trust` is already spent on Q7/Q8. No 4-section
+// assignment of this sequence avoids at least one mis-file; this is the minimum.
+// Resolving it needs either approved heading copy or dropping the category layer
+// — both out of scope here (MEH-579: unauthorized heading change -> revert PR).
 const CATEGORIES = [
   {
     key: "money_value",
     items: [
       { key: "cost", open: true },
-      { key: "value" },
+      { key: "revenue_model" },
+    ],
+  },
+  {
+    key: "control",
+    items: [
+      { key: "customer_ownership" },
+      { key: "analytics" },
+      { key: "repeat_customers" },
+      { key: "visibility" },
+    ],
+  },
+  {
+    key: "trust",
+    items: [
+      { key: "reviews" },
+      { key: "license" },
     ],
   },
   {
     key: "time_effort",
     items: [
       { key: "time" },
-      { key: "writing" },
-    ],
-  },
-  {
-    key: "trust",
-    items: [
-      { key: "founder" },
-      { key: "leads" },
-    ],
-  },
-  {
-    key: "control",
-    items: [
-      { key: "visibility" },
-      { key: "control" },
+      { key: "difference" },
     ],
   },
 ];
