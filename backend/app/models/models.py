@@ -69,9 +69,13 @@ class Producer(Base):
     # (schemas.ProducerUpdate, http(s) only). Free-text columns, no enum.
     facebook = Column(String(200), nullable=True)
     external_order_form = Column(String(500), nullable=True)
-    status = Column(
-        String(20), default="pending"
-    )  # pending | approved | rejected | inactive
+    # MEH-1612: free String(20) — no enum, no DB CHECK constraint. The
+    # authoritative enumeration is the admin filter pattern at
+    # routers/admin.py:112:
+    #   pending | pending_whatsapp | approved | rejected | inactive
+    # (pending_whatsapp is written at auth.py:509 and auth.py:624; an earlier
+    # version of this comment omitted it and misled MEH-1587's Phase 0.)
+    status = Column(String(20), default="pending")
     images = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
@@ -91,6 +95,14 @@ class Producer(Base):
     # migration: f7d2a9c4b1e8.
     owner_bio = Column(Text, nullable=True)
     owner_photo_url = Column(String(500), nullable=True)
+    # MEH-1541: self-reported founding year → the quiet "מאז {שנה}" heritage
+    # line on the public masthead (a trust signal for veteran businesses, not a
+    # badge). Nullable, Expand-only (ADR-007, no backfill) — NULL = the owner
+    # hasn't stated a year and the line is absent from the DOM. Range
+    # (1800..current year) is enforced at the app layer (schemas.ProducerUpdate),
+    # not a DB CHECK — mirrors the availability_state app-layer-validation
+    # precedent. Paired migration: e4a9c1f7b2d3.
+    established_year = Column(Integer, nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     # MEH-1490: admin-mapped Google Maps Place ID. The ONLY Google datum we
@@ -233,6 +245,21 @@ class Producer(Base):
         default=[],
         server_default=text("'{}'::text[]"),
     )
+    # MEH-1577: structured delivery cost, producer-level (NOT per delivery_area
+    # — delivery_areas.min_order below already owns the per-city dimension).
+    # NULL = not stated → the public DeliveryBlock renders no line at all;
+    # delivery_fee=0 is a distinct, meaningful value ("free delivery").
+    # INTEGER to match delivery_areas.min_order (:605), the same conceptual
+    # cluster — NOT the NUMERIC(10,2) of products.price / price_per_person.
+    # Two adjacent delivery-money fields with different types would fork
+    # serialization (Decimal vs int in one Pydantic response), rendering and
+    # fixtures; these are display-only whole shekels, no cent arithmetic.
+    # Owner-writable via producer_me PUT; validated in schemas.ProducerUpdate
+    # (both >= 0, free_delivery_above > 0 when set → 422), no DB CHECK —
+    # app-layer enforcement mirroring order_window. Expand-only per ADR-007.
+    # Paired migration: c7e2a4b91f38.
+    delivery_fee = Column(Integer, nullable=True)
+    free_delivery_above = Column(Integer, nullable=True)
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
@@ -959,7 +986,7 @@ class Event(Base):
     lat = Column(Float)
     lng = Column(Float)
     image_url = Column(Text)
-    category = Column(String(30), nullable=False)  # סדנה|סיור|שוק|קטיף|טעימות|אחר
+    category = Column(String(30), nullable=False)  # שוק|קטיף|טעימות|אחר (MEH-1657)
     price = Column(Integer, default=0)  # 0 = free
     max_participants = Column(Integer, nullable=True)
     registration_url = Column(String(500), nullable=True)  # external signup link
@@ -973,12 +1000,27 @@ class Experience(Base):
     """
     Community-submitted experiences (workshops, food tours, nutrition classes).
 
-    Intentionally separate from `Event`:
-      - Event    = farm event hosted by an approved producer. Simple, no
-                   moderation. Keyed on producer_id.
-      - Experience = community workshop hosted by any logged-in user.
-                   Requires Claude pre-moderation AND admin approval.
-                   Keyed on host_user_id — the host is a User, not a Producer.
+    Intentionally separate from `Event`. The axis is ONE-TIME vs SIGN-UP
+    (locked 27/07, reaffirmed 28/07 — MEH-1657):
+      - Event      = something that happens ONCE, on a date. An open day, a
+                     market stall, a seasonal harvest, a launch. Flat `price`,
+                     an external `registration_url`, and that's it.
+      - Experience = a guided activity people SIGN UP for. Priced per person,
+                     capped, and repeatable — which is why this model carries
+                     `is_recurring`, `recurring_schedule`, `price_per_person`,
+                     `participants_count`, `duration_minutes` and
+                     `requirements`, and Event carries none of them.
+
+    Industry precedent for the split: Airbnb Experiences (recurring, bookable,
+    per-person) vs Eventbrite (dated events, multiple dates resolved *inside*
+    one event rather than as a separate entity).
+
+    Host type is an IMPLEMENTATION DETAIL of that axis, not the definition:
+    an Experience is keyed on `host_user_id` (a User) while an Event is keyed
+    on `producer_id`, and an Experience additionally requires Claude
+    pre-moderation AND admin approval. This docstring previously stated the
+    axis WAS who hosts — that was stale, the fields had already overtaken it,
+    and it actively misled readers into thinking the two models overlap.
 
     Moderation flow:
       status: pending | approved | rejected | changes_requested
@@ -1312,6 +1354,14 @@ class GroupBuy(Base):
     fulfillment_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
+    # MEH-1651: one-way latch for the open->funded notification pair. NULL =
+    # never sent. `status` cannot carry this on its own because it legitimately
+    # flaps: cancelling below min_participants reverts it to "open" and the next
+    # join re-crosses the threshold, so a status-keyed send would re-spam every
+    # participant on every flap.
+    # DO NOT clear this on the funded->open revert path — that re-arms the
+    #        notification, which is the exact failure the column prevents.
+    funded_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     producer = relationship("Producer", backref="group_buys")

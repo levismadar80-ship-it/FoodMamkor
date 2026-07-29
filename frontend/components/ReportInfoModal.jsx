@@ -73,8 +73,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
       }}
     >
       <div
-        className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-right"
-        dir="rtl"
+        className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start"
       >
         <h2
           id="report-info-title"
@@ -93,8 +92,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t("placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-right resize-none"
-              dir="rtl"
+              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start resize-none"
             />
           </div>
 
@@ -111,8 +109,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-right"
-              dir="rtl"
+              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start"
             />
           </div>
 

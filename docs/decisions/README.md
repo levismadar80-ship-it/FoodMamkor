@@ -49,6 +49,8 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [026](./ADR-026-error-color-token.md) | Error color token — AA-passing cream + on-dark pair (narrows ADR-019) | Accepted | 2026-07-09 | MEH-1073 |
 | [027](./ADR-027-revenue-model.md) | Revenue model — base free forever, no transaction fees, trigger-gated premium | Accepted | 2026-07-12 | MEH-1147 |
 | [028](./ADR-028-qa-gates-per-tier.md) | QA gates per-tier — CI replaces manual mobile QA for GREEN/YELLOW (amends ADR-016 DoD) | Accepted | 2026-07-13 | MEH-1185 |
+| [031](./ADR-031-outbound-contact-unobservable.md) | Outbound contact is unobservable — copy constraint + CI lexicon gate | Accepted | 2026-07-28 | MEH-1652 |
+| [032](./ADR-032-autonomous-remediation-mode.md) | Autonomous remediation mode — CC finds → fixes → proves → merges; Sapir sees exceptions only | Accepted | 2026-07-28 | MEH-1741 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

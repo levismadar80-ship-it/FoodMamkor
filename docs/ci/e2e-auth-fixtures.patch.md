@@ -1,16 +1,29 @@
 # `Playwright E2E` — enable authenticated coverage (MEH-999)
 
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply
-this. Same shape as [`ui-pattern-guard.patch.md`](./ui-pattern-guard.patch.md)
+this. Same shape as [`repo-guards.patch.md`](./repo-guards.patch.md)
 and [`e2e-gate.patch.md`](./e2e-gate.patch.md).
 
-**This patch is optional.** Nothing is broken without it — MEH-999 already made
-the authed specs *skip with a reason* instead of failing. Applying it converts
+> ## ✅ APPLIED — 26/07, commit `21ccecc` ("Revise secrets for e2e tests in
+> ## GitHub Actions"). Do not apply again.
+>
+> `e2e.yml:168-170` now passes `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` /
+> `DEMO_ADMIN_PASSWORD` into the run, and the header comment at `e2e.yml:28-30`
+> was updated accordingly. **Authenticated coverage runs on every PR.**
+>
+> Proof: run `30220096957` logged `[global-setup] wrote {producer,consumer,admin}
+> storageState` and executed all 6 `25-role-reachability` tests; run
+> `30211526292`, earlier the same day, logged "no `DEMO_*_PASSWORD` is set" and
+> skipped them. Everything below is retained as the record of what was applied
+> and why — the line references describe the **pre-patch** file.
+
+**This patch was optional.** Nothing was broken without it — MEH-999 already made
+the authed specs *skip with a reason* instead of failing. Applying it converted
 a documented coverage gap into real coverage.
 
 ---
 
-## The gap
+## The gap (as it was, pre-`21ccecc`)
 
 The E2E job runs `next start` on the runner and points Playwright at
 `http://localhost:3000` (`e2e.yml:158`). `global-setup.ts:72-80` deliberately

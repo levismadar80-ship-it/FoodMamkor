@@ -12,6 +12,7 @@ import {
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import { OrderWindowCtaNote } from "./OrderWindowStrip";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -89,7 +90,9 @@ function armMailtoFallback(email, t) {
  *           consolidates the old ContactSidebar + ActionRow CTAs);
  *           MEH-1334 chunk 1 (status line + follow/share row removed);
  *           MEH-1551 (degenerate states — sole channel renders a labeled row,
- *           phone reveal swaps in place instead of appending a sibling).
+ *           phone reveal swaps in place instead of appending a sibling);
+ *           MEH-1583 (reveal adopts the geometry of the element it replaces —
+ *           one row anatomy across every cell of the count x state matrix).
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
@@ -140,6 +143,16 @@ const linkAttrs = (key) =>
     ? {}
     : { target: "_blank", rel: key === "website" ? "noopener" : "noopener noreferrer" };
 
+// MEH-1583: the ONE row anatomy. Both full-width affordances — the labeled
+// sole-channel row and the revealed number row — spread this constant, which
+// is what makes "(1 x closed)" and "(1 x open)" provably the same box (zero
+// layout jump on reveal). MEH-1551 fixed the reveal's POSITION but left it
+// wearing pill anatomy (inline-flex + rounded-full + no w-full), so a card
+// could show two geometric languages at once. Only the trailing state classes
+// (hover/text colour) differ per affordance.
+const ROW_ANATOMY =
+  "flex w-full items-center gap-2 min-h-[44px] px-3 rounded-[10px] border border-border bg-white text-sm";
+
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
@@ -152,13 +165,28 @@ export default function ContactCard({ producer, isVacation }) {
 
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
-  const channels = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
+  const available = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
+
+  // MEH-1583: once the number is on screen the phone LEAVES the channel map
+  // entirely and the number takes its own full-width row as the last child of
+  // the same container. Previously the phone entry stayed in the map and the
+  // pill rendered in its slot, so a revealed card mixed a wide pill with 44px
+  // circles on one line (Sapir 26/07, phone + instagram).
+  const revealed = phoneRevealed && Boolean(producer.phone);
+  const channels = revealed ? available.filter((c) => c.key !== "phone") : available;
 
   // MEH-1551: exactly one surviving channel used to render a lone unlabeled
   // 44px circle floating on its own — a degenerate state MEH-1334's icon-row
   // design never specified (it assumed a row of 3-6). One channel = one quiet
   // labeled row instead.
+  // MEH-1583: computed AFTER the reveal filter on purpose — revealing the
+  // phone on a 2-channel card leaves one survivor, and leaving THAT as a bare
+  // circle would re-create the very orphan MEH-1551 closed.
   const single = channels.length === 1;
+
+  // The row also has to render when the reveal emptied `channels` (the
+  // sole-channel card): the number row is then its only child.
+  const showChannelRow = channels.length > 0 || revealed;
 
   // Shared by both affordances (circle + single row) so the tracking and the
   // desktop phone-reveal behave identically whichever one is rendered.
@@ -182,8 +210,13 @@ export default function ContactCard({ producer, isVacation }) {
     }
   };
 
+  // MEH-1649: data-testid="contact-card" is a stable locator for the card
+  // boundary. The QA harness asserts the closed-window note is a DOM
+  // DESCENDANT of this container, not merely "not floating" — a note flung
+  // anywhere else would satisfy the negative check alone (MEH-1592). Class
+  // selectors are brittle; docs/E2E-LOCATORS.md mandates data-testid.
   return (
-    <div className="bg-white rounded-lg p-6 border border-border">
+    <div className="bg-white rounded-lg p-6 border border-border" data-testid="contact-card">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
         {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
             line (3 states, one status home per page — revision-2 #2). */}
@@ -206,38 +239,28 @@ export default function ContactCard({ producer, isVacation }) {
           }}
         />
 
+        {/* MEH-1649: the closed-window context line lives HERE — inside the
+            card, directly under the button it explains. It previously mounted
+            outside the card in both viewports (ContactSidebar above the card
+            on desktop, ProducerDetail above it on mobile), which read as text
+            floating on the cream background, detached from its CTA. Placing it
+            in ContactCard covers both viewports at once, since this component
+            is the one rendered in each. The MEH-1546 sticky constraint is
+            untouched: it was about wrapping the <aside>, and this is strictly
+            inside the card. Self-gating is unchanged — renders nothing unless
+            the window is closed, so open/null-window cards are byte-identical. */}
+        <OrderWindowCtaNote orderWindow={producer.order_window} />
+
         {/* Ready-made questions as quiet text links under the CTA. */}
         <WhatsAppQuestionChips producer={producer} />
 
         {/* Quiet secondary-channel icon row — MEH-1334 chunk 2: circular
             hairline-bordered 44px targets on white, primary-dark glyph (the
             approved mockup's .iconrow anatomy). */}
-        {channels.length > 0 && (
+        {showChannelRow && (
           <div className="flex flex-wrap items-center gap-2 mt-3 mb-1" role="list">
             {channels.map((channel) => {
               const { key, Icon, href } = channel;
-
-              // MEH-1551: the desktop-revealed number pill replaces the phone
-              // affordance IN PLACE. It used to render as a sibling block below
-              // the row (old :223-231), so the circle and the number read as two
-              // unrelated blobs. Number is dir="ltr" + .numeric so RTL can't
-              // reorder the digits; still a tel: link so a desktop softphone /
-              // click-to-call extension can act on it.
-              if (phoneRevealed && key === "phone" && producer.phone) {
-                return (
-                  <a
-                    key={key}
-                    href={`tel:${producer.phone}`}
-                    dir="ltr"
-                    data-testid="revealed-phone"
-                    role="listitem"
-                    className="numeric inline-flex items-center gap-2 px-3 min-h-[44px] rounded-full border border-border bg-white text-sm text-text focus-visible:ring-2 focus-visible:ring-primary/40"
-                  >
-                    <Phone size={16} className="text-primary-dark" aria-hidden="true" />
-                    {producer.phone}
-                  </a>
-                );
-              }
 
               // MEH-1551: sole channel → a labeled quiet row (the visible label
               // IS the accessible name here, so no aria-label overriding it).
@@ -250,7 +273,7 @@ export default function ContactCard({ producer, isVacation }) {
                     role="listitem"
                     data-testid="contact-single-row"
                     onClick={(e) => onChannelClick(e, channel)}
-                    className="flex w-full items-center gap-2 min-h-[44px] px-3 rounded-[10px] border border-border bg-white text-sm text-primary-dark hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className={`${ROW_ANATOMY} text-primary-dark hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
                   >
                     <Icon size={18} aria-hidden="true" />
                     {t(`producer.detail.contact_card.single.${key}`)}
@@ -264,6 +287,10 @@ export default function ContactCard({ producer, isVacation }) {
                   href={href(producer)}
                   {...linkAttrs(key)}
                   role="listitem"
+                  // MEH-1583: stable locator for the VRT reveal shot — the
+                  // circle's only other handle is its Hebrew aria-label, and
+                  // E2E must not key on copy (docs/E2E-LOCATORS.md).
+                  data-testid={`contact-channel-${key}`}
                   aria-label={t(`producer.detail.contact_card.aria.${key}`)}
                   title={t(`producer.detail.contact_card.aria.${key}`)}
                   onClick={(e) => onChannelClick(e, channel)}
@@ -273,6 +300,28 @@ export default function ContactCard({ producer, isVacation }) {
                 </a>
               );
             })}
+
+            {/* MEH-1583: the revealed number is the LAST child of the same
+                container and wears ROW_ANATOMY, so it reads as one more row
+                rather than a pill wedged between circles. w-full + the
+                container's flex-wrap put it on its own line under any
+                surviving circles. dir="ltr" + .numeric sit on the NUMBER SPAN
+                only — on the row they would flip the icon to the visual end in
+                RTL; on the span they just stop the digits reordering. Still a
+                tel: link so a desktop softphone / click-to-call can act on it. */}
+            {revealed && (
+              <a
+                href={`tel:${producer.phone}`}
+                data-testid="revealed-phone"
+                role="listitem"
+                className={`${ROW_ANATOMY} text-text focus-visible:ring-2 focus-visible:ring-primary/40`}
+              >
+                <Phone size={18} className="text-primary-dark" aria-hidden="true" />
+                <span dir="ltr" className="numeric">
+                  {producer.phone}
+                </span>
+              </a>
+            )}
           </div>
         )}
 

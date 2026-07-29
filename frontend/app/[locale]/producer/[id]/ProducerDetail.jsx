@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
@@ -47,6 +47,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const { activeTab, sectionRefs, tabBarRef, scrollToSection } = useTabScroll();
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+
+  // MEH-1693: the post-save AlertPrefsPanel is owned HERE, not by either heart.
+  // The page has two hearts on different surfaces — the hero overlay circle
+  // (ImageGallery, mobile) and the quiet row (ProducerHeader, desktop) — and
+  // they are siblings, so this is their only common ancestor. Both call
+  // openAlerts; ProducerHeader renders the single panel (its mount sits in
+  // normal flow, clear of both the pinned row and the absolute hero overlay).
+  // One owner ⇒ exactly one panel in the DOM regardless of which heart fired.
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const openAlerts = useCallback(() => setAlertsOpen(true), []);
+  const closeAlerts = useCallback(() => setAlertsOpen(false), []);
 
   // MEH-1306: deep-link landing for the edit tab's "view on page" links. The
   // sections mount only after the client fetch resolves, so the browser's
@@ -124,6 +135,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           producerName={producer.name}
           verified={producer.verification_tier === "verified"}
           shareUrl={shareUrl}
+          onFavorited={openAlerts}
         />
         <div className="flex justify-end">
           <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
@@ -178,7 +190,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             primaryCategory={primaryCategory}
             hasImages={hasImages}
             shareUrl={shareUrl}
+            alertsOpen={alertsOpen}
+            onOpenAlerts={openAlerts}
+            onCloseAlerts={closeAlerts}
           />
+          {/* MEH-1691: the weekly order-acceptance strip that used to render
+              here was removed — the order window is stated exactly once, as the
+              derived status inside ProducerHeader's meta line. DO NOT re-add a
+              second schedule render to this column (MEH-1305 A discipline). */}
           {/* Mobile/tablet inline contact card — the IntersectionObserver
               target for useStickyBar. Must stay the first child after
               ProducerHeader so the sticky bar fires at the same scroll
@@ -194,6 +213,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
+            {/* MEH-1649: the closed-window note moved INSIDE ContactCard,
+                directly under the primary CTA. Above the card it sat on the
+                cream background, visually detached from the button it
+                explains — the same defect Sapir reported on desktop. The
+                earlier "never inside it" note here assumed the card's other
+                content would separate the line from the CTA; under the button
+                itself (above the FAQ chips) it is adjacent to exactly what it
+                describes. */}
             <ContactCard producer={producer} isVacation={isVacation} />
           </div>
           <ProducerSections

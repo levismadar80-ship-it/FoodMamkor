@@ -329,12 +329,32 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   // form must not open on two unexplained numbers), but expanded when the row
   // already carries coordinates, so editing never hides a value the owner
   // previously set. Seeded once via useState so a re-render can't reopen a
-  // disclosure the owner just closed.
+  // disclosure the owner just closed. Null-checked rather than String()-cast:
+  // String(null) is "null", which is !== "" and would open the disclosure on a
+  // NEW location if a caller ever passed null for an unset coordinate. Both of
+  // today's callers (EMPTY_FORM, toEditForm) hand over "", so this is a guard
+  // on the invariant, not a live bug.
   const [coordsOpen] = useState(
-    () => String(initial.lat) !== "" && String(initial.lng) !== "",
+    () =>
+      initial.lat != null &&
+      initial.lat !== "" &&
+      initial.lng != null &&
+      initial.lng !== "",
   );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  // MEH-1579: the city/address hint follows the precision selected RIGHT NOW —
+  // an `approximate` location renders a pin in the area with no address, so a
+  // flat "shown in navigation" line promised a surface the customer never sees
+  // (MEH-1539 standard, principle 2). Reads `form.location_precision`, so it
+  // re-renders live as the owner switches the select — no save round-trip.
+  // REUSES: the per-option `precision_helper` mechanism two fields above.
+  const placeHint = tForm(
+    form.location_precision === "approximate"
+      ? "place_hint_approximate"
+      : "place_hint_exact",
+  );
 
   return (
     <form
@@ -359,8 +379,15 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder
           (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
-          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment. */}
-      <div className="grid grid-cols-2 gap-2">
+          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment.
+          MEH-1595: single column below `sm`. Two columns gave each input 134px
+          at 375px (108px usable) while the example placeholders measure
+          125–186px, so four of five were cut mid-example — `למשל: 050-1234567`
+          rendered as `של: 050-1234567`, losing the word that marks it as an
+          example. The same squeeze wrapped `kind_helper` to 5 lines and
+          `precision_helper` to 4. Full width fixes both at once; `sm:` and up
+          is unchanged. */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Field label={tForm("kind_label")} hint={tForm("kind_helper")}>
           <select
             value={form.kind}
@@ -392,14 +419,14 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             placeholder={tForm("label_placeholder")}
           />
         </Field>
-        <Field label={tForm("city_label")} hint={tForm("place_hint")}>
+        <Field label={tForm("city_label")} hint={placeHint}>
           <TextInput
             value={form.city}
             onChange={set("city")}
             placeholder={tForm("city_placeholder")}
           />
         </Field>
-        <Field label={tForm("address_label")} hint={tForm("place_hint")}>
+        <Field label={tForm("address_label")} hint={placeHint}>
           <TextInput
             value={form.address}
             onChange={set("address")}
@@ -443,8 +470,13 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
         open={coordsOpen}
         className="rounded-[10px] border border-border bg-surface px-3 py-2"
       >
+        {/* MEH-1595: 44px minimum tap target — the row was 16px tall, on the
+            one control an owner has to go looking for. Padding + min-height
+            only: no `display` override, because anything other than the
+            default `list-item` drops the disclosure triangle that signals the
+            row is expandable. */}
         <summary
-          className="cursor-pointer text-xs font-medium text-fg-muted"
+          className="min-h-[44px] cursor-pointer py-3 text-xs font-medium text-fg-muted"
           data-testid="location-coords-toggle"
         >
           {tForm("coords_summary")}

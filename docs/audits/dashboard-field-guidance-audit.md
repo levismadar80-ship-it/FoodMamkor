@@ -51,7 +51,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | `description` | `DescriptionCard` | `desc_label` | — | ✓ `desc_placeholder` | ✓ `desc_where` | ok |
 | `tagline` | `DescriptionCard` | `tagline_label` | — | ✓ `tagline_placeholder` | ✓ `tagline_where` — card in search/lists | ok |
 | assist: sell / area / special | `DescriptionCard` | `q_*_label` | — | ✓ `q_*_placeholder` | — (input to the generator, never published) | ok |
-| assist: instagram | `DescriptionCard` | `instagram_label` | ✓ `instagram_hint` | ✓ literal URL | — | ok |
+| assist: instagram | `DescriptionCard` | `instagram_label` — username framing (MEH-1608) | ✓ `instagram_hint` | ✓ `instagram_placeholder` — bare handle (was a hardcoded literal URL, the exact shape that broke the public link) | — | ok |
 | `top_product_name` | `PricingCard` | `field_top_product` | ✓ `scope_helper` | ✓ `top_product_placeholder` | ✓ `scope_helper` — highlighted card atop the product list | ok |
 | `price_range` | `PricingCard` | `field_price_range` | ✓ `price_hint` | ✓ `price_range_placeholder` | ✓ `scope_helper` | ok |
 | owner name | `OwnerStoryCard` | `contact_label` | — | ✓ `contact_placeholder` | ✓ `intro` + placeholder text | ok |
@@ -74,28 +74,55 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | `kind` | `LocationsEditor` | ✓ `kind_label` | ✓ `kind_helper` — one line per option (סניף / נקודת איסוף / דוכן שוק) | — (select) | ✓ `intro` (MEH-1563) | ok |
 | `precision` | `LocationsEditor` | ✓ `precision_label` | ✓ `precision_helper` — names what the customer sees per option | — (select) | ✓ `intro` | ok |
 | `label` | `LocationsEditor` | ✓ `label_label` | ✓ `label_hint` — "השם שהלקוחות יראו לצד הנקודה" | ✓ `label_placeholder` | ✓ `intro` | ok |
-| `city` | `LocationsEditor` | ✓ | ✓ `place_hint` | ✓ `city_placeholder` | ✓ `place_hint` + `intro` | ok |
-| `address` | `LocationsEditor` | ✓ | ✓ `place_hint` | ✓ `address_placeholder` | ✓ `place_hint` + `intro` | ok |
+| `city` | `LocationsEditor` | ✓ | ✓ `place_hint_exact` / `place_hint_approximate` — precision-aware, switches live with the select (MEH-1579) | ✓ `city_placeholder` | ✓ the same precision-aware hint + `intro` | ok |
+| `address` | `LocationsEditor` | ✓ | ✓ `place_hint_exact` / `place_hint_approximate` — names that משוער hides the full address (MEH-1579) | ✓ `address_placeholder` | ✓ the same precision-aware hint + `intro` | ok |
 | `phone` | `LocationsEditor` | ✓ | — | ✓ `phone_placeholder` | ✓ `intro` | ok |
 | `lat` / `lng` | `LocationsEditor` | ✓ | ✓ `coords_hint` — optional escape hatch, behind the collapsed `coords_summary` disclosure | — (numeric escape hatch) | ✓ `intro` | ok |
 | `hours` | `LocationsEditor` | ✓ `hours_label` | — still free text, while `HoursCard` next door is a structured editor (unchanged by MEH-1563) | ✓ `hours_placeholder` | ✓ `intro` | ok |
+| `producer_license` | `LicenseCard` | ✓ `field_label` | ~ `required_hint` when a category demands it | — (regulated number, no example) | ✓ `where` (MEH-1597) — kept on file only, never shown publicly | ok |
+| `is_vegan` / `is_vegetarian` / gluten facility | `DietaryScopeCard` | ✓ (questions) | ✓ `helper` + `scope_helper` (MEH-1597) | — (radio) | ✓ `scope_helper` — the search filters they drive | ok |
+| product `name` | `ProductsSection` | ✓ `name_label` | — | ✓ `name_placeholder` | ✓ card-level `where` (MEH-1597) | ok |
+| product `description` | `ProductsSection` | ✓ `description_label` | — | ✓ `description_placeholder` | ✓ card-level `where` | ok |
+| `price_min` | `ProductsSection` | ✓ `price_min_label` | ✓ `price_hint` | ✓ `price_min_placeholder` (MEH-1597) | ✓ card-level `where` | ok |
+| `price_max` | `ProductsSection` | ✓ + optional suffix | ✓ `price_hint` | ✓ `price_max_placeholder` (MEH-1597) | ✓ card-level `where` | ok |
+| product image | `ProductsSection` | ✓ `image_label` | — | — (file) | ✓ card-level `where` | ok |
+| `instagram` | `ContactChannelsCard` | ✓ | — | ✓ `instagram_placeholder` — bare handle (MEH-1597) | ✓ card-level `subtitle` | ok |
+| `website` | `ContactChannelsCard` | ✓ | — | ✓ `website_placeholder` | ✓ card-level | ok |
+| `whatsapp_group` | `ContactChannelsCard` | ✓ | — | ✓ `whatsapp_group_placeholder` | ✓ card-level | ok |
+| `contact_email` | `ContactChannelsCard` | ✓ | — | ✓ `email_placeholder` | ✓ card-level | ok |
+| `facebook` | `ContactChannelsCard` | ✓ | — | ✓ `facebook_placeholder` | ✓ card-level | ok |
 
 ### Gaps
 
-| Field | Card | Label | Helper | Placeholder | Where | Verdict |
-|---|---|---|---|---|---|---|
-| `producer_license` | `LicenseCard` | ✓ `field_label` | ~ `required_hint` **only when a category demands it** | ✗ | ✗ — never says whether the number is shown publicly or used for the ✓ badge | missing-guidance |
-| `is_vegan` / `is_vegetarian` / gluten facility | `DietaryScopeCard` | ✓ (questions) | ~ `helper` says answers are cross-checked | — | ✗ — no line on which filters/badges the answers drive | missing-guidance |
-| product `name` | `ProductsSection` | ✓ `name_label` | ✗ | ✓ `name_placeholder` | ✗ | partial |
-| product `description` | `ProductsSection` | ✓ | ✗ | ✓ `description_placeholder` | ✗ | partial |
-| `price_min` | `ProductsSection` | ✓ | ✓ `price_hint` | ✗ | ✗ | partial |
-| `price_max` | `ProductsSection` | ✓ + optional suffix | ✓ `price_hint` | ✗ | ✗ | partial |
-| product image | `ProductsSection` | ✓ `image_label` | ✗ | — | ✗ | missing-guidance |
-| `instagram` | `ContactChannelsCard` | ✓ (label carries the format) | ✗ | ✗ | ✓ card-level | partial |
-| `website` | `ContactChannelsCard` | ✓ | ✗ | ✗ | ✓ card-level | partial |
-| `whatsapp_group` | `ContactChannelsCard` | ✓ | ✗ | ✗ | ✓ card-level | partial |
-| `contact_email` | `ContactChannelsCard` | ✓ | ✗ | ✗ | ✓ card-level | partial |
-| `facebook` | `ContactChannelsCard` | ✓ | ✗ | ✗ | ✓ card-level | partial |
+**None open.** The twelve rows below were the audit's remaining gaps; MEH-1597
+closed all of them in one batch. They are kept here as the record of what was
+missing and what closed it — the live verdicts are in the standard-met table
+above.
+
+| Field | Card | What was missing | Closed by |
+|---|---|---|---|
+| `producer_license` | `LicenseCard` | no "where" line — never said whether the number is shown publicly | ✓ `where` — states it is kept on file only and never shown. Deliberately silent on the ✓ badge: filling the number does not grant it (admin-granted after document review, ADR-022), and the earlier framing of this row conflated the two |
+| `is_vegan` / `is_vegetarian` / gluten facility | `DietaryScopeCard` | `helper` gave the mechanism (answers are cross-checked), never the payoff | ✓ `scope_helper` — names the search filters the answers drive and that they read as the owner's own declaration |
+| product `name` | `ProductsSection` | no "where" | ✓ card-level `where` |
+| product `description` | `ProductsSection` | no "where" | ✓ card-level `where` |
+| `price_min` | `ProductsSection` | no placeholder, no "where" | ✓ `price_min_placeholder` + card-level `where` |
+| `price_max` | `ProductsSection` | no placeholder, no "where" | ✓ `price_max_placeholder` + card-level `where` |
+| product image | `ProductsSection` | no "where" | ✓ card-level `where` |
+| `instagram` | `ContactChannelsCard` | no placeholder | ✓ `instagram_placeholder` — a **bare handle**, not a URL: `ContactCard.jsx:105-106` composes the URL itself, so a URL here would render a doubled, dead link. Since MEH-1608 the server also normalizes URL/@ input to a bare handle on every producer write schema (`_normalize_instagram`, schemas.py) |
+| `website` | `ContactChannelsCard` | no placeholder | ✓ `website_placeholder` — full URL, matching `_url_scheme_validator` |
+| `whatsapp_group` | `ContactChannelsCard` | no placeholder | ✓ `whatsapp_group_placeholder` — the `https://chat.whatsapp.com/…` shape its validator requires |
+| `contact_email` | `ContactChannelsCard` | no placeholder | ✓ `email_placeholder` |
+| `facebook` | `ContactChannelsCard` | no placeholder | ✓ `facebook_placeholder` — full URL, matching `_url_scheme_validator` |
+
+**One documented deviation from standard item 3.** The five ContactChannels
+placeholders carry no `לדוגמה:` prefix, unlike every other placeholder in the
+dashboard. Measured at 375px: with the prefix, `whatsapp_group` needed 330px of
+a 277px usable width and `facebook` 320px — both clipped. The
+`https://chat.whatsapp.com/` host alone is 26 of roughly 36 available
+characters, so the prefix cannot coexist with the shape the validator demands.
+All five inputs are also `dir="ltr"`, where a Hebrew prefix reorders under bidi.
+Without the prefix all five clear their width (47–163px of headroom). Reverting
+this needs either a shorter host or a wider field, not a copy tweak.
 
 ---
 
