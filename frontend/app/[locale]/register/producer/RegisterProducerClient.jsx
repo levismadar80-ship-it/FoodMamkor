@@ -43,6 +43,28 @@ const DESCRIPTION_PENDING_KEY = "description_pending";
 // (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
 const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 
+// MEH-1769: a stored draft only earns the resume banner when the seller
+// actually entered something. Every field write mirrors the WHOLE form to
+// localStorage (setAndSave → saveDraft, :~281), so the stored object is
+// normally EMPTY_FORM-shaped with empty strings — its mere presence proves
+// nothing about whether there is anything to resume.
+// The pre-1769 condition tested 3 of the 12 fields
+// (`producer_name || name || email`) and was wrong in both directions: a
+// draft where the seller had only picked a city or typed a phone never
+// offered a resume, and every field added to EMPTY_FORM since was invisible
+// to it by default. Checking every persisted value closes both.
+// `password` is stripped before the write (saveDraft, :~239) so it can never
+// appear here; the guard is defensive, not load-bearing.
+function hasDraftContent(parsed) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  return Object.entries(parsed).some(([field, value]) => {
+    if (field === "password") return false;
+    if (typeof value === "string") return value.trim() !== "";
+    if (Array.isArray(value)) return value.length > 0;
+    return Boolean(value);
+  });
+}
+
 const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
@@ -121,6 +143,15 @@ function RegisterProducerPageBody() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // MEH-1769: false on the server AND on the first client render, raised only
+  // by the mount effect below once the storage read has resolved. That ordering
+  // is what keeps the banner off a first paint entirely — there is no
+  // pre-hydration frame in which it can appear and then vanish, so this is NOT
+  // the accepted first-paint flash BusinessCtaLink.jsx documents for MEH-1489
+  // (that one paints a default branch and swaps it; this one paints nothing).
+  // Same shape as InstallPrompt.jsx: default hidden, storage read inside an
+  // effect. Do not move this read into a lazy useState initialiser — that runs
+  // during SSR too, where localStorage does not exist.
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
@@ -211,8 +242,11 @@ function RegisterProducerPageBody() {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.producer_name || parsed.name || parsed.email) setShowDraftBanner(true);
+        // MEH-1769: hasDraftContent (:~46) replaces the 3-field truthiness
+        // test. An empty-storage visit never reaches here at all (getItem
+        // returns null); a draft that exists but holds nothing the seller
+        // typed no longer earns a banner promising a "מילוי קודם".
+        if (hasDraftContent(JSON.parse(saved))) setShowDraftBanner(true);
       }
     } catch {}
   }, []);
@@ -265,6 +299,18 @@ function RegisterProducerPageBody() {
       // Bad JSON or storage disabled — clear and ignore.
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
     }
+    setShowDraftBanner(false);
+  };
+
+  // MEH-1769: "לא" has to stay dismissed across a reload. showDraftBanner is
+  // component state only, so hiding it left the stored draft intact and the
+  // mount read above re-raised the banner on the very next load — the seller
+  // could decline the same prompt indefinitely. Dropping the draft IS what
+  // "no, don't continue the previous fill" means, and it keeps the decision in
+  // the one key that already owns it instead of adding a second dismissed-flag
+  // key that the next keystroke would immediately contradict.
+  const dismissDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     setShowDraftBanner(false);
   };
 
@@ -497,11 +543,11 @@ function RegisterProducerPageBody() {
         )}
 
         {showDraftBanner && step < STEP.CONFIRM && (
-          <div className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
+          <div data-testid="register-draft-banner" className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
-              <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
-              <button onClick={() => setShowDraftBanner(false)} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
+              <button data-testid="register-draft-continue" onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
+              <button data-testid="register-draft-dismiss" onClick={dismissDraft} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
             </div>
           </div>
         )}

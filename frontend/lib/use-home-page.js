@@ -551,12 +551,21 @@ export function useHomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // MEH-1645: set / toggle-off the delivery-day refinement. Only reachable
-  // while a city filter is active (the day row is progressive-disclosure UI
-  // — DeliveryDayRow renders null without cityActive). Selecting the active
-  // day again clears it.
+  // MEH-1645: set / toggle-off the delivery-day refinement. Selecting the
+  // active day again clears it.
+  //
+  // MEH-1771: the day row is now ALWAYS rendered (ghost state without a
+  // city), so this is reachable with no city set. A day still requires a
+  // city — filtering by day alone returns meaningless results — so instead
+  // of the old silent `return`, ask for the missing precondition: open the
+  // LocationModal. Same modal handleDeliveryCta opens, and its onSelectCity
+  // IS handleCitySelected, so the pick flows through the one existing path;
+  // no new city-application path is introduced here.
   const handleDaySelected = (day) => {
-    if (!filters.delivery_city) return;
+    if (!filters.delivery_city) {
+      setLocationModalOpen(true);
+      return;
+    }
     setGeoEmptyNotice(false);
     const next = filters.delivery_day === day ? "" : day;
     const newFilters = { ...filters, delivery_day: next };

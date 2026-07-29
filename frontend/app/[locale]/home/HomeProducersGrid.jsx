@@ -154,8 +154,9 @@ export function HomeProducersGrid({
         onClear={onClearLocation}
       />
 
-      {/* MEH-1645: progressive-disclosure day refinement — renders only while
-          a city filter is active (DeliveryDayRow self-gates on cityActive). */}
+      {/* MEH-1645 day refinement, made permanently visible in MEH-1771: always
+          rendered — without a city it self-renders a muted ghost row + hint,
+          and a pill click routes into the LocationModal (handleDaySelected). */}
       <DeliveryDayRow
         cityActive={cityActive}
         dayActive={dayActive}
