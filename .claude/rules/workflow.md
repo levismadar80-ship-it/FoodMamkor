@@ -152,6 +152,48 @@ wrong answer.
 
 ---
 
+## ⏳ TEMPORARY — local adversarial review (expires 2026-08-01)
+
+**Delete this whole section on 2026-08-01.** Sapir's decision, 29/07, recorded
+under MEH-1761.
+
+**Why:** the CI adversarial reviewer runs without a credential (**MEH-1734** /
+MEH-1735) and fails on every commit repo-wide. It is `continue-on-error` and is
+**not** in `ci-gate`'s `needs:`, so its red does not block anything — which also
+means rule 5a currently buys nothing.
+
+**Substitute, per PR:**
+
+1. Implement per the ticket's prompt block.
+2. Push and open the PR **non-draft**. A draft reports zero gates — and since
+   the MEH-1582 patch went live (`pr-checks.yml` `check_ran`/`strict_ok`) a
+   draft's required jobs are suppressed and the gate now goes **red**, not
+   falsely green.
+3. Run `/adversarial-review` **locally in the session** on the diff. Fix every
+   finding. Re-run if the fix changed anything.
+4. In the PR body, paste the verdict and note *"local review, CI reviewer
+   uncredentialed (MEH-1734)"*.
+5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
+   actually ran — `conclusion: success`, not `skipped`.
+6. **Ignore the `claude-review` job's red. Never edit `claude-review.yml`.**
+
+> **State the limitation plainly in the PR — do not dress it up.** The maker and
+> the checker are the same session, so this is a self-review and carries none of
+> the independence the CI reviewer was there to provide. It is a stopgap that is
+> strictly better than the current no-op, and strictly worse than a second pair
+> of eyes. Never present it as independent review.
+>
+> This is the same trap MEH-1757 §3 names for self-authored VEX: *"a VEX written
+> internally that nobody reviews becomes a quiet way to disappear findings."*
+> Writing the limitation into the PR body is what keeps it visible.
+
+**On 2026-08-01:** if MEH-1734 has shipped, delete this section and rule 5a's
+pointer to it. If it has not, that is a decision for Sapir — not a silent
+extension. An expiry nobody actions is a promise, and this repo already has the
+empty MEH-487 calibration tally to show for that class.
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
@@ -200,6 +242,7 @@ wrong answer.
      named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
    [.claude/rules/testing.md](./testing.md).
+   **⏳ Temporary substitution in force — see "Local adversarial review" below.**
 5. **Tests before implementation.** See
    [.claude/rules/testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one
