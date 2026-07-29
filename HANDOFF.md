@@ -3,6 +3,62 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-26 — MEH-1553 email_verified creation-paths fix + pinning test (MERGED, PR #2154, squash `d521ea5`)
+
+- **MEH-1553** (auth = HIGH-RISK, but **end-to-end authority per הכרעת ספיר 26/07** — Phase 0 → Phase 1 → self-QA → merge with no WAIT between phases; `feature/meh-1553-email-verified-creation-paths`): closed a class of relying on the `email_verified` **column default (False)** for a security-relevant flag instead of setting it explicitly. **Exactly 3 code files.**
+- **The fixes (line numbers as merged):** (1) `auth.py::register_producer_oauth` new-user `User(**kwargs)` (`auth.py:913`) sets `email_verified=True`, one-to-one with `/auth/google` (`:788`) + `/auth/apple` (`:1113`) — without it an OAuth business owner fell to default False, saw the verify banner, and was blocked by `require_verified_producer` (MEH-170 gap → MEH-1164 money-path blocker). (2) `scripts/create_admin.py` both branches (`:63` existing→upgrade, `:74` new). (3) misleading upgrade-path comment (`auth.py:553`) corrected — verification is **not enforced** there (guard only needs a valid JWT); the unverified case is covered downstream by the banner + `require_verified_producer`. Comment only.
+- **Pinning test** `tests/test_email_verified_creation_paths.py` — **repo-root `tests/`, NOT the spec's `backend/tests/`** which doesn't exist (`tests/CLAUDE.md`; flagged in the PR). 6 paths pinned; reuses the `tests/test_producer_oauth.py` monkeypatch pattern with zero production changes (STOP-(b) never fired). **Pins proven non-vacuous:** reverting the two production files to their pre-fix versions fails **exactly 4 of 8** (both producer-OAuth + both create_admin) while the 4 already-correct paths stay green.
+- **Phase 0 `User(` audit:** 6 sites — `auth.py:316`/`664` correct False+token (password flows), `:788`/`1113` correct True (OAuth siblings), `:913` **fixed**, `create_admin.py:74` **fixed** + `:63` upgrade-write **fixed**; `models.py:359` is the class def (N/A). **No out-of-scope site with a wrong flag → STOP-(a) never fired.**
+- **Two process lessons worth keeping.** (a) **Draft-trap (rule 21) caught live:** as a draft, both required aggregators read `success` while `Backend tests (pytest)` + `Backend lint (ruff)` were `skipped` — a skipped leg still aggregates green, so that green meant "nothing ran." Marked ready; every green claimed came from a post-ready run (pytest really executed 9m24s + alembic upgrade + 36-table verify + drift check). (b) **Rule 25 merge-storm, 6 sync cycles:** staging took ~13 merges while the backend suite needs ~10 min, so the top-of-`## Unreleased` CHANGELOG entry re-conflicted every pass and the PR kept going un-mergeable. **GitHub's `mergeable_state` reported `dirty` twice when a local dry-run merge was actually clean** — verify locally, don't trust that field. Fixed by dropping CHANGELOG + HANDOFF from the code PR so it touched only the 3 code files (no shared conflict surface); auto-merge then landed it. This entry is that re-add — same pattern as #2177 for #2153.
+- **DoD exception (per ticket):** backend + script + tests only, no UI → mobile check + preview waived (Vercel = *Ignored*, correct). No schema / Alembic / env / backfill.
+- **Owed to Sapir (RED, not done in the PR):** `UPDATE users SET email_verified = true WHERE role = 'admin'` in prod — the fix does **not** backfill existing rows, so the admin banner QA symptom won't clear until this runs.
+- **Reported, deliberately not bundled (wants its own ticket):** `uv.lock` pins **Starlette 0.49.3** → CVE-2026-54283 (CVSS 7.5) + CVE-2026-48710 (Host-header validation bypass). Pre-existing; zero dependencies changed in this diff, so folding a security bump into a bug fix would have broken commit discipline and the 3-file bound.
+- **NB (branch-name):** the harness assigned `claude/meh-1553-email-verified-iztjth` — violates the `claude/*` ban + branch-name gate (workflow rule 3); used the ticket's `feature/meh-1553-email-verified-creation-paths` instead.
+## 2026-07-28 — MEH-1698 (בורר שפה בדסקטופ) הושלם ב-3 chunks + אבחון סחיפת VRT + backfill
+
+**ארבעה PRs מוזגו:** #2353 `8b769894` (chunks 1–2) · #2358 `9b69a4a3` (chunk 3 + כלל) · #2360 `114e4c84` (premise שגוי ב-parity.spec + כלל המחלקה) · ה-PR הזה (docs-only backfill, נחתך מ-`114e4c84`).
+
+**MEH-1698 = Done.** הסטטוס נע Done → In Progress → Done **פעמיים** — נכון ולא artifact: #2353 נשא `Closes` בעוד chunk 3 טרם נשלח.
+
+---
+
+### הממצא המרכזי של היום: ארבעה שערים חלולים, אחד שחסם, ואחד שעבד ויצר את הפער
+
+זו לא רשימת תקלות אלא **דפוס אחד**. שער נמדד לפי מה שהוא **מונע**, לא לפי שמו.
+
+| שער | מה קרה |
+| -- | -- |
+| `Adversarial review (calibration)` | רץ, נכשל, **לא סוקר כלום** — `CLAUDE_CODE_OAUTH_TOKEN` לא מאומת (`claude-review.yml:66`; **לא** `ANTHROPIC_API_KEY` — תיקון שנרשם ב-#2353). `num_turns: 1`, `$0`, 493ms. `continue-on-error: true`. |
+| `E2E gate (required)` | **נקרא required ואינו בערכה.** אדום בשלושת המיזוגים היום, חסם אפס. הערכה = `CI gate` + `Deploy gate` בלבד. |
+| `DO-NOT-MERGE marker gate` | שיניים אמיתיות, אך כלל 30 אוסר על CC לנקות אותו — שער שרק ספיר מפעילה. |
+| `Builder-Model` guard | warn-only עד 2026-08-17, ומאמת **קיום** הצהרה ולא **אמיתותה**. |
+| **`CI gate` / `R_CHANGES`** | **חסם.** `Paths filter` נפל על 5xx של GitHub API; 11 jobs דיווחו `skipped`; ה-guard **סירב** להוריק ריצה שאת ה-scope שלה לא יכול לאמת. עלה קליק אחד. |
+
+**המקרה ההפוך, והוא הממצא של ספיר:** `changelog-branch-guard.sh` (MEH-1602) **עובד בדיוק כמתוכנן** — מוציא לוגים מ-branches של קוד. ה-PR המפצה, docs-only, **חסר כל אכיפה**. התוצאה: **11 מתוך 13 המיזוגים של 28/07 ללא רשומה ביום אחד.** שער שמצליח ויוצר את הפער שנועד לארגן.
+
+**ולמה זה לא bookkeeping:** `#2346` / **MEH-1684** — כתיבה מחדש של אזור החיפוש בהירו — **לא נרשם**. זו הסיבה הישירה לכך שסחיפת ה-VRT נקראה כבלתי-מוסברת. **סשן שלם הושקע בשחזור מה שהיה אמור להיות שורה אחת ב-CHANGELOG.**
+
+*(ללא הצעת תיקון — צורת האכיפה היא הכרעה, לא סקריפט.)*
+
+---
+
+### ⚠️ ממתין לספיר
+
+1. **regen של baselines — שני המשטחים, ואף אחד לא בוצע.** `home` אדום ב-desktop ו-mobile וחוסם כל PR. אבחון מלא ב-CHANGELOG. **שני תנאים לפני כל regen:** (א) אדם פותח את ה-PNG ומאשר שהוא מציג את הירו של MEH-1684; (ב) **דסקטופ דורש צילום והכרעה משלו** — `home-desktop-linux.png` על `bf71e303` מאז 11/07, **17 יום**, ואינו העתק של החלטת הנייד. חידוש עכשיו היה מקבע 68,085px סחיפה לא-מאובחנת.
+2. **`CLAUDE_CODE_OAUTH_TOKEN`** — repo secret או org secret (ל-job אין `environment:`). לא ניתן להבחין בין חסר לפג מהלוגים; `show_full_output: true` יפתור. **לא להוסיף fallback** — job שמוריק בלי לסקור גרוע מ-job שמאדים.
+3. **QA בנייד על staging** — תנאי המיזוג של chunk 1. Vercel החזיר Building→Ignored בכל push, אין preview.
+4. **MEH-1686 טרם מוזג** ונוגע ב-`Header.jsx` — כעת ימוזג **אחרי** MEH-1698 ויפתור התנגשות מול `:12` ו-`:400-402`.
+
+### ידוע ולא נפתח ככרטיס
+
+- **התנגשות כללים:** שער שם ה-branch (MEH-1141) **מחייב** `meh-[0-9]+`, ולכן כל PR המשך לכרטיס סגור פותח אותו מחדש; כלל 29 **אוסר** מזהה של כרטיס Done ב-branch/כותרת/גוף. מילת סגירה = הפתרון הפחות-שגוי. קרה פעמיים היום.
+- **`*.tsbuildinfo` נעדר מכל `.gitignore`.** כמעט נכנס ל-repo ב-#2360; אף שער לא התנגד.
+- **פלייקים תלויי-seed בנייד גדלו 2 → 3** (`03-view-producer-detail`, `04-whatsapp-click`, `06-lightbox`).
+- **MEH-817** — ה-prose מציין EN→HE ככיוון המתרוצץ אך מצטט assertion של HE→EN. סותרים, לא הוכרע.
+
+### NEXT
+
+ה-backfill הזה. **MEH-1700–1703 לא הותחלו במכוון.**
 ## 2026-07-29 (morning) — queue run under the new opt-in rule + docs backfill
 
 **Branch at close:** `feature/meh-1762-docs-backfill-2807`. This entry is the docs-only backfill (rule 31).
