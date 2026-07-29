@@ -16,12 +16,21 @@ import { highlightMatch } from "@/lib/highlightMatch";
  *   empty + focused + recent exist    → recent searches (🕐, localStorage)
  *   empty + focused + no recent       → trending searches (🔥, /search/trending)
  *   ≥2 chars typed                    → live autocomplete (producers / categories / cities)
+ *
+ * MEH-1684: the submit control is a CIRCLE (rounded-full) — it is the single
+ * filled-primary control of the hero zone now that the "גלו בתי עסק" button is
+ * gone from the chips row. Optional `placeholders` (array) rotates example
+ * queries every ROTATE_MS; rotation pauses on focus/typing and never starts
+ * under prefers-reduced-motion (the first string stays put).
  */
 
 // --- Recent searches helpers (localStorage) ---
 const RECENT_KEY = "mehamakor_recent_searches";
 const MAX_RECENT = 5;
 const DEBOUNCE_MS = 300;
+// MEH-1684: rotating-placeholder cadence. ~3.5s is slow enough to finish
+// reading a Hebrew example query before it swaps.
+const ROTATE_MS = 3500;
 const MAX_PER_SECTION = 5;
 const EMPTY_RESULT = { producers: [], products: [], cities: [], categories: [] };
 
@@ -57,7 +66,12 @@ function deleteRecent(query) {
   }
 }
 
-export default function HeroSearch({ placeholder, srLabel, className = "" }) {
+export default function HeroSearch({
+  placeholder,
+  placeholders,
+  srLabel,
+  className = "",
+}) {
   const t = useTranslations("search.hero");
   const router = useRouter();
   // MEH-1078: per-instance ids (useId is SSR-stable) so a transient double-
@@ -75,6 +89,10 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [trending, setTrending] = useState([]);
+  // MEH-1684: rotating placeholder. `phIdx` is 0 on the server and on the first
+  // client paint, so SSR and hydration agree; only the interval advances it.
+  const [phIdx, setPhIdx] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
@@ -84,6 +102,27 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   useEffect(() => {
     setRecentSearches(readRecent());
   }, []);
+
+  // MEH-1684: rotating placeholder (Bobcat pattern — example queries teach what
+  // the field accepts). Paused while the field is focused or holds text, so it
+  // never moves under someone who is reading or typing.
+  // REUSES: components/BackToTop.jsx:71 — matchMedia reduced-motion read.
+  const rotateCount = Array.isArray(placeholders) ? placeholders.length : 0;
+  const rotationPaused = isFocused || value !== "";
+  useEffect(() => {
+    if (rotateCount < 2 || rotationPaused) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(
+      () => setPhIdx((i) => (i + 1) % rotateCount),
+      ROTATE_MS
+    );
+    return () => clearInterval(id);
+  }, [rotateCount, rotationPaused]);
+
+  // Falls back to the static `placeholder` when no rotation list is supplied,
+  // so every existing caller keeps its current behaviour.
+  const activePlaceholder =
+    rotateCount > 0 ? placeholders[phIdx % rotateCount] : placeholder;
 
   // Debounced autocomplete fetch.
   useEffect(() => {
@@ -169,6 +208,9 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   const handleFocus = () => {
     setIsOpen(true);
     setHighlightIdx(0);
+    // MEH-1684: freeze the rotating placeholder for as long as the field is
+    // focused (blur re-arms it — see handleBlur).
+    setIsFocused(true);
     // Fetch trending once per mount, only when input is empty.
     if (!value.trim() && !trendingFetchedRef.current) {
       trendingFetchedRef.current = true;
@@ -261,9 +303,17 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           setHighlightIdx(0);
         }}
         onFocus={handleFocus}
+        // MEH-1684: blur only re-arms the placeholder rotation — the dropdown
+        // keeps its own outside-click close (the mousedown handler above), so a
+        // click ON a dropdown row is not cut short by a blur-driven close.
+        onBlur={() => setIsFocused(false)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        placeholder={activePlaceholder}
+        // MEH-1684: `ps-3.5` puts the text's inset from the pill edge on the
+        // INPUT, not on the wrapper — the dropdown is inset-x-0 against the
+        // wrapper, so padding there would push it out of alignment with the
+        // pill (logical prop: RTL start = right).
+        className="flex-1 min-w-0 ps-3.5 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
         aria-expanded={showAutocomplete || showEmpty}
@@ -280,8 +330,16 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       <button
         type="button"
         onClick={() => submitRaw()}
-        // MEH-991 (HOME-05): filled green square submit per S14 (was icon-only).
-        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-md transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+        // MEH-991 (HOME-05): filled green submit per S14 (was icon-only).
+        // MEH-1684: rounded-md → rounded-full. The Airbnb-editorial pill wants a
+        // circle riding inside it, and with the "גלו בתי עסק" button gone from
+        // the chips row this is the hero zone's ONE filled-primary control.
+        // DO NOT add `.focus-ring` here — it sets `outline: none` and swaps in a
+        // 40%-opacity PRIMARY ring, which lands on the pill's white fill at
+        // ~1.6:1 and fails WCAG 1.4.11's 3:1 for focus indicators. On the cream
+        // chips the same ring is fine; on this control the browser default
+        // outline is the stronger indicator, so it is deliberately left alone.
+        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-full transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >

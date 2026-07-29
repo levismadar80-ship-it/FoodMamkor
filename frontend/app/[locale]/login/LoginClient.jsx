@@ -241,7 +241,8 @@ function LoginPageBody() {
                 onBlur={() => setEmailTouched(true)}
                 required
                 // MEH-991 (LOGIN-04): S9 email field shows a format example.
-                placeholder="name@example.com"
+                // MEH-1617: value moved to auth.login.email_placeholder.
+                placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   emailInvalid

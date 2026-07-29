@@ -44,8 +44,9 @@ SITE_DOMAIN = "mehamakor.co.il"
 
 # MEH-1587: the ONLY Producer.status that may enter the onboarding sequence.
 # The four bodies below are written in Sapir's first person and assume a
-# reviewed, published business ("עברתי על הפרופיל שלכם, והכל נראה טוב" :213;
-# "אם הפרופיל שלכם פעיל" :137). Before this filter the candidate query gated
+# reviewed, published business ("I went over your profile and everything
+# looks good" :213; "if your profile is active" :137 — English paraphrases
+# of the Hebrew copy at those lines). Before this filter the candidate query gated
 # on created_at + NULL-column only, so a REJECTED business received the full
 # 30-day coaching sequence — a founder-credibility failure, not a copy bug.
 #
@@ -257,8 +258,9 @@ _EMAIL_5B_BODY = """\
 
 
 def _greeting(first_name: str) -> str:
-    """Build the opening "היי X," line. Falls back to "היי," when the user
-    has no parseable first name (User.name None/empty/whitespace-only)."""
+    """Build the opening Hebrew greeting line ("Hi X,"). Falls back to the
+    bare greeting ("Hi,") when the user has no parseable first name
+    (User.name None/empty/whitespace-only)."""
     return f"היי {first_name}," if first_name else "היי,"
 
 

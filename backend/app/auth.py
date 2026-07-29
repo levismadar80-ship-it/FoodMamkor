@@ -136,6 +136,29 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
             pass
 
 
+# MEH-1627: RFC 6750 §3 challenge on every access-token rejection. The
+# frontend interceptor (frontend/lib/api.js:56) keys its silent refresh off
+# the 401 status alone, so this header is protocol correctness rather than
+# behaviour — but it is what makes "the token you sent is invalid"
+# machine-distinguishable from "you sent no token at all" (which returns
+# None, not 401 — see get_current_user_optional).
+# DO NOT attach to a 403 — 403 means the identity resolved and was refused
+# (blocked account / wrong role); re-authenticating cannot help, and a
+# WWW-Authenticate there would tell the client to retry a hopeless refresh.
+_INVALID_TOKEN_HEADERS = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
+
+# MEH-1627: the *missing* credential carries a bare challenge, no error code.
+# RFC 6750 §3 is explicit: "If the request lacks any authentication
+# information … the resource server SHOULD NOT include an error code or other
+# error information", because `invalid_token` means a credential was presented
+# and rejected. Emitting it for a request that presented nothing would collapse
+# "you sent no token" into "your token is bad" — the exact conflation this
+# ticket exists to remove, reproduced in the header while the body gets it
+# right. A client that reads the challenge would suppress its "please
+# authenticate" flow and try to refresh a token it never had.
+_NO_CREDENTIAL_HEADERS = {"WWW-Authenticate": 'Bearer realm="mehamakor"'}
+
+
 def _validate_access_scope(claims: dict) -> None:
     # MEH-326: only access-scope tokens are valid here. Refresh tokens go
     # to /auth/refresh; presenting one as a Bearer access token is rejected.
@@ -145,7 +168,9 @@ def _validate_access_scope(claims: dict) -> None:
     scope = claims.get("scope")
     if scope is not None and scope != "access":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="אסימון לא תקין",
+            headers=_INVALID_TOKEN_HEADERS,
         )
 
 
@@ -167,6 +192,7 @@ def _check_password_change_invalidation(user: User, claims: dict) -> None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="session_invalidated_by_password_change",
+            headers=_INVALID_TOKEN_HEADERS,
         )
 
 
@@ -176,7 +202,9 @@ def _check_token_version(user: User, claims: dict) -> None:
     tv = claims.get("tv")
     if tv is not None and tv != user.token_version:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="אסימון לא תקין",
+            headers=_INVALID_TOKEN_HEADERS,
         )
 
 
@@ -196,7 +224,9 @@ def _check_fingerprint(request: Request, claims: dict) -> None:
             extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None},
         )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="אסימון לא תקין",
+            headers=_INVALID_TOKEN_HEADERS,
         )
 
 
@@ -207,7 +237,9 @@ def get_current_user(
 ) -> User:
     if token is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers=_NO_CREDENTIAL_HEADERS,
         )
     try:
         token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
@@ -215,11 +247,15 @@ def get_current_user(
         user_id = token_obj.claims.get("sub")
         if user_id is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="אסימון לא תקין",
+                headers=_INVALID_TOKEN_HEADERS,
             )
     except JoseError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="אסימון לא תקין",
+            headers=_INVALID_TOKEN_HEADERS,
         )
 
     _validate_access_scope(token_obj.claims)
@@ -227,7 +263,9 @@ def get_current_user(
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="משתמש לא נמצא",
+            headers=_INVALID_TOKEN_HEADERS,
         )
     if user.is_blocked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
@@ -246,6 +284,63 @@ def get_current_user_optional(
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
+    """Optional auth with RFC 6750 semantics — three states, not two.
+
+    MEH-1627. "Optional" means the *credential* is optional, never that a
+    bad token is acceptable:
+
+    - no Bearer credential      → ``None`` (a genuine anonymous visitor)
+    - Bearer present, valid     → the ``User``
+    - Bearer present, invalid   → **401 propagated**, never swallowed
+
+    "No Bearer credential" is what ``oauth2_scheme`` (auto_error=False)
+    reports, and it covers a missing Authorization header *and* a header
+    carrying a different scheme (``Basic …``) — both yield ``None`` here.
+    That is not a hole: a non-Bearer credential grants exactly the
+    anonymous access the caller would have had with no header at all, so
+    nothing is escalated. Verified against the running backend: no header
+    → 200, ``Basic`` → 200, ``Bearer <expired|garbage|empty>`` → 401.
+
+    The swallow this replaces collapsed states 1 and 3, so an expired
+    token downgraded a logged-in user to anonymous *silently*. On
+    ``POST /auth/register/producer`` that flipped ``upgrade_path`` to
+    False (routers/auth.py:392) and the request fell into the
+    new-registration branch, which 422s on the absent email
+    (routers/auth.py:575-580) — a dead end, because 422 does not trigger
+    the frontend's refresh interceptor. Propagating the 401 lets the
+    interceptor refresh and retry, and the user never sees the failure.
+
+    Endpoints that genuinely cannot retry use get_current_user_lenient.
+    """
+    if token is None:
+        return None
+    # No try/except: a token that was sent but does not verify is an
+    # error, and the caller must hear about it.
+    return get_current_user(request=request, token=token, db=db)
+
+
+def get_current_user_lenient(
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Optional auth that degrades an invalid token to anonymous.
+
+    MEH-1627. This is the pre-MEH-1627 behaviour of
+    get_current_user_optional, preserved for the narrow case where a 401
+    would destroy the request instead of deferring it: fire-and-forget
+    telemetry sent via ``navigator.sendBeacon`` / ``fetch(keepalive)``.
+    Those calls are dispatched as the page unloads, have no response
+    handler, and therefore cannot be retried after a refresh — a 401
+    would drop the click entirely. Losing the *attribution* of a click
+    is strictly better than losing the *click*.
+
+    Blocked users still raise 403: a blocked account must never be
+    quietly recorded as an anonymous visitor.
+
+    DO NOT reach for this to silence a 401 on a normal endpoint — use
+    get_current_user_optional there and let the client refresh.
+    """
     if token is None:
         return None
     try:

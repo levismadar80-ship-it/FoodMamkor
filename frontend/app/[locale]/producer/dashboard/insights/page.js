@@ -23,11 +23,10 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import { useRouter, Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
-import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 // MEH-1520: formatCompact moved to lib/ — App Router forbids non-reserved

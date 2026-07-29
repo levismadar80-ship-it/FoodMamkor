@@ -40,6 +40,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_min_km,
 )
+from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
@@ -217,6 +218,22 @@ def _delivery_city_condition(city: str):
     return or_(area_match, nationwide_match)
 
 
+def _delivery_day_condition(day: str, city: str | None = None):
+    """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
+    producers and day-less rows ("בתיאום מראש") are excluded from day
+    filtering; the integrity of "משלוח ביום X" beats recall.
+
+    With a city, the city AND the day must match on the SAME delivery_areas
+    row (one EXISTS). Two separate EXISTS would wrongly match a producer
+    whose חיפה row is day-less while its עכו row is on שישי — the day
+    promise would be attributed to the wrong city.
+    """
+    conds = [DeliveryArea.delivery_day == day]
+    if city:
+        conds.append(func.lower(DeliveryArea.city) == city.lower())
+    return Producer.delivery_areas.any(and_(*conds))
+
+
 def _kosher_condition(kosher: bool):
     """MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
     verified-only — it matches admin-verified kashrut (kashrut_verified_at,
@@ -331,15 +348,28 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     delivery_city = filters.get("delivery_city")
     delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
+    # MEH-1645: single canonical day (router 422s anything else). When a city
+    # is present the combined condition REPLACES _delivery_city_condition —
+    # v1 deliberately drops the nationwide OR-branch (no explicit day row =
+    # no day promise), so the shared MEH-1487 helper is untouched.
+    delivery_day = filters.get("delivery_day")
     if delivery_city:
-        # MEH-1255: nationwide producers now match any delivery_city EXCEPT
-        # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used so
-        # the OR branch isn't swallowed by join semantics; for area-based
-        # producers the result set is identical. Extracted to
-        # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
-        city_cond = _delivery_city_condition(delivery_city)
+        if delivery_day:
+            city_cond = _delivery_day_condition(delivery_day, delivery_city)
+        else:
+            # MEH-1255: nationwide producers now match any delivery_city EXCEPT
+            # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used
+            # so the OR branch isn't swallowed by join semantics; for area-based
+            # producers the result set is identical. Extracted to
+            # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
+            city_cond = _delivery_city_condition(delivery_city)
         q = q.filter(city_cond)
         count_q = count_q.filter(city_cond)
+    elif delivery_day:
+        # Day without a city — every explicit row with that day, any city.
+        day_cond = _delivery_day_condition(delivery_day)
+        q = q.filter(day_cond)
+        count_q = count_q.filter(day_cond)
     elif delivery_cities:
         # MEH-1487: region fallback — OR the SAME per-city condition across
         # the region's cities (nationwide-minus-excluded honoured per city).
@@ -361,38 +391,44 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     return q, count_q
 
 
-def _apply_search_filter(
-    db: Session, q, count_q, search_q: str | None, *, geo_search: bool
-):
-    """MEH-99 cross-field search: name · description · city · category names · product names · delivery cities.
+def _token_search_filter(db: Session, token: str):
+    """MEH-1664 — the match condition for ONE search token.
 
-    Adds relevance ordering in non-geo mode (exact-match first, then
-    prefix, then rating, then created_at) — geo mode keeps distance ASC.
+    OR across the six searchable sources; within each source, OR across the
+    token's variants. The caller AND-s one of these per token.
 
-    MEH-1488: the search also matches a business's delivery_areas.city, so
-    `q=<city>` surfaces a producer that DELIVERS to that city even when its
-    own Producer.city differs (the city the owner typed under "אזורי משלוח").
+    Every pattern comes from token_patterns (escape_like-escaped); the
+    escape=LIKE_ESCAPE below is the other half of that contract (MEH-1176).
     """
-    if not (search_q and search_q.strip()):
-        return q, count_q
+    patterns = token_patterns(token)
 
-    clean = search_q.strip()
-    like = f"%{escape_like(clean)}%"
+    def _any(*columns):
+        return or_(
+            *[
+                column.ilike(pattern, escape=LIKE_ESCAPE)
+                for pattern in patterns
+                for column in columns
+            ]
+        )
 
     has_category = (
         db.query(ProducerCategory)
         .join(Category, Category.id == ProducerCategory.category_id)
         .filter(
             ProducerCategory.producer_id == Producer.id,
-            Category.name.ilike(like, escape=LIKE_ESCAPE),
+            _any(Category.name),
         )
         .exists()
     )
+    # MEH-1664: description joins name here. /search has always matched a
+    # product on either column (search.py products sub-query); this path only
+    # matched the name, so a producer whose catalog mentioned the term only in
+    # a product description was reachable from /search but not /producers?q=.
     has_product = (
         db.query(Product)
         .filter(
             Product.producer_id == Producer.id,
-            Product.name.ilike(like, escape=LIKE_ESCAPE),
+            _any(Product.name, Product.description),
         )
         .exists()
     )
@@ -404,20 +440,48 @@ def _apply_search_filter(
         db.query(DeliveryArea)
         .filter(
             DeliveryArea.producer_id == Producer.id,
-            DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE),
+            _any(DeliveryArea.city),
         )
         .exists()
     )
-    search_filter = (
-        Producer.name.ilike(like, escape=LIKE_ESCAPE)
-        | Producer.description.ilike(like, escape=LIKE_ESCAPE)
-        | Producer.city.ilike(like, escape=LIKE_ESCAPE)
+    return (
+        _any(Producer.name, Producer.description, Producer.city)
         | has_category
         | has_product
         | has_delivery_city
     )
-    q = q.filter(search_filter)
-    count_q = count_q.filter(search_filter)
+
+
+def _apply_search_filter(
+    db: Session, q, count_q, search_q: str | None, *, geo_search: bool
+):
+    """MEH-99 cross-field search: name · description · city · category names · product names + descriptions · delivery cities.
+
+    Adds relevance ordering in non-geo mode (exact-match first, then
+    prefix, then rating, then created_at) — geo mode keeps distance ASC.
+
+    MEH-1488: the search also matches a business's delivery_areas.city, so
+    `q=<city>` surfaces a producer that DELIVERS to that city even when its
+    own Producer.city differs (the city the owner typed under "אזורי משלוח").
+
+    MEH-1664: matching is per token, not one literal substring. Each token
+    contributes its own OR-over-all-six-sources condition and the tokens are
+    AND-ed, so "גבינה עיזים" matches a product named "גבינת עיזים" in either
+    word order while "גבינה חיפה" does NOT match a Tel-Aviv cheese business.
+    The has_product EXISTS also covers Product.description now, so this path
+    and /search agree on what a product match is.
+    """
+    if not (search_q and search_q.strip()):
+        return q, count_q
+
+    clean = search_q.strip()
+
+    for token in tokenize(clean):
+        token_filter = _token_search_filter(db, token)
+        # Both queries, always — a filter on q that misses count_q reopens the
+        # Postgres 500 / count-mismatch trap in _build_base_queries' docstring.
+        q = q.filter(token_filter)
+        count_q = count_q.filter(token_filter)
 
     if not geo_search:
         q = q.order_by(False).order_by(
@@ -487,7 +551,8 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
-    category, delivery_city, delivery_cities, has_delivery, verified, kosher, city,
+    category, delivery_city, delivery_cities, delivery_day (MEH-1645 — one
+    canonical Hebrew day; explicit-row matching only), has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)

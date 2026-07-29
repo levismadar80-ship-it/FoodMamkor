@@ -12,6 +12,7 @@ import {
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import { OrderWindowCtaNote } from "./OrderWindowStrip";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -209,8 +210,13 @@ export default function ContactCard({ producer, isVacation }) {
     }
   };
 
+  // MEH-1649: data-testid="contact-card" is a stable locator for the card
+  // boundary. The QA harness asserts the closed-window note is a DOM
+  // DESCENDANT of this container, not merely "not floating" — a note flung
+  // anywhere else would satisfy the negative check alone (MEH-1592). Class
+  // selectors are brittle; docs/E2E-LOCATORS.md mandates data-testid.
   return (
-    <div className="bg-white rounded-lg p-6 border border-border">
+    <div className="bg-white rounded-lg p-6 border border-border" data-testid="contact-card">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
         {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
             line (3 states, one status home per page — revision-2 #2). */}
@@ -232,6 +238,18 @@ export default function ContactCard({ producer, isVacation }) {
             }
           }}
         />
+
+        {/* MEH-1649: the closed-window context line lives HERE — inside the
+            card, directly under the button it explains. It previously mounted
+            outside the card in both viewports (ContactSidebar above the card
+            on desktop, ProducerDetail above it on mobile), which read as text
+            floating on the cream background, detached from its CTA. Placing it
+            in ContactCard covers both viewports at once, since this component
+            is the one rendered in each. The MEH-1546 sticky constraint is
+            untouched: it was about wrapping the <aside>, and this is strictly
+            inside the card. Self-gating is unchanged — renders nothing unless
+            the window is closed, so open/null-window cards are byte-identical. */}
+        <OrderWindowCtaNote orderWindow={producer.order_window} />
 
         {/* Ready-made questions as quiet text links under the CTA. */}
         <WhatsAppQuestionChips producer={producer} />

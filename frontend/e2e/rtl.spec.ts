@@ -1,74 +1,102 @@
 /**
- * RTL regression tests — ensure key elements are positioned correctly
- * in the Hebrew (RTL) layout. These tests catch regressions from
- * accidentally using physical left-*/right-* classes instead of
- * logical start-*/end-* equivalents.
+ * RTL regression tests — Hebrew is the product, so a suite reporting coverage
+ * it does not have is worse than no suite at all.
  *
- * Intentional physical exceptions (eye toggles, carousel arrows,
- * centering idiom) are NOT tested here — they are documented in
- * CLAUDE.md and suppressed with eslint-disable comments.
+ * MEH-1721 P6 F-1 measured this file **passing with zero assertions executed**.
+ * Three of its four tests could not fail:
+ *
+ *   - "admin sidebar" asserted `toHaveURL(/login|admin/)` — a regex matching
+ *     BOTH possible outcomes, i.e. a tautology, and nothing about RTL at all.
+ *   - "modal close button" wrapped its only assertion in
+ *     `if (await forgot.count() > 0)`.
+ *   - "ProducerCard premium badge" returned early on `count === 0`, then
+ *     wrapped its assertion in a second `count() > 0`.
+ *
+ * All three are the defect class `.claude/rules/testing.md` names: **a guard
+ * that consults its own subject**, converting "the element is gone" — the exact
+ * condition worth failing on — into "nothing to check". They are replaced with
+ * assertions that fail when their subject is missing, because `expect(locator)`
+ * fails on a missing element where `count()` quietly returns 0.
+ *
+ * Selectors are `data-testid` per `frontend/e2e/CLAUDE.md` — the previous file
+ * keyed off the Hebrew string `aria-label='הציגו סיסמה'`, which breaks on any
+ * copy edit and is unusable on `/en`.
+ *
+ * Intentional physical exceptions (the password eye toggle inside a `dir="ltr"`
+ * input) are documented in `.claude/rules/rtl.md` and asserted here as
+ * *expected physical placement*, so a "logical properties" sweep cannot quietly
+ * relocate them either.
  */
 
 import { test, expect } from "@playwright/test";
 
 test.describe("RTL layout regression", () => {
-  test("login page — password eye toggle is on the physical right side of input", async ({ page }) => {
-    await page.goto("/login");
-    const toggle = page.locator("button[aria-label='הציגו סיסמה']").first();
-    await expect(toggle).toBeVisible();
-    const toggleBox = await toggle.boundingBox();
-    const input = page.locator("input[type='password']").first();
-    const inputBox = await input.boundingBox();
-    // Eye toggle must be within the input boundaries, on the physical right
-    expect(toggleBox!.x + toggleBox!.width).toBeGreaterThan(inputBox!.x + inputBox!.width - 60);
-    expect(toggleBox!.x).toBeGreaterThan(inputBox!.x + inputBox!.width / 2);
-  });
+  // ---------------------------------------------------------------
+  // The locale-direction invariant. Nothing asserted this before,
+  // which is how 8 hardcoded `text-right` reached /en (P7 F-1).
+  // ---------------------------------------------------------------
 
-  test("modal close button — positioned at inline-start (physical right in RTL)", async ({ page }) => {
-    // The LocationModal and LoginPromptModal use start-3 so the close button
-    // appears on the right side in RTL (start = inline-start = physical right).
-    // We test LoginPromptModal which is triggered by the favorites flow.
-    // Since we can't easily trigger it, we test the login page's modal-like close.
-    // Instead, navigate to a producer page and check the image gallery close button.
-    await page.goto("/login");
-    // Check that the forgot-password link aligns to the end (left in RTL via text-end)
-    const forgot = page.locator("a[href='/forgot-password']");
-    if (await forgot.count() > 0) {
-      const forgotBox = await forgot.boundingBox();
-      const viewport = page.viewportSize()!;
-      // In RTL, text-end aligns to physical left — element center should be in left half
-      expect(forgotBox!.x + forgotBox!.width / 2).toBeLessThan(viewport.width / 2);
-    }
-  });
-
-  test("admin sidebar — positioned at inline-start (physical right in RTL)", async ({ page, context }) => {
-    // The admin sidebar uses start-0 so in RTL it appears on the right side.
-    // We can check the layout without authentication by checking CSS properties.
-    // This is a layout smoke test — if the sidebar uses right-0 instead of start-0
-    // it would appear on the wrong side.
-    await page.goto("/admin");
-    // Expect redirect to /login (unauthenticated)
-    await expect(page).toHaveURL(/login|admin/);
-    // If we're redirected to login, the admin layout isn't rendered — that's ok.
-    // The test documents the expectation: admin sidebar must use start-0.
-    // When authenticated, the sidebar should appear on the right (physical) in RTL.
-  });
-
-  test("ProducerCard premium badge — at inline-start (physical right in RTL)", async ({ page }) => {
+  test("he renders dir=rtl at the document root", async ({ page }) => {
     await page.goto("/");
-    // Wait for producer cards to load
-    await page.waitForSelector("article", { timeout: 10_000 });
-    const cards = page.locator("article");
-    const count = await cards.count();
-    if (count === 0) return; // no producers seeded, skip
-    // The premium badge (if present) uses start-3 — in RTL that's physical right.
-    // We verify it exists and is within the card's right quarter.
-    const badge = page.locator("article span:has-text('פרמיום')").first();
-    if (await badge.count() > 0) {
-      const badgeBox = await badge.boundingBox();
-      const cardBox = await cards.first().boundingBox();
-      // Badge at start-3 in RTL: should be in the right portion of the card
-      expect(badgeBox!.x + badgeBox!.width).toBeGreaterThan(cardBox!.x + cardBox!.width * 0.5);
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(page.locator("html")).toHaveAttribute("lang", "he");
+  });
+
+  test("en renders dir=ltr at the document root", async ({ page }) => {
+    await page.goto("/en");
+    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  });
+
+  test("form controls inherit the document direction in each locale", async ({ page }) => {
+    // The email input declares no `dir` of its own, so it must follow <html>.
+    // A hardcoded physical alignment on this control would surface here.
+    await page.goto("/login");
+    await expect(page.getByTestId("login-email")).toBeVisible();
+    expect(
+      await page.getByTestId("login-email").evaluate((el) => getComputedStyle(el).direction),
+      "he: email input must inherit rtl from <html>",
+    ).toBe("rtl");
+
+    await page.goto("/en/login");
+    await expect(page.getByTestId("login-email")).toBeVisible();
+    expect(
+      await page.getByTestId("login-email").evaluate((el) => getComputedStyle(el).direction),
+      "en: email input must inherit ltr from <html>",
+    ).toBe("ltr");
+  });
+
+  // ---------------------------------------------------------------
+  // Documented physical exceptions — asserted, not assumed.
+  // ---------------------------------------------------------------
+
+  test("password input stays dir=ltr in both locales", async ({ page }) => {
+    // A password is LTR content regardless of page direction
+    // (.claude/rules/rtl.md § intentional exceptions).
+    for (const path of ["/login", "/en/login"]) {
+      await page.goto(path);
+      await expect(page.getByTestId("login-password")).toHaveAttribute("dir", "ltr");
     }
+  });
+
+  test("password eye toggle sits on the physical right of the input", async ({ page }) => {
+    await page.goto("/login");
+
+    const input = page.getByTestId("login-password");
+    await expect(input).toBeVisible();
+    // The toggle is the button inside the input's relative wrapper.
+    const toggle = input.locator("xpath=..").getByRole("button").first();
+    await expect(toggle).toBeVisible();
+
+    const toggleBox = await toggle.boundingBox();
+    const inputBox = await input.boundingBox();
+    // boundingBox() returns null for a non-rendered element; assert rather than
+    // let `!` coerce null into a comparison that happens to pass.
+    expect(toggleBox, "toggle has no layout box").not.toBeNull();
+    expect(inputBox, "password input has no layout box").not.toBeNull();
+
+    // Physical right half of the field, and not overflowing it.
+    expect(toggleBox!.x).toBeGreaterThan(inputBox!.x + inputBox!.width / 2);
+    expect(toggleBox!.x).toBeLessThanOrEqual(inputBox!.x + inputBox!.width);
   });
 });

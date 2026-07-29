@@ -153,7 +153,8 @@
       "reset_success": "הסיסמה עודכנה בהצלחה — אפשר להתחבר",
       "or": "או",
       "no_account": "אין לך חשבון?",
-      "register_cta": "הצטרפו ←"
+      "register_cta": "הצטרפו ←",
+      "email_placeholder": "name@example.com"
     },
     "oauth": {
       "google_error": "שגיאה בהתחברות עם Google",
@@ -424,15 +425,25 @@
       "main_label": "דף הבית — גלו בתי עסק מקומיים",
       "search_area_label": "חיפוש בתי עסק",
       "near_me": "קרוב אליי",
+      "delivery_cta": "משלוחים אליי",
+      "delivery_cta_city": "משלוחים ל{city}",
       "surprise_me": "הפתיעו אותי",
       "searching": "בחיפוש...",
       "scroll_down_label": "גלול לרשימת בתי העסק",
-      "geo_failure": "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית"
+      "geo_failure": "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית",
+      "chips_prefix": "פופולרי עכשיו:",
+      "trust_line": "כל בית עסק נבדק ואושר ידנית"
     },
     "search": {
       "placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
       "sr_label": "חיפוש בתי עסק וערים",
-      "submit": "חיפוש"
+      "submit": "חיפוש",
+      "placeholders": {
+        "q1": "לחם מחמצת",
+        "q2": "ביצים אורגניות",
+        "q3": "גבינת עיזים",
+        "q4": "ירקות מהשדה"
+      }
     },
     "stats": {
       "businesses": "בתי עסק שהצטרפו עד היום",
@@ -480,6 +491,11 @@
       "onboarding1": "סננו לפי אורגני, כשר, משלוח ועוד — לחצו על אחד מהכפתורים למעלה",
       "geo_chip": "בתי עסק ליד המיקום שלך",
       "city_chip": "עסקים באזור {city}",
+      "city_day_chip": "משלוח ל{city} · יום {day}",
+      "day_row_label": "יום משלוח:",
+      "day_option_aria": "סינון משלוח ליום {day}",
+      "day_empty_suggestion": "אין כרגע עסקים עם משלוח ביום {day} ל{city} — אולי בימים אחרים",
+      "day_empty_clear_cta": "הסרת סינון היום",
       "clear_location_filter": "הסרת סינון מיקום",
       "geo_empty": "לא מצאנו עסקים קרובים — מציגים את כל בתי העסק",
       "region_fallback_header": "אין עדיין משלוחים ל{city} — בתי עסק שמגיעים לאזור {region}:"
@@ -503,9 +519,6 @@
       "body_l2": "תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.",
       "body_l3": "חינם, בלי עמלות. נשמח להכיר.",
       "button": "הוסיפו את העסק שלכם"
-    },
-    "new_businesses": {
-      "heading": "בתי עסק חדשים"
     },
     "events": {
       "heading": "אירועים קרובים",
@@ -649,10 +662,10 @@
       "description_fallback": "אירועים קולינריים אצל בתי עסק מקומיים."
     },
     "events": {
-      "title": "אירועים בחוות ואצל בתי עסק | מהמקור",
-      "description": "סדנאות, סיורים, ימים פתוחים וטעימות אצל בתי עסק מקומיים בישראל. גלו אירועים קרובים לפי עיר, קטגוריה ותאריך.",
-      "og_title": "אירועים בחוות ואצל בתי עסק | מהמקור",
-      "og_description": "סדנאות, סיורים, ימים פתוחים וטעימות אצל בתי עסק מקומיים בישראל."
+      "title": "אירועים של בתי עסק מקומיים — ימים פתוחים, דוכנים בשוק וקטיף",
+      "description": "ימים פתוחים, דוכנים בשוק, קטיף עונתי והשקות של בתי עסק מקומיים בישראל. סדנאות וסיורים שנרשמים אליהם — בעמוד החוויות.",
+      "og_title": "אירועים של בתי עסק מקומיים — ימים פתוחים, דוכנים בשוק וקטיף",
+      "og_description": "ימים פתוחים, דוכנים בשוק, קטיף עונתי והשקות של בתי עסק מקומיים בישראל."
     },
     "experiences": {
       "title": "חוויות וסדנאות קהילתיות | מהמקור",
@@ -727,7 +740,7 @@
         "about": "אודות",
         "location": "הגעה ומיקום",
         "similar": {
-          "heading": "עסקים דומים",
+          "heading": "בתי עסק דומים",
           "in_area": "{category} · באזור שלך"
         },
         "nearby": {
@@ -763,8 +776,8 @@
           "shared": "מקום הייצור משותף עם גלוטן — לפי הצהרת בית העסק. אם יש צליאק, כדאי לוודא ישירות מול בית העסק.",
           "dedicated": "אין גלוטן במקום הייצור — לפי הצהרת בית העסק."
         },
-        "slow_response": "⏳ זמני תגובה ארוכים יותר השבוע",
-        "vacation": "🌙 בית עסק זה בהפסקה כרגע",
+        "slow_response": "זמני תגובה ארוכים יותר השבוע",
+        "vacation": "בית עסק זה בהפסקה כרגע",
         "vacation_return": "{label} — ניתן להשאיר הודעה",
         "vacation_back": "חוזרת ב-{date}",
         "vacation_back_soon": "חוזרת בקרוב",
@@ -779,9 +792,7 @@
           "orders_open": "פתוח להזמנות · עד {time}"
         },
         "excerpt_footer": "מתוך הביקורות",
-        "excerpt_all": "לכל הביקורות",
-        "alerts_reentry": "מקבלת עדכונים · לעריכה",
-        "alerts_reentry_aria": "עריכת העדפות עדכונים"
+        "excerpt_all": "לכל הביקורות"
       },
       "owner_card": {
         "heading": "מאחורי העסק"
@@ -818,17 +829,7 @@
         "vacation_msg": "שליחת הודעה"
       },
       "order_window": {
-        "strip_label": "מקבלים הזמנות:",
-        "cta_note": "אפשר לשלוח הודעה גם עכשיו — היא תיענה כשההזמנות ייפתחו",
-        "days_short": {
-          "sun": "א׳",
-          "mon": "ב׳",
-          "tue": "ג׳",
-          "wed": "ד׳",
-          "thu": "ה׳",
-          "fri": "ו׳",
-          "sat": "ש׳"
-        }
+        "cta_note": "אפשר לשלוח הודעה גם עכשיו — היא תמתין לבית העסק עד שההזמנות ייפתחו"
       }
     },
     "card": {
@@ -849,8 +850,9 @@
       },
       "badges": {
         "delivery_only": "משלוחים בלבד",
-        "available_today": "🛒 מגיעה היום",
-        "overflow_aria": "הצגת עוד {count} תגיות"
+        "available_today": "מגיעה היום",
+        "overflow_aria": "הצגת עוד {count} תגיות",
+        "overflow_heading": "עוד על העסק הזה"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
     }
@@ -971,9 +973,9 @@
       "back_to_list": "חזרה לקבוצות הרכש",
       "back_to_list_arrow": "→ חזרה לקבוצות הרכש",
       "funded_title": "המחיר נפתח!",
-      "funded_subtitle": "{name} תצור קשר עם המשתתפות בקרוב",
+      "funded_subtitle": "הקבוצה הגיעה ליעד! לתיאום ההזמנה צרו קשר עם {name}",
       "cancelled": "קבוצת הרכש בוטלה",
-      "fulfilled": "✅ קבוצת הרכש הושלמה",
+      "fulfilled": "קבוצת הרכש הושלמה",
       "by_producer": "מאת {name}",
       "unit_suffix": "/ {unit}",
       "discount_hint": "חיסכון של {discount}% במחיר קבוצתי",
@@ -982,13 +984,11 @@
       "deadline_prefix": "מועד אחרון: {date}",
       "fulfillment_prefix": "איסוף ומשלוח: ",
       "quantity_label": "כמות",
-      "phone_label": "טלפון ליצירת קשר",
-      "phone_placeholder": "050-1234567",
       "submitting": "בצירוף...",
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
       "login_required": "יש להתחבר כדי להצטרף לקבוצת רכש",
-      "committed_confirm": "✅ הצטרפת לקבוצת רכש זו",
+      "committed_confirm": "הצטרפת לקבוצת רכש זו",
       "committed_units": " ({count} יחידות)",
       "cancelling": "בביטול...",
       "cancel_cta": "בטלו את ההצטרפות",
@@ -1008,7 +1008,7 @@
         "open": "פתוחה",
         "funded": "ממומנת",
         "cancelled": "בוטלה",
-        "fulfilled": "הושלמה ✅"
+        "fulfilled": "הושלמה"
       },
       "back": "חזרה לכלים",
       "heading": "קבוצות הרכש שלי",
@@ -1060,9 +1060,9 @@
       },
       "card_label": {
         "open_orders": "פתוח להזמנות",
-        "available_today": "זמינה היום 🟢",
-        "busy_week": "עמוסה השבוע 🟠",
-        "on_vacation": "בהפסקה ⏸"
+        "available_today": "זמינה היום",
+        "busy_week": "עמוסה השבוע",
+        "on_vacation": "בהפסקה"
       }
     },
     "delivery": {
@@ -1073,6 +1073,12 @@
       "min_order": "מינימום",
       "delivery_day_label": "משלוח ביום {day}",
       "dispatch_days": "יוצאים בימי {day}",
+      "order_cutoff": "מקבלים הזמנות עד {day} {time}",
+      "order_cutoff_with_day": "מקבלים הזמנות עד {day} {time} · משלוח ביום {delivery_day}",
+      "free": "חינם",
+      "fee": "משלוח: {amount}",
+      "fee_free": "משלוח חינם",
+      "free_above": "מעל {amount} — חינם",
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
@@ -1084,6 +1090,10 @@
         "yes_nationwide": "כן! משלוחים לכל הארץ — כולל {city}",
         "yes": "כן, מגיעים ל{city}",
         "no": "לצערנו לא מגיעים ל{city} כרגע"
+      },
+      "coverage_cta": {
+        "known_city": "לא מגיעים ל{city}? אפשר לשאול את בית העסק",
+        "prefill": "היי! אני מ{city} — אשמח לדעת אם יש אפשרות למשלוח לאזור"
       }
     },
     "friday_delivery": {
@@ -1204,7 +1214,10 @@
       "open_in_waze": "Waze",
       "open_in_google": "מפות Google",
       "open_in_waze_aria": "פתיחה ב-Waze",
-      "open_in_google_aria": "פתיחה במפות Google"
+      "open_in_google_aria": "פתיחה במפות Google",
+      "expand_aria": "הגדלת המפה למסך מלא",
+      "close_aria": "סגירת המפה במסך מלא",
+      "expanded_aria": "מפה במסך מלא"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {אין בתי עסק מקומיים באזור} one {בית עסק מקומי אחד באזור} two {שני בתי עסק מקומיים באזור} other {# בתי עסק מקומיים באזור}}"
@@ -1344,8 +1357,8 @@
         "incomplete_title": "הצג רק עסקים שחסרים להם פרטים נדרשים",
         "show_all": "הצג הכל",
         "incomplete_label": "פרטים חסרים",
-        "export": "📤 ייצוא",
-        "import_excel": "📥 ייבא מ-Excel",
+        "export": "ייצוא",
+        "import_excel": "ייבא מ-Excel",
         "new_producer": "+ בית עסק חדש"
       },
       "import": {
@@ -1408,11 +1421,11 @@
           "activate": "הפעל",
           "remove_ambassador_title": "הסר תפקיד שגרירה",
           "set_ambassador_title": "הגדר כשגרירה",
-          "ambassador_active": "⭐ שגרירה",
+          "ambassador_active": "שגרירה",
           "ambassador_inactive": "☆ שגריר",
           "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
-          "story_card": "📸 סטורי",
+          "story_card": "סטורי",
           "delete": "מחקי",
           "menu_aria": "פעולות נוספות"
         },
@@ -1498,7 +1511,7 @@
           "phone": "טלפון / וואטסאפ",
           "phone_placeholder": "050-1234567",
           "instagram": "אינסטגרם",
-          "instagram_placeholder": "@username",
+          "instagram_placeholder": "maafiat_hasade",
           "website": "אתר",
           "website_placeholder": "https://...",
           "whatsapp_group": "קישור לקבוצת וואטסאפ",
@@ -1535,7 +1548,7 @@
           "organic_certified": "אורגני מוסמך",
           "grass_fed": "גראס פד",
           "verified": "מאומת",
-          "recommended": "⭐ מומלץ (תגית עורכת)",
+          "recommended": "מומלץ (תגית עורכת)",
           "kosher": "כשרות",
           "kosher_none": "—",
           "kosher_kosher": "כשר",
@@ -1547,16 +1560,16 @@
           "license_format_warning": "מספר רישיון יצרן הוא 7-10 ספרות",
           "license_registry_link": "בדיקה במאגר משרד הבריאות",
           "license_optional_toggle": "יש לי רישיון יצרן ↓",
-          "has_physical_location": "🏪 חנות פיזית (קבלת לקוחות)",
-          "offers_delivery": "🚚 משלוחים",
+          "has_physical_location": "חנות פיזית (קבלת לקוחות)",
+          "offers_delivery": "משלוחים",
           "type_validation": "חייב לסמן לפחות אחד מהשניים",
           "delivery_nationwide": "משלוחים לכל הארץ",
           "delivery_cities_label": "ערים שמשלוחים אליהן",
           "delivery_excluded_label": "חוץ מ:",
           "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
           "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
-          "has_delivery": "🚚 יש משלוחים",
-          "pickup_points": "📦 נקודות איסוף ברחבי הארץ",
+          "has_delivery": "יש משלוחים",
+          "pickup_points": "נקודות איסוף ברחבי הארץ",
           "delivery_area_cities": "ערי משלוח (מופרדות בפסיק)",
           "delivery_area_cities_placeholder": "תל אביב, חיפה, ירושלים",
           "short_description": "תיאור קצר (לכרטיסייה)",
@@ -1570,9 +1583,9 @@
           "opening_hours_label": "שעות פתיחה (פורמט: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "פתוח להזמנות",
-          "avail_today": "זמינה היום 🟢",
-          "avail_full": "עמוסה השבוע 🟠",
-          "avail_vacation": "בהפסקה ⏸",
+          "avail_today": "זמינה היום",
+          "avail_full": "עמוסה השבוע",
+          "avail_vacation": "בהפסקה",
           "vacation_until": "תאריך חזרה (אופציונלי)"
         }
       },
@@ -1610,7 +1623,7 @@
         "demote": "הסירי הרשאות",
         "protected_title": "לא ניתן להסיר הרשאות מהאדמין הראשי",
         "menu_aria": "פעולות נוספות",
-        "unblock": "🚫 שחרר חסימה",
+        "unblock": "שחרר חסימה",
         "block": "חסום"
       },
       "favorites": {
@@ -1861,6 +1874,19 @@
         "shmitta": "שמיטה",
         "kilayim": "ללא כלאיים",
         "artisan_dairy": "מוצרי חלב מהחווה"
+      },
+      "reminders": {
+        "title": "תזכורות פקיעת תעודה",
+        "subtitle": "בתי עסק שתעודת הכשרות שלהם פוקעת ב-30 הימים הקרובים. תמיד מציגות תצוגה מקדימה לפני שליחה.",
+        "preview": "תצוגה מקדימה",
+        "loading": "טוענת…",
+        "none": "אין בתי עסק עם תעודה שפוקעת ב-30 הימים הקרובים.",
+        "preview_summary": "{count} בתי עסק יקבלו תזכורת. עדיין לא נשלח דבר.",
+        "result_summary": "נשלחו {sent} · נכשלו {failed}",
+        "send_now": "שלחי עכשיו",
+        "row_sent": "נשלח",
+        "row_failed": "נכשל",
+        "sent_toast": "נשלחו {count} תזכורות"
       }
     },
     "reports": {
@@ -1875,7 +1901,7 @@
       "no_reports": "אין דיווחים פתוחים",
       "report_count": "{count} דיווחים",
       "actions": {
-        "suspend": "⏸️ השהה עסק",
+        "suspend": "השהה עסק",
         "ignore": "התעלם",
         "dismiss_confirm": "להתעלם מכל הדיווחים על {name}?",
         "dismissing": "מתעלמת…"
@@ -1887,7 +1913,7 @@
         "empty": "אין מוצרים בבדיקה כרגע",
         "default_reason": "סומן לבדיקה",
         "approve": "אשרי",
-        "remove": "❌ הסירי",
+        "remove": "הסירי",
         "removing": "מסירה…"
       },
       "hidden": {
@@ -1994,6 +2020,7 @@
         "producer_count": "{count} בתי עסק",
         "deleting": "מוחקים…",
         "delete_error": "מחיקת הקטגוריה נכשלה. נסו שוב.",
+        "save_error": "שמירת הקטגוריה נכשלה. נסו שוב.",
         "license_rename_error": "לקטגוריה הזאת יש דרישת רישיון של משרד הבריאות שמזוהה לפי השם. שינוי השם מבטל את הדרישה עבור בתי העסק בקטגוריה, ולכן הוא נעשה במיגרציה ולא במסך הניהול. אפשר לעדכן את האימוג'י.",
         "name_taken_error": "קטגוריה בשם זה כבר קיימת"
       },
@@ -2259,8 +2286,6 @@
     },
     "categories": {
       "all": "הכל",
-      "workshop": "סדנה",
-      "tour": "סיור",
       "market": "שוק",
       "harvest": "קטיף",
       "tasting": "טעימות",
@@ -2337,7 +2362,7 @@
       "status_pending": "החוויה שלך בהמתנה לאישור צוות מהמקור",
       "status_changes_requested": "נדרשים שינויים לפני שנוכל לפרסם",
       "status_rejected": "החוויה לא אושרה לפרסום",
-      "just_submitted": "✅ החוויה נשלחה לאישור! תקבלו אימייל כשהיא תתפרסם 🌿",
+      "just_submitted": "החוויה נשלחה לאישור! תקבלו אימייל כשהיא תתפרסם",
       "team_notes": "הערות הצוות:",
       "reason": "סיבה:",
       "requirements_title": "מה להביא / דרישות",
@@ -2400,7 +2425,8 @@
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
-      "save_cta": "שמירה"
+      "save_cta": "שמירה",
+      "field_image_placeholder": "https://res.cloudinary.com/..."
     }
   },
   "errors": {
@@ -2680,7 +2706,14 @@
     },
     "expiry": {
       "valid_until": "תקף עד: {date}",
-      "near_expiry": "⚠️ תעודה פגה בקרוב"
+      "near_expiry": "תעודה פגה בקרוב"
+    },
+    "cert": {
+      "dialog_label": "תעודת כשרות",
+      "close": "סגירה",
+      "image_alt": "צילום תעודת הכשרות",
+      "verified_by": "אומתה על ידי מהמקור",
+      "original_at_business": "התעודה המקורית מוצגת בבית העסק"
     }
   },
   "opening_hours": {
@@ -2708,15 +2741,15 @@
       "tooltip": "מספר הטלפון של בית העסק אומת באמצעות קוד חד-פעמי"
     },
     "tier_3": {
-      "label": "✅ עסק מאומת",
+      "label": "עסק מאומת",
       "tooltip": "בית העסק עבר אימות ידני על ידי צוות מהמקור"
     },
     "tier_4": {
-      "label": "⭐ מובילת קהילה",
+      "label": "מובילת קהילה",
       "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
     },
     "tier_5": {
-      "label": "🏅 שגרירת מהמקור",
+      "label": "שגרירת מהמקור",
       "tooltip": "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור"
     }
   },
@@ -2885,7 +2918,7 @@
   "newsletter_unsubscribe": {
     "meta_title": "ביטול הרשמה לניוזלטר · מהמקור",
     "loading": "מבטלים את ההרשמה…",
-    "success_title": "הוסרת מרשימת התפוצה 🌿",
+    "success_title": "הוסרת מרשימת התפוצה",
     "success_body": "לא נשלח לך יותר ניוזלטר. תמיד אפשר לחזור — נשמח לראות אותך שוב.",
     "error_title": "הקישור אינו תקין",
     "error_body": "ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסי שוב מהמייל, או פני אלינו.",
@@ -2934,9 +2967,9 @@
       "submit_aria": "חפש",
       "loading": "טעינת תוצאות...",
       "no_results_for": "אין תוצאות עבור",
-      "section_producers": "🏪 בתי עסק",
-      "section_categories": "🏷️ קטגוריות",
-      "section_cities": "📍 ערים",
+      "section_producers": "בתי עסק",
+      "section_categories": "קטגוריות",
+      "section_cities": "ערים",
       "recent_heading": "חיפושים אחרונים",
       "trending_heading": "חיפושים פופולריים",
       "remove_recent_aria": "הסר {q} מהחיפושים האחרונים"
@@ -2972,9 +3005,8 @@
     "title": "המועדפים שלי",
     "empty_title": "עדיין לא שמרת בתי עסק",
     "empty_subtitle": "לחצו על הלב בכרטיסיית עסק כדי לשמור אותו כאן לגישה מהירה.",
-    "first_visit_tip": "לחצו על בכרטיס עסק כדי לשמור אותו כאן",
     "empty_cta": "גלו עסקים",
-    "list_alerts_hint": "לחצו על בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים",
+    "list_alerts_hint": "לחצו על <icon></icon> בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים",
     "button": {
       "saved_toast_first_time": "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט",
       "saved_toast": "נשמר למועדפים",
@@ -3097,7 +3129,7 @@
       "uploading": "בהעלאה...",
       "save_cloudinary": "שמרי ל-Cloudinary",
       "copy_caption": "העתקת caption",
-      "copied": "✅ הועתק!"
+      "copied": "הועתק!"
     }
   },
   "footer": {
@@ -3818,8 +3850,8 @@
       "error_availability_update": "לא הצלחנו לעדכן את מצב הזמינות — נסו שוב בעוד רגע",
       "error_questions_save": "שגיאה בשמירה — נסו שוב",
       "vanity_link": {
-        "label": "🔗 הלינק שלי",
-        "copied": "✅ הועתק!",
+        "label": "הלינק שלי",
+        "copied": "הועתק!",
         "copy_cta": "העתיקו לינק",
         "share_cta": "שתפו בוואטסאפ",
         "wa_text_template": "הפרופיל שלי במהמקור: {url}"
@@ -3850,7 +3882,7 @@
           "body": "הצוות שלנו בודק את הפרטים — לרוב לוקח עד 3 ימי עסקים. פרופילים מלאים מאושרים מהר יותר."
         },
         "rejected": {
-          "title": "⚠️ הבקשה לא אושרה",
+          "title": "הבקשה לא אושרה",
           "body": "צרו קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
           "tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
           "tip_photos": "הוסיפו תמונות ברורות של המוצרים",
@@ -3930,11 +3962,11 @@
         },
         "manage_events": {
           "title": "האירועים שלי",
-          "sub": "צפייה, עריכה וביטול אירועים"
+          "sub": "ימים פתוחים, דוכנים והשקות — מה שקורה פעם אחת"
         },
         "manage_experiences": {
           "title": "החוויות שלי",
-          "sub": "צפייה, עריכה ומחיקה של חוויות"
+          "sub": "סדנאות וסיורים שנרשמים אליהם"
         }
       },
       "pulse": {
@@ -4038,7 +4070,7 @@
         "label_weak": "הפרופיל שלך חלש — לקוחות לא רואות אותך",
         "label_ok": "בסדר, אבל יש מה לשפר",
         "label_strong": "פרופיל חזק",
-        "label_perfect": "פרופיל מושלם ⭐",
+        "label_perfect": "פרופיל מושלם",
         "items": {
           "image": "תמונת פרופיל",
           "desc": "תיאור עסק (50+ תווים)",
@@ -4089,7 +4121,7 @@
         "subtitle": "בחרו אילו ערוצים להציג, ומה יהיה הערוץ הראשי — הוא מופיע ככפתור הגדול בעמוד העסק שלך.",
         "field_phone": "טלפון",
         "phone_field_helper": "המספר הזה משמש גם לוואטסאפ וגם לשיחות",
-        "field_instagram": "אינסטגרם (שם משתמש או קישור)",
+        "field_instagram": "אינסטגרם (שם משתמש)",
         "field_website": "אתר (קישור)",
         "field_whatsapp_group": "קישור לקבוצת וואטסאפ",
         "field_email": "אימייל",
@@ -4196,14 +4228,24 @@
         "heading": "משלוחים ואיסוף",
         "subtitle": "איך הלקוחות מקבלים מכם — חנות פיזית, משלוחים, או שניהם.",
         "scope_helper": "כתובת בית העסק מוגדרת בכרטיס המיקום — כאן בוחרים רק לאן מגיעים עם משלוחים. הרשימה תוצג ללקוחות בעמוד שלך.",
-        "has_physical_location": "🏪 חנות פיזית (קבלת לקוחות)",
-        "offers_delivery": "🚚 משלוחים",
+        "has_physical_location": "חנות פיזית (קבלת לקוחות)",
+        "offers_delivery": "משלוחים",
         "type_validation": "חייב לסמן לפחות אחד מהשניים",
         "delivery_nationwide": "משלוחים לכל הארץ",
         "delivery_cities_label": "ערים שמשלוחים אליהן",
         "delivery_excluded_label": "משלוחים לכל הארץ, חוץ מהערים האלה:",
         "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
         "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
+        "fee_label": "עלות משלוח (₪)",
+        "fee_hint": "אופציונלי — מופיע בעמוד העסק שלכן, בקטע המשלוחים. אפשר לרשום 0 אם המשלוח חינם.",
+        "fee_placeholder": "35",
+        "free_above_label": "משלוח חינם מעל (₪)",
+        "free_above_hint": "אופציונלי — מופיע לצד עלות המשלוח בעמוד העסק.",
+        "free_above_placeholder": "250",
+        "delivery_days_label": "יום משלוח לכל עיר (לא חובה)",
+        "delivery_days_hint": "מוצג ללקוחות בעמוד העסק — למשל \"יוצאים בימי שישי\". בלי בחירה יוצג \"בתיאום מראש\".",
+        "day_select_aria": "יום משלוח ל{city}",
+        "day_arranged": "בתיאום מראש",
         "save_cta": "שמירה",
         "saving": "בשמירה…",
         "saved": "נשמר",
@@ -4281,7 +4323,8 @@
         "q_special_label": "מה מיוחד אצלכם?",
         "q_special_placeholder": "לדוגמה: מתכון של סבתא, חומרי גלם מהחצר",
         "optional": "לא חובה",
-        "instagram_label": "קישור לאינסטגרם",
+        "instagram_label": "אינסטגרם (שם משתמש)",
+        "instagram_placeholder": "maafiat_hasade",
         "instagram_hint": "אם יש — נשתמש בו כהשראה לניסוח.",
         "generate_cta": "צרו תיאור",
         "generate_hint_disabled": "ענו על השאלה הראשונה כדי להתחיל.",
@@ -4340,7 +4383,7 @@
         "heading": "האירועים שלי",
         "create_cta": "אירוע חדש",
         "empty_title": "עדיין אין אירועים",
-        "empty_description": "סדנה, סיור או יום פתוח — אירוע מופיע בעמוד העסק שלך ומביא לקוחות חדשות.",
+        "empty_description": "יום פתוח, דוכן בשוק או קטיף — אירוע חד-פעמי שמופיע בעמוד העסק שלך ומביא לקוחות חדשות.",
         "empty_cta": "אירוע חדש",
         "loading": "טוען…",
         "back_to_tools": "חזרה לכלים",
@@ -4429,7 +4472,8 @@
       "save_cta": "שמרו הגדרות",
       "saving": "בשמירה...",
       "save_success_toast": "הגדרות עודכנו",
-      "save_error_toast": "שגיאה בשמירה, נסו שוב"
+      "save_error_toast": "שגיאה בשמירה, נסו שוב",
+      "phone_placeholder": "050-1234567"
     },
     "layout": {
       "skip_to_main": "דילוג לתוכן"
@@ -4467,10 +4511,10 @@
       "pending_success_dashboard": "חזרה לניהול העסק",
       "crumb_dashboard": "ניהול העסק",
       "crumb_current": "אירוע חדש",
-      "subtitle": "סדנה, סיור, שוק, קטיף או ימי פתיחה — פרסמו כאן",
-      "info_paragraph": "אירועים = סדנה, סיור, יום פתיחה, או כל מפגש עם לקוחות. יופיעו ב-/events ובעמוד שלך. מושלם להבאת לקוחות חדשות.",
-      "field_title_placeholder": "למשל: סדנת גבינה",
-      "field_description_full_placeholder": "אירועים נחשפים ללקוחות ב-/events ובעמוד שלך. ספרו: מה יקרה, מי מוזמנת, מה כלול במחיר, מה להביא.",
+      "subtitle": "יום פתוח, דוכן בשוק, קטיף או השקה — מה שקורה פעם אחת",
+      "info_paragraph": "אירוע הוא משהו שקורה פעם אחת, בתאריך מסוים — יום פתוח, דוכן בשוק, קטיף עונתי או השקה. הוא יופיע בעמוד האירועים ובעמוד העסק שלך. פעילות קבועה שנרשמים אליה, כמו סדנה או סיור — פרסמי אותה כחוויה.",
+      "field_title_placeholder": "למשל: יום פתוח במחלבה",
+      "field_description_full_placeholder": "ספרי מה יקרה: מה כלול, למי זה מתאים ומה כדאי להביא. למשל: יום פתוח במחלבה — טעימות מכל הגבינות והצצה לרפת.",
       "field_city_placeholder": "חפשו עיר...",
       "field_location_simple_placeholder": "בחווה שלנו / כתובת מלאה",
       "field_price_label_full": "מחיר (0 = חינם)",
@@ -4511,7 +4555,8 @@
       "email_change_hint": "לשינוי אימייל, פנו לתמיכה",
       "field_phone_label": "טלפון",
       "field_phone_hint": "לעדכונים בוואטסאפ מבתי עסק שאתם עוקבים אחריהם",
-      "field_phone_error": "מספר טלפון לא תקין"
+      "field_phone_error": "מספר טלפון לא תקין",
+      "field_phone_placeholder": "050-1234567"
     },
     "products": {
       "section_heading": "מוצרים",
@@ -4842,5 +4887,33 @@
     "sources_prefix": "מקורות:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
     "source_collectivecrop": "CollectiveCrop — Fresh-Picked vs Supermarket Produce"
+  },
+  "chat": {
+    "opening": "היי אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצו לדעת?",
+    "prompts": {
+      "register": "איך נרשמים כבית עסק?",
+      "find_nearby": "איך מוצאים עסקים קרובים אליי?",
+      "what_is": "מה זה מהמקור?",
+      "is_free": "האם האתר בחינם?",
+      "contact": "איך יוצרים קשר עם בית עסק?",
+      "approval_time": "כמה זמן לוקח האישור של העסק?"
+    },
+    "answers": {
+      "register": "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nהצוות שלנו בודק את הפרטים ומאשר את העסק שלך בדרך כלל עד 3 ימי עסקים, ואז הוא מופיע באתר.",
+      "find_nearby": "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשו לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר"
+    },
+    "fallback_reply": "לא הצלחתי להבין את השאלה — אפשר לנסח אותה שוב?",
+    "error_rate_limit": "שלחתם הרבה הודעות בזמן קצר — נסו שוב בעוד דקה",
+    "error_generic": "משהו השתבש — נסו שוב בעוד רגע",
+    "launcher_close_label": "סגרו את הצ׳אט",
+    "launcher_open_label": "שאלו אותנו",
+    "launcher_pill": "שאלה? שאלו אותי",
+    "panel_label": "עוזרת מהמקור",
+    "panel_title": "שאלו אותנו",
+    "panel_close_label": "סגרו את חלון העוזרת",
+    "log_label": "שיחה עם העוזרת",
+    "input_label": "הקלידו שאלה",
+    "input_placeholder": "הקלידו שאלה...",
+    "send_label": "שלחו שאלה"
   }
 }

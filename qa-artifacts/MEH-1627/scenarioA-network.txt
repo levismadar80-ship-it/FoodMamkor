@@ -1,0 +1,11 @@
+200 POST /api/auth/login
+200 GET /api/auth/me
+200 GET /api/users/me/favorites
+401 GET /api/auth/me
+200 POST /api/auth/refresh
+200 GET /api/auth/me
+200 GET /api/users/me/favorites
+200 GET /api/producers/432c48fc-e808-495c-aef3-793a62a3d343
+200 GET /api/events?producer_id=432c48fc-e808-495c-aef3-793a62a3d343
+200 GET /api/producers?city=%D7%AA%D7%9C+%D7%90%D7%91%D7%99%D7%91&exclude=432c48fc-e808-495c-aef3-793a62a3d343&limit=12
+200 GET /api/producers?category=3&exclude=432c48fc-e808-495c-aef3-793a62a3d343&limit=3

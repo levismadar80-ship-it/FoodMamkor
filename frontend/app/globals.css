@@ -184,6 +184,44 @@ h1, h2, h3 {
   filter: none;
 }
 
+/* MEH-1682 — normalise the tooltip's positioning ORIGIN so Leaflet's own
+   placement math lands where it intends under `direction: rtl`.
+
+   Leaflet ships `.leaflet-tooltip { position: absolute }` with NO `left` and
+   no `right` (leaflet.css:577-579), so the box falls back to its STATIC
+   position — which CSS anchors to the containing block's inline start. In LTR
+   that is the left edge, which is the origin Leaflet's JS assumes when it
+   positions the tooltip with `transform: translate3d(x, …)`
+   (DomUtil.setPosition). Under RTL the static position anchors the box's RIGHT
+   edge instead, so the very same transform lands it exactly one tooltip-width
+   toward the inline start: detached from the pin, with a lateral gap.
+
+   Measured on the producer page, primary pin, 1440px — the transform is
+   BYTE-IDENTICAL in every row, so this is the CSS origin and not Leaflet's
+   arithmetic:
+
+     dir=rtl, no rule   → computed left: -138.672px, centre off by -139.3px
+     dir=ltr, no rule   → computed left:  0px,       centre off by   -0.7px
+     dir=ltr, this rule → computed left:  0px,       centre off by   -0.7px
+     dir=rtl, this rule → computed left:  0px,       centre off by   -0.7px
+
+   Row 2 vs 3 is why this is unconditional rather than `[dir="rtl"]`-scoped:
+   in LTR the declaration reproduces the value the cascade already computes,
+   so it is a measured no-op, and an attribute-scoped rule would only add a
+   way for the two to drift apart.
+
+   Physical `left` is REQUIRED and cannot be `inset-inline-start` — the whole
+   point is to pin the origin to one physical edge regardless of direction,
+   which is exactly what a logical property refuses to do. Same class of
+   documented exception as the map controls in .claude/rules/rtl.md.
+
+   Upstream: Leaflet #7201 (open since 2020, present in 1.9.4). Guarded by
+   frontend/e2e/qa-meh1682-tooltip-rtl.mjs, which measures the rendered
+   geometry rather than trusting this comment. */
+.leaflet-tooltip {
+  left: 0; /* rtl-ok: positioning origin, see the measured table above */
+}
+
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet
    is open. MapClient adds `body.sheet-open` when `selectedProducer` is
    set; without this the cookie banner peeks below the sheet's bottom
@@ -222,15 +260,20 @@ body.sheet-open .cookie-banner {
      locked by history: 1 → header covered it (MEH-15/30), 600 is the sheet
      token). Spatial fix, not another z-index round: MapBottomSheet publishes
      --map-sheet-h every drag frame / snap (MEH-970, NearMePill precedent);
-     fallback 0vh = no sheet mounted (desktop, other map surfaces) → the 10px
-     floor below IS Leaflet's own default margin, so those surfaces are
-     byte-identical. !important because Leaflet's
-     `.leaflet-bottom .leaflet-control { margin-bottom: 10px }` outranks this
-     single-class selector (measured: without it the margin never applies).
+     fallback 0vh = no sheet mounted (desktop, other map surfaces) → the max()
+     collapses to the 10px floor below.
+     MEH-1636: that 10px floor is OURS, not an inherited Leaflet value, and the
+     sheet-closed state is NOT equivalent to having no rule here. Leaflet ships
+     two competing rules and the LATER one wins on equal specificity, so its
+     effective default for this control is `margin: 0`. !important is therefore
+     needed to outrank `.leaflet-container .leaflet-control-attribution`
+     (measured: without it the margin never applies). Pinned executably —
+     frontend/__tests__/leaflet-attribution-default.test.js reads the installed
+     leaflet.css and reds if that cascade ever shifts; read the test, not this
+     comment, for the current fact.
      Mobile-only: the sheet is a <lg surface but it publishes --map-sheet-h
      whenever mounted, so an unscoped rule would lift the DESKTOP attribution
-     too (measured 78px). +6px clears the sheet's rounded top edge; the 10px
-     floor IS Leaflet's default margin (sheet-closed state = byte-identical).
+     too (measured 78px). +6px clears the sheet's rounded top edge.
      --map-sheet-anim keeps snap smooth (300ms), drag 1:1 (0ms). */
 }
 @media (max-width: 1023.98px) {
@@ -299,14 +342,66 @@ body.sheet-open .cookie-banner {
   background: transparent !important;
   border: none !important;
 }
-@media (hover: hover) {
-  .mehamakor-marker:not(.selected):not(.visited):hover {
-    transform: scale(1.15);
-  }
-}
+/* MEH-1619: a hover-media block sat here scaling up a marker on hover, and it had
+   never once applied. Measured, not reasoned: on a live /map with 11 un-clustered
+   markers its selector matched 0 elements — it named the bare marker class, while
+   the class Leaflet actually renders is the wrap class above — and its two state
+   qualifiers matched 0 as well, since marker state has been baked into the divIcon
+   HTML since MEH-763 rather than carried as classes.
+
+   DO NOT re-add a `transform` rule on this element. Leaflet owns the wrap's
+   transform: it writes `transform: translate3d(x, y, 0)` INLINE on every marker to
+   position it (DomUtil.setTransform, leaflet-src.js:2532, called from Marker._setPos).
+   Inline beats a class rule, so such a rule is dead on arrival — and in the one case
+   where it did win it would REPLACE the positioning transform and throw the pin to
+   the pane origin. A hover scale, if ever wanted, has to target the INNER div of the
+   icon HTML, which Leaflet does not touch.
+
+   Nothing was lost by the removal: hovering a marker produced no visual change
+   before it either (measured — icon HTML unchanged). The hover affordance that does
+   work is the JS one on the CARD path (useMapSync.js:162-168 -> refreshMarkerIcon ->
+   box-shadow ring; measured 0 -> 1 rings on card hover). Marker-hover having no
+   affordance of its own is a real UX gap, but it is a design decision, not this
+   audit's to make. Full evidence: docs/audits/silent-failure-audit.md (row A-10). */
 .mehamakor-cluster {
   background: transparent !important;
   border: none !important;
+}
+
+/* MEH-1611 — focus-on-select demote.
+   MapComponent puts `mehamakor-map-focused` on the map container while a
+   business is selected, and tags that business's own pins with
+   `mehamakor-marker-focused`. Everything else fades + desaturates so the
+   selection reads instantly, WITHOUT removing a single pin: the surrounding
+   supply stays on the map as context (Airbnb map-search pattern). Because the
+   rule is a descendant selector, demoting N pins costs exactly one class
+   toggle — no per-marker JS and no layer add/remove (MEH-1424's O(N²) lesson).
+
+   Deliberately NOT extended to `.mehamakor-cluster`: a cluster's membership
+   isn't knowable from CSS, and a single-business cluster (MEH-1568) IS the
+   selected business at low zoom — dimming it would fade the very thing the
+   user just picked. Clusters therefore stay at full strength.
+
+   The fade rides in `filter: opacity()`, NOT the `opacity` property — that is
+   load-bearing, not style. leaflet.markercluster writes INLINE `style.opacity`
+   onto every marker it animates (`clusterShow()` -> `setOpacity(options.opacity)`
+   = 1, leaflet.markercluster-src.js:1826-1836, called from :197/:417/:1289/:1378/
+   :1757 on every zoom and spiderfy). An inline style outranks a class rule, so a
+   plain `opacity: 0.35` here was silently reverted to full strength the first
+   time the user zoomed while a business was selected, leaving grayscale as the
+   only surviving cue. markercluster never touches `filter`, so routing the fade
+   through it keeps the demote stable across cluster animations AND leaves
+   markercluster's own hide/show (opacity 0 <-> 1) working untouched. Verified
+   in-browser: after a zoom-out/in cycle the demoted pins still compute
+   `filter: grayscale(1) opacity(0.35)` while their inline opacity is back at 1. */
+.mehamakor-map-focused .mehamakor-marker-wrap:not(.mehamakor-marker-focused) {
+  filter: grayscale(1) opacity(0.35);
+  transition: filter 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mehamakor-map-focused .mehamakor-marker-wrap:not(.mehamakor-marker-focused) {
+    transition: none;
+  }
 }
 
 /* Slide-up animation for the mobile bottom sheet on /map */

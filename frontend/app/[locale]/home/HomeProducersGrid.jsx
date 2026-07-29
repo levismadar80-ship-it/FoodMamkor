@@ -9,7 +9,7 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useMemo } from "react";
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
+import { ActiveFilterChip, DeliveryDayRow } from "@/app/[locale]/home/ActiveFilterChip";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
@@ -52,6 +52,9 @@ export function HomeProducersGrid({
   hasProducers,
   geoActive,
   cityActive,
+  // MEH-1645: active day refinement + its handler (day row + empty-state CTA).
+  dayActive,
+  onSelectDay,
   geoEmptyNotice,
   regionFallback,
 }) {
@@ -137,7 +140,16 @@ export function HomeProducersGrid({
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
+        dayActive={dayActive}
         onClear={onClearLocation}
+      />
+
+      {/* MEH-1645: progressive-disclosure day refinement — renders only while
+          a city filter is active (DeliveryDayRow self-gates on cityActive). */}
+      <DeliveryDayRow
+        cityActive={cityActive}
+        dayActive={dayActive}
+        onSelectDay={onSelectDay}
       />
 
       {producersLoading ? (
@@ -193,6 +205,23 @@ export function HomeProducersGrid({
               </motion.div>
             ))}
           </div>
+          {/* MEH-1645: zero results while a DAY refinement is active → suggest
+              removing the day BEFORE the region fallback — the day is the
+              narrowest filter, so it is the first thing to relax. */}
+          {producers.length === 0 && dayActive && (
+            <div className="text-center py-8" data-testid="day-empty-suggestion">
+              <p className="text-fg-muted mb-3 max-w-md mx-auto">
+                {t("home.producers.day_empty_suggestion", { day: dayActive, city: filters.delivery_city })}
+              </p>
+              <button
+                type="button"
+                onClick={() => onSelectDay(dayActive)}
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+              >
+                {t("home.producers.day_empty_clear_cta")}
+              </button>
+            </div>
+          )}
           {/* MEH-1487: region fallback — when a city filter returned 0 but the
               city belongs to a region, show the businesses that deliver
               anywhere in that region. Editorial discovery framing, not a

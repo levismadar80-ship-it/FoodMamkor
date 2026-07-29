@@ -1,5 +1,22 @@
 # E2E gate (required) — YAML patch ל-`e2e.yml` (MEH-1201)
 
+> # 🟢 סטטוס סופי (27/07) — אל תבצעי את צעדי ההחלה שבהמשך
+>
+> **ה-aggregator הוחל.** ספיר הדביקה אותו ידנית ב-27/07. אומת מול staging חי:
+> `e2e.yml` מכיל job בשם `e2e-gate`, `name: E2E gate (required)`, `if: always()`,
+> `needs: [filter, e2e]`. גם `concurrency` תוקן ל-`e2e-${{ github.head_ref ||
+> github.run_id }}` (MEH-1601 — Done).
+>
+> **הצעד של ה-ruleset הוכרע לשלילה ולא יבוצע.** ה-E2E נשאר **אינפורמטיבי**: הוא
+> אינו required status check, וה-ruleset `protect-staging` (15240090) **לא שונה
+> ולא ישונה**. הנימוק המלא — ומה בדיוק נדחה (ה-scope, לא המנגנון) — ב-
+> [ADR-028](../decisions/ADR-028-qa-gates-per-tier.md) § אמנדמנט 27/07.
+>
+> **מה הקובץ הזה עכשיו:** תיעוד היסטורי. תנאים מוקדמים A/B/C, ממצא MEH-892 ובלוק
+> ה-YAML נשארים **כלשונם** — הם הסיבה שאנחנו מבינים את הבעיה, ומי שיחזור לשאלה
+> הזאת בעתיד צריך אותם. רק סעיף "סדר ההחלה" בסוף נכתב מחדש, כי הוא היחיד שהיה
+> הוראת ביצוע.
+
 > **הבלוקים כאן מיועדים לספיר להדבקה ידנית.** `.github/workflows/**` הוא CC-deny
 > (`.claude/settings.json`, MEH-671) — CC כותב את ה-diff בקובץ `.md` הזה בלבד
 > ואינו נוגע ב-workflow.
@@ -178,6 +195,12 @@ MEH-1497 / MEH-1591), לא regen. מיסוך הוא **לא** תשובה מקוב
 ה-`name:` של `e2e` (`Playwright E2E (Vercel preview)`) — שם זה הוא זהות
 ה-branch-protection (`e2e.yml:77-80`).
 
+> ⚠️ **הבלוק הבא משוכפל כלשונו כרשומה היסטורית — כולל ההערה שבתוכו שאומרת
+> "Add `E2E gate (required)` to ruleset 15240090 ONLY after prerequisites A + B
+> are met".** המשפט הזה **בוטל** ב-27/07: ה-YAML **כבר הוחל**, וההוספה ל-ruleset
+> **הוכרעה לשלילה** (ראו הבאנר בראש הקובץ ו-ADR-028 § אמנדמנט 27/07). הוא נשאר
+> בתוך הבלוק כי הבלוק משוכפל verbatim; **אין לפעול לפיו.**
+
 ```yaml
   # ─────────────────────────────────────────────────────────────────
   # E2E GATE (MEH-1201) — required-check aggregator for the E2E suite.
@@ -240,21 +263,23 @@ MEH-1497 / MEH-1591), לא regen. מיסוך הוא **לא** תשובה מקוב
 
 ---
 
-## סדר ההחלה — צעדי ספיר
+## סדר ההחלה — הושלם, אין צעדים פתוחים
 
-1. **Prerequisite A** — הדביקי את תיקון ה-`filters` (למעלה) ל-`e2e.yml:62-74`.
-   ודאי על PR של docs-only ש-`Paths filter` פולט `frontend = false` וש-`Playwright
-   E2E (Vercel preview)` מדווח `skipped`.
-2. **Prerequisite B** — ייצבי/סגרי את 4 כשלי הסוויטה (MEH-991 Chunk 3 parity +
-   a11y `/producer/[id]`). ודאי run ירוק על non-docs PR.
-3. הדביקי את בלוק ה-aggregator `e2e-gate` (למעלה) לסוף `e2e.yml`. מזגי/דחפי כעצמך
-   (push עם `GITHUB_TOKEN` לא מפעיל workflows — ראו הערת VRT-baseline ב-CLAUDE.md).
-4. ודאי ש-`E2E gate (required)` רץ פעם אחת על staging כדי ש-GitHub יציע את שם
-   ה-context.
-5. Settings → Rules → Rulesets → `protect-staging` (ID 15240090) → הוסיפי את
-   `E2E gate (required)` ל-required status checks.
-6. **אימות סופי:** PR של docs-only מתמזג נקי (ה-gate = success על e2e שדולג); PR
-   של frontend עם E2E אדום נחסם (ה-gate = failure).
+**אין מה לבצע כאן.** הסעיף הזה החזיק פעם רשימת צעדים לספיר; כולם הוכרעו. נשמר
+כרשומה של מה נעשה ומה נדחה — לא כהוראה.
+
+| צעד היסטורי | מצב 27/07 |
+| -- | -- |
+| Prerequisite A — paths-filter מדלג על docs-only | ✅ הושלם. ה-filter חיובי-בלבד, ו-run `30220080416` הראה `skipped` על דחיפת docs-only. |
+| Prerequisite B — לייצב את הסוויטה | ✅ הושלם מספיק. הסוויטה ירוקה בריצות האחרונות; כשלים נותרים מטופלים כל אחד בכרטיס שלו. |
+| הדבקת בלוק ה-aggregator `e2e-gate` | ✅ **הוחל ידנית ע"י ספיר, 27/07.** אומת מול staging: job `e2e-gate`, `name: E2E gate (required)`, `if: always()`, `needs: [filter, e2e]`. |
+| הרצה אחת על staging כדי ש-GitHub יציע את ה-context | ✅ ה-job רץ; שם ה-context זמין. |
+| הוספת `E2E gate (required)` ל-ruleset | ⛔ **הוכרע לשלילה — לא בוצע ולא יבוצע.** ה-E2E נשאר אינפורמטיבי. הנימוק ב-[ADR-028](../decisions/ADR-028-qa-gates-per-tier.md) § אמנדמנט 27/07: מה שנדחה הוא ה-**scope** (E2E דפדפני מול סביבת preview חיצונית — הקטגוריה שהתעשייה משאירה אינפורמטיבית), לא ה-**מנגנון** (דפוס ה-aggregator עצמו תקני ונשאר בשימוש). |
+| "אימות סופי" מול חסימת merge | — לא רלוונטי. ה-gate אינו חוסם merge בכוונה; הוא סיגנל. |
+
+**מה כן נכון לעשות מכאן:** לקרוא את התוצאה של `E2E gate (required)` על כל PR
+כסיגנל — אדום בו ראוי לחקירה — ולא להסתמך עליו כחוסם. שני ה-required checks
+נשארים `CI gate` ו-`Deploy gate` בלבד.
 
 ---
 

@@ -15,7 +15,8 @@
 #           scripts/checks/README.md (the authoring contract),
 #           .claude/rules/workflow.md (rule 31 — the rule this enforces).
 # History:  MEH-1602 (creation — mechanises MEH-1372); MEH-1602 follow-up
-#           (root-level *.md counts as docs, + its regression case).
+#           (root-level *.md counts as docs, + its regression case);
+#           MEH-1634 (base resolution — stop diffing against a moving tip).
 #
 # WHY THIS EXISTS
 #   MEH-1372 landed as prose, which makes it advice an agent can skip. The same
@@ -25,7 +26,8 @@
 #   conflict on every concurrent merge; keeping them out of code branches is
 #   what removes the conflict, and only a red check enforces it.
 #
-# THE RULE (one rule; --self-test drives six cases through it)
+# THE RULE (one rule; --self-test drives six classification cases through it,
+#           plus two end-to-end base-resolution cases — see mid_cycle_case)
 #   Let DOCS = docs/**, .claude/**, .ai/**, HANDOFF.md, and root-level *.md
 #   FAIL  when the diff touches at least one file OUTSIDE DOCS *and* touches
 #         docs/CHANGELOG.md or HANDOFF.md.
@@ -46,17 +48,40 @@
 #   ask for the same treatment.
 #
 #   So it resolves a base itself, in this order, announcing which it used:
-#     1. $CHANGELOG_GUARD_BASE            — explicit override (self-test uses it)
-#     2. $GITHUB_BASE_REF                 — set automatically on pull_request
-#                                           events; fetched at depth 1 if the
-#                                           ref is not already present
-#     3. origin/<default>                 — local dev, full history
-#   On a pull_request checkout HEAD is refs/pull/N/merge (head already merged
-#   into base), so a TWO-dot `git diff BASE HEAD` is exactly the PR's net
-#   change and needs no common ancestor. When a merge base IS computable
-#   (local dev, or CI with full history) it is preferred, because there HEAD is
-#   the branch tip rather than a merge commit and two-dot would also report
-#   files that moved on the base since the branch point.
+#     1. $CHANGELOG_GUARD_BASE            — explicit override            [frozen]
+#     2. first parent of refs/pull/N/merge — the PR's own merge base,
+#                                            fetched on demand           [frozen]
+#     3. $GITHUB_BASE_REF                 — tip of the base branch NOW   [moving]
+#     4. origin/<default>                 — local dev, full history      [moving]
+#
+#   MEH-1634 — WHY (2) EXISTS AND WHY THE KIND TAG IS LOAD-BEARING
+#   A `pull_request` checkout puts HEAD at refs/pull/N/merge — head already
+#   merged into base — so `git diff BASE HEAD` is exactly the PR's net change,
+#   but ONLY when BASE is the very commit that merge ref was built on. GitHub
+#   recomputes that merge ref on push/base-change events, not continuously, so
+#   by the time this guard runs the base branch has usually moved on. Diffing
+#   the merge ref against the *current* tip reports everything that landed on
+#   staging in between — in REVERSE, as though this branch deleted it.
+#
+#   That is not theoretical. Run 30248101409 (27/07, PR on
+#   feature/meh-1546-staging-verification) went red with "47 code files"
+#   including backend/app/routers/alerts.py, while the very same run's
+#   paths-filter reported FRONTEND_TOUCHED=false BACKEND_TOUCHED=false — a
+#   docs-only PR. All 47 were staging's churn; one of them was a docs backfill
+#   carrying docs/CHANGELOG.md, which is what tipped the classifier into a
+#   VIOLATION. ~3 CI cycles burned on MEH-1623/1624 the same morning.
+#
+#   The fix reads the merge ref's FIRST PARENT — the frozen base the ref was
+#   actually built against — and fetches just that commit. Path (2) is gated on
+#   GITHUB_REF matching refs/pull/*/merge on purpose: on a feature branch that
+#   ran `git merge origin/staging` (rule 25) HEAD is also a merge commit, but
+#   there parent 1 is the branch's own previous tip, not a base.
+#
+#   A base is tagged `frozen` (two-dot is exact) or `moving` (two-dot is NOT).
+#   With a moving base the guard requires a real merge base and diffs three-dot;
+#   if it cannot compute one it EXITS NON-ZERO rather than emit the unsound
+#   two-dot answer that caused MEH-1634. Same discipline as the no-base case
+#   below: never report a verdict for a comparison it could not actually make.
 #
 #   If no base can be resolved the guard EXITS NON-ZERO. It must never report
 #   OK for a check it did not actually perform — that is the decorative-guard
@@ -64,10 +89,14 @@
 #
 # USAGE
 #   bash scripts/checks/changelog-branch-guard.sh              # guard the diff
-#   bash scripts/checks/changelog-branch-guard.sh --self-test  # prove all 4 cases
+#   bash scripts/checks/changelog-branch-guard.sh --self-test  # prove all 8 cases
 #
 set -uo pipefail
 
+# Absolute path to THIS file, resolved before the cd below — the self-test
+# copies it into a throwaway clone, and a relative BASH_SOURCE would not
+# survive that cd (invoking the guard from any other directory).
+SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # `|| exit 1` is load-bearing (SC2164) — see scripts/checks/README.md.
 cd "$REPO_ROOT" || exit 1
@@ -163,27 +192,91 @@ classify() {
 }
 
 # ---------------------------------------------------------------------------
-# resolve_base — echoes "<rev>\t<how>" or returns 1. See BASE RESOLUTION above.
+# have_commit <sha> — is this commit object actually present in the clone?
+# `git rev-parse` alone is not enough: in a shallow clone it happily resolves
+# a SHA whose object was never fetched.
+# ---------------------------------------------------------------------------
+have_commit() {
+  git cat-file -e "${1}^{commit}" 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
+# fetch_commit <sha> — pull one commit into a shallow clone. Two routes,
+# because neither works everywhere:
+#   (a) fetch the SHA directly — GitHub allows this (actions/checkout depends
+#       on it) but a plain `git daemon` / bare remote does not by default.
+#   (b) deepen the base branch until the SHA lands. The frozen base is an
+#       ancestor of the base branch, so a large enough --depth reaches it.
+# ---------------------------------------------------------------------------
+fetch_commit() {
+  local sha="$1" depth
+  if git fetch --no-tags --quiet --depth=1 origin "$sha" 2>/dev/null && have_commit "$sha"; then
+    return 0
+  fi
+  [ -n "${GITHUB_BASE_REF:-}" ] || return 1
+  for depth in 50 250 1000; do
+    git fetch --no-tags --quiet --depth="$depth" origin "$GITHUB_BASE_REF" 2>/dev/null || return 1
+    have_commit "$sha" && return 0
+  done
+  return 1
+}
+
+# ---------------------------------------------------------------------------
+# merge_ref_base — first parent of refs/pull/N/merge, i.e. the exact commit
+# this PR's merge ref was built on. Echoes the SHA or returns 1.
+#
+# Gated on GITHUB_REF: a feature branch synced with `git merge origin/staging`
+# (rule 25) is also a merge commit, but there parent 1 is the branch's own
+# previous tip and using it would under-report the diff.
+# ---------------------------------------------------------------------------
+merge_ref_base() {
+  case "${GITHUB_REF:-}" in
+    refs/pull/*/merge) ;;
+    *) return 1 ;;
+  esac
+
+  local parents first
+  # Parent lines live in the commit header, above the first blank line. The
+  # raw object survives shallow grafting; `git rev-parse HEAD^` does not.
+  parents="$(git cat-file commit HEAD 2>/dev/null | sed -n '/^$/q; s/^parent //p')"
+  [ "$(printf '%s\n' "$parents" | grep -c .)" -ge 2 ] || return 1
+  first="$(printf '%s\n' "$parents" | head -n 1)"
+  [ -n "$first" ] || return 1
+
+  have_commit "$first" || fetch_commit "$first" || return 1
+  printf '%s\n' "$first"
+}
+
+# ---------------------------------------------------------------------------
+# resolve_base — echoes "<rev>\t<how>\t<frozen|moving>" or returns 1.
+# See BASE RESOLUTION above for the ordering and what the kind tag means.
 # ---------------------------------------------------------------------------
 resolve_base() {
   if [ -n "${CHANGELOG_GUARD_BASE:-}" ]; then
     if git rev-parse --verify --quiet "${CHANGELOG_GUARD_BASE}^{commit}" >/dev/null; then
-      printf '%s\t%s\n' "$CHANGELOG_GUARD_BASE" "CHANGELOG_GUARD_BASE override"
+      printf '%s\t%s\t%s\n' "$CHANGELOG_GUARD_BASE" "CHANGELOG_GUARD_BASE override" frozen
       return 0
     fi
     echo "  base override CHANGELOG_GUARD_BASE=$CHANGELOG_GUARD_BASE is not a commit." >&2
     return 1
   fi
 
+  # MEH-1634: the PR's own frozen merge base, before any moving-tip fallback.
+  local frozen
+  if frozen="$(merge_ref_base)" && [ -n "$frozen" ]; then
+    printf '%s\t%s\t%s\n' "$frozen" "refs/pull/N/merge first parent" frozen
+    return 0
+  fi
+
   if [ -n "${GITHUB_BASE_REF:-}" ]; then
     if git rev-parse --verify --quiet "origin/${GITHUB_BASE_REF}^{commit}" >/dev/null; then
-      printf '%s\t%s\n' "origin/${GITHUB_BASE_REF}" "GITHUB_BASE_REF (already fetched)"
+      printf '%s\t%s\t%s\n' "origin/${GITHUB_BASE_REF}" "GITHUB_BASE_REF (already fetched)" moving
       return 0
     fi
     # Shallow CI checkout: the base branch is not in this clone yet.
     if git fetch --no-tags --quiet --depth=1 origin "$GITHUB_BASE_REF" 2>/dev/null &&
        git rev-parse --verify --quiet FETCH_HEAD^{commit} >/dev/null; then
-      printf '%s\t%s\n' "$(git rev-parse FETCH_HEAD)" "GITHUB_BASE_REF (fetched --depth=1)"
+      printf '%s\t%s\t%s\n' "$(git rev-parse FETCH_HEAD)" "GITHUB_BASE_REF (fetched --depth=1)" moving
       return 0
     fi
     echo "  could not fetch base ref $GITHUB_BASE_REF from origin." >&2
@@ -195,7 +288,7 @@ resolve_base() {
   for candidate in "$head_branch" "origin/staging" "origin/main"; do
     [ -n "$candidate" ] || continue
     if git rev-parse --verify --quiet "${candidate}^{commit}" >/dev/null; then
-      printf '%s\t%s\n' "$candidate" "local fallback"
+      printf '%s\t%s\t%s\n' "$candidate" "local fallback" moving
       return 0
     fi
   done
@@ -203,24 +296,33 @@ resolve_base() {
 }
 
 # ---------------------------------------------------------------------------
-# changed_files <base> — the PR's net diff, preferring a merge base when one
-# exists. Two-dot is correct on a pull_request merge ref; see BASE RESOLUTION.
+# changed_files <base> <kind> — the PR's net diff. Three-dot whenever a merge
+# base is computable; two-dot ONLY against a frozen base, where it is exact.
+# Returns 1 rather than guess. See BASE RESOLUTION (MEH-1634).
 # ---------------------------------------------------------------------------
 changed_files() {
-  local base="$1" mb
+  local base="$1" kind="$2" mb
   mb="$(git merge-base HEAD "$base" 2>/dev/null)"
   if [ -n "$mb" ]; then
-    echo "  diff: merge-base ${mb:0:8}..HEAD" >&2
+    echo "  diff: merge-base ${mb:0:8}..HEAD (three-dot)" >&2
     git diff --name-only "$mb" HEAD
-  else
-    echo "  diff: two-dot ${base}..HEAD (no merge base — shallow clone)" >&2
-    git diff --name-only "$base" HEAD
+    return 0
   fi
+  if [ "$kind" = frozen ]; then
+    echo "  diff: two-dot ${base:0:8}..HEAD (frozen base — exact for a merge ref)" >&2
+    git diff --name-only "$base" HEAD
+    return 0
+  fi
+  echo "  no merge base with $base, and that base is a MOVING ref." >&2
+  echo "  Two-dot here would report staging's own churn as this branch's" >&2
+  echo "  changes — the MEH-1634 false positive. Refusing to guess." >&2
+  return 1
 }
 
 # ---------------------------------------------------------------------------
-# --self-test — build a throwaway repo and drive all three cases end-to-end,
-# through the real diff path rather than the classifier alone.
+# --self-test — build a throwaway repo and drive the classification cases
+# through the real diff path, then hand off to mid_cycle_case for the two that
+# exercise base resolution on a shallow pull-request checkout (MEH-1634).
 # ---------------------------------------------------------------------------
 self_test() {
   local tmp status=0 base_sha cases=0
@@ -302,6 +404,13 @@ self_test() {
   run_case "backend *.py + CHANGELOG" FAIL \
     "echo 'x = 2' > backend/app/thing.py; echo '- entry' >> docs/CHANGELOG.md"
 
+  # MEH-1634 — the two cases above this line all drive `classify` directly, so
+  # none of them can see a base-resolution bug. These two drive the REAL script
+  # end-to-end over a shallow pull-request checkout.
+  mid_cycle_case true  "direct SHA fetch (GitHub-shaped remote)" || status=1
+  mid_cycle_case false "deepened base branch (SHA fetch refused)" || status=1
+  cases=$(( cases + 2 ))
+
   if [ "$status" -eq 0 ]; then
     echo "self-test OK — all $cases cases behaved as specified."
   else
@@ -311,11 +420,106 @@ self_test() {
 }
 
 # ---------------------------------------------------------------------------
+# mid_cycle_case <allow_sha_fetch> <label> — MEH-1634 regression lock.
+#
+# Reconstructs run 30248101409 exactly: a docs-only PR whose refs/pull/N/merge
+# was built on staging@T0, with a CODE merge (T1) and a docs backfill carrying
+# docs/CHANGELOG.md + HANDOFF.md (T2) landing on staging since. Guard runs on a
+# depth-1 checkout of the merge ref, as the repo-guards job does.
+#
+#   before MEH-1634: base = staging tip (T2), no merge base → two-dot T2..M,
+#                    which reports T1's code file AND T2's logs in reverse →
+#                    "VIOLATION", exit 1. A green CI cycle burned for nothing.
+#   after:           base = M's first parent (T0) → two-dot T0..M → the one
+#                    file this PR actually added → "docs-only diff", exit 0.
+#
+# The two invocations differ only in whether the remote honours a by-SHA fetch,
+# so both routes in fetch_commit() are exercised rather than one being decorative.
+# ---------------------------------------------------------------------------
+mid_cycle_case() {
+  local allow_sha="$1" label="$2"
+  local tmp origin clone out rc t0
+
+  tmp="$(mktemp -d)"
+  origin="$tmp/origin"
+  clone="$tmp/clone"
+
+  echo "── case: MEH-1634 mid-cycle docs PR — $label (expect PASS)"
+
+  (
+    mkdir -p "$origin" && cd "$origin" || exit 1
+    git init --quiet -b staging .
+    git config user.email guard@test.local
+    git config user.name  guard-self-test
+    git config uploadpack.allowAnySHA1InWant "$allow_sha"
+    mkdir -p docs/qa backend/app
+    echo "# changelog"  > docs/CHANGELOG.md
+    echo "# handoff"    > HANDOFF.md
+    echo "x = 1"        > backend/app/thing.py
+    git add -A && git commit --quiet -m "T0 base"
+
+    # The PR: docs-only, branched at T0.
+    git checkout --quiet -b feature
+    echo "- 32/32 verified" > docs/qa/evidence.md
+    git add -A && git commit --quiet -m "docs(qa): staging verification evidence"
+
+    # GitHub builds refs/pull/1/merge against staging AS IT IS NOW (T0).
+    git checkout --quiet -b prmerge staging
+    git merge --quiet --no-ff feature -m "Merge feature into staging"
+    git update-ref refs/pull/1/merge HEAD
+
+    # ...and only afterwards does staging move: a code PR, then a docs backfill.
+    git checkout --quiet staging
+    echo "x = 2" > backend/app/thing.py
+    git add -A && git commit --quiet -m "T1 someone else's code PR"
+    echo "- another entry" >> docs/CHANGELOG.md
+    echo "- another note"  >> HANDOFF.md
+    git add -A && git commit --quiet -m "T2 docs backfill (the mid-cycle lander)"
+  ) || { echo "   [XX] could not build fixture"; rm -rf "$tmp"; return 1; }
+
+  t0="$(git -C "$origin" rev-parse refs/pull/1/merge^1)"
+  echo "     merge ref built on T0=${t0:0:8}; staging tip is now $(git -C "$origin" rev-parse --short staging)"
+
+  (
+    mkdir -p "$clone" && cd "$clone" || exit 1
+    git init --quiet -b staging .
+    git config user.email guard@test.local
+    git config user.name  guard-self-test
+    git remote add origin "$origin"
+    # Exactly what actions/checkout@v7 does on a pull_request with fetch-depth 1.
+    git fetch --no-tags --quiet --depth=1 origin refs/pull/1/merge
+    git checkout --quiet --detach FETCH_HEAD
+    mkdir -p scripts/checks
+  ) || { echo "   [XX] could not build shallow clone"; rm -rf "$tmp"; return 1; }
+
+  # The real implementation, byte-for-byte — not a re-statement of it.
+  local self="scripts/checks/$(basename "$SELF_PATH")"
+  cp "$SELF_PATH" "$clone/$self"
+
+  out="$(cd "$clone" && CHANGELOG_GUARD_BASE= GITHUB_BASE_REF=staging \
+    GITHUB_REF=refs/pull/1/merge \
+    bash "$self" 2>&1)"
+  rc=$?
+
+  printf '%s\n' "$out" | sed 's/^/     /'
+  rm -rf "$tmp"
+
+  if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q "docs-only diff"; then
+    echo "   [ok] got PASS"
+    echo
+    return 0
+  fi
+  echo "   [XX] got exit $rc — expected a clean docs-only PASS"
+  echo
+  return 1
+}
+
+# ---------------------------------------------------------------------------
 main() {
   echo "changelog-branch-guard (MEH-1602) — enforces MEH-1372"
   echo
 
-  local resolved base how files
+  local resolved base how kind rest files
   if ! resolved="$(resolve_base)"; then
     echo "changelog-branch-guard FAILED — could not determine a base revision."
     echo "  Refusing to report OK for a check that did not run (MEH-420 precedent)."
@@ -323,10 +527,16 @@ main() {
     exit 1
   fi
   base="${resolved%%$'\t'*}"
-  how="${resolved#*$'\t'}"
-  echo "  base: $base  [$how]"
+  rest="${resolved#*$'\t'}"
+  how="${rest%%$'\t'*}"
+  kind="${rest##*$'\t'}"
+  echo "  base: $base  [$how, $kind]"
 
-  files="$(changed_files "$base")"
+  if ! files="$(changed_files "$base" "$kind")"; then
+    echo "changelog-branch-guard FAILED — could not compute a sound diff (MEH-1634)."
+    echo "  Set CHANGELOG_GUARD_BASE=<rev> to point it at a frozen base explicitly."
+    exit 1
+  fi
   echo
   printf '%s\n' "$files" | classify || {
     echo

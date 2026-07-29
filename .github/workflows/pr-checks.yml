@@ -34,7 +34,10 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  # MEH-1653: ready_for_review מקבל group נפרד כדי שלא יבטל ריצת synchronize
+  # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
+  # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event.action == 'ready_for_review' }}
   cancel-in-progress: true
 
 jobs:
@@ -707,6 +710,25 @@ jobs:
             fi
           }
 
+          # MEH-1582: a job that the gate is actively enforcing must have RUN.
+          # `skipped` there means a draft suppressed it (or a future `if:` did) —
+          # that is an absence of evidence, not a pass.
+          strict_ok() {
+            case "$1" in
+              success) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          check_ran() {
+            if strict_ok "$2"; then
+              echo "  OK  $1: $2"
+            else
+              echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
+              fail=1
+            fi
+          }
+
           echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED"
 
           if ! ok "$R_CHANGES"; then
@@ -715,15 +737,15 @@ jobs:
           fi
 
           echo "Always required (stack-independent):"
-          check "DO-NOT-MERGE marker gate" "$R_DNM"
-          check "qa-artifacts size cap" "$R_QA_SIZE"
-          check "Repo guards" "$R_REPO_GUARDS"
-          check "Env drift (.env.example)" "$R_ENV_DRIFT"
+          check_ran "DO-NOT-MERGE marker gate" "$R_DNM"
+          check_ran "qa-artifacts size cap" "$R_QA_SIZE"
+          check_ran "Repo guards" "$R_REPO_GUARDS"
+          check_ran "Env drift (.env.example)" "$R_ENV_DRIFT"
 
           if [ "$BACKEND_TOUCHED" = "true" ]; then
             echo "Backend stack touched — enforcing backend checks:"
-            check "Backend tests (pytest)" "$R_PYTEST"
-            check "Backend lint (ruff)" "$R_LINT_BACKEND"
+            check_ran "Backend tests (pytest)" "$R_PYTEST"
+            check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
             check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
           else
             echo "Backend stack not touched — backend checks not enforced."
@@ -731,11 +753,11 @@ jobs:
 
           if [ "$FRONTEND_TOUCHED" = "true" ]; then
             echo "Frontend stack touched — enforcing frontend checks:"
-            check "Frontend build (Next.js)" "$R_BUILD"
-            check "AI artifact scan (MEH-449)" "$R_AI_SCAN"
+            check_ran "Frontend build (Next.js)" "$R_BUILD"
+            check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
             check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
             check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
-            check "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
+            check_ran "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
           else
             echo "Frontend stack not touched — frontend checks not enforced."
           fi
