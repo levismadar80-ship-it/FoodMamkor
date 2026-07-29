@@ -24,7 +24,7 @@ from app.models.models import Experience, User
 from conftest import auth_header, make_producer, make_user
 
 
-def _make_host(db, *, producer_status: str = "approved") -> User:
+def _make_host(db, *, producer_status: str = "approved", **user_kwargs) -> User:
     """A host whose business is approved.
 
     MEH-1749 gated the public read paths on the host's business status, so a
@@ -33,9 +33,19 @@ def _make_host(db, *, producer_status: str = "approved") -> User:
     host through here; owner/admin tests keep using `make_user` directly,
     because those paths bypass the gate by design.
 
+    "Public read path" is the whole test, not just its subject. A test whose
+    *subject* is cancellation or pin privacy still asserts through
+    `GET /experiences` — so it needs a host with a business even though the
+    business is not what it is testing. Six such tests were missed on the first
+    sweep and only CI caught them; the criterion is **does this test read a
+    public path**, never **is this test about visibility**.
+
+    `**user_kwargs` forwards to `make_user` (e.g. `email=`) for tests that pin
+    explicit addresses to keep two actors apart.
+
     Pass `producer_status="pending"` / `"rejected"` to exercise the gate.
     """
-    host = make_user(db)
+    host = make_user(db, **user_kwargs)
     producer = make_producer(db, status=producer_status)
     host.producer_id = producer.id
     db.commit()
@@ -351,7 +361,7 @@ class TestExperienceDetail:
         assert resp.status_code == 404
 
     def test_stranger_cannot_see_pending(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(db, host, status="pending")
         resp = client.get(f"/experiences/{ex.id}")
         assert resp.status_code == 404
@@ -610,7 +620,7 @@ class TestAdminExperienceFlows:
         self, client, db, monkeypatch
     ):
         _mock_moderation(monkeypatch)
-        host = make_user(db, email="host@t.com")
+        host = _make_host(db, email="host@t.com")
         admin = make_user(db, role="admin")
         ex = _make_experience(db, host, title="GoLive", status="pending")
 
@@ -696,7 +706,7 @@ class TestExperienceCancelToggle:
     moderation (an approved experience stays approved)."""
 
     def test_public_list_hides_cancelled(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(db, host, title="Live", status="approved", is_active=True)
         _make_experience(db, host, title="Off", status="approved", is_active=False)
         resp = client.get("/experiences")
@@ -715,7 +725,7 @@ class TestExperienceCancelToggle:
 
     def test_owner_can_cancel_and_reactivate(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="APPROVED")
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(db, host, title="Toggle", status="approved")
 
         # Cancel → drops from public feed
@@ -787,7 +797,7 @@ class TestExperiencePinPrivacy:
     def test_stranger_home_experience_hides_coords_and_address(
         self, client, db
     ):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(
             db,
             host,
@@ -803,7 +813,7 @@ class TestExperiencePinPrivacy:
         assert body["lng"] is None
 
     def test_stranger_public_experience_keeps_coords(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(
             db,
             host,
