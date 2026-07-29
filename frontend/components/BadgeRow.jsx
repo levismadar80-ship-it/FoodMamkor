@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CaretLeft, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges } from "@/lib/badges";
+import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import Popover from "@/components/ui/Popover";
 
 /**
@@ -37,9 +38,53 @@ import Popover from "@/components/ui/Popover";
  * Hebrew explainer. Outside click + Esc closes. Works on mobile
  * without requiring hover.
  */
+// MEH-1711: the card badge names the CERTIFICATION, not a word we invented.
+// `CODE_TO_KEY` is imported from KashrutBadgeStrip — the detail page's owner of
+// that map — rather than copied, so the two surfaces cannot drift apart. That
+// import is also what preserves the map's WHITELIST role
+// (KashrutBadgeStrip.jsx:144 filters unknown codes through it); deriving the
+// key with `code.replace(/-/g,"_")` would have produced the same string for
+// known codes while silently accepting unknown ones.
+//
+// Filter BEFORE counting, deliberately: the detail page renders the filtered
+// set, so counting raw codes could show "חלק" there and the fallback here for
+// the same producer — the exact cross-surface disagreement this ticket closes.
+//
+// Zero or 2+ codes -> the locked fallback. Naming one certificate out of two
+// would be a misstatement, and naming none is the honest state; both are the
+// MEH-986 / MEH-1259 legal-compliance posture, not a display preference.
+function kosherLabel(producer, tKashrut, fallback) {
+  const codes = (producer?.kashrut_badges ?? []).filter((code) => CODE_TO_KEY[code]);
+  if (codes.length !== 1) return fallback;
+  return tKashrut(`badges.${CODE_TO_KEY[codes[0]]}.label`);
+}
+
+/**
+ * The one entry point every surface that renders a badge label must call.
+ *
+ * MEH-1711 resolved the label inside BadgeRow's own `.map`, which fixed the
+ * visible pills and left one surface behind: ProducerCard builds the `+N`
+ * overflow list straight from `allBadges(producer)` (ProducerCard.jsx:349-356)
+ * and reads `b.label` off BADGE_CONFIG, never passing through BadgeRow at all.
+ * A kosher pill in position 3+ therefore said the fallback while the detail
+ * page said "חלק" — the original three-surface contradiction surviving on the
+ * one surface nobody was looking at.
+ *
+ * Exported rather than duplicated so the overflow cannot drift from the pill:
+ * the resolution rule (filter through CODE_TO_KEY, then count) lives here once.
+ * Every other badge is returned untouched — this is a label resolver, not a
+ * badge filter, and it must not become one.
+ */
+export function resolveBadgeLabel(badge, producer, tKashrut) {
+  return badge.key === "kosher" ? kosherLabel(producer, tKashrut, badge.label) : badge.label;
+}
+
 export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
+  // MEH-1711: same namespace KashrutBadgeStrip.jsx:115 uses, so both surfaces
+  // read the identical `kashrut.badges.*.label` strings.
+  const tKashrut = useTranslations("kashrut");
   const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
   // MEH-1124 (MEH-1074 Task C): optional per-surface suppression. The producer
   // detail header passes hideKeys={["products", "delivery"]} — the products
@@ -59,7 +104,15 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
         b.key === "verified" ? (
           <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} avoidRef={avoidRef} />
         ) : (
-          <Badge key={b.key} badge={b} surface={surface} avoidRef={avoidRef} />
+          // MEH-1711: only the kosher pill's LABEL is swapped. earnsBadge, the
+          // badge set, the ordering, and the max-2 cap are untouched — this
+          // changes what the pill says, never who earns it.
+          <Badge
+            key={b.key}
+            badge={{ ...b, label: resolveBadgeLabel(b, producer, tKashrut) }}
+            surface={surface}
+            avoidRef={avoidRef}
+          />
         ),
       )}
     </div>

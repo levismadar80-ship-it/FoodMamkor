@@ -35,7 +35,7 @@ def _make_event(db, producer_id):
         producer_id=producer_id,
         title="סדנת אפייה",
         event_date=date(2099, 1, 1),
-        category="סדנה",
+        category="שוק",
         is_active=True,
     )
     db.add(event)

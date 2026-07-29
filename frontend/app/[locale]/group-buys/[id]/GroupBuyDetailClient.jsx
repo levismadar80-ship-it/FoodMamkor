@@ -335,6 +335,12 @@ export default function GroupBuyDetailClient({ id }) {
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
+                // rtl-ok — dir="ltr" numeric quantity: physical right IS the
+                // inline start of an LTR field inside the RTL form. Same
+                // documented exception as the licence number in
+                // RegisterProducerClient.jsx:815. MEH-1721 P7 filed this under
+                // F-1 (locale-breaking); it belongs in F-5 (correct use, marker
+                // missing) — swapping to text-start would misalign it.
                 className="text-right"
                 dir="ltr"
               />
