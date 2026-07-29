@@ -57,10 +57,10 @@ const GEO_RADIUS_KM_RETRY = 30;
  *   - 7 useEffect blocks in declaration order
  *   - handlers (updateURL, loadProducers, handleWhatsAppClick,
  *     scrollToProducers, navigateToChip, handleNearMe, handleCitySelected)
- *     — MEH-1774 renamed toggleChip → navigateToChip when the attribute chips
- *     stopped filtering in place and became deep-links to /producers
  *     close over the same state via the same reference identities they
- *     did before extraction. handleCategoryCardClick was removed in
+ *     did before extraction. MEH-1774 renamed toggleChip → navigateToChip:
+ *     the attribute chips stopped filtering in place and became deep-links
+ *     to /producers. handleCategoryCardClick was removed in
  *     MEH-1080 — category cards are real links to /producers?category=
  *     now; the ?category= deep-link path below stays for old shared URLs.
  *   - 6 derived values (visibleProducers, hasMore, categoryCards,
