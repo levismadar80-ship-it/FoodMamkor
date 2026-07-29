@@ -152,6 +152,115 @@ wrong answer.
 
 ---
 
+## ⏳ TEMPORARY — local adversarial review · ACTION DUE 2026-08-01
+
+> **⚠️ This section is the ONLY surviving record.** MEH-1734 and MEH-1735 —
+> which tracked the broken reviewer — were **cancelled on 29/07**. Nothing else
+> in Linear or the repo carries the three actions below. Delete this section
+> only when all three are done, not when the date passes.
+
+### 📅 2026-08-01 — three actions, all required
+
+**(a) Restore `CLAUDE_CODE_OAUTH_TOKEN` as a repository (or organization)
+secret.** `claude-review.yml:66` reads
+`claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}` — **not**
+`ANTHROPIC_API_KEY`, which the action also accepts but this workflow never
+reads. The job declares no `environment:`, so an *environment* secret resolves
+to empty and cannot work here; it must be repo- or org-scoped.
+
+> While you are in the file, add `show_full_output: true` to the step. The key
+> is **absent today** (verified 29/07 — not set to `false`, as MEH-1734's body
+> claimed), so the action's default applies and its own error text never
+> surfaces. GitHub additionally masks an **unset** secret and an **expired** one
+> identically. Without that output you cannot tell which of the two causes below
+> you are actually looking at, nor confirm the fix took.
+
+**(b) Pin `anthropics/claude-code-action` to a full commit SHA.**
+`claude-review.yml:64` is on the floating **`@v1`** tag, so an upstream change
+lands unannounced and un-reviewed — in a job whose entire purpose is review.
+(`actions/checkout@v7` at `:59` floats too; out of scope here, worth the same
+treatment.)
+
+**(c) Delete this temporary policy** — this whole section, plus rule 5a's
+pointer to it.
+
+**If (a) has not happened by 2026-08-01, that is a decision for Sapir — not a
+silent extension.** An expiry nobody actions is a promise, and this repo already
+has the empty MEH-487 calibration tally to show for that class.
+
+### Why the substitution exists
+
+The CI adversarial reviewer **has never read a diff**. It is not "failing" —
+it exits before doing any work: `num_turns: 1`, `total_cost_usd: 0`,
+`is_error: true`, ~500–600ms, on **every commit**, repo-wide (reproduced on an
+unrelated PR, run `30358905937`).
+
+**The cause is NOT established, and (a) is a hypothesis, not a diagnosis.** Two
+candidates produce this identical symptom:
+
+| # | Candidate | What points at it |
+|---|---|---|
+| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call |
+| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two |
+
+So **(b) may be the actual fix rather than a hardening**, and doing (a) alone
+could leave it broken. Do (a) and (b) together, with `show_full_output: true`
+on, and read the step log before concluding anything.
+
+It is `continue-on-error: true` (`claude-review.yml:56` — MEH-1734's body and
+the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`)
+and it is **not** in `ci-gate`'s `needs:` list, so its red blocks nothing. That
+is deliberate calibration mode, not an accident — but it means **rule 5a
+currently buys nothing**, and the `Builder-Model` guard (MEH-1668) was built to
+keep builder and reviewer distinct around a reviewer that never ran.
+
+### Do NOT "fix" it by making it required
+
+Sequence, decided under MEH-1734 §6 and preserved here because that ticket is
+gone: fix the credential → let it run **non-required** → collect a real tally
+(>70% useful) → **only then** promote it via an aggregator that maps
+`skipped → pass`, the approved `E2E gate` pattern. **Never** add the context to
+the ruleset directly — `claude-review.yml:27-31` has `paths-ignore`, so it
+skips docs-only PRs, and a skipped-but-required check reads as *Expected* and
+blocks them (MEH-892; tried on E2E 13/07 and reverted the same day).
+
+**A further decision died with MEH-1735 and is recorded here for Sapir only —
+not acted on:** that ticket concluded the reviewer should return to *advisory*
+(neutral conclusion, findings posted as a PR comment rather than mapped to an
+exit code, softening MEH-1668), and that the calibration audit **MEH-569**
+should be pulled forward from post-launch to now, since the gate was armed
+before the calibration meant to justify it ever ran. Both tickets are cancelled;
+neither change has been made. Flagged, not implemented — it is outside what this
+section was asked to carry.
+
+**Substitute, per PR:**
+
+1. Implement per the ticket's prompt block.
+2. Push and open the PR **non-draft**. A draft reports zero gates — and since
+   the MEH-1582 patch went live (`pr-checks.yml` `check_ran`/`strict_ok`) a
+   draft's required jobs are suppressed and the gate now goes **red**, not
+   falsely green.
+3. Run `/adversarial-review` **locally in the session** on the diff. Fix every
+   finding. Re-run if the fix changed anything.
+4. In the PR body, paste the verdict and note *"local review; CI reviewer
+   uncredentialed"* — cite **this section**, not a ticket. MEH-1734/1735 are
+   cancelled and a reader following them lands on nothing.
+5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
+   actually ran — `conclusion: success`, not `skipped`.
+6. **Ignore the `claude-review` job's red. Never edit `claude-review.yml`.**
+
+> **State the limitation plainly in the PR — do not dress it up.** The maker and
+> the checker are the same session, so this is a self-review and carries none of
+> the independence the CI reviewer was there to provide. It is a stopgap that is
+> strictly better than the current no-op, and strictly worse than a second pair
+> of eyes. Never present it as independent review.
+>
+> This is the same trap MEH-1757 §3 names for self-authored VEX: *"a VEX written
+> internally that nobody reviews becomes a quiet way to disappear findings."*
+> Writing the limitation into the PR body is what keeps it visible.
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
@@ -200,6 +309,8 @@ wrong answer.
      named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
    [.claude/rules/testing.md](./testing.md).
+   **⏳ Temporary substitution in force until 2026-08-01 — see
+   "TEMPORARY — local adversarial review" *above*, before "Workflow rules 1–20".**
 5. **Tests before implementation.** See
    [.claude/rules/testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one
