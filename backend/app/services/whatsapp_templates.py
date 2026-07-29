@@ -188,3 +188,22 @@ class FavoriteAlertHeV1(WhatsAppTemplate):
                 "parameters": [{"type": "text", "text": self.url_path}],
             },
         ]
+
+
+class KashrutExpiryReminderV1(WhatsAppTemplate):
+    """MEH-1673: reminds a business owner ~30 days before her kashrut
+    certificate expires, so the badge (and the MEH-1672 certificate display)
+    stays continuous.
+
+    UTILITY category, no buttons — three body params in {{n}} order:
+    owner/business name, business name, expiry date. The base
+    `to_components()` emits all three in declaration order.
+
+    # DO NOT rename — `kashrut_expiry_reminder` is the name registered with
+    # Meta; a mismatch returns error 132001 (template does not exist).
+    """
+
+    name: ClassVar[str] = "kashrut_expiry_reminder"
+    owner_name: str
+    producer_name: str
+    expires_at: str

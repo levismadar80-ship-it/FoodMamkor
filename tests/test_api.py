@@ -182,6 +182,18 @@ class TestAuth:
                 email_verified=True,
             )
         )
+        # MEH-1624 gap 1: the apple-collision branch (auth.py:338) was absent
+        # from this set, so a divergence unique to Apple would have shipped
+        # green. Quad, not triple.
+        db.add(
+            User(
+                email="ident_a@test.com",
+                name="AUser",
+                apple_id="apple-sub-ident",
+                role="consumer",
+                email_verified=True,
+            )
+        )
         db.commit()
 
         def post(email):
@@ -197,15 +209,17 @@ class TestAuth:
         r_new = post("ident_new@test.com")
         r_pw = post("ident_pw@test.com")
         r_g = post("ident_g@test.com")
-        for r in (r_new, r_pw, r_g):
+        r_a = post("ident_a@test.com")
+        for r in (r_new, r_pw, r_g, r_a):
             assert r.status_code == 200
         # Content (the response body the attacker sees) must be byte-identical.
-        assert r_new.content == r_pw.content == r_g.content
+        assert r_new.content == r_pw.content == r_g.content == r_a.content
         # Defensive: also no Set-Cookie divergence between branches.
         assert (
             r_new.headers.get_list("set-cookie")
             == r_pw.headers.get_list("set-cookie")
             == r_g.headers.get_list("set-cookie")
+            == r_a.headers.get_list("set-cookie")
             == []
         )
 
@@ -432,9 +446,32 @@ class TestAuth:
                 email_verified=True,
             )
         )
+        # MEH-1624 gap 1: apple-collision (auth.py:695) joins the set — same
+        # reasoning as the /auth/register sibling above.
+        db.add(
+            User(
+                email="prod_ident_a@test.com",
+                name="AUser",
+                apple_id="apple-sub-prod-ident",
+                role="consumer",
+                email_verified=True,
+            )
+        )
         db.commit()
 
-        def post(email, producer_name):
+        # MEH-1624: the per-IP cap on auth.py:378 is what forced this — when
+        # it was 3/hour the original triple sat exactly ON the ceiling, and a
+        # 4th request from one IP returned 429, proving nothing about response
+        # bytes. MEH-1635 widened that cap to 10/hour, so the triple no longer
+        # brushes it; the IP rotation stays regardless, because it makes this
+        # test independent of the per-IP value instead of merely far enough
+        # below it. Same technique as
+        # TestRegisterPerEmailRateLimit below; the emails are all distinct, so
+        # the per-email bucket never accumulates either. Request headers do
+        # not affect the response body being compared.
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+
+        def post(email, producer_name, ip):
             return client.post(
                 "/auth/register/producer",
                 json={
@@ -442,18 +479,21 @@ class TestAuth:
                     "email": email,
                     "producer_name": producer_name,
                 },
+                headers={"X-Real-IP": ip},
             )
 
-        r_new = post("prod_ident_new@test.com", "חוות חדשה")
-        r_pw = post("prod_ident_pw@test.com", "חוות פסבורד")
-        r_g = post("prod_ident_g@test.com", "חוות גוגל")
-        for r in (r_new, r_pw, r_g):
+        r_new = post("prod_ident_new@test.com", "חוות חדשה", "198.51.100.1")
+        r_pw = post("prod_ident_pw@test.com", "חוות פסבורד", "198.51.100.2")
+        r_g = post("prod_ident_g@test.com", "חוות גוגל", "198.51.100.3")
+        r_a = post("prod_ident_a@test.com", "חוות אפל", "198.51.100.4")
+        for r in (r_new, r_pw, r_g, r_a):
             assert r.status_code == 200
-        assert r_new.content == r_pw.content == r_g.content
+        assert r_new.content == r_pw.content == r_g.content == r_a.content
         assert (
             r_new.headers.get_list("set-cookie")
             == r_pw.headers.get_list("set-cookie")
             == r_g.headers.get_list("set-cookie")
+            == r_a.headers.get_list("set-cookie")
             == []
         )
 
@@ -593,11 +633,20 @@ class TestRegisterPerEmailRateLimit:
     def test_register_producer_per_email_rate_limit_blocks_after_5_attempts(
         self, client, monkeypatch
     ):
-        """Per-IP=3/hour (tight) + per-email=5/15min. Per-IP would trip
-        first from a single client, so this test rotates IPs via X-Real-IP
-        (TRUSTED_PROXY=1 to honor the header in get_real_client_ip).
-        Each request hits a fresh per-IP bucket; only per-email accumulates.
-        Sixth request from a 6th distinct IP, same email → 429.
+        """Per-IP=10/hour (auth.py:378) + per-email=5/15min (auth.py:379).
+
+        This test rotates IPs via X-Real-IP (TRUSTED_PROXY=1 to honor the
+        header in get_real_client_ip) so each request hits a fresh per-IP
+        bucket and only per-email accumulates. Sixth request from a 6th
+        distinct IP, same email → 429, and the 429 can only have come from
+        the per-email half.
+
+        The rotation was originally required: under the old 3/hour per-IP cap
+        (MEH-1635 widened it to 10/hour) a single client tripped per-IP first
+        and the test could not tell the two limiters apart. At 10/hour six
+        requests no longer reach the per-IP ceiling, so rotation is no longer
+        strictly necessary — it is kept because it pins the per-EMAIL cap
+        independently of whatever the per-IP value happens to be.
         """
         monkeypatch.setenv("TRUSTED_PROXY", "1")
         monkeypatch.setattr(
@@ -634,6 +683,484 @@ class TestRegisterPerEmailRateLimit:
         ]
         assert statuses[:5] == [200] * 5
         assert statuses[5] == 429
+
+
+class TestRegistrationCoverageGaps:
+    """MEH-1624 — the pins the 27/07 registration-coverage audit found missing.
+
+    Tests-only batch; every gap below was reachable production behaviour with
+    nothing asserting it. Gap numbers match the audit matrix / issue section 2.
+    """
+
+    def _producer_reg(self, **overrides):
+        return valid_producer_register_payload() | {
+            "email": "gap@example.com",
+            "name": "שרה",
+            "producer_name": "חוות הפערים",
+            "phone": "0501234567",
+            **overrides,
+        }
+
+    # --- gap 1: apple-collision duplicate-attempt dispatch ---------------
+
+    def test_register_existing_apple_user_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        """auth.py:338 — the apple arm of the provider ladder. Google and
+        password were pinned; Apple was not, so a wrong provider label (or a
+        missing dispatch) on this arm shipped green."""
+        db.add(
+            User(
+                email="dup_a@test.com",
+                name="Avigail",
+                apple_id="apple-sub-dup",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "dup_a@test.com",
+                "name": "Attacker",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("provider") == "apple"
+        # Body uses the EXISTING user's name, never the attacker-supplied one.
+        assert captured.get("name") == "Avigail"
+
+    def test_register_producer_existing_apple_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        """auth.py:695 — same ladder on the producer endpoint."""
+        db.add(
+            User(
+                email="dup_pa@test.com",
+                name="Avigail",
+                apple_id="apple-sub-dup-prod",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._producer_reg(email="dup_pa@test.com"),
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("provider") == "apple"
+        assert captured.get("name") == "Avigail"
+
+    # --- gap 6: the provider=None defensive arm --------------------------
+
+    def test_register_collision_with_no_auth_method_sends_nothing(
+        self, client, db, monkeypatch
+    ):
+        """auth.py:340-348 — a row with no password_hash / google_id /
+        apple_id. The handler logs and swallows; the response must stay
+        byte-identical and NO duplicate-attempt email may go out (there is no
+        provider to name in it)."""
+        from unittest.mock import Mock
+
+        db.add(
+            User(
+                email="noauth@test.com",
+                name="NoAuth",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        dup = Mock()
+        monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", dup)
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "noauth@test.com",
+                "name": "Attacker",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        dup.assert_not_called()
+        # And the swallow must not have created a second row.
+        assert db.query(User).filter(User.email == "noauth@test.com").count() == 1
+
+    def test_register_producer_collision_with_no_auth_method_sends_nothing(
+        self, client, db, monkeypatch
+    ):
+        """auth.py:697-702 — producer-side twin of the arm above."""
+        from unittest.mock import Mock
+
+        db.add(
+            User(
+                email="noauth_p@test.com",
+                name="NoAuth",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+        dup = Mock()
+        monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", dup)
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._producer_reg(email="noauth_p@test.com"),
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        dup.assert_not_called()
+
+    # --- gap 7: no verification email on a collision ---------------------
+
+    def test_register_collision_sends_no_verification_email(
+        self, client, db, monkeypatch
+    ):
+        """Absence pin. The existing collision tests STUB _send_verify_email
+        but never assert it stayed unused — a regression that treated the
+        existing email as new would have leaked a verification token to an
+        address the attacker does not control."""
+        from unittest.mock import Mock
+
+        make_user(db, email="novertify@test.com", name="Dana")
+        verify = Mock()
+        monkeypatch.setattr("app.routers.auth._send_verify_email", verify)
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "novertify@test.com",
+                "name": "Attacker",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        verify.assert_not_called()
+
+    def test_register_producer_collision_sends_no_verification_email(
+        self, client, db, monkeypatch
+    ):
+        """Producer-side twin of the absence pin above."""
+        from unittest.mock import Mock
+
+        make_user(db, email="novertify_p@test.com", name="Dana")
+        verify = Mock()
+        monkeypatch.setattr("app.routers.auth._send_verify_email", verify)
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._producer_reg(email="novertify_p@test.com"),
+        )
+        assert resp.status_code == 200
+        verify.assert_not_called()
+
+    # --- gap 8: score_producer dispatch ----------------------------------
+
+    def test_register_producer_dispatches_score_producer(
+        self, client, db, monkeypatch
+    ):
+        """auth.py:680. The service has thorough unit coverage but nothing
+        asserted the register handler actually schedules it — deleting the
+        add_task line would have kept the whole suite green."""
+        from unittest.mock import Mock
+
+        from app.models.models import Producer
+
+        score = Mock()
+        monkeypatch.setattr("app.routers.auth.score_producer", score)
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._producer_reg(email="scored@example.com"),
+        )
+        assert resp.status_code == 200
+        producer = db.query(Producer).filter(Producer.name == "חוות הפערים").one()
+        score.assert_called_once_with(producer.id)
+
+    def test_upgrade_dispatches_score_producer(self, client, db, monkeypatch):
+        """auth.py:552 — the upgrade path schedules it too."""
+        from unittest.mock import Mock
+
+        from app.models.models import Producer
+
+        user = make_user(db, email="upgrade_score@example.com", role="consumer")
+        score = Mock()
+        monkeypatch.setattr("app.routers.auth.score_producer", score)
+        payload = valid_producer_register_payload()
+        for field in ("email", "name", "password"):
+            payload.pop(field, None)
+        resp = client.post(
+            "/auth/register/producer",
+            json=payload | {"producer_name": "חוות שדרוג", "phone": "0521234567"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        producer = db.query(Producer).filter(Producer.name == "חוות שדרוג").one()
+        score.assert_called_once_with(producer.id)
+
+    def test_register_producer_collision_does_not_dispatch_score_producer(
+        self, client, db, monkeypatch
+    ):
+        """Absence half of gap 8 — the collision branch must stay
+        side-effect-symmetric (no producer row exists to score)."""
+        from unittest.mock import Mock
+
+        make_user(db, email="noscore@test.com")
+        score = Mock()
+        monkeypatch.setattr("app.routers.auth.score_producer", score)
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._producer_reg(email="noscore@test.com"),
+        )
+        assert resp.status_code == 200
+        score.assert_not_called()
+
+    # --- gap 9: welcome-email dispatch, both role variants ---------------
+
+    def test_register_consumer_dispatches_consumer_welcome(
+        self, client, monkeypatch
+    ):
+        """auth.py:326-328 — the role argument is what selects the template,
+        so it is the part worth pinning."""
+        from unittest.mock import Mock
+
+        welcome = Mock()
+        monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome)
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "welcome_c@example.com",
+                "name": "צרכנית",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        welcome.assert_called_once_with(
+            "welcome_c@example.com", "צרכנית", "consumer"
+        )
+
+    def test_register_producer_dispatches_producer_welcome(
+        self, client, monkeypatch
+    ):
+        """auth.py:684-686 — the "producer" variant. A copy-paste that left
+        "consumer" here would have sent producers the wrong onboarding mail
+        with nothing failing."""
+        from unittest.mock import Mock
+
+        welcome = Mock()
+        monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome)
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._producer_reg(email="welcome_p@example.com", name="יצרנית"),
+        )
+        assert resp.status_code == 200
+        welcome.assert_called_once_with(
+            "welcome_p@example.com", "יצרנית", "producer"
+        )
+
+    def test_register_collision_dispatches_no_welcome(
+        self, client, db, monkeypatch
+    ):
+        """Absence half of gap 9."""
+        from unittest.mock import Mock
+
+        make_user(db, email="nowelcome@test.com")
+        welcome = Mock()
+        monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome)
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "nowelcome@test.com",
+                "name": "Attacker",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        welcome.assert_not_called()
+
+
+class TestRegisterProducerContactMethodPresence:
+    """MEH-1624 gap 3 — auth.py:415-433.
+
+    whatsapp/phone (missing phone) was pinned; the website / instagram /
+    contact_email arms were not, so any of the three could have stopped
+    422-ing and a producer would land with a primary contact channel that
+    has no value behind it.
+    """
+
+    def _payload(self, **overrides):
+        base = valid_producer_register_payload() | {
+            "email": "cm@example.com",
+            "name": "שרה",
+            "producer_name": "חוות הקשר",
+        }
+        base.pop("phone", None)
+        return base | overrides
+
+    def test_website_method_without_website_is_422(self, client):
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._payload(primary_contact_method="website"),
+        )
+        assert resp.status_code == 422
+        assert "אתר" in str(resp.json()["detail"])
+
+    def test_instagram_method_without_instagram_is_422(self, client):
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._payload(primary_contact_method="instagram"),
+        )
+        assert resp.status_code == 422
+        assert "אינסטגרם" in str(resp.json()["detail"])
+
+    def test_email_method_without_contact_email_is_422(self, client):
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._payload(primary_contact_method="email"),
+        )
+        assert resp.status_code == 422
+        assert "אימייל ליצירת קשר" in str(resp.json()["detail"])
+
+    def test_website_method_with_website_succeeds(self, client):
+        """Control: the guard rejects absence, not the method itself."""
+        resp = client.post(
+            "/auth/register/producer",
+            json=self._payload(
+                primary_contact_method="website",
+                website="https://example.com",
+            ),
+        )
+        assert resp.status_code == 200, resp.text
+
+
+class TestRegisterProducerRequiredFieldsNonUpgrade:
+    """MEH-1624 gap 5 — auth.py:577-581.
+
+    email/name/password are Optional on ProducerRegister (the MEH-143 upgrade
+    path sends none of them), so the anonymous path's requirement lives in the
+    handler alone and nothing asserted it.
+    """
+
+    def _payload(self, **overrides):
+        return valid_producer_register_payload() | {
+            "email": "req@example.com",
+            "name": "שרה",
+            "producer_name": "חוות החובה",
+            "phone": "0501234567",
+            **overrides,
+        }
+
+    @pytest.mark.parametrize("missing", ["email", "name", "password"])
+    def test_missing_account_field_is_422(self, client, missing):
+        resp = client.post(
+            "/auth/register/producer", json=self._payload(**{missing: None})
+        )
+        assert resp.status_code == 422
+        assert "שדות חובה" in str(resp.json()["detail"])
+
+
+class TestRegisterPerIpRateLimit:
+    """MEH-1624 gap 4 — the per-IP halves of the dual-key limiters
+    (auth.py:262 register = 10/hour, auth.py:378 producer = 10/hour since
+    MEH-1635; it was 3/hour when this class was written).
+
+    The MEH-624 tests pin only the per-EMAIL half. These rotate the email so
+    the per-email bucket never saturates, leaving per-IP as the only limiter
+    that can trip. TRUSTED_PROXY is deliberately NOT set, so X-Real-IP is
+    ignored and every request shares the TestClient's single source IP —
+    the same technique as TestForgotPasswordRateLimits in test_auth.py.
+    """
+
+    def _stub_side_effects(self, monkeypatch):
+        for target in (
+            "_send_verify_email",
+            "_send_welcome_email",
+            "_send_duplicate_attempt_email",
+            "notify_admin_new_producer",
+            "notify_producer_registered",
+            "score_producer",
+        ):
+            monkeypatch.setattr(
+                f"app.routers.auth.{target}", lambda *a, **kw: None
+            )
+
+    def test_register_per_ip_limit_trips_on_11th(self, client, monkeypatch):
+        self._stub_side_effects(monkeypatch)
+        statuses = [
+            client.post(
+                "/auth/register",
+                json={
+                    "email": f"perip{i}@example.com",
+                    "name": "Tester",
+                    "password": "Zx7Yp9Mq2Lr4",
+                },
+            ).status_code
+            for i in range(11)
+        ]
+        assert statuses[:10] == [200] * 10
+        assert statuses[10] == 429
+
+    def test_register_producer_per_ip_limit_trips_on_11th(
+        self, client, monkeypatch
+    ):
+        # MEH-1635: widened 3/hour -> 10/hour (auth.py:378). Keying
+        # registration abuse on IP punished shared-IP users (CGNAT), and the
+        # allowance was further eaten by the MEH-1627 refresh-retry
+        # double-count and by resubmits after a 422. The per-EMAIL cap is
+        # unchanged and remains the primary anti-spam key.
+        self._stub_side_effects(monkeypatch)
+        base = valid_producer_register_payload() | {
+            "name": "שרה",
+            "phone": "0501234567",
+        }
+        statuses = [
+            client.post(
+                "/auth/register/producer",
+                json=base
+                | {
+                    "email": f"peripp{i}@example.com",
+                    "producer_name": f"חוות מספר {i}",
+                },
+            ).status_code
+            for i in range(11)
+        ]
+        assert statuses[:10] == [200] * 10
+        assert statuses[10] == 429
 
 
 class TestLoginTimingEqualization:
@@ -1027,18 +1554,25 @@ class TestAdminFlows:
         resp = client.get("/admin/settings", headers=auth_header(admin))
         assert resp.status_code == 200
         defaults = resp.json()
-        assert "admin_email" in defaults
+        # MEH-1566: was `admin_email` until that write-only key was removed
+        # from DEFAULT_SETTINGS. Any surviving free-text key exercises the same
+        # GET-defaults + PUT-persists contract.
+        assert "holiday_override_key" in defaults
 
         resp = client.put(
             "/admin/settings",
-            json={"admin_email": "boss@mehamakor.co.il"},
+            json={"holiday_override_key": "pesach"},
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
         # Persisted
-        row = db.query(AdminSetting).filter(AdminSetting.key == "admin_email").first()
+        row = (
+            db.query(AdminSetting)
+            .filter(AdminSetting.key == "holiday_override_key")
+            .first()
+        )
         assert row is not None
-        assert row.value == "boss@mehamakor.co.il"
+        assert row.value == "pesach"
 
     def test_analytics_endpoint(self, client, db):
         admin = make_user(db, role="admin")

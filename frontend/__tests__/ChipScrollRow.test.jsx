@@ -2,42 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 
-// MEH-1340: the active chip was washed out under the widened (w-12) end fade
-// because the fade was always rendered and the scroller had no scroll-pe. This
-// suite locks the DYNAMIC-fade behaviour: each edge fade renders only while its
-// sentinel is off-screen (IntersectionObserver, rooted on the scroller). A row
-// that doesn't overflow (both sentinels visible) shows zero fades; at the far
-// end the end fade is gone so the active chip is never covered. The IO is
-// mocked so we can drive sentinel visibility deterministically.
+// MEH-1340 made the edge fades DYNAMIC (a side fades only while content is
+// hidden past it). MEH-1572 changed how they are DRAWN and who decides:
+//   - drawn as a `mask-image` on the scroller, not two painted gradient divs,
+//     so the fade is transparent and needs no per-caller `fadeBg` colour;
+//   - decided by useScrollAffordance's scroll+RO math — the ONE authority
+//     that also drives the arrows and the conditional end spacer. The
+//     IntersectionObserver sentinels are gone.
+// These suites therefore drive scroll GEOMETRY (as the arrow suite below
+// already did) and assert on the mask's stop positions.
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
 }));
-
-// Controllable IntersectionObserver: capture every instance so a test can
-// fire the observer callback with hand-picked { target, isIntersecting }
-// entries — the component keys off entry.target === startEl/endEl.
-let ioInstances = [];
-class MockIntersectionObserver {
-  constructor(cb, options) {
-    this.cb = cb;
-    this.options = options;
-    this.targets = [];
-    ioInstances.push(this);
-  }
-  observe(el) {
-    this.targets.push(el);
-  }
-  unobserve(el) {
-    this.targets = this.targets.filter((t) => t !== el);
-  }
-  disconnect() {
-    this.targets = [];
-  }
-  fire(entries) {
-    act(() => this.cb(entries));
-  }
-}
 
 const CHIPS = [
   { key: "all", label: "כל" },
@@ -45,138 +22,136 @@ const CHIPS = [
   { key: "meat", label: "בשר ודגים" },
 ];
 
-// The two w-px flex children are the edge sentinels (DOM order: start, end).
-function getSentinels(container) {
-  const [start, end] = container.querySelectorAll("div.shrink-0.w-px");
-  return { start, end };
+// MEH-1572 fade depths, mirrored from the component.
+const START_FADE_PX = 12;
+const END_FADE_PX = 48;
+
+function getScroller(container) {
+  return container.querySelector("div.overflow-x-auto");
 }
 
-// Fades are the only pointer-events-none gradient overlays; start uses .start-0,
-// end uses .end-0. querySelector returns null when the fade isn't rendered.
-function getFades(container) {
+// The mask is the single source of fade truth now. The gradient lives in
+// globals.css (.chip-scroll-fade-mask); the component publishes only the two
+// stop depths as custom properties. A side with nothing hidden past it
+// publishes 0px (= no fade).
+function fadeStops(container) {
+  const { style } = getScroller(container);
   return {
-    start: container.querySelector("div.pointer-events-none.start-0"),
-    end: container.querySelector("div.pointer-events-none.end-0"),
+    start: Number.parseInt(style.getPropertyValue("--chip-fade-start"), 10),
+    end: Number.parseInt(style.getPropertyValue("--chip-fade-end"), 10),
   };
 }
 
+// Give the scroller real geometry (jsdom defaults everything to 0) and fire a
+// scroll event so the hook recomputes. RTL: scrollLeft is 0 at the inline
+// start and grows NEGATIVE toward the inline end.
+function setScrollGeometry(container, { scrollWidth, clientWidth, scrollLeft }) {
+  const scroller = getScroller(container);
+  Object.defineProperty(scroller, "scrollWidth", { value: scrollWidth, configurable: true });
+  Object.defineProperty(scroller, "clientWidth", { value: clientWidth, configurable: true });
+  Object.defineProperty(scroller, "scrollLeft", {
+    value: scrollLeft,
+    configurable: true,
+    writable: true,
+  });
+  fireEvent.scroll(scroller);
+  return scroller;
+}
+
+function renderRow(props = {}) {
+  return render(
+    <ChipScrollRow
+      variant="category"
+      activeKey="all"
+      chips={CHIPS}
+      onChipClick={() => {}}
+      {...props}
+    />,
+  );
+}
+
 beforeEach(() => {
-  ioInstances = [];
-  global.IntersectionObserver = MockIntersectionObserver;
   // jsdom doesn't implement these scroll methods the component calls on mount.
   Element.prototype.scrollTo = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-describe("ChipScrollRow — dynamic edge fades (MEH-1340)", () => {
-  it("renders no fade before the observer reports (default state)", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getFades(container);
-    expect(start).toBeNull();
-    expect(end).toBeNull();
+describe("ChipScrollRow — mask-image edge fades (MEH-1572)", () => {
+  it("fades are a mask on the scroller — no painted gradient overlay survives", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
+    // The MEH-1340 overlays were the only pointer-events-none edge divs.
+    expect(container.querySelector("div.pointer-events-none.start-0")).toBeNull();
+    expect(container.querySelector("div.pointer-events-none.end-0")).toBeNull();
+    // The scroller opts into the shared mask utility...
+    expect(getScroller(container).className).toContain("chip-scroll-fade-mask");
+    // ...and carries no colour of its own: a mask is colourless, so no caller
+    // background can leak into it (this is what killed the fadeBg prop).
+    const inlineStyle = getScroller(container).getAttribute("style") || "";
+    expect(inlineStyle).not.toMatch(/#F5F0E8|#ffffff/i);
   });
 
-  it("wires ONE IntersectionObserver rooted on the scroller, observing both sentinels", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    expect(ioInstances).toHaveLength(1);
-    const io = ioInstances[0];
-    // root is the horizontally-scrolling flex container.
-    expect(io.options.root).toBe(container.querySelector("div.overflow-x-auto"));
-    const { start, end } = getSentinels(container);
-    expect(io.targets).toEqual([start, end]);
+  it("non-overflowing row → both stops 0px (fully opaque, no fade)", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 500, clientWidth: 500, scrollLeft: 0 });
+    expect(fadeStops(container)).toEqual({ start: 0, end: 0 });
   });
 
-  it("non-overflowing row (both sentinels visible) → zero fades", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: true },
-    ]);
-    expect(getFades(container).start).toBeNull();
-    expect(getFades(container).end).toBeNull();
+  it("at the start edge → only the end fade", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: 0 });
+    expect(fadeStops(container)).toEqual({ start: 0, end: END_FADE_PX });
   });
 
-  it("at the start edge (start sentinel visible, end hidden) → only the end fade", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: false },
-    ]);
-    expect(getFades(container).start).toBeNull();
-    expect(getFades(container).end).not.toBeNull();
+  it("in the middle → both fades", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -250 });
+    expect(fadeStops(container)).toEqual({ start: START_FADE_PX, end: END_FADE_PX });
   });
 
-  it("in the middle (neither sentinel visible) → both fades", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: false },
-    ]);
-    expect(getFades(container).start).not.toBeNull();
-    expect(getFades(container).end).not.toBeNull();
+  it("at the far end → end fade GONE so the active chip isn't washed out", () => {
+    const { container } = renderRow({ activeKey: "bread" });
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(fadeStops(container)).toEqual({ start: START_FADE_PX, end: 0 });
   });
 
-  it("at the far end (end sentinel visible) → end fade GONE so the active chip isn't washed", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="bread" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    // scrolled fully to the end: start content hidden, end reached.
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: true },
-    ]);
-    expect(getFades(container).end).toBeNull();
-    expect(getFades(container).start).not.toBeNull();
-  });
-
-  it("disconnects the observer on unmount", () => {
-    const { unmount } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const io = ioInstances[0];
-    const spy = vi.spyOn(io, "disconnect");
-    unmount();
-    expect(spy).toHaveBeenCalledTimes(1);
+  it("publishes both stop depths on every render so the mask is never partial", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
+    const { style } = getScroller(container);
+    // Both vars must always be present — a missing one would fall back to the
+    // stylesheet default and silently pin that edge open.
+    expect(style.getPropertyValue("--chip-fade-start")).toMatch(/^\d+px$/);
+    expect(style.getPropertyValue("--chip-fade-end")).toMatch(/^\d+px$/);
   });
 });
 
-describe("ChipScrollRow — end-fade clearance structure (MEH-1340)", () => {
-  it("scroller carries scroll-pe-12 (matches the end fade width)", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const scroller = container.querySelector("div.overflow-x-auto");
-    expect(scroller.className).toContain("scroll-pe-12");
-    expect(scroller.className).toContain("scroll-ps-4");
+describe("ChipScrollRow — conditional end spacer + shared gutter (MEH-1572)", () => {
+  it("non-overflowing row renders NO end spacer (zero trailing dead space)", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 500, clientWidth: 500, scrollLeft: 0 });
+    expect(container.querySelector("div.shrink-0.w-12")).toBeNull();
   });
 
-  it("end spacer is w-12 (widened from w-8 so the last chip clears the fade)", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
+  it("overflowing row still reserves the w-12 spacer", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
     expect(container.querySelector("div.shrink-0.w-12")).not.toBeNull();
-    expect(container.querySelector("div.shrink-0.w-8")).toBeNull();
   });
 
-  it("has exactly two w-px sentinels bracketing the chips", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    expect(container.querySelectorAll("div.shrink-0.w-px")).toHaveLength(2);
+  it("the IO sentinels are gone — the hook is the only affordance authority", () => {
+    const { container } = renderRow();
+    expect(container.querySelectorAll("div.shrink-0.w-px")).toHaveLength(0);
+  });
+
+  it("scroller sits at the shared inline-start inset (0) and keeps scroll-pe-12", () => {
+    const { container } = renderRow();
+    const cls = getScroller(container).className;
+    expect(cls).toContain("ps-0");
+    expect(cls).toContain("scroll-ps-0");
+    expect(cls).not.toContain("ps-4");
+    // scroll-pe-12 remains the scrollIntoView clearance mechanism.
+    expect(cls).toContain("scroll-pe-12");
   });
 });
 

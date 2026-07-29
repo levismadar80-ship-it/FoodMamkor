@@ -31,6 +31,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import {
   requiresProducerLicense,
   hasLicenseFormatWarning,
@@ -44,6 +45,7 @@ import CategoryRequestModal from "@/components/CategoryRequestModal";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import HoursEditor from "./HoursEditor";
 
 // ============================================================
@@ -576,6 +578,11 @@ export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
 //     200 {"bio":""} fail-open / other.
 // ============================================================
 
+// Deliberately TIGHTER than the schemas.py sanitize caps (description 2000,
+// short_description 160/200) — product-length choices, not mirrors. The
+// invariant that must hold is client <= server (otherwise the UI accepts
+// input the server silently truncates); enforced by
+// scripts/checks/length-cap-sync-guard.sh (MEH-1393).
 const DESC_MAX = 150;
 const TAGLINE_MAX = 160;
 const HIGHLIGHT_MS = 2500;
@@ -633,11 +640,14 @@ function AssistForm({ t, assist }) {
             {t("optional")}
           </span>
         </div>
+        {/* MEH-1608: handle-shaped placeholder via i18n — the old hardcoded
+            "https://instagram.com/…" told owners to type the exact value
+            that broke their public link (ContactCard composes the URL). */}
         <input
           type="text"
           value={instagram}
           onChange={(e) => setInstagram(e.target.value.slice(0, 200))}
-          placeholder="https://instagram.com/…"
+          placeholder={t("instagram_placeholder")}
           className="w-full border border-border bg-surface rounded-[10px] px-3 py-2 text-sm"
           dir="ltr"
           maxLength={200}
@@ -901,7 +911,9 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
 // ImagesCard uploadFiles (upload error surface via detailToMessage).
 // ============================================================
 
-// Server-side sanitize cap (schemas.py owner_bio validator) — keep in sync.
+// Mirrors the schemas.py owner_bio sanitize cap — equality is mechanically
+// enforced by scripts/checks/length-cap-sync-guard.sh (MEH-1393), so a drift
+// on either side reds the Repo-guards CI job instead of shipping silently.
 const OWNER_BIO_MAX = 300;
 
 // Exported for isolation tests (EditTabOwnerStoryCard.test.jsx) — see CategoriesCard.
@@ -915,13 +927,21 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
   // the same explicit PUT as the bio.
   const [contactName, setContactName] = useState(profile.contact_name || "");
   const [savedContactName, setSavedContactName] = useState(profile.contact_name || "");
+  // MEH-1541: self-reported founding year → the quiet "מאז {שנה}" masthead line.
+  // Kept as a string in state (the native number input's value) and coerced to
+  // int|null on save. Empty string clears the value.
+  const [year, setYear] = useState(profile.established_year ?? "");
+  const [savedYear, setSavedYear] = useState(profile.established_year ?? "");
   const [photoUrl, setPhotoUrl] = useState(profile.owner_photo_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const dirty = bio !== savedBio || contactName !== savedContactName;
+  const dirty =
+    bio !== savedBio ||
+    contactName !== savedContactName ||
+    String(year) !== String(savedYear);
   useEffect(() => {
     reportDirty("ownerStory", dirty);
     return () => reportDirty("ownerStory", false);
@@ -955,9 +975,13 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     setError("");
     const owner_bio = bio.trim() || null;
     const contact_name = contactName.trim() || null;
+    // MEH-1541: "" clears the year; otherwise send the integer. Range
+    // (1800..current year) is enforced server-side (422 → surfaced below).
+    const established_year =
+      String(year).trim() === "" ? null : Number(year);
     try {
-      await api.put("/producers/me", { owner_bio, contact_name });
-      onSave({ owner_bio, contact_name });
+      await api.put("/producers/me", { owner_bio, contact_name, established_year });
+      onSave({ owner_bio, contact_name, established_year });
       // Track (and show) the normalized value that was actually persisted —
       // storing the raw textarea value would leave a phantom-dirty gap when
       // the input carried trailing whitespace (PR review nit).
@@ -965,9 +989,13 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       setSavedBio(owner_bio ?? "");
       setContactName(contact_name ?? "");
       setSavedContactName(contact_name ?? "");
+      setYear(established_year ?? "");
+      setSavedYear(established_year ?? "");
       setSaved(true);
-    } catch {
-      setError(t("error_save"));
+    } catch (err) {
+      // MEH-1541: surface the Hebrew validation detail (e.g. "שנת ההקמה לא
+      // תקינה") instead of the generic fallback.
+      setError(detailToMessage(err?.response?.data?.detail) || t("error_save"));
     }
     setSaving(false);
   };
@@ -990,6 +1018,26 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
         }}
         placeholder={t("contact_placeholder")}
         data-testid="owner-contact-name-input"
+      />
+
+      {/* MEH-1541: founding year (optional) → the quiet "מאז {שנה}" masthead
+          line. Numeric field, dir="ltr" so the digits read in LTR order.
+          MEH-1581: bounds derive from the shared helper (Israel-tz year),
+          parity with the server validator (1800..israel_today().year). */}
+      <Input
+        type="number"
+        label={t("year_label")}
+        helperText={t("year_helper")}
+        value={year}
+        onChange={(e) => {
+          setYear(e.target.value);
+          setSaved(false);
+        }}
+        min={MIN_ESTABLISHED_YEAR}
+        max={currentIsraelYear()}
+        dir="ltr"
+        inputMode="numeric"
+        data-testid="owner-established-year-input"
       />
 
       {/* Photo — locked spec label (photo_label). Square face-gravity crop is
@@ -1241,6 +1289,14 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
       {required && (
         <p className="text-xs text-fg-muted mb-3">{t("required_hint")}</p>
       )}
+      {/* MEH-1597: the "where it appears" line the MEH-1539 standard requires.
+          Unconditional — `required_hint` above renders only for a category that
+          demands a license, so without this an owner in any other category was
+          asked for a regulated number with nothing said about where it goes.
+          Deliberately silent on the verified badge: filling this number does
+          not grant it (admin-granted after document review, ADR-022), and
+          implying otherwise is the over-claim class MEH-1579 fixed. */}
+      <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
       <Input
         type="text"
         dir="ltr"
@@ -1541,14 +1597,25 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
   );
 }
 
+// MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
+// importable across the Python/JS boundary, so kept in sync by hand — the
+// ceiling exists to catch a typo before the round-trip 422, not as security.
+const MAX_DELIVERY_MONEY = 1_000_000;
+
 // ============================================================
 // MEH-1242 PR5: producer-facing location-mode + delivery editor. Mirrors the
 // admin ProducerForm "business_type" section (physical-store toggle, delivery
 // toggle, nationwide-or-cities via CitiesAutocomplete). The owner now writes
 // has_physical_location / offers_delivery / delivery_nationwide (previously
-// admin-only) plus delivery_area_cities. Client blocks the invalid states the
-// backend ProducerUpdate._validate_location_mode also 422s (neither type;
+// admin-only). Client blocks the invalid states the backend
+// ProducerUpdate._validate_location_mode also 422s (neither type;
 // nationwide + cities). REUSES: components/admin/ProducerForm.jsx:491-543.
+// MEH-1644: saves STRUCTURED delivery_areas rows (city · delivery_day ·
+// min_order) instead of the flat delivery_area_cities list — each city gets
+// an optional canonical-day select (lib/delivery-days.js mirrors the backend
+// whitelist), and registration-captured min_order survives the save instead
+// of being wiped by the flat delete+insert path. The admin form still uses
+// the flat list (it has no day input — nothing to align).
 // ============================================================
 
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx).
@@ -1561,7 +1628,30 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
     // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
     excluded: profile?.delivery_excluded_cities ?? [],
+    // MEH-1577: structured delivery cost. Held as STRINGS in form state (an
+    // <input> value must be), with "" meaning "not stated" → null on save.
+    // `?? ""` and not `|| ""`: a stored 0 is a real value ("משלוח חינם") and
+    // `||` would blank the field every time the owner reopened the form.
+    fee: profile?.delivery_fee ?? "",
+    freeAbove: profile?.free_delivery_above ?? "",
+    // MEH-1644: optional per-city dispatch day (canonical Hebrew values —
+    // lib/delivery-days.js mirrors the backend whitelist). "" = no day
+    // ("בתיאום מראש"). Legacy free-text values not in the vocabulary load as
+    // "" so the select never offers an unstorable value; the stored row is
+    // only rewritten on the next save (expand-only).
+    days: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, DELIVERY_DAYS.includes(d.delivery_day) ? d.delivery_day : ""]),
+    ),
   };
+  // MEH-1644: min_order isn't editable here, but the structured save must not
+  // wipe values registration captured — carry them through per city.
+  const minOrders = Object.fromEntries(
+    (profile?.delivery_areas ?? [])
+      .filter((d) => d.city && d.min_order != null)
+      .map((d) => [d.city, d.min_order]),
+  );
   const [baseline, setBaseline] = useState(initial);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -1580,7 +1670,14 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     form.cities.length !== baseline.cities.length ||
     form.cities.some((c, i) => c !== baseline.cities[i]) ||
     form.excluded.length !== baseline.excluded.length ||
-    form.excluded.some((c, i) => c !== baseline.excluded[i]);
+    form.excluded.some((c, i) => c !== baseline.excluded[i]) ||
+    // MEH-1577: String() both sides — baseline holds numbers after a save,
+    // form holds input strings, and 35 !== "35" would keep the card
+    // permanently dirty (blocking the unsaved-changes guard from ever clearing).
+    String(form.fee) !== String(baseline.fee) ||
+    String(form.freeAbove) !== String(baseline.freeAbove) ||
+    // MEH-1644: a day change on any currently-chosen city is a real edit.
+    form.cities.some((c) => (form.days[c] || "") !== (baseline.days[c] || ""));
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
@@ -1601,31 +1698,61 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     const cities = form.offersDelivery && !form.nationwide ? form.cities : [];
     const excluded =
       form.offersDelivery && form.nationwide ? form.excluded : [];
+    // MEH-1577: "" → null (owner cleared the field / never filled it), any
+    // other value → Number. Written as an explicit ""-check rather than
+    // `Number(v) || null`, which would turn a legitimate 0 into null and
+    // silently downgrade "delivery is free" to "cost not stated".
+    const toNullableInt = (v) => (v === "" || v == null ? null : Number(v));
     const normalized = {
       hasPhysical: form.hasPhysical,
       offersDelivery: form.offersDelivery,
       nationwide: form.offersDelivery ? form.nationwide : false,
       cities,
       excluded,
+      // Cost is meaningless for a pickup-only business — cleared alongside
+      // nationwide/cities above, same normalisation rule.
+      fee: form.offersDelivery ? toNullableInt(form.fee) : null,
+      freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
+      days: form.days,
     };
+    // MEH-1644: structured rows replace the flat delivery_area_cities send —
+    // each city carries its optional canonical day ("" → null = בתיאום מראש)
+    // and preserves any registration-captured min_order (previously wiped by
+    // the flat delete+insert path).
+    const rows = normalized.cities.map((c) => ({
+      city: c,
+      delivery_day: normalized.days[c] || null,
+      min_order: minOrders[c] ?? null,
+    }));
     try {
       await api.put("/producers/me", {
         has_physical_location: normalized.hasPhysical,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
-        delivery_area_cities: normalized.cities,
+        delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
+        delivery_fee: normalized.fee,
+        free_delivery_above: normalized.freeAbove,
       });
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
         has_physical_location: normalized.hasPhysical,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
-        delivery_areas: normalized.cities.map((c) => ({ city: c })),
+        delivery_areas: rows,
         delivery_excluded_cities: normalized.excluded,
+        delivery_fee: normalized.fee,
+        free_delivery_above: normalized.freeAbove,
       });
-      setBaseline(normalized);
-      setForm(normalized);
+      // MEH-1577: back to "" for the inputs — normalized carries null, and a
+      // null <input value> makes React warn about an uncontrolled component.
+      const asFields = {
+        ...normalized,
+        fee: normalized.fee ?? "",
+        freeAbove: normalized.freeAbove ?? "",
+      };
+      setBaseline(asFields);
+      setForm(asFields);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -1695,6 +1822,43 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                     {t("delivery_cities_required")}
                   </p>
                 )}
+                {/* MEH-1644: optional per-city dispatch day — select-from-
+                    canonical (lib/delivery-days.js), never free text. Empty
+                    option = "בתיאום מראש" (stored as null). Dashboard field
+                    standard: label + where-it-appears hint + select. */}
+                {form.cities.length > 0 && (
+                  <div className="mt-3">
+                    <span className="block text-sm text-muted mb-0.5">
+                      {t("delivery_days_label")}
+                    </span>
+                    <p className="text-xs text-fg-muted mb-2">
+                      {t("delivery_days_hint")}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {form.cities.map((c) => (
+                        <li key={c} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="min-w-0 truncate">{c}</span>
+                          <select
+                            value={form.days[c] || ""}
+                            aria-label={t("day_select_aria", { city: c })}
+                            data-testid={`delivery-day-select-${c}`}
+                            onChange={(e) =>
+                              set({ days: { ...form.days, [c]: e.target.value } })
+                            }
+                            className="border border-border rounded-[8px] px-2 py-1 text-sm bg-surface"
+                          >
+                            <option value="">{t("day_arranged")}</option>
+                            {DELIVERY_DAYS.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
             {/* MEH-1255: nationwide exclusion list — "לכל הארץ חוץ מ:" */}
@@ -1713,6 +1877,61 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 />
               </div>
             )}
+            {/* MEH-1577: structured delivery cost. Both optional — leaving them
+                empty keeps the public page exactly as it is today. Each field
+                carries a "where it appears" line + an example placeholder per
+                the dashboard field standard (docs/audits/dashboard-field-
+                guidance-audit.md, MEH-1539). min=0 on the fee (0 = free),
+                min=1 on the threshold, and max=MAX_DELIVERY_MONEY on both
+                mirror the server validators, so the browser catches the same
+                values the API would 422 on — the ceiling round-trips instead
+                of only surfacing after a submit. */}
+            <div className="space-y-3 pt-1">
+              <div>
+                <label
+                  htmlFor="delivery-fee"
+                  className="block text-sm text-muted mb-1"
+                >
+                  {t("fee_label")}
+                </label>
+                <p className="text-xs text-fg-muted mb-1">{t("fee_hint")}</p>
+                <input
+                  id="delivery-fee"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max={MAX_DELIVERY_MONEY}
+                  step="1"
+                  value={form.fee}
+                  onChange={(e) => set({ fee: e.target.value })}
+                  placeholder={t("fee_placeholder")}
+                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="free-delivery-above"
+                  className="block text-sm text-muted mb-1"
+                >
+                  {t("free_above_label")}
+                </label>
+                <p className="text-xs text-fg-muted mb-1">
+                  {t("free_above_hint")}
+                </p>
+                <input
+                  id="free-delivery-above"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={MAX_DELIVERY_MONEY}
+                  step="1"
+                  value={form.freeAbove}
+                  onChange={(e) => set({ freeAbove: e.target.value })}
+                  placeholder={t("free_above_placeholder")}
+                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

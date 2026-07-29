@@ -36,6 +36,16 @@ vi.mock("@/components/ShareButton", () => ({
   ),
 }));
 
+// MEH-1693: the hero corner is a PAIR now — the heart rejoined the share
+// circle. Stubbed for the same reason ShareButton is: the real one pulls in
+// auth + the favorites cache, and this suite asserts hero composition, not
+// favoriting behaviour.
+vi.mock("@/components/FavoriteButton", () => ({
+  default: (props) => (
+    <div data-testid="fav-overlay" data-variant={props.variant} />
+  ),
+}));
+
 // Mock ImageWithFallback — only rendered in the non-empty branch
 vi.mock("@/components/ImageWithFallback", () => ({
   default: () => <div data-testid="image" />,
@@ -97,8 +107,28 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     expect(share.parentElement.className).toMatch(/lg:hidden/);
   });
 
-  it("omits the share overlay when no producerId", () => {
+  // MEH-1693: the heart returned to the hero (override of MEH-1334 decision 6).
+  // Both circles, one cluster, exactly one of each — a second heart would mean
+  // the imageless and imaged branches both mounted.
+  it("shows the heart beside the share circle, one each (MEH-1693)", () => {
+    render(
+      <ImageGallery images={[]} producerId={"p-123"} producerName="חוות הדבש" shareUrl="https://x/p" />,
+    );
+    const hearts = screen.getAllByTestId("fav-overlay");
+    expect(hearts).toHaveLength(1);
+    expect(screen.getAllByTestId("share-overlay")).toHaveLength(1);
+    // gallery variant = the white-circle anatomy the share overlay mirrors.
+    expect(hearts[0]).toHaveAttribute("data-variant", "gallery");
+    // Same parent ⇒ same cluster, so they share the corner and the gap.
+    expect(hearts[0].parentElement).toBe(
+      screen.getByTestId("share-overlay").parentElement
+    );
+    expect(hearts[0].parentElement.className).toMatch(/lg:hidden/);
+  });
+
+  it("omits BOTH hero controls when no producerId", () => {
     render(<ImageGallery images={[]} producerName="חוות הדבש" />);
     expect(screen.queryByTestId("share-overlay")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("fav-overlay")).not.toBeInTheDocument();
   });
 });

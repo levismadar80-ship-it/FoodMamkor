@@ -1132,9 +1132,6 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
         {t("subtitle")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
       </p>
-      <p className="text-xs text-fg-muted mb-4">
-        {t("context_line")}
-      </p>
       {/* MEH-1477: content guidance — nudges owners toward the questions
           customers actually ask before buying (stock / delivery / ordering),
           reusing the MEH-1116 helper-text idiom. */}
@@ -1281,17 +1278,29 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-3">
         <Input type="tel" inputMode="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
           onChange={(e) => upd("phone", e.target.value)} error={fieldError("phone")} />
+        {/* MEH-1597: each placeholder shows the shape that field's validator
+            actually accepts (ProducerUpdate, backend/app/schemas/schemas.py).
+            instagram is the odd one out: it has NO validator (:997 is a bare
+            `str | None` — :1205 covers only website/facebook/external_order_form)
+            and ContactCard.jsx:105-106 builds `https://instagram.com/${handle}`
+            itself, so a URL here would render a doubled, dead link. Bare handle
+            on purpose. */}
         <Input type="text" dir="ltr" label={t("field_instagram")} value={form.instagram}
+          placeholder={t("instagram_placeholder")}
           onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
         <Input type="url" dir="ltr" label={t("field_website")} value={form.website}
+          placeholder={t("website_placeholder")}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
         {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
             empty-primary guard applies (fieldError never targets it). */}
         <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          placeholder={t("whatsapp_group_placeholder")}
           onChange={(e) => upd("whatsapp_group", e.target.value)} />
         <Input type="email" inputMode="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+          placeholder={t("email_placeholder")}
           onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
         <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
+          placeholder={t("facebook_placeholder")}
           onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
         <Input type="url" dir="ltr" label={t("field_external_order")} value={form.external_order_form}
           onChange={(e) => upd("external_order_form", e.target.value)} error={fieldError("external_order_form")} />

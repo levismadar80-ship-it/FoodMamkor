@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
-import BadgeRow from "./BadgeRow";
+import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
-import { badgeCount } from "@/lib/badges";
+import { allBadges, badgeCount } from "@/lib/badges";
+import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { BRAND_NAME } from "@/lib/constants";
@@ -156,8 +157,15 @@ function CardHeart({ producer, onCountChange }) {
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const t = useTranslations();
+  // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
+  // overflow rows read the identical `kashrut.badges.*.label` strings the
+  // visible pills and the detail page read.
+  const tKashrut = useTranslations("kashrut");
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
+  // MEH-1592: collision boundary handed to the +N Popover — see the badge strip
+  // below. The panel must clear the whole strip, not just the +N chip.
+  const badgeStripRef = useRef(null);
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -263,17 +271,105 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         {/* Badge row — bottom-start over the image (Assembly v2), max 2.
             MEH-76 chunk 4 (S12 §04-B): list density — verified renders the
             icon-only seal; declared shows nothing (no placeholder). */}
-        <div className="absolute bottom-3 start-3 z-[2] flex flex-wrap items-center gap-1.5">
-          <BadgeRow producer={producer} limit={2} surface="card" />
+        {/* MEH-1547: the z-[2] that used to sit here was REMOVED. `z-index` on
+            an absolutely-positioned element creates a stacking context, which
+            trapped the +N Popover's mobile bottom sheet (z-[1210]) at level 2 —
+            BottomNav (z-[1000], BottomNav.jsx:237) painted over it and the
+            disclosed labels were unreadable (caught in self-QA, not by tests).
+            The strip is a LATER sibling of the image <Link> in the same
+            stacking context, so plain `absolute` already paints it above the
+            photo — verified at 375px + 1440px, badges unchanged. z-index ledger:
+            .claude/rules/rtl.md (sheet family 1200/1210 > BottomNav 1000). */}
+        {/* MEH-1592: the strip is the +N popover's collision boundary — the
+            panel is placed so it clears this whole box, which is what makes
+            WRAPPED siblings safe too (at 4-col desktop widths the TrustBadge
+            "מובילת קהילה" wraps onto a second line directly under the +N chip,
+            which is the overlap Sapir's QA screenshot caught). */}
+        <div
+          ref={badgeStripRef}
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1.5"
+        >
+          <BadgeRow producer={producer} limit={2} surface="card" avoidRef={badgeStripRef} />
           {badgeCount(producer) > 2 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
-            <span
-              className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-[11px] font-medium"
-              data-testid="badge-overflow"
-              dir="ltr"
+            // MEH-1547: the +N counter becomes a Popover trigger listing the
+            // HIDDEN badges (labels only) — it was the one dead element in an
+            // otherwise tappable badge row. The v4 LOCK stays: still max 2
+            // visible badges, this adds disclosure, not visible badges.
+            // REUSES: components/BadgeRow.jsx:233 — Popover trigger pattern
+            // (MEH-813 transparent hit-area button wrapping the visible pill;
+            // Popover injects the toggle + the card-Link tap guard, and
+            // handleRootClick above ignores button descendants anyway).
+            // sheetOnMobile: an anchored panel cannot fit inside a 166px-wide
+            // mobile grid card (article is overflow-hidden), so below lg it
+            // presents as the MEH-1334 bottom sheet.
+            // w-max (not a fixed w-40): the card's own overflow-hidden clips
+            // the panel, and the popover anchors start-0 from the chip — which
+            // sits ~141px into a 294px xl:grid-cols-4 card, so a 160px panel
+            // lost 7px off its inline-end (measured in self-QA). Content-sized
+            // + nowrap keeps the widest label ("בחירת העורכת") inside the card.
+            <Popover
+              contentTestId="badge-overflow-popover"
+              contentClassName="w-max whitespace-nowrap"
+              sheetOnMobile
+              // MEH-1592: lg-and-up presentation moves to the overlay layer.
+              // The pre-1592 anchored panel opened `top-full` DOWNWARD out of a
+              // strip pinned to the photo's bottom edge, so it landed on the
+              // card title / rating row (measured 47.9x24.1px of overlap at
+              // 1440px) and on any sibling pill that had wrapped below it.
+              // Overlay mode places it above the whole strip instead, portalled
+              // out of the card's overflow-hidden. Below lg, sheetOnMobile
+              // still wins — the sheet was never the colliding surface.
+              overlay
+              avoidRef={badgeStripRef}
+              trigger={
+                <button
+                  type="button"
+                  aria-label={t("producer.card.badges.overflow_aria", {
+                    count: badgeCount(producer) - 2,
+                  })}
+                  data-testid="badge-overflow"
+                  dir="ltr"
+                  className="group inline-flex items-center justify-center min-h-[44px] min-w-[44px] -m-2.5 focus:outline-none"
+                >
+                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-[11px] font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
+                    +{badgeCount(producer) - 2}
+                  </span>
+                </button>
+              }
             >
-              +{badgeCount(producer) - 2}
-            </span>
+              {/* MEH-1714: the panel opened as a bare label list with no
+                  heading, so it read as an orphan pill floating over the
+                  photo (Sapir QA 28/07: "למה התג של הכשר נראה ככה"). The
+                  labels.md disclosure contract wants the affordance AND the
+                  copy that says what is behind it — MEH-1547 shipped the
+                  affordance, this is the copy. Muted + one step smaller than
+                  the labels so the list stays the primary content; the
+                  role="list"/"listitem" tree below is untouched, and the
+                  heading sits outside it so it is not announced as an item. */}
+              <span className="mb-1.5 block text-[10px] font-medium text-fg-muted">
+                {t("producer.card.badges.overflow_heading")}
+              </span>
+              {/* The overflow used to read `b.label` straight off BADGE_CONFIG,
+                  which is the one badge surface that never passes through
+                  BadgeRow — so MEH-1711's kashrut resolver did not reach it and
+                  a kosher pill in position 3+ said the fallback while the
+                  detail page said "חלק". Same shared resolver as the visible
+                  pills now (BadgeRow.jsx `resolveBadgeLabel`), imported rather
+                  than reimplemented so the two cannot drift. `allBadges` and
+                  `.slice(2)` are untouched: this changes what the rows SAY,
+                  not which rows are here, so the max-2 visible cap and the
+                  MEH-1714 heading above are unaffected. */}
+              <span className="flex flex-col gap-1" role="list">
+                {allBadges(producer)
+                  .slice(2)
+                  .map((b) => (
+                    <span key={b.key} role="listitem" className="block">
+                      {resolveBadgeLabel(b, producer, tKashrut)}
+                    </span>
+                  ))}
+              </span>
+            </Popover>
           )}
           {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
               (2 phone / 3 business) are owned by the BadgeRow seal above
@@ -281,7 +377,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               recognition tiers (4 community-leader, 5 ambassador), so it no
               longer duplicates the "מאומת" seal on the card. */}
           {(producer.trust_tier ?? 1) >= 4 && (
-            <TrustBadge tier={producer.trust_tier} compact />
+            <TrustBadge tier={producer.trust_tier} compact avoidRef={badgeStripRef} />
           )}
           {producer.has_physical_location === false && producer.offers_delivery && (
             // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string

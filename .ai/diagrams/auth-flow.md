@@ -84,7 +84,9 @@ flowchart LR
     NoAuth --> Anonymous[Anonymous route continues<br/>e.g. GET /producers]
 
     Header -->|Yes| Decode[jose.jwt.decode<br/>JWT_SECRET_KEY, HS256]
-    Decode -->|Invalid/expired| Raise401[HTTPException 401]
+    Decode -->|Invalid/expired| WhichDep{MEH-1627:<br/>which dep?}
+    WhichDep -->|get_current_user<br/>or _optional| Raise401[HTTPException 401<br/>+ WWW-Authenticate:<br/>Bearer error=invalid_token]
+    WhichDep -->|_lenient — the 2 sendBeacon<br/>telemetry routes ONLY| NoAuth
     Decode -->|Valid| LoadUser[SELECT User WHERE id=sub]
     LoadUser -->|Not found| Raise401b[HTTPException 401]
     LoadUser -->|Found| FpGate{MEH-327:<br/>userFingerprint<br/>claim present?}

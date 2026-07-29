@@ -1,6 +1,6 @@
 # מהמקור — COPY BANK
 > Single source of truth for all copy decisions.
-> Last updated: 2026-05-22
+> Last updated: 2026-07-26
 > **Status key:** ✅ Merged to staging · ⏳ PR open · 🕐 Pending
 >
 > Rule: document only **merged** copy. Pending entries show the MEH ticket to watch.
@@ -796,3 +796,73 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 | **CTA** | `גלו בתי עסק באזור שלכם` → `/producers` (locale-aware) |
 | **Sources line** | `מקורות: Sustain UK — What is local food and why does it matter? (2025) · CollectiveCrop — Fresh-Picked vs Supermarket Produce (2026)` — both titles are live links: Sustain → `https://www.sustainweb.org/blogs/jul25-what-is-local-food/`; CollectiveCrop → `https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter` |
 | **Status** | ✅ MEH-1289 |
+
+## Section 12 — Producer-page directory disclaimer, plain-language rewrite (MEH-1548)
+
+> **Status: ✅ APPROVED — Sapir picked variant A (26/07). Shipped verbatim; see "Final locked copy" below.**
+> Surface: `components/DirectoryDisclaimer.jsx`, mounted once at
+> `app/[locale]/producer/[id]/components/ProducerSections.jsx:522` (producer detail page only;
+> home-product surfaces were deferred under MEH-543). Renders as
+> `[BRAND_NAME] + brand_is_prefix + directory_only + prices_set_by_businesses`.
+>
+> **Why:** QA 26/07 — "מה זאת אומרת מדריך??". The word "מדריך" is the legal positioning
+> (an editorial guide, not a marketplace), but it is not everyday Hebrew, and if the founder
+> re-reads it twice a consumer will not read it at all. The **substance does not change** —
+> only the wording spreads out, with the full legal weight staying on `/terms`
+> (layered disclosure).
+
+### Current copy (verbatim, unchanged on staging)
+
+| Field | Value |
+|---|---|
+| **he (rendered)** | `מהמקור הוא מדריך בלבד. האחריות על הפריטים והרישוי חלה על בית העסק בלבד. המחירים נקבעים על ידי בתי העסק.` |
+| **en (rendered)** | `מהמקור presents business information only. The business bears full responsibility for items and licensing. Prices are set by the businesses themselves.` |
+| **i18n keys** | `directory.disclaimer.brand_is_prefix` · `.directory_only` · `.prices_set_by_businesses` |
+
+### Proposed variants — line 1 (pick ONE, or edit)
+
+Every variant is derived from existing `/terms` wording; **no new legal claim is introduced**
+and the declared verification scope is **not** widened (over-claim guard):
+`terms.sections.service` ("מציגה מידע בלבד: היא אינה מוכרת מוצרים, אינה צד לעסקה… כל עסקה נעשית
+ישירות בין המוכרת לקונה"), `terms.sections.responsibility` ("כל מוצר… באחריות המוכרת בלבד"),
+`terms.sections.licensing` ("האחריות לציות חלה על המוכרת בלבד").
+
+| # | he | en twin |
+|---|---|---|
+| **A** — closest to `/terms` §1 | `מהמקור מציגה בתי עסק — לא מוכרת ולא צד לעסקה. הקנייה נעשית ישירות מול בית העסק, והאחריות על המוצרים, על הרישוי ועל המחירים היא שלו.` | `Mehamakor lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which sets its prices and is responsible for its products and licensing.` |
+| **B** — shortest | `מהמקור מציגה בתי עסק ואינה מוכרת. הקנייה, המחירים והאחריות על המוצרים ועל הרישוי — ישירות מול בית העסק.` | `Mehamakor lists businesses and does not sell. Purchases, prices, and responsibility for products and licensing sit with the business.` |
+| **C** — reader-facing "you" (ADR-024 voice) | `אנחנו מציגות כאן בתי עסק, לא מוכרות. את קונה ישירות מבית העסק — הוא קובע את המחיר ואחראי על המוצרים ועל הרישוי.` | `We list businesses here — we don't sell. You buy directly from the business, which sets its prices and is responsible for its products and licensing.` |
+
+### Proposed line 2 — link to the full terms (all variants)
+
+| Field | Value |
+|---|---|
+| **he** | `לפרטים המלאים — תנאי השימוש` → `/terms` |
+| **en** | `Full details — Terms of Use` → `/terms` |
+
+### Final locked copy (variant A — approved 26/07, shipped)
+
+| Field | Value |
+|---|---|
+| **he (rendered)** | `מהמקור מציגה בתי עסק — לא מוכרת ולא צד לעסקה. הקנייה נעשית ישירות מול בית העסק, והאחריות על המוצרים, על הרישוי ועל המחירים היא שלו.` + link `לפרטים המלאים — תנאי השימוש` → `/terms` |
+| **en (rendered)** | `מהמקור lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which is responsible for its products, its licensing, and its prices.` + link `Full details — Terms of Use` → `/terms` |
+| **i18n keys** | `directory.disclaimer.body` · `.terms_link` |
+| **Status** | ✅ MEH-1548 |
+
+`BRAND_NAME` is still rendered separately in semibold by the component, so each `body` value
+starts mid-sentence — that is deliberate, not a truncation.
+
+**Key structure changed 3 → 2.** `brand_is_prefix` / `directory_only` /
+`prices_set_by_businesses` were retired: variant A carries the price clause inline
+("ועל המחירים"), so a separate prices sentence would have repeated it. `DirectoryDisclaimer.jsx`
+was the only consumer of all three (grep-verified), so nothing else needed touching.
+
+### Notes on the decision
+
+- All three candidates dropped "מדריך" and instead said plainly what the platform **does**
+  ("מציגה בתי עסק"); A was chosen as the one that tracks `/terms` §1 most literally.
+- The three facts the old line carried are all preserved: not the seller, responsibility for
+  products + licensing sits with the business, and the business sets prices.
+- **Still open:** this wording joins the agenda for the pending lawyer review of the
+  terms/privacy documents before it is treated as finally settled legal copy. Approval here is
+  a product/copy approval, not a legal sign-off.

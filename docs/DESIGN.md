@@ -205,6 +205,15 @@ instead, and *Do's and Don'ts* for why.
   go **deeper** on interaction (`primary` → `primary-dark` / `green-700`), never
   lighter.
 
+### Raw palette shades are not tokens
+
+Tailwind's stock palettes (`red-*`, `gray-*`, `amber-*`, …) are **not** tokens.
+Use the semantic name: `text-error`, `bg-surface`, `border-border`,
+`text-fg-muted`, `text-muted`. `green-*` is the one exception — it **is** a token
+(the 6-stop scale above) and is exempt. An ESLint selector warns on the rest
+(MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
+raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
+
 Two families carry the whole system. **Frank Ruhl Libre** — a Hebrew serif —
 for headlines, set at weight **900** for editorial gravitas (the canonical
 headline weight per CONTEXT.md §5 and BRAND.md §3). **DM Sans** for all body,

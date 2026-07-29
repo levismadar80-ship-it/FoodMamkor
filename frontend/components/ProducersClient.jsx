@@ -538,26 +538,24 @@ export default function ProducersClient({
           selection) vs the toggle row below (attribute filtering). */}
       {categories.length > 0 && (
         <div className="mb-3">
-          <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.category_label")}</p>
+          <p className="text-xs text-fg-muted mb-1">{t("filters.category_label")}</p>
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
             activeKeys={new Set(categoryFilter)}
             onChipClick={handleCategorySelect}
-            fadeBg="#F5F0E8"
           />
         </div>
       )}
 
       {/* Toggle/attribute chip row — MEH-1186 micro-label "סינון". */}
       <div className="mb-3">
-        <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.filter_label")}</p>
+        <p className="text-xs text-fg-muted mb-1">{t("filters.filter_label")}</p>
         <ChipScrollRow
           variant="toggle"
           chips={allChips}
           activeKeys={activeKeys}
           onChipClick={handleChipClick}
-          fadeBg="#F5F0E8"
         />
       </div>
 

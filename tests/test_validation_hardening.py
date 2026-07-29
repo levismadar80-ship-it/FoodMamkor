@@ -114,6 +114,144 @@ def test_register_producer_accepts_po_box_address(client):
     assert r.status_code == 200, r.text
 
 
+# ---------- MEH-1623: producer_name floor + sanitize on the PUBLIC path ----------
+# ProducerRegister.producer_name carried NO validator at all while its
+# admin-side twin (ProducerCreate.name) has had _min_letters_validator since
+# MEH-555 — so the public registration path accepted "???", whitespace, and raw
+# HTML as a business name. Stacked bleach→floor, mirroring short_description.
+
+
+def test_register_producer_rejects_punctuation_only_producer_name(client):
+    # The MEH-555 pattern on the field it had never been applied to.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="???"),
+    )
+    assert r.status_code == 422
+    assert any("producer_name" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_rejects_whitespace_only_producer_name(client):
+    # sanitize_text strips to "" → returns None; _min_letters_validator coerces
+    # None → "" and raises a clean ValueError (422), NOT AttributeError (500).
+    # This is the HOT-003 path documented at schemas.py:59.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="   "),
+    )
+    assert r.status_code == 422
+    assert any("producer_name" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_strips_html_from_producer_name(client, db):
+    # Sanitization is observable only in what gets PERSISTED — the response is
+    # an anti-enumeration ack (MEH-328) that echoes nothing back.
+    from app.models.models import Producer
+
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="<b>מאפיית שקד</b>"),
+    )
+    assert r.status_code == 200, r.text
+    stored = db.query(Producer).one()
+    assert stored.name == "מאפיית שקד"
+
+
+def test_register_producer_rejects_html_wrapping_a_too_short_name(client):
+    # The ticket's literal example, pinned to its ACTUAL behaviour: bleach
+    # strips to "שם" = 2 letters, which is below the ≥3-letter floor → 422.
+    # The floor runs on the POST-sanitize value, so HTML cannot be used to pad
+    # a name past it.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="<b>שם</b>"),
+    )
+    assert r.status_code == 422
+    assert any("producer_name" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_accepts_legitimate_hebrew_producer_name(client):
+    # Regression floor: the fix must not reject a real business name.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(producer_name="מאפיית שקד"),
+    )
+    assert r.status_code == 200, r.text
+
+
+def _validated_fields(model):
+    """Field names on `model` validated by EITHER a @field_validator OR an
+    Annotated domain type carrying an AfterValidator.
+
+    Recursing into the annotation is load-bearing: an optional domain-typed
+    field is `Optional[Annotated[str, AfterValidator(...)]]`, so the marker
+    sits on the inner Annotated inside the Union, not on the field's own
+    metadata.
+    """
+
+    def has_after_validator(tp, depth=0):
+        if depth > 4:
+            return False
+        if any(type(m).__name__ == "AfterValidator" for m in getattr(tp, "__metadata__", ())):
+            return True
+        return any(has_after_validator(a, depth + 1) for a in getattr(tp, "__args__", ()))
+
+    decorated = {
+        name
+        for v in model.__pydantic_decorators__.field_validators.values()
+        for name in v.info.fields
+    }
+    typed = {
+        name
+        for name, f in model.model_fields.items()
+        if any(type(m).__name__ == "AfterValidator" for m in getattr(f, "metadata", []))
+        or has_after_validator(f.annotation)
+    }
+    return decorated | typed
+
+
+def test_producer_register_validated_field_count():
+    """MEH-1623's count pin, re-aimed by MEH-1626 chunk 1 — updated, never
+    deleted.
+
+    Two things changed under it, both deliberate:
+
+    1. HOW fields are validated. `producer_name` moved from a pair of inline
+       @field_validators to the shared `SanitizedBusinessNameField`. Counting
+       decorators alone would now report 11 and go red for a reason that has
+       nothing to do with coverage — so the count is by **type OR decorator**,
+       which is the property MEH-1623 actually cared about.
+    2. HOW MANY. Chunk 1 brought `name` (the account holder's person name)
+       under `SanitizedPersonNameField`, so the real number is 12 + 1 = 13.
+       Bumping the constant is only legitimate BECAUSE a field was added to
+       the validated set; it must never be bumped to chase a red test.
+
+    Renamed from test_producer_register_has_exactly_12_validated_fields — the
+    old name would have become a lie.
+    """
+    from app.schemas.schemas import ProducerRegister
+
+    fields = _validated_fields(ProducerRegister)
+    assert "producer_name" in fields, sorted(fields)
+    assert "name" in fields, sorted(fields)
+    assert len(fields) == 13, sorted(fields)
+
+
+def test_producer_name_is_validated_by_type_not_decorator():
+    """Pins the MEH-1626 migration itself: producer_name's validation now
+    arrives via the shared domain type. Without this, a revert to inline
+    decorators would keep the count at 12 and go unnoticed."""
+    from app.schemas.schemas import ProducerRegister
+
+    decorated = {
+        name
+        for v in ProducerRegister.__pydantic_decorators__.field_validators.values()
+        for name in v.info.fields
+    }
+    assert "producer_name" not in decorated
+    assert "producer_name" in _validated_fields(ProducerRegister)
+
+
 # ---------- favorites: orphaned row doesn't 500 ----------
 
 

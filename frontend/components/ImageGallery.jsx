@@ -5,14 +5,19 @@ import { useTranslations } from "next-intl";
 import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import ImageWithFallback from "./ImageWithFallback";
+import FavoriteButton from "./FavoriteButton";
 import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
 import Popover from "./ui/Popover";
 
-// MEH-1334 (decision 6): the hero corner overlay is now SHARE, mobile-only —
-// the heart's one home is the header quiet-actions row (שמירה), and desktop
-// share lives there too, so the desktop hero stays clean.
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, shareUrl = "" }) {
+// The hero corner overlay is mobile-only; the desktop hero stays clean because
+// both controls live in the header's quiet-actions row there.
+// MEH-1334 (decision 6) made that corner SHARE-only and gave the heart a single
+// home in the header row. MEH-1693 reverses the heart half: below lg the row no
+// longer renders at all, so the corner carries BOTH circles (share + heart) and
+// the row is the desktop-only pair. `onFavorited` is forwarded to the heart so
+// the page — not this component — owns the post-save AlertPrefsPanel.
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, shareUrl = "", onFavorited }) {
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -116,6 +121,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               <Popover
                 role="dialog"
                 sheetOnMobile
+                // MEH-1593 (surface 5): the masthead's own wrapper is
+                // `relative … overflow-hidden`, and it IS this panel's
+                // containing block — measured 27/07, 86.75px of the panel was
+                // cut off at 1440px (panel bottom 395px vs ancestor bottom
+                // 308px). `overlay` portals it out; no avoidRef needed, the
+                // panel already had 0 sibling intersections.
+                overlay
                 contentTestId="badge-tooltip-verified"
                 contentClassName="w-64 flex flex-col gap-1.5"
                 sheetContentClassName="flex flex-col gap-2"
@@ -151,9 +163,19 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             )}
           </div>
         </div>
+        {/* MEH-1693: imageless masthead — same two-circle hero cluster as the
+            imaged branch below. gap-2 matches the grid's own gap so the pair
+            reads as one control group. Mutually exclusive with that branch
+            (this arm returns early), so only ONE heart mounts per render. */}
         {producerId && (
-          <div className="absolute top-3 start-3 z-10 lg:hidden">
+          <div className="absolute top-3 start-3 z-10 lg:hidden flex items-center gap-2">
             <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+            <FavoriteButton
+              producerId={producerId}
+              producerName={producerName}
+              variant="gallery"
+              onFavorited={onFavorited}
+            />
           </div>
         )}
       </div>
@@ -293,12 +315,26 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         </>
       )}
     </div>
-    {/* MEH-1334: single mobile SHARE overlay for the imaged state — pinned
-        top-start (right, RTL) over the hero corner where the heart used to
-        sit (MEH-1047 slot). z-20 clears the counter chip / pill (z-10). */}
+    {/* MEH-1334: mobile overlay for the imaged state — pinned top-start
+        (right, RTL) over the hero corner. z-20 clears the counter chip /
+        pill (z-10).
+        MEH-1693: the heart is BACK beside the share circle, reclaiming the
+        MEH-1047 slot it was pulled from. MEH-1334 decision 6 removed it to
+        kill a ❤️-hero/actions-row duplication; that duplication is gone now
+        that the row is desktop-only, so the removal's premise no longer
+        holds. Both circles share one anatomy (bg-white/95, w-11 h-11,
+        rounded-full, shadow-md) — ShareButton's overlay variant was written
+        to mirror FavoriteButton's gallery circle, so they match by
+        construction rather than by copied class strings. */}
     {producerId && (
-      <div className="absolute top-3 start-3 z-20 lg:hidden">
+      <div className="absolute top-3 start-3 z-20 lg:hidden flex items-center gap-2">
         <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+        <FavoriteButton
+          producerId={producerId}
+          producerName={producerName}
+          variant="gallery"
+          onFavorited={onFavorited}
+        />
       </div>
     )}
     </div>

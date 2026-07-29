@@ -164,7 +164,10 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
       fireEvent.click(screen.getByLabelText("התקשרו"));
       const revealed = screen.getByTestId("revealed-phone");
       expect(revealed).toHaveAttribute("href", "tel:0501234567");
-      expect(revealed).toHaveAttribute("dir", "ltr");
+      // MEH-1583: dir="ltr" moved off the row onto the number span — on the
+      // row it dragged the phone icon to the visual end in RTL. The digits are
+      // still direction-locked, one level down.
+      expect(revealed.querySelector("span[dir='ltr']")).toHaveTextContent("0501234567");
     } finally {
       window.matchMedia = prev;
     }

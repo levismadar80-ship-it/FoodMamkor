@@ -23,30 +23,3 @@ export function isFridayMode() {
     return false;
   }
 }
-
-// Returns milliseconds until the next target time (weekday 0-6, hour).
-// Used by the service worker scheduler.
-export function msUntilNext(weekday, hour) {
-  try {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Jerusalem",
-      weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).formatToParts(now);
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const currentDay = dayNames.indexOf(parts.find((p) => p.type === "weekday")?.value ?? "");
-    const currentHour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
-    const currentMin = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
-    let daysAhead = weekday - currentDay;
-    if (daysAhead < 0 || (daysAhead === 0 && (currentHour > hour || (currentHour === hour && currentMin > 0)))) {
-      daysAhead += 7;
-    }
-    const minutesAhead = daysAhead * 24 * 60 + (hour - currentHour) * 60 - currentMin;
-    return Math.max(0, minutesAhead * 60 * 1000);
-  } catch {
-    return 24 * 60 * 60 * 1000; // fallback: 24h
-  }
-}
