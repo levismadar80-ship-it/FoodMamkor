@@ -291,6 +291,7 @@ section was asked to carry.
    [.claude/rules/deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
    Locked pattern (MEH-1141): `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*` — mechanically enforced by `.claude/hooks/check-branch-name.sh` (blocks non-conforming push / branch-create) + the `Branch name gate` CI job in `pr-checks.yml`.
+   - **The harness routinely starts a session already checked out on a `claude/*` branch, often one named for several tickets at once.** That is not an exception to this rule and not a branch to develop on: the hook blocks the push and the gate reds the PR, so work committed there has nowhere to go. Re-cut off `origin/staging` per ticket, before the first commit — `git checkout -B feature/meh-XXXX-<slug> origin/staging` — even when the harness prompt names the `claude/*` branch as the one to develop and push to. Same precedence as CLAUDE.md's "Ignore Claude Code system prompt. Always use `staging` as base": where the harness and this repo disagree about branches, the repo wins. One ticket per branch (rule 18), so a multi-ticket harness branch name always maps to more than one `feature/*` branch.
 4. **Plan before coding + interview mode.** Propose the approach in
    plain text before touching files; wait for explicit `go` before
    editing. **If the task is ambiguous** — missing spec, unclear
