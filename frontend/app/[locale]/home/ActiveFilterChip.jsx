@@ -74,6 +74,15 @@ const DAY_HINT_ID = "delivery-day-hint";
  * names. Pattern: MDN aria-disabled + Smashing "Usability Pitfalls of
  * Disabled Buttons" (hint next to the control beats hiding it).
  *
+ * The ghost look is the MUTED TOKEN ALONE — deliberately no `opacity-*`.
+ * Measured: text-fg-muted (#5c584f) on the pill's white bg is 7.1:1, but the
+ * same token at opacity-60 composites to 2.78:1, under the WCAG AA 4.5:1
+ * floor (IS 5568 makes AA mandatory here). WCAG's "inactive component"
+ * exemption does NOT cover these: they are focusable, clickable, and reading
+ * them IS the discovery path this row exists for. Exactly the MEH-919 finding
+ * — globals.css dropped a Leaflet `opacity: 0.6` for the same reason. Dim
+ * further only by swapping the token, never by stacking opacity.
+ *
  * Placement note (MEH-1645 Phase 0 correction): the MEH-1645 spec names
  * "FilterSheet", but FilterSheet.jsx is mounted only by /map's
  * FilterChipsBar — and /map was out of that ticket's scope. The home has no
@@ -105,7 +114,7 @@ export function DeliveryDayRow({ cityActive, dayActive, onSelectDay }) {
                 active
                   ? "bg-primary text-white border-primary"
                   : ghost
-                    ? "bg-surface text-fg-muted border-border opacity-60"
+                    ? "bg-surface text-fg-muted border-border"
                     : "bg-surface text-text border-border hover:bg-green-50"
               }`}
             >
