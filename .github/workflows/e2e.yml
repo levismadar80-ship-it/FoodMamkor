@@ -395,7 +395,7 @@ jobs:
   # required context instead.
   # ─────────────────────────────────────────────────────────────────
   e2e-gate:
-    name: E2E gate (required)
+    name: E2E gate 
     if: always()
     needs: [filter, e2e]
     runs-on: ubuntu-latest
