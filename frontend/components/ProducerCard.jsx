@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
-import BadgeRow from "./BadgeRow";
+import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
@@ -157,6 +157,10 @@ function CardHeart({ producer, onCountChange }) {
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const t = useTranslations();
+  // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
+  // overflow rows read the identical `kashrut.badges.*.label` strings the
+  // visible pills and the detail page read.
+  const tKashrut = useTranslations("kashrut");
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
   // MEH-1592: collision boundary handed to the +N Popover — see the badge strip
@@ -346,12 +350,22 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               <span className="mb-1.5 block text-[10px] font-medium text-fg-muted">
                 {t("producer.card.badges.overflow_heading")}
               </span>
+              {/* The overflow used to read `b.label` straight off BADGE_CONFIG,
+                  which is the one badge surface that never passes through
+                  BadgeRow — so MEH-1711's kashrut resolver did not reach it and
+                  a kosher pill in position 3+ said the fallback while the
+                  detail page said "חלק". Same shared resolver as the visible
+                  pills now (BadgeRow.jsx `resolveBadgeLabel`), imported rather
+                  than reimplemented so the two cannot drift. `allBadges` and
+                  `.slice(2)` are untouched: this changes what the rows SAY,
+                  not which rows are here, so the max-2 visible cap and the
+                  MEH-1714 heading above are unaffected. */}
               <span className="flex flex-col gap-1" role="list">
                 {allBadges(producer)
                   .slice(2)
                   .map((b) => (
                     <span key={b.key} role="listitem" className="block">
-                      {b.label}
+                      {resolveBadgeLabel(b, producer, tKashrut)}
                     </span>
                   ))}
               </span>

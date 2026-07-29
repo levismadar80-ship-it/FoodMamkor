@@ -2,22 +2,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 /**
- * MEH-1609 — the producer page's re-entry point into the MEH-54 AlertPrefsPanel.
+ * MEH-1693 — the producer page's ONE AlertPrefsPanel mount, after the bell retired.
  *
- * Before this, the panel was reachable from the producer page only in the
- * instant after a save — and not even then on this surface: FavoriteButton.jsx
- * suppresses the auto-open for variant="quiet" (MEH-1334, "a block panel inside
- * the flex row breaks the layout"). So there is exactly ONE panel owner on this
- * page, the header, and these tests pin that: the control appears only for a
- * logged-in user who has saved the business, toggles exactly one panel, and
- * unmounts cleanly when the save is undone.
+ * MEH-1609 added an alerts_reentry bell to the actions row because the panel was
+ * otherwise unreachable here: FavoriteButton suppresses its inline auto-open for
+ * variant="quiet" AND variant="gallery" (MEH-1334 — "a block panel inside the
+ * flex row breaks the layout"), which are the only two variants this page uses.
+ * MEH-1693 removed the bell and lifted the open-state to ProducerDetail, so the
+ * SAVE opens the panel instead — for the desktop quiet heart and the mobile hero
+ * heart alike.
+ *
+ * What this suite pins is unchanged in spirit: HOW MANY panels mount and WHEN.
+ * The header no longer owns the state, so `alertsOpen` arrives as a prop and the
+ * close paths are asserted as callbacks. The panel's internals stay out of scope.
  */
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     if (key === "producer.detail.header.review_count") return `${vars?.count} ביקורות`;
-    if (key === "producer.detail.header.alerts_reentry") return "מקבלת עדכונים";
-    if (key === "producer.detail.header.alerts_reentry_aria") return "עריכת העדפות עדכונים";
     return key;
   },
   useLocale: () => "he",
@@ -32,24 +34,25 @@ vi.mock("@/components/BadgeRow", () => ({ default: () => <div /> }));
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div /> }));
 vi.mock("@/components/TrustBadge", () => ({ default: () => <div /> }));
+// Expose onFavorited so a test can fire the save the way the real heart does.
 vi.mock("@/components/FavoriteButton", () => ({
-  default: () => <button data-testid="fav-quiet" />,
+  default: ({ onFavorited }) => (
+    <button data-testid="fav-quiet" onClick={() => onFavorited?.()} />
+  ),
 }));
 vi.mock("@/components/ShareButton", () => ({
   default: () => <button data-testid="share-quiet" />,
 }));
+// Bell is deliberately NOT in this map — if a future edit re-imports it, the
+// component throws here rather than silently rendering a second entry point.
 vi.mock("@phosphor-icons/react", () => ({
   MapPin: () => <span />,
   Heart: () => <span />,
   Star: () => <span />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
-  Bell: () => <span data-testid="bell-glyph" />,
 }));
 
-// The real panel pulls in api/auth/push plumbing — stub it. What this suite
-// asserts is HOW MANY panels mount and WHEN, never the panel's internals
-// (AlertPrefsPanel is explicitly out of scope for MEH-1609).
 vi.mock("@/components/AlertPrefsPanel", () => ({
   default: ({ onClose }) => (
     <div data-testid="alert-prefs-panel">
@@ -94,96 +97,101 @@ const producer = {
   city: "תל אביב",
 };
 
-const renderHeader = () =>
-  render(<ProducerHeader producer={producer} primaryCategory={null} hasImages />);
+const renderHeader = (props = {}) =>
+  render(
+    <ProducerHeader producer={producer} primaryCategory={null} hasImages {...props} />
+  );
 
-describe("ProducerHeader — AlertPrefsPanel re-entry (MEH-1609)", () => {
+describe("ProducerHeader — single AlertPrefsPanel mount (MEH-1693)", () => {
   beforeEach(() => {
     mockUser = null;
     mockFavorited = false;
     favListeners.clear();
   });
 
-  it("guest sees no control and no panel — 0 in DOM", async () => {
+  it("the retired bell is gone — no control, no its testid, at any state", async () => {
+    mockUser = { id: "u-1" };
+    mockFavorited = true;
+    renderHeader({ alertsOpen: true });
+    await waitFor(() => expect(screen.getByTestId("fav-quiet")).toBeInTheDocument());
+    expect(screen.queryByTestId("alerts-reentry")).not.toBeInTheDocument();
+    // Assert on the i18n KEY, not the Hebrew string: the key is deleted from
+    // both message twins, so the mocked useTranslations falls through to
+    // echoing the key — which is what would render if the control came back
+    // under a different testid. Keeping the literal here would also put Hebrew
+    // copy in source, which the repo forbids outside messages/*.json.
+    expect(
+      screen.queryByText("producer.detail.header.alerts_reentry")
+    ).not.toBeInTheDocument();
+  });
+
+  it("guest sees no panel even when the page asks for it", async () => {
     mockFavorited = true; // even if a stale cache says favorited
-    renderHeader();
+    renderHeader({ alertsOpen: true });
     await waitFor(() => expect(screen.getByTestId("fav-quiet")).toBeInTheDocument());
-    expect(screen.queryByTestId("alerts-reentry")).not.toBeInTheDocument();
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
   });
 
-  it("logged in but NOT favorited — 0 in DOM", async () => {
+  it("logged in but NOT favorited — no panel even when alertsOpen", async () => {
     mockUser = { id: "u-1" };
-    renderHeader();
+    renderHeader({ alertsOpen: true });
     await waitFor(() => expect(screen.getByTestId("fav-quiet")).toBeInTheDocument());
-    expect(screen.queryByTestId("alerts-reentry")).not.toBeInTheDocument();
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
   });
 
-  it("favorited + logged in shows exactly ONE control, collapsed", async () => {
+  it("favorited + logged in + alertsOpen renders EXACTLY ONE panel", async () => {
     mockUser = { id: "u-1" };
     mockFavorited = true;
-    renderHeader();
-    const control = await screen.findByTestId("alerts-reentry");
-    expect(screen.getAllByTestId("alerts-reentry")).toHaveLength(1);
-    expect(control).toHaveAttribute("aria-expanded", "false");
-    expect(control).toHaveAttribute("aria-label", "עריכת העדפות עדכונים");
-    // MEH-1648: exact, not toHaveTextContent — that matches substrings, so it
-    // stayed green with the removed "· לעריכה" suffix still present. The state
-    // IS the button (Google "Following" / YouTube bell), so the label is the
-    // state alone; the edit affordance lives in alerts_reentry_aria.
-    expect(control.textContent.trim()).toBe("מקבלת עדכונים");
-    // Collapsed by default — the panel is a disclosure, not an auto-open.
+    renderHeader({ alertsOpen: true });
+    await waitFor(() =>
+      expect(screen.getAllByTestId("alert-prefs-panel")).toHaveLength(1)
+    );
+  });
+
+  it("alertsOpen=false keeps the panel closed — it is not self-opening", async () => {
+    mockUser = { id: "u-1" };
+    mockFavorited = true;
+    renderHeader({ alertsOpen: false });
+    await waitFor(() => expect(screen.getByTestId("fav-quiet")).toBeInTheDocument());
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
   });
 
-  it("tap opens EXACTLY ONE panel, and tapping again closes it", async () => {
+  it("the quiet heart's save asks the PAGE to open — it does not open locally", async () => {
     mockUser = { id: "u-1" };
     mockFavorited = true;
-    renderHeader();
-    const control = await screen.findByTestId("alerts-reentry");
+    const onOpenAlerts = vi.fn();
+    renderHeader({ alertsOpen: false, onOpenAlerts });
+    const heart = await screen.findByTestId("fav-quiet");
 
-    fireEvent.click(control);
-    expect(screen.getAllByTestId("alert-prefs-panel")).toHaveLength(1);
-    expect(control).toHaveAttribute("aria-expanded", "true");
-
-    fireEvent.click(control);
+    fireEvent.click(heart);
+    expect(onOpenAlerts).toHaveBeenCalledTimes(1);
+    // Still closed: the header does not own the state, so nothing opens until
+    // the page flips the prop. This is the lift, asserted.
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
-    expect(control).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("the panel's own onClose collapses the control", async () => {
+  it("the panel's own onClose delegates upward", async () => {
     mockUser = { id: "u-1" };
     mockFavorited = true;
-    renderHeader();
-    const control = await screen.findByTestId("alerts-reentry");
-    fireEvent.click(control);
+    const onCloseAlerts = vi.fn();
+    renderHeader({ alertsOpen: true, onCloseAlerts });
+    await screen.findByTestId("alert-prefs-panel");
 
     fireEvent.click(screen.getByTestId("panel-close"));
-    expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
-    expect(control).toHaveAttribute("aria-expanded", "false");
+    expect(onCloseAlerts).toHaveBeenCalled();
   });
 
-  it("un-favoriting while the panel is open unmounts BOTH, and re-saving does not silently re-open", async () => {
+  it("un-saving while the panel is open asks the page to close it", async () => {
     mockUser = { id: "u-1" };
     mockFavorited = true;
-    renderHeader();
-    const control = await screen.findByTestId("alerts-reentry");
-    fireEvent.click(control);
-    expect(screen.getByTestId("alert-prefs-panel")).toBeInTheDocument();
+    const onCloseAlerts = vi.fn();
+    renderHeader({ alertsOpen: true, onCloseAlerts });
+    await screen.findByTestId("alert-prefs-panel");
+    onCloseAlerts.mockClear();
 
-    // The heart elsewhere on the page removes the favorite.
+    // A heart on ANY surface un-saves — the shared cache is the channel.
     setFavoritedExternally(false);
-    await waitFor(() => {
-      expect(screen.queryByTestId("alerts-reentry")).not.toBeInTheDocument();
-    });
-    expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
-
-    // Re-saving brings the control back COLLAPSED — a stale `alertsOpen` would
-    // otherwise re-open the panel with no user intent.
-    setFavoritedExternally(true);
-    const back = await screen.findByTestId("alerts-reentry");
-    expect(back).toHaveAttribute("aria-expanded", "false");
+    await waitFor(() => expect(onCloseAlerts).toHaveBeenCalled());
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
   });
 });

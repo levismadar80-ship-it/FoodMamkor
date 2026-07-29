@@ -114,6 +114,39 @@ git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צר�
 Any hit on a customer-facing string → switch to plural (`גלו`, `בחרו`, `שלחו`,
 `חזרו`, `צרו`, …) before proceeding.
 
+**Bucket-A feminine-PLURAL canary (MEH-1758).** The two guards above cover
+feminine *singular* only — `מחפשת`, `בודקת`, `הוסיפי`, `הצטרפי`. Feminine
+**plural** was never covered, so `מחפשות`/`בודקות`/`שולחות` passed every canary
+without a word. That is how «מחפשות עכשיו:» reached production on the homepage
+filter row (`home.hero.chips_prefix`) despite ADR-014 / MEH-872 / MEH-940 /
+ADR-024 all locking neutral-plural voice. Same `^\+` added-lines anchor as its
+siblings, so a future removal sweep cannot self-block.
+
+**The left boundary deliberately admits Hebrew clitic prefixes and excludes `מ`.**
+Hebrew attaches `ש`/`ה`/`ו`/`ל`/`ב`/`כ` directly to the word, so a plain
+whitespace boundary would silently miss real hits — `שמחפשות` in
+`admin.outreach.*` is exactly that shape. `מ` is left OUT on purpose: admitting
+it makes `מרוצות` ("satisfied", fem. pl. — `reviews.owner_empty_title`) fire as
+a false `רוצות`, and a `מ`-prefixed participle is vanishingly rare in UI copy.
+The cost is documented rather than hidden: a genuine `מ`-prefixed feminine
+plural will not fire.
+
+**Exempt (hits there are false positives — eyeball the namespace and proceed):**
+`admin/settings/dashboard` backoffice, `/about` + `/about/for-businesses`
+narrative (`about_business.*`, `about.consumer.*`), and `process.*` /
+`privacy.*` **first-person team self-reference** — `אנחנו בודקות`, `אנו שומרות`.
+That last class is the important one and is NOT a voice violation: the brand
+describing *itself* in feminine plural assumes nothing about the reader's
+gender, which is the only thing ADR-014 actually prohibits. Do not "fix" it.
+Third-party description (`הלקוחות שולחות`, `רשתות לא יכולות`) is likewise fine —
+it describes a group, it does not address the reader.
+```bash
+git diff --staged | grep -E "^\+.*[ \">'(שהולבכ-](מחפשות|בודקות|שולחות|שומרות|טוענות|רוצות|מגלות|מוצאות|יכולות|צריכות|בוחרות|מזמינות)[ \",.<—)?!:]" && echo "STOP — feminine-PLURAL UI copy detected (ADR-014, MEH-1758)" && exit 1 || true
+```
+Any hit addressing the reader → neutral phrasing that removes the verb entirely
+where possible (`פופולרי עכשיו:` rather than `מחפשים/מחפשות עכשיו:`) — no verb,
+no gender, no guard to maintain.
+
 ---
 
 ## Section 5 — STOP conditions
