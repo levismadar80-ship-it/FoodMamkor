@@ -98,6 +98,7 @@ Zero guards found is a `NOTICE` and exit **0**, not a failure.
 | [`ui-pattern-guard.sh`](./ui-pattern-guard.sh) | Producer-dashboard pages hand-rolling `EmptyState` / `BackLink` / text arrows in `he.json` back keys | MEH-999 |
 | [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves six classification cases plus two end-to-end base-resolution cases (MEH-1634). | MEH-1602 |
 | [`length-cap-sync-guard.sh`](./length-cap-sync-guard.sh) | Frontend length-cap constants drifting from their backend schema caps: `OWNER_BIO_MAX` must **equal** the `owner_bio` sanitize cap; `DESC_MAX`/`TAGLINE_MAX` must stay **≤** every `description`/`short_description` cap (they are deliberately tighter UX caps). `--self-test` proves both directions + the missing-extraction fail-loud. | MEH-1393 |
+| [`adr-citation-guard.sh`](./adr-citation-guard.sh) | An `ADR-NNN (MEH-XXXX)` citation in an always-loaded rule file (`.claude/rules/*.md`, `CLAUDE.md`, `AGENTS.md`) pointing at an ADR that never mentions that issue — i.e. a link that **resolves** but to an unrelated decision. Bare `ADR-NNN` mentions with no adjacent MEH id are ignored on purpose. `--self-test` proves the discriminating pair: the historical `ADR-017 (MEH-1741)` fails while the corrected `ADR-032 (MEH-1741)` and the genuine `ADR-017 (MEH-686)` both pass. | MEH-1761 |
 
 ### File taxonomy — what `changelog-branch-guard.sh` calls "docs"
 
