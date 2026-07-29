@@ -534,7 +534,12 @@ class TestJourney7AuthSession:
 class TestJourney8Experience:
     def test_experience_create_to_public(self, client, db, monkeypatch):
         _mock_experience_moderation(monkeypatch)
-        host = make_user(db, email=f"h{uuid4().hex[:6]}@t.com")
+        # MEH-1749: the last hop asserts the experience reaches the PUBLIC
+        # list, which now requires the host's business to be approved. A plain
+        # make_user host would be filtered out at that final assertion — the
+        # journey would fail on its own premise rather than on the flow it
+        # tests. _make_producer_user is the existing helper for exactly this.
+        _, host = _make_producer_user(db, email=f"h{uuid4().hex[:6]}@t.com")
         admin = make_user(db, role="admin", email=f"a{uuid4().hex[:6]}@t.com")
 
         created = client.post(
