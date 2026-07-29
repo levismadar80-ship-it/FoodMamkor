@@ -21,7 +21,26 @@ from datetime import date, time, timedelta
 from decimal import Decimal
 
 from app.models.models import Experience, User
-from conftest import auth_header, make_user
+from conftest import auth_header, make_producer, make_user
+
+
+def _make_host(db, *, producer_status: str = "approved") -> User:
+    """A host whose business is approved.
+
+    MEH-1749 gated the public read paths on the host's business status, so a
+    plain `make_user(db)` host is no longer publicly visible — its experiences
+    are correctly filtered out. Public-visibility tests therefore build their
+    host through here; owner/admin tests keep using `make_user` directly,
+    because those paths bypass the gate by design.
+
+    Pass `producer_status="pending"` / `"rejected"` to exercise the gate.
+    """
+    host = make_user(db)
+    producer = make_producer(db, status=producer_status)
+    host.producer_id = producer.id
+    db.commit()
+    db.refresh(host)
+    return host
 
 
 # ---------- helpers ----------
@@ -241,7 +260,7 @@ class TestExperienceValidate:
 
 class TestExperienceListing:
     def test_lists_only_approved(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(db, host, title="Live", status="approved")
         _make_experience(db, host, title="Wait", status="pending")
         _make_experience(db, host, title="Dead", status="rejected")
@@ -254,7 +273,7 @@ class TestExperienceListing:
         assert titles == ["Live"]
 
     def test_filter_by_category(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db, host, title="Cook", category="בישול", status="approved"
         )
@@ -265,7 +284,7 @@ class TestExperienceListing:
         assert [e["title"] for e in resp.json()] == ["Cook"]
 
     def test_filter_by_city(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(db, host, title="TLV", city="תל אביב", status="approved")
         _make_experience(db, host, title="JLM", city="ירושלים", status="approved")
         resp = client.get("/experiences", params={"city": "תל אביב"})
@@ -273,7 +292,7 @@ class TestExperienceListing:
 
     def test_public_listing_hides_private_address(self, client, db):
         """Address is stored on the row but must not leak in the public list."""
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db,
             host,
@@ -288,7 +307,7 @@ class TestExperienceListing:
         assert "address" not in body or body["address"] is None
 
     def test_spots_left_computed(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db,
             host,
@@ -301,7 +320,7 @@ class TestExperienceListing:
         assert resp.json()[0]["spots_left"] == 3
 
     def test_past_experiences_are_excluded(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         _make_experience(
             db,
             host,
@@ -356,7 +375,7 @@ class TestExperienceDetail:
         assert resp.status_code == 200
 
     def test_approved_visible_publicly(self, client, db):
-        host = make_user(db)
+        host = _make_host(db)
         ex = _make_experience(db, host, status="approved")
         resp = client.get(f"/experiences/{ex.id}")
         assert resp.status_code == 200
@@ -371,6 +390,86 @@ class TestExperienceDetail:
             f"/experiences/{ex.id}", headers=auth_header(host)
         )
         assert resp.json().get("address") == "רחוב הגפן 5"
+
+
+class TestPublicVisibilityRequiresApprovedBusiness:
+    """MEH-1749 — LOCK (בעלי עסק מורשים בלבד): an experience reaches the
+    public only when the business behind its host is approved.
+
+    Experiences were the only content surface without this gate. Because
+    `Experience.host_user_id` points at a User rather than a Producer, a host
+    whose business was rejected — for missing a licence, say — could still
+    publish publicly through her user account.
+
+    These assert BEHAVIOUR (what a stranger receives), never that a particular
+    filter was added. A test that checked for the filter would pass against an
+    inert change; this one cannot.
+    """
+
+    def test_pending_business_experience_absent_from_listing(self, client, db):
+        host = _make_host(db, producer_status="pending")
+        _make_experience(db, host, title="TooEarly", status="approved")
+        resp = client.get("/experiences")
+        assert resp.status_code == 200
+        assert [e["title"] for e in resp.json()] == []
+
+    def test_rejected_business_experience_absent_from_listing(self, client, db):
+        host = _make_host(db, producer_status="rejected")
+        _make_experience(db, host, title="Rejected", status="approved")
+        assert [e["title"] for e in client.get("/experiences").json()] == []
+
+    def test_host_with_no_business_at_all_is_absent(self, client, db):
+        """The INNER JOIN case: producer_id IS NULL. A plain consumer account
+        can still submit; it just doesn't get a public surface."""
+        host = make_user(db)
+        _make_experience(db, host, title="NoBusiness", status="approved")
+        assert [e["title"] for e in client.get("/experiences").json()] == []
+
+    def test_pending_business_experience_404s_on_detail(self, client, db):
+        """404 rather than 403 — same convention as events.py:167, so the UUID
+        cannot be used to enumerate which businesses are awaiting approval."""
+        host = _make_host(db, producer_status="pending")
+        ex = _make_experience(db, host, status="approved")
+        resp = client.get(f"/experiences/{ex.id}")
+        assert resp.status_code == 404
+
+    def test_detail_404_also_starves_the_seo_metadata_fetch(self, client, db):
+        """The generateMetadata path, asserted at its real boundary.
+
+        `frontend/app/[locale]/experiences/[id]/page.js:14` server-fetches THIS
+        endpoint with no auth and falls back when the response is not ok. So
+        the title of a pending business's experience stays out of <head>
+        precisely because this request 404s — there is no separate frontend
+        gate to test, and adding one would be a second copy (MEH-1740).
+        """
+        host = _make_host(db, producer_status="rejected")
+        ex = _make_experience(db, host, status="approved")
+        unauthenticated = client.get(f"/experiences/{ex.id}")
+        assert unauthenticated.status_code == 404
+        assert "title" not in unauthenticated.json()
+
+    def test_owner_still_sees_her_own_while_business_pending(self, client, db):
+        """The gate must not hide the host's work from the host."""
+        host = _make_host(db, producer_status="pending")
+        ex = _make_experience(db, host, status="approved")
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(host))
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(ex.id)
+
+    def test_admin_still_sees_it_while_business_pending(self, client, db):
+        host = _make_host(db, producer_status="pending")
+        admin = make_user(db, role="admin", email="admin-1749@test.com")
+        ex = _make_experience(db, host, status="approved")
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(admin))
+        assert resp.status_code == 200
+
+    def test_approved_business_is_visible_on_both_paths(self, client, db):
+        """The other half of the discrimination: the gate must not hide
+        legitimate content. Without this, filtering everything would pass."""
+        host = _make_host(db, producer_status="approved")
+        ex = _make_experience(db, host, title="Legit", status="approved")
+        assert [e["title"] for e in client.get("/experiences").json()] == ["Legit"]
+        assert client.get(f"/experiences/{ex.id}").status_code == 200
 
 
 # ---------- Admin moderation ----------
