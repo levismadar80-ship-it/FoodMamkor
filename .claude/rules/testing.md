@@ -194,7 +194,7 @@ PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
 `staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
 MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
 wired into the required-check set — the sanctioned way to make it block merge is
-the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+the `E2E gate` aggregator (job id `e2e-gate`, `always()` +
 `needs: [filter, e2e]`) whose YAML is staged in
 [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
 (`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
@@ -233,7 +233,7 @@ docs-only).
 Governance + gate matrix:
 [ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
 amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
-aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
 

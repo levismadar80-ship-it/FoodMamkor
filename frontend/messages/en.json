@@ -416,7 +416,7 @@
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
       "geo_failure": "We couldn't detect your location — you can pick a city manually",
-      "chips_prefix": "Searching now:",
+      "chips_prefix": "Popular now:",
       "trust_line": "Every business is checked and approved by hand"
     },
     "search": {
@@ -667,10 +667,10 @@
       "description_fallback": "Culinary events at local food businesses."
     },
     "events": {
-      "title": "Events at farms and local food businesses | Mehamakor",
-      "description": "Workshops, tours, open days, and tastings at local food businesses across Israel. Discover upcoming events by city, category, and date.",
-      "og_title": "Events at farms and local food businesses | Mehamakor",
-      "og_description": "Workshops, tours, open days, and tastings at local food businesses across Israel."
+      "title": "Events at local food businesses — open days, market stalls and harvests | Mehamakor",
+      "description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel. Workshops and tours you sign up for are on the experiences page.",
+      "og_title": "Events at local food businesses — open days, market stalls and harvests",
+      "og_description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel."
     },
     "experiences": {
       "title": "Community experiences and workshops | Mehamakor",
@@ -797,9 +797,7 @@
           "orders_open": "Open for orders · until {time}"
         },
         "excerpt_footer": "From the reviews",
-        "excerpt_all": "All reviews",
-        "alerts_reentry": "Getting updates",
-        "alerts_reentry_aria": "Edit notification preferences"
+        "excerpt_all": "All reviews"
       },
       "owner_card": {
         "heading": "Behind the business"
@@ -836,17 +834,7 @@
         "vacation_msg": "Send a message — they will respond soon"
       },
       "order_window": {
-        "strip_label": "Accepting orders:",
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
-        "days_short": {
-          "sun": "Sun",
-          "mon": "Mon",
-          "tue": "Tue",
-          "wed": "Wed",
-          "thu": "Thu",
-          "fri": "Fri",
-          "sat": "Sat"
-        }
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen"
       }
     },
     "card": {
@@ -2277,8 +2265,6 @@
     },
     "categories": {
       "all": "All",
-      "workshop": "Workshop",
-      "tour": "Tour",
       "market": "Market",
       "harvest": "Harvest",
       "tasting": "Tasting",
@@ -3955,11 +3941,11 @@
         },
         "manage_events": {
           "title": "My events",
-          "sub": "View, edit and cancel events"
+          "sub": "Open days, market stalls and launches — what happens once"
         },
         "manage_experiences": {
           "title": "My experiences",
-          "sub": "View, edit and delete experiences"
+          "sub": "Workshops and tours people sign up for"
         }
       },
       "pulse": {
@@ -4376,7 +4362,7 @@
         "heading": "My events",
         "create_cta": "New event",
         "empty_title": "No events yet",
-        "empty_description": "A workshop, a tour or an open day — an event appears on your business page and brings in new customers.",
+        "empty_description": "An open day, a market stall or a harvest — a one-time event that appears on your business page and brings in new customers.",
         "empty_cta": "New event",
         "loading": "Loading…",
         "back_to_tools": "Back to tools",
@@ -4504,10 +4490,10 @@
       "pending_success_dashboard": "Back to business management",
       "crumb_dashboard": "Business management",
       "crumb_current": "New event",
-      "subtitle": "Workshop, tour, market, harvest, or open days — publish here",
-      "info_paragraph": "Events = workshop, tour, open day, or any customer gathering. They show up on /events and on your page. Perfect for attracting new customers.",
-      "field_title_placeholder": "For example: cheese workshop",
-      "field_description_full_placeholder": "Events are shown to customers on /events and on your page. Describe: what will happen, who's invited, what's included in the price, what to bring.",
+      "subtitle": "An open day, a market stall, a harvest or a launch — what happens once",
+      "info_paragraph": "An event is something that happens once, on a specific date — an open day, a market stall, a seasonal harvest or a launch. It appears on the events page and on your business page. A regular activity people sign up for, like a workshop or a tour, belongs under experiences.",
+      "field_title_placeholder": "For example: an open day at the dairy",
+      "field_description_full_placeholder": "Describe what will happen: what's included, who it suits and what to bring. For example: an open day at the dairy — tastings of every cheese and a look at the barn.",
       "field_city_placeholder": "Search a city…",
       "field_location_simple_placeholder": "At our farm / full address",
       "field_price_label_full": "Price (0 = free)",

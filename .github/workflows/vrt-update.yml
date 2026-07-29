@@ -19,6 +19,12 @@ name: VRT baseline update
 # the ref it ran on, and both protected branches reject direct pushes at the
 # ruleset level anyway.
 #
+# MEH-1705: DISPATCH THIS AGAINST THE FEATURE BRANCH, NEVER staging/main. The
+# sentence above describes the design; it did not stop four dispatches against
+# staging that regenerated every baseline and then died at the commit step with
+# nothing saved. The first job step now rejects a protected ref up front with
+# the correct usage, so the failure names itself instead of looking transient.
+#
 # Build/start steps mirror e2e.yml (MEH-1044 localhost target) — keep the
 # two in sync when the server strategy changes.
 
@@ -48,6 +54,31 @@ jobs:
     if: github.actor != 'github-actions[bot]'
 
     steps:
+      # MEH-1705: fail FAST on a protected ref. This job regenerates baselines
+      # and then commits them back to the ref it ran on — but `protect-staging`
+      # (and the main ruleset) reject direct pushes, so a dispatch against
+      # staging/main regenerates the images and then throws them away at the
+      # commit step. That failure lands ~90s in, at the LAST step, and reads
+      # like a transient CI fault rather than a usage error; it produced four
+      # wasted dispatches (30301613939, 30212779646, 30212224342, 30211514753)
+      # against staging while every feature-branch dispatch succeeded. The
+      # header above already said "never pushes to staging/main" — prose alone
+      # did not stop it, so this is the mechanism (MEH-271: mechanism > memory).
+      - name: Reject dispatch against a protected branch
+        if: github.ref_name == 'staging' || github.ref_name == 'main'
+        run: |
+          echo "::error title=Dispatch this against the feature branch, not ${{ github.ref_name }}::VRT baselines are committed back to the ref the run was launched from, and '${{ github.ref_name }}' rejects direct pushes at the ruleset level. This run would regenerate every baseline and then fail at 'Commit updated baselines' with nothing saved."
+          echo ""
+          echo "  Correct usage:  Actions -> VRT baseline update -> Run workflow"
+          echo "                  Branch: the FEATURE branch whose PR is red"
+          echo "                  route:  the single baseline to regen (e.g. home)"
+          echo ""
+          echo "  The baselines land as a commit on that branch. Because the bot"
+          echo "  pushes with GITHUB_TOKEN, no workflow re-runs on it — push a"
+          echo "  follow-up commit as yourself to re-trigger the gates"
+          echo "  (MEH-1112/1113)."
+          exit 1
+
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
