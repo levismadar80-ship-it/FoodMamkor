@@ -3,6 +3,68 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-29 (morning) — queue run under the new opt-in rule + docs backfill
+
+**Branch at close:** `feature/meh-1762-docs-backfill-2807`. This entry is the docs-only backfill (rule 31).
+
+**What the session was.** An overnight autonomous sweep that stopped almost immediately, then a
+directed queue run once labels were applied. Both halves are worth recording because the stop was
+correct and the reason is structural.
+
+- **The sweep stopped on an empty queue, by design.** PR #2414 landed as it started and flipped
+  queue selection to **opt-in on a `cc-queue` label**. Zero issues carried that label, workspace-wide.
+  `workflow.md` says an unlabeled card is not CC's "even if it looks actionable", and that an empty
+  queue is the expected steady state — so the sweep said so and stopped rather than working the 28
+  unlabeled cards its brief pointed at. That brief's card list was, almost exactly, the set the new
+  rule exists to exclude.
+- **Merge authority could not be verified from either direction** — filed as MEH-1761.
+  `.claude/autonomy-cache.json` stops at MEH-545 while everything in flight is MEH-784+, so it
+  classifies nothing and fails as a silent miss. The fallback pointer, `workflow.md:43`'s
+  "ADR-017", was an **occupied number** — ADR-017 is the JWT/localStorage decision. The link
+  resolved, which is why nobody caught it. Renumbered to **ADR-032** in #2418, and #2422 added
+  `scripts/checks/adr-citation-guard.sh` so the class cannot recur: an `ADR-NNN (MEH-XXXX)`
+  citation in an always-loaded rule file must point at an ADR that actually mentions that issue.
+  Existence alone would not have caught it — the wrong file existed.
+- **`CI gate` was fixed, so a green gate now means something it did not yesterday.** Sapir applied
+  the MEH-1582 patch (#2417). Within a touched stack, and for the four always-required jobs, a
+  `skipped` result is now a failure. Practical effect: a green `CI gate` **proves** Repo guards,
+  Env drift, the DO-NOT-MERGE gate and the qa-artifacts cap each reported `success`.
+- **The CI adversarial reviewer is uncredentialed and its two tickets were cancelled** (MEH-1734,
+  MEH-1735, both 29/07). The substitute — a local `/adversarial-review` per PR — plus the three
+  actions due **2026-08-01** now live in `workflow.md` (#2423), because that section is the only
+  surviving record: (a) restore `CLAUDE_CODE_OAUTH_TOKEN`, (b) pin `anthropics/claude-code-action`
+  off the floating `@v1` to a full SHA, (c) delete the policy. **The cause is not established** —
+  sudden repo-wide onset points at the floating tag at least as strongly as at the credential, so
+  (b) may be the fix and (a) alone could leave it broken.
+
+**Board vs repo.** Four cards sat `In Progress` while already shipped: MEH-1527 (`uv lock --check`
+exit 0, run and confirmed), MEH-1698 (all three chunks), MEH-1608 (normalizer live at
+`schemas/schemas.py:203`), MEH-1583. For MEH-1583 the blocking DoD item was closed by opening both
+VRT baselines and reviewing them visually — the poisoned MEH-1552 baseline really was replaced, and
+the two-channel cell shows one geometry. MEH-1602's guard was likewise already shipped; verified
+against its five DoD items rather than rebuilt, per its own STOP condition (a).
+
+**Decisions taken this session**
+
+| Decision | Why |
+|---|---|
+| Draft-only during the unattended half | Merging to staging unattended is hard to reverse; a stack of drafts is not. With no verifiable tier, the conservative branch was the cheap one. |
+| Did **not** settle `autonomy-cache.json`'s fate | ADR-032 is `Accepted` and deliberately left it open; `docs/decisions/README.md:14` forbids editing an Accepted ADR, and MEH-1756 (where it belongs) is `not-cc`. |
+| Backfilled at the **top** of each file, not the end | MEH-1762's prompt said "append at the end"; both files are **newest-first**, so appending would bury 29/07 below April 2026. Convention won. |
+
+**Known issues found, not filed**
+
+- `.claude/hooks/check-rtl.sh` exempts `.md` (`:60`) but not `.sh`, and flags the literal string
+  `pr-checks.yml` because it contains `pr-c`. Worked around with the documented `rtl-ok`.
+- MEH-1602 is `archivedAt` **and** was `In Progress` simultaneously; the Linear API rejects comments
+  on it (`Could not find referenced Issue`). Moved to Done; the verification lives in this file instead.
+- Evidence of a **concurrent session** (rule 1): MEH-1757 went Backlog→Done at 09:01 via #2421, and
+  #2418/#2421 landed mid-session. Not halted, since the run was being directed live.
+
+**Next:** MEH-1390 is the only queue card still open and is `not-cc` — it needs a scoped
+`vrt-update.yml` dispatch on `levismadar80/meh-1390-tabs-hide-empty` (route `producer-detail`),
+then a visual check that the three mobile shots show 2 tabs, not 4.
+
 ## 2026-07-28 (evening) — MEH-1500 three-legged permissions work + 7 PRs merged
 
 **Branch at close:** none active. This entry is the docs-only backfill (rule 31).
