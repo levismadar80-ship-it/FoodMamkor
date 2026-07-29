@@ -493,6 +493,7 @@
       "city_chip": "עסקים באזור {city}",
       "city_day_chip": "משלוח ל{city} · יום {day}",
       "day_row_label": "יום משלוח:",
+      "day_row_hint": "בחרו אזור כדי לסנן לפי יום משלוח",
       "day_option_aria": "סינון משלוח ליום {day}",
       "day_empty_suggestion": "אין כרגע עסקים עם משלוח ביום {day} ל{city} — אולי בימים אחרים",
       "day_empty_clear_cta": "הסרת סינון היום",
