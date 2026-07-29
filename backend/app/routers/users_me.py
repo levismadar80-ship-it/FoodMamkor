@@ -57,11 +57,21 @@ def update_profile(
     # without depending on the handler's "skip when None" idiom.
     old_avatar = user.avatar_url
 
-    if data.name is not None:
-        trimmed = data.name.strip()
-        if not trimmed:
-            raise HTTPException(status_code=422, detail="שם לא יכול להיות ריק")
-        user.name = trimmed
+    # MEH-1626 chunk 2: name/phone are domain-typed on ProfileUpdate now, and
+    # their validators normalize empty input to None (the MEH-1537 convention).
+    # That breaks the `is not None` idiom used below for the untyped fields:
+    # it cannot tell "field omitted — leave alone" from "field sent as empty —
+    # clear it", so a PATCH clearing a phone became a silent no-op. `model_
+    # fields_set` carries exactly that distinction (it holds the keys the
+    # client actually sent), so the caller's intent survives the normalization.
+    #
+    # name needs no empty-check here any more: _sanitized_person_name raises on
+    # a value that sanitizes away, so `name: "   "` is a 422 from the schema —
+    # louder than the old handler-side check, and it can no longer be swallowed.
+    sent = data.model_fields_set
+
+    if "name" in sent and data.name is not None:
+        user.name = data.name
 
     if data.avatar_url is not None:
         user.avatar_url = data.avatar_url
@@ -69,8 +79,8 @@ def update_profile(
     if data.city is not None:
         user.city = data.city.strip() or None
 
-    if data.phone is not None:
-        user.phone = data.phone.strip() or None
+    if "phone" in sent:
+        user.phone = data.phone
 
     if data.email is not None:
         new_email = data.email.lower()

@@ -45,6 +45,95 @@ swapped to `GET /auth/me` (a real route, not in `SKIP_REFRESH`)._
 
 ---
 
+## Every new guard test must be shown failing (MEH-1619)
+
+A guard test that has never been observed failing is not evidence — it is a green light
+of unknown wiring. Any new or strengthened assertion (unit, e2e, or QA harness) ships
+with a **demonstrated failing-by-construction run**: break the thing it guards, show it
+goes red, restore, show it goes green. Put the two outcomes in the PR body.
+
+**The construction has to discriminate.** This is the part that is easy to get wrong.
+Showing "I broke it and the suite went red" proves nothing about *your change* if the
+**previous** version of the assertion also went red on that same construction. Before
+citing a failing run as justification, ask: would the old assertion have passed this?
+If you can't answer yes, the run is not evidence for the change.
+
+_MEH-1619, C-1: reintroducing a known-broken CSS form turned the suite red — and the old,
+weaker assertion failed on it too, because by sample time the library had already undone
+the broken state. The construction couldn't tell the two apart. What did: a **self-test**
+feeding the real classifier three synthetic inputs (correct / regression-shaped / neutral)
+and asserting how it sorts them. Deterministic — no animation, no timing — and it isolates
+exactly the changed condition._
+
+**Where the assertion is a classifier, ship the self-test.** Run it **first**: if the
+classifier can't tell a correct state from a broken one, nothing it reports afterwards is
+worth reading. Exercise the **real** implementation, never a copy — a second copy is free
+to drift from the one that matters. Repo precedent: `.claude/scripts/audit-skills.sh
+--self-test`, which CI asserts must exit 1.
+
+**Watch the shape of the pass condition.** An `||` between two cues lets either one carry
+the assertion, so losing the other is undetectable — that is how a probe signs off on a
+broken state. Prefer `&&`, or split into separate named checks so the failure message says
+which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
+
+**Lifting a quarantine is not the fix.** A `count()===0` skip reports green against a
+control that does not exist — proven on MEH-1698, where the old spec skipped past a
+completely missing element with only `test.fixme` lifted.
+
+That last clause is the whole rule, and it is why "un-quarantine it" is the wrong first
+move on any silent spec. The MEH-1698 file carried **two** disablers stacked — a
+`test.fixme` and, under it, `if ((await toggle.count()) === 0) test.skip(...)`. The
+obvious reading is that the quarantine was the problem. It was not: run the spec with the
+`fixme` removed and the skip intact, against a Header from which the control had been
+deleted entirely, and it still reports **skipped — exit 0**. The quarantine was decoration
+on top of a guard that could never have failed.
+
+The defect class is a guard that **consults its own subject**. `count()` on the element
+under test, `length === 0 → skip`, `if (!el) return` — each reads as defensive
+hygiene and each converts "the thing is gone" (the exact condition worth failing on) into
+"nothing to check". Gate on something the product cannot move instead: a static project
+identity (`test.skip(testInfo.project.name !== "desktop")`, as
+`e2e/visual/parity.spec.ts:522` does), an env var, a fixture file's presence.
+
+**The review question:** if the element vanished entirely, does this test go red — or
+green? If you cannot answer from reading it, run it against a build with the element
+deleted. That two-run control is the only thing that distinguishes a guard from a
+decoration, and it is cheap.
+
+**Restoring an old artifact is not ratification.** A runner-generated image carries
+**credibility, not currency** — restoring it returns the first and not the second, and the
+file name looks identical either way. Before restoring any baseline, count the commits
+touching that surface since the blob was captured; if the answer is not zero, take a fresh
+capture instead.
+
+_Proven on `10ed80d7`, which restored a 3.5-day-old `home-mobile` blob across **36
+unmeasured home-render commits** — in a PR that cited the MEH-1552 candidate-baseline
+lesson while committing the same error in the one disguise that lesson doesn't name._
+
+**The class is wider than VRT: inheriting an artifact's authority without its currency.**
+Every instance has the same three parts — an artifact that was rigorously produced, a gap
+during which the world moved, and a reuse that carries the rigour forward while silently
+dropping the as-of. The artifact is not wrong; it is *stale*, and staleness has no visual
+tell. Same shape, different surfaces:
+
+- a **lockfile hash** or dependency pin re-pointed at a previously-audited version
+- a **cached CI layer** or fixture reused because it was built from a clean tree — once
+- an **audit verdict** (`approved` in `skills-allowlist.json`) carried across a content
+  change, which is exactly why MEH-420 made the hash the trust anchor and not the verdict
+- a **benchmark or perf number** requoted after the workload changed
+- a **screenshot in a ticket** used as current evidence of a live surface
+
+**The question that detects all of them:** *as of when was this true, and what has changed
+since?* If the answer needs a count and nobody has counted, the artifact is a claim about
+the past being presented as a claim about the present. **Reproduce, don't restore** — and
+where reproduction is expensive, record the as-of next to the artifact so the next reader
+can do the subtraction. An artifact whose as-of is unrecoverable cannot be ratified at all,
+only replaced.
+
+Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/audits/silent-failure-audit.md).
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files. Fix every REFEREE
@@ -105,7 +194,7 @@ PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
 `staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
 MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
 wired into the required-check set — the sanctioned way to make it block merge is
-the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+the `E2E gate` aggregator (job id `e2e-gate`, `always()` +
 `needs: [filter, e2e]`) whose YAML is staged in
 [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
 (`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
@@ -144,7 +233,7 @@ docs-only).
 Governance + gate matrix:
 [ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
 amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
-aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
 

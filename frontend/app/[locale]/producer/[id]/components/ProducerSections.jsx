@@ -510,8 +510,18 @@ export default function ProducerSections({
             </p>
           )}
           <OpeningHours opening_hours={producer.opening_hours} />
+          {/* MEH-1611 chunk 2: the map now shows every point this business has
+              — its branch plus each pickup / market stand — not just the primary
+              pin. Complements the textual pickup list DeliveryBlock renders
+              (MEH-1512): same rows, one as a list, one on a map. */}
           {parseHasLocation(producer) && (
-            <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+            <MiniMap
+              lat={producer.lat}
+              lng={producer.lng}
+              name={producer.name}
+              locations={producer.locations}
+              producer={producer}
+            />
           )}
         </section>
       )}

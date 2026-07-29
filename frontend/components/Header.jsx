@@ -9,8 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
-// MEH-896 polish: LanguageToggle removed from the nav until the EN i18n wave
-// (MEH-472). The component file is unchanged; only its nav entry is gone.
+import LanguageToggle from "@/components/LanguageToggle";
 
 /**
  * Header — MEH-643 (S3 chunk 4) floating-pill navbar. Global chrome,
@@ -391,8 +390,16 @@ export default function Header() {
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
-            {/* MEH-896 polish: LanguageToggle removed from the nav until the
-                EN i18n wave (MEH-472). Import dropped at :12. */}
+            {/* MEH-1698: desktop language toggle restored. MEH-896 (b7919b39,
+                21/06) removed it "until the EN i18n wave (MEH-472)"; MEH-472
+                never reinstated it, so for 5 weeks the ONLY mount was the
+                AccountSheet mobile row (AccountSheet.jsx:191, variant="bare")
+                and /en was a one-way door on desktop. `variant="default"` is
+                the standalone 36px circle chip (LanguageToggle.jsx:75-77) —
+                the bare variant belongs to the menu row, not to the pill. */}
+            <span className="hidden md:inline-flex">
+              <LanguageToggle variant="default" />
+            </span>
 
             {user ? (
               <UserMenu

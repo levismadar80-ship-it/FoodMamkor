@@ -240,6 +240,9 @@ export default function MapPage() {
     userCity: userCityCtx.city,
     setUserCity: userCityCtx.setCity,
     setShowCityPicker,
+    // MEH-1670: the viewport filter derives points the same way the marker layer
+    // does, so it needs the same layer-toggle state.
+    showSecondaryLayer,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
@@ -369,6 +372,13 @@ export default function MapPage() {
     />
   );
 
+  // MEH-1611: focus-on-select. Keyed on selectedProducer, NOT activeProducerId —
+  // the selected card's onClose (below) clears only selectedProducer, and
+  // "close the card → every pin back to normal" is a hard acceptance criterion.
+  // selectedProducer is also the state both selection paths agree on
+  // (useMapSync handleCardClick + handleMarkerClick set it together).
+  const focusedProducerId = filters.selectedProducer?.id ?? null;
+
   const mapPane = (
     <MapPane
       producers={filters.filteredByCategory}
@@ -382,6 +392,7 @@ export default function MapPage() {
       visitedIds={hints.visitedIds}
       showSecondaryLayer={showSecondaryLayer}
       onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
+      focusedProducerId={focusedProducerId}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}

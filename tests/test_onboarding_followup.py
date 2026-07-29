@@ -87,7 +87,8 @@ def test_step2_due_after_two_days(db, sent_log):
     to, subject, body = sent_log[0]
     assert to == user.email
     assert subject == onboarding_followup._EMAIL_2_SUBJECT
-    # First-name extraction: "ספיר ניסוי" → "ספיר"
+    # First-name extraction: the fixture's two-word Hebrew name yields its
+    # first word, so the greeting opens with the first name only.
     assert body.startswith("היי ספיר,")
 
     db.refresh(producer)
@@ -262,9 +263,10 @@ def test_rejected_producer_gets_no_email_even_when_licensed(db, sent_log):
     """The MEH-1587 headline regression, asserted end-to-end.
 
     A rejected business with a license number is exactly the shape that
-    previously received Email 5B — 'עברתי על הפרופיל שלכם, והכל נראה טוב,
-    חוץ מדבר אחד שעוד חסר: רישיון' — signed in Sapir's first person, 30 days
-    after being rejected. Nothing at all should go out.
+    previously received Email 5B — "I went over your profile, and everything
+    looks good, except one thing still missing: a license" (English paraphrase
+    of the Hebrew body) — signed in Sapir's first person, 30 days after being
+    rejected. Nothing at all should go out.
     """
     _make_producer_user(
         db,

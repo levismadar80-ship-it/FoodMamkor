@@ -3,6 +3,1350 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-29 (morning) — queue run under the new opt-in rule + docs backfill
+
+**Branch at close:** `feature/meh-1762-docs-backfill-2807`. This entry is the docs-only backfill (rule 31).
+
+**What the session was.** An overnight autonomous sweep that stopped almost immediately, then a
+directed queue run once labels were applied. Both halves are worth recording because the stop was
+correct and the reason is structural.
+
+- **The sweep stopped on an empty queue, by design.** PR #2414 landed as it started and flipped
+  queue selection to **opt-in on a `cc-queue` label**. Zero issues carried that label, workspace-wide.
+  `workflow.md` says an unlabeled card is not CC's "even if it looks actionable", and that an empty
+  queue is the expected steady state — so the sweep said so and stopped rather than working the 28
+  unlabeled cards its brief pointed at. That brief's card list was, almost exactly, the set the new
+  rule exists to exclude.
+- **Merge authority could not be verified from either direction** — filed as MEH-1761.
+  `.claude/autonomy-cache.json` stops at MEH-545 while everything in flight is MEH-784+, so it
+  classifies nothing and fails as a silent miss. The fallback pointer, `workflow.md:43`'s
+  "ADR-017", was an **occupied number** — ADR-017 is the JWT/localStorage decision. The link
+  resolved, which is why nobody caught it. Renumbered to **ADR-032** in #2418, and #2422 added
+  `scripts/checks/adr-citation-guard.sh` so the class cannot recur: an `ADR-NNN (MEH-XXXX)`
+  citation in an always-loaded rule file must point at an ADR that actually mentions that issue.
+  Existence alone would not have caught it — the wrong file existed.
+- **`CI gate` was fixed, so a green gate now means something it did not yesterday.** Sapir applied
+  the MEH-1582 patch (#2417). Within a touched stack, and for the four always-required jobs, a
+  `skipped` result is now a failure. Practical effect: a green `CI gate` **proves** Repo guards,
+  Env drift, the DO-NOT-MERGE gate and the qa-artifacts cap each reported `success`.
+- **The CI adversarial reviewer is uncredentialed and its two tickets were cancelled** (MEH-1734,
+  MEH-1735, both 29/07). The substitute — a local `/adversarial-review` per PR — plus the three
+  actions due **2026-08-01** now live in `workflow.md` (#2423), because that section is the only
+  surviving record: (a) restore `CLAUDE_CODE_OAUTH_TOKEN`, (b) pin `anthropics/claude-code-action`
+  off the floating `@v1` to a full SHA, (c) delete the policy. **The cause is not established** —
+  sudden repo-wide onset points at the floating tag at least as strongly as at the credential, so
+  (b) may be the fix and (a) alone could leave it broken.
+
+**Board vs repo.** Four cards sat `In Progress` while already shipped: MEH-1527 (`uv lock --check`
+exit 0, run and confirmed), MEH-1698 (all three chunks), MEH-1608 (normalizer live at
+`schemas/schemas.py:203`), MEH-1583. For MEH-1583 the blocking DoD item was closed by opening both
+VRT baselines and reviewing them visually — the poisoned MEH-1552 baseline really was replaced, and
+the two-channel cell shows one geometry. MEH-1602's guard was likewise already shipped; verified
+against its five DoD items rather than rebuilt, per its own STOP condition (a).
+
+**Decisions taken this session**
+
+| Decision | Why |
+|---|---|
+| Draft-only during the unattended half | Merging to staging unattended is hard to reverse; a stack of drafts is not. With no verifiable tier, the conservative branch was the cheap one. |
+| Did **not** settle `autonomy-cache.json`'s fate | ADR-032 is `Accepted` and deliberately left it open; `docs/decisions/README.md:14` forbids editing an Accepted ADR, and MEH-1756 (where it belongs) is `not-cc`. |
+| Backfilled at the **top** of each file, not the end | MEH-1762's prompt said "append at the end"; both files are **newest-first**, so appending would bury 29/07 below April 2026. Convention won. |
+
+**Known issues found, not filed**
+
+- `.claude/hooks/check-rtl.sh` exempts `.md` (`:60`) but not `.sh`, and flags the literal string
+  `pr-checks.yml` because it contains `pr-c`. Worked around with the documented `rtl-ok`.
+- MEH-1602 is `archivedAt` **and** was `In Progress` simultaneously; the Linear API rejects comments
+  on it (`Could not find referenced Issue`). Moved to Done; the verification lives in this file instead.
+- Evidence of a **concurrent session** (rule 1): MEH-1757 went Backlog→Done at 09:01 via #2421, and
+  #2418/#2421 landed mid-session. Not halted, since the run was being directed live.
+
+**Next:** MEH-1390 is the only queue card still open and is `not-cc` — it needs a scoped
+`vrt-update.yml` dispatch on `levismadar80/meh-1390-tabs-hide-empty` (route `producer-detail`),
+then a visual check that the three mobile shots show 2 tabs, not 4.
+
+## 2026-07-28 (evening) — MEH-1500 three-legged permissions work + 7 PRs merged
+
+**Branch at close:** none active. This entry is the docs-only backfill (rule 31).
+
+### Merged this session
+| PR | Ticket | What |
+|---|---|---|
+| #2348 | MEH-1686 | social-proof strip `py-4`→`py-8`. Auto-merged before the held PNG review — see "what went wrong" below |
+| #2371 | MEH-1720 | `hooks-wiring-guard.sh` + allowlist, auto-discovered by `run-all.sh` |
+| #2373 | MEH-1720 | corrected two records asserting `check-path-exists.sh`, a hook that never existed |
+| #2378 | MEH-1723 | Rule 19 prose corrected + both sibling pointers folded in |
+| #2380 | MEH-1727 | E2E font CORS — `extraHTTPHeaders` gated on target |
+| #2384 | MEH-1500 Phase B | `write-deny-parity-guard.sh`, red-by-design until the paste landed |
+| #2390 | MEH-1500 Phase C | `docs/ci/check-bash-safety.patch.md` — patch doc, NOT applied |
+
+Still open: **#2356** (MEH-1705 item 2) — marker gate now green after an authorized reword; remaining blockers are the normal gates.
+
+### Decisions made
+1. **MultiEdit enforced, not reported** (Sapir, 28/07). Grounds: 6 of 7 write-class `PreToolUse` matchers are `Edit|Write|MultiEdit`. The 7th is `Edit|Write|NotebookEdit` — the ticket said "every", which was wrong; corrected in-file. NotebookEdit deliberately NOT enforced: no protected path is a notebook, so cover would be vacuous.
+2. **Rule 30 §2 narrowing WITHDRAWN.** CC cannot reliably tell its own prose from a marker Sapir added — a PR body is a single field with no per-line authorship. Delegation runs through explicit per-PR authorization instead, which rule 30 already contemplates.
+3. **Rule 30 §3 to be rebased from mechanism to act** — wording drafted, not pushed. Close/reopen via `mcp__github__update_pull_request(state)` re-runs every gate with no commit, so banning "push a commit" bans one route, not the act.
+4. **`.claude/hooks/**` Write window closed** by the 28-line paste. CC found it, declined to use or probe it, and it is now denied to all three tools.
+
+### What went wrong, recorded so it isn't relearned
+- **#2348 auto-merged past a hold.** Auto-merge fired 2s after `CI gate` went green while `E2E gate` had not reported — and that gate then came back RED 113s later. This is the behavioural proof that `E2E gate (required)` is **not** in ruleset 15240090.
+- **Home VRT was regenerated (`e9a02c98`, MEH-1689) ~3h before the hold reached it.** It IS green — verified by reading the executed job steps, not the aggregate.
+- **Two false greens found in CC's own guard, both before merge.** (a) valid-JSON-wrong-shape fell through to `ok` because `[[ "" -gt 0 ]]` is false in bash; (b) a malformed deny entry (trailing space / lowercase / unclosed paren) was silently dropped and read as coverage — reachable by exactly the hand-paste the guard gates. Self-test 8 → 17 cases.
+- **A `read`-EOF bug in the Phase C hook patch** would have shipped a hook that allows everything, silently. Caught only because the patch was executed before being written into the doc.
+
+### Ticket premises that died on Phase 0 — verify before building on any of these
+- **MEH-1500 §2**: both original hypotheses refuted. `permissions.deny` DOES fire on `Edit()`; relative-path matching DOES work. Real gap was tool coverage.
+- **MEH-1723**: duplicate of MEH-1713, which merged 9 minutes before MEH-1723 was created. Re-scoped to the prose residue.
+- **MEH-514**: `git reset --hard` is blocked by `.claude/settings.json:284`, **not** by `check-bash-safety.sh` — the hook's `git` skip precedes every check, so it never sees the command. `docs/EXECUTION_PLAN.md:216` corrected; there is no hook allowlist to add to.
+- **MEH-1733 §ג**: ruled out non-determinism on "no Date/random/Intl". A `setInterval` needs none of those. See below.
+
+### Open, not filed, not fixed
+- **Hero placeholder rotates** — `HeroSearch.jsx:112-120`, `ROTATE_MS = 3500`, source `he.json:441-446`. Un-masked in the home VRT shot. Currently inert because `playwright.config.ts:72` sets `reducedMotion: "reduce"` and the component gates on it — **but that guard fails OPEN** (`HeroSearch.jsx:114`: optional chaining short-circuits the whole chain, so absent `matchMedia` ⇒ `undefined` ⇒ interval created). No test-side pin exists. Second visit to home non-determinism after MEH-1594 was retracted.
+- **`login-mobile` is a 1px DOCUMENT HEIGHT gate** (`393x1671`→`393x1670` in the regen). `toHaveScreenshot` rejects on dimension mismatch *before* comparing pixels, so `maxDiffPixelRatio` gives zero protection. One green run does not prove stability.
+- **`ProducerSchema` still strips 9 card fields** on the home grid and `/map` — corroborated independently by MEH-1713's commit message, which scopes it as deliberate there. Not ticketed by instruction.
+- **`frontend/e2e/CLAUDE.md`** still says `baseURL` comes from the Vercel deployment-status webhook — untrue since MEH-1044.
+
+### Governance contradiction — Sapir's call, do not act
+**MEH-1738** (from PR #2376) vs **MEH-1735**: four rule files call `.github/workflows/**` an absolute CC-deny, MEH-450's risk-tiering calls CI/workflow YAML LOW-RISK, and MEH-1735 opens by asserting the deny as fact. Two live tickets hold opposite premises about one directory, and **neither position is mechanically enforced** — the path appears in no `permissions.deny` entry and no `PreToolUse` hook. Read both before touching that area.
+
+### Next concrete step
+Apply `docs/ci/check-bash-safety.patch.md` (merged in #2390, **not yet applied**). Until it is, all three Bash-layer holes are live: the `git` prefix disables the whole hook, redirection to protected paths is unblocked, and missing `jq` fails open. Expect **18/18** from `bash .claude/hooks/check-bash-safety.selftest.sh .claude/hooks/check-bash-safety.sh` after applying; anything less means stop and re-paste.
+
+---
+
+## 2026-07-28 — MEH-1710 brand rule: empty-state copy convention (LOW-RISK, docs-only) — PR #2361 merged
+
+**Branch:** `feature/meh-1710-brand-empty-state-copy-rule` (2 commits: the section + a staging merge).
+**Docs branch:** `feature/meh-1710-docs-backfill` — this file + CHANGELOG, kept out of the code branch under rule 31.
+
+### What shipped
+One `###` subsection at the end of `docs/BRAND.md` §7: title = the state, description
+= the explanation/benefit, primary CTA **inside** the empty state (and the equivalent
+top button not rendered), blocked action = **no button at all**, Emoji-LOCK v2 on every
+empty-state string with the icon passed as a Phosphor component. 31 insertions, 0
+deletions. Zero code files.
+
+### Two things Phase 0 found that the prompt had wrong
+| Assumption | Reality |
+|---|---|
+| "§7 is the MEH-1652 rule (PR #2354)" | §7 was **Anti-patterns**; MEH-1652 was unmerged (`f61fa0e9` lived only on its own branch). §7 *did* exist, so the stop condition did not fire. #2354 merged mid-session (`6d0261f6`). |
+| "MEH-1652 is the precedent for landing a brand rule without an ADR" | **False.** #2354 shipped **with ADR-031** and an explicit `**ADR מגבה:**` line. |
+
+### Open items — Sapir
+1. **ADR-032 decision.** `### מצבים ריקים` is currently the **only §7 rule without a
+   backing ADR**, which §8 says is not permitted. The basis is Sapir's 28/07 lock in
+   the ticket body. Opening an ADR was outside the ticket's `<scope>` (BRAND.md only),
+   so CC flagged rather than acted. If yes → add a matching `**ADR מגבה:**` line.
+2. **Drive copy (manual, per the ticket DoD).** Copy the section into
+   `Drive/03-Brand-Hub/02-מדריך-מותג.md`, replace `"לא מצאנו בינתיים — עדיין 🌱"` with an
+   emoji-free version, bump the guide changelog to v1.2. The full section text is
+   quoted verbatim in the PR body for exactly this.
+3. **`❌`/`✅` are emoji by the grep, not by convention.** U+274C/U+2705 sit inside the
+   `\x{2600}-\x{27BF}` range the ticket's own verification step checks, yet the rest of
+   §7 — including the MEH-1652 rule that landed the same day — uses them freely. The
+   new section uses bold **אסור**/**מותר** instead. **The §3-Emoji-LOCK-vs-verification
+   mismatch is unresolved**; existing sections were left untouched.
+
+### Worth carrying forward
+**A predicted conflict is still a conflict.** The first version of the PR body wrote
+down that #2354 and #2361 both append at the end of §7 and that whoever merges second
+needs Accept-Both. That is exactly what happened — `405 Pull Request has merge
+conflicts` on the first squash-merge attempt. Predicting it cost nothing and made the
+resolution mechanical (rule 25 / `resolve-conflicts`: first-landed rule first,
+0 deletions). Naming a foreseeable collision in the PR body is cheap; two branches
+appending to the same anchor is a standing hazard, not a surprise.
+## 2026-07-28 — MEH-1709 group-buys gated empty state (YELLOW, frontend) — PR #2364 merged
+
+**Branch:** `feature/meh-1709-group-buys-gated-empty-state` (2 commits: the fix + a staging merge).
+**Docs branch:** `feature/meh-1709-docs-backfill` — this file + CHANGELOG, kept out of the code branch under rule 31.
+
+### What shipped
+`frontend/app/[locale]/producer/dashboard/group-buys/page.js`, three blocks. Header
+button absent while `notApproved` (not disabled). Standalone hint paragraph now only
+when the list is non-empty. EmptyState takes `approval_required_hint` as its
+`description` and drops both `ctaLabel` and `ctaOnClick` while gated. Plus
+`frontend/__tests__/GroupBuysGatedEmptyState.test.jsx` (7 assertions), a browser probe,
+and 4 screenshots.
+
+### Phase 0 — the answer that changed the shape of the fix
+The muted button was **not** a leftover. MEH-1420's own code comment kept it
+deliberately: `EmptyState` self-hides a CTA whose handler is absent, so hiding the
+header button *too* would have orphaned the hint's `aria-describedby` target and left
+zero affordance. This ticket dissolves that dependency rather than overriding it — the
+explanation moves inside, the `aria-describedby` becomes unnecessary, and the button
+can go. The `id` went with it (grep: one consumer, same file).
+
+### Decisions made this session
+| Decision | Outcome |
+|---|---|
+| Unapproved **with** existing group buys | Not in F1/F2/F3. Button dropped, **hint paragraph kept** — no EmptyState exists there to carry the reason. Has its own test. |
+| `empty_title` still a value proposition | **Left as-is on purpose.** Zero-copy ticket; the convention is MEH-1710's and the application is MEH-1630's. Marked in a code comment so it doesn't read as an oversight. |
+| Screenshots | **Real browser**, not the sanctioned vitest substitute — `page.route()` stubs `/api`, token seeded pre-hydration. Probe: `disabledButtons: 0`, `gateStringOccurrences: 1`. |
+| Merge method | Sapir enabled **auto-merge with `merge`**, while the ticket specified squash. Her setting was left alone. |
+
+### Open items — Sapir
+1. **Staging QA.** The ticket's DoD waived the preview URL and mobile check (Vercel
+   quota); verification moves to staging post-merge. Two states to look at: unapproved
+   (no button anywhere, explanation under the cart) and approved-empty (one green CTA
+   inside, nothing in the header).
+2. **`Adversarial review (calibration)` reported failure on PR #2364 — infrastructural,
+   not a finding.** `duration_ms: 992`, `num_turns: 1`, `total_cost_usd: 0`, and
+   `ANTHROPIC_API_KEY:` **empty** in the job env. This is the workflow-rule-21 class
+   ("a failure you cannot read logs for is not a signal"). Not a required gate, so it
+   did not block. The fix is a repo secret + `.github/workflows/**`, both outside CC's
+   reach (MEH-671).
+3. **he/en message-key drift predates this work** — 37 he-only, 17 en-only. Untouched;
+   worth its own ticket.
+
+### Worth carrying forward
+**A sibling spec covering the same component is not coverage of the same states.**
+`DashboardEmptyStateFormExclusive` renders this exact page and passes on both the broken
+and the fixed version, because its mock producer carries no `status` field — so
+`notApproved` is never true and the gated branch is unreachable from it. The file list
+said "this page is tested". The state matrix said otherwise. When adding a guard, run
+the *existing* spec against the broken build too: if it stays green, that is the
+evidence the new assertion is worth having (MEH-1619's discrimination requirement).
+
+## 2026-07-27 — MEH-1577 structured delivery cost (RED, chunked) — PR #2334 open, awaiting merge approval
+
+**PR #2334 is OPEN as a draft, NOT merged.** RED tier: migration `c7e2a4b91f38`
+was shown verbatim, applied to staging by Sapir, and confirmed before chunks 2–3
+were written. Merge approval is Sapir's.
+
+**Branch:** `feature/meh-1577-delivery-fee-fields` (5 commits + a staging merge).
+**Docs branch:** `feature/meh-1577-docs-backfill` — this file + CHANGELOG, kept
+out of the code branch under rule 31.
+
+### What shipped
+`producers.delivery_fee` + `producers.free_delivery_above`, both nullable
+INTEGER. Owner edits them in the dashboard delivery card; `DeliveryBlock` renders
+one cost line above the city list. Six render states + a seventh combined state.
+
+### Decisions made this session (all Sapir's, recorded so they are not re-litigated)
+| Decision | Outcome |
+|---|---|
+| Column type | **INTEGER**, not `NUMERIC(10,2)`. CC proposed NUMERIC on money-convention grounds; rejected — `delivery_areas.min_order` is the closest analogous field, and two adjacent delivery-money fields with different types fork serialization (`Decimal` vs `int`), rendering, and fixtures. |
+| Scope | **Producer-level**, not per-`delivery_areas` row. |
+| Ordering vs MEH-1646 | **MEH-1577 first**; 1646 merged onto this line. |
+| Sync mechanism | **`git merge origin/staging`** (rule 25), not rebase. |
+| ProducerCard fee display | **Deferred → MEH-1678** (frontend-only; no schema work needed). |
+
+### Open items — Sapir
+1. **Merge approval on PR #2334.** No auto-merge (RED).
+2. **`Builder-Model:` trailer is absent from every commit on both branches.** The
+   guard warns and exits 0 (warn-only until **2026-08-17**, then blocking). CC did
+   not add it: this session runs under a harness instruction forbidding its model
+   identifier in commit messages / PR titles / PR bodies, which contradicts the
+   template requirement. CC declined to pick a side on a convention Sapir owns.
+   Note the guard's substantive purpose is already met — it exists to catch
+   *builder == reviewer*, and the reviewer pin is `claude-sonnet-4-6`.
+3. **No Vercel preview URL.** Account is at the free-tier cap
+   (`api-deployments-free-per-day`, 100/24h) — same condition as earlier today.
+   Mobile QA cannot be done from a preview until that clears.
+4. **`/adversarial-review` has not been run** on PR #2334.
+5. **Four meta-patterns rules were referenced but never supplied** — see below.
+
+### ⚠️ Missing input, not forgotten
+The instruction for this docs PR named "the four meta-patterns rules I supplied
+earlier". **No such rules appear anywhere in the session transcript.** They were
+not written to `.claude/rules/meta-patterns.md` here, and inventing four
+plausible-sounding rules for a file that shapes every future session is exactly
+the failure mode that file warns about. Awaiting the actual text.
+
+### Two findings worth carrying forward
+1. **A clean linter does not mean a clean diff.** Moving fields between schema
+   classes left an orphaned comment above `model_config` with no code under it;
+   `ruff check` and `ruff format` both passed. Reading the diff caught it.
+2. **Invisible characters land in `textContent`.** Unicode bidi isolates
+   (U+2066/U+2069) are correct and invisible on screen, but they silently break
+   `getByText` / Playwright assertions written against rendered copy. `<bdi>` is
+   equivalent and leaves the text clean — measured, not assumed
+   (`frontend/e2e/qa-meh1577-bidi-probe.mjs`).
+
+### Process note
+Two concurrent `pytest` runs deadlocked on the suite's `TRUNCATE`-between-tests
+fixture; the first reported **completed, exit 0, with an empty log**. That is the
+false-green shape rule 21 describes. Never run two backend suites against
+`mehamakor_test` at once, and never accept a green you cannot read.
+
+### NEXT
+Sapir merges #2334 (or requests changes), then MEH-1626 chunk 1 remains the
+queued epic (unchanged from the previous handoff).
+## 2026-07-27 — MEH-1626 epic הושלם: domain types + guard מבני (3 chunks)
+
+**האפיק סגור.** שלושת ה-chunks מוזגו ב-squash על gates נדרשים ירוקים, כל chunk ב-PR נפרד עם WAIT ביניהם.
+
+| Chunk | PR | Merge SHA | תוכן |
+|---|---|---|---|
+| 1 | #2296 | `d87f3e86` | 5 domain types + המשטחים הציבוריים |
+| 2 | #2320 | `679eca9a` | 29 שדות פנימיים (19/8/2) + ProfileUpdate schema+router + חקירת admin_notes |
+| 3 | #2333 | `9ba59795` | ה-guard המבני + ProducerCreate.name + website ""→None |
+
+**מצב סופי:** 7 domain types ב-`schemas.py` · guard חי ב-`tests/test_schema_symmetry.py` (רץ ב-job הנדרש Backend tests — זו החיווט, לא נגענו ב-workflow YAML) · **allowlist = 4 שורות**, כל אחת עם נימוק · backlog מיגרציה = 31 שדות decorator-based, מדווח ולא-מכשיל · pytest 2127 ירוקים.
+
+**הכרעות שננעלו:** person vs business name (רצפת ≥3 אותיות רק לעסקים — שמות פרטיים עבריים בני 2 אותיות לגיטימיים, הכרעת ספיר ב-chunk 1) · שתי ההחמרות של chunk 1 (`GroupBuyCreate.title`, `EventCreate.title`) **נשארות** · `admin_notes` **אינו** באג — ה-allowlist ב-`producer_me.py:289` חוסם אותו.
+
+### ⚠️ פעולות ממתינות לספיר
+
+1. **סטטוס האפיק ב-Linear** — chunks 1 ו-2 נשאו `Refs`/ללא `Closes` במכוון, אך ה-slug של ה-branch לבדו סוגר את הכרטיס אוטומטית (MEH-1615). אחרי chunk 3 מצב Done **נכון** — אין צורך בשחזור. אם הכרטיס נסגר מוקדם ב-chunks 1/2 ושוחזר ידנית, זה היה תקין.
+2. **Vercel חסום ב-cap יומי** (`more than 100 per day`, free tier) — אדים status על כל PR היום. אינו gate נדרש; PRs של backend בלבד אינם מושפעים.
+
+### Follow-up שנפתח בתיעוד בלבד (טרם ticket)
+
+- **31 שדות decorator-based** — מוגנים כהלכה אך לא דרך domain type. ה-guard מדווח את המספר בכל ריצה כדי שיירד בכוונה ולא באקראי. אין דחיפות: תכונת הבטיחות מכוסה.
+- **`OutreachLeadUpdate.website`** — לפני chunk 3 האילוץ 200 היה קיים רק ברמת עמודת ה-DB, לא ב-Pydantic; chunk 3 יישר אותם. תועד ב-review של #2333.
+
+---
+
+## 2026-07-27 — delivery-features batch: ארבעה merges (הירו CTA · DeliveryBlock · יום משלוח מובנה · פילטר יום)
+
+**כל הארבעה מוזגו ב-squash auto-merge על gates נדרשים ירוקים** (ADR-016 v2 end-to-end authority). הלוגים כאן כי אף branch קוד לא נושא אותם (rule 31).
+
+| Ticket | PR | Merge SHA | צורה |
+|---|---|---|---|
+| MEH-1643 | #2297 | `6f050547` | frontend-only — CTA רביעי בהירו, מסלול delivery_city קיים |
+| MEH-1646 | #2302 | `fd6ec3f8` | frontend-only — cutoff הזמנות (יום-פתוח-יחיד בלבד) + "חינם" לאיסוף |
+| MEH-1644 | #2314 | `c9330d08` | backend+frontend — whitelist ימים קנוני, DeliveryCard rows, סקריפט נורמליזציה |
+| MEH-1645 | #2329 | `549f8b1b` | backend+frontend — ?delivery_day= (EXISTS יחיד, v1 explicit-rows-only) + DeliveryDayRow בבית |
+
+### ⚠️ פעולות ממתינות לספיר
+
+1. **backfill awaiting Sapir run on staging→prod** — `scripts/normalize_delivery_days.py` ממפה delivery_day חופשי-טקסט לאוצר הקנוני. dry-run ברירת מחדל; `--apply` כותב; מסרב ל-DATABASE_URL לא-מקומי בלי `--allow-remote`. **לעולם לא מ-CC session** (MEH-408). דו"ח dry-run סינתטי מקומי ב-PR #2314; ערכים UNMAPPED ("שישי בבוקר", "בתיאום") נשארים כמות-שהם להכרעה ידנית.
+2. **VRT home baseline regen** — ה-CTA של #2297 הסיח את baseline ה-home (mobile); parity `home.png` אדום מאז (הכשל היחיד בסוויטה — 172/173 פונקציונליים ירוקים). regen במסלול MEH-991 (vrt-update) + פוש re-trigger ידני.
+3. **Copy ה-empty state של פילטר היום** (`day_empty_suggestion` / `day_empty_clear_cta`, #2329) — copy פונקציונלי חדש שלא ננעל ב-spec; ממתין לאישור/ניסוח ספיר.
+
+### Follow-up שנפתח בתיעוד בלבד (טרם ticket)
+
+- **חיווט alert אזור-משלוח מה-empty state של סינון עיר** — MEH-1360 הוא העדפת favorite פר-עסק; חיווט מה-empty state דורש endpoint חדש ברמת עיר + UX. תועד ב-PR #2302; פתיחת ticket כשספיר תרצה.
+
+### NEXT
+הבאטץ' סגור. MEH-1577 (delivery_fee, RED) הוא ריצה נפרדת — לא הותחל בכוונה.
+
+## 2026-07-27 — docs backfill for PR #2324 (builder-model guard)
+
+**Shipped.** The CHANGELOG entry for PR #2324 (`d8c75e13`), which could not carry
+its own logs: the branch touched `scripts/checks/**` and
+`.github/pull_request_template.md`, so `changelog-branch-guard.sh` under the
+required **Repo guards** job blocks them (rule 31). Verified against the commit,
+not from memory — 5 files, 677 insertions.
+
+**⚠️ Scope was cut from two PRs to one. #2303 is deliberately NOT backfilled.**
+The request named #2303 and #2324. #2303 is already covered: `docs/CHANGELOG.md`
+carries its entry, written by PR #2322, **and** the record correction is already
+there too — #2303's diff was docs-only (`docs/CLAUDE-REVIEW.md` +
+`docs/ci/adversarial-review.patch.md`), both under `docs/`, which
+`changelog-branch-guard.sh`'s `is_docs_path()` classifies as docs. It was never
+blocked; it was free to carry its logs and simply didn't. A second entry would
+have produced exactly the duplicated, contradictory pair MEH-1602 exists to
+prevent — the precedent being the two conflicting MEH-1569 entries on PR #2207,
+which only a human reading the log caught. **The ticket that stated all three of
+its PRs were guard-blocked (the #2276/#2293/#2303 backfill) is wrong about #2303
+only; the repo record is already right.**
+
+**Three defects worth carrying, none of which were in the source ticket:**
+
+1. **`git log -1 --format=%B` reads the wrong commit in CI.** `repo-guards` runs
+   `actions/checkout@v7` with no `ref:` and no `fetch-depth`, so HEAD is
+   `refs/pull/N/merge` — a synthetic merge commit. Demonstrated in run
+   `30295332674`, not argued.
+2. **A PR's head is the SECOND parent of the merge ref, not the first.** Parent 1
+   is the base — what `changelog-branch-guard.sh` wants and the exact opposite of
+   what a builder-identity guard needs.
+3. **Rule 25 makes a sync merge the usual branch tip**, and a sync merge carries
+   no trailer, so the guard would have redded precisely the branches that obeyed
+   the rule. Caught by the CI negative control; the four local controls could not
+   see it structurally, because they all run on a normal checkout where HEAD is
+   the commit itself.
+
+**The methodological lesson, which generalises past this guard:** local green is
+not evidence for anything that reads git metadata, because local-vs-CI *is* the
+variable under test. And a negative control that cannot discriminate is not a
+control — run 5b passed while warn-only, which exits 0 whether or not the fix
+works. The gap was closed by a separate enforcing run on a sync-merge tip
+(PR #2328, closed unmerged) where PASS was only possible if the walk worked.
+
+### NEXT
+The guard's warn-only window closes **2026-08-17**, mechanically. Before then,
+commits should start carrying `Builder-Model:` trailers or that date reds open
+PRs. Part 2 (`docs/ci/adversarial-review-blocking.patch.md`) is Sapir's to apply,
+and must land **before** the `continue-on-error: false` flip — otherwise the
+required check gates on "did the reviewer run", not "was the diff clean".
+## 2026-07-27 — MEH-1664 Hebrew search tokenization (end-to-end authority, הכרעת ספיר)
+
+**Shipped.** PR #2323 merged to `staging` (squash) on verified-green required gates.
+This is the docs-only backfill (rule 31 — the logs never ride in a code branch).
+
+| Ticket | PR | Shape | Gate note |
+|---|---|---|---|
+| MEH-1664 | #2323 | backend, 2 search paths + new shared helper | green: `CI gate` · `Deploy gate` · `Backend tests (pytest)` all success |
+
+**What changed.** Both search paths matched the whole query as one literal substring.
+Now every query is tokenized and each token expands to variants; a row matches iff
+**every** token hits ≥1 of its searchable fields — AND across tokens, OR across
+(variant × field). One shared helper, `backend/app/utils/hebrew_search.py`, so
+`/search` and `/producers?q=` can no longer disagree. `has_product` on the listing
+path also gained `Product.description` (it had only matched `Product.name`, which is
+why a description-only term was reachable from `/search` but invisible on
+`/producers?q=`). 6 files, +500/−68, zero frontend paths.
+
+**Four findings worth keeping.**
+
+1. **A negative guard often cannot be proven by reverting — only by breaking what it
+   guards.** Against the old implementation 5 of the 7 behavioral tests fail, but
+   tests 4 and 5 pass on it too. That is not a weak test, it is the wrong experiment:
+   test 5 is a *negative* assertion the old literal behavior also satisfied. Proving
+   it required flipping AND→OR across tokens, which fails **only test 5** while the
+   other 22 tests in the file — every pre-existing MEH-99 assertion included — stay
+   green. That asymmetry is the discrimination MEH-1619 asks for: it shows the old
+   assertion set would not have caught the regression. A revert-based run alone would
+   have signed off on test 5 without evidence.
+2. **The draft skip-green trap fires in practice, not just in theory (rule 21).** The
+   first CI run showed all three required gates `success` while `Backend tests
+   (pytest)` and `Backend lint (ruff)` were `skipped` — backend jobs gate on
+   `draft == false`, and a skipped leg aggregates to success. Merging there would have
+   merged on a run in which **nothing executed**. Marking the PR ready produced the
+   real signal. Treat a required-gate green on a draft as *no information*.
+3. **Escape-after-transform is load-bearing and invisible.** `token_variants` runs the
+   prefix strip and the ה/ת stem on the **raw** token; `escape_like` runs afterwards in
+   `token_patterns`. The reverse order — escape then chop — could sever a `\` from
+   `\%` and emit a dangling escape. Nothing in the type system or the linter would say
+   so, so `test_escaping_survives_the_variant_transforms` pins it directly.
+4. **Two concurrent pytest runs share one test DB and silently corrupt each other.**
+   `_clean_tables` TRUNCATEs between tests, so a second run mid-flight wipes the first
+   run's fixtures and the failures look like real regressions. Also: a `nohup`'d pytest
+   in this sandbox gets reaped and leaves a truncated log that reads like a completed
+   run. Use the harness's tracked background mode and check for a live process before
+   trusting any suite output.
+
+**Known limitation, deliberately shipped.** Plural→singular does not work: the ה/ת stem
+takes `גבינות` to `גבינו`, which reaches nothing, and ים/ות stripping was out of scope.
+`test_plural_to_singular_is_not_covered` pins it. If search logs show users typing
+plurals and getting nothing, that is the first thing to revisit — as its own ticket,
+not as a quiet widening of the rule.
+
+**Open item carried forward.** `backend/app/schemas/schemas.py:2944` still says
+`_strip_hebrew_prefix` "stays in search.py"; it now lives in the shared helper. Stale
+but harmless — it was outside the ticket's file list. Fix on next touch of that file.
+
+**Next task.** MEH-1665 (frontend, signal-gated) is the declared sibling of this work
+and was explicitly excluded here. First concrete step: confirm with Sapir whether the
+signal for it has been met before any frontend change.
+
+## 2026-07-27 — batch MEH-1660 · MEH-1661 · MEH-1662 (end-to-end authority, ADR-016 v2)
+
+**Shipped.** Four PRs merged: #2308 (MEH-1660 fix) · #2321 (MEH-1660 qa-artifacts) ·
+#2318 (MEH-1661 sweep + guard) · #2326 (MEH-1662 heading). This PR is the docs-only
+backfill (rule 31 — the logs never ride in a code branch).
+
+| Ticket | PR | Shape | Gate note |
+|---|---|---|---|
+| MEH-1660 | #2308 + #2321 | backend + new pytest; qa-artifacts | green, auto-merged |
+| MEH-1661 | #2318 | messages sweep + new vitest guard | merged on Sapir's explicit "MERGE" with `E2E gate` red |
+| MEH-1662 | #2326 | one he.json key | green |
+
+**Open item carried forward — MEH-1661's `home-mobile` VRT baseline is still stale.**
+The hero CTA lost its 📦, which moves unmasked pixels, so `[mobile] › visual/parity
+home` fails (173 passed, 1 failed). It merged anyway on explicit instruction, which
+means **`staging` now carries a knowingly-red VRT shot**: the next PR that runs the
+suite inherits the failure and it will read as *that* PR's regression. Closing it needs
+one `vrt-update` dispatch (`route=home`) on `staging` — a permission this session does
+not have (403, no workflows scope).
+
+**Three findings worth keeping.**
+
+1. **A local VRT regen would have been wrong, and only a self-test showed it.** Before
+   considering a locally-generated baseline I built the *base* (unchanged) content and
+   ran the spec against the committed baseline: **0.25 pixel ratio difference on content
+   that had not changed** — sandbox Chromium 1194 vs runner 1228. Had I skipped that
+   check, I would have committed a baseline that ratifies sandbox rendering for every
+   future run. This is the MEH-1552 candidate-baseline trap reached by a different road:
+   there the bot froze a broken state, here the *environment* would have.
+2. **The ☆ "survivor" report was half right — and the half that was wrong would have
+   shipped a defect.** Mid-batch verification reported `ambassador_inactive` ("☆ שגריר")
+   as a missed emoji and asked to widen the guard to `U+2600–U+27BF`. The survivor is
+   real; the premise is not — **U+2606 is NOT `Extended_Pictographic`** (verified against
+   Node/ICU 17.0; so is `★` U+2605, while `⭐` U+2B50 is). The count of 5 was correct for
+   the ticket's own stated definition. Two things stopped the "fix":
+   - **The proposed range would red ~80 lines per locale** — every `✓ נשמר`, `✗ לא מוגדר`,
+     `הבא ←`, `→ חזרה`. The sibling MEH-1472 guard *explicitly* allows those, and
+     `app/[locale]/admin/reviews/page.jsx:129-132` shows MEH-1472 **deliberately
+     converted ⭐ → ★ as "the repo's typographic star"**. Widening would have contradicted
+     a decision the repo made on purpose and created two definitions of "emoji" in two
+     sibling guards (workflow.md smell #1).
+   - **Stripping ☆ alone collides in English.** `ambassador_active` is "Ambassador" after
+     the sweep; `ambassador_inactive` is "☆ Ambassador". Remove the glyph and both read
+     **"Ambassador"** — the toggle's two states become indistinguishable. The glyph
+     carries the meaning, which is the MEH-1628 case where the spec itself says replace
+     with a word, not delete. That needs approved copy (rule 22), so I reverted and
+     stopped rather than inventing it.
+   - **Decision owed to Sapir:** either keep ☆ as the approved typographic twin of ★
+     (zero work, consistent with MEH-1472), or approve distinguishing English copy —
+     `set_ambassador_title` / `remove_ambassador_title` already exist in the same
+     namespace, **approved but unused**, and would fit if the component is repointed.
+3. **Grep verification has to distinguish source from build output.** MEH-1662's
+   grep-absence proof returned 2 false hits from a gitignored `.next/` directory left by
+   a local build. `git grep` returned 0. Any "0 occurrences remain" claim should use
+   `git grep`, not `grep -rn`.
+
+**Environment notes — corrected 27/07, the first version of this paragraph named the
+wrong cause.** It said "Vercel hit its free-tier 100-deploys/day cap mid-batch". That
+error is real and does appear on the **feature-branch preview** comments, but it is
+**not** what blocks staging, and generalising from one to the other was an inference
+with no evidence behind it. Verified against `list_deployments`:
+
+- **Deploys are being created continuously right now** — there is no active quota stall.
+- **Feature-branch `CANCELED` is the MEH-1044 `ignoreCommand` gate**, i.e. by design.
+- **The real fault: the `staging` target has not rebuilt since `ad5f7560`** (MEH-1639,
+  PR #2307) — even though #2318, #2326, #2333, #2337 and #2339 all merged into it.
+
+**The blast radius is the whole 27/07 batch, not one screenshot.** Any post-merge
+staging QA for this batch is invalid until a staging deploy lands *newer than the sweep
+merge*, because `staging.mehamakor.online` is still serving the pre-sweep bundle —
+independently confirmed to still contain `📦 ⭐ 🏅 🚚 ✅ 🛒 🌙 🟢 📤`.
+
+**Precondition before any future staging screenshot:** fetch the staging URL and assert
+`📦` is **absent** from `/he`. Shoot nothing until that passes.
+
+**One exception, and it holds.** MEH-1660's post-merge verification is still valid: it
+was a **backend** change deployed by **Railway**, not Vercel, and the live payload
+returned `days_since_created: 5` / `favorites_count: 2` — fields that are *definitionally*
+absent before that fix, so their presence proves the fixed backend was serving. The card
+render in those shots does not depend on the sweep.
+
+MEH-1661's screenshots (PR #2339) were therefore rendered from the **merged code built
+locally against staging's live API**, and labelled as such; its **admin-surface** shots
+are still owed. A **parallel session** was pushing `feature/meh-1644-delivery-day-capture`
+at 18:29Z (rule 1 single-session flag) — different ticket, no file overlap.
+
+**Next task.** (1) Get the `staging` Vercel target rebuilding — that unblocks batch QA.
+(2) Dispatch `vrt-update` (`route=home`) on `staging` to clear the inherited red shot.
+(3) MEH-1681 (gated on 2) supersedes the ☆/ambassador question: Sapir declined both
+options and identified the real root cause — `AdminProducersTable.jsx:244` renders STATE
+copy on an ACTION item, and ☆ was carrying the directional meaning. The guard stays
+untouched; `Extended_Pictographic` is the deliberate boundary.
+
+## 2026-07-27 — docs backfill for the attribution chain: PRs #2276 · #2293 · #2303 (MEH-1669)
+
+**Shipped.** CHANGELOG entries for the three 27/07 attribution-chain merges. Every
+claim below was **read from the commit**, per the ticket's instruction — none of the
+three came from this session.
+
+| PR | Merge | Shape |
+|---|---|---|
+| #2276 | `2792495f` | code — `MiniMap.jsx` + new `scripts/checks/map-attribution-guard.sh` + 6 qa-artifacts |
+| #2293 | `cb00d1d0` | code — new `frontend/__tests__/leaflet-attribution-default.test.js` + `globals.css` comments |
+| #2303 | `1a5ecfbc` | **docs-only** — `docs/CLAUDE-REVIEW.md` + `docs/ci/adversarial-review.patch.md` |
+
+**⚠️ The ticket's premise is wrong for one of the three, and verification is the only
+reason it surfaced.** MEH-1669 states that all three branches touched code and were
+therefore blocked by `changelog-branch-guard.sh`. True for #2276 and #2293. **#2303 is
+docs-only** — both its files sit under `docs/`, which the guard classifies as docs
+(`changelog-branch-guard.sh:123`: `docs/*|.claude/*|.ai/*|HANDOFF.md`). It was free to
+carry its own logs and simply didn't. Same distinction MEH-1642 recorded for #2272, in
+the opposite direction — there the PR was free and *did* write them, so a second entry
+would have duplicated. Here it was free and didn't, so the backfill is still owed. The
+row belongs in this PR either way; the stated reason does not.
+
+**Two content corrections against the commits.**
+
+1. **#2276 changed the attribution *string*, not only the control.** The ticket's table
+   says the prop was deleted and the string was inert. The diff also replaces
+   `'© OpenStreetMap contributors'` with
+   `'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'`,
+   byte-identical to `HomepageMiniMap.jsx:236`. So even had the control rendered, the
+   old string carried no link — two defects, not one.
+2. **The `leaflet.css` line numbers that look contradictory are not.** #2293's commit
+   message cites `:167`/`:416` in one sentence and `(413 > 166)` in the next, and the
+   ticket repeats `413`/`166`. Read against the installed leaflet 1.9.4: `166` and `413`
+   are the **selector** lines (what source order compares), `167` and `416` the
+   **declaration** lines (`margin-bottom: 10px`, `margin: 0`). Both pairs are correct
+   for what they cite. Worth knowing before someone "fixes" one of them.
+
+**The lessons the entries carry**, all three of the same family — an assertion or a
+scan that cannot see what it claims to cover:
+
+- **Class B′ was a definition gap, not a missed scan.** MEH-1619's class B was scoped to
+  props conditional on runtime element type, so a prop that *deletes what another prop
+  configures* fell outside it structurally.
+- **A claim whose subject is `node_modules` is invisible to every tool in the pipeline.**
+  `tsc`, `eslint`, `knip`, `run-all.sh` all check the code against itself. A test that
+  reads the installed package is the only instrument.
+- **`grep -c` on mentions is not a count of claims** — the `.claude/rules` Leaflet-claim
+  count fell 13 → 2 → 1 across two narrowings.
+- **`continue-on-error: false` blocks a step failure, not findings.** The review action
+  is advisory by construction, so the flip has to gate on "did the reviewer run", not
+  "was the diff clean". Carried into MEH-1668.
+
+**Coverage ledger, so the next backfill doesn't double-write:** MEH-1642 = #2272/#2275/#2284 ·
+MEH-1666 = #2305 · MEH-1667 = #2299/#2301/#2309 · **MEH-1669 = #2276/#2293/#2303**.
+Verified before writing: no existing CHANGELOG entry mentions MEH-1633, MEH-1636,
+MEH-1654, or any of the three PR numbers.
+
+### NEXT
+Unchanged by this session — see the queue entry below.
+
+## 2026-07-27 — 4-ticket sequential queue (loading-state batch) — 3 merged, 1 STOP
+
+**Queue per Sapir grant 27/07 (end-to-end authority, ADR-016).** Sequential, each
+branch off fresh `origin/staging`, auto-merge on green, no CHANGELOG/HANDOFF in
+code branches (rule 31) — this is the docs-only backfill PR those merges pointed
+at.
+
+| Ticket | Branch | PR | Outcome |
+|---|---|---|---|
+| MEH-1655 loading-CTA jump ×4 manage lists | `feature/meh-1655-loading-cta-jump` | #2304 | **merged** 13:56Z |
+| MEH-1656 admin/users empty flash | `feature/meh-1656-admin-users-empty-flash` | #2306 | **merged** 14:01Z |
+| MEH-1638 entry skeleton — `/settings` half | `feature/meh-1638-dashboard-entry-skeleton` | #2311 | **merged** 18:20Z |
+| MEH-1657 event/experience axis | — none — | — | **STOP (a)** — see below |
+
+**Gate evidence (MEH-1582 discipline):** on every merged head both required
+aggregators (`CI gate`, `Deploy gate`) succeeded with the real legs RUN, not
+skipped — #2304 head `a22f54bc`: Frontend build 54s / vitest 3m57s / RTL lint /
+Repo guards / qa-size cap all `success`; #2306 head `89bdfb65`: build 53s /
+vitest 4m17s `success`. Backend legs `skipped` on both = paths-filter (no
+backend file in either diff), the documented docs-only-style skip, not the
+draft skip-green hole. `Playwright E2E` failed on both runs with **exactly the
+pre-existing known red** — `parity.spec.ts:226 › home` (mobile), 173 passed —
+the same failure `.claude/rules/testing.md` records as precondition-B blocker;
+E2E gate is not in ruleset 15240090, and none of the three diffs touches a VRT
+route. #2311 head `87544f94` (run `30292884267`): build/vitest/tsc/Knip/lint
+all `success`, same single pre-existing parity red (24012px, home mobile), and
+the settings-touching specs (password-policy settings card, role-reachability)
+all passed on it.
+
+**MEH-1657 STOP (a) — data decision needed, Sapir runs the DML.** The ticket's
+own first step: query staging for events in the categories being removed.
+`GET /events?from_date=2000-01-01` (via the Vercel-proxied `/api`) returned
+exactly one live event and it is category **סדנה**:
+`d886c4df-d541-44ce-af08-b8190cd94153` · "סדנת אפיית לחם מחמצת למתחילות" ·
+מאפיית רוח השדה (`2e9aa40f-1d5f-4a85-8d10-c87aafb12cf2`) · 2026-08-11 · זכרון
+יעקב · `is_active: true`. Removing סדנה from `VALID_CATEGORIES` (events.py:33)
+with that row live would strand real data. No branch was created, no file
+touched. `/events/mine` for the demo producer was NOT checked (no
+`DEMO_*_PASSWORD` in this session) — after the DML, re-check it before
+re-dispatching the ticket. The locked copy + category spec stays in the ticket,
+ready to execute once staging is clean.
+
+**Session-discovered follow-ups (not filed, per rule 27 — search Linear first):**
+- MapCardList.jsx:73 empty state flashes during producers load on the DESKTOP
+  sidebar only (`MapClient.jsx:512` unguarded; mobile sheet protected by
+  MEH-1054). Read-only finding required by the MEH-1656 ticket, reported in PR
+  #2306's body.
+- Reviewer suggestion on #2304 (arrived pre-merge, landed after): the 3-state
+  CTA-count vitest block covers only the events page; experiences/recipes/
+  group-buys are covered by the e2e harness but not in CI's vitest. Optional
+  parameterized-test follow-up.
+- Reviewer nits on #2306 (post-merge, cosmetic): two Hebrew strings quoted in
+  code comments; loading/empty rows use `text-center` vs the table's `text-end`.
+
+### NEXT
+Sapir: run the DML for the סדנה event (or approve recategorizing it), then
+re-dispatch MEH-1657 from its Linear description unchanged.
+## 2026-07-27 — Leaflet inline-writer claim pinned; two of its own acceptance criteria were false (PR #2305)
+
+**Shipped and merged** (`eab51862`). The one claim in `.claude/rules/` that guides
+code decisions and nothing checked — which CSS properties Leaflet and markercluster
+write inline, and above all that neither writes `filter` — is now re-derived from
+the installed bundles on every vitest run. That negative is the sole reason a marker
+fade rides `filter: opacity()`; if a release starts writing `filter` inline the fade
+stops applying with no error and no failing test, which is the MEH-1611 shape.
+
+**The finding that matters: Phase 0 contradicted two of the ticket's own acceptance
+criteria, and the test was written to the packages rather than to the spec.**
+
+1. **`filter` is not absent from Leaflet.** `leaflet-src.js:2506` writes
+   `el.style.filter +=` inside `_setOpacityIE` — IE-8 dead code, reached only via
+   the `else if ('filter' in el.style)` arm that `setOpacity` takes when
+   `'opacity' in el.style` is false. The behavioural claim holds; the absolute one
+   does not. Criterion (d) as written would have failed on the untouched package.
+2. **`clusterShow` does not assign `opacity`.** It delegates —
+   `markercluster:1835` → `Marker.setOpacity` → `_updateOpacity` →
+   `DomUtil.setOpacity` → `el.style.opacity`. Its body has no style write at all.
+
+So (d) pins the exact shape (one write, inside `_setOpacityIE`, single guarded call
+site) and (c) pins the delegation chain. The rule file's three line citations were
+all **accurate** — the prose around them was not.
+
+**Negative control 1 caught a real defect, and it is the transferable lesson.** The
+declaration matcher was unanchored, so it matched Leaflet's
+`// @function setTransform(…)` doc comment sitting immediately above the real
+declaration, then brace-matched forward into the function and returned a body that
+looked perfectly valid. **Renaming `setTransform` left the guard green.** Anchoring
+to a line start fixed it. Same class as MEH-1619 C-1 and the MEH-1593 clipping
+detector: an assertion that cannot tell the healthy state from the broken one. All
+four controls ran against a mutated `node_modules` restored byte-identically
+(md5-verified), including the one that proves (d) is not a substring match — a bare
+`filter` in a comment leaves it green.
+
+**Two process notes worth carrying.**
+
+- **Draft green is not green (rule 21), and it nearly bit here.** At draft time both
+  required aggregators reported `success` while `Frontend build` / `Frontend unit
+  tests` showed `skipped`. The PR was marked ready and the merge waited for the
+  ready-time runs, where those legs actually executed.
+- **A stale check-run read almost became a false diagnosis.** The `get_check_run`
+  endpoint served `in_progress` for the vitest job long after it finished; the job
+  record showed it completed in 3m37s. Prefer the job/run record over the check-run
+  status when the two disagree.
+
+**Deliberately not in that PR:** CHANGELOG + HANDOFF (this entry). The branch touched
+`frontend/__tests__/**`, so `changelog-branch-guard.sh` under the required *Repo
+guards* job blocks the logs from riding along (rule 31). This docs-only PR is the
+backfill, tracked as its own ticket per the MEH-1614/1622/1642 precedent.
+
+**⚠️ Branch-naming note (MEH-1615).** This backfill branch carries its **own**
+ticket's identifier, not `meh-1637`. The branch slug alone auto-links in Linear and
+would have flipped the now-Done MEH-1637 back to In Progress even with the identifier
+kept out of the PR title and body — the trap MEH-1615 documents and rule 29 warns
+about. MEH-1637's identifier appears only inside the file content, which does not
+auto-link.
+
+### NEXT
+Unchanged: MEH-1626 Chunk 1 (HIGH-RISK, chunked — numbered plan then `go` per chunk)
+is still the next thing to pick up; MEH-1629 remains blocked.
+
+## 2026-07-27 — MEH-1659: מיני-מפה עם זום + מסך מלא (PR #2310 + #2317), ו-docs backfill
+
+**נשלח ומוזג.** PR #2310 (`e671aa84`) — המיני-מפה ב"הגעה ומיקום" חדלה להיות קפואה:
+פקד +/− inline, והקשה על המפה (רקע או פין) פותחת overlay על כל המסך עם כל המחוות.
+שלושת הצרכנים (producer · events · experiences) דרך props API ללא שינוי. PR #2317
+סגר מיד חור ב-guard שה-reviewer האוטומטי מצא (`keyboard` חסר ממערך ה-GESTURES).
+
+**שלוש נקודות שראוי שיישרדו את הסשן:**
+
+1. **הנחת המוצא של הכרטיס על `map.tap` הייתה מיושנת.** Leaflet 1.9.4 אינו כולל handler
+   בשם `tap` כלל (רק `TapHold`) — `if (map.tap) map.tap.disable()` שירד עכשיו מהקוד היה
+   מת מאז השדרוג. לכן `click` נייטיב מגיע ללא הפרעה ואין צורך ב-fallback ברמת container.
+   אומת ב-`page.tap()` אמיתי, לא בהיסק.
+2. **מה שמונע פתיחה בטעות של ה-overlay אינו קוד שלנו** אלא
+   `DomEvent.disableClickPropagation` של Leaflet על מיכלי הפקדים. שתי הטענות
+   התלויות-בספרייה ננעלו ב-`frontend/__tests__/leaflet-interaction-contract.test.js`
+   לפי `.claude/rules/frontend.md` § Maintenance — שנחת ב-staging באמצע העבודה על הענף.
+3. **חריגה מודעת מה-spec, מתועדת ב-PR body:** כפתורי ההגדלה/סגירה לוקחים פינה **פיזית**
+   (`right-3`, `rtl-ok`) ולא לוגית, כי Leaflet מצמיד את +/− לשמאל-פיזי בשני הכיוונים —
+   `start-*` היה מתנגש איתו ב-`/en` ו-`end-*` בעברית.
+
+**⚠️ שני דברים פתוחים שהם לא באג בקוד הזה:**
+
+- **אין preview URL לשני ה-PRs.** Vercel בתקרת ה-free tier
+  (`api-deployments-free-per-day`, 100/24h) — חשבון, לא בדיקה נדרשת. **בדיקת מובייל
+  אמיתית (iOS Safari / Android Chrome) עדיין לא נעשתה** ואי אפשר לעשות אותה מה-sandbox;
+  ה-QA שכן רץ הוא Chromium ב-375 ו-1440 עם מכשיר מגע (26/26). המקרים למובייל נוספו
+  ל-`docs/MANUAL_TESTING.md`.
+- **`parity.spec.ts › home` (mobile) אדום — קיים מראש, לא רגרסיה.** אותו spec ואותו סדר
+  גודל (24012px, יחס 0.09) נכשל גם על `8c354f54` ב-staging, שאינו מכיל את השינוי. כל
+  spec של producer-detail עבר בשני ה-viewports. תואם לזוג ה-VRT האדום שכבר מתועד
+  ב-`.claude/rules/testing.md`. **ה-baseline של `home-mobile-linux.png` עדיין צריך
+  הכרעה אנושית** — לא נגעתי בו: baseline הוא candidate ולא אמת, ומי שמחדש אותו צריך
+  לפתוח את ה-PNG ולסקור ויזואלית (CLAUDE.md § 5-state).
+
+### NEXT
+MEH-1629 עדיין חסום (ללא שינוי). אם מחליטים לטפל ב-`home` mobile VRT — זה כרטיס נפרד,
+ובו רענון baseline עם סקירה ויזואלית, לא merge של bot.
+
+## 2026-07-27 — copy-honesty batch: three follow-ups merged (docs backfill)
+
+**Three merges, backfilled here as one docs-only PR (rule 31).** None of the three
+code branches carried CHANGELOG or HANDOFF — `changelog-branch-guard.sh` under the
+required **Repo guards** job hard-fails that, which is the whole point of the rule.
+
+| PR | Merge SHA | Shape |
+|---|---|---|
+| #2299 | `fdc2e642` | copy-only — reentry label drops "· לעריכה" |
+| #2301 | `f6e2d4d1` | copy-only — `funded_subtitle` stops promising a callback |
+| #2309 | `8c354f54` | YELLOW — closed-window note moves inside ContactCard + honest copy |
+
+**The batch's real finding is about assertions, not copy.** Two of the three
+exposed a check that could not fail. #2299's label test used
+`toHaveTextContent`, which matches **substrings** — it stayed green with the
+removed suffix still present. The fix is exact equality, and the evidence that
+matters is that the *old* assertion passed 6/6 on the identical construction
+that reds the new one. #2309's first sticky probe compared scroll travel against
+an **assumed** 900px rather than the 769px that actually happened; that shape can
+call a non-scrollable element "stuck". Both are the class
+`.claude/rules/testing.md` names: an assertion that looks strict and cannot tell
+the healthy state from the broken one.
+
+**#2309 carries a stated deviation from its own acceptance criteria.** The
+criteria asked for "exactly ONE note in the DOM", but `ContactCard` renders twice
+(mobile `lg:hidden` + sidebar `hidden lg:block`, both always in the DOM). A closed
+window therefore yields 2 in the DOM and 1 visible — a count **unchanged** by the
+fix, since the two prior mounts were `ProducerDetail:208` and `ContactSidebar:22`.
+The invariant the harness locks is exactly one **visible** note, inside the card,
+after the CTA, `outsideCard === 0`. Written into the PR body rather than quietly
+reinterpreted.
+
+**A new QA harness landed:** `frontend/e2e/qa-meh1649-cta-note.mjs`, which
+self-tests its own classifier against three synthetic DOM shapes before it
+measures the page, and whose baseline run against unmodified `staging` fails
+exactly as it should. Reusable shape for any future placement assertion.
+
+### Current state
+
+- **Vercel is still at its free-tier cap** (`api-deployments-free-per-day`,
+  100/24h), so none of the three PRs got a preview URL. Account-level infra, not
+  a required check; the GREEN/YELLOW tier waivers covered preview-first, and
+  Sapir verifies on staging after merge.
+- **MEH-1651 (group-buy owner blind on `funded`) is untouched and still the real
+  gap** — #2301 fixed only the copy that over-promised. MEH-1652 likewise
+  untouched (decision-gated).
+- **MEH-1615 is now load-bearing, not theoretical.** It says a docs-only PR's
+  **branch slug alone** reopens a Done ticket even when the identifier is kept out
+  of title and body. That is why this backfill has its own ticket rather than
+  reusing any of the three numbers — the branch-name gate demands `meh-NNNN` in
+  the slug, so the slug had to belong to something legitimately active.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
+## 2026-07-27 — docs backfill for the 27/07 spec merges (MEH-1642)
+
+**Shipped.** CHANGELOG entries for the two 27/07 merges that could not carry
+their own logs: PR #2275 (`772e1edf`, MEH-1631) and PR #2284 (`58cda106`,
+MEH-1593 follow-up). Both were spec branches — they touch a file outside
+`docs/**` / `HANDOFF.md` / `.claude/**` — so `changelog-branch-guard.sh` under
+the required **Repo guards** job blocks the logs from riding along (rule 31).
+This is the deferred backfill those PRs pointed at.
+
+**⚠️ #2272 was in the ticket's scope and is deliberately NOT backfilled.** The
+ticket listed three PRs and specifically said to verify #2272 against the commit
+rather than write from its title, since it did not come from that session. The
+verification's answer is that it needs nothing: `f220532b` changed 4 files —
+`HANDOFF.md`, `docs/CHANGELOG.md`, `docs/ci/e2e-gate.patch.md`, `ADR-028` — and
+**zero code files**. The guard only fires on a branch that also changes code, so
+#2272 was free to write its own logs, and did: `docs/CHANGELOG.md:36` plus a
+6-line HANDOFF correction (the stale "three manual items, all Sapir's" list),
+both accurate and complete. Adding a second entry would have produced exactly the
+duplicated, contradictory pair MEH-1602 exists to prevent — the precedent being
+the two conflicting MEH-1569 entries on PR #2207, which only a human reading the
+log caught. For that row the scope note *is* the deliverable.
+
+**Two lessons carried into the CHANGELOG, because they are the real content:**
+
+1. **A line-number cross-reference rots.** One citation, three repair attempts,
+   three different wrong answers — none canonical, because the pattern lives at
+   **5** sites in `parity.spec.ts` (451 · 505 · 530 · 564 · 593), not 2. The
+   replacement anchors on the enclosing test name plus the shared skip-reason
+   string; the string is the stronger of the two, surviving a rename and finding
+   all five sites at once.
+2. **An assertion that can only confirm is not an assertion.** The mandated
+   `grep "S5 subject unreachable" → 0` returned 0 — but would have returned 0
+   even if all four S5 instances had skipped, because Playwright's list reporter
+   prints a skip as `-  <n> …` and never prints the annotation's reason. What
+   actually carries the claim is the `✓` vs `-` marker per line. Same class as
+   the MEH-1593 clipping detector: an assertion that looks strict and cannot
+   tell the healthy state from the broken one.
+
+**Operational note, unchanged from earlier today.** Vercel is still at its
+free-tier cap (`api-deployments-free-per-day`, 100/24h), so neither #2275 nor
+#2284 has a preview URL, and this PR will not get one either. Account-level
+infra, not a required check; docs-only and spec-only diffs need no mobile QA.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
+## 2026-07-27 — registration-hardening batch: MEH-1623 · MEH-1624 · MEH-1634 all merged
+
+**Three merges, backfilled here as one docs-only PR (rule 31).** None of the
+three code branches carried CHANGELOG or HANDOFF — `changelog-branch-guard.sh`
+under the required **Repo guards** job hard-fails that, which is the whole point
+of the rule.
+
+| Ticket | PR | Merge SHA | Shape |
+|---|---|---|---|
+| MEH-1623 | #2273 | `114612da` | backend-only — `producer_name` validator on the public registration path |
+| MEH-1624 | #2280 | `049fd32a` | tests-only, 9 pins — zero production-code change |
+| MEH-1634 | #2287 | `6d6b9515` | CI-only — guard base resolution + `docs/SECURITY.md` sync |
+
+**MEH-1623 — the asymmetry, not just the field.** `ProducerRegister.producer_name`
+was the only field on that schema with no validator at all, while its admin-side
+twin `ProducerCreate.name` has carried `_min_letters_validator` since MEH-555, so
+the public path accepted `"???"`, whitespace-only and raw HTML as a business name.
+Fixed with a stacked bleach→floor mirroring `short_description`: the ≥3-letter
+floor runs on the **post**-sanitize value, so HTML cannot pad a name past it.
+`sanitize_text` returning `None` is coerced to `""` and raises a clean 422 rather
+than a 500 (the HOT-003 path at `schemas.py:59`). No new helpers, no Alembic.
+
+**MEH-1624 — the safety net that had to land first.** 9 reachable behaviours in
+`auth.py` with nothing asserting them: apple-collision dispatch, MEH-166 takeover
+409s on both OAuth routes, the presence guards, the per-IP halves of both
+dual-key limiters, the non-upgrade missing-field arms, the `provider=None`
+defensive arm, and three absence-assertions each paired with a positive
+observation through the identical target string so none can pass vacuously.
+Widening the producer byte-identity test to a quad exposed that its 3/hour per-IP
+cap put the original triple exactly on the ceiling — rotated `X-Real-IP` under
+`TRUSTED_PROXY`.
+
+**MEH-1634 — the guard that had been reddening this batch.** It diffed
+`refs/pull/N/merge` two-dot against the base branch's *current* tip; GitHub
+rebuilds that merge ref on push, not continuously, so staging's churn appeared in
+reverse as though the branch had deleted it. Run `30248101409` is the proof — the
+guard claimed "47 code files" while the same run's paths-filter reported neither
+stack touched. Base resolution now prefers the merge ref's frozen first parent,
+every base carries a `frozen`/`moving` tag, and a comparison it cannot make
+soundly exits non-zero instead of answering. Fails closed.
+
+### Current state
+
+- **MEH-1626 Chunk 1 — pending, and it is the next thing to pick up.** Epic:
+  domain types (`SanitizedNameField` · `PhoneNumberField` · `SanitizedTitleField`
+  · `SanitizedAddressField`) beside the existing `PasswordField` precedent
+  (`schemas.py:326`), then migrating the **public** surfaces:
+  `ProducerLocationCreate/Update` (address+phone), `GroupBuyCommitRequest.phone`,
+  `GroupBuyCreate` title+description, `UserRegister.name`,
+  `ProfileUpdate.name/phone`, `EventCreate/Update.title`. MEH-1623's
+  `producer_name` becomes the first consumer of `SanitizedNameField`.
+  **HIGH-RISK, chunked** — numbered plan, then `go` per chunk; do not run it
+  end-to-end. Phase 0 is mandatory **per field**: the AST scan's own caveat is
+  that some of the 8 may already be filtered in the router or be inert, and each
+  such field must be documented and skipped rather than migrated blindly.
+  Chunks 2 and 3 (the remaining schemas + `admin_notes`, then the structural
+  pytest guard) stay untouched until Chunk 1 is approved.
+- **MEH-1625 — waiting on Sapir, manual QA, not CC.** Labelled `not-cc`: the P5
+  persona (every field filled, quote/apostrophe business name, emoji in the
+  description, long address, 3 categories, multi-location, every contact channel,
+  then post-approval activation of images / products / delivery / event / recipe)
+  run against **staging only**. Its dependency on MEH-1623 is now satisfied — the
+  matrix will exercise the new validator rather than trip over it. The docs-only
+  `MANUAL_TESTING.md` PR that adds P5 to the matrix has not been opened yet; CC
+  can prepare it on request.
+- **MEH-1634 self-test CI wiring — parked, RED route.** `run-all.sh` invokes each
+  guard with no arguments, so **no** guard's `--self-test` runs in CI — including
+  the new `mid_cycle_case` regression lock. Pre-existing and true of all four
+  guards, not something MEH-1634 introduced. Wiring it needs a `pr-checks.yml`
+  edit, and `.github/workflows/**` is CC-deny (MEH-671), so it belongs to Sapir
+  or to a patch-file ticket. Deliberately not folded into the fix.
+
+### Known-good / known-bad from this batch
+
+- **Vercel is at its free-tier daily deployment cap**
+  (`api-deployments-free-per-day`, >100/day). No preview URL on PR #2287, and it
+  will block the next UI PR until the window resets. Account-level infra, not a
+  code problem — nothing in this batch changed UI, so rule 9's mobile check did
+  not apply.
+- **Superseded-run false failures again** (rule 21 / MEH-1049). PR #2287 emitted
+  a `CI gate (required)` failure webhook whose siblings were all `cancelled` —
+  the draft→ready flip started a newer run that concurrency-cancelled the
+  in-flight one, and the aggregator maps `cancelled` deps to FAIL. Read the run
+  against the current head, not the webhook; do not push a no-op commit to
+  re-trigger (rule 30).
+
+### NEXT
+MEH-1626 Chunk 1 — Phase 0 per field (read-only), then a numbered plan, then wait
+for `go`. MEH-1629 remains blocked (see below), unchanged by this batch.
+
+---
+## 2026-07-27 — MEH-1629 raw-palette lint guard (PRs #2283 `a3fcd979` + #2286 `b4810ec4`) — split RED execution
+
+**Shipped, in two lanes.** `no-restricted-syntax` gained a fourth selector that
+warns on Tailwind stock-palette shades (`text-red-600`, `bg-gray-100`, …) which
+are not Mehamakor tokens. `green-*` is exempt — it genuinely is a token. Level is
+`warn`, deliberately: the point is to catch *new* code before commit, not to fail
+a build on ~170 pieces of existing debt.
+
+**The split is the reusable part.** The entire deliverable was
+`frontend/eslint.config.mjs`, which `.claude/hooks/protect-lint-config.sh`
+(MEH-442) blocks CC from editing by design — self-protection so an AI cannot
+disable its own guardrails. My first attempt stopped there and reported rather
+than working around it.
+
+| Lane | Who | What |
+|---|---|---|
+| A — RED | Sapir, manually via GitHub UI | the selector (`a3fcd979`, PR #2283) |
+| B — GREEN | CC | read-only verification + `docs/DESIGN.md` (PR #2286) + these logs |
+
+No hook workaround was attempted — `sed`, python, or `git apply` would have been
+exactly the silent circumvention rule 30 forbids. **MEH-1629's section 4 has been
+rewritten in Linear as this split-RED model**, so the next lint-config ticket has
+a template instead of rediscovering the block.
+
+**Verification (read-only, against `a3fcd979`).** `grep -c "selector:"` = 4
+exactly · `npx eslint .` = 0 errors · 5508 warnings. A temp file with
+`text-red-600` fired the rule *at warning severity*; a temp file with
+`bg-green-50` did not fire. Both temps deleted, tree clean, and
+`git diff a3fcd979 -- frontend/eslint.config.mjs` empty — byte-identical to
+Sapir's version.
+
+**One measurement note worth keeping.** The 5335 baseline was taken on a staging
+that had since moved 7 commits, so subtracting totals would have credited the new
+rule with unrelated changes. Counting findings that carry the rule's own message
+via `--format json` gave the real figure: **170 warnings across 54 files**. The
+implied before (5338) differs from 5335 by exactly those 7 commits — consistent,
+not fudged.
+
+**Deliberately not done:** zero of the 170 existing violations were fixed, and no
+`--max-warnings` ratchet was added. The ratchet is MEH-1630, post-launch.
+
+**Note on branch naming.** Both this backfill and the DESIGN.md PR carry `meh-1629`
+in the branch name because the branch-name gate (MEH-1141) requires it. Per rule 29
+that can flip a closed issue back to In Progress via Linear's auto-link; on the
+MEH-1628 pair earlier today it did, and the merge restored it to Done ~1 min later.
+Worth watching, not worth blocking on.
+
+## 2026-07-27 — MEH-1627 optional-auth strict 401 (PR #2281 merged `4fa95cdc`) — launch blocker closed
+
+**Shipped (PR #2281).** `get_current_user_optional` swallowed every non-403
+`HTTPException` and returned `None`, so an expired Bearer token was
+indistinguishable from no token at all — a logged-in user silently became a
+guest. It now propagates the 401, with `WWW-Authenticate: Bearer
+error="invalid_token"` (RFC 6750). The old swallow survives as
+`get_current_user_lenient` on exactly 2 endpoints: the `sendBeacon` /
+`keepalive` click-tracking routes, which have no response handler and so
+cannot be refreshed-and-retried — losing attribution beats losing the event.
+8 endpoints are strict; no router body needed editing.
+
+**Why it was a launch blocker.** On `POST /auth/register/producer` the swallow
+set `upgrade_path=False`, dropping the request into the anonymous-registration
+branch, which 422s on the absent email. A 422 never reaches the refresh
+interceptor, so the user was stuck on "אימייל, שם וסיסמה הם שדות חובה" with no
+way forward. Same shape on the owner-bypass guard: a pending producer's own
+owner got the enumeration 404 — terminal, no reason for the client to refresh.
+
+**⚠️ The ticket's premise was wrong, and it mattered.** It asked me to *confirm*
+`SKIP_REFRESH` covers none of the 8 strict endpoints. It covered one — the exact
+one in the blocker. `SKIP_REFRESH` matches with `startsWith`, and both
+`"/auth/register"` and `"/auth/register/producer"` catch the upgrade POST.
+Without an `api.js` fix the backend change would have converted an
+unrecoverable 422 into an equally unrecoverable 401 — no refresh, no retry, not
+even the `auth:expired` toast. Fixed with an exact-match allowlist that beats
+the prefix list; `/auth/register/producer/oauth` stays skipped.
+
+**Proven end-to-end, not just in units.** Real Chromium against a real local
+stack (`next start` → `uvicorn` → Postgres), nothing route-mocked, 11/11:
+`401 POST /auth/register/producer` → `200 POST /auth/refresh` → `200 POST` —
+the submit succeeds and never reaches the 422.
+
+**Two deviations from the ticket, both deliberate:**
+1. CHANGELOG + HANDOFF are NOT in the code PR — `changelog-branch-guard.sh`
+   (required **Repo guards**, rule 31) hard-fails that. This entry is the
+   deferred backfill. Same collision MEH-1628 hit yesterday; the gate wins.
+2. `frontend/e2e/qa-meh1627-optional-auth.mjs` is a new file beyond the
+   ticket's list. Self-QA was required and the repo commits these harnesses;
+   an uncommitted one can't be re-run.
+
+**Two operational notes for whoever picks this up:**
+- `POST /auth/register/producer` is rate-limited 3/hour per IP and slowapi runs
+  before dependencies, so a refresh+retry submit burns **2** units, not 1.
+  Observed (a 429 during repeated self-QA runs), not theoretical. Did not touch
+  a security-relevant limit inside this PR — flagging it rather than changing it.
+- Vercel hit its free-tier daily deployment cap
+  (`api-deployments-free-per-day`) during this PR, so there is **no preview
+  URL** for it. Account-level infra, not a code problem; no UI changed here, so
+  rule 9's mobile check is not applicable, but it will block the next UI PR
+  until the window resets.
+
+**CI note.** Several `CI gate` / `E2E gate` red webhooks on this PR were
+superseded-run false failures (rule 21 / MEH-1049) — the logs showed only
+`cancelled` deps with every other leg `success`, caused by my own rapid
+follow-up pushes concurrency-cancelling in-flight runs. Read the run against
+the current head, not the webhook.
+
+### NEXT
+MEH-1629 remains blocked (see below) — unchanged by this session.
+
+---
+
+## 2026-07-27 — MEH-1628 favorites copy holes (PR #2274 merged `85db63e0`) · MEH-1629 BLOCKED
+
+**Shipped (PR #2274).** Two `/favorites` strings had lost their grammatical object
+when MEH-990's Emoji-LOCK sweep stripped ❤️ and 🔔 out of them. The glyph now lives
+*inside* the sentence as a next-intl rich-text component — a form a character-level
+sweep cannot reach — rather than being restored as an emoji. Also: `HeartStraight`
+replaces a generic `Leaf` in the empty state (the copy said "press the heart"), and
+the duplicate first-visit tip is gone, leaving exactly one helper paragraph.
+
+**Why nothing caught it.** Every assertion in the suite verifies *presence*. A hole
+is an absence, so a removal-shaped bug is invisible to them. The new
+`FavoritesEmptyState.test.jsx` asserts the negative side in **equalities** — `>= 1`
+would pass on the broken state too — and was observed failing 5/7 against the
+pre-fix component before the fix landed.
+
+**Two spec contradictions, both reported rather than quietly resolved:**
+1. The DoD demanded `grep -c "<Bell"` = 1 in the file. That number is wrong: the
+   second instance is the per-card alerts bell in `FavoriteCardWrapper`, a different
+   component, out of scope. F3's actual wording ("the row renders exactly one Bell")
+   is satisfied. File-wide count stays 2 deliberately.
+2. `<file_locations>` asked for CHANGELOG + HANDOFF in the code branch, which
+   `changelog-branch-guard.sh` (required **Repo guards** job, rule 31) hard-fails.
+   The gate wins — this entry is that deferred backfill.
+
+### ⛔ NEXT — MEH-1629 is blocked by a hook, needs Sapir
+
+MEH-1629 (ESLint `no-restricted-syntax` selector for raw Tailwind palette shades)
+**cannot be done by CC.** Its entire deliverable is editing
+`frontend/eslint.config.mjs`, and `.claude/hooks/protect-lint-config.sh` (MEH-442)
+blocks Edit/Write/MultiEdit on `eslint.config.*` by design — the hook's own message
+says *"If a rule blocks your task, REPORT to user with explanation. Do NOT modify
+config."* Self-protection so an AI cannot disable its own guardrails.
+
+Phase 0 ran clean before the block and the numbers are ready for whoever applies it:
+
+- `grep -c "selector:" frontend/eslint.config.mjs` → **3** (matches the ticket's expectation)
+- `npx eslint .` baseline → **5335 problems, 0 errors, 5335 warnings**
+- `tailwind.tokens.json` confirms `green-50/100/300/500/700/900` **are** tokens (flat
+  keys, not a nested `green` object) and `error: #b3261e` exists — so `green` must be
+  absent from the flagged-palette list, exactly as G3 requires.
+
+**First step for Sapir:** apply the fourth selector to the existing
+`no-restricted-syntax` array in `frontend/eslint.config.mjs` (the block at :69-89),
+mirroring the three RTL selectors. Nothing else in the ticket is blocked.
+
+## 2026-07-27 — MEH-1619 (4 PRs merged: `deb96817` · `7ac508fc` · `1be7aa64` · `33f20853`)
+
+**Shipped.** A systematic sweep for code that is valid, type-valid, lint-clean,
+review-approved — and does nothing. Three classes, 4 findings, 4 fixed, plus two
+rules so the classes get caught at review instead of a ticket later. Full evidence
+tables: `docs/audits/silent-failure-audit.md`.
+
+| Class | Scanned | Findings |
+|---|---|---|
+| A — our CSS on library-managed DOM | 13 rules | 1 dead |
+| B — type-valid but runtime-inert props | 8 instances | 2 inert |
+| C — assertions one disjunct can pass | 103 `\|\|`, 5 in assertion position | 1 weak |
+
+**The number that matters is 12, not 1.** Twelve of the thirteen class-A rules are
+live. The only way to tell them apart from the dead one was to measure each in a
+browser — which is exactly why the new rule demands a computed-style probe rather
+than a code read.
+
+**The measurement trap, twice.** Both times the first attempt produced a confident
+wrong answer:
+
+1. **Sampling the wrong state.** The first probe run reported `(missing)` for three
+   rows because at the default zoom every marker is inside a cluster — the marker
+   selector matches zero elements, so the probe measured the camera, not the rule.
+   Selecting a business first (which fitBounds and un-clusters) fixed it. This is
+   now written into the frontend rule.
+2. **The wrong instrument.** The no-op comparator hashed PNGs and reported /map as
+   differing. It wasn't: the same build captured twice also hashed differently, and
+   the pixel diff was 0. One step from "the deletion changed rendering, revert it".
+
+**The invalid proof is the most reusable lesson.** For class C I did what the ticket
+asked — reintroduced the broken CSS, re-ran, watched it go red. That looked like
+proof and wasn't: the OLD, weaker assertion failed on the same construction, because
+the library had already undone the broken state by sample time. A construction that
+both versions fail cannot justify replacing one with the other. What worked was a
+self-test feeding the real classifier synthetic inputs. **That clause — "the
+construction must discriminate" — is the load-bearing half of the new testing rule.**
+
+**Two rules added.** `.claude/rules/frontend.md` (CSS on third-party DOM needs a
+browser probe; deletions need a pixel diff, not a hash; lists what Leaflet and
+markercluster write inline, with file:line). `.claude/rules/testing.md` (new guard
+tests ship with a discriminating failing-by-construction run; ship a self-test when
+the assertion is a classifier; watch for `||` in a pass condition).
+
+**Open, flagged, not absorbed.**
+- **A producer-detail fault took out three E2E specs on every PR in this batch**
+  (`03`/`04`/`06`, all `#__next_error__`) while `staging` stayed green. Proven
+  unrelated to the diffs by an inert-delta A/B: #2262 passed on one commit and
+  failed on the next, where the entire delta was **11 comment lines** in two `.mjs`
+  files the app never imports and Playwright never runs. Could not be re-run (`403`)
+  or reproduced locally (Railway egress blocked, MEH-360). **Wants its own ticket** —
+  not opened from here, since rule 27 wants a duplicate search first.
+- **`E2E gate (required)` went live mid-run** (PR #2265 / MEH-1201) and immediately
+  reported red on those environmental failures — precondition B in
+  `.claude/rules/testing.md` warned about exactly this. It is not in the ruleset's
+  required contexts yet (`mergeable_state` stayed `unstable`, not `blocked`), so it
+  did not block. **Worth Sapir's eyes before it is added to the ruleset**, or every
+  PR blocks on a fault none of them caused.
+- **Marker-hover has no affordance at all.** The deleted rule never worked; only
+  card-hover rings a pin (measured 0→1). Restoring it is a design call, and it must
+  target the icon's inner div — never the Leaflet-positioned wrap.
+- **Vercel hit the 100-deploy/day cap again**, so no preview URLs for this batch.
+  The pixel-diff artifacts in `qa-artifacts/MEH-1619/` are the substitute evidence.
+
+**Next.** Nothing outstanding on this ticket. Stryker/mutation testing (the
+industrial version of class C) is the sibling post-launch ticket.
+
+## 2026-07-27 — MEH-1593 badge popover/tooltip audit (merged `db4548e7`)
+
+**Shipped.** The MEH-1592 "+N" fix turned out to be one symptom of a family. All
+5 live badge popover/tooltip surfaces were measured at 375px and 1440px: **3
+defective, 2 clean**. `ui/Tooltip` gained an opt-in `overlay` mode mirroring the
+MEH-1592 Popover fix; `ProducerCard` threads its existing `badgeStripRef` into
+`BadgeRow` + `TrustBadge` so both card disclosures clear the whole strip;
+`ImageGallery`'s masthead panel escapes its clipping ancestor. Surfaces 2 and 4
+measured clean and were left alone, tests included. Tooltip and Popover remain
+separate primitives with no consumer moved between them (§2.5 / MEH-792 holds).
+Also removed a stray `= [` from `.gitignore:51` that made ripgrep emit
+`unclosed character class` on every invocation repo-wide.
+
+**Lesson 1 — a workaround that reads like a fix hides a live defect.** MEH-1459
+had already met surface 3's bubble and chose `bottom-start` + a responsive width
+— to stop it being *clipped*. That worked, and the code comment read as
+complete, so nobody went back. It never addressed the *overlap*, which was still
+being served to users months later. **A workaround comment must say what it did
+NOT fix, not only what it did.**
+
+**Lesson 2 — an assertion can invert silently.** A naive clipping detector
+("intersect every ancestor with `overflow != visible`") is wrong in both
+directions: it over-reports a `fixed` bottom sheet as clipped, and — the
+dangerous half — once a panel is portalled to `<body>` the walk finds no
+ancestors at all and returns "not clipped" **unconditionally**. The assertion
+becomes a vacuous false negative that would wave through a genuinely cut-off
+panel. The fix is to build the real clipping chain per CSS position semantics
+(only a containing-block-establishing ancestor can clip a `fixed` box) **plus** a
+positive liveness proof, because a zero is not evidence on its own.
+
+**⚠️ Open — staging E2E is red from this PR's own spec.** Run `30251402510`:
+170 passed / 4 failed / 26 skipped. All 4 are the S5 case, failing on
+`[data-testid='masthead-verified'] → element(s) not found` — not a collision
+failure. Cause: `middleware.js` existence-checks the producer id against the
+backend (the constraint `parity.spec.ts:302-307` documents). Locally the backend
+is unreachable so it fails OPEN (`middleware.js:45-48`) and a synthetic UUID
+renders; in CI it does not. S1/S3 target `/search`, which middleware does not
+gate — which is exactly why only S5 broke. Needs a forward fix on its own
+ticket: guard/skip S5 when the masthead cannot be reached, per the sanctioned
+`parity.spec.ts` skip-on-missing-id pattern.
+
+## 2026-07-27 — MEH-1613 email-failure visibility (+ MEH-1612 verified, not re-done)
+
+- **MEH-1613** (YELLOW, backend-only, `feature/meh-1613-email-failure-visibility` off fresh `origin/staging`, `Closes MEH-1613`, **PR #2257 → `cd80067b`**): all three `send_email` swallow points now report to Sentry + log at ERROR. Contract untouched — same signature, same `None` return, zero of the 20 call sites edited.
+- **Phase 0 caller audit was done by AST walk, not grep, and that mattered.** A regex can't see `x = send_email(...)` nested in a comprehension or a call argument. Result: **20 bare expression statements, 0 uses of the return value** (16 direct + 4 via `experience_notifications._send_email`). The ticket's stop-condition (a) — "if any caller DOES branch on the return, STOP" — did not fire. **Near-miss worth remembering:** `auth_emails.send_verify_email` / `send_welcome_email` DO return `bool`, which looks like a counter-example until you read `auth_emails.py:79-83` — that bool is their own `resend_api_key` check, not `send_email`'s return.
+- **Three swallow points, all effectively invisible before this.** Empty recipient: bare `return`, zero logging. No API key: `logger.debug` — below the INFO default, so invisible in prod — **and logged the address in full**. Resend raised: `logger.warning`, no Sentry, **also the full address**. The success line rendered the local part while masking the domain — the wrong half.
+- **Two design calls that are not obvious from the diff.** (a) The missing-key Sentry report is **latched to once per process**: it's static config, not a per-send event, and reporting it per send would emit one event per email and bury the signal inside the outage it exists to surface. The ERROR log still fires every time. (b) `_EmailNotSent` is **constructed and never raised** — `capture_background_exception` needs a `BaseException` and two of the three points are config states; a test asserts it never escapes.
+- **The stash/restore proof needed a second pass, and the first version was weak evidence.** With `monkeypatch.setattr(..., raising=True)` the fixture couldn't set up against the old module, so 15 of 17 tests **errored at setup** — that proves a symbol is missing, not that the tests detect the bug. `raising=False` makes them run and fail on assertions: **12 failed / 5 passed** stashed → **17 passed** restored, zero setup errors. The 5 that pass both ways are exactly the fail-open contract guards (returns `None`, never raises, signature unchanged) — they *should* pass in both states.
+- Verify: `pytest tests/ -m "not fuzz"` → **1890 passed / 6 skipped / 359 deselected / 1 xfailed** (13m58s, real Postgres 16). ruff check + format clean on `email.py`.
+
+- **MEH-1612 was already merged by another session** (`4a0585bf`, PR #2241) before this batch started. **Verified against `origin/staging` rather than re-done or trusted from Linear:** 0 Hebrew comment lines in `onboarding_followup.py` and `tests/test_onboarding_followup.py`, and the `models.py` status comment now enumerates all five values including `pending_whatsapp`. Nothing to redo.
+  - **10 Hebrew comment lines remain in `models.py`** (`:82,88,98,151,159,179,238,253,486,1322`) — all pre-existing and unrelated to the status comment, so outside MEH-1612's stated scope and outside its stop-condition ("do not sweep the repo"). Reported as a count, deliberately not fixed. A repo-wide Rule 5 sweep is its own decision.
+  - **Process note:** two sessions were dispatched the same ticket. Git was the only reliable signal — Linear said Done, but only `git log origin/staging` proved it. Worth re-reading CLAUDE.md rule 1 (single-session) and rule 28 (single-dispatch) before the next batch.
+
+## 2026-07-27 — intentional staging fixture left behind by the MEH-1546 verification pass
+
+**Intentional staging fixture (order-window regression checks):** producer `2e9aa40f-1d5f-4a85-8d10-c87aafb12cf2` — `מאפיית רוח השדה`, the `seed_demo_business.py` demo business owned by `demo-owner@example.com` — carries `order_window = Sun–Thu 09:00–14:00` on **staging only**. Set 27/07 via the real dashboard editor during the MEH-1546 verification pass (PR #2243, `12cd58d9`). Staging and production are separate Railway databases: 0 UUID overlap, 0 name overlap, and production has no `order_window` column (196 commits behind `main`). Clear with "ניקוי הכל" in the dashboard if a test ever needs the null state on that producer — `77055d87` is the standing null-window control.
+
+The demo business is staging-gated by `_assert_not_production()` (`backend/scripts/seed_demo_business.py:414`, called at `:813`) and ADR-029's `check_no_demo_data.py`, so it structurally cannot reach production.
+
+## 2026-07-27 — VRT determinism closed out: home ratified, /map mocked, hero-search fixed → E2E gate unblocked
+
+- **Four merges, one thread.** The VRT suite stopped being a source of permanent red. **PR #2221** ratified the home-mobile baseline by **restoring the `3680b928` blob** (`c01d43011917`) rather than regenerating — that blob was the on-runner regen of 23/07, captured after both MEH-1476 and MEH-1410, which `52ab77da` had reverted to a 21/07 image by mistake. **PR #2210** (MEH-1591) made `/map` deterministic with `page.route()` fixtures for the producers collection + `/categories`, and landed a regenerated `map-desktop-linux.png`. **PR #2230** (MEH-1599, **another session**) replaced the auth-gate redirect with an in-app denied state. **PR #2255** made the hero-search locator deterministic with `.first()`. Details for each are in the CHANGELOG; not repeated here.
+- **All three `E2E gate (required)` prerequisites are now satisfied** — A (docs-only actually skips) since 26/07, C (no permanently-red data-dependent spec) via #2210, B (suite green) via #2255. ⚠️ **CI had not reported on #2255 when it auto-merged** — E2E is still not a required gate, so the aggregators merged it first. The local evidence is 5/5 with `--retries=0`, but on sandbox chromium v1194 vs CI's v1228; the runner remains the authoritative signal.
+- ~~**Three manual items left, all Sapir's**~~ — **all three are closed as of 27/07; this line was stale on every count.** Corrected under MEH-1201: **(1)** the `e2e-gate` aggregator **was applied** by Sapir manually on 27/07 — verified against staging: `e2e.yml` carries job `e2e-gate`, `name: E2E gate (required)`, `if: always()`, `needs: [filter, e2e]`. **(2)** the MEH-1601 concurrency fix **was applied** — `e2e.yml:49` is now `e2e-${{ github.head_ref || github.run_id }}`, so a docs push to `staging` no longer cancels the preceding code run (MEH-1601 is Done). **(3)** adding `E2E gate (required)` to ruleset 15240090 was **DECIDED AGAINST and will not happen** — E2E stays informational; the two required checks remain `CI gate` + `Deploy gate`. Rationale in [ADR-028](./docs/decisions/ADR-028-qa-gates-per-tier.md) § amendment 27/07: we rejected the **scope** (browser E2E against an external preview is the category industry sources keep informational, and locally the gate sat unenabled for two weeks, blocked each time by flaky or data-dependent reds — not by real product bugs), **not the mechanism** (the aggregator pattern is standard and stays in use). The "order matters: (2) before (3)" note is moot — there is no (3).
+- **New rule — `.claude/rules/workflow.md` "Provenance verification".** In a `--depth` clone, `git log -- <path>` and `git log -S` return the **graft commit** as though it introduced the file, silently. `git rev-parse --is-shallow-repository` must read `false` before any "last changed in X" claim. Corollary recorded with it: **blob identity beats commit identity** — `git rev-parse <commit>:<path>` is what exposed `52ab77da` as a revert rather than a write, which is the whole reason #2221 could restore instead of regenerate.
+- **⚠️ Pattern worth carrying forward — three claims this session came from an indirect signal rather than the authoritative source, and Phase 0 caught all three.** (a) **shallow-clone `git log`** put MEH-1410 and MEH-1476 *after* the baseline, inverting the diagnosis — until `--unshallow`. (b) **A test result read as behaviour**: "/admin redirects to /login, /producer/dashboard to /" came from one assertion passing and one failing; in code the two guards were **identical**, and the difference was a race against `LoginClient.jsx:90`. The passing assertion passed by luck. (c) **A cached raw fetch**: a read of `admin/layout.js` showing the old shape came from **`main`**, not `staging` — `origin/main:120` is verbatim the quoted line and `ae06a786` is not its ancestor (the `CLAUDE.md` line-1 default-branch trap). Each indirect signal was entirely plausible; only cross-checking the source (unshallowed git, the guard code, `git show <ref>:<path>`) exposed the gap. This is meta-patterns §1 earning its place three times in one night.
+- **⚠️ Parallel sessions are live on this repo.** MEH-1599/#2230 landed on the two files I was in Phase 0 on, and MEH-1601 rewrote `docs/ci/e2e-gate.patch.md` mid-task; the trigger list shows five other sessions active tonight. Both near-collisions were avoided only by re-checking before editing, not by any guard. Rule 1 (single session) / rule 16 (worktrees) apply.
+- **Not done, deliberately:** the role-redirect work was **not** started — another session owned it and shipped it as #2230. The `e2e-gate.patch.md` status block still lists `02-search-producer` as the open blocker and needs one more touch now that #2255 merged.
+
+## 2026-07-27 — badge-popover collision · alerts re-entry · state-visibility audit
+
+**Shipped.** MEH-1592 (`93ff325d`, PR #2223) — the MEH-1547 "+N" badge-overflow
+Popover no longer opens over sibling badge pills or the card title/rating row.
+`ui/Popover` gained an **opt-in** `overlay` mode (portal → `<body>`, `position:
+fixed`, flip/shift against a caller-supplied `avoidRef`); `ProducerCard` is its
+only consumer and passes the whole badge strip, which is what makes *wrapped*
+siblings safe. Every other Popover consumer is untouched. MEH-1609 (`08aa06e0`,
+PR #2240) — the producer page gained a third quiet control (Bell + "מקבלת
+עדכונים · לעריכה") that re-opens the MEH-54 AlertPrefsPanel, closing the
+visibility gap MEH-1362 decision A left behind.
+
+**Audit (read-only, no code).** MEH-1610 — state-visibility & zombie sweep over
+live staging `08aa06e0`: **172 routes enumerated, 24 zero-caller → 16 true
+zombies + 8 zero-caller by design.** Full verdict table with `file:line` per row
+lives in the MEH-1610 SYNC block. Headlines: the 4 ProducerFollower endpoints are
+still live while MEH-1394 (their removal contract) sits **archived** — needs
+Sapir's call whether that archive was intentional; `/messages` is **no longer
+orphaned** (`AboutClient.jsx:436`), so that MEH-1311 leftover can close; a user
+still **cannot find her own review** (no `/users/me/reviews` exists anywhere);
+and `alert_log` remains append-only with no retention owner.
+
+**Lesson 1 — a passing numeric assertion is not a correct one.** MEH-1592's first
+implementation read text direction from the *trigger*, which carries its own
+`dir="ltr"` for the "+2" numeral, while `insetInlineStart` resolves against the
+portalled panel's containing block (`<body>`, `dir="rtl"`). The panel anchored to
+the opposite edge of the screen — measured **982px** from its own trigger — and
+*both* numeric assertions (0 intersections, inside viewport) still passed, because
+flinging a panel far away also satisfies "doesn't overlap". Caught by adversarial
+review, not by the suite. **Generalisation: when an assertion is a negative ("does
+not overlap"), pair it with a positive one ("is where it belongs") — otherwise the
+degenerate solution passes.**
+
+**Lesson 2 — a draft PR's green is not a signal, and CC cannot re-fire it.** On
+PR #2223 the draft-time run reported `CI gate` green while `Frontend build`,
+`vitest` and `lint` all showed `skipped` (they gate on `draft == false`), and
+`ci-gate`'s `ok()` counts `skipped` as pass even when `FRONTEND_TOUCHED=true`.
+Marking the PR ready via the GitHub App token produced **no new run** — App-token
+events don't trigger workflows, the same mechanic CLAUDE.md already documents for
+`GITHUB_TOKEN` pushes (MEH-991). Only a real push re-fired it. **Open code PRs
+non-draft from the start** (matches the pending #2197 note); MEH-1609 did, and its
+first run was genuine.
+
+**Lesson 3 — verify a bot's "Must Fix" before acting on it.** An automated review
+on PR #2223 reported that the diff deleted the `.ai/diagrams/api-routes.md` health
+section. The file was not in the PR's 12-file diff at all: the bot had compared the
+branch against a staging that gained MEH-1598 *after* the branch's base, and read
+"lacks content it never had" as a deletion. Staging was verified intact before the
+claim was dismissed.
+
+**Next:** MEH-1614 (this docs backfill) · MEH-1593 (badge popover/tooltip audit —
+Phase 0 inventory done: 5 live surfaces, `MapProducerCard`/`MobileSheetSelectedCard`
+render no badges, `ui/Badge` is dead code; surface measurement still pending).
+
+## 2026-07-27 — MEH-1611 (both chunks merged: `f25b1a24` PR #2246 · `0b76ed8d` PR #2251)
+
+**Shipped, overnight autonomous run.** Picking a business on `/map` now demotes
+every other business's pins instead of removing them, and frames **all** of the
+selected business's points with `fitBounds`. Its own page shows every point it
+owns on the existing mini-map. Both PRs merged on green required gates.
+
+**The direction is the part worth keeping.** Demote, don't hide — the Airbnb
+map-search pattern. A discovery map that hides non-selected pins lies about
+what is in the area; full isolation belongs on the **entity page** (store
+locator). That split is exactly why this was two chunks and not one.
+
+**The bug that would have shipped silently, and how it was caught.** The
+`/map` demote first expressed its fade as the CSS `opacity` property. That is
+wrong here: `leaflet.markercluster` writes `style.opacity` **inline** on every
+marker it animates (`clusterShow()` -> `setOpacity`,
+`leaflet.markercluster-src.js:1826-1836`, called on every zoom and spiderfy),
+and inline beats a class rule — so the fade reverted to full strength the first
+time anyone zoomed while a business was selected, leaving grayscale as the only
+cue. Adversarial review raised it as a hypothesis; a browser probe confirmed it
+(`computed opacity: 1`), and the fix routes the fade through
+`filter: grayscale(1) opacity(0.35)`, which markercluster never touches.
+
+**The QA harness had the same blind spot, which is the real lesson.** Its demote
+probe was `opacity < 0.9 || grayscale` — an OR that would have called the broken
+state "demoted" and passed. A probe whose disjunction lets either half carry the
+assertion cannot detect the loss of one half. It is now an AND with the fade
+asserted specifically, plus a zoom-cycle step so the regression can't return.
+
+**Two review findings declined, with reasons.**
+1. Widening `parseHasLocation` to `|| producer.locations?.length > 0` (to make
+   MiniMap's no-lat/lng arm reachable) would bypass the
+   `has_physical_location !== false` check and put delivery-only businesses back
+   on a map — **MEH-213**. The arm stays as defensive depth; the comment now
+   forbids the "fix" explicitly.
+2. Nothing else — rounds 2 and 3 returned Must Fix: none.
+
+**Known nit, deliberately not chased into a third PR.** `LocationPins` passes
+`alt` to `<Marker>`, which Leaflet applies **only** when the icon element is an
+`<img>` (`leaflet-src.js:7907-7909`); a divIcon renders a `<div>`, so it is
+inert. Harmless, and a11y is carried by `title` + `<Tooltip>` — but whoever next
+edits that file should drop it rather than trust it. `MapComponent.jsx` carries
+the same inert `alt`, compensated there by the MEH-765 `add`-handler that sets
+`role` + `aria-label`.
+
+**Two environment blockers that are NOT resolved and need Sapir.**
+- **Vercel hit the free-tier cap** (`api-deployments-free-per-day`, 100/day), so
+  **neither PR ever produced a preview URL**. Workflow rule 9's mobile preview QA
+  did not happen. The committed 375 + 1440 screenshots in
+  `qa-artifacts/MEH-1611/` are substitute evidence, not a replacement — worth a
+  look at `/map` and a producer page on staging once the quota resets.
+- `pytest` cannot run in the CC sandbox (no backend deps). Both diffs touch
+  **zero** backend files, and CI ran it.
+
+**E2E: one red that resolved itself, recorded because the reasoning matters.**
+PR #2246 failed 3 producer-detail specs (`03`/`04`/`06`, all `#__next_error__`)
+— a page chunk 1 does not touch (`MapComponent` has exactly one importer,
+`MapPane.jsx:35`), and `staging` had passed the same suite on the identical base
+minutes earlier. It could not be re-run (`403`) or reproduced locally (Railway
+egress blocked, MEH-360), so it was reported as **suspected** flake, not proven.
+PR #2251 — which *does* touch the producer-detail page — then passed the full
+suite including those three. Confirmed flake.
+
+**Next.** Nothing outstanding on this ticket. If the three specs above go red on
+`staging` itself, they want their own ticket; they were green on every run after
+#2246.
+
 ## 2026-07-26 — MEH-1599 (merged `ae06a786`) + MEH-1601 (patch doc merged `c02d2e4c`, ticket stays open)
 
 **Shipped.** MEH-1599 — an authenticated-but-unauthorized visitor now gets an
@@ -50,6 +1394,10 @@ the `DEMO_*` secrets (since `21ccecc`). Notably `docs/ci/e2e-auth-fixtures.patch
 was a patch doc telling Sapir to do work she had already done; it is now marked
 APPLIED. **The E2E gate is still blocked, but on precondition B alone** (suite
 not green) — A has been satisfied for some time and no doc said so.
+_(Superseded 27/07 — accurate as written on 26/07. B is since satisfied, the
+aggregator was applied, and the ruleset step was decided against; the E2E gate
+is not "blocked", it is deliberately informational. See the 27/07 entry and
+ADR-028 § amendment 27/07. Left as-written: this is a dated record.)_
 
 **Process note.** The `changelog-branch-guard` (MEH-1602) landed on `staging`
 mid-session and correctly rejected the CHANGELOG entry inside the MEH-1599 code
@@ -5556,6 +6904,15 @@ heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2
 **Why A2:** `permissions.deny` has `Edit(.claude/hooks/**)` covering the whole hooks dir — so neither the executable nor `README.md` can be committed from a CC session. Both go in the PR body; Sapir installs manually post-merge. (Spec assumed README.md was committable — corrected per meta-patterns §1, the exact pattern this hook mechanizes.)
 
 **What the hook does:** blocks `Edit`/`MultiEdit` when `file_path` does not exist on disk (catches orchestrator-claimed-wrong-path bugs, meta-patterns §1). Pass-through for `Write` (intentional file creation) and non-Edit/MultiEdit tools. Fail-open if `jq` missing. Exit 2 = block, exit 0 = allow. Field path `.tool_input.file_path` verified against `check-rtl.sh:43` (uniform for Edit + MultiEdit).
+
+> **⚠️ CORRECTION — 2026-07-28 (MEH-1720): the manual wiring below was never
+> performed.** `.claude/hooks/check-path-exists.sh` does not exist in the repo,
+> `.claude/settings.json` references it nowhere, and the hook has never run. The
+> steps are left in place as the record of what was asked for — they are **not**
+> a pending TODO anyone should now execute without first re-deciding whether the
+> hook is still wanted (its premise, meta-patterns §1, has moved on since May).
+> `docs/CHANGELOG.md` carries the matching correction. Detection for this class
+> now exists: `scripts/checks/hooks-wiring-guard.sh`.
 
 **Manual wiring (Sapir, post-merge — full copy-paste in PR body):**
 1. Save script from PR body → `.claude/hooks/check-path-exists.sh`; `chmod +x`.

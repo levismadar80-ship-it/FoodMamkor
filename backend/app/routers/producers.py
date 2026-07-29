@@ -1,15 +1,23 @@
+from datetime import datetime
+from urllib.parse import urlparse
 from uuid import UUID
 
+import httpx
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.auth import get_current_user_optional, require_verified_email
+from app.auth import (
+    get_current_user_lenient,
+    get_current_user_optional,
+    require_verified_email,
+)
 from app.database import get_db
 from app.models import (
     Category,
     ContactClick,
+    KashrutBadgeRequest,
     Producer,
     ProducerWhatsAppClick,
     Report,
@@ -22,6 +30,8 @@ from app.routers.producer_follows import router as producer_follows_router
 from app.schemas.schemas import (
     CategoryOut,
     ContactClickIn,
+    DELIVERY_DAYS,
+    KashrutCertRef,
     ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
@@ -70,6 +80,11 @@ def list_producers(
     # home empty-result "בתי עסק שמגיעים לאזור" section. delivery_city (single)
     # takes precedence when both are sent.
     delivery_cities: list[str] | None = Query(None),
+    # MEH-1645: single canonical Hebrew day (schemas.DELIVERY_DAYS). Explicit
+    # delivery_areas rows only — nationwide + day-less rows are excluded (v1
+    # semantics; see producer_listing._delivery_day_condition). Validated
+    # below with the router's manual-422 pattern (cf. sort).
+    delivery_day: str | None = None,
     has_delivery: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
@@ -113,6 +128,13 @@ def list_producers(
     # than silently falling back to newest.
     if sort is not None and sort not in ("newest", "rating"):
         raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
+    # MEH-1645: whitelist the day param against the canonical vocabulary —
+    # same list DeliveryAreaCreate validates on the write path (MEH-1644).
+    if delivery_day is not None and delivery_day not in DELIVERY_DAYS:
+        raise HTTPException(
+            status_code=422,
+            detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
+        )
     results, total_count = build_producers_query(
         db,
         lat=lat,
@@ -122,6 +144,7 @@ def list_producers(
         category=category,
         delivery_city=delivery_city,
         delivery_cities=delivery_cities,
+        delivery_day=delivery_day,
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
@@ -235,6 +258,11 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
+    result.kashrut_certs = [
+        KashrutCertRef(badge_code=c.badge_code)
+        for c in _servable_kashrut_certs(db, producer)
+    ]
     return result
 
 
@@ -286,6 +314,11 @@ def get_producer(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
+    result.kashrut_certs = [
+        KashrutCertRef(badge_code=c.badge_code)
+        for c in _servable_kashrut_certs(db, producer)
+    ]
 
     # feature/producer-analytics: track the view. Best-effort; swallows
     # all exceptions so tracking glitches can never break the response.
@@ -311,7 +344,12 @@ def record_whatsapp_click(
     request: Request,
     producer_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    # MEH-1627: lenient, NOT get_current_user_optional. The frontend fires
+    # this via navigator.sendBeacon as the tab hands off to wa.me — there is
+    # no response handler, so a 401 could not be refreshed-and-retried and
+    # the click would simply be lost. An expired token degrades to an
+    # unattributed click; losing attribution beats losing the click.
+    current_user: User | None = Depends(get_current_user_lenient),
 ):
     """Log a WhatsApp CTA click for the producer dashboard.
 
@@ -343,7 +381,9 @@ def record_contact_click(
     producer_id: UUID,
     data: ContactClickIn,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    # MEH-1627: lenient — same keepalive/sendBeacon rationale as
+    # whatsapp-click above. Fire-and-forget telemetry cannot retry.
+    current_user: User | None = Depends(get_current_user_lenient),
 ):
     """Log a contact-method click for the producer dashboard.
 
@@ -392,3 +432,155 @@ def create_producer(
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.id).all()
+
+
+# MEH-1672 (adversarial review): the only host the cert proxy will ever
+# fetch from. `cert_url` is producer-submitted (KashrutRequestCreate only
+# validates an https:// prefix), so the proxy is a server-side fetch of a
+# value the requester controls — an explicit host allowlist is the SSRF
+# defense, not a nice-to-have.
+_ALLOWED_CERT_HOSTS = frozenset({"res.cloudinary.com"})
+
+# MEH-1672 (adversarial review): the proxy streams and caps DURING download,
+# not after — httpx.get().content would buffer the whole body first
+# regardless of any check on the result. 8 MB gives headroom above the 5 MB
+# upload-time cap (upload.py:MAX_FILE_SIZE) for re-encoding, not a promise
+# that a 5 MB+ file is legitimate.
+_MAX_CERT_BYTES = 8 * 1024 * 1024
+
+
+# MEH-1672: the ONE rule deciding whether a kashrut certificate may be shown.
+# Both call sites use it — the serializer that lists which badges have a cert,
+# and the proxy that streams the bytes — so a badge can never be advertised as
+# viewable while the proxy refuses it, or vice versa.
+def _servable_kashrut_certs(
+    db: Session, producer: Producer
+) -> list[KashrutBadgeRequest]:
+    """Approved requests with a cert, for an approved producer, not yet expired.
+
+    Expiry is checked against `producer.kashrut_expires_at` — the same field
+    KashrutBadgeStrip hides the whole strip on (MEH-1260). A legacy NULL
+    expiry stays visible, matching that component exactly.
+    """
+    if producer.status != "approved":
+        return []
+    expires_at = producer.kashrut_expires_at
+    if expires_at is not None and expires_at <= datetime.utcnow():
+        return []
+    return (
+        db.query(KashrutBadgeRequest)
+        .filter(
+            KashrutBadgeRequest.producer_id == producer.id,
+            KashrutBadgeRequest.status == "approved",
+            KashrutBadgeRequest.cert_url.isnot(None),
+            KashrutBadgeRequest.cert_url != "",
+        )
+        .all()
+    )
+
+
+@router.get("/producers/{producer_id}/kashrut-cert/{badge_code}")
+@limiter.limit("30/minute")
+def get_kashrut_cert(
+    request: Request,
+    producer_id: UUID,
+    badge_code: str,
+    db: Session = Depends(get_db),
+):
+    """MEH-1672: stream an approved, in-date kashrut certificate photo.
+
+    A proxy, not a redirect: `cert_url` points at a `type=upload` Cloudinary
+    asset, which is public forever to anyone holding the address
+    (`upload.py:353-360` uploads with no `type=`). Handing that address to
+    every visitor would publish a link no expiry could ever revoke. Streaming
+    the bytes keeps the address inside the backend, so authorisation is
+    re-evaluated on every single request and revocation is immediate.
+
+    Every AUTHORIZATION failure is **404**, never 403: a 403 would confirm
+    that a pending/rejected/expired certificate exists for this business,
+    which is exactly the queue state MEH-254 keeps unenumerable. That
+    boundary is fully evaluated (producer lookup, `_servable_kashrut_certs`,
+    host allowlist) before any network call — a 502 can therefore ONLY be
+    reached for a badge whose `kashrut_certs` entry is already public via
+    the producer's own serializer, so it reveals nothing 404 doesn't already
+    cover; it exists to distinguish "no such cert" from "cert exists but
+    Cloudinary is transiently unreachable" for operators, not visitors.
+
+    Full-hardening (`type=authenticated` + asset migration) is a separate
+    post-launch ticket; this closes the exposure we would otherwise create.
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    match = next(
+        (
+            c
+            for c in _servable_kashrut_certs(db, producer)
+            if c.badge_code == badge_code
+        ),
+        None,
+    )
+    if match is None:
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    # Adversarial review (MEH-1672): cert_url is written by the producer's own
+    # kashrut-request submission and only validated to start with https://,
+    # so an explicit host allowlist makes the SSRF defense here explicit
+    # rather than resting on operational trust of the upload flow. No
+    # redirect-follow either — a redirect off-host would defeat the check.
+    if urlparse(match.cert_url).hostname not in _ALLOWED_CERT_HOSTS:
+        logger.warning(
+            "kashrut cert_url host not allowlisted", producer_id=str(producer_id)
+        )
+        raise HTTPException(status_code=404, detail="לא נמצא")
+
+    try:
+        with httpx.stream(
+            "GET", match.cert_url, timeout=10.0, follow_redirects=False
+        ) as upstream:
+            if upstream.status_code != 200:
+                raise HTTPException(status_code=404, detail="לא נמצא")
+
+            content_type = upstream.headers.get(
+                "content-type", "application/octet-stream"
+            )
+            # Only ever serve an image — the upload route sniffs magic bytes,
+            # but the column is plain text, so this is the second lock
+            # rather than the first.
+            if not content_type.startswith("image/"):
+                raise HTTPException(status_code=404, detail="לא נמצא")
+
+            # Adversarial review: httpx.get().content buffers the WHOLE body
+            # into memory regardless of any post-hoc size check on the
+            # result — only streaming and capping DURING the read actually
+            # bounds memory. _MAX_CERT_BYTES sits above the 5 MB upload cap
+            # (upload.py:MAX_FILE_SIZE) with headroom for re-encoding.
+            body = bytearray()
+            for chunk in upstream.iter_bytes():
+                body.extend(chunk)
+                if len(body) > _MAX_CERT_BYTES:
+                    logger.warning(
+                        "kashrut cert exceeded size cap", producer_id=str(producer_id)
+                    )
+                    raise HTTPException(
+                        status_code=502, detail="לא ניתן לטעון את התעודה כרגע"
+                    )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.warning("kashrut cert fetch failed", producer_id=str(producer_id))
+        raise HTTPException(status_code=502, detail="לא ניתן לטעון את התעודה כרגע")
+
+    return Response(
+        content=bytes(body),
+        media_type=content_type,
+        headers={
+            # Adversarial review: max-age=300 contradicted this endpoint's
+            # own "revocation is immediate" claim — a browser could still
+            # serve a stale image for up to 5 minutes after an admin
+            # rejects a badge or it expires. no-store means every open of
+            # the modal re-checks _servable_kashrut_certs for real.
+            "Cache-Control": "no-store",
+        },
+    )
