@@ -75,7 +75,10 @@ vi.mock("@/components/ChipScrollRow", () => ({
 const EXPERIENCES_TAB = "events.list.tab_experiences";
 
 // Category wire values sourced from the SoT so the test survives key renames.
-const EVENT_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "workshop").key; // in the events vocab
+// MEH-1657: was "workshop" — removed from the events vocab when סדנה/סיור moved
+// to the experiences side of the locked axis. Any two event categories work here;
+// the test is about URL sync, not about which categories exist.
+const EVENT_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "harvest").key; // in the events vocab
 const EVENT_CAT_ALT = EVENT_CATEGORIES.find((c) => c.labelKey === "market").key; // in the events vocab
 const CROSS_TAB_CAT = EXPERIENCE_CATEGORIES.find((c) => c.labelKey === "cooking").key; // experiences-only
 const CITY = "חיפה";
