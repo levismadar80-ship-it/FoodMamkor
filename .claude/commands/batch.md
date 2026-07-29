@@ -1,8 +1,8 @@
 ---
-description: Run a batch of Linear MEH-XXX tasks autonomously with auto-fix CI failures. Use when user says "run batch", "execute batch", "ship batch", or asks to work through multiple PRs sequentially from autonomy-cache. Do NOT use for single-PR work, design tasks, or Linear issue creation.
+description: Run a batch of Linear MEH-XXX tasks autonomously with auto-fix CI failures. Use when user says "run batch", "execute batch", "ship batch", or asks to work through multiple PRs sequentially from the cc-queue. Do NOT use for single-PR work, design tasks, or Linear issue creation.
 ---
 
-Run a batch of Linear MEH-XXX tasks end-to-end: branch → implement → push → PR → post-merge verification. Pause for `go` only on YELLOW autonomy classifications; STOP on RED. Closes the loop with Vercel + Sentry MCP verification once merged.
+Run a batch of Linear MEH-XXX tasks end-to-end: branch → implement → push → PR → post-merge verification. Authority is **ADR-032** — GREEN/YELLOW and RED are all autonomous, RED subject to the proof obligations in ADR-032 §2 and the hard stops in §3. Closes the loop with Vercel + Sentry MCP verification once merged.
 
 Industry-rationale (preserved from MEH-344 spec): Boris Cherny uses slash commands for inner-loop workflows; "Scaling Claude Code 2026" warns that long lists of bespoke commands are an anti-pattern — keep this file as a single execution playbook, not a framework.
 
@@ -12,7 +12,7 @@ Industry-rationale (preserved from MEH-344 spec): Boris Cherny uses slash comman
 
 Run these once at the top of every `/batch` invocation. Abort the batch if any check fails.
 
-1. **Read autonomy cache.** `.claude/autonomy-cache.json` must exist and be valid JSON. Expected baseline: 54 GREEN / 45 YELLOW / 44 RED across 143 tasks. Use `jq 'keys | length'` to confirm.
+1. **Build the queue from Linear, not from a file.** `list_issues` with `state = In Progress · team = Mehamakor · labeled cc-queue`, worked in priority order (Urgent → High → Normal → Low). The label is the **only** signal — an unlabeled card is not in the batch even if it looks actionable, and an **empty queue is the expected steady state**, not a pre-flight failure: say so and stop. Opt-in, not opt-out (MEH-1760): forgetting to label causes inaction, never unintended work.
 2. **Verify local settings.** `.claude/settings.local.json` must exist with `Bash(*)` allow + the 30 deny patterns from Section 11. If missing → STOP and ask Smadar to restore (gitignored, not recoverable from the repo).
 3. **Linear MCP authenticated.** Run a no-op `mcp__6bc1cb1a-…__get_issue` to confirm; on auth error → tell Smadar to run `/mcp auth linear` interactively.
 4. **Vercel + Sentry MCPs authenticated.** Run `/mcp` and confirm both servers are connected (HTTP transport, OAuth token live). Section 9 depends on both.
@@ -22,10 +22,10 @@ Run these once at the top of every `/batch` invocation. Abort the batch if any c
 
 ## Section 2 — Per-task workflow (10 steps)
 
-For each MEH-XXX in the batch list, execute in order. Stop the whole batch at the first STOP condition (Section 5).
+For each MEH-XXX in the batch list, execute in order. On a STOP condition, apply Section 5 — most park the **item** and the batch continues.
 
 1. `get_issue(MEH-XXX)` — full description from Linear.
-2. **Autonomy gate.** `jq -r --arg id "MEH-XXX" '.[$id] // "RED"' .claude/autonomy-cache.json` → GREEN proceed, YELLOW pause for explicit `go`, RED stop. Missing entry = treat as RED and ask Smadar to classify.
+2. **Authority gate (ADR-032 §1).** The card carries `cc-queue`, so it is in the envelope; classify the *work* to know which obligations attach. GREEN/YELLOW (frontend, copy, docs, tests, single-file) → straight through. RED (auth, security, business logic, additive Alembic) → also autonomous, but only with ADR-032 §2's proof obligations met: an exploit-proving test that **fails before and passes after**, an industry-standard solution cited as `Decision: … — Source: …`, additive-only Alembic with a tested downgrade, and one PR per RED fix. §2.5: a RED item **stops before merge** until the adversarial reviewer has run. §2.6: the proving test asserts **behaviour**, never that the prescribed change was applied. Hit a §3 hard stop → Section 5, condition (e).
 3. **Branch.** `git checkout staging && git pull origin staging && git checkout -b feature/meh-XX-<slug>`.
 4. **Implement** per task spec. Skeptic Mode (MEH-450) — surface scope mismatches before editing.
 5. **Pre-commit.** `cd frontend && npm run lint` then `pytest tests/test_api.py` — both must pass before commit. ESLint hook is `--max-warnings=0`.
@@ -151,16 +151,18 @@ no gender, no guard to maintain.
 
 ## Section 5 — STOP conditions
 
-⛔ Stop the batch — do not silently work around — if any of:
+⛔ Stop — do not silently work around — if any of:
 
 - (a) Phase 0/discovery reveals the problem is bigger than the ticket scope.
 - (b) The fix needs to touch a production component outside the declared scope.
 - (c) >2 failed attempts on the same root cause.
 - (d) Cumulative runtime exceeds 30 minutes for the current task.
-- (e) Task is RED autonomy (44 tasks classified RED in the cache).
+- (e) An **ADR-032 §3 hard stop** — LOCK, destructive data, `main`/production deploy, a new env var or secret, the same failure ×3, or Vercel red on a code diff.
 - (f) Brand voice violation detected (Section 4 grep guard).
 - (g) Sentry MCP returns auth error → tell Smadar to run `/mcp auth sentry`.
 - (h) Vercel deployment FAILED twice → escalate, do not retry blindly.
+
+**(a)–(f) stop the item, not the batch.** Per ADR-032 §3/§4: record the state on the card, move it back to **Backlog** with a one-paragraph *why*, and take the next item — never idle waiting for a message. (g) and (h) are infrastructure and do halt the batch, since every remaining item would hit the same wall.
 
 ---
 
@@ -214,28 +216,33 @@ After OAuth to Vercel + Sentry MCPs is live, `/batch` runs verification with **n
 
 ---
 
-## Section 10 — `autonomy-cache.json` usage
+## Section 10 — Where the authority comes from
 
-`.claude/autonomy-cache.json` holds 143 classified tasks:
+Two documents, in this order:
 
-- 🟢 **54 GREEN** — fully autonomous; CC runs end-to-end and Smadar reviews the PR only.
-- 🟡 **45 YELLOW** — pause for explicit `go` before each step.
-- 🔴 **44 RED** — STOP; manual review required.
+| Question | Answer lives in |
+|---|---|
+| **Which cards are in the batch?** | [`.claude/rules/workflow.md`](../rules/workflow.md) → *"Working the queue"* — `state = In Progress · team = Mehamakor · labeled cc-queue`, priority order |
+| **How far may CC take one?** | [ADR-032](../../docs/decisions/ADR-032-autonomous-remediation-mode.md) — §1 envelope, §2 proof obligations for RED, §3 hard stops, §4 reporting |
 
-Per-task gate (already part of Section 2, Step 2):
+Nothing else gates a card. There is **no per-task lookup table** to consult and no
+classification step that can come back "unknown": the label decides membership and
+ADR-032 decides authority, so a card either carries `cc-queue` or it is not this
+command's business.
 
-```bash
-AUTONOMY=$(jq -r --arg id "MEH-XXX" '.[$id] // "RED"' .claude/autonomy-cache.json)
+> **Deliberately not decided here:** the fate of `.claude/autonomy-cache.json`.
+> This section used to gate every card on a `jq` lookup in that file, treating a
+> missing entry as RED → STOP. Its entries stop at **MEH-545** while everything in
+> flight is MEH-784+, so that path halted on *every* live card while the same
+> queue ran fine by hand. ADR-032's *Consequences* explicitly defers the file's
+> fate to **MEH-1756**. This change removes its **veto**, not the file — do not
+> edit or delete it (MEH-1763).
 
-case "$AUTONOMY" in
-  "GREEN")  echo "Proceeding autonomously" ;;
-  "YELLOW") echo "PAUSE — wait for Smadar 'go'" ; exit 0 ;;
-  "RED")    echo "STOP — manual review required" ; exit 1 ;;
-  *)        echo "STOP — task not classified, ask Smadar" ; exit 1 ;;
-esac
-```
-
-**Cache update policy:** never silently classify a missing task. Always stop and ask Smadar to add the entry to `autonomy-cache.json` before continuing.
+**Why the veto had to go rather than be repaired.** A staleness guard would have
+made the gate *announce* that it was out of date; it would still have been a second
+authority for a question ADR-032 already answers, and two mechanisms owning one
+decision is the MEH-271 smell — either path can succeed while the other drifts, and
+neither surface shows an error. One authority, one answer.
 
 ---
 
