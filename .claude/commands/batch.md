@@ -22,10 +22,10 @@ Run these once at the top of every `/batch` invocation. Abort the batch if any c
 
 ## Section 2 — Per-task workflow (10 steps)
 
-For each MEH-XXX in the batch list, execute in order. Stop the whole batch at the first STOP condition (Section 5).
+For each MEH-XXX in the batch list, execute in order. On a STOP condition, apply Section 5 — most park the **item** and the batch continues.
 
 1. `get_issue(MEH-XXX)` — full description from Linear.
-2. **Authority gate (ADR-032 §1).** The card carries `cc-queue`, so it is in the envelope; classify the *work* to know which obligations attach. GREEN/YELLOW (frontend, copy, docs, tests, single-file) → straight through. RED (auth, security, business logic, additive Alembic) → also autonomous, but only with ADR-032 §2's proof obligations met: an exploit-proving test that **fails before and passes after**, an industry-standard solution cited as `Decision: … — Source: …`, additive-only Alembic with a tested downgrade, and one PR per RED fix. §2.5: a RED item **stops before merge** until the adversarial reviewer has run. §2.6: the proving test asserts **behaviour**, never that the prescribed change was applied. Hit a §3 hard stop → record it on the card and take the next item; never idle.
+2. **Authority gate (ADR-032 §1).** The card carries `cc-queue`, so it is in the envelope; classify the *work* to know which obligations attach. GREEN/YELLOW (frontend, copy, docs, tests, single-file) → straight through. RED (auth, security, business logic, additive Alembic) → also autonomous, but only with ADR-032 §2's proof obligations met: an exploit-proving test that **fails before and passes after**, an industry-standard solution cited as `Decision: … — Source: …`, additive-only Alembic with a tested downgrade, and one PR per RED fix. §2.5: a RED item **stops before merge** until the adversarial reviewer has run. §2.6: the proving test asserts **behaviour**, never that the prescribed change was applied. Hit a §3 hard stop → Section 5, condition (e).
 3. **Branch.** `git checkout staging && git pull origin staging && git checkout -b feature/meh-XX-<slug>`.
 4. **Implement** per task spec. Skeptic Mode (MEH-450) — surface scope mismatches before editing.
 5. **Pre-commit.** `cd frontend && npm run lint` then `pytest tests/test_api.py` — both must pass before commit. ESLint hook is `--max-warnings=0`.
@@ -222,7 +222,7 @@ Two documents, in this order:
 
 | Question | Answer lives in |
 |---|---|
-| **Which cards are in the batch?** | `.claude/rules/workflow.md` → *"Working the queue"* — `state = In Progress · team = Mehamakor · labeled cc-queue`, priority order |
+| **Which cards are in the batch?** | [`.claude/rules/workflow.md`](../rules/workflow.md) → *"Working the queue"* — `state = In Progress · team = Mehamakor · labeled cc-queue`, priority order |
 | **How far may CC take one?** | [ADR-032](../../docs/decisions/ADR-032-autonomous-remediation-mode.md) — §1 envelope, §2 proof obligations for RED, §3 hard stops, §4 reporting |
 
 Nothing else gates a card. There is **no per-task lookup table** to consult and no
