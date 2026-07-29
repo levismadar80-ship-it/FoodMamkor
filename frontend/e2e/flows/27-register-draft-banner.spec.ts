@@ -58,19 +58,32 @@ const banner = (page: Page) => page.getByTestId("register-draft-banner");
 
 test.describe("MEH-1769 — draft-resume banner render condition", () => {
   test("A — empty storage: no banner, and no pre-hydration flash", async ({ page }) => {
-    // Sample every animation frame from before the first page script until 6s
-    // in. This is what makes "no flash before hydration" testable: a banner
+    // Sample every animation frame from before the first page script runs.
+    // This is what makes "no flash before hydration" testable: a banner
     // painted on the first frame and removed once the storage read resolves
     // would be invisible to a post-settle assertion, but is caught here.
+    //
+    // The window is closed by the TEST (__stopSampling), not by a constant.
+    // An earlier draft stopped at a fixed 6s and went green on this repo's dev
+    // server purely because hydration landed after 6s — the detector had shut
+    // down before the thing it exists to watch. The 30s leg below is a backstop
+    // only, and __endedBy asserts which of the two actually ended the run.
     await page.addInitScript(() => {
-      (window as unknown as { __bannerFrames: number[] }).__bannerFrames = [];
+      const w = window as unknown as {
+        __bannerFrames: number[];
+        __stopSampling: boolean;
+        __endedBy: string;
+      };
+      w.__bannerFrames = [];
+      w.__stopSampling = false;
+      w.__endedBy = "";
       const tick = () => {
         if (document.body?.innerText.includes("שמרנו טיוטה")) {
-          (window as unknown as { __bannerFrames: number[] }).__bannerFrames.push(
-            Math.round(performance.now()),
-          );
+          w.__bannerFrames.push(Math.round(performance.now()));
         }
-        if (performance.now() < 6000) requestAnimationFrame(tick);
+        if (w.__stopSampling) w.__endedBy = "test";
+        else if (performance.now() >= 30000) w.__endedBy = "timeout";
+        else requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     });
@@ -88,9 +101,25 @@ test.describe("MEH-1769 — draft-resume banner render condition", () => {
     await enterWizard(page);
     await expect(banner(page)).toHaveCount(0);
 
-    const frames = await page.evaluate(
-      () => (window as unknown as { __bannerFrames: number[] }).__bannerFrames,
-    );
+    // Clicking through the pre-flight above proves hydration completed (its
+    // handler is client-side), so the detector has now covered the whole
+    // pre-hydration window. Close it and read how it ended: "" means it was
+    // still sampling right up to here (healthy), "timeout" means the 30s
+    // backstop had already fired before hydration, in which case the "no
+    // flash" claim below would prove nothing.
+    const { frames, endedBy } = await page.evaluate(() => {
+      const w = window as unknown as {
+        __bannerFrames: number[];
+        __stopSampling: boolean;
+        __endedBy: string;
+      };
+      w.__stopSampling = true;
+      return { frames: w.__bannerFrames, endedBy: w.__endedBy };
+    });
+    expect(
+      endedBy,
+      "flash detector timed out before hydration — this run proves nothing about a flash",
+    ).not.toBe("timeout");
     expect(frames, `banner was painted at ${frames.join(", ")}ms`).toEqual([]);
   });
 
