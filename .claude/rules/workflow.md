@@ -242,7 +242,8 @@ empty MEH-487 calibration tally to show for that class.
      named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
    [.claude/rules/testing.md](./testing.md).
-   **⏳ Temporary substitution in force — see "Local adversarial review" below.**
+   **⏳ Temporary substitution in force until 2026-08-01 — see
+   "TEMPORARY — local adversarial review" *above*, before "Workflow rules 1–20".**
 5. **Tests before implementation.** See
    [.claude/rules/testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one
