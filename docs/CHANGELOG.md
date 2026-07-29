@@ -21,11 +21,11 @@
 - **MEH-1727 — עצירת דליפת headers של Vercel ל-preflight של פונטים cross-origin (PR #2380).**
 - **MEH-1712 — לכידת `next-start.log` + probe מה-runner ל-Railway (PR #2376).**
 - **MEH-1707 — `--reset` חוסך את עסק הדמו הדגל (PR #2363):** לא תיקון באג — **התפקיד** של השורה השתנה ב-MEH-1706 והיא הפכה לתשתית. `TEST_NAME_PATTERNS` 12→11. ההערה מעל הרשימה מתעדת גם ש-`seed_demo_business.py --refresh` **בונה מחדש** ולכן אינו נתיב מחיקה — אחרי השינוי אף סקריפט לא מוחק את ה-flagship לצמיתות.
-- **MEH-1698 — בורר השפה בדסקטופ, 3 chunks (PRs #2353, #2358, #2360):** ה-mount הוחזר ל-`Header.jsx`; ה-spec של הטאגל נכתב מחדש כך ש**יוכל להיכשל** — ה-`count()===0 → skip` שהיה מנטרל את עצמו נמחק; שני docstrings שקריים תוקנו. #2360 מוסיף את הכלל שארטיפקט לא יורש סמכות מעבר לפער שבו נוצר.
+- **MEH-1698 — בורר השפה בדסקטופ, 3 chunks (PRs #2353, #2358, #2360):** ה-mount הוחזר ל-`Header.jsx`; ה-spec של הטאגל נכתב מחדש כך ש**יוכל להיכשל** — ה-`count()===0 → skip` שהיה מנטרל את עצמו נמחק; שני docstrings שקריים תוקנו. #2360 מוסיף את הכלל שארטיפקט לא יורש סמכות מעבר לפער שבו נוצר, ומסיר את `frontend/tsconfig.tsbuildinfo` שנכנס ל-git בטעות.
 - **MEH-1704 — 13 שדות badge שהוסרו בשקט הוצהרו על `ProducerSchema` (PR #2355).**
 - **MEH-1688 — הסרת סקשן "עסקים חדשים" העצמאי מדף הבית (PR #2359).**
 - **MEH-1691 — חלון ההזמנות נאמר פעם אחת בעמוד בית העסק (PR #2351).**
-- **MEH-1686 / MEH-1714 — social-proof strip `py-4`→`py-8` + כותרת מעל רשימת ה-+N (PR #2348).**
+- **MEH-1686 — social-proof strip `py-4`→`py-8` (PR #2348).** קומיט אחד, סגנון בלבד.
 - **MEH-1670 — פילטר ה-viewport ב-/map נגזר מ-`locations[]` ולא מ-`Producer.lat/lng` (PR #2347).**
 - **MEH-1651 — `group_buys.funded_notified_at` כסמן idempotency (chunk 1, PR #2345)** + merge revision לפיצול ה-head `c7e2a4f9b1d6`/`c7e2a4b91f38`.
 - **MEH-1672 — proxy ציבורי לתעודת כשרות + מודאל tap-to-view (PR #2344):** התגובה `no-store` כדי שביטול תוקף ייכנס מיידית.
