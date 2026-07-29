@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
+// MEH-1727: the font gate's decision lives in one place, shared with its
+// self-test, so the tested logic and the live logic cannot drift apart.
+import { judgeFonts } from "./font-gate";
 
 // MEH-1497: fixed producer-detail payload for the network-mocked shot (below).
 // Read from disk (not `import ... json`) so it works regardless of the spec
@@ -18,12 +21,47 @@ const MINIMAL_FIXTURE = fs.readFileSync(
   path.join(__dirname, "fixtures", "producer-detail-minimal.json"),
   "utf-8"
 );
+// MEH-1583: exactly two channels (phone + instagram) — the one matrix cell
+// neither fixture above can reach. The 4-channel fixture never shows a reveal
+// and the minimal one has no surviving sibling, so "(many x open)" — the state
+// in Sapir's 26/07 screenshot — had no pixel coverage at all.
+const TWO_CHANNEL_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-detail-two-channel.json"),
+  "utf-8"
+);
 // Matches ONLY the detail call GET /api/producers/{uuid} — not the collection
 // (`/api/producers?…`, no id segment), the `…/reviews` sub-resource, or the
 // non-UUID siblings (`/count`, `/cities`, `/random`, `/by-slug/*`). Producer
 // ids are UUIDs (schemas.py ProducerListOut.id: UUID); the `(?:\?|$)` tail
 // stops it swallowing `/api/producers/{uuid}/reviews`.
 const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
+
+// MEH-1591: fixed /map payloads. The map's results rail and category chip row
+// are UNMASKED live chrome (only `.leaflet-container` is masked), so the
+// baseline moved whenever a business was approved/deactivated — the 26/07 regen
+// proved it: a pure 124px vertical shift of the rail, count row 13 → 12, map
+// canvas byte-identical. Same fs.readFileSync loading as the MEH-1497 pair above.
+const MAP_PRODUCERS_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "map-producers.json"),
+  "utf-8"
+);
+// Sapir's call (MEH-1591 §2): mock /categories too, not just /producers. The chip
+// row is filtered by what the API returns (`resolveCategoryId`,
+// useMapFilters.js:346 — a chip whose category is absent is HIDDEN), it has
+// already churned this baseline once (MEH-1440), and the category table is in
+// active motion (MEH-1530 seed rekey merged, MEH-1456 chunk 3 pending). Partial
+// mocking would reopen this ticket within a week.
+const MAP_CATEGORIES_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "map-categories.json"),
+  "utf-8"
+);
+// COLLECTION only — deliberately disjoint from PRODUCER_DETAIL_RE above. The
+// `(?:\?[^#]*)?$` tail anchors the end, so this matches `/api/producers` and
+// `/api/producers?limit=1` but NOT `/api/producers/{uuid}` (detail — owned by
+// the regex above), nor the non-UUID siblings `/count`, `/cities`, `/random`,
+// `/by-slug/*`, which all carry a further `/segment`.
+const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
+const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
@@ -43,9 +81,20 @@ const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
  * route per project (desktop 1440x900 + mobile Pixel 5), compared with
  * maxDiffPixelRatio 0.02 (playwright.config.ts expect.toHaveScreenshot).
  *
- * Determinism strategy (no mocks — MEH-417):
- * - Live-data regions (producers grid, events preview, mini-map, Leaflet
- *   tiles) are MASKED — layout chrome is the subject under test, data isn't.
+ * Determinism strategy — three tools, in preference order:
+ * - NETWORK MOCK (page.route + a fixed JSON fixture) where the DATA moves but
+ *   the layout is the subject: producer detail (MEH-1497) and /map (MEH-1591).
+ *   This is a deliberate, NARROW carve-out from the MEH-417 no-mocks rule,
+ *   scoped to e2e/visual/** and recorded in frontend/e2e/CLAUDE.md ("No mocks").
+ *   Functional specs under e2e/flows/ stay unmocked — that is what MEH-417
+ *   actually protects. Prefer this over masking when the region is real chrome
+ *   we want under test: a mask hides regressions, a fixture only freezes data.
+ *   (The header previously read "no mocks — MEH-417" outright; that has been
+ *   stale since MEH-1497 landed on 2026-07-23.)
+ * - MASK for regions that are irreducibly non-deterministic and NOT the subject
+ *   (Leaflet tiles/markers, the home producers grid, events preview, mini-map).
+ * - FROZEN CLOCK (page.clock.setFixedTime, MEH-1531) for wall-clock-dependent
+ *   copy — see VRT_FIXED_TIME below.
  * - Calendar-dependent banners (holiday / friday-delivery) are HIDDEN via
  *   parity.css — their *presence* varies, and a mask can't absorb the layout
  *   shift of a section that appears and disappears with the date.
@@ -117,6 +166,18 @@ const VRT_FIXED_TIME = new Date("2026-07-15T09:00:00Z"); // Wed 12:00 IDT
  * clock (above) so wall-clock-dependent copy can't drift between runs.
  */
 async function preparePage(page: Page): Promise<void> {
+  // MEH-1727: start tallying font requests the browser could not fetch BEFORE
+  // the first navigation — a listener attached after goto() misses them all.
+  // In the broken state (extraHTTPHeaders leaking `x-vercel-skip-toolbar` into
+  // cross-origin preflights) this collects all 11 .woff2 files.
+  const fontFailures: string[] = [];
+  failedFontRequests.set(page, fontFailures);
+  page.on("requestfailed", (req) => {
+    if (req.resourceType() === "font") {
+      fontFailures.push(`${req.url()} — ${req.failure()?.errorText ?? "unknown"}`);
+    }
+  });
+
   // setFixedTime (not clock.install): Date.now()/new Date() return the pinned
   // instant while timers keep running normally, so the app's own polling —
   // e.g. use-home-page.js:131's 60s isFridayMode() re-check — still ticks and
@@ -132,9 +193,40 @@ async function preparePage(page: Page): Promise<void> {
   });
 }
 
-/** Wait for fonts + a settle beat so text renders identically run-to-run. */
+/**
+ * MEH-1727 — per-page tally of font requests the browser failed to fetch.
+ * Populated by preparePage(); read by settle().
+ */
+const failedFontRequests = new WeakMap<Page, string[]>();
+
+/**
+ * Wait for fonts + a settle beat so text renders identically run-to-run.
+ *
+ * MEH-1727 — `document.fonts.ready` is NOT a gate. It resolves even when every
+ * face failed to download, and (verified 28/07) it resolves with
+ * `status === "loaded"` while `document.fonts.size === 0`, i.e. it reports
+ * success for a page that loaded no font at all. A VRT baseline captured in
+ * that state freezes system-fallback typography as the truth — the MEH-1552
+ * candidate-baseline trap. So: keep the await (it still sequences correctly),
+ * then assert a POSITIVE count of loaded faces and zero failed font fetches.
+ */
 async function settle(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
+
+  const fonts = await page.evaluate(() => {
+    let loaded = 0;
+    document.fonts.forEach((face) => {
+      if (face.status === "loaded") loaded += 1;
+    });
+    return { total: document.fonts.size, loaded };
+  });
+
+  // Single owner for the decision: judgeFonts() is the same function the
+  // self-test exercises (frontend/__tests__/FontGate.test.js). Re-implementing
+  // the thresholds here would let the tested copy drift from the live one.
+  const verdict = judgeFonts(fonts, failedFontRequests.get(page) ?? []);
+  expect(verdict.ok, verdict.reason).toBe(true);
+
   await page.waitForLoadState("networkidle").catch(() => {
     /* long-polling/streaming must not fail the shot — fonts are the gate */
   });
@@ -149,27 +241,51 @@ test.describe("Visual parity — MEH-991", () => {
   // regenerated on-runner. Delta is confined to the hero region — the home shot
   // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
   // also merged 2026-07-18 sit below the fold and out of frame.
-  // MEH-999 (2026-07-26): home-mobile red-lines at 17,589 px (ratio 0.07) and
-  // the cause is UNIDENTIFIED. Do NOT regenerate this baseline until it is —
-  // a regen would silently bless whatever changed. What was ruled out:
-  //   1. Copy. A key-by-key diff of he.json between the baseline commit
-  //      (1eb89491) and the failing base (397f4466) gives 44 changed keys and
-  //      ZERO under home.hero / home.trust / home.stats / nav.*. The only
-  //      home.* change is home.producers.filter_prefix, which renders on
-  //      /producers, not here.
-  //   2. Above-the-fold components. Nothing in Header / HeroSearch / BottomNav /
-  //      page.js changed in that range.
-  //   3. The live /stats strip (page.js:112-140) — the leading hypothesis, and
-  //      WRONG. Measured on a real 375x812 render: the strip's bounding box is
-  //      y=1061, h=58, i.e. ~250px BELOW the 812px fold. This shot is
-  //      viewport-only (no fullPage), so the strip is out of frame and cannot
-  //      contribute a single pixel. (With live producers the grid above is
-  //      taller, pushing it further down still.) Masking it was implemented,
-  //      measured, and reverted.
-  // Next step is the diff image, not another guess: open home-diff.png in the
-  // playwright-report artifact of a failing run (run 30199607886 has one). The
-  // CC sandbox cannot download Actions artifacts — proxy-blocked, same limit
-  // recorded in the MEH-1440 note below.
+  // MEH-1519 (2026-07-26): home-mobile's 17,589 px (ratio 0.07) red line is
+  // RESOLVED and RATIFIED. An earlier revision of this note recorded the cause
+  // as UNIDENTIFIED and forbade regen; both statements are retracted. The diff
+  // was confined to y=466-696 — everything above (header, hero, H1, subtitle,
+  // search card) was pixel-identical — and it decomposes into exactly two
+  // INTENTIONAL product changes that the baseline predated:
+  //   1. MEH-1476 (af62123e, 2026-07-23) relocated "הפתיעו אותי" out of the hero
+  //      to the producers-grid end (HomeHero.jsx:49-51), collapsing the CTA row
+  //      from two rows to one and shifting everything below it up.
+  //   2. MEH-1410 (e4b725a0, 2026-07-21) restored ChatWidget to desktop-only —
+  //      ChatWidget.jsx:215 `if (!isDesktop) return null` returns null below
+  //      768px, so the chat FAB no longer renders on the mobile project
+  //      (Pixel 5, 393x851). The FAB survived in the baseline only because the
+  //      baseline predates that commit. NOT a hydration race: ChatWidgetLazy's
+  //      route gate does not cover "/", but the viewport gate one component
+  //      deeper does, deterministically, on every run.
+  // Ratified by RESTORING the blob 3680b928 already committed — the on-runner
+  // regen of 2026-07-23, captured after BOTH changes above, which 52ab77da
+  // ("undo PR #2102 contamination") reverted to a 2026-07-21 image by mistake.
+  // THAT RESTORE DID NOT HOLD, and the sentence that justified it has been
+  // removed rather than softened. It read: "restoring a runner-generated blob
+  // is why no new regen was needed here." True only while nothing
+  // rendering-relevant had landed since the blob was captured — a condition it
+  // never stated, so it read as a standing licence to restore instead of
+  // recapture, which is how it was used.
+  // By the time 10ed80d7 restored it (26/07 21:42Z) the blob was 3.5 days old
+  // and 36 commits touching home-render files had landed unmeasured against it.
+  // MEH-1643's fourth hero CTA (6f050547, 27/07 13:30Z) then landed on top, and
+  // MEH-1684's hero-search rewrite (96f0f532, 28/07 08:11Z) on top of that.
+  // home-mobile has been red since, and no single one of those is "the"
+  // regression — the delta accumulated against a reference that stopped
+  // tracking the code on 23/07.
+  // A runner-generated image carries CREDIBILITY, not CURRENCY. Restoring it
+  // returns the first and not the second, and the file name looks identical
+  // either way.
+  // Before restoring any baseline: count the commits touching that surface
+  // since the blob was captured. Non-zero means recapture, not restore.
+  // Recapture means on-runner (vrt-update.yml) — a dev-machine capture is
+  // still forbidden, font stacks differ, see "Baseline maintenance" above.
+  // home-desktop-linux.png needed no change: 3680b928 regenerated 5 baselines
+  // and left it untouched, i.e. the runner's post-change desktop render was
+  // byte-identical to the existing image (blob 85ba6329 unchanged since
+  // bf71e303, 2026-07-11), and the desktop shot has stayed green throughout.
+  // Cause: MEH-1410 only gates <768px, and at 1440px the hero CTA row never
+  // wrapped, so MEH-1476's relocation cost it no vertical space.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
@@ -231,6 +347,32 @@ test.describe("Visual parity — MEH-991", () => {
   test("map", async ({ page }) => {
     test.setTimeout(90_000);
     await preparePage(page);
+
+    // ── MEH-1591: data mock (MEH-417 no-mocks EXCEPTION, e2e/visual/** only) ──
+    // Same carve-out the producer-detail shot uses (frontend/e2e/CLAUDE.md
+    // "No mocks" → MEH-1497 §2.4): the subject here is layout/pixels, the
+    // producer + category data is noise. DO NOT copy into e2e/flows/.
+    // Registered BEFORE goto so the mount fetches are intercepted:
+    // useProducersFeed.js:65 fires loadProducers() (no params → bare
+    // /api/producers) and :64 fires /api/categories.
+    // NOTE: the rail and chip row stay UNMASKED on purpose — masking them would
+    // hide real layout regressions, which is exactly what this baseline is for.
+    // Mocking the data keeps the pixels stable without blinding the shot.
+    await page.route(PRODUCERS_COLLECTION_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: MAP_PRODUCERS_FIXTURE,
+      });
+    });
+    await page.route(CATEGORIES_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: MAP_CATEGORIES_FIXTURE,
+      });
+    });
+
     await page.goto("/map");
     // MEH-549 pattern (flow 05): __MAP_CENTER__ is race-free across the two
     // MapPane instances; .leaflet-container:visible is not.
@@ -241,9 +383,35 @@ test.describe("Visual parity — MEH-991", () => {
       { timeout: 45_000 }
     );
     await settle(page);
+
+    // MEH-1591 guard — the fixture must actually REACH the rail. The feed parses
+    // the response through ProducersResponseSchema (lib/schemas.js:104) and a
+    // malformed payload degrades to an empty list + toast (useProducersFeed.js:36-40)
+    // rather than throwing. That failure mode is invisible to VRT: an empty rail
+    // is perfectly *stable*, so the baseline would lock in a blank column and the
+    // suite would stay green while testing nothing.
+    //
+    // Two assertions, because count alone is not enough:
+    //   1. at least one card per fixture row — kills the empty/short-rail case;
+    //   2. a fixture-specific NAME is rendered — proves the pixels came from the
+    //      fixture and not from a live backend response that happened to be
+    //      non-empty (a count-only check would pass on live data too).
+    // NOT an exact-equality count: `cardList` is ONE element rendered in BOTH
+    // shells — the desktop grid (MapClient.jsx:457 `hidden lg:grid`) and the
+    // mobile sheet (:534 `lg:hidden`) — so every producer yields 2 DOM nodes on
+    // both projects, with CSS (not the DOM) hiding the irrelevant shell. Asserting
+    // `=== fixture.length` fails with "Received: 12" for 6 rows; asserting `>=`
+    // keeps the empty-rail guarantee without hard-coding that ×2 detail.
+    const fixtureRows = JSON.parse(MAP_PRODUCERS_FIXTURE) as { name: string }[];
+    const cardCount = await page.getByTestId("map-card").count();
+    expect(cardCount).toBeGreaterThanOrEqual(fixtureRows.length);
+    await expect(page.getByText(fixtureRows[0].name).first()).toHaveCount(1);
+
     await expect(page).toHaveScreenshot("map.png", {
       ...SHOT,
       // Tiles + markers are live; chrome (header, filters, controls) is not.
+      // MEH-1591: the rail + chip row are no longer live — they render from the
+      // fixtures mocked above — so they stay unmasked and under test.
       mask: [page.locator(".leaflet-container")],
     });
   });
@@ -434,6 +602,40 @@ test.describe("Visual parity — MEH-991", () => {
     await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail-phone-revealed.png", {
+      ...SHOT,
+      mask: [page.locator("main img"), page.locator(".leaflet-container")],
+    });
+  });
+
+  // Desktop-only, MEH-1583: the missing matrix cell — (many x open). Two
+  // channels, phone revealed: the phone leaves the icon row and its number
+  // takes a full-width row, so the card must show ONE geometry, never a wide
+  // pill parked beside a 44px circle.
+  test("producer-detail-two-channel-revealed", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "phone reveal is desktop-only (>=1024px)");
+    await preparePage(page);
+    await page.route(PRODUCER_DETAIL_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: TWO_CHANNEL_FIXTURE,
+      });
+    });
+    const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+    const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+    const borrowedId = Array.isArray(list) && list[0]?.id;
+    if (!borrowedId) {
+      test.skip(true, "No producer on staging to borrow an id from");
+      return;
+    }
+    await page.goto(`/producer/${borrowedId}`);
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
+    // Two channels => circles, so the phone is reached by its own channel
+    // testid; the single-row testid only exists at exactly one channel.
+    await page.locator('[data-testid="contact-channel-phone"]:visible').first().click();
+    await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
+    await settle(page);
+    await expect(page).toHaveScreenshot("producer-detail-two-channel-revealed.png", {
       ...SHOT,
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });

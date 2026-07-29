@@ -290,6 +290,11 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         )}
       </div>
 
+      {/* MEH-1597: card-level "where it appears" line. The MEH-1539 standard
+          allows one per card when it covers every field, which it does here —
+          name, description and price all surface in the same public list. */}
+      <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
+
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
       {/* MEH-1261 F1: load failure gets its own state — never the EmptyState
@@ -385,6 +390,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   label={tForm("price_min_label")}
                   required
                   value={editForm.price_min || ""}
+                  placeholder={tForm("price_min_placeholder")}
                   onChange={(e) => setEditForm((f) => ({ ...f, price_min: e.target.value }))}
                 />
                 <PriceField
@@ -392,6 +398,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   label={tForm("price_max_label")}
                   optionalSuffix={tForm("price_max_optional_suffix")}
                   value={editForm.price_max || ""}
+                  placeholder={tForm("price_max_placeholder")}
                   onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
                 />
               </div>
@@ -522,6 +529,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 label={tForm("price_min_label")}
                 required
                 value={form.price_min}
+                placeholder={tForm("price_min_placeholder")}
                 onChange={(e) => setForm((f) => ({ ...f, price_min: e.target.value }))}
               />
               <PriceField
@@ -529,6 +537,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 label={tForm("price_max_label")}
                 optionalSuffix={tForm("price_max_optional_suffix")}
                 value={form.price_max}
+                placeholder={tForm("price_max_placeholder")}
                 onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
               />
             </div>
@@ -625,7 +634,11 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 // REUSES: app/[locale]/producer/dashboard/group-buys/page.js:126-137 (Input
 // startAdornment="₪") + components/ui/Input.jsx:105-110 (absolute start-3 span).
 // Logical props only (start-3 / ps-8) — RTL-safe.
-function PriceField({ id, label, optionalSuffix, value, onChange, required = false }) {
+// MEH-1597: `placeholder` added so the two price inputs can carry an example
+// like every other field in the card. Plain number, no ₪ — the currency glyph
+// is already rendered inside the input below, and products are numeric since
+// MEH-295.
+function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, required = false }) {
   return (
     <div>
       <label htmlFor={id} className="text-xs text-fg-muted mb-1 block">
@@ -648,6 +661,7 @@ function PriceField({ id, label, optionalSuffix, value, onChange, required = fal
           step={0.5}
           value={value}
           onChange={onChange}
+          placeholder={placeholder}
           className="w-full border border-border rounded-[8px] ps-8 pe-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
         />
       </div>

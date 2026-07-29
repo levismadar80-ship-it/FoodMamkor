@@ -152,7 +152,8 @@
       "reset_success": "Password updated successfully — you can sign in",
       "or": "or",
       "no_account": "Don't have an account?",
-      "register_cta": "Join →"
+      "register_cta": "Join →",
+      "email_placeholder": "name@example.com"
     },
     "oauth": {
       "google_error": "Google sign-in failed",
@@ -409,15 +410,25 @@
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
       "near_me": "Near me",
+      "delivery_cta": "Deliveries to me",
+      "delivery_cta_city": "Deliveries to {city}",
       "surprise_me": "Surprise me",
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
-      "geo_failure": "We couldn't detect your location — you can pick a city manually"
+      "geo_failure": "We couldn't detect your location — you can pick a city manually",
+      "chips_prefix": "Popular now:",
+      "trust_line": "Every business is checked and approved by hand"
     },
     "search": {
       "placeholder": "Search fresh veggies, grass-fed beef...",
       "sr_label": "Search businesses and cities",
-      "submit": "Search"
+      "submit": "Search",
+      "placeholders": {
+        "q1": "Sourdough bread",
+        "q2": "Organic eggs",
+        "q3": "Goat cheese",
+        "q4": "Field-fresh vegetables"
+      }
     },
     "stats": {
       "businesses": "businesses joined so far",
@@ -466,6 +477,11 @@
       "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
+      "city_day_chip": "Delivery to {city} · {day}",
+      "day_row_label": "Delivery day:",
+      "day_option_aria": "Filter deliveries on {day}",
+      "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
+      "day_empty_clear_cta": "Remove day filter",
       "clear_location_filter": "Remove location filter",
       "geo_empty": "No businesses found nearby — showing all businesses",
       "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
@@ -493,9 +509,6 @@
       "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
       "body_l3": "We'd love to meet.",
       "button": "Add Your Business"
-    },
-    "new_businesses": {
-      "heading": "New businesses"
     },
     "events": {
       "heading": "Upcoming events",
@@ -654,10 +667,10 @@
       "description_fallback": "Culinary events at local food businesses."
     },
     "events": {
-      "title": "Events at farms and local food businesses | Mehamakor",
-      "description": "Workshops, tours, open days, and tastings at local food businesses across Israel. Discover upcoming events by city, category, and date.",
-      "og_title": "Events at farms and local food businesses | Mehamakor",
-      "og_description": "Workshops, tours, open days, and tastings at local food businesses across Israel."
+      "title": "Events at local food businesses — open days, market stalls and harvests | Mehamakor",
+      "description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel. Workshops and tours you sign up for are on the experiences page.",
+      "og_title": "Events at local food businesses — open days, market stalls and harvests",
+      "og_description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel."
     },
     "experiences": {
       "title": "Community experiences and workshops | Mehamakor",
@@ -768,8 +781,8 @@
           "shared": "Gluten is present in the production facility — as declared by the business. If you have celiac disease, please confirm directly with the business.",
           "dedicated": "No gluten in the production facility — as declared by the business."
         },
-        "slow_response": "⏳ Longer response times this week",
-        "vacation": "🌙 This business is on break right now",
+        "slow_response": "Longer response times this week",
+        "vacation": "This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
         "vacation_back_soon": "Back soon",
@@ -821,17 +834,7 @@
         "vacation_msg": "Send a message — they will respond soon"
       },
       "order_window": {
-        "strip_label": "Accepting orders:",
-        "cta_note": "You can send a message now — it'll be answered when orders reopen",
-        "days_short": {
-          "sun": "Sun",
-          "mon": "Mon",
-          "tue": "Tue",
-          "wed": "Wed",
-          "thu": "Thu",
-          "fri": "Fri",
-          "sat": "Sat"
-        }
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen"
       }
     },
     "card": {
@@ -852,8 +855,9 @@
       },
       "badges": {
         "delivery_only": "Delivery only",
-        "available_today": "🛒 Coming today",
-        "overflow_aria": "Show {count} more badges"
+        "available_today": "Coming today",
+        "overflow_aria": "Show {count} more badges",
+        "overflow_heading": "More about this business"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
     }
@@ -974,9 +978,9 @@
       "back_to_list": "Back to group buys",
       "back_to_list_arrow": "← Back to group buys",
       "funded_title": "Price unlocked!",
-      "funded_subtitle": "{name} will contact the participants soon",
+      "funded_subtitle": "The group reached its goal! To arrange your order, contact {name}",
       "cancelled": "Group buy cancelled",
-      "fulfilled": "✅ Group buy completed",
+      "fulfilled": "Group buy completed",
       "by_producer": "by {name}",
       "unit_suffix": "/ {unit}",
       "discount_hint": "Save {discount}% at the group price",
@@ -985,13 +989,11 @@
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_prefix": "Pickup & delivery: ",
       "quantity_label": "Quantity",
-      "phone_label": "Contact phone",
-      "phone_placeholder": "050-1234567",
       "submitting": "Joining...",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
       "login_required": "You must sign in to join a group buy",
-      "committed_confirm": "✅ You joined this group buy",
+      "committed_confirm": "You joined this group buy",
       "committed_units": " ({count} units)",
       "cancelling": "Cancelling...",
       "cancel_cta": "Cancel my commitment",
@@ -1011,7 +1013,7 @@
         "open": "Open",
         "funded": "Funded",
         "cancelled": "Cancelled",
-        "fulfilled": "Completed ✅"
+        "fulfilled": "Completed"
       },
       "back": "Back to tools",
       "heading": "My group buys",
@@ -1060,9 +1062,9 @@
       },
       "card_label": {
         "open_orders": "Open for orders",
-        "available_today": "Available today 🟢",
-        "busy_week": "Busy this week 🟠",
-        "on_vacation": "On break ⏸"
+        "available_today": "Available today",
+        "busy_week": "Busy this week",
+        "on_vacation": "On break"
       }
     },
     "delivery": {
@@ -1073,6 +1075,12 @@
       "min_order": "Minimum",
       "delivery_day_label": "Delivery on {day}",
       "dispatch_days": "Dispatch on {day}",
+      "order_cutoff": "Orders accepted until {day} {time}",
+      "order_cutoff_with_day": "Orders accepted until {day} {time} · delivery on {delivery_day}",
+      "free": "Free",
+      "fee": "Delivery: {amount}",
+      "fee_free": "Free delivery",
+      "free_above": "Free over {amount}",
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
       "pickup": "Self pickup",
@@ -1084,6 +1092,10 @@
         "yes_nationwide": "Yes! Nationwide delivery — including {city}",
         "yes": "Yes, we deliver to {city}",
         "no": "Sorry, we don't deliver to {city} right now"
+      },
+      "coverage_cta": {
+        "known_city": "Not delivering to {city}? You can ask the business",
+        "prefill": "Hi! I'm from {city} — I'd love to know if delivery to my area is possible"
       }
     },
     "friday_delivery": {
@@ -1204,7 +1216,10 @@
       "open_in_waze": "Waze",
       "open_in_google": "Google Maps",
       "open_in_waze_aria": "Open in Waze",
-      "open_in_google_aria": "Open in Google Maps"
+      "open_in_google_aria": "Open in Google Maps",
+      "expand_aria": "Expand map to full screen",
+      "close_aria": "Close full screen map",
+      "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
@@ -1340,8 +1355,8 @@
         "incomplete_title": "Show only businesses missing required details",
         "show_all": "Show all",
         "incomplete_label": "Missing details",
-        "export": "📤 Export",
-        "import_excel": "📥 Import from Excel",
+        "export": "Export",
+        "import_excel": "Import from Excel",
         "new_producer": "+ New business"
       },
       "import": {
@@ -1404,11 +1419,11 @@
           "activate": "Activate",
           "remove_ambassador_title": "Remove ambassador role",
           "set_ambassador_title": "Set as ambassador",
-          "ambassador_active": "⭐ Ambassador",
+          "ambassador_active": "Ambassador",
           "ambassador_inactive": "☆ Ambassador",
           "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
-          "story_card": "📸 Story",
+          "story_card": "Story",
           "delete": "Delete",
           "menu_aria": "More actions"
         },
@@ -1494,7 +1509,7 @@
           "phone": "Phone / WhatsApp",
           "phone_placeholder": "050-1234567",
           "instagram": "Instagram",
-          "instagram_placeholder": "@username",
+          "instagram_placeholder": "maafiat_hasade",
           "website": "Website",
           "website_placeholder": "https://...",
           "whatsapp_group": "WhatsApp group link",
@@ -1531,7 +1546,7 @@
           "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
           "verified": "Verified",
-          "recommended": "⭐ Recommended (editor's pick)",
+          "recommended": "Recommended (editor's pick)",
           "kosher": "Kosher",
           "kosher_none": "—",
           "kosher_kosher": "Kosher",
@@ -1543,16 +1558,16 @@
           "license_format_warning": "Producer license number is 7-10 digits",
           "license_registry_link": "Check the Ministry of Health registry",
           "license_optional_toggle": "I have a producer license ↓",
-          "has_physical_location": "🏪 Physical store (welcomes customers)",
-          "offers_delivery": "🚚 Delivery",
+          "has_physical_location": "Physical store (welcomes customers)",
+          "offers_delivery": "Delivery",
           "type_validation": "Must select at least one of the two",
           "delivery_nationwide": "Delivery nationwide",
           "delivery_cities_label": "Cities delivered to",
           "delivery_excluded_label": "Except:",
           "delivery_excluded_hint": "Optional — cities you don't deliver to",
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
-          "has_delivery": "🚚 Offers delivery",
-          "pickup_points": "📦 Pickup points across the country",
+          "has_delivery": "Offers delivery",
+          "pickup_points": "Pickup points across the country",
           "delivery_area_cities": "Delivery cities (comma-separated)",
           "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
           "short_description": "Short description (for the card)",
@@ -1566,9 +1581,9 @@
           "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "Accepting orders",
-          "avail_today": "Available today 🟢",
-          "avail_full": "Busy this week 🟠",
-          "avail_vacation": "On break ⏸",
+          "avail_today": "Available today",
+          "avail_full": "Busy this week",
+          "avail_vacation": "On break",
           "vacation_until": "Return date (optional)"
         }
       },
@@ -1606,7 +1621,7 @@
         "demote": "Remove permissions",
         "protected_title": "Cannot remove permissions from the primary admin",
         "menu_aria": "More actions",
-        "unblock": "🚫 Unblock",
+        "unblock": "Unblock",
         "block": "Block"
       },
       "favorites": {
@@ -1857,6 +1872,19 @@
         "shmitta": "Shmita",
         "kilayim": "Without kilayim",
         "artisan_dairy": "Farm dairy products"
+      },
+      "reminders": {
+        "title": "Certificate expiry reminders",
+        "subtitle": "Businesses whose kashrut certificate expires within 30 days. Always previewed before sending.",
+        "preview": "Preview",
+        "loading": "Loading…",
+        "none": "No businesses with a certificate expiring in the next 30 days.",
+        "preview_summary": "{count} businesses would receive a reminder. Nothing sent yet.",
+        "result_summary": "Sent {sent} · failed {failed}",
+        "send_now": "Send now",
+        "row_sent": "Sent",
+        "row_failed": "Failed",
+        "sent_toast": "Sent {count} reminders"
       }
     },
     "reports": {
@@ -1871,7 +1899,7 @@
       "no_reports": "No open reports",
       "report_count": "{count} reports",
       "actions": {
-        "suspend": "⏸️ Suspend business",
+        "suspend": "Suspend business",
         "ignore": "Ignore",
         "dismiss_confirm": "Dismiss all reports for {name}?",
         "dismissing": "Dismissing…"
@@ -1883,7 +1911,7 @@
         "empty": "No products under review right now",
         "default_reason": "Flagged for review",
         "approve": "Approve",
-        "remove": "❌ Remove",
+        "remove": "Remove",
         "removing": "Removing…"
       },
       "hidden": {
@@ -1990,6 +2018,7 @@
         "producer_count": "{count} businesses",
         "deleting": "Deleting…",
         "delete_error": "Failed to delete the category. Please try again.",
+        "save_error": "Failed to save the category. Please try again.",
         "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The emoji can still be updated.",
         "name_taken_error": "A category with this name already exists"
       },
@@ -2236,8 +2265,6 @@
     },
     "categories": {
       "all": "All",
-      "workshop": "Workshop",
-      "tour": "Tour",
       "market": "Market",
       "harvest": "Harvest",
       "tasting": "Tasting",
@@ -2314,7 +2341,7 @@
       "status_pending": "Your experience is waiting for review by the Mehamakor team",
       "status_changes_requested": "Changes are required before we can publish",
       "status_rejected": "This experience was not approved for publication",
-      "just_submitted": "✅ Experience submitted for review! You'll get an email when it's published 🌿",
+      "just_submitted": "Experience submitted for review! You'll get an email when it's published",
       "team_notes": "Team notes:",
       "reason": "Reason:",
       "requirements_title": "What to bring / requirements",
@@ -2377,7 +2404,8 @@
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
       "error_generic": "Error submitting the experience. Please try again.",
-      "save_cta": "Save"
+      "save_cta": "Save",
+      "field_image_placeholder": "https://res.cloudinary.com/..."
     }
   },
   "errors": {
@@ -2400,6 +2428,19 @@
       "message": "The link may be old, or the business is no longer active. Find other businesses near you.",
       "discover": "Find businesses on the map",
       "home": "Back to home"
+    },
+    "access_denied": {
+      "producer": {
+        "heading": "You don't have access to the dashboard",
+        "message": "The dashboard is open to business owners only. The account you signed in with isn't linked to a business.",
+        "cta": "Register a business",
+        "home": "Back to home"
+      },
+      "admin": {
+        "heading": "You don't have access to the admin area",
+        "message": "This area is open to the admin team only. The account you signed in with isn't part of it.",
+        "home": "Back to home"
+      }
     }
   },
   "about": {
@@ -2644,7 +2685,14 @@
     },
     "expiry": {
       "valid_until": "Valid until: {date}",
-      "near_expiry": "⚠️ Certificate expires soon"
+      "near_expiry": "Certificate expires soon"
+    },
+    "cert": {
+      "dialog_label": "Kashrut certificate",
+      "close": "Close",
+      "image_alt": "Photo of the kashrut certificate",
+      "verified_by": "Verified by Mehamakor",
+      "original_at_business": "The original is displayed at the business"
     }
   },
   "opening_hours": {
@@ -2672,15 +2720,15 @@
       "tooltip": "The business owner's phone number was verified via a one-time code"
     },
     "tier_3": {
-      "label": "✅ Verified business",
+      "label": "Verified business",
       "tooltip": "The business was manually verified by the Mehamakor team"
     },
     "tier_4": {
-      "label": "⭐ Community leader",
+      "label": "Community leader",
       "tooltip": "10+ reviews with an average rating of 4.5 or above"
     },
     "tier_5": {
-      "label": "🏅 Mehamakor ambassador",
+      "label": "Mehamakor ambassador",
       "tooltip": "The leading business owner in the area — selected manually by Mehamakor"
     }
   },
@@ -2849,7 +2897,7 @@
   "newsletter_unsubscribe": {
     "meta_title": "Unsubscribe from the newsletter · Mehamakor",
     "loading": "Unsubscribing…",
-    "success_title": "You've been unsubscribed 🌿",
+    "success_title": "You've been unsubscribed",
     "success_body": "You won't receive the newsletter anymore. You're always welcome back.",
     "error_title": "This link isn't valid",
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
@@ -2898,9 +2946,9 @@
       "submit_aria": "Search",
       "loading": "Loading results...",
       "no_results_for": "No results for",
-      "section_producers": "🏪 Businesses",
-      "section_categories": "🏷️ Categories",
-      "section_cities": "📍 Cities",
+      "section_producers": "Businesses",
+      "section_categories": "Categories",
+      "section_cities": "Cities",
       "recent_heading": "Recent searches",
       "trending_heading": "Trending searches",
       "remove_recent_aria": "Remove {q} from recent searches"
@@ -2936,9 +2984,8 @@
     "title": "My favorites",
     "empty_title": "You haven't saved any businesses yet",
     "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
-    "first_visit_tip": "Tap on a business card to save it here",
     "empty_cta": "Discover businesses",
-    "list_alerts_hint": "Tap on any card to get alerts about new events and products",
+    "list_alerts_hint": "Tap the <icon></icon> on any card to get alerts about new events and products",
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
@@ -3061,7 +3108,7 @@
       "uploading": "Uploading...",
       "save_cloudinary": "Save to Cloudinary",
       "copy_caption": "Copy caption",
-      "copied": "✅ Copied!"
+      "copied": "Copied!"
     }
   },
   "footer": {
@@ -3782,8 +3829,8 @@
       "error_availability_update": "We couldn't update your availability — try again in a moment",
       "error_questions_save": "Save error — please try again",
       "vanity_link": {
-        "label": "🔗 My link",
-        "copied": "✅ Copied!",
+        "label": "My link",
+        "copied": "Copied!",
         "copy_cta": "Copy link",
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
@@ -3814,7 +3861,7 @@
           "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster."
         },
         "rejected": {
-          "title": "⚠️ Application not approved",
+          "title": "Application not approved",
           "body": "Contact us for more details and a re-review.",
           "tip_details": "Make sure all business details are complete and accurate",
           "tip_photos": "Add clear product photos",
@@ -3894,11 +3941,11 @@
         },
         "manage_events": {
           "title": "My events",
-          "sub": "View, edit and cancel events"
+          "sub": "Open days, market stalls and launches — what happens once"
         },
         "manage_experiences": {
           "title": "My experiences",
-          "sub": "View, edit and delete experiences"
+          "sub": "Workshops and tours people sign up for"
         }
       },
       "pulse": {
@@ -4002,7 +4049,7 @@
         "label_weak": "Your profile is weak — customers don't see you",
         "label_ok": "OK, but there's room to improve",
         "label_strong": "Strong profile",
-        "label_perfect": "Perfect profile ⭐",
+        "label_perfect": "Perfect profile",
         "items": {
           "image": "Profile photo",
           "desc": "Business description (50+ chars)",
@@ -4059,6 +4106,11 @@
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
         "field_external_order": "Order form (link)",
+        "instagram_placeholder": "maafiat_hasade",
+        "website_placeholder": "https://example.co.il",
+        "whatsapp_group_placeholder": "https://chat.whatsapp.com/AbCd",
+        "email_placeholder": "hello@example.co.il",
+        "facebook_placeholder": "https://facebook.com/hasade",
         "primary_legend": "Primary channel",
         "primary_whatsapp": "WhatsApp — customers message you",
         "primary_phone": "Phone — customers call you",
@@ -4116,6 +4168,7 @@
         "heading": "Producer license",
         "field_label": "Producer license number (Ministry of Health)",
         "required_hint": "One of your selected categories requires a producer license. Filling in the number is required for approval.",
+        "where": "We keep this number on file only — it is never shown on your page. It is needed to approve businesses in categories that require a license.",
         "summary_empty": "Not set",
         "save_cta": "Save",
         "saving": "Saving…",
@@ -4147,20 +4200,31 @@
         "opt_no": "No",
         "opt_unknown": "Not known",
         "gluten_dedicated": "No gluten in the production facility",
-        "gluten_shared": "Gluten is present in the production facility"
+        "gluten_shared": "Gluten is present in the production facility",
+        "scope_helper": "These answers drive the filters on the search page. They apply to every product the business sells, and are shown as your own declaration."
       },
       "delivery": {
         "heading": "Delivery & pickup",
         "subtitle": "How customers get your products — physical store, delivery, or both.",
         "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
-        "has_physical_location": "🏪 Physical store (welcomes customers)",
-        "offers_delivery": "🚚 Delivery",
+        "has_physical_location": "Physical store (welcomes customers)",
+        "offers_delivery": "Delivery",
         "type_validation": "Must select at least one of the two",
         "delivery_nationwide": "Delivery nationwide",
         "delivery_cities_label": "Cities delivered to",
         "delivery_excluded_label": "Nationwide delivery, except these cities:",
         "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+        "fee_label": "Delivery fee (₪)",
+        "fee_hint": "Optional — shown on your business page, in the delivery section. Enter 0 if delivery is free.",
+        "fee_placeholder": "35",
+        "free_above_label": "Free delivery over (₪)",
+        "free_above_hint": "Optional — shown next to the delivery fee on your business page.",
+        "free_above_placeholder": "250",
+        "delivery_days_label": "Delivery day per city (optional)",
+        "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
+        "day_select_aria": "Delivery day for {city}",
+        "day_arranged": "By arrangement",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4238,7 +4302,8 @@
         "q_special_label": "What's special about you?",
         "q_special_placeholder": "e.g. grandma's recipe, ingredients from the yard",
         "optional": "optional",
-        "instagram_label": "Instagram link",
+        "instagram_label": "Instagram (username)",
+        "instagram_placeholder": "maafiat_hasade",
         "instagram_hint": "If you have one — we'll use it as inspiration.",
         "generate_cta": "Create description",
         "generate_hint_disabled": "Answer the first question to get started.",
@@ -4297,7 +4362,7 @@
         "heading": "My events",
         "create_cta": "New event",
         "empty_title": "No events yet",
-        "empty_description": "A workshop, a tour or an open day — an event appears on your business page and brings in new customers.",
+        "empty_description": "An open day, a market stall or a harvest — a one-time event that appears on your business page and brings in new customers.",
         "empty_cta": "New event",
         "loading": "Loading…",
         "back_to_tools": "Back to tools",
@@ -4386,7 +4451,8 @@
       "save_cta": "Save settings",
       "saving": "Saving…",
       "save_success_toast": "Settings updated",
-      "save_error_toast": "Save error, please try again"
+      "save_error_toast": "Save error, please try again",
+      "phone_placeholder": "050-1234567"
     },
     "layout": {
       "skip_to_main": "Skip to content"
@@ -4424,10 +4490,10 @@
       "pending_success_dashboard": "Back to business management",
       "crumb_dashboard": "Business management",
       "crumb_current": "New event",
-      "subtitle": "Workshop, tour, market, harvest, or open days — publish here",
-      "info_paragraph": "Events = workshop, tour, open day, or any customer gathering. They show up on /events and on your page. Perfect for attracting new customers.",
-      "field_title_placeholder": "For example: cheese workshop",
-      "field_description_full_placeholder": "Events are shown to customers on /events and on your page. Describe: what will happen, who's invited, what's included in the price, what to bring.",
+      "subtitle": "An open day, a market stall, a harvest or a launch — what happens once",
+      "info_paragraph": "An event is something that happens once, on a specific date — an open day, a market stall, a seasonal harvest or a launch. It appears on the events page and on your business page. A regular activity people sign up for, like a workshop or a tour, belongs under experiences.",
+      "field_title_placeholder": "For example: an open day at the dairy",
+      "field_description_full_placeholder": "Describe what will happen: what's included, who it suits and what to bring. For example: an open day at the dairy — tastings of every cheese and a look at the barn.",
       "field_city_placeholder": "Search a city…",
       "field_location_simple_placeholder": "At our farm / full address",
       "field_price_label_full": "Price (0 = free)",
@@ -4468,10 +4534,12 @@
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
       "field_phone_hint": "For WhatsApp updates from businesses you follow",
-      "field_phone_error": "Invalid phone number"
+      "field_phone_error": "Invalid phone number",
+      "field_phone_placeholder": "050-1234567"
     },
     "products": {
       "section_heading": "Products",
+      "where": "Your products appear as a list on your page — with the name, description and price you enter here.",
       "add_cta": "Add product",
       "errors": {
         "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
@@ -4506,8 +4574,10 @@
         "description_label": "Short description",
         "description_placeholder": "e.g. 750g loaf, baked in a taboon",
         "price_min_label": "Price from",
+        "price_min_placeholder": "24",
         "price_max_label": "Price to",
         "price_max_optional_suffix": "optional",
+        "price_max_placeholder": "60",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "Gluten-free",
@@ -4796,5 +4866,33 @@
     "sources_prefix": "Sources:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
     "source_collectivecrop": "CollectiveCrop — Fresh-Picked vs Supermarket Produce"
+  },
+  "chat": {
+    "opening": "Hi, I'm here to help! You can ask me how to register or how to find businesses. What would you like to know?",
+    "prompts": {
+      "register": "How do I register as a business?",
+      "find_nearby": "How do I find businesses near me?",
+      "what_is": "What is Mehamakor?",
+      "is_free": "Is the site free?",
+      "contact": "How do I contact a business?",
+      "approval_time": "How long does approval take?"
+    },
+    "answers": {
+      "register": "You register through a simple 3-step form — completely free!\nOur team checks the details and approves your business usually within 3 business days, and then it appears on the site.",
+      "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
+    },
+    "fallback_reply": "I couldn't understand the question — could you rephrase it?",
+    "error_rate_limit": "You sent a lot of messages in a short time — try again in a minute",
+    "error_generic": "Something went wrong — try again in a moment",
+    "launcher_close_label": "Close the chat",
+    "launcher_open_label": "Ask us",
+    "launcher_pill": "A question? Ask me",
+    "panel_label": "Mehamakor assistant",
+    "panel_title": "Ask us",
+    "panel_close_label": "Close the assistant window",
+    "log_label": "Conversation with the assistant",
+    "input_label": "Type a question",
+    "input_placeholder": "Type a question...",
+    "send_label": "Send question"
   }
 }

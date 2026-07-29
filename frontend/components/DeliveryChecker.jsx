@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
+import CoverageRequestCta from "@/components/CoverageRequestCta";
+import { useUserCity } from "@/lib/use-user-city";
 
 /**
  * Module:   DeliveryChecker
@@ -73,6 +75,9 @@ export default function DeliveryChecker({
   nationwide = false,
   excluded = [],
   areas = [],
+  // MEH-1675: only for the coverage CTA below the negative verdict (phone +
+  // id). The checker's own answer stays 100% client-side over the props above.
+  producer = null,
 }) {
   const t = useTranslations("group_buys.delivery");
   // Two states on purpose. `city` is what the field shows; `checked` is the
@@ -87,6 +92,23 @@ export default function DeliveryChecker({
   // that no longer matches what the field says.
   const [city, setCity] = useState("");
   const [checked, setChecked] = useState("");
+
+  // MEH-1675: seed from the saved user_city so a visitor who already told us
+  // where she is gets her answer — and, when it is "no", the coverage CTA —
+  // without typing. Deliberately an EFFECT and not `useState(initial)`:
+  // user_city lives in localStorage, which is unreadable during SSR, so an
+  // initial value would be `null` on the server and desync on hydration.
+  // One-shot by construction (`seeded` ref): once the visitor touches the
+  // field, her input owns it and a later city-changed event must not yank
+  // the verdict out from under her.
+  const { city: userCity } = useUserCity();
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current || !userCity) return;
+    seeded.current = true;
+    setCity(userCity);
+    setChecked(userCity);
+  }, [userCity]);
 
   // Gate 1 (spec): only for producers that actually deliver.
   // Gate 2 (spec): nationwide with no exclusions — the answer is trivially
@@ -158,6 +180,16 @@ export default function DeliveryChecker({
                   </>
                 )}
               </p>
+            )}
+            {/* MEH-1675: the ONLY mount of the coverage CTA, and only on a
+                hard "no". A positive verdict never shows it, and because the
+                checker itself renders at most once per page (single mount in
+                DeliveryBlock.jsx:256) there is exactly one CTA block on the
+                page in every state. */}
+            {result.status === "no" && (
+              <div className="ms-6">
+                <CoverageRequestCta producer={producer} city={result.city} />
+              </div>
             )}
           </>
         )}

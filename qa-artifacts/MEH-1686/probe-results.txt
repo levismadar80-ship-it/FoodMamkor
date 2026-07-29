@@ -1,0 +1,6 @@
+strip-375: {"paddingTop":"32px","paddingBottom":"32px","borderTopWidth":"1px","borderTopColor":"rgb(229, 223, 211)","borderBottomWidth":"1px","height":142,"lines":["בתי עסק שכבר בדקנו בשבילך","42 בתי עסק שהצטרפו עד היום · 9 קטגוריות · מכל רחבי הארץ"]}
+pill-rest-375: {"backdropFilter":"blur(12px)","background":"rgba(245, 240, 232, 0.85)"}
+pill-scrolled-375: {"backdropFilter":"blur(12px)","background":"rgba(245, 240, 232, 0.6)"}
+strip-1440: {"paddingTop":"32px","paddingBottom":"32px","borderTopWidth":"1px","borderTopColor":"rgb(229, 223, 211)","borderBottomWidth":"1px","height":122,"lines":["בתי עסק שכבר בדקנו בשבילך","42 בתי עסק שהצטרפו עד היום · 9 קטגוריות · מכל רחבי הארץ"]}
+pill-rest-1440: {"backdropFilter":"blur(12px)","background":"rgba(245, 240, 232, 0.85)"}
+pill-scrolled-1440: {"backdropFilter":"blur(12px)","background":"rgba(245, 240, 232, 0.6)"}

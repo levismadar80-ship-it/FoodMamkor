@@ -8,9 +8,8 @@
  * Create is reachable from the header CTA.
  */
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { CalendarPlus, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -80,12 +79,16 @@ export default function ManageEventsPage() {
       {/* MEH-999: the list pages had NO back link at all — entered from the
           Tools tab (tools/page.js:72), so back goes to Tools. */}
       <BackLink href="/producer/dashboard/tools" label={t("back_to_tools")} />
-      <div className="flex items-center justify-between gap-3 mt-1 mb-6">
+      {/* MEH-1655: min-h pins the row at CTA height so the h1 doesn't grow
+          when the button unmounts. */}
+      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-[44px]">
         <h1 className="font-headline-lg text-3xl font-bold text-text">{t("heading")}</h1>
         {/* MEH-999: single-CTA pattern (MEH-1097 F14 / MEH-1420) — the header
             CTA hides while the list is empty so the EmptyState's own CTA is the
-            only "create" button. `items === null` (loading) keeps it visible. */}
-        {items?.length !== 0 && (
+            only "create" button. MEH-1655: also hidden while loading
+            (items === null) — it used to render then jump to the EmptyState
+            CTA on an empty result. */}
+        {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/events/new"
             className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"

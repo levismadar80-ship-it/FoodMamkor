@@ -39,6 +39,15 @@ vi.mock("@/components/ShareButton", () => ({
   ),
 }));
 
+// MEH-1693: the hero corner is a PAIR now — the heart rejoined the share
+// circle. Stubbed for the same reason ShareButton is: the real one pulls in
+// auth + the favorites cache, and this suite asserts hero composition.
+vi.mock("@/components/FavoriteButton", () => ({
+  default: (props) => (
+    <div data-testid="fav-overlay" data-variant={props.variant} />
+  ),
+}));
+
 // Forward the props we assert on (priority for LCP, src for identity).
 vi.mock("@/components/ImageWithFallback", () => ({
   default: (props) => (
@@ -118,6 +127,20 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     expect(shares[0].parentElement.className).toMatch(/top-3/);
     expect(shares[0].parentElement.className).toMatch(/z-20/);
     expect(shares[0].parentElement.className).toMatch(/lg:hidden/);
+  });
+
+  // MEH-1693: same regression guard, for the heart that rejoined the corner.
+  // The imaged branch has TWO hero mount points (desktop grid + mobile
+  // carousel) under one wrapper, so "exactly one" is the thing that can break.
+  it("renders exactly one hero heart, clustered with the share circle (MEH-1693)", () => {
+    render(<ImageGallery images={urls(4)} producerId="p-1" shareUrl="https://x/p-1" />);
+    const hearts = screen.getAllByTestId("fav-overlay");
+    expect(hearts).toHaveLength(1);
+    expect(hearts[0]).toHaveAttribute("data-variant", "gallery");
+    expect(hearts[0].parentElement).toBe(
+      screen.getByTestId("share-overlay").parentElement
+    );
+    expect(hearts[0].parentElement.className).toMatch(/lg:hidden/);
   });
 });
 

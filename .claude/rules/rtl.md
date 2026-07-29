@@ -96,8 +96,16 @@ AND above the header (the MEH-15/30 loop: z-1 → header covered it → z-1001 �
 it covered the sheet). Do not touch either z value: on <1024px the attribution
 now rides the sheet's live top edge via
 `margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px), 10px)` (globals.css,
-`!important` to outrank Leaflet's own `.leaflet-bottom .leaflet-control`
-margin). Any future overlap in that corner → adjust geometry, never z-index.
+`!important` to outrank Leaflet's own
+`.leaflet-container .leaflet-control-attribution { margin: 0 }`). Any future
+overlap in that corner → adjust geometry, never z-index.
+
+**The 10px floor is ours, not a Leaflet default (MEH-1636).** Leaflet ships two
+competing rules of equal specificity and the later one wins, so its effective
+default for this control is `margin: 0` — which is why the `!important` above
+names that rule and not `.leaflet-bottom .leaflet-control`. Don't take this
+paragraph's word for it: `frontend/__tests__/leaflet-attribution-default.test.js`
+reads the installed `leaflet.css` and reds if the cascade ever shifts.
 
 ### Floating-elements corner ownership (MEH-1135)
 

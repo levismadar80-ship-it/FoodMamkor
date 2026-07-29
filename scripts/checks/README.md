@@ -77,8 +77,15 @@ bash scripts/checks/ui-pattern-guard.sh   # just one, while iterating on it
 ```
 
 `run-all.sh` runs **every** guard even after one fails — one run tells you about
-all of them — then exits 1 if any failed. Passing guards stay quiet; a failing
-guard's own output is echoed inline, followed by a `PASS`/`FAIL` summary.
+all of them — then exits 1 if any failed. Each guard lands in one of three
+outcomes, summarised as `PASS` / `WARN` / `FAIL`: a guard that passes quietly
+prints nothing, and a guard that **fails**, or that **exits 0 having printed the
+word `WARNING` or `WARNED`**, has its own output echoed inline (MEH-1715).
+
+**Only a non-zero exit fails the run** — a `WARN` never does. To make a
+non-fatal finding visible, print `WARNING`/`WARNED` (also matched in the plural)
+and still `exit 0`; the match is case-sensitive and whole-word, so `WARN-ONLY`
+and lowercase `warning` in prose are deliberately ignored.
 
 Zero guards found is a `NOTICE` and exit **0**, not a failure.
 
@@ -89,6 +96,86 @@ Zero guards found is a `NOTICE` and exit **0**, not a failure.
 | Guard | Guards against | Ticket |
 |---|---|---|
 | [`ui-pattern-guard.sh`](./ui-pattern-guard.sh) | Producer-dashboard pages hand-rolling `EmptyState` / `BackLink` / text arrows in `he.json` back keys | MEH-999 |
+| [`changelog-branch-guard.sh`](./changelog-branch-guard.sh) | A **code** PR also carrying `docs/CHANGELOG.md` / `HANDOFF.md` (MEH-1372). Docs-only PRs still pass. `--self-test` proves six classification cases plus two end-to-end base-resolution cases (MEH-1634). | MEH-1602 |
+| [`length-cap-sync-guard.sh`](./length-cap-sync-guard.sh) | Frontend length-cap constants drifting from their backend schema caps: `OWNER_BIO_MAX` must **equal** the `owner_bio` sanitize cap; `DESC_MAX`/`TAGLINE_MAX` must stay **≤** every `description`/`short_description` cap (they are deliberately tighter UX caps). `--self-test` proves both directions + the missing-extraction fail-loud. | MEH-1393 |
+| [`adr-citation-guard.sh`](./adr-citation-guard.sh) | An `ADR-NNN (MEH-XXXX)` citation in an always-loaded rule file (`.claude/rules/*.md`, `CLAUDE.md`, `AGENTS.md`) pointing at an ADR that never mentions that issue — i.e. a link that **resolves** but to an unrelated decision. Bare `ADR-NNN` mentions with no adjacent MEH id are ignored on purpose. `--self-test` proves the discriminating pair: the historical `ADR-017 (MEH-1741)` fails while the corrected `ADR-032 (MEH-1741)` and the genuine `ADR-017 (MEH-686)` both pass. | MEH-1761 |
+
+### File taxonomy — what `changelog-branch-guard.sh` calls "docs"
+
+The guard's whole verdict turns on one question: **is this diff a code change?**
+That means the docs/code split is the guard's real interface, and it is worth
+stating outright rather than leaving readers to infer it from a `case` statement.
+
+`is_docs_path()` returns **docs** for exactly these:
+
+| Pattern | Examples | Why |
+|---|---|---|
+| `docs/**` | `docs/CHANGELOG.md`, `docs/DESIGN.md`, `docs/audits/…` | the documentation tree |
+| `.claude/**` | `.claude/rules/workflow.md`, `.claude/hooks/…` | agent configuration + rules |
+| `.ai/**` | `.ai/diagrams/api-routes.md`, `.ai/diagrams/db-schema.md` | session-start diagrams — rule 12 requires them in the same PR as the code they document (MEH-1607) |
+| `HANDOFF.md` | — | an append-only log itself |
+| **root-level** `*.md` | `CLAUDE.md`, `AGENTS.md`, `README.md` | documentation that happens to live at the repo root |
+
+Everything else is **code**, including some things that look like docs:
+
+| Pattern | Examples | Classified |
+|---|---|---|
+| nested Markdown | `frontend/components/CLAUDE.md`, `backend/**/*.md` | **code** — it ships beside the code it documents, and a PR touching it is a code PR |
+| `.github/**` | workflows, PR/issue templates — *including* `.md` ones | **code** |
+| root-level non-Markdown | `package.json`, `Dockerfile`, `.gitignore`, `LICENSE` | **code** |
+| everything under `scripts/`, `tests/`, `frontend/`, `backend/`, `qa-artifacts/` | — | **code** |
+
+The root-level `*.md` arm exists because the guard **got this wrong on its first
+real customer**: PR #2228 corrected `CLAUDE.md` (the rule this guard enforces)
+and the guard classified `CLAUDE.md` as code, which would have blocked that PR
+from carrying its own CHANGELOG entry. `--self-test` case 4 now locks the fix —
+remove the arm and the self-test goes red rather than the behaviour regressing
+quietly.
+
+#### Deliberately NOT decided
+
+These have never come up, so the guard's current answer is an accident of the
+patterns above rather than a considered decision. **Decide them the first time
+one actually blocks a PR** — don't pre-emptively widen the taxonomy:
+
+- **`.github/**/*.md`** (PR / issue templates) — currently **code**. Arguably
+  documentation, but `.github/**` is CC-deny territory anyway, so a PR touching
+  it is unusual and rarely also a docs backfill.
+- **A root-level doc with no `.md` extension** (`LICENSE`, `CODEOWNERS`) —
+  currently **code**. No such PR has needed a CHANGELOG entry yet.
+- **`qa-artifacts/**`** (screenshots) — currently **code**, which is deliberate
+  for now: they are evidence attached to a code change and travel with it.
+- **A docs-only PR that also touches `docs/ci/*.patch.md`** — currently **docs**
+  (under `docs/`), even though those files are staged workflow YAML.
+
+If one of these bites, the fix is one `case` arm plus a `--self-test` case. Do
+both — a taxonomy change without a locking case is how the CLAUDE.md defect got
+in.
+
+### The one guard that needs a diff
+
+`changelog-branch-guard.sh` is the first guard here that reasons about the
+**PR's diff** rather than the working tree, which the `repo-guards` job does not
+hand it: that job checks out shallow (depth 1) and passes no base SHA. The guard
+therefore resolves its own base — `$CHANGELOG_GUARD_BASE`, else the **first
+parent of `refs/pull/N/merge`**, else `$GITHUB_BASE_REF` (fetched at
+`--depth=1` when absent), else the local default branch — and **exits non-zero
+if it can resolve none**, rather than reporting OK for a check it never ran. If
+you write another diff-based guard, reuse that ladder; a guard that silently
+passes when it cannot see the diff is worse than no guard.
+
+**MEH-1634 — a resolvable base is not automatically a *correct* one.** The
+first three rungs above used to be two, and the guard diffed the merge ref
+against whatever the base branch's tip happened to be at run time. Those are
+different commits: GitHub rebuilds `refs/pull/N/merge` on push, not
+continuously, so anything that lands on `staging` in between shows up in a
+two-dot diff **in reverse**, as though the branch had deleted it. Run
+`30248101409` (27/07) red-lined a docs-only PR over "47 code files" while the
+same run's paths-filter reported neither stack touched. So each base now carries
+a `frozen` / `moving` tag: two-dot is only used against a frozen base (where it
+is exact), a moving base requires a real merge base and three-dot, and a guard
+that can do neither **fails loudly instead of answering**. Any diff-based guard
+you add inherits this problem — resolve the PR's own merge base, not a tip.
 
 ## Not run from here
 

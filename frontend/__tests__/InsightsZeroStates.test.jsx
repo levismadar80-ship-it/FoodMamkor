@@ -23,6 +23,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
   Link: ({ href, children, ...rest }) => <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>,
 }));
 

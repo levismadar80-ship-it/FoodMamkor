@@ -62,6 +62,10 @@
 
 > **MEH-1291 (2026-07-18):** producer freshness signal. `producers.updated_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `a3f1c9d2e4b7`, Chunk A) is stamped by the model-level `onupdate=func.now()` (`models.py`) on every real producer UPDATE — owner edits (`producer_me.py:update_my_producer`) and admin edits (`admin.py:admin_update_producer`), both of which load the ORM object + `setattr` + `commit` (a bulk `update()` execute would skip the stamp — no such path exists on producers). **No `server_default`, NO backfill** (ADR-007 Expand-only): the column stays NULL for producers never edited since the migration, so the public "עודכן לאחרונה: {חודש שנה}" line renders nothing for them (honest signal). **Public** — `ProducerDetailOut` (Chunk B) carries `updated_at` read-only; `ProducerListOut`/map do NOT (detail-page-only). Rendered as a modest month-year footnote at the page end (`ProducerSections.jsx`, `frontend/lib/format-date.js` → he-IL/en-US).
 
+> **MEH-1644 (2026-07-27):** structured delivery-day capture. `delivery_areas.delivery_day` (existing column, NO migration) gains a **write-path whitelist**: `DeliveryAreaCreate.delivery_day` is a `DeliveryDayField` (`schemas.py` — canonical bare Hebrew day names `DELIVERY_DAYS = ["ראשון".."שבת"]`; blank → `None`; anything else 422 `יום משלוח לא מוכר`). `None` stays legal = "בתיאום מראש". **Expand-only:** `DeliveryAreaOut` carries NO whitelist — legacy free-text rows still serialize until Sapir runs `scripts/normalize_delivery_days.py` (dry-run by default, `--apply` to write, refuses non-localhost `DATABASE_URL` without `--allow-remote`). **New owner write path:** `PUT /producers/me` now accepts `delivery_areas: [DeliveryAreaCreate]` (structured rows: city · min_order · delivery_day) — takes precedence over the flat `delivery_area_cities` when both are sent; the nationwide-XOR covers the rows field too (`ProducerUpdate._validate_location_mode`). The dashboard `DeliveryCard` saves rows (per-city day select from `frontend/lib/delivery-days.js`, the frontend mirror of `DELIVERY_DAYS`) and preserves registration-captured `min_order` (the flat delete+insert path used to wipe it). Admin form still uses the flat list (no day input). New-city `delivery_area` alerts (MEH-54/MEH-1360) fire identically on both paths.
+
+> **MEH-1645 (2026-07-27):** consumer delivery-day filter. `GET /producers?delivery_day=` accepts ONE canonical Hebrew day (`schemas.DELIVERY_DAYS` — the MEH-1644 vocabulary; anything else 422 `יום משלוח לא מוכר`). **v1 semantics:** only EXPLICIT `delivery_areas` rows with a matching day count — nationwide producers and day-less rows ("בתיאום מראש") are excluded from day filtering (integrity of "משלוח ביום X" over recall). With `delivery_city` the city+day must match on the SAME row — a single EXISTS (`producer_listing._delivery_day_condition`), which REPLACES the `_delivery_city_condition` (its nationwide OR-branch is deliberately dropped when a day is present; the MEH-1487 shared helper is untouched). Home UI: progressive-disclosure day-pill row beside the ActiveFilterChip (renders only while a city filter is active — never a primary chip), chip label "משלוח ל{city} · יום {day}", `?day=` deep-link (city-guarded: a day-only URL drops the day — invisible-filter guard), and a zero-result "הסרת סינון היום" suggestion above the region fallback.
+
 > **MEH-1471 (2026-07-22):** self-reported attribution ("מאיפה שמעת עלינו?"). `producers.referral_source` (`VARCHAR(40)`, **nullable**) + `producers.referral_source_other` (`VARCHAR(120)`, **nullable**), migration `d7b2f4a9c6e1`. `referral_source` stores an **English key** from `constants.REFERRAL_SOURCE_KEYS` (`business_referral`\|`friends_family`\|`instagram`\|`facebook`\|`google`\|`whatsapp_group`\|`other`\|`prefer_not_to_say`) chosen at the final registration step; Hebrew labels are rendered from i18n. `referral_source_other` holds the optional free-text answer, revealed only when the key is `other`. Validated at the API boundary (`ProducerRegister._validate_referral_source` → **422** on an unknown key; `referral_source_other` bleach-sanitised) — **no DB CHECK/enum** (app-layer, like `availability_state`/`verification_doc_type`). Field is optional at the Pydantic layer (nullable column, MEH-143 upgrade path); required-ness is a **front-end** registration gate only. **No `server_default`, NO backfill** (ADR-007 Expand-only) — existing rows stay NULL (admin renders "—"). **Admin-only** — `ProducerAdminOut` surfaces both; public `ProducerListOut`/`ProducerDetailOut` do NOT (internal supply-side data, MEH-530 privacy precedent). Displayed read-only under the producer name in the `/admin/producers` table (`AdminProducersTable.jsx`, `"אחר: <text>"` for the `other` case).
 
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
@@ -103,6 +107,15 @@ producers (
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
   -- (app-validated 1800..current year; NULL = line absent from DOM)
   established_year integer nullable,
+  -- MEH-1577: structured delivery cost → public DeliveryBlock line. Whole
+  -- shekels (INTEGER, matching delivery_areas.min_order, not the NUMERIC(10,2)
+  -- of products.price — display-only, no cent arithmetic). delivery_fee = 0 is
+  -- a VALUE meaning "משלוח חינם" and is distinct from NULL ("not stated" → no
+  -- line renders); free_delivery_above rejects 0 (a threshold every order
+  -- clears says nothing). Independent: a threshold with no fee is legal.
+  -- App-validated in ProducerUpdate ONLY — no DB CHECK, so a bad payload is a
+  -- clean 422 rather than a 500. Declared on ProducerListOut (Detail inherits).
+  delivery_fee integer nullable, free_delivery_above integer nullable,
   -- MEH-1471: self-reported attribution (admin-only; English key + free-text "other")
   referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   starting_price_label, price_range,
@@ -237,7 +250,7 @@ events (
   event_time time,                   -- HH:MM
   location, city, lat float, lng float,
   image_url text,                    -- single image
-  category: סדנה|סיור|שוק|קטיף|טעימות|אחר,
+  category: שוק|קטיף|טעימות|אחר,   -- MEH-1657: 6 → 4
   price int,                         -- 0 = free
   max_participants int,
   registration_url text,             -- external signup link
@@ -560,8 +573,18 @@ DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 No per-event moderation. An **approved** producer publishes and it's live;
 a **pending** producer's events exist but are invisible to the public until
 the business is approved (MEH-1161, audit F1). Designed for the
-"יום קטיף / סיור בחווה" calendar on producer pages. Category enum:
-`סדנה | סיור | שוק | קטיף | טעימות | אחר`.
+"יום קטיף / יום פתוח בחווה" calendar on producer pages. Category enum:
+`שוק | קטיף | טעימות | אחר`.
+
+**MEH-1657 — the axis, and why the enum is 4 and not 6.** An **Event** is
+something that happens **once, on a date**; an **Experience** is a guided
+activity people **sign up for** (per-person price, repeatable). `סדנה` and
+`סיור` name the Experience side exactly, so they were removed from the Event
+enum — offering them here is what made owners guess which surface to publish
+on. `Experience.category` is a **separate** set and still carries both words,
+deliberately. A row created before this change may still hold a removed value:
+the enum is enforced on **write** (`events.py` `VALID_CATEGORIES`, POST + PUT),
+not by a DB constraint, and no backfill was run.
 
 **MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
 "Event not found"**, not 403 — a foreign producer can't confirm an
@@ -789,6 +812,47 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
+```
+
+### Health (`app/routers/health.py`)
+
+Three surfaces, one owner. All public, all unrate-limited. Undocumented since
+MEH-483 shipped them; added in MEH-1598 alongside the MEH-1596 version block.
+
+```
+GET/HEAD /health/liveness        public — {"status":"alive"}. Always 200 while the worker is up.
+                                 No DB call, no app.state read.
+
+GET/HEAD /health/readiness       public — 200 {"status":"ready","migrations":<rev|"unknown">,
+                                 "db_init":<state>} only when SELECT 1 succeeds AND db_init
+                                 settled. Otherwise 503 {"status":"not_ready","reason":...}:
+                                   db_unreachable:<ExcName>  SELECT 1 raised
+                                   db_init_failed            db_init_status == "failed"
+                                   db_init_pending           db_init_status == "initializing"
+                                 A 503 here means the boot-time DB init (create_all + seed)
+                                 failed or has not finished — NOT that the service is down.
+                                 The process is serving; it is not ready. MEH-1530 Chunk 2
+                                 points the Railway healthcheck here, so read the `reason`
+                                 before concluding anything.
+                                 `migrations` is "unknown" when the alembic_version table is
+                                 absent (e.g. a create_all-bootstrapped DB) — informational,
+                                 never a readiness failure.
+
+GET/HEAD /health                 public — backwards-compat alias, the path Railway currently
+                                 polls (railway.json). ALWAYS 200; it never reports failure
+                                 via status code, only via the db_init field.
+                                 {"status":"ok","db_init":<state>,"version":{...}}
+                                 `version` carries EXACTLY FOUR fields (MEH-1596):
+                                   git_sha       GIT_SHA or RAILWAY_GIT_COMMIT_SHA
+                                   git_branch    GIT_BRANCH or RAILWAY_GIT_BRANCH
+                                   alembic_head  revision cached ONCE at startup, not per request
+                                   booted_at     UTC ISO-8601 process start
+                                 Any of the four may be the string "unknown" — that is a known
+                                 state, not a bug. alembic_head is "unknown" whenever the
+                                 alembic_version table is absent or was unreadable at startup;
+                                 git_sha/git_branch are "unknown" when the env vars are unset
+                                 or empty. Nothing here raises: a health endpoint that 500s is
+                                 worse than one that says it does not know.
 ```
 
 ---

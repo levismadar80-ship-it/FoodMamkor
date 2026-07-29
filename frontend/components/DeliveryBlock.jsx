@@ -5,7 +5,12 @@ import { Truck, Package, CaretDown, CaretUp, NavigationArrow } from "@phosphor-i
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
+import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
+
+// Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
+// dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
+const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 /**
  * MEH-213 / MEH-1146 chunk B: editorial delivery section shown on
@@ -26,6 +31,17 @@ import DeliveryChecker from "@/components/DeliveryChecker";
  *
  * Plus an optional self-pickup line (invention-fix 6, gated on pickup_points).
  * min_order is rendered via formatPrice (MEH-1140 canonical shekel format).
+ *
+ * MEH-1646: (a) order-cutoff line — ONLY when order_window has exactly one
+ * open day (getSingleOrderCutoff; 2+ days → the "until" day is ambiguous, so
+ * no cutoff claim renders — Phase 0 decision). In hoist mode it REPLACES the
+ * dispatch_days subline ("מקבלים הזמנות עד {day} {time} · משלוח ביום {day}" —
+ * the day is still stated exactly once, MEH-1305 discipline); in group mode
+ * it renders WITHOUT the day promise. The MEH-1546 OrderWindowStrip (weekly
+ * hours near the header) is NOT duplicated — this line is cutoff framing,
+ * that one is a weekly schedule. (b) pickup rows carry a "חינם" tag at the
+ * min_order hierarchy (pickup is always free; delivery rows show cost info,
+ * pickup rows now do too).
  *
  * MEH-1466: the tertiary WhatsApp order CTA was removed. All three
  * producer-detail WhatsApp CTAs opened the same wa.me, so the delivery
@@ -116,7 +132,7 @@ function CompactCities({ areas, t }) {
 // producer's locations[] — label (falls back to city) · city · opening_hours ·
 // an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
 // second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
-function PickupRow({ loc, tMap }) {
+function PickupRow({ loc, t, tMap }) {
   const hasCoords =
     loc.lat != null && loc.lng != null && !isNaN(Number(loc.lat)) && !isNaN(Number(loc.lng));
   const wazeUrl = hasCoords ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : null;
@@ -129,18 +145,23 @@ function PickupRow({ loc, tMap }) {
         {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
         {loc.opening_hours && <p className="text-[13px] text-fg-muted">{loc.opening_hours}</p>}
       </div>
-      {wazeUrl && (
-        <a
-          href={wazeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={tMap("open_in_waze_aria")}
-          className="flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
-        >
-          <NavigationArrow size={16} aria-hidden="true" />
-          {tMap("open_in_waze")}
-        </a>
-      )}
+      <div className="flex-shrink-0 flex items-center gap-3">
+        {/* MEH-1646 (b): pickup is free — stated at the same hierarchy as the
+            delivery rows' min_order cost info (muted end-of-row text). */}
+        <span className="text-fg-muted">{t("free")}</span>
+        {wazeUrl && (
+          <a
+            href={wazeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={tMap("open_in_waze_aria")}
+            className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          >
+            <NavigationArrow size={16} aria-hidden="true" />
+            {tMap("open_in_waze")}
+          </a>
+        )}
+      </div>
     </li>
   );
 }
@@ -170,7 +191,7 @@ function PickupRows({ locations, t, tMap }) {
       </p>
       <ul className="divide-y divide-border border-y border-border">
         {visible.map((loc, i) => (
-          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} tMap={tMap} />
+          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} t={t} tMap={tMap} />
         ))}
       </ul>
       {overLimit && (
@@ -192,6 +213,74 @@ function PickupRows({ locations, t, tMap }) {
   );
 }
 
+// MEH-1577: the structured delivery-cost line. Producer-level (not per area —
+// delivery_areas.min_order owns the per-city dimension).
+//
+// Six inputs, because `0` is a VALUE here and not an absence: delivery_fee=0
+// means "delivery is free" and is distinct from NULL ("owner hasn't stated a
+// cost"). Every gate below is an explicit `!= null` — a truthiness check would
+// silently turn the free case into the not-stated case, which is the single
+// most likely way this line breaks.
+//
+//   fee > 0, no threshold   → "משלוח: 35₪"
+//   fee > 0, threshold      → "משלוח: 35₪ · מעל 250₪ — חינם"
+//   fee === 0               → "משלוח חינם"  (threshold SUPPRESSED — see below)
+//   no fee, threshold       → "מעל 250₪ — חינם"   (legal state; renders alone)
+//   neither                 → null → no line in the DOM at all
+//
+// fee===0 suppresses the threshold on purpose. Both can be set (the validators
+// allow it: fee >= 0, threshold > 0), but "delivery is free · free above 250₪"
+// states a condition on something already unconditional. The free fact wins.
+//
+// Returns an array of {before, amount, after} segments rather than a string, so
+// each ₪ amount can be rendered inside <bdi> — the HTML-native bidi isolate.
+//
+// Same intent as AreaRow's `<span dir="ltr">{formatPrice(...)}</span>` above
+// (MEH-1168 P1: RTL otherwise reorders "35₪"), but the amount here sits INSIDE a
+// Hebrew sentence, so dir="ltr" on the whole line would reorder the Hebrew
+// around it. <bdi> isolates the number alone and leaves the sentence RTL.
+//
+// Not the Unicode isolate characters (U+2066/U+2069): those work, but they land
+// in textContent, where they are invisible and silently break any getByText /
+// Playwright assertion written against the rendered copy. <bdi> leaves the text
+// clean. The sentinel split is what lets a translated string carry an element in
+// the middle without next-intl rich-text plumbing for a two-word line.
+// Written as the ESCAPE "\u0000", never a literal NUL byte in the source: a
+// raw NUL makes grep classify this file as binary, so the repo's documented
+// navigation recipe (code-execution.md §15, `grep -rE "// MEH-[0-9]+:"`)
+// prints "binary file matches" instead of this file's sentinel anchors and
+// silently drops it from every such sweep. Same runtime value, ASCII source.
+const AMOUNT_SENTINEL = "\u0000";
+
+function splitAroundAmount(text) {
+  const [before, after = ""] = text.split(AMOUNT_SENTINEL);
+  return { before, after };
+}
+
+function buildFeeSegments(fee, threshold, t) {
+  const hasFee = fee != null;
+  const hasThreshold = threshold != null;
+  if (!hasFee && !hasThreshold) return null;
+  // fee===0 suppresses the threshold on purpose. Both can be set (the
+  // validators allow fee >= 0 with threshold > 0), but "delivery is free ·
+  // free above 250₪" puts a condition on something already unconditional.
+  if (hasFee && fee === 0) return [{ before: t("fee_free"), amount: null, after: "" }];
+  const segments = [];
+  if (hasFee) {
+    segments.push({
+      ...splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL })),
+      amount: formatPrice(fee),
+    });
+  }
+  if (hasThreshold) {
+    segments.push({
+      ...splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL })),
+      amount: formatPrice(threshold),
+    });
+  }
+  return segments;
+}
+
 export default function DeliveryBlock({
   nationwide,
   excluded = [],
@@ -201,7 +290,19 @@ export default function DeliveryBlock({
 }) {
   const t = useTranslations("group_buys.delivery");
   const tMap = useTranslations("map.mini");
+  // MEH-1646 (a): weekday labels for the cutoff day ("יום רביעי").
+  const tWeekdays = useTranslations("opening_hours.weekdays");
   const hasAreas = areas.length > 0;
+  // MEH-1646 (a): non-null ONLY when order_window has exactly one open day —
+  // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
+  const cutoff = getSingleOrderCutoff(producer?.order_window);
+  const cutoffDayLabel = cutoff ? tWeekdays(WEEKDAY_SHORT_KEYS[cutoff.dayIndex]) : null;
+  // MEH-1577: null when the owner stated neither value → no line renders.
+  const feeSegments = buildFeeSegments(
+    producer?.delivery_fee,
+    producer?.free_delivery_above,
+    t,
+  );
   // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
   // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
   const pickupLocations = (producer?.locations || []).filter(
@@ -231,7 +332,33 @@ export default function DeliveryBlock({
         nationwide={nationwide}
         excluded={excluded}
         areas={areas}
+        producer={producer}
       />
+
+      {/* MEH-1577: cost before geography — the reader's first question is
+          "what does delivery cost", not "where do they go" (Baymard: surprise
+          costs are the #1 abandonment driver). Absent from the DOM entirely
+          when the owner has stated neither value. The ₪ amounts are bidi-
+          isolated for the same reason AreaRow's min_order is (MEH-1168 P1):
+          RTL otherwise reorders "35₪". */}
+      {feeSegments && (
+        <p
+          className="flex items-center gap-1.5 text-sm text-text mb-4"
+          data-testid="delivery-fee-line"
+        >
+          <Truck size={16} className="text-primary" aria-hidden="true" />
+          <span>
+            {feeSegments.map((seg, i) => (
+              <span key={seg.before || i}>
+                {i > 0 && " · "}
+                {seg.before}
+                {seg.amount != null && <bdi>{seg.amount}</bdi>}
+                {seg.after}
+              </span>
+            ))}
+          </span>
+        </p>
+      )}
 
       {nationwide ? (
         <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
@@ -248,9 +375,20 @@ export default function DeliveryBlock({
               in a subline; group: a header per distinct day; flat: no day data. */}
           {grouped.mode === "hoist" && (
             <>
-              <p className="flex items-center gap-1.5 text-sm text-fg-muted mb-2">
+              <p
+                className="flex items-center gap-1.5 text-sm text-fg-muted mb-2"
+                data-testid="delivery-order-cutoff"
+              >
                 <Truck size={16} className="text-primary" aria-hidden="true" />
-                {t("dispatch_days", { day: grouped.day })}
+                {/* MEH-1646 (a): with a single-day order window the cutoff line
+                    REPLACES dispatch_days — day still stated exactly once. */}
+                {cutoff
+                  ? t("order_cutoff_with_day", {
+                      day: cutoffDayLabel,
+                      time: cutoff.close,
+                      delivery_day: grouped.day,
+                    })
+                  : t("dispatch_days", { day: grouped.day })}
               </p>
               <ul className="divide-y divide-border border-y border-border">
                 {grouped.rows.map((da) => (
@@ -270,6 +408,17 @@ export default function DeliveryBlock({
 
           {grouped.mode === "group" && (
             <div className="flex flex-col gap-4">
+              {/* MEH-1646 (a): 2+ distinct delivery days → no single day to
+                  promise, so the cutoff renders WITHOUT the delivery half. */}
+              {cutoff && (
+                <p
+                  className="flex items-center gap-1.5 text-sm text-fg-muted -mb-2"
+                  data-testid="delivery-order-cutoff"
+                >
+                  <Truck size={16} className="text-primary" aria-hidden="true" />
+                  {t("order_cutoff", { day: cutoffDayLabel, time: cutoff.close })}
+                </p>
+              )}
               {grouped.groups.map((g) => (
                 <AreaGroup
                   key={g.day}
@@ -300,6 +449,9 @@ export default function DeliveryBlock({
           <p className="flex items-center gap-2 text-sm text-text mb-4">
             <Package size={18} className="text-primary" aria-hidden="true" />
             {t("pickup")}
+            {/* MEH-1646 (b): the generic fallback line carries the same tag
+                as the location rows — no producer shape misses it. */}
+            <span className="text-fg-muted">{t("free")}</span>
           </p>
         )
       )}
