@@ -6,18 +6,33 @@ name: VRT baseline update
 # chromium): dev machines (Windows) and the CC sandbox render different font
 # stacks, so locally-generated baselines would red-line every CI comparison.
 #
-# Trigger: workflow_dispatch ONLY (manual). MEH-1496 removed the push
-# auto-fire (on.push on e2e/visual/** or this file): it regenerated EVERY
-# route's baseline and committed each changed one, so a targeted regen of a
-# single route (e.g. /map) also rewrote the deliberately-frozen home baseline
-# (MEH-1450 Phase 0; PR #2102 hit exactly this and merged the frozen home
-# baseline to staging). The optional `route` dispatch input (--grep) scopes a
-# run to one baseline; empty input keeps the full regen. Dispatch needs a token
-# with actions:write (the GitHub MCP integration in CC sessions does not have
-# it — run it from the Actions tab / gh CLI on a feature branch).
-# It never runs on a schedule and never pushes to staging/main — it commits to
-# the ref it ran on, and both protected branches reject direct pushes at the
-# ruleset level anyway.
+# Trigger: workflow_dispatch, PLUS a scoped push trigger on vrt-regen/** only.
+#
+# MEH-1496 removed the original push auto-fire (on.push on e2e/visual/** or
+# this file) because it regenerated EVERY route's baseline and committed each
+# changed one, so a targeted regen of a single route (e.g. /map) also rewrote
+# the deliberately-frozen home baseline (MEH-1450 Phase 0; PR #2102 hit exactly
+# this and merged the frozen home baseline to staging).
+#
+# MEH-1733 re-adds a push trigger under three constraints that make the
+# MEH-1496 failure unreachable:
+#   1. It fires ONLY on refs/heads/vrt-regen/** — never on staging, never on a
+#      feature branch, never on a path filter.
+#   2. A push-triggered run MUST carry frontend/e2e/visual/.regen-scope, a
+#      one-line Playwright --grep pattern. Missing or empty file => the job
+#      FAILS. There is no unscoped push path. This is the direct replacement
+#      for the `route` dispatch input, which a push event cannot supply.
+#   3. The commit step is unchanged: it pushes to the ref it ran on. Both
+#      protected branches reject direct pushes at the ruleset level anyway.
+#
+# Why a push trigger at all: dispatch needs a token with actions:write, which
+# the GitHub MCP integration in CC sessions does not have. Pushing a branch is
+# a permission CC already holds, so this removes the need to mint a PAT for the
+# agent (GitHub deprecated the PAT path for Copilot CLI in Actions on
+# 2026-07-02; long-lived agent-held PATs are the documented anti-pattern).
+# Baseline APPROVAL is unchanged and stays human — see CLAUDE.md and MEH-1552.
+#
+# It never runs on a schedule and never pushes to staging/main.
 #
 # MEH-1705: DISPATCH THIS AGAINST THE FEATURE BRANCH, NEVER staging/main. The
 # sentence above describes the design; it did not stop four dispatches against
@@ -29,7 +44,7 @@ name: VRT baseline update
 # two in sync when the server strategy changes.
 
 on:
-  # MEH-1496: manual dispatch ONLY. `route` scopes the regen to a single
+  # MEH-1496: manual dispatch. `route` scopes the regen to a single
   # baseline via Playwright --grep (empty = every route, the prior behavior).
   workflow_dispatch:
     inputs:
@@ -37,6 +52,11 @@ on:
         description: 'Playwright --grep pattern (ריק = כל ה-routes)'
         required: false
         default: ''
+
+  # MEH-1733: scoped agent path. See header — .regen-scope is mandatory here.
+  push:
+    branches:
+      - 'vrt-regen/**'
 
 permissions:
   contents: write
@@ -64,14 +84,17 @@ jobs:
       # against staging while every feature-branch dispatch succeeded. The
       # header above already said "never pushes to staging/main" — prose alone
       # did not stop it, so this is the mechanism (MEH-271: mechanism > memory).
+      #
+      # MEH-1733: unreachable on the push path (vrt-regen/** can never be
+      # staging/main), but kept verbatim — it still guards every dispatch.
       - name: Reject dispatch against a protected branch
         if: github.ref_name == 'staging' || github.ref_name == 'main'
         run: |
           echo "::error title=Dispatch this against the feature branch, not ${{ github.ref_name }}::VRT baselines are committed back to the ref the run was launched from, and '${{ github.ref_name }}' rejects direct pushes at the ruleset level. This run would regenerate every baseline and then fail at 'Commit updated baselines' with nothing saved."
           echo ""
-          echo "  Correct usage:  Actions -> VRT baseline update -> Run workflow"
-          echo "                  Branch: the FEATURE branch whose PR is red"
-          echo "                  route:  the single baseline to regen (e.g. home)"
+          echo "  Correct usage: Actions -> VRT baseline update -> Run workflow"
+          echo "    Branch: the FEATURE branch whose PR is red"
+          echo "    route:  the single baseline to regen (e.g. home)"
           echo ""
           echo "  The baselines land as a commit on that branch. Because the bot"
           echo "  pushes with GITHUB_TOKEN, no workflow re-runs on it — push a"
@@ -82,6 +105,32 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
+
+      # MEH-1733: resolve the regen scope BEFORE any expensive step, and fail
+      # closed. A push event cannot carry workflow inputs, so the scope travels
+      # in the branch as a committed file. This is what keeps the MEH-1496
+      # failure (unscoped regen overwriting a frozen baseline) unreachable.
+      - name: Resolve regen scope
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "push" ]; then
+            f=frontend/e2e/visual/.regen-scope
+            if [ ! -s "$f" ]; then
+              echo "::error::$f missing or empty. A push-triggered regen must declare its --grep scope (MEH-1496: an unscoped regen rewrote the frozen home baseline in PR #2102). Commit the file and push again."
+              exit 1
+            fi
+            grep_pattern=$(head -n 1 "$f" | tr -d '\r' | xargs)
+            if [ -z "$grep_pattern" ]; then
+              echo "::error::$f contains no pattern."
+              exit 1
+            fi
+            echo "Scope from .regen-scope: $grep_pattern"
+          else
+            grep_pattern='${{ inputs.route }}'
+            echo "Scope from dispatch input: ${grep_pattern:-<all routes>}"
+          fi
+          echo "pattern=$grep_pattern" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
@@ -136,12 +185,15 @@ jobs:
           exit 1
 
       - name: Regenerate baselines
-        # MEH-1496: scope to one route when `route` is set (e.g. "map" or
-        # "producer detail"); empty input regenerates every baseline. PR #2102
+        # MEH-1496: scope to one route when a pattern is set (e.g. "map" or
+        # "producer detail"); empty pattern regenerates every baseline. PR #2102
         # added the input but left this step unscoped — the input was dead.
+        # MEH-1733: the pattern now comes from steps.scope, which resolves it
+        # from either the dispatch input or .regen-scope, and fails closed on
+        # the push path.
         run: |
-          if [ -n "${{ inputs.route }}" ]; then
-            npx playwright test e2e/visual --update-snapshots --grep "${{ inputs.route }}"
+          if [ -n "${{ steps.scope.outputs.pattern }}" ]; then
+            npx playwright test e2e/visual --update-snapshots --grep "${{ steps.scope.outputs.pattern }}"
           else
             npx playwright test e2e/visual --update-snapshots
           fi
