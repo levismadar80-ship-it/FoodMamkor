@@ -9,7 +9,8 @@
  * Related:  frontend/app/[locale]/about/for-businesses/page.js (same page
  *           pattern — metadata + OG + max-w-3xl container),
  *           frontend/components/GuideArticle.jsx (same prose typography).
- * History:  MEH-1289 (creation, 2026-07-17).
+ * History:  MEH-1289 (creation, 2026-07-17); MEH-1810 (adds the "מה שמשתנה
+ *           בדרך" three-line block between the sections and the CTA).
  */
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -60,6 +61,10 @@ const SECTIONS = [
   { heading: "start_h", body: "start_body" },
 ];
 
+// MEH-1810: closing block — one h2 (sibling of the SECTIONS h2s, so the h1→h2
+// hierarchy is unbroken) over three short lines. Copy locked by Sapir.
+const CHANGES_LINES = ["changes_1", "changes_2", "changes_3"];
+
 // MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
 export default async function WhyLocalPage({ params }) {
   const { locale } = await params;
@@ -102,6 +107,20 @@ export default async function WhyLocalPage({ params }) {
               </p>
             </section>
           ))}
+
+          <section>
+            <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold">
+              {t("changes_h")}
+            </h2>
+            {CHANGES_LINES.map((line) => (
+              <p
+                key={line}
+                className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90"
+              >
+                {t(line)}
+              </p>
+            ))}
+          </section>
         </div>
 
         <div className="mt-12 sm:mt-14">
