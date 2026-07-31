@@ -197,14 +197,67 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_areas: [
           // min_order captured at registration survives the save (the flat
           // path used to wipe it); day "" → null = בתיאום מראש.
-          { city: "חיפה", delivery_day: "שישי", min_order: 100 },
-          { city: "עכו", delivery_day: "שלישי", min_order: null },
+          // MEH-1772 chunk 3: delivery_fee rides the same row — null here
+          // because neither seeded city states an override (= inherit the
+          // business-wide rate).
+          { city: "חיפה", delivery_day: "שישי", min_order: 100, delivery_fee: null },
+          { city: "עכו", delivery_day: "שלישי", min_order: null, delivery_fee: null },
         ],
         delivery_excluded_cities: [],
         // MEH-1577: every save now carries the cost pair; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
       }),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+  });
+
+  // MEH-1772 chunk 3: the per-city fee override. Two separate failure modes,
+  // so two assertions in one round-trip — a stored 0 must LOAD as "0" (not
+  // blank) and a typed value must SAVE on the right row.
+  //
+  // The 0 half is the one that matters. `d.delivery_fee || ""` reads as
+  // reasonable defaulting and blanks the field on every reopen, so an owner
+  // who set "free delivery to עתלית" sees an empty box, saves, and the row
+  // silently reverts to inheriting the business rate. Nothing errors.
+  it("MEH-1772: a stored per-city fee of 0 loads as 0, and an edit saves on the right row", async () => {
+    api.put.mockResolvedValue({ data: {} });
+    const { onSave } = renderCard(DeliveryCard, {
+      profile: {
+        has_physical_location: true,
+        offers_delivery: true,
+        delivery_nationwide: false,
+        delivery_fee: 35,
+        delivery_areas: [
+          { city: "עתלית", delivery_day: "שישי", min_order: null, delivery_fee: 0 },
+          { city: "חיפה", delivery_day: "שישי", min_order: 100, delivery_fee: null },
+        ],
+      },
+    });
+
+    expect(screen.getByText(D.area_fee_label)).toBeInTheDocument();
+    const atlit = screen.getByTestId("delivery-fee-input-עתלית");
+    const haifa = screen.getByTestId("delivery-fee-input-חיפה");
+    // 0 survives the load; the un-overridden row stays empty (= inherit).
+    expect(atlit.value).toBe("0");
+    expect(haifa.value).toBe("");
+
+    fireEvent.change(haifa, { target: { value: "40" } });
+    const saveBtn = screen.getByRole("button", { name: D.save_cta });
+    expect(saveBtn).not.toBeDisabled(); // a fee change alone is a real edit
+    fireEvent.click(saveBtn);
+
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith(
+        "/producers/me",
+        expect.objectContaining({
+          delivery_areas: [
+            // 0 round-trips as 0, NOT null — "free here" is not "inherit".
+            { city: "עתלית", delivery_day: "שישי", min_order: null, delivery_fee: 0 },
+            { city: "חיפה", delivery_day: "שישי", min_order: 100, delivery_fee: 40 },
+          ],
+        }),
+      ),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());
   });
