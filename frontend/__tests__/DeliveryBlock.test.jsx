@@ -24,6 +24,10 @@ vi.mock("next-intl", () => ({
     // bidi-isolated by the component, so the mock just interpolates).
     if (key === "fee") return `משלוח: ${vars?.amount ?? ""}`;
     if (key === "free_above") return `מעל ${vars?.amount ?? ""} — חינם`;
+    // MEH-1772 chunk 3: the variance form. Distinct from "fee" on purpose —
+    // a mock that returned the same string for both would let the variance
+    // tests below pass against a component that never switched keys.
+    if (key === "fee_from") return `משלוח מ-${vars?.amount ?? ""}`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
@@ -460,5 +464,133 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     // Regression lock: if the fee line were ever reduced to the bare word, the
     // block would show "חינם" twice with nothing saying which is which.
     expect(feeLine()).not.toHaveTextContent(/^חינם$/);
+  });
+
+  // ---------- MEH-1772 chunk 3: per-area fee override ----------
+  //
+  // The whole feature turns on ONE decision — do the effective per-area fees
+  // vary? — so these tests are organised around that boolean rather than
+  // around the rendering. Each case pins a different way the decision can be
+  // got wrong, and every one of them renders plausibly if it is.
+  //
+  // "Effective" means `area.delivery_fee ?? producer.delivery_fee`. The API
+  // deliberately does NOT coalesce this server-side (schemas.py:849-855), so
+  // an override that happens to equal the producer rate is indistinguishable
+  // from an inherit — which is correct, because for DISPLAY purposes it is.
+  const areaFees = () =>
+    screen.queryAllByTestId("area-fee").map((el) => el.textContent);
+
+  it("MEH-1772 (1/6) fees vary → top line states the MINIMUM with 'מ-', not a flat rate", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "תל אביב", delivery_day: "חמישי", delivery_fee: 20 },
+          { id: 2, city: "חיפה", delivery_day: "חמישי", delivery_fee: 40 },
+        ]}
+        pickup={false}
+        producer={withCost(35, null)}
+      />,
+    );
+    expect(feeLine()).toHaveTextContent("משלוח מ-20₪");
+    // The producer-level 35 must NOT appear as a flat claim — it is the
+    // fallback, not the price, and stating it would misprice both areas.
+    expect(feeLine()).not.toHaveTextContent("משלוח: 35₪");
+  });
+
+  it("MEH-1772 (2/6) an area with NO override inherits the producer rate, and that rate counts toward the minimum", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "תל אביב", delivery_day: "חמישי", delivery_fee: 40 },
+          // no delivery_fee key at all → inherits 25
+          { id: 2, city: "ירושלים", delivery_day: "חמישי" },
+        ]}
+        pickup={false}
+        producer={withCost(25, null)}
+      />,
+    );
+    // 25 is the minimum even though no AREA declares it.
+    expect(feeLine()).toHaveTextContent("משלוח מ-25₪");
+    expect(areaFees()).toEqual(["משלוח: 40₪", "משלוח: 25₪"]);
+  });
+
+  it("MEH-1772 (3/6) uniform fees → rendering is unchanged: no per-row fee, no 'מ-'", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "תל אביב", min_order: 100, delivery_day: "חמישי", delivery_fee: 30 },
+          { id: 2, city: "חיפה", min_order: 120, delivery_day: "חמישי", delivery_fee: 30 },
+        ]}
+        pickup={false}
+        producer={withCost(30, null)}
+      />,
+    );
+    // One distinct effective value → the pre-ticket flat line.
+    expect(feeLine()).toHaveTextContent("משלוח: 30₪");
+    expect(feeLine()).not.toHaveTextContent("מ-");
+    // And NOT one fee per row — that would restate the top line N times.
+    expect(areaFees()).toEqual([]);
+    // The rows still carry what they always carried — one "מינימום" per row.
+    expect(screen.getAllByText("מינימום")).toHaveLength(2);
+  });
+
+  it("MEH-1772 (4/6) an area override of 0 renders 'משלוח חינם' on that row — not an absent fee", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "עתלית", delivery_day: "שישי", delivery_fee: 0 },
+          { id: 2, city: "חיפה", delivery_day: "שישי", delivery_fee: 30 },
+        ]}
+        pickup={false}
+        producer={withCost(30, null)}
+      />,
+    );
+    // 0 is a VALUE. A truthiness gate would drop this row's fee entirely and
+    // the free city would look identical to a city with no stated cost.
+    expect(areaFees()).toEqual(["משלוח חינם", "משלוח: 30₪"]);
+  });
+
+  it("MEH-1772 (5/6) minimum of 0 under variance says 'משלוח מ-0₪', NOT 'משלוח חינם'", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "עתלית", delivery_day: "שישי", delivery_fee: 0 },
+          { id: 2, city: "חיפה", delivery_day: "שישי", delivery_fee: 30 },
+        ]}
+        pickup={false}
+        producer={withCost(30, null)}
+      />,
+    );
+    // The MEH-1577 fee===0 shortcut must be suppressed here: some areas cost
+    // money, so a blanket "delivery is free" is false. This is the single
+    // most consequential line in the feature — it is the only place where the
+    // two 0-meanings (this area is free / the cheapest area is free) collide.
+    expect(feeLine()).toHaveTextContent("משלוח מ-0₪");
+    expect(feeLine()).not.toHaveTextContent("משלוח חינם");
+  });
+
+  it("MEH-1772 (6/6) varying fees keep the editorial rows — the compact city list must not swallow them", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          // No min_order, no delivery_day → pre-ticket this collapsed to the
+          // MEH-1435 compact name-only list, which has nowhere to put a fee.
+          { id: 1, city: "תל אביב", delivery_fee: 20 },
+          { id: 2, city: "חיפה", delivery_fee: 40 },
+        ]}
+        pickup={false}
+        producer={withCost(null, null)}
+      />,
+    );
+    expect(feeLine()).toHaveTextContent("משלוח מ-20₪");
+    // Without the !feeVaries guard on `bare`, this is [] — the top line
+    // announces variance the page then refuses to show.
+    expect(areaFees()).toEqual(["משלוח: 20₪", "משלוח: 40₪"]);
   });
 });

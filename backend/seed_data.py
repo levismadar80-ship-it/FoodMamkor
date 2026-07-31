@@ -87,9 +87,30 @@ PRODUCERS = [
             {"name": "לאבנה ביתית", "price_range": "35₪/יח'"},
             {"name": "חמאה טבעית", "price_range": "40₪/יח'"},
         ],
+        # MEH-1577: business-wide default rate — the value ירושלים below
+        # inherits because it states no override of its own.
+        "delivery_fee": 35,
+        # MEH-1772 chunk 3: the per-area override demo. Three rows on purpose,
+        # one per branch of the display logic, so the variance path is
+        # reachable in preview without hand-editing the DB:
+        #   תל אביב  → explicit 20 (override, cheaper than the default)
+        #   חיפה     → explicit 40 (override, dearer than the default)
+        #   ירושלים  → no key    (NULL → inherits the 35 above)
+        # Effective set {20, 40, 35} has 2+ distinct values, so the public page
+        # renders "משלוח מ-20₪" on the top line and a fee on every area row.
         "delivery_areas": [
-            {"city": "תל אביב", "min_order": 300, "delivery_day": "חמישי"},
-            {"city": "חיפה", "min_order": 250, "delivery_day": "רביעי"},
+            {
+                "city": "תל אביב",
+                "min_order": 300,
+                "delivery_day": "חמישי",
+                "delivery_fee": 20,
+            },
+            {
+                "city": "חיפה",
+                "min_order": 250,
+                "delivery_day": "רביעי",
+                "delivery_fee": 40,
+            },
             {"city": "ירושלים", "min_order": 300, "delivery_day": "חמישי"},
         ],
     },
@@ -349,6 +370,9 @@ def seed():
                 slug=p_data.get("slug"),
                 top_product_name=p_data.get("top_product_name"),
                 starting_price_label=p_data.get("starting_price_label"),
+                # MEH-1772 chunk 3: .get() so the producers that state no rate
+                # keep NULL ("cost not stated") rather than becoming 0 ("free").
+                delivery_fee=p_data.get("delivery_fee"),
                 status="approved",
                 # MEH-766 ch3: seed no longer sets is_verified (column default False).
             )
@@ -374,6 +398,10 @@ def seed():
                         city=da["city"],
                         min_order=da["min_order"],
                         delivery_day=da["delivery_day"],
+                        # MEH-1772 chunk 3: .get() — a row without the key
+                        # inherits the producer-level rate (NULL), which is
+                        # every seeded row except the two demo overrides.
+                        delivery_fee=da.get("delivery_fee"),
                     )
                 )
 
