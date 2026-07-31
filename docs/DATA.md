@@ -175,7 +175,19 @@ products       (id, producer_id FK, name, description,
                 is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293/MEH-479: same
                 is_vegetarian Boolean NOT NULL DEFAULT FALSE,    -- MEH-1438: 4th dietary axis. ?vegetarian filter matches is_vegetarian OR is_vegan (a vegan product is vegetarian by definition); migration c5d9f3a1b2e8 seeded TRUE for existing vegan rows
                 is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE (predicate extended with is_vegetarian in MEH-1438)
-delivery_areas (id, producer_id FK, city, min_order int, delivery_day)
+delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
+                delivery_fee int nullable)
+  -- MEH-1772: per-area OVERRIDE of producers.delivery_fee (a4f7c2e91b58).
+  -- NULL = no override → inherit the business-level fee; 0 = "משלוח חינם" to
+  -- THIS city, distinct from NULL. INTEGER to match both min_order above and
+  -- the producer-level column it overrides — a Decimal/int fork would
+  -- serialize two JSON shapes for the same rendered "₪".
+  -- The fallback resolves CLIENT-SIDE, on purpose: DeliveryAreaOut does not
+  -- coalesce (schemas.py:849-855), because an already-resolved value cannot
+  -- distinguish "overrides with the same number" from "inherits", and that
+  -- distinction is exactly what the "משלוח מ-X₪" variance line consumes.
+  -- App-validated on DeliveryAreaCreate only — no DB CHECK, same reasoning as
+  -- the producer-level pair above (bad payload → clean 422, not a 500).
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
 producer_followers (
