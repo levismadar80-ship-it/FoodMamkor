@@ -3,6 +3,36 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 (ערב) — MEH-1797 + MEH-1801: הכללת ה-caveat של `list_branches`, ושתי עובדות ריפו שדווחו שגוי
+
+**מוזג:** PR #2462 (MEH-1797, `CLAUDE.md:68`) + PR של MEH-1801 (התיעוד הזה). **docs-only, אפס קוד.**
+
+### הכלל עצמו — מה השתנה ולמה
+
+`CLAUDE.md:68` תואר סביב **כלי אחד** (`list_branches`) עם הערת אגב על השאר. עכשיו: **"Any paginated listing is evidence of PRESENCE, never of ABSENCE."** שלושה שינויים מהותיים — **`check runs` נוספו במפורש** (הכיסוי שנעדר), **התרופה בחיוב** (*re-fetch the FULL set in ONE window; never page with varying window sizes*, או להצהיר על הטענה כלא-מאומתת), ו**"X isn't reporting" / "waiting on a gate"** נוספו לפעולות האסורות על סמך היעדר. `git ls-remote` ירד למקרה הענפים בלבד — כי הוא **לא היה עוזר ל-check runs**, שהם המקרה שהוליד את הכרטיס. זה ממצא של ה-adversarial review המקומי ששינה את הדיף.
+
+**המקור:** `CI gate` דווח כ"not reporting" בזמן ש**הסתיים ב-16:11:01**; חלונות `perPage` לא-עקביים חתכו מעליו. **המחיר היה המתנה מבוזבזת, לא merge שגוי** — נאמר בכלל כדי לא לנפח את התקדים.
+
+### המחלקה — זו הנקודה, לא הכלל
+
+*שאילתה שהתשובה הבטוחה-נשמעת שלה היא artifact של האופן שבו נשאלה.* **שלושה מופעים ב-session אחד:** ה-`CI gate` הזה · ה-probe ב-`addInitScript` שדיווח אפסים נקיים כי `document.documentElement` הוא `null` שם, `observe()` זרק וה-sampler מת בשקט · וייחוס ה-anomaly ל-capture harness במקום להסביר אותו (MEH-1771 → MEH-1792). **לפני שמאמינים לשלילה — לשאול מה השאילתה לא יכלה לראות.**
+
+### שתי עובדות ריפו שדווחתי עליהן שגוי — תיקון
+
+1. **`AGENTS.md` הוא symlink ל-`CLAUDE.md`** (`lrwxrwxrwx … AGENTS.md -> CLAUDE.md`, MEH-490). דיווחתי שהם שני קבצים אמיתיים ללא guard שאוכף מראה, וסימנתי drift כסיכון שדורש עריכה כפולה. **שגוי — המראה מכנית, אין סיכון, ולעולם לא עורכים `AGENTS.md`.** **אף מסמך בריפו לא נשא את הטענה השגויה** — נבדק **בחיפוש ולא בהנחה**; כל אזכור מנגנוני קיים כבר אומר symlink. מה שכן אפשר את הקריאה: `CLAUDE.md:24` אמר `"AGENTS.md mirrors this file"`, ו**"mirrors" נקרא כ"עותק מסונכרן"**. השורה חוזקה במקום.
+2. **`CLAUDE.md` עומד על 76/80 שורות.** ארבע שורות headroom. MEH-1797 נכנס בעלות אפס **רק כי הרחיב שורה ארוכה קיימת במקום**. תועד ב-`## How to update this file` — המקום שבו הכותב הבא נתקל בו — עם ההוראה **למדוד ב-`wc -l`, לא מהזיכרון**, ושכלל **חדש** דורש שורה משלו ולכן הולך ל-`.claude/rules/`. **העלאת התקרה אינה המהלך** (הוראת הקובץ עצמו).
+
+### CI — נפילה אחת, ולא באשמת הדיף
+
+`CI gate` האדים כי `Repo guards` דווח `cancelled` וה-aggregator ממפה `cancelled → FAIL`. ה-job **לא הגיע לאף guard** — הוא נתקע בתוך `actions/checkout`: `git fetch --depth=1` ב-16:50:29, `##[error]The operation was canceled` ב-16:53:27. תשתית, לא קוד. **הפתרון היה `rerun_failed_jobs`** — לא commit ריק ולא עריכת metadata; כלל 30 אוסר **לנטרל** חסם, ו-rerun עושה את ההפך: גורם ל-guard לרוץ באמת. הריצה השנייה: `9 guard(s) ran, 1 warned` בלוג — כלומר ירוק **מוכח**, לא ירוק-מדילוג.
+
+### מה פתוח מהבatch הזה
+
+- **`permissions-patch-guard` = WARN**, שלושת פריטי MEH-1779 (Sapir-only). **הופך לחוסם-מיזוג ב-2026-08-07.** לא קשור לדיפים האלה, אבל השעון רץ.
+- **MEH-1799** (מ-MEH-1791) עדיין פתוח.
+
+---
+
 ## 2026-07-31 (ערב) — MEH-1791: הכרטיס ביקש regen שכבר לא היה צריך; מה שחסר היה מעבר סקירה שני
 
 **מוזג:** PR #2461 (`c93fc792`) — docs-only. **נפתח:** MEH-1799 (P2). **אף baseline לא נגע.**
