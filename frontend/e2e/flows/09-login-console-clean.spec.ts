@@ -56,6 +56,54 @@ const SKIP_REASON =
   "NEXT_PUBLIC_GOOGLE_CLIENT_ID not set in the build env — the GSI script never loaded, " +
   "so this assertion would pass on an empty universe rather than because the code is correct (MEH-1778).";
 
+/**
+ * MEH-1784 — the POSITIVE half of the assertion.
+ *
+ * The absence of the double-init warning is not success on its own. A guard
+ * that stops the second initialize() by returning early ALSO stops the second
+ * mount's renderButton(), and the warning disappears because the button was
+ * never drawn. That state is strictly worse than the bug — silent instead of
+ * noisy — and it satisfies every negative assertion in this file.
+ *
+ * So every run that asserts "no warning" must also assert "a live button is
+ * present", in the SAME run. Reported here as a structured object rather than
+ * a bare boolean: when this fails on CI the message has to say what WAS in the
+ * container, because GSI's rendered markup is Google's and can drift.
+ *
+ * Deliberately NOT mocked. e2e/CLAUDE.md forbids mocks in flow specs
+ * (MEH-417); this reads the real GSI-rendered DOM. Proving that a CLICK
+ * reaches the right callback cannot be done against real Google in CI — that
+ * half lives in __tests__/use-google-sign-in.test.jsx, where stubbing the
+ * third-party SDK is legitimate.
+ */
+async function gsiButtonState(page: import("@playwright/test").Page) {
+  return page.evaluate(() => {
+    // GSI renders into whatever element renderButton() was handed. Rather than
+    // guess Google's class names — which are obfuscated and version-dependent —
+    // look for the artifacts it is documented to produce, then measure the box.
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        'iframe[src*="accounts.google.com"], div[role="button"], [aria-labelledby]',
+      ),
+    );
+    const live = candidates.filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+    return {
+      candidateCount: candidates.length,
+      liveCount: live.length,
+      // Diagnostics for a failing run — never asserted on, only printed.
+      sample: live.slice(0, 3).map((el) => ({
+        tag: el.tagName.toLowerCase(),
+        role: el.getAttribute("role"),
+        w: Math.round(el.getBoundingClientRect().width),
+        h: Math.round(el.getBoundingClientRect().height),
+      })),
+    };
+  });
+}
+
 test.describe("Login page console clean (MEH-274)", () => {
   test("no producer OAuth call on page load", async ({ page }) => {
     const producerOAuthCalls: string[] = [];
@@ -104,6 +152,23 @@ test.describe("Login page console clean (MEH-274)", () => {
       .click();
     await page.waitForURL(/\/login/, { timeout: 15_000 });
     await page.waitForTimeout(2000);
+
+    // MEH-1784 step א — POSITIVE assertion, evaluated BEFORE the warning
+    // assertion and active in every run of this test.
+    //
+    // Order is deliberate. If the button is missing, the warning being absent
+    // is meaningless, and reporting "no double-init" first would describe a
+    // dead page as a pass. This is the same reasoning as the negative controls
+    // in scripts/checks/permissions-patch-guard.sh: the check that can
+    // invalidate the other one runs first.
+    const afterNav = await gsiButtonState(page);
+    expect(
+      afterNav.liveCount,
+      "No live GSI button on /login after client-side navigation from /register. " +
+        "A missing button makes the double-init assertion below vacuous: silencing the " +
+        "warning by never drawing the second button is a REGRESSION, not a fix (MEH-1784). " +
+        `Observed: ${JSON.stringify(afterNav)}`,
+    ).toBeGreaterThan(0);
 
     expect(
       gsiWarnings,
