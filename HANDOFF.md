@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 — MEH-1770 for-businesses FAQ replaced (8 → 10 Q&As, 5 sections) — PR #2431 (merged)
+
+- **Shipped:** the `/about/for-businesses` FAQ set is now the 10 research-backed Q&As in the locked order, `he.json` + `en.json`. Page heading, eyebrow, `meta_description`, `og_*`, showcase, guides link and both CTAs are byte-identical — the diff is FAQ keys, the `CATEGORIES` array, and one new category key.
+- **8 → 10 was not a string swap, and this is the part worth carrying forward.** The page groups the FAQ into category sections and renders them in array order (`page.js:154-183`), so display order is the concatenation of blocks — which means the locked Q1→Q10 order forces every section to hold a **contiguous run**. Grouping the new set by meaning needs **five** runs, not four: Q10 lands after Q9, and `אמון במהמקור` (its natural home by subject) is already spent on Q7/Q8. With exactly four headings, at least one question is necessarily mis-filed. A fifth heading `ההבדל והאנשים` (Q10 only) was approved; the four existing headings stayed byte-identical and Q9 stayed under `זמן ומאמץ`.
+- **Register check on the new heading was the load-bearing gate, and it rejected the first candidate.** All four existing headings are 2-word nominal phrases (`כסף וערך` 69.39px · `שליטה ועמדה` 102.11px · `אמון במהמקור` 106.48px · `זמן ומאמץ` 75.34px). The initially proposed `במה זה שונה — ומי מאחורי זה` is a 6-word interrogative and duplicates Q10's own text sitting directly beneath it. `ההבדל והאנשים` measures **119.77px in a 343px box** at 375×812 — one line, 35% of the width. Asserted mechanically (`Range.getClientRects().length === 1`) in `frontend/e2e/qa-meh1770-faq.mjs`, not judged by eye.
+- **Q9 corrected — the locked copy carried a factually wrong claim.** "טופס פשוט בן 3 שלבים" against `RegisterProducerClient.jsx:29` = `{ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5}` — **four input steps** for a new business owner, who is the page's audience. Now **"טופס קצר"**: no number, so the copy does not break on the next wizard change. "עד 3 ימי עסקים" is verified and stayed (MEH-1347).
+
+### 🚨 Open sibling — a live contradiction this PR created. No Linear ticket (quota full, 29/07).
+
+**`backend/app/routers/chat.py:95`** — the chatbot's `SYSTEM_PROMPT` still says **"נרשמים דרך טופס פשוט בן 3 שלבים"**.
+
+Before this PR both surfaces were wrong the *same* way; after it they **disagree**. A reader who asks the chatbot after reading the FAQ gets two different answers about the same form. This is **accepted-by-decision, not an oversight** — but it is live in production copy and it is worse than the bug it replaced, because a contradiction is more corrosive to trust than a shared error.
+
+**What the fix needs:**
+- `grep "3 שלבים"` across the **whole repo**, not just `frontend/messages/**`.
+- `chat.py:95` is the hard case: **hardcoded Hebrew inside a backend system prompt**, structurally invisible to any sweep over message files or any i18n tool. That is the reason this class survives — the string is not where copy lives.
+- Also check the registration-success screen.
+- Prefer removing the number over correcting it, per the Q9 reasoning above: a corrected number is a fresh hostage to the next wizard change.
+
+### Two process notes
+
+- **This was a duplicate dispatch (rule 28).** A prior session had already completed the work and opened PR #2431; this session re-derived the same ten key names independently and came close to pushing a competing branch. The single substantive divergence was Q9 — this session held the verbatim `3 שלבים` from the ticket, which is the wrong one. Caught only because the push was rejected by a non-fast-forward. **Rule 1's session-start audit is what should have caught it, before any file was read.**
+- **`vitest` and `Playwright E2E` never reported before auto-merge fired.** Both required gates (*CI gate* is not among them) were green, so the merge was legitimate, but `Frontend unit tests` ran 15+ minutes and was never observed completing. `Frontend build`, `Env drift`, `AI artifact scan`, `Deploy gate`, `Repo guards`, lint, tsc and Knip were all confirmed green on `678fc7ed`. If vitest routinely takes that long it is worth a look on its own.
+- **`Env drift` was reddened by this session and fixed in-branch** (`678fc7ed`): the QA harness read `QA_BASE`/`QA_CHROME`, and `scripts/check_env_drift.sh:65` fails any frontend `process.env` name absent from `.env.example`. Made constants rather than documented — regression rule 8 wants new env vars confirmed first, and a throwaway harness should not widen the env surface.
+
 ## 2026-07-31 — MEH-1782 template 06 stops prescribing the combination rule 31 blocks (docs-only)
 
 - **Root cause:** template 06's canonical Definition of Done required `CHANGELOG עודכן` + `HANDOFF.md עודכן` with no distinction by diff type, so **every ticket written from the template carried an instruction that `changelog-branch-guard.sh` reds** once the PR contains code — the ticket prescribed the combination that blocks the merge it authorises. Proven on MEH-1771, where CC had to split by hand under the Truth Hierarchy.
