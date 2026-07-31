@@ -61,6 +61,30 @@ Three instances in one session, all the same shape: **a mechanism reports green 
 - **Two sessions ran concurrently on 29–31/07**, which rule 1's single-session audit exists to prevent. The other session's #2431 was a duplicate dispatch of work this session nearly re-did; it was caught by a non-fast-forward rejection, not by the audit.
 - **CC's GitHub App *does* hold `actions: write`.** `vrt-update.yml:15` claims the opposite ("the GitHub MCP integration in CC sessions does not have it"). It was tested rather than believed: two `workflow_dispatch` calls and one `rerun_workflow_run` all succeeded. That comment is stale and misleads the next reader.
 - **A `cancelled` `pr-checks` run does not self-heal.** On #2448 there was exactly one such run and no newer one coming, so waiting per rule 21's superseded-run pattern would have waited forever. Re-run it via the API — never a no-op commit (rule 30).
+## 2026-07-31 — MEH-1786 item ג: the chatbot stopped contradicting the FAQ — PR #2452 (merged)
+
+- **Shipped:** the three live strings that still promised a 3-step registration form now say "טופס קצר" / "a short form" — `backend/app/routers/chat.py:95` (hardcoded Hebrew in `SYSTEM_PROMPT`), `he.json` `chat.answers.register`, `en.json` `chat.answers.register`. Clause-only swaps: emoji, line breaks, the free-of-charge clause and **"עד 3 ימי עסקים"** are byte-identical; the diff is **one line per file**.
+- **Why it mattered more than the original bug.** Before MEH-1770 the FAQ and the chatbot were wrong *identically*. MEH-1770 fixed the page and did not sweep the repo, so afterwards they **contradicted** each other — a reader who asked the bot after reading the page got two different answers about one form. A shared error is survivable; a contradiction corrodes trust in both surfaces.
+- **The number was removed, not corrected to 4** — consistent with the Q9 decision. `RegisterProducerClient.jsx:29` is `{ACCOUNT, DETAILS, CATEGORY, STORY, CONFIRM}`, so a new business owner walks four input steps; "4" is accurate today and brittle tomorrow, and MEH-1768 is already queued against the same wizard.
+- **Rule established — where a step count is allowed to appear.** `he.json` `process.steps.lead` ("ארבעה שלבים, אדם אחד מהצד השני") was deliberately **not** touched. **The page that walks the reader through the steps names the count; a surface that merely mentions the form does not.** `/about/process` is the only page that describes the journey, and its number is correct against the code. Anyone doing the next sweep should leave it alone.
+- **⚠️ Correction to this file's MEH-1770 entry above.** It says the string was *"hardcoded Hebrew inside a backend system prompt, invisible to any sweep over message files"*. **That is wrong.** Of the three live hits, **two were in `frontend/messages/*.json`** (`chat.answers.register`, he + en) and only `chat.py:95` was hardcoded. A sweep over message files would have caught the majority. The lesson stands (a backend system prompt is invisible to i18n tooling) but the claim as written overstated it, and a future reader planning a copy sweep would have skipped the message files on the strength of it.
+- **Verify:** `pytest` **259 passed / 4 skipped** (local Postgres — see the UTF8/template0 note below) · `npm run build` green · ICU parity clean · `run-all.sh` 8/8 · CI on the merged head green across `Frontend build`, `AI artifact scan`, `Backend lint`, `Frontend lint`, `API contract audit`, `Deploy gate`, mypy/tsc/Knip. `git grep "3 שלבים"` returns **zero live-code hits** — only docs, history and `design-reference/**` mockups.
+- **`git grep "3-step"` is NOT empty, and that is expected.** Remaining hits are `docs/CHANGELOG.md` history, `docs/DESIGN-GAP-MATRIX.md`, `docs/templates/03-…`, `.claude/rules/security.md`, a skill eval fixture, and an accurate code *comment* at `RegisterProducerClient.jsx:561`. No user-facing copy carries it. Don't "finish the job" by editing those.
+- **Item ב (array order dictating content organisation) was not touched and remains the only open part of MEH-1786.**
+
+### 🧪 QA-harness rule — kill the port first, and verify the build against the render
+
+**Before any Playwright capture run: kill whatever is on the target port, then confirm the running server is serving *this* build.**
+
+A `next start` left over from an earlier task was still holding port 3000. The new server logged `errno: -98` (EADDRINUSE) and died; `curl` returned **200** from the stale process, so the harness looked perfectly healthy while photographing **a previous task's output**. The first MEH-1786 capture therefore "proved" the old `3 שלבים` string was still live *after* the fix had already been applied correctly.
+
+This is the same class as the stale-artifact rule in `.claude/rules/testing.md`: an artifact that is credible but not current, with no visual tell. A screenshot cannot distinguish "the change didn't work" from "you photographed the wrong server."
+
+**What catches it:**
+- `kill` the port before starting, and check the new server's log for `EADDRINUSE` rather than trusting a `200` from `curl`.
+- Cross-check the **source** and the **build output** against what rendered. Here: `he.json` on disk said `טופס קצר`, `grep` found the old string nowhere in `.next`, but the browser showed the old text — that three-way disagreement is what exposed it.
+- A `200` proves *something* is listening. It proves nothing about *what*.
+
 ## 2026-07-31 — MEH-1792 E2E flake closed + MEH-1789 docs backfill (PRs #2454, this one)
 
 - **MEH-1792 (merged, PR #2454, squash `ce8f02e2`).** `27-delivery-day-discoverability.spec.ts` was flaking and poisoning the E2E signal on unrelated PRs. Scoped every lookup to `#main-content` (`layout.js:229`) and added a `toHaveCount(1)` settle gate. Verified on the PR's own run: **`flaky=0`, down from `flaky=1`**, all three specs green first-attempt.

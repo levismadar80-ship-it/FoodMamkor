@@ -22,10 +22,19 @@
  *            for rows with no day.
  *   flat   — no row carries a day at all → plain city ↔ minimum rows.
  *
- * Row shape is preserved from the input ({ id, city, min_order, delivery_day }),
- * original order kept; day groups are ordered by first appearance.
+ * Row shape is preserved from the input
+ * ({ id, city, min_order, delivery_day, delivery_fee }), original order kept;
+ * day groups are ordered by first appearance.
  *
- * @param {Array<{id?: any, city?: string, min_order?: number, delivery_day?: string}>} areas
+ * ⚠️ The map below is an EXPLICIT WHITELIST, not a spread — every field a row
+ * needs downstream must be named here or it is silently dropped on the way to
+ * DeliveryBlock. No error, no warning: the column exists in the API payload and
+ * simply never arrives. `delivery_fee` (MEH-1772) spent two chunks in exactly
+ * that state — DB column and serializer both shipped, UI still saw nothing.
+ * When adding a delivery_areas column, add it here in the same PR; the
+ * exact-shape assertion in deliveryGroups.test.js is what reds if you don't.
+ *
+ * @param {Array<{id?: any, city?: string, min_order?: number, delivery_day?: string, delivery_fee?: number}>} areas
  */
 export function groupDeliveryAreas(areas = []) {
   const rows = areas.map((a) => ({
@@ -33,6 +42,9 @@ export function groupDeliveryAreas(areas = []) {
     city: a.city,
     min_order: a.min_order,
     delivery_day: a.delivery_day || null,
+    // MEH-1794: `?? null` and never `|| null` — 0 is a real fee ("משלוח חינם"
+    // to this area) and `||` would forward it as "no override, inherit".
+    delivery_fee: a.delivery_fee ?? null,
   }));
 
   const missing = rows.filter((r) => !r.delivery_day);
