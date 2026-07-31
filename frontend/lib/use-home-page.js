@@ -1,4 +1,4 @@
-/* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, security/detect-object-injection, id-length */
+/* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, id-length */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -13,6 +13,13 @@ import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { getUserLocation, setUserLocation } from "@/lib/user-location";
 import { showToast } from "@/lib/toast";
 import { buildChipParams } from "@/lib/producer-filters";
+// MEH-1774: attribute chips deep-link to /producers instead of filtering here.
+// The LOCALE-AWARE router is required, not the next/navigation one imported
+// above: under localePrefix "as-needed" a bare push("/producers?…") drops an
+// /en session onto the default locale — the class MEH-1157 closed on the
+// dashboard login redirect.
+import { useRouter as useLocaleRouter } from "@/i18n/navigation";
+import { trackEvent } from "@/lib/analytics";
 import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
@@ -49,9 +56,11 @@ const GEO_RADIUS_KM_RETRY = 30;
  *   - 13 useState calls in declaration order
  *   - 7 useEffect blocks in declaration order
  *   - handlers (updateURL, loadProducers, handleWhatsAppClick,
- *     scrollToProducers, toggleChip, handleNearMe, handleCitySelected)
+ *     scrollToProducers, navigateToChip, handleNearMe, handleCitySelected)
  *     close over the same state via the same reference identities they
- *     did before extraction. handleCategoryCardClick was removed in
+ *     did before extraction. MEH-1774 renamed toggleChip → navigateToChip:
+ *     the attribute chips stopped filtering in place and became deep-links
+ *     to /producers. handleCategoryCardClick was removed in
  *     MEH-1080 — category cards are real links to /producers?category=
  *     now; the ?category= deep-link path below stays for old shared URLs.
  *   - 6 derived values (visibleProducers, hasMore, categoryCards,
@@ -67,6 +76,8 @@ export function useHomePage() {
   // MEH-1288: real navigation to a random producer page (a page change, unlike
   // the MEH-1293 same-URL History-API mirroring below — push is correct here).
   const router = useRouter();
+  // MEH-1774: locale-preserving push for the chip deep-link (see import note).
+  const localeRouter = useLocaleRouter();
   // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
   // old flat keys ("hero_title"). Wave 2 migrates those call sites and
   // this wrap is removed.
@@ -392,22 +403,30 @@ export function useHomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const toggleChip = (key) => {
-    // MEH-1282: any chip toggle is a fresh filter action — clear the geo-empty notice.
+  // MEH-1774: an attribute chip is a DEEP-LINK, not an in-place filter. One
+  // canonical filtering surface — /producers owns the attribute axis (Baymard:
+  // attribute filtering is a product-list capability; home is the entry layer),
+  // so a tap navigates there with the filter already applied instead of
+  // filtering the home grid. Same shape MEH-1080 gave the category cards.
+  //
+  // The param is built HERE and NOT via buildChipParams, deliberately:
+  // buildChipParams emits a boolean `true` (producer-filters.js:38) while
+  // ProducersClient.initChipsFromParams tests `get(chip.key) === "1"`
+  // (ProducersClient.jsx:53). Reusing it would produce `?vegan=true`, and the
+  // chip would stay dark on arrival with no error anywhere — a silent failure.
+  //
+  // No key-mapping table is needed and one would be dead code: initChipsFromParams
+  // iterates the SAME CHIPS_CONFIG array this row renders from, so `?<chip.key>=1`
+  // round-trips for all 7 keys by construction — `has_delivery` included. The
+  // `?delivery=1` short name is home's OWN serializer (updateURL below) and is
+  // deliberately untouched here: home's reading of attribute params is out of
+  // scope for this ticket (MEH-1083).
+  const navigateToChip = (key) => {
+    // MEH-1282: still a filter action — clear the geo-empty notice before leaving,
+    // so a back-navigation doesn't land on a stale near-me notice.
     setGeoEmptyNotice(false);
-    const next = { ...chips, [key]: !chips[key] };
-    setChips(next);
-    const params = buildChipParams(next);
-    if (filters.category) params.category = filters.category;
-    if (filters.delivery_city) params.delivery_city = filters.delivery_city;
-    // MEH-1645: keep the day refinement through chip toggles (city kept above).
-    if (filters.delivery_city && filters.delivery_day) params.delivery_day = filters.delivery_day;
-    const newFilters = key === "has_delivery"
-      ? { ...filters, has_delivery: next.has_delivery }
-      : filters;
-    if (key === "has_delivery") setFilters(newFilters);
-    updateURL(newFilters, next);
-    loadProducers(params);
+    trackEvent("home_chip_navigate", { chip: key });
+    localeRouter.push(`/producers?${key}=1`);
   };
 
   // MEH-1269: geographic listing fetch with a one-shot empty-guard. Runs the
@@ -707,7 +726,7 @@ export function useHomePage() {
     handleClearLocation,
     handleWhatsAppClick,
     scrollToProducers,
-    toggleChip,
+    navigateToChip,
     handleClearCategory,
     handleLoadMore,
     handleAdvanceFromStep0,

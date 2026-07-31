@@ -121,10 +121,17 @@ def _sync_delivery_areas(
 
 def _apply_delivery_rows(db: Session, producer: Producer, rows: list[dict]):
     """MEH-1644: replace all delivery areas with structured rows
-    (city · min_order · delivery_day). Same delete+insert semantics as
-    _apply_delivery_cities; delivery_day arrives whitelist-validated by
-    DeliveryAreaCreate (DeliveryDayField — 422 outside the canonical
-    vocabulary, None = "בתיאום מראש")."""
+    (city · min_order · delivery_day · delivery_fee). Same delete+insert
+    semantics as _apply_delivery_cities; delivery_day arrives
+    whitelist-validated by DeliveryAreaCreate (DeliveryDayField — 422 outside
+    the canonical vocabulary, None = "בתיאום מראש").
+
+    MEH-1772: delivery_fee is the per-area override of producers.delivery_fee.
+    `row.get("delivery_fee")` returns None both when the key is absent and when
+    it is explicitly null, and both mean the same thing here — inherit — so the
+    two cases do not need distinguishing. A 0 survives untouched (it is
+    "משלוח חינם", not absence), which is why this reads the value rather than
+    testing it for truthiness."""
     db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
     for row in rows:
         city = (row.get("city") or "").strip()
@@ -136,6 +143,7 @@ def _apply_delivery_rows(db: Session, producer: Producer, rows: list[dict]):
                 city=city,
                 min_order=row.get("min_order"),
                 delivery_day=row.get("delivery_day"),
+                delivery_fee=row.get("delivery_fee"),
             )
         )
 
