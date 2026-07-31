@@ -14,6 +14,10 @@ import api from "@/lib/api";
 
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// MEH-1774: use-home-page now imports the locale-aware router for the chip
+// deep-link. Stub it so next-intl's ESM createNavigation never loads under vitest.
+vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k),
 }));
