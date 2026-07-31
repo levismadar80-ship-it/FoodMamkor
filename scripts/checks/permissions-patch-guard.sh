@@ -109,38 +109,46 @@ fetch_exit() {
 }
 
 # --- check 1: eslint.config.mjs reaches ask, and the hook still blocks ------
-check_ask_mode() {
+# INVERTED under MEH-1803. This check used to assert that eslint.config.mjs
+# reached an ASK. That requirement was WITHDRAWN: the ask-tier shipped, was
+# live-tested, and did not gate — the session permission mode approves file
+# edits before hooks are consulted, so the ask was never reached and the file
+# went from blocked to freely editable. The desired state is now the ORIGINAL
+# one: a full block. This is no longer manual-delivery tracking (that is items
+# 2 and 3 only); it is an INVARIANT, and its failure is a regression.
+check_eslint_blocked() {
   if [ ! -r "$PLC_HOOK" ]; then
-    report "$PLC_HOOK: not readable — cannot verify item 1."
+    report "$PLC_HOOK: not readable — cannot verify the eslint-config block."
     return
   fi
 
   local target_rc control_rc
   target_rc=$(hook_exit "$PLC_HOOK" "$(edit_payload "frontend/eslint.config.mjs")")
-  # CONTROL PATH CHOICE. It must be a path THIS HOOK owns — i.e. one listed in
-  # its own PROTECTED_FULL. The obvious-looking frontend/next.config.js is NOT:
-  # it is protected by a deny rule in settings.json, and the hook exits 0 for it
-  # by design. Using it made this control fail against a perfectly healthy hook
-  # on the guard's first run. .claude/hooks/protect-lint-config.sh is the hook's
-  # own self-protection entry (PROTECTED_FULL:25) and is the strongest available
-  # invariant: whatever else changes, the hook must never make ITSELF askable.
-  control_rc=$(hook_exit "$PLC_HOOK" "$(edit_payload ".claude/hooks/protect-lint-config.sh")")
+  # THE CONTROL FLIPS WITH THE ASSERTION, and this is the part that is easy to
+  # get wrong. The old check expected exit 0, so its control had to prove the
+  # hook still blocked SOMETHING. This one expects exit 2 — so a hook that
+  # blocked EVERYTHING would satisfy it for the worst possible reason. The
+  # control must therefore prove the opposite: an unprotected path still passes.
+  control_rc=$(hook_exit "$PLC_HOOK" "$(edit_payload "frontend/components/Footer.jsx")")
 
-  # The control comes first on purpose. If the hook has stopped blocking
-  # ANYTHING, the item-1 assertion below would pass for the worst possible
-  # reason, and reporting "item 1 applied" then would be actively misleading.
-  if [ "$control_rc" != "2" ]; then
-    report "$PLC_HOOK: NEGATIVE CONTROL FAILED — its own self-protection entry exited $control_rc, expected 2." \
-      "The hook has stopped blocking a path that must stay blocked." \
-      "Item 1 is NOT verifiable while this is true: an ask-mode pass here would be indistinguishable" \
-      "from a hook that no longer protects anything. Fix this before reading the item-1 result."
+  # Control first — if it fails, the assertion below is unreadable either way.
+  if [ "$control_rc" != "0" ]; then
+    report "$PLC_HOOK: NEGATIVE CONTROL FAILED — an unprotected path (Footer.jsx) exited $control_rc, expected 0." \
+      "The hook is blocking paths it does not own, so 'eslint.config.mjs blocks' proves nothing:" \
+      "a hook that blocks everything satisfies it. Fix this before reading the result below."
     return
   fi
 
-  if [ "$target_rc" = "2" ]; then
-    report "$PLC_HOOK: frontend/eslint.config.mjs still BLOCKS (exit 2) — item 1 not applied." \
-      "Apply section 1 of docs/guardrails/meh-1779-permissions.patch.md." \
-      "MEH-1767 stays blocked until this passes."
+  if [ "$target_rc" != "2" ]; then
+    report "REGRESSION — the ask-tier is back. See MEH-1803." \
+      "$PLC_HOOK: frontend/eslint.config.mjs exited $target_rc, expected 2 (full block)." \
+      "MEH-1779 item 1 was REVERTED because an ask does not gate: the permission mode" \
+      "approves file edits before hooks are consulted, so the path became freely editable." \
+      "Do not re-apply section 1 of docs/guardrails/meh-1779-permissions.patch.md." \
+      "To change eslint.config.mjs, write docs/guardrails/eslint.config.PROPOSED.mjs and open a PR."
+  else
+    echo "  OK — eslint.config.mjs blocks (MEH-1803 reverted the ask-tier)."
+    echo "       MEH-1767 route = PROPOSED file + PR. Independent of this guard."
   fi
 }
 
@@ -232,6 +240,33 @@ self_test() {
   # over-permissive: allows everything, including what must be refused
   printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 0\n' > "$tmp/overpermissive.sh"
 
+  # --- fixtures for the INVERTED check 1 (MEH-1803) --------------------------
+  # Without these, "eslint.config.mjs must block" is a check that has never been
+  # observed failing — and the state it must catch is precisely the one that
+  # shipped and had to be reverted. Fixtures, never the live hook: pointing this
+  # at the real file would make the test agree with whatever is on disk.
+  #
+  # reverted  — blocks the lint config, lets an unowned path through  -> clean
+  # asktier   — the MEH-1779 shape: exit 0 + ask JSON for the config  -> FLAGGED
+  # blockall  — blocks everything, incl. Footer.jsx                   -> FLAGGED
+  #             (satisfies "eslint blocks" for the worst reason; the
+  #              control is the only thing that separates it from reverted)
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'p=$(cat | sed -E "s/.*\"file_path\":\"([^\"]*)\".*/\1/")'
+    echo 'case "$p" in *eslint.config.mjs|*.eslintrc.json) exit 2 ;; esac'
+    echo 'exit 0'
+  } > "$tmp/reverted.sh"
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'p=$(cat | sed -E "s/.*\"file_path\":\"([^\"]*)\".*/\1/")'
+    echo 'case "$p" in *eslint.config.mjs)'
+    echo '  printf "{\"hookSpecificOutput\":{\"permissionDecision\":\"ask\"}}\n"; exit 0 ;;'
+    echo 'esac'
+    echo 'exit 0'
+  } > "$tmp/asktier.sh"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 2\n' > "$tmp/blockall.sh"
+
   chmod +x "$tmp"/*.sh
 
   echo "permissions-patch-guard --self-test"
@@ -253,9 +288,26 @@ self_test() {
     fi
   done
 
+  echo "  -- inverted check 1 (MEH-1803): eslint.config.mjs must BLOCK --"
+  for name in reverted:0 asktier:1 blockall:1; do
+    expected="${name##*:}"
+    name="${name%%:*}"
+    problems=0
+    enforcing=1
+    PLC_HOOK="$tmp/$name.sh" check_eslint_blocked >/dev/null 2>&1
+    rc=$([ "$problems" -eq 0 ] && echo 0 || echo 1)
+    if [ "$rc" = "$expected" ]; then
+      echo "  OK   $name -> $([ "$rc" = 0 ] && echo clean || echo flagged)"
+    else
+      echo "  FAIL $name -> expected $([ "$expected" = 0 ] && echo clean || echo flagged), got the other"
+      fails=$(( fails + 1 ))
+    fi
+  done
+
   echo
   if [ "$fails" -eq 0 ]; then
-    echo "self-test OK — the classifier separates applied / unapplied / over-permissive."
+    echo "self-test OK — webfetch: applied/unapplied/over-permissive separated;"
+    echo "               check 1: reverted clean, ask-tier FLAGGED, block-all FLAGGED."
     exit 0
   fi
   echo "self-test FAILED — $fails case(s) misclassified. Do not trust this guard's output."
@@ -284,24 +336,39 @@ else
 fi
 echo "  mode: $([ "$enforcing" -eq 1 ] && echo ENFORCING || echo WARN-ONLY) — $mode_note"
 echo
+# MEH-1803 — the limit of check 1, printed on EVERY run rather than buried in a
+# comment, because a green here was read as "the gate works" and it does not
+# mean that. Proven live on 31/07: the hook emitted its ask and exited 0, and
+# the edit went through with no prompt, because the session permission mode
+# (acceptEdits) approves file edits at an earlier stage than hooks are
+# consulted. Check 1 runs the hook in a shell; the harness is not in the loop.
+echo "  NOTE a hook check proves what the HOOK EMITS, not what the HARNESS ENFORCES."
+echo "       A hook decision other than 'deny' can be pre-empted by the session"
+echo "       permission mode and never reached. Only 'deny' is evaluated ahead"
+echo "       of the mode — which is why item 1 was reverted (MEH-1803)."
+echo "       See docs/guardrails/meh-1779-permissions.patch.md."
+echo
 
-check_ask_mode
+# Invariant first, then the two items still awaiting a manual paste.
+check_eslint_blocked
 check_workflow_deny
 check_webfetch_allowlist
 
 echo
 if [ "$problems" -eq 0 ]; then
-  echo "permissions-patch-guard OK — MEH-1779 items 1-3 are applied."
+  echo "permissions-patch-guard OK — the eslint-config block holds, items 2-3 applied."
   exit 0
 fi
 
 if [ "$enforcing" -eq 1 ]; then
-  echo "permissions-patch-guard FAILED — $problems item(s) of MEH-1779 still unapplied."
+  echo "permissions-patch-guard FAILED — $problems finding(s)."
+  echo "Manual-delivery tracking is items 2-3 only; a REGRESSION line is not a missing paste."
   echo "Source: docs/guardrails/meh-1779-permissions.patch.md"
   exit 1
 fi
 
-echo "permissions-patch-guard WARNED — $problems item(s) of MEH-1779 still unapplied."
+echo "permissions-patch-guard WARNED — $problems finding(s)."
 echo "On $ENFORCE_FROM this same output becomes a merge-blocking failure."
-echo "Source: docs/guardrails/meh-1779-permissions.patch.md — three pastes into two files."
+echo "Items 2-3 are two pastes into two files: docs/guardrails/meh-1779-permissions.patch.md."
+echo "Item 1 is NOT a paste — it is an invariant, and its failure means the ask-tier returned."
 exit 0
