@@ -157,6 +157,57 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 
 ---
 
+## A green that has two possible causes is not a signal
+
+> **A check that can be green for two opposite reasons is not a check.
+> Before trusting a green, ask what else would produce it.**
+
+The discrimination rule above asks whether an assertion goes red when the thing it guards
+breaks. This one asks the mirror question, and it is the one that keeps getting skipped:
+**when the check is green, is "the code is correct" the only explanation?** A green with two
+possible causes carries no information, and it is indistinguishable from a real pass at the
+moment you read it — which is why it survives review.
+
+The failure is not exotic. It happened **four times in a single day** (2026-07-28), across
+four different surfaces, to a session that had the discrimination rule loaded the whole time.
+
+| # | The green | What else produced it |
+|---|---|---|
+| 1 | **VRT `about` + `login` passing** for days | Webfonts were CORS-blocked (MEH-1727) in **both** the baseline capture and the PR run. Both sides were wrong *in the same way*, so the comparison matched. The fix (`35ce2619`) made the runs correct, the baselines stayed wrong, and all three specs went red **within minutes of the bug being fixed**. |
+| 2 | **`size` fallback guard passing** | The probe used `size="enormous"`, which is absent from `Object.prototype` too — so `CIRCLE_SIZES[size] \|\| …` and `Object.hasOwn(…)` behave identically on it. The assertion passed against the implementation it existed to reject. Only `constructor` / `toString` / `valueOf` / `__proto__` separate them. |
+| 3 | **`E2E gate (required)` = success** | `Playwright E2E` was `skipped`, and a skipped leg passes the aggregator. The green meant *nothing ran*, not *nothing failed*. Same mechanic as the draft-PR and docs-only cases already documented under "Required status checks", and the subject of MEH-1582. |
+| 4 | **`DashboardEmptyStateFormExclusive` passing** | Its mock producer carries no `status` field, so `notApproved` is never true and the gated branch is unreachable. It passed identically on the broken and the fixed page. The file list said the page was covered; the state matrix said otherwise. |
+
+**What they share:** in every case a *second* fault, a *skip*, or an *unreachable branch*
+supplied the green, and the reviewer read it as evidence of the first thing they thought of.
+Cases 1 and 4 are the dangerous shape — **symmetric** wrongness, where the reference and the
+subject drift together. Nothing in the output distinguishes that from agreement.
+
+**The practical test**, cheap enough to apply every time:
+
+1. Name at least one *other* world in which this check is green. If you can name one, the
+   check does not yet discriminate.
+2. For any comparison against a stored reference (VRT baseline, golden file, recorded
+   fixture, cached hash), ask whether the reference and the subject could be wrong
+   **together**. They share a generator far more often than anyone expects.
+3. Treat a green that appears the moment a *bug is fixed elsewhere* as a defect report about
+   the check, not as new breakage. Case 1 inverted: three specs went red because an unrelated
+   fix landed, which is what finally exposed years-shaped staleness in the baselines.
+
+**The inverse is worth one line, because it cost time the same day.** A *red* from an
+unvalidated probe is the same error wearing the opposite sign: a malformed `grep` reported
+every Tailwind class missing from the built CSS — including `w-16`, which is used site-wide.
+The build was fine; the probe was broken. **Validate a probe on a case whose answer you
+already know before you trust either its red or its green** — and report the retraction, since
+a withdrawn finding is evidence the probe was checked and a silent one is not.
+
+Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
+"Required status checks + docs-only merge" documents the skip-green mechanic for the
+aggregators; MEH-1582 tracks the bypass itself. Recorded under MEH-1732's pipeline-reliability
+scope — not a separate ticket.
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files. Fix every REFEREE
