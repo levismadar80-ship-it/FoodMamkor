@@ -3210,40 +3210,49 @@
       "money_value": "Money and value",
       "time_effort": "Time and effort",
       "trust": "Trust in Mehamakor",
-      "control": "Control and stance"
+      "control": "Control and stance",
+      "difference": "Difference and people"
     },
     "faq": {
       "cost": {
-        "q": "How much does it cost to sign up?",
-        "a": "Zero. You don't pay us anything — no order commission, no subscription fee. Customers reach you directly on WhatsApp or by phone, and you keep 100% of their payment."
+        "q": "How much does it cost — and what happens when you start charging?",
+        "a": "Your page is free, and there are no transaction commissions — ever. That's a founding principle, not a launch promotion: payment goes between you and your customers only. In the future we'll also offer an upgraded subscription with extra tools for anyone who wants it — but that will be entirely your choice, and the basic page will stay free, always."
       },
-      "value": {
-        "q": "What do I get out of it?",
-        "a": "Two things you didn't have before:\n\n**That people will find you on Google.** Someone searching Google for local food — finds you. Today, if you're not buying an ad budget, you're nearly invisible. With us every business gets a page that ranks in search.\n\n**A stable page that doesn't disappear.** Instagram disappears after 24 hours. WhatsApp disappears when someone isn't in the group. Your page on Mehamakor — stays. With your story, your photos, and the contact channels you choose. You can share it as a link and put it in your Instagram bio."
+      "revenue_model": {
+        "q": "If everything is free — how does Mehamakor make money?",
+        "a": "Right now? It doesn't. Mehamakor is a young project, and I'm building it because I believe real, local food deserves a home. In the future the revenue will come from the upgraded subscription — extra tools that businesses choose, willingly. Not from commissions on your transactions, and not from selling a spot at the top of the list. That's how our interest stays aligned with yours: the site succeeds only if it genuinely works for you."
       },
-      "time": {
-        "q": "How long will this take me?",
-        "a": "About 10 minutes for the initial setup. After that — you don't manage anything else with us. You keep working the way you work. If something changes — opening hours, a new product, a break — you update it with one tap, or send me a message on WhatsApp and I'll update."
+      "customer_ownership": {
+        "q": "Who gets the customers — you or me?",
+        "a": "You do. Every enquiry reaches you directly on WhatsApp (or another channel you choose). We don't stand in the middle, we don't see the payment, and your relationship with your customers stays yours — even if one day you decide to leave."
       },
-      "writing": {
-        "q": "I don't know how to write about myself. Will the page look thin?",
-        "a": "You don't have to write it alone. Tell me about your business in whatever way you usually write — WhatsApp, Instagram, however is comfortable — and I'll help phrase it. Phone photos are great, you don't need a professional photographer. If you want — we can spend 15 minutes on the phone and build it together."
+      "analytics": {
+        "q": "How will I know if this is even working for me?",
+        "a": "You get your own dashboard: how many viewed your page this week, how many tapped WhatsApp, which cities they came from, and how many saved you to their favourites. No need to guess — you can see it."
       },
-      "founder": {
-        "q": "Who's behind Mehamakor?",
-        "a": "I'm Sapir, from Zikhron Ya'akov. I built Mehamakor because I was also looking for places to buy real, local food, and it was hard — WhatsApp groups, Instagram searches. I wanted one place. I'm on my own for now, no investors, no big company. You can talk to me on WhatsApp directly and ask anything you want."
-      },
-      "leads": {
-        "q": "The customers who arrive through you — yours or mine?",
-        "a": "Yours. Completely. Customers reach out to you directly on WhatsApp or by phone — you get their details, you manage the relationship. We're not in the middle, we don't see the messages, we don't take their info. Even if Mehamakor closed tomorrow, the customers who reached you through us stay yours. It's the opposite of Wolt or Yango."
+      "repeat_customers": {
+        "q": "What makes customers come back to me?",
+        "a": "Everyone who saves you to their favourites gets an automatic update whenever you have something new — a product, an event, a recipe or a delivery area. Like a mailing list that works for you, without you having to manage it."
       },
       "visibility": {
-        "q": "I'm already on Instagram and WhatsApp — why do I need another place?",
-        "a": "Instagram only works when someone already follows you. WhatsApp groups only work when someone is already in the group. Mehamakor works even when you're not thinking about it — someone searching Google for local food finds you. It's not instead of your channels, it's in addition.\n\nAnd it matters to know — on Mehamakor there is no comparison. No prices side by side, no star ratings, no \"see 10 similar businesses\" button. Each business stands on its own. The customer sees you, not you-versus-others."
+        "q": "How do I avoid disappearing among all the businesses on the site? Is there paid promotion?",
+        "a": "There is no paid promotion — no business buys a place above you. What sets you apart on Mehamakor is your story, and we help you write it: guides, examples and personal support during your first month. And your page also shows up in Google search — an online presence even if you don't have a site of your own."
       },
-      "control": {
-        "q": "I want to decide who I work with and when.",
-        "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
+      "reviews": {
+        "q": "What happens if someone writes a hurtful review about me anonymously?",
+        "a": "They can't. On Mehamakor there are no anonymous ratings — every review appears with a real name and a real story. And if something still isn't right, write to us and we'll look into it."
+      },
+      "license": {
+        "q": "Why do you require a licence — and what if I'm still in the process?",
+        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after a cross-check against the Ministry of Health's official registry, and a kashrut badge if you have a certificate."
+      },
+      "time": {
+        "q": "How much time and effort does this take from me?",
+        "a": "Signing up is a short form, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
+      },
+      "difference": {
+        "q": "How is this different from Instagram or delivery apps — and who's behind it?",
+        "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
       }
     },
     "showcase": {
