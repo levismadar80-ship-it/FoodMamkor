@@ -41,6 +41,13 @@ const PAGE_SIZE = 8;
 export const LOAD_MORE_CAP = PAGE_SIZE * 2;
 // MEH-521: minimum approved count before showing numeric stats.
 const STATS_DISPLAY_THRESHOLD = 5;
+// MEH-1692: minimum approved count before the trust band's LEAD line stops
+// being a sentence and becomes a count ("{N} בתי עסק · כל אחד נבחר אישית").
+// Deliberately higher than STATS_DISPLAY_THRESHOLD above — that one gates the
+// quiet secondary stats line, this one decides what the band LEADS with, and a
+// low number leading is negative social proof. Two thresholds, two jobs; do not
+// collapse them.
+const TRUST_COUNT_THRESHOLD = 25;
 // MEH-1269: "קרוב אליי" geo radius (km). First pass at 15; the empty-guard
 // widens to 30 once before giving up and showing all (mirrors the MEH-970
 // never-blank philosophy on /map).
@@ -660,6 +667,20 @@ export function useHomePage() {
   const statsProducersCount = stats?.producers_count || producers.length;
   const statsCategoriesCount = stats?.categories_count || categories.length || 6;
   const showStatsCounter = statsLoaded && statsProducersCount >= STATS_DISPLAY_THRESHOLD;
+  // MEH-1692: at/above the trust threshold the band LEADS with the count, and
+  // the secondary line drops its own business count so the number is stated
+  // once rather than twice (categories + countrywide stay).
+  //
+  // Gated on the AUTHORITATIVE /stats value, not on `statsProducersCount`. That
+  // accessor falls back to `producers.length` when /stats fails — and that list
+  // is the FILTERED home feed, so under a category or city filter it counts a
+  // subset, not the directory. Tolerable for the quiet secondary line it has
+  // always fed; not tolerable for a leading claim about how many businesses
+  // exist, which is the over-claim class this ticket was opened to fix. When
+  // /stats is unavailable the band falls back to the sentence, which is true
+  // regardless of any count.
+  const showTrustCount =
+    statsLoaded && (stats?.producers_count ?? 0) >= TRUST_COUNT_THRESHOLD;
 
   // MEH-1688: `newestProducers` (last 4 by created_at) is GONE along with the
   // standalone section it fed. Recency is now a per-card fact, not a separate
@@ -712,6 +733,7 @@ export function useHomePage() {
     statsCategoriesCount,
     statsLoaded,
     showStatsCounter,
+    showTrustCount,
     featuredProducer,
     geoActive,
     cityActive,

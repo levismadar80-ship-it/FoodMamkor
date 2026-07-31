@@ -505,6 +505,203 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
   });
 });
 
+// MEH-1807: cross-step validation. Before this, producer_name / phone /
+// category_ids were checked ONLY in the submit handler, so a blank business
+// name surfaced as "יש למלא שם עסק" next to "הצטרפו" on STORY — two frames from
+// the field, with no navigation, no focus and no marking on the field itself.
+//
+// Failing-by-construction (workflow: every new guard test is shown failing, and
+// the construction has to DISCRIMINATE — the pre-1807 code must fail it):
+//  · revert the DETAILS gate to `onClick={() => setStep(STEP.CATEGORY)}` and
+//    tests 1+2 fail on `register-frame-details` being gone (the wizard advanced
+//    with an empty name). The old code could not pass them: it never blocked.
+//  · revert the submit gate to the three `setError(...)` returns and tests 4+5
+//    fail on `register-frame-details` never appearing — the old code painted a
+//    message and left `step` on STORY, which is the reported defect verbatim.
+//  · drop the `submitBounced` guard and test 6 fails: the summary would appear
+//    on a same-step block, where nobody was moved.
+// None of these assertions can be satisfied by rendering a message alone, which
+// is exactly what the pre-1807 behaviour did.
+describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
+  // Walk to DETAILS and fill everything EXCEPT the business name.
+  async function reachDetailsWithoutName() {
+    await fillAccountToDetails();
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+  }
+
+  it("blocks the DETAILS advance when the business name is empty, inline + focused", async () => {
+    await renderWizard();
+    await reachDetailsWithoutName();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+
+    // did NOT advance
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    // inline at the field, via the ui/Input error slot (MEH-602 a11y wiring)
+    const nameInput = screen.getByTestId("register-details-name");
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    const describedBy = nameInput.getAttribute("aria-describedby");
+    expect(document.getElementById(describedBy)).toHaveTextContent(
+      `${K}.validation.producer_name_required`,
+    );
+    // focus landed on the offending field
+    expect(document.activeElement).toBe(nameInput);
+  });
+
+  it("clears the inline error as soon as the field is corrected (Baymard)", async () => {
+    await renderWizard();
+    await reachDetailsWithoutName();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    const nameInput = screen.getByTestId("register-details-name");
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(nameInput, { target: { value: "העסק שלי" } });
+    expect(nameInput).not.toHaveAttribute("aria-invalid");
+    // and the advance now succeeds
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("blocks the CATEGORY advance when nothing is selected, at the selector", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    await screen.findByTestId("register-frame-category");
+    // advance with zero categories picked
+    fireEvent.click(screen.getByTestId("register-category-next"));
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-category-error")).toHaveTextContent(
+      `${K}.validation.category_required`,
+    );
+    expect(document.activeElement).toBe(
+      document.getElementById("register-category-selector"),
+    );
+    // picking one clears it and unblocks (Baymard on-change clear)
+    fireEvent.click(screen.getByTestId("pick-category"));
+    expect(screen.queryByTestId("register-category-error")).not.toBeInTheDocument();
+  });
+
+  // The reachable route to a submit bounce. With the per-step gates in place the
+  // seller cannot WALK to STORY with a blank earlier field, so the submit check
+  // is a backstop — but it is not a dead branch: `restoreDraft` merges the
+  // stored draft over the live form (RegisterProducerClient.jsx:~294) without
+  // re-running any gate, and the draft key is shared across tabs of the same
+  // origin. A second tab open on the wizard rewrites that key on its own first
+  // keystroke, so tab 1's banner — raised at mount and still on screen through
+  // STORY (`step < STEP.CONFIRM`) — restores a form the seller never typed.
+  // `seedForeignDraft` below is that other tab's write, placed at the moment it
+  // would land; seeding before render only sets up the banner, because this
+  // tab's own setAndSave overwrites the key on every keystroke.
+  const DRAFT_KEY = "producer_registration_draft";
+  const seedForeignDraft = (draft) =>
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+  it("final submit with a blanked earlier field navigates to that step, focuses it, and explains why", async () => {
+    // non-empty city → hasDraftContent() raises the banner at mount
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-frame-story")).toBeInTheDocument();
+
+    // the other tab writes; keys absent from the draft are left untouched
+    seedForeignDraft({ producer_name: "", city: "חיפה" });
+    fireEvent.click(screen.getByTestId("register-draft-continue")); // producer_name → ""
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    // navigated back to the step that owns the field — no request went out
+    expect(api.post).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+    // focused, marked, and explained
+    const nameInput = screen.getByTestId("register-details-name");
+    expect(document.activeElement).toBe(nameInput);
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    expect(
+      document.getElementById(nameInput.getAttribute("aria-describedby")),
+    ).toHaveTextContent(`${K}.validation.producer_name_required`);
+    expect(screen.getByTestId("register-submit-gate-notice")).toHaveTextContent(
+      `${K}.validation.cross_step_notice`,
+    );
+    // fixing the field retires the summary too (it is derived, not stored)
+    fireEvent.change(nameInput, { target: { value: "העסק שלי" } });
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+
+  it("two missing fields render the GOV.UK summary list, and land on the first", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({ producer_name: "", phone: "", city: "חיפה" });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await screen.findByTestId("register-frame-details");
+    const notice = screen.getByTestId("register-submit-gate-notice");
+    expect(notice).toHaveTextContent(`${K}.validation.cross_step_summary`);
+    expect(notice).toHaveTextContent(`${K}.validation.producer_name_required`);
+    expect(notice).toHaveTextContent(`${K}.validation.phone_required`);
+    // wizard order decides the landing field: producer_name precedes phone
+    expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
+  });
+
+  // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
+  // nothing lowered it, so the NEXT same-step block re-raised "הועברתם לשדה"
+  // while nobody had been moved. The state only looked self-clearing because the
+  // render also requires a non-empty fieldErrors, and fixing the field emptied
+  // it — the flag itself survived and the very next per-step block resurrected
+  // the false sentence.
+  it("clears the bounce flag, so a later same-step block does not re-raise the summary", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({ producer_name: "", city: "חיפה" });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`)); // bounce
+    await screen.findByTestId("register-frame-details");
+    expect(screen.getByTestId("register-submit-gate-notice")).toBeInTheDocument();
+
+    // fix the bounced field, then trip a PER-STEP block on a different one
+    fireEvent.change(screen.getByTestId("register-details-name"), {
+      target: { value: "העסק שלי" },
+    });
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+
+    // blocked at the field, but nobody was navigated — no bounce sentence
+    expect(screen.getByTestId("register-details-phone")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+
+  // A per-step block moves nobody, so the "הועברתם לשדה" summary must NOT appear
+  // there. Without the submitBounced guard this test goes red — the inline error
+  // alone would raise it.
+  it("does not show the bounce summary for a same-step block", async () => {
+    await renderWizard();
+    await reachDetailsWithoutName();
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(screen.getByTestId("register-details-name")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+});
+
 // MEH-1489 chunk A — early auth-state gate. A logged-in producer/admin can never
 // complete the wizard (409 already_has_producer / 403 admin at submit), so they
 // see a terminal screen instead of the preflight+wizard. Guests + logged-in
