@@ -476,6 +476,24 @@ section was asked to carry.
       rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
       emitted "CI gate failed" from superseded run #2279 while #2280 ran
       green and auto-merged.)
+      - **Not every `cancelled` is a supersession — and the remedy inverts.**
+        A job can also be cancelled by **hanging inside its own setup**, with
+        no second run anywhere. Read the failing job's log before choosing:
+        supersession shows a *newer run* for the head SHA, while an infra
+        hang shows the job stuck in one step and then
+        `##[error]The operation was canceled`. For supersession you **wait**;
+        for a hang, waiting never terminates — you **re-run**
+        (`rerun_failed_jobs`). Applying the wait remedy to a hang is an
+        indefinite stall on a PR nothing is wrong with.
+        **Re-running is not a rule-30 violation:** rule 30 forbids
+        *neutralizing* a block — clearing a marker, editing metadata, pushing
+        a no-op commit. A re-run does the opposite, making the check actually
+        execute; confirm it did by finding the real output in the log, not by
+        reading the green.
+        _Source: 2026-07-31 (PR #2462) — `Repo guards` hung in
+        `actions/checkout` (`git fetch --depth=1` 16:50:29 → cancelled
+        16:53:27) having run zero guards; the aggregator mapped
+        `cancelled → FAIL`. The re-run logged `9 guard(s) ran, 1 warned`._
     - **Draft PRs produce a skip-green signal, not a real pass.** The
       backend jobs (`Backend tests`, `Backend lint`, build) gate on
       `github.event.pull_request.draft == false`, so on a *draft* they
@@ -1112,6 +1130,14 @@ Tasks auto-expire after 7 days.
        אליו: ה-status משקף מה שמישהו עדכן, ה-attachments משקפים מה שקרה בפועל.
        גם `git ls-remote origin | grep <branch>` לפני יצירת ענף — ענף קיים מרחוק
        הוא הסימן החד-משמעי ש-session אחר כבר בעבודה.
+    5. **מספר הענף נקרא מהכרטיס אחרי שנוצר — לעולם לא נחזה מראש.** הסדר הוא:
+       יוצרים את הכרטיס → קוראים את המזהה שחזר → כותבים את שם הענף. כתיבת
+       `feature/meh-NNNN-...` לתוך prompt לפני שהכרטיס קיים היא ניחוש, ו**ניחוש
+       שפספס נוחת על כרטיס של מישהו אחר** — ענף או PR שנושא מזהה של כרטיס אחר
+       מקשר אליו, ועם מילת סגירה גם סוגר אותו (כלל 29). התיקון זול והכשל אינו:
+       אין דרך "לבטל" ענף שכבר קישר את עצמו לכרטיס הלא נכון.
+       _Source: 2026-07-31 — שלושה ניחושים בסשן אחד (1793→1794, 1795→1796,
+       1798→1797). כולם נתפסו לפני dispatch, אף אחד לא בזכות בדיקה שיטתית._
 
     _Source: MEH-1772 chunk 3 (2026-07-31) — ה-SYNC בכרטיס אמר "chunk 3 (UI) לא
     התחיל. זו כל העבודה שנותרה", בעוד PR #2445 כבר היה פתוח על אותו ענף בדיוק
@@ -1148,6 +1174,21 @@ Tasks auto-expire after 7 days.
       merge). Branch-name gate (MEH-1141) requires `meh-[0-9]+` for code PRs, so
       this ban applies to the *mentioned-and-Done* identifiers, not to a code
       PR's own active-ticket branch slug.
+    - **Check the body BEFORE opening the PR — CI cannot save you here.** The
+      `Linear mention guard` job is `continue-on-error: true` and ends in
+      `|| true` (`pr-checks.yml:643,654`), so it prints warnings and passes.
+      By the time it runs, the PR is open and the auto-link has already
+      fired — the damage this rule exists to prevent is done at *open* time,
+      not at merge time. Draft the body to a file and run the guard on it
+      first:
+
+      ```
+      bash .claude/scripts/check-linear-mentions.sh <title-file> <body-file>
+      ```
+
+      _Source: 2026-07-31 (PR #2465) — the local run caught three bare
+      identifiers in a drafted body and they were rewritten as prose before
+      opening. The CI job on that same PR reported `success`._
 
     _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
