@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Crosshair, SealCheck } from "@phosphor-icons/react";
+import { Crosshair } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -26,28 +26,58 @@ const HERO_IMAGE = optimizeCloudinary(
 // <MotionConfig reducedMotion="user"> at the layout root (#1053).
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
-// MEH-1684: the ONE chip style for the hero row. Ghost by construction — a
-// hairline primary border at 35% and primary text, never a fill, so the
-// circular search submit keeps MEH-1369's single-filled-primary slot. Shared
-// as a constant (not duplicated per button) so a future chip cannot drift into
-// a second style, which is the exact failure this ticket is undoing.
+// MEH-1684: the ONE chip style for the hero row. Shared as a constant (not
+// duplicated per button) so a future chip cannot drift into a second style,
+// which is the exact failure that ticket was undoing.
+//
+// MEH-1690 changed the SURFACE these sit on, and with it the fill. MEH-1684's
+// chips were ghost-on-cream (transparent, hairline primary border); they now
+// sit INSIDE the hero photo, on the `.scrim-ink` band whose bottom stop is
+// rgb(28 26 23 / 0.88) — primary green on near-black is far under AA, and a
+// transparent chip would have been unreadable exactly where the eye lands.
+// The fill is `bg-surface` (the same white as the search pill above it), which
+// is what makes pill + chips read as ONE unit rather than two strips.
+//
+// This does NOT spend MEH-1369's single-filled-primary slot: that invariant is
+// about the PRIMARY fill, which the circular submit still holds alone. A
+// neutral surface fill is not a primary one.
 const CHIP_CLASS =
-  "inline-flex items-center gap-2 rounded-full border border-primary/35 text-primary " +
+  "inline-flex items-center gap-2 rounded-full bg-surface border border-border text-primary " +
   "px-4 py-2.5 hover:bg-green-50 transition-colors duration-base ease-quart " +
-  "font-medium text-sm disabled:opacity-50 focus-ring";
+  "font-medium text-sm disabled:opacity-50 focus-ring shadow-sm";
 
 /**
  * Hero section — S14 "Photography + Texture" composition (MEH-788 Phase 3).
  *
  * Full-bleed Ken Burns produce photo, height-capped (mobile ~44svh ≤360px /
- * desktop ~44svh 380–440px) — NOT 100vh, and short enough that the bottom-
- * overlaid headline + the seam-riding search + CTAs all clear a ~700–800px
- * laptop fold on load (MEH-788: 560px was too tall once search went in-flow).
- * S14 hero discipline: only the FRL-900 headline +
- * subtitle ride the `--scrim-ink` band on the photo; the pill search card then
- * rides the photo seam DOWN onto cream (negative margin overlap), and the chips
- * row (near-me MEH-41 · delivery-to-me MEH-1643) plus the trust line and the
- * "how it works" link land fully on cream — far less overlay surface, AA free.
+ * desktop ~44svh 380–440px) — NOT 100vh, and short enough that the headline +
+ * search + chips all clear a ~700–800px laptop fold on load (MEH-788: 560px
+ * was too tall once search went in-flow).
+ *
+ * MEH-1690 — the photo is a LAYER, not a box the content has to fit after.
+ * The band used to be a fixed-height `overflow-hidden` <section> with the
+ * search pill as a SIBLING pulled back up over the seam by a negative margin
+ * (`-mt-8`). That arithmetic is what put the pill across the photo's bottom
+ * edge: measured pre-fix, the pill overhung the image by 26px at 375 and 18px
+ * at 1440, and the chips row by 88px / 80px — half the search zone on the
+ * photo, half on cream, so neither surface held it (Baymard: a search field's
+ * prominence is set by its surroundings; one split across two has neither's).
+ *
+ * Now the photo + scrim are an absolutely-positioned layer pinned to
+ * `inset-0`, and the headline, the pill and the chips are ordinary flow
+ * children that DEFINE the band's height. "The pill sits inside the image" is
+ * therefore true by construction rather than by a tuned magic number — it
+ * survives a copy change, a font swap, or a chip wrapping to a second line,
+ * none of which the old negative margin could absorb.
+ *
+ * Two things that look incidental and are not:
+ *   · the section is `relative` with NO `z-index` and NO `isolate`, so it does
+ *     not open a stacking context. HeroSearch's dropdown (`z-[1000]`, scoped
+ *     inside the pill's own `z-10`) therefore resolves exactly as it did when
+ *     the pill was a sibling — this restructure is deliberately z-neutral.
+ *   · only the INNER image layer carries `overflow-hidden` (it clips the ≤1.06
+ *     Ken Burns drift). The section itself must not, or the dropdown would be
+ *     clipped by the very band it now sits inside.
  *
  * Ken Burns = the kenburns-right layer (globals.css), opposite direction to the
  * kenburns-left dividers below; honors prefers-reduced-motion (animation:none).
@@ -64,23 +94,37 @@ const CHIP_CLASS =
  * MEH-1643 (delivery-to-me ghost CTA beside near-me — 4-item CTA row:
  * filled primary + near-me ghost + delivery ghost + "how it works" link;
  * label is dynamic: "משלוחים ל{city}" when localStorage user_city is set),
- * MEH-1684 (search-zone redesign — see below).
+ * MEH-1684 (search-zone redesign), MEH-1690 (composition — see below).
  *
  * MEH-1684 — the zone speaks ONE affordance language:
  *   · search = a full white pill (rounded-full, one soft shadow) with a
  *     circular filled submit inside it. It is the zone's ONLY primary CTA, so
  *     the solid "גלו בתי עסק" button that used to open the row is GONE (search
  *     is how you discover; `onScrollDown` therefore left this component's API).
- *   · the row below is now CHIPS, not CTAs — one ghost style (rounded-full,
- *     border primary/35, text primary) behind a muted editorial prefix. Both
- *     chips keep their pre-existing wiring untouched: near-me is still MEH-41
- *     geolocation, delivery is still MEH-1643's user_city path. Restyle only.
- *   · a trust line (SealCheck, accent gold) carries the differentiator above
- *     the fold, and "איך זה עובד" moved OUT of the row to sit under it — an
- *     underlined text link inside a chip row was the third affordance language
- *     in one strip, which is what made the row unreadable.
+ *   · the row below is now CHIPS, not CTAs — one style behind a muted editorial
+ *     prefix. Both chips keep their pre-existing wiring untouched: near-me is
+ *     still MEH-41 geolocation, delivery is still MEH-1643's user_city path.
  * MEH-1369's "exactly ONE filled primary" invariant is preserved, now with the
  * circular submit holding that slot instead of a scroll button.
+ *
+ * MEH-1690 — MEH-1684 got the COMPONENTS right and the COMPOSITION wrong: it
+ * replaced one overloaded row with a column of three short centred rows
+ * stranded on empty cream. Three things left the hero zone entirely, and the
+ * removals are the point of the ticket, not a side effect:
+ *   · the trust line — an accent-gold seal glyph plus the hand-checked claim.
+ *     It duplicated the claim the social-proof bar makes immediately below
+ *     (`home.trust.lead`, strengthened in MEH-1686), and under a search field
+ *     the eye is looking for a hint about SEARCH, not a claim about the
+ *     directory. Its gold seal was also the only accent-coloured mark above the
+ *     fold, pulling the eye to the least important point in the zone.
+ *   · the how-it-works text link, which now lives only in the block it pointed
+ *     at (HomeStaticBlocks.jsx `#how-it-works`).
+ * Neither the removed copy nor its message keys are quoted anywhere in this
+ * file ON PURPOSE: the ticket's absence assertions are greps, and a comment
+ * naming the string would answer 1 forever and hide a real regression.
+ * The second gold seal above the fold — the Header's desktop trust strip
+ * (`Header.jsx:225`) — is deliberately NOT touched here: that is MEH-1692, at a
+ * different risk tier.
  */
 export function HomeHero({
   fridayMode,
@@ -101,41 +145,44 @@ export function HomeHero({
     ],
     [t]
   );
-  // Mirrors the use-home-page.js scrollToProducers pattern (getElementById +
-  // smooth scroll); target id added on HomeHowItWorks (HomeStaticBlocks.jsx).
-  const scrollToHowItWorks = () =>
-    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-
   return (
-    <>
-      {/* 01 · HERO — capped full-bleed IMG-02 + --scrim-ink. H1 + subtitle only. */}
-      <section
-        className="relative isolate w-full overflow-hidden h-[clamp(300px,44svh,360px)] md:h-[clamp(380px,44svh,440px)]"
-        aria-label={t("home.hero.main_label")}
-      >
-        {/* Ken Burns layer — decorative produce photo. inset -5% gives the
-            ≤1.06 zoom drift room. (The ParallaxQuote.jsx REUSES anchor that
-            was here died with that component — MEH-1567.) */}
-        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div
-            className="kenburns-right absolute"
-            style={{
-              inset: "-5%",
-              backgroundImage: `url(${HERO_IMAGE})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-        </div>
+    /* 01 · HERO — full-bleed IMG-02 + --scrim-ink, with the search zone INSIDE
+       the band. `relative` and deliberately WITHOUT z-index/isolate — see the
+       component docblock: opening a stacking context here would re-scope
+       HeroSearch's dropdown. */
+    <section
+      className="relative w-full"
+      aria-label={t("home.hero.main_label")}
+    >
+      {/* Photo + scrim LAYER — pinned behind the flow content, and the only
+          thing that clips (the ≤1.06 Ken Burns drift needs inset -5% room).
+          (The ParallaxQuote.jsx REUSES anchor that was here died with that
+          component — MEH-1567.) */}
+      <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="kenburns-right absolute"
+          style={{
+            inset: "-5%",
+            backgroundImage: `url(${HERO_IMAGE})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+        {/* --scrim-ink (globals.css) — warm-ink bottom band. It carried H1 +
+            subtitle alone before MEH-1690; it now also underlies the pill and
+            the chips, which is what lets a white pill and white chips hold
+            contrast over any crop of the produce photo. */}
+        <div className="scrim-ink absolute inset-0" />
+      </div>
 
-        {/* --scrim-ink (globals.css) — warm-ink bottom band; H1 + subtitle stay
-            ≥ AA over any crop. */}
-        <div className="scrim-ink absolute inset-0" aria-hidden="true" />
-
-        {/* Text — bottom-anchored on the scrim; centered mobile, start (RTL
-            right) desktop. pb leaves room for the search card's seam overlap. */}
-        <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-12 md:pb-16 text-white">
+      {/* Flow content — this is what DEFINES the band height now. `justify-end`
+          keeps the old bottom-anchored composition; min-h preserves MEH-788's
+          capped band as a FLOOR, so a short viewport still gets the full photo
+          while a wrapped chip row can grow it instead of spilling out. */}
+      <div className="relative flex flex-col justify-end min-h-[clamp(300px,44svh,360px)] md:min-h-[clamp(380px,44svh,440px)] pt-20 pb-6 md:pb-8">
+        {/* Text — centered mobile, start (RTL right) desktop. */}
+        <div className="px-4 md:px-12 text-white">
           <div className="max-w-2xl mx-auto md:mx-0 text-center md:text-start">
             {/* MEH-788: above-the-fold hero content must NOT gate visibility on
                 a JS opacity reveal — SSR renders it visible; the y-slide is a
@@ -161,107 +208,82 @@ export function HomeHero({
             </motion.p>
           </div>
         </div>
-      </section>
 
-      {/* Search card — rides the photo seam DOWN onto cream (negative overlap).
-          MEH-99 HeroSearch routes to /producers?q=. Lives OUTSIDE the
-          overflow-hidden photo section so its dropdown can overflow freely. */}
-      <motion.div
-        initial={{ y: 16 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
-        role="search"
-        aria-label={t("home.hero.search_area_label")}
-        // MEH-991 (HOME-05) put a cream card (radius 16) around a white inner
-        // field here. MEH-1684 collapses the two back into ONE white pill:
-        // rounded-full, one soft shadow, a hairline border for the cream
-        // background — the circular submit is the only thing inside it that
-        // carries fill.
-        // Padding is SYMMETRIC (px-1.5) on purpose: HeroSearch's dropdown is
-        // `inset-x-0` against its own container, so any asymmetry here lands
-        // directly in the dropdown's alignment under the pill. The text's inset
-        // from the pill edge comes from the input's own `ps-3.5` instead.
-        // (Measured before this was symmetric: 7px vs 21px — visibly off-centre.)
-        className="relative z-10 mx-auto -mt-8 md:-mt-10 bg-surface border border-border shadow-lg rounded-full px-1.5 py-1.5"
-        style={{ width: "min(580px, calc(100% - 2rem))" }}
-      >
-        <HeroSearch
-          placeholder={t("home.search.placeholder")}
-          placeholders={searchPlaceholders}
-          srLabel={t("home.search.sr_label")}
-          className="w-full"
-        />
-      </motion.div>
-
-      {/* Chips row — on cream. MEH-1070: centered at every breakpoint,
-          superseding HOME-06 alignment per Sapir 09/07. MEH-1476: surprise-me
-          left the hero (it lives at the producers-grid end beside "load more").
-          MEH-1684: this is a CHIPS row now, not a CTA row — the filled
-          "גלו בתי עסק" button and the underlined "how it works" link both left
-          it, so every remaining item shares ONE ghost-chip style behind a muted
-          editorial prefix. Wiring is untouched: same handlers, same testids. */}
-      <motion.div
-        initial={{ y: 12 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
-        data-testid="hero-chips-row"
-        className="mt-5 px-4 flex flex-wrap items-center justify-center gap-2.5"
-      >
-        <span className="text-sm text-fg-muted">{t("home.hero.chips_prefix")}</span>
-
-        {/* MEH-41 geolocation — behaviour unchanged, chip styling only. */}
-        <button
-          type="button"
-          onClick={onNearMe}
-          disabled={geoLoading}
-          className={CHIP_CLASS}
+        {/* Search pill — MEH-99 HeroSearch routes to /producers?q=. No longer
+            rides a seam: it is an in-flow child of the band, so it cannot cross
+            the photo's bottom edge. `z-10` is retained verbatim from the
+            pre-MEH-1690 sibling so the dropdown's stacking is unchanged. */}
+        <motion.div
+          initial={{ y: 16 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
+          role="search"
+          aria-label={t("home.hero.search_area_label")}
+          // MEH-991 (HOME-05) put a cream card (radius 16) around a white inner
+          // field here. MEH-1684 collapses the two back into ONE white pill:
+          // rounded-full, one soft shadow, a hairline border — the circular
+          // submit is the only thing inside it that carries fill.
+          // Padding is SYMMETRIC (px-1.5) on purpose: HeroSearch's dropdown is
+          // `inset-x-0` against its own container, so any asymmetry here lands
+          // directly in the dropdown's alignment under the pill. The text's inset
+          // from the pill edge comes from the input's own `ps-3.5` instead.
+          // (Measured before this was symmetric: 7px vs 21px — visibly off-centre.)
+          className="relative z-10 mx-auto mt-6 bg-surface border border-border shadow-lg rounded-full px-1.5 py-1.5"
+          style={{ width: "min(580px, calc(100% - 2rem))" }}
         >
-          <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
-          {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
-        </button>
+          <HeroSearch
+            placeholder={t("home.search.placeholder")}
+            placeholders={searchPlaceholders}
+            srLabel={t("home.search.sr_label")}
+            className="w-full"
+          />
+        </motion.div>
 
-        {/* MEH-1643: delivery-to-me. Two label states — with a saved user_city
-            the label names the city; without one the generic label opens the
-            LocationModal (routing lives in use-home-page handleDeliveryCta).
-            MEH-1684 restyled it from .action-ghost to the shared chip; the
-            handler, the testid and both label states are untouched. */}
-        <button
-          type="button"
-          onClick={onDeliveryCta}
-          data-testid="hero-delivery-cta"
-          className={CHIP_CLASS}
+        {/* Chips row — MEH-1070: centered at every breakpoint, superseding
+            HOME-06 alignment per Sapir 09/07. MEH-1476: surprise-me left the
+            hero (it lives at the producers-grid end beside "load more").
+            MEH-1690: it sits INSIDE the photo directly under the pill, so the
+            two read as one unit; `mt-3` (was mt-5) is the tightened coupling.
+            Wiring is untouched: same handlers, same testids. */}
+        <motion.div
+          initial={{ y: 12 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
+          data-testid="hero-chips-row"
+          className="mt-3 px-4 flex flex-wrap items-center justify-center gap-2.5"
         >
-          {userCity
-            ? t("home.hero.delivery_cta_city", { city: userCity })
-            : t("home.hero.delivery_cta")}
-        </button>
-      </motion.div>
+          {/* On the scrim now, not cream — `text-fg-muted` would fail AA here. */}
+          <span className="text-sm text-green-50">{t("home.hero.chips_prefix")}</span>
 
-      {/* MEH-1684: trust line — the differentiator (hand-checked admission)
-          stated above the fold, where the old zone carried no trust signal at
-          all. SealCheck in accent gold (#896714 ≡ the `accent` token); the row
-          is text, not a control, so it adds no affordance to the chips above. */}
-      <div
-        data-testid="hero-trust-line"
-        className="mt-3 px-4 flex items-center justify-center gap-2 text-sm text-fg-muted"
-      >
-        <SealCheck size={18} weight="fill" className="text-accent shrink-0" aria-hidden="true" />
-        {t("home.hero.trust_line")}
+          {/* MEH-41 geolocation — behaviour unchanged, chip styling only. */}
+          <button
+            type="button"
+            onClick={onNearMe}
+            disabled={geoLoading}
+            className={CHIP_CLASS}
+          >
+            <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+            {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
+          </button>
+
+          {/* MEH-1643: delivery-to-me. Two label states — with a saved user_city
+              the label names the city; without one the generic label opens the
+              LocationModal (routing lives in use-home-page handleDeliveryCta).
+              MEH-1690 Phase 0 confirmed this is already city-NEUTRAL by default:
+              nothing here is hardcoded, the city only appears when `userCity` is
+              truthy. Handler, testid and both label states untouched. */}
+          <button
+            type="button"
+            onClick={onDeliveryCta}
+            data-testid="hero-delivery-cta"
+            className={CHIP_CLASS}
+          >
+            {userCity
+              ? t("home.hero.delivery_cta_city", { city: userCity })
+              : t("home.hero.delivery_cta")}
+          </button>
+        </motion.div>
       </div>
-
-      {/* MEH-1476 made "how it works" the sole secondary text link; MEH-1684
-          moves it OUT of the chips row to sit under the trust line, so the row
-          holds one affordance language and this stays a quiet link. Unchanged
-          handler. */}
-      <div className="mt-2 px-4 pb-6 md:pb-8 flex justify-center">
-        <button
-          type="button"
-          onClick={scrollToHowItWorks}
-          className="text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
-        >
-          {t("home.hero.how_it_works")}
-        </button>
-      </div>
-    </>
+    </section>
   );
 }

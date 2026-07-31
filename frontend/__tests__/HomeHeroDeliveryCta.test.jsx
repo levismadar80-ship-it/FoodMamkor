@@ -64,10 +64,18 @@ describe("HomeHero delivery CTA (MEH-1643)", () => {
   // delivery control must never carry a fill. `bg-action-primary` is the fill
   // token, so its absence is the thing worth asserting — a rename of the ghost
   // utility can no longer red this test, and a future fill still can.
-  it("keeps the MEH-1369 single-filled-primary rule — the delivery chip carries no fill", () => {
+  // MEH-1690: `border-primary/35` was still pinned here despite the note above
+  // — and it is exactly the "old class name" the note warns against. The chip
+  // moved onto the scrim and took a `bg-surface` fill for AA, which reddened
+  // this test without any change to the invariant it names. Asserting the
+  // invariant directly: no PRIMARY fill token, whatever the neutral styling is.
+  it("keeps the MEH-1369 single-filled-primary rule — the delivery chip carries no primary fill", () => {
     render(<HomeHero {...baseProps} onDeliveryCta={vi.fn()} userCity={null} />);
     const cls = screen.getByTestId("hero-delivery-cta").className;
     expect(cls).not.toContain("bg-action-primary");
-    expect(cls).toContain("border-primary/35");
+    expect(cls).not.toContain("bg-primary");
+    // The other half of the invariant — that the circular submit still HOLDS the
+    // one primary slot — is asserted in HomeHeroSearchZone.test.jsx, which
+    // renders the real HeroSearch. This file mocks it, so it cannot see it.
   });
 });

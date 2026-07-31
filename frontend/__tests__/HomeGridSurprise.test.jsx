@@ -75,11 +75,14 @@ const gridProps = {
 };
 
 describe("HomeHero (MEH-1476 — surprise-me removed)", () => {
-  it("no longer renders the surprise-me button; keeps near-me + how-it-works", () => {
+  // MEH-1690: "how it works" left the hero zone entirely (it lives only in the
+  // HomeStaticBlocks section it used to scroll to), so this no longer asserts
+  // its presence. near-me is still the thing MEH-1476 was protecting.
+  it("no longer renders the surprise-me button; keeps near-me", () => {
     render(<HomeHero {...heroProps} />);
     expect(screen.queryByText("home.hero.surprise_me")).not.toBeInTheDocument();
     expect(screen.getByText("home.hero.near_me")).toBeInTheDocument();
-    expect(screen.getByText("home.hero.how_it_works")).toBeInTheDocument();
+    expect(screen.queryByText("home.hero.how_it_works")).not.toBeInTheDocument();
   });
 });
 
