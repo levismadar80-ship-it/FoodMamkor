@@ -2975,7 +2975,8 @@
       "clear_aria": "Clear city"
     },
     "address_search": {
-      "placeholder": "Search address..."
+      "placeholder": "Search address...",
+      "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
     }
   },
   "favorites": {

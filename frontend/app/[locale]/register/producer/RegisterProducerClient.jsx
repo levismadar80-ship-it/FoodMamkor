@@ -10,6 +10,7 @@ import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
+import AddressSearch from "@/components/AddressSearch";
 import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
@@ -758,17 +759,43 @@ function RegisterProducerPageBody() {
 
             {/* address is optional (no "*", not gated at submit) — label carries
                 no asterisk and the input gets no required attr. */}
-            {/* MEH-951 map-privacy reassurance now rides the Input helperText slot. */}
-            <Input
-              id="producer-address"
-              label={t("auth.register.producer.fields.address_label")}
-              data-testid="register-details-address"
-              placeholder={t("auth.register.producer.fields.address")}
-              value={form.address}
-              onChange={set("address")}
-              helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
-              dir="rtl"
-            />
+            {/* MEH-1766: this was a raw <Input>, so step 2's address field had no
+                autocomplete at all — "דרך שרה" returned 0 suggestions because
+                nothing was ever queried. AddressSearch.jsx's docstring claimed
+                "RegisterProducer consumers untouched"; that claim was never true.
+                REUSES: components/EventForm.jsx:183-200 (MEH-1405 pattern —
+                visible <label htmlFor> above, no `label` prop, so there is no
+                duplicate sr-only association).
+                onSelect fills the address TEXT ONLY: the registration payload
+                (:331-332) carries no lat/lng and adding one would be a payload
+                change, which is out of scope for MEH-1766. */}
+            <div>
+              <label
+                htmlFor="producer-address"
+                className="block text-sm font-medium text-text mb-1"
+              >
+                {t("auth.register.producer.fields.address_label")}
+              </label>
+              <AddressSearch
+                id="producer-address"
+                inputTestId="register-details-address"
+                value={form.address}
+                onChange={(v) => setAndSave((prev) => ({ ...prev, address: v }))}
+                onSelect={(picked) =>
+                  setAndSave((prev) => ({
+                    ...prev,
+                    address: picked.street || picked.displayName || prev.address,
+                  }))
+                }
+                placeholder={t("auth.register.producer.fields.address")}
+              />
+              {/* MEH-951 map-privacy reassurance — same copy, moved out of the
+                  Input helperText slot it used to ride; class recipe mirrors the
+                  city required-marker at :708. */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_map_privacy_hint")}
+              </p>
+            </div>
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
                 Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
