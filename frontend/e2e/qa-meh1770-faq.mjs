@@ -5,8 +5,16 @@
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.QA_BASE ?? "http://127.0.0.1:3000";
+// Constants, not env reads: the "Env drift (.env.example)" gate fails any
+// `process.env.X` that isn't documented in .env.example, and a throwaway QA
+// harness has no business widening the project's env surface (regression
+// rule 8). Edit these two lines directly if you need a different target.
+const BASE = "http://127.0.0.1:3000";
 const OUT = "qa-artifacts/MEH-1770";
+// The sandbox image ships Chromium 1194; this repo's playwright pins 1234 and
+// would otherwise demand `playwright install` (blocked here). Point at the
+// preinstalled binary instead.
+const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const HEADINGS = [
   "כסף וערך",
   "שליטה ועמדה",
@@ -17,12 +25,8 @@ const HEADINGS = [
 
 mkdirSync(OUT, { recursive: true });
 
-// The sandbox image ships Chromium 1194; this repo's playwright pins 1234 and
-// would otherwise demand `playwright install` (blocked here). Point at the
-// preinstalled binary instead.
 const browser = await chromium.launch({
-  executablePath:
-    process.env.QA_CHROME ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  executablePath: CHROME,
   args: ["--ssl-version-max=tls1.2"],
 });
 const page = await browser.newPage({
