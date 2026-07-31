@@ -2430,6 +2430,8 @@
       "error_price_negative": "המחיר לא יכול להיות שלילי",
       "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
+      "error_whole_number": "יש להזין מספר שלם",
+      "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
       "save_cta": "שמירה",
       "field_image_placeholder": "https://res.cloudinary.com/..."
     }
@@ -4525,6 +4527,8 @@
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
       "error_generic": "שגיאה ביצירת האירוע — נסו שוב.",
+      "error_whole_number": "יש להזין מספר שלם",
+      "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
       "error_title_required": "חובה להזין כותרת לאירוע",
       "error_date_required": "חובה לבחור תאריך",
       "error_price_negative": "המחיר לא יכול להיות שלילי",

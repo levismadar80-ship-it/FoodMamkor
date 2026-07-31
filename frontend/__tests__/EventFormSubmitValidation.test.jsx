@@ -94,6 +94,49 @@ describe("EventForm — submit validation (MEH-1809)", () => {
     expect(screen.getByText(T.error_max_participants_min)).toBeInTheDocument();
   });
 
+  // The form is noValidate, so every boundary the browser used to enforce has
+  // to be re-enforced in JS or it is silently gone. Measured in Chromium:
+  // type="url" rejects "abc"; an implicit step=1 rejects "5.5".
+  it("restores the url-format boundary that noValidate turned off", () => {
+    renderForm();
+
+    fireEvent.change(document.getElementById("title"), { target: { value: "יום פתוח" } });
+    fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-09-01" } });
+    fireEvent.change(document.getElementById("registration_url"), { target: { value: "abc" } });
+    fireEvent.click(screen.getByText(T.submit));
+
+    expect(screen.getByText(T.error_invalid_url)).toBeInTheDocument();
+    // EventCreate has NO validator for registration_url (schemas.py:2937) and it
+    // lands in an href — without this check "abc" would reach the database.
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("restores the whole-number boundary for the two int fields", () => {
+    renderForm();
+
+    fireEvent.change(document.getElementById("title"), { target: { value: "יום פתוח" } });
+    fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-09-01" } });
+    fireEvent.change(document.getElementById("price"), { target: { value: "5.5" } });
+    fireEvent.click(screen.getByText(T.submit));
+
+    expect(screen.getByText(T.error_whole_number)).toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("a well-formed url passes — the check restores parity, it does not tighten it", () => {
+    renderForm();
+    api.post.mockResolvedValue({ data: { id: 3 } });
+
+    fireEvent.change(document.getElementById("title"), { target: { value: "יום פתוח" } });
+    fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-09-01" } });
+    fireEvent.change(document.getElementById("registration_url"), {
+      target: { value: "https://example.com/signup" },
+    });
+    fireEvent.click(screen.getByText(T.submit));
+
+    expect(api.post).toHaveBeenCalled();
+  });
+
   it("fixing the title clears only its own error", () => {
     renderForm();
 

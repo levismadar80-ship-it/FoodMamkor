@@ -90,6 +90,7 @@ function seed(initial) {
 const EXPERIENCE_FIELD_ORDER = [
   "title",
   "description",
+  "image_url",
   "event_date",
   "duration_minutes",
   "price_per_person",
@@ -99,26 +100,51 @@ const EXPERIENCE_FIELD_ORDER = [
 const EXPERIENCE_FIELD_ID = {
   title: "experience-title",
   description: "experience-description",
+  image_url: "experience-image",
   event_date: "experience-date",
   duration_minutes: "experience-duration",
   price_per_person: "experience-price",
   max_participants: "experience-max-participants",
 };
 
+// Mirrors `type="url"` exactly — it rejects "abc" but accepts "javascript:…"
+// (measured in Chromium). image_url is additionally validated server-side by
+// _image_url_validator (MEH-1222); this only restores the inline message the
+// browser used to show before the form became noValidate.
+function isNativeValidUrl(value) {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const isWholeNumber = (value) => Number.isInteger(Number(value));
+
 function validateExperienceForm(f, t) {
   const errors = {};
   if (f.title.trim().length < 4) errors.title = t("error_title_short");
   if (f.description.trim().length < 20) errors.description = t("error_description_short");
+  if (f.image_url.trim() !== "" && !isNativeValidUrl(f.image_url.trim())) {
+    errors.image_url = t("error_invalid_url");
+  }
   if (!f.event_date) errors.event_date = t("error_date_required");
   if (f.duration_minutes !== "") {
     const d = Number(f.duration_minutes);
+    // ExperienceCreate.duration_minutes is `int` with ge=15/le=1440.
     if (d < 15 || d > 1440) errors.duration_minutes = t("error_duration_range");
+    else if (!isWholeNumber(d)) errors.duration_minutes = t("error_whole_number");
   }
+  // price_per_person is a Decimal server-side, so fractions are legitimate here
+  // — only the lower bound needs restoring (the schema carries no `ge`).
   if (f.price_per_person !== "" && Number(f.price_per_person) < 0) {
     errors.price_per_person = t("error_price_negative");
   }
-  if (f.max_participants !== "" && Number(f.max_participants) < 1) {
-    errors.max_participants = t("error_max_participants_min");
+  if (f.max_participants !== "") {
+    const m = Number(f.max_participants);
+    if (m < 1) errors.max_participants = t("error_max_participants_min");
+    else if (!isWholeNumber(m)) errors.max_participants = t("error_whole_number");
   }
   return errors;
 }
@@ -322,11 +348,13 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       </Field>
 
       <Input
+        id="experience-image"
         label={t("field_image")}
         type="url"
         dir="ltr"
         value={form.image_url}
         onChange={setField("image_url")}
+        error={fieldErrors.image_url}
         // MEH-1617: value moved to experiences.new.field_image_placeholder,
         // matching the field_title_placeholder naming already in that namespace.
         placeholder={t("field_image_placeholder")}
