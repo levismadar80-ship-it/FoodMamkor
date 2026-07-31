@@ -70,15 +70,41 @@ function seed(initial) {
 // attributes. The form is `noValidate` now, so these checks replace them — all
 // evaluated together, each landing on its own field. Order = DOM order, which is
 // what makes "focus the first invalid field" mean the topmost one.
-const EVENT_FIELD_ORDER = ["title", "event_date", "price", "max_participants"];
+const EVENT_FIELD_ORDER = ["title", "event_date", "price", "max_participants", "registration_url"];
+
+// `type="url"` rejects "abc" and "www.example.com" but ACCEPTS "javascript:…"
+// and "data:…" — measured in Chromium, not assumed. This mirrors that exactly,
+// so the boundary is restored and nothing more: registration_url reaches an
+// href (EventDetailClient.jsx:157) with no backend validation of any kind
+// (schemas.py:2937), and closing the scheme hole is a security fix that needs
+// its own ticket rather than a quiet ride-along here.
+function isNativeValidUrl(value) {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const isWholeNumber = (value) => Number.isInteger(Number(value));
 
 function validateEventForm(f, t) {
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
-  if (f.price !== "" && Number(f.price) < 0) errors.price = t("error_price_negative");
-  if (f.max_participants !== "" && Number(f.max_participants) < 1) {
-    errors.max_participants = t("error_max_participants_min");
+  if (f.price !== "") {
+    if (Number(f.price) < 0) errors.price = t("error_price_negative");
+    // EventCreate.price is `int` — a fractional value 422s with an opaque
+    // banner, which is what the browser's implicit step=1 used to prevent.
+    else if (!isWholeNumber(f.price)) errors.price = t("error_whole_number");
+  }
+  if (f.max_participants !== "") {
+    if (Number(f.max_participants) < 1) errors.max_participants = t("error_max_participants_min");
+    else if (!isWholeNumber(f.max_participants)) errors.max_participants = t("error_whole_number");
+  }
+  if (f.registration_url.trim() !== "" && !isNativeValidUrl(f.registration_url.trim())) {
+    errors.registration_url = t("error_invalid_url");
   }
   return errors;
 }
@@ -330,6 +356,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           onChange={update("registration_url")}
           placeholder={t("field_registration_url_placeholder")}
           dir="ltr"
+          error={fieldErrors.registration_url}
         />
 
         <div className="flex gap-3 pt-4">

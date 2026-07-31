@@ -111,6 +111,35 @@ describe("ExperienceForm — submit validation (MEH-1809)", () => {
     expect(screen.getByText(T.error_max_participants_min)).toBeInTheDocument();
   });
 
+  it("restores the url-format boundary that noValidate turned off", () => {
+    renderForm();
+
+    fireEvent.change(document.getElementById("experience-image"), { target: { value: "abc" } });
+    fireEvent.click(submitButton());
+
+    expect(screen.getByText(T.error_invalid_url)).toBeInTheDocument();
+  });
+
+  it("restores the whole-number boundary on duration (an int server-side)", () => {
+    renderForm();
+
+    fireEvent.change(document.getElementById("experience-duration"), { target: { value: "20.5" } });
+    fireEvent.click(submitButton());
+
+    expect(screen.getByText(T.error_whole_number)).toBeInTheDocument();
+  });
+
+  it("a fractional price is still allowed — price_per_person is a Decimal, not an int", () => {
+    renderForm();
+
+    fireEvent.change(document.getElementById("experience-price"), { target: { value: "20.5" } });
+    fireEvent.click(submitButton());
+
+    // the price field must NOT be the thing complaining here
+    expect(screen.queryByText(T.error_whole_number)).not.toBeInTheDocument();
+    expect(screen.queryByText(T.error_price_negative)).not.toBeInTheDocument();
+  });
+
   it("fixing the title clears only its own error", () => {
     renderForm();
 
