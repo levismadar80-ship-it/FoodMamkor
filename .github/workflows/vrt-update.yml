@@ -112,6 +112,16 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: "1"
           NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          # MEH-1778 follow-up: e2e.yml gained this var so the GSI script
+          # actually loads in CI; this file did not, and the header above
+          # ("Build/start steps mirror e2e.yml — keep the two in sync") is
+          # exactly the contract that was broken. The cost was a silent no-op:
+          # without the client id, LoginClient.jsx:111-113 and
+          # RegisterClient.jsx:195 render no OAuth section, so a regen produced
+          # baselines byte-identical to the stale ones and the commit step
+          # reported "Baselines unchanged — nothing to commit" with a GREEN run.
+          # A regen that cannot regenerate is the MEH-1778 defect in a new file.
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
       - name: Start Next.js server (background)
         run: |
