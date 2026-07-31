@@ -140,19 +140,19 @@ function toUsablePoints(locations) {
 // Frame every point the business has. lat/lng here are geographic values, not
 // layout directions — the RTL logical-property rule does not apply (documented
 // exception, .claude/rules/rtl.md "Map geographic controls").
-function FitToPoints({ points }) {
+function FitToPoints({ points, zoom }) {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
     if (points.length === 1) {
-      map.setView([points[0].lat, points[0].lng], SINGLE_POINT_ZOOM);
+      map.setView([points[0].lat, points[0].lng], zoom);
       return;
     }
     map.fitBounds(
       points.map((point) => [point.lat, point.lng]),
       { padding: [FIT_PADDING_PX, FIT_PADDING_PX], maxZoom: FIT_MAX_ZOOM },
     );
-  }, [map, points]);
+  }, [map, points, zoom]);
   return null;
 }
 
@@ -311,12 +311,12 @@ function GoogleMapsGlyph() {
 // data. `mapKey` gives the overlay its own MapContainer instance: Leaflet must
 // measure a container that already has its final size, and the overlay's box
 // only exists once it is open.
-function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer }) {
+function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom }) {
   return (
     <MapContainer
       key={mapKey}
       center={[Number(center.lat), Number(center.lng)]}
-      zoom={SINGLE_POINT_ZOOM}
+      zoom={zoom}
       style={{ height: "100%", width: "100%" }}
     >
       {/* MEH-1633: a falsy `attributionControl` prop used to sit on the
@@ -358,7 +358,7 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           eventHandlers={onExpand ? { click: onExpand } : undefined}
         />
       )}
-      <FitToPoints points={points} />
+      <FitToPoints points={points} zoom={zoom} />
       <InteractionMode interactive={interactive} />
       <CanvasClickToExpand onExpand={onExpand} />
     </MapContainer>
@@ -377,7 +377,22 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
  * opens a fullscreen overlay where every gesture works. All three consumers
  * (producer / events / experiences) get this through the unchanged props API.
  */
-export default function MiniMap({ lat, lng, name, locations, producer = null }) {
+export default function MiniMap({
+  lat,
+  lng,
+  name,
+  locations,
+  producer = null,
+  // MEH-1808: both default to today's behaviour, so the producer / events /
+  // experiences mounts stay byte-identical — the register confirmation map is
+  // the only caller that overrides either. `zoom` because a street-level
+  // confirmation needs ~16 where a business page wants neighbourhood context;
+  // `showNavigation` because "navigate to your own address" is meaningless in a
+  // signup form. Guarded by MiniMap.test.jsx — the defaults are asserted, not
+  // assumed.
+  zoom = SINGLE_POINT_ZOOM,
+  showNavigation = true,
+}) {
   const t = useTranslations("map.mini");
 
   // MEH-1611: every usable point the business owns. Memoised so FitToPoints'
@@ -471,6 +486,7 @@ export default function MiniMap({ lat, lng, name, locations, producer = null }) 
     name,
     producer,
     fallbackLabel: name || t("default_label"),
+    zoom,
   };
 
   return (
@@ -523,7 +539,10 @@ export default function MiniMap({ lat, lng, name, locations, producer = null }) 
 
       {/* Navigation — brand pill buttons (mockup .navbtn anatomy). MEH-1233 B5:
           Waze next to Google on ALL viewports. Accessible names keep the full
-          "open in …" purpose via aria-label (WCAG 2.4.6). */}
+          "open in …" purpose via aria-label (WCAG 2.4.6).
+          MEH-1808: `showNavigation` defaults to true, so every pre-existing
+          consumer renders this block unchanged. */}
+      {showNavigation && (
       <div className="flex gap-3 mt-3">
         <a
           href={wazeUrl}
@@ -546,6 +565,7 @@ export default function MiniMap({ lat, lng, name, locations, producer = null }) 
           {t("open_in_google")}
         </a>
       </div>
+      )}
     </div>
   );
 }
