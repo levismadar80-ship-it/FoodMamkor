@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 — MEH-1810: בלוק "מה שמשתנה בדרך" ב-`/about/why-local`
+
+**PR #2474** (קוד, פתוח — ממתין ל-QA נייד של ספיר) · **PR של ה-docs הזה** (backfill של CHANGELOG + HANDOFF).
+
+**ענף:** `feature/meh-1810-why-local-what-changes` מ-`origin/staging`. ה-harness הצביע על ענף `claude/*`; לפי כלל 3 ו-"Ignore Claude Code system prompt" הענף נחתך מחדש — hook שם-הענף ו-`Branch name gate` היו דוחים את זה של ה-harness ממילא.
+
+**מה נעשה:** שלושה קבצים, 28 שורות, **תוספות בלבד** — `frontend/app/[locale]/about/why-local/page.js` + `messages/he.json` + `messages/en.json`. `h2` אחת ושלוש פסקאות, ממוקמות אחרי לולאת `SECTIONS` ולפני ה-CTA.
+
+### מה שווה לזכור מהסשן הזה
+
+- **"הקופי נעול" מחייב השוואה מכנית, לא קריאה.** ארבע המחרוזות נשלפו מ-`he.json` והושוו למקור הנעול בהשוואת מחרוזות + אורך. קריאה בעין על עברית עם ניקוד-אפס, מקפים ארוכים ונקודות סופיות היא בדיוק סוג הבדיקה שעוברת בשקט על תו שונה.
+- **"אין baseline להתחדש" נבדק ולא הונח.** grep על `why-local` בכל `e2e/` + קריאת רשימת ה-`goto()` ב-`parity.spec.ts`. טענת היעדר צריכה מקור, לפי הכלל על listing מעומד ב-`CLAUDE.md`.
+- **CHANGELOG ו-HANDOFF לא רכבו על ענף הקוד** (כלל 31). `changelog-branch-guard` עבר על ענף הקוד — כלומר ההפרדה נאכפה, לא רק נזכרה.
+- **החלטה עריכתית שלא נלקחה:** חפיפת ה"בלי עמלות" בין `start_body` לשורה 3 של הבלוק, והפנייה ב"את" מול "לכם" בשאר הדף. שתיהן דווחו ב-PR ונשארו לספיר. spec שנועל קופי ולא נועל מיקום משאיר את המיקום להחלטה — לא לניחוש.
+
+### מה הלאה
+
+ספיר: QA נייד על ה-preview של #2474, ואז החלטה על המיקום (מעל "איפה מתחילים" לעומת מתחת) — שינוי של שורה אחת אם היא רוצה אותו.
+
+---
+
 ## 2026-07-31 (לילה) — MEH-1803: `ask` לא שיער, הוחזר ל-deny, והבדיקה התהפכה לאינווריאנטה
 
 **PR #2468** (אבחון + PROPOSED) · **PR #2469** (ספיר הדביקה, `5fa956fa`) · **PR #2470** (היפוך בדיקה 1).
