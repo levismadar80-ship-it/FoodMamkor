@@ -51,22 +51,57 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 // One editorial area row: city ↔ minimum only (the day is hoisted/grouped, so
 // it is intentionally no longer repeated per row — MEH-1305 A).
-function AreaRow({ da, t }) {
+//
+// MEH-1772 chunk 3: `fee` is the row's EFFECTIVE per-area delivery fee, and is
+// non-null ONLY when fees actually vary across the producer's areas (see
+// feeVaries below). When they don't, every row would print the same number the
+// top line already states, so the caller passes null and this renders exactly
+// the markup it rendered before this ticket — the "uniform → byte-identical"
+// half of the acceptance criteria is enforced here, by the null, not by a
+// separate branch further up.
+//
+// `fee != null` and not `fee ?` for the same reason the producer-level line
+// uses explicit null gates (MEH-1577): 0 is a VALUE ("משלוח חינם"), and a
+// truthiness test would silently render the free case as "no fee stated".
+function AreaRow({ da, t, fee = null }) {
+  const feeLabel =
+    fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
   return (
     <li className="flex items-center justify-between gap-3 py-2.5 text-sm">
       <span className="font-medium text-text">{da.city}</span>
-      {da.min_order ? (
-        <span className="text-fg-muted">
-          {/* MEH-1168 P1 (bidi): isolate the ₪ amount so RTL keeps "150₪". */}
-          {t("min_order")} <span dir="ltr">{formatPrice(da.min_order)}</span>
-        </span>
-      ) : null}
+      <span className="flex items-center gap-2">
+        {fee != null ? (
+          <span className="text-fg-muted" data-testid="area-fee">
+            {/* bdi, not dir="ltr": the amount sits INSIDE a Hebrew sentence
+                here (unlike min_order below, which is its own phrase), so
+                isolating the whole span would reorder the Hebrew around it. */}
+            {feeLabel ? (
+              <>
+                {feeLabel.before}
+                <bdi>{formatPrice(fee)}</bdi>
+                {feeLabel.after}
+              </>
+            ) : (
+              t("fee_free")
+            )}
+          </span>
+        ) : null}
+        {da.min_order ? (
+          <span className="text-fg-muted">
+            {/* MEH-1168 P1 (bidi): isolate the ₪ amount so RTL keeps "150₪". */}
+            {t("min_order")} <span dir="ltr">{formatPrice(da.min_order)}</span>
+          </span>
+        ) : null}
+      </span>
     </li>
   );
 }
 
 // A day-headed group (2+ distinct days) or the trailing "arranged" bucket.
-function AreaGroup({ label, rows, t }) {
+// MEH-1772 chunk 3: `feeOf` resolves a row's effective fee (or null when fees
+// don't vary) — threaded through rather than recomputed here so the variance
+// decision is made exactly once, in the component below.
+function AreaGroup({ label, rows, t, feeOf = () => null }) {
   return (
     <div>
       <p className="flex items-center gap-1.5 text-sm font-medium text-text mb-1">
@@ -75,7 +110,7 @@ function AreaGroup({ label, rows, t }) {
       </p>
       <ul className="divide-y divide-border border-y border-border">
         {rows.map((da) => (
-          <AreaRow key={da.id ?? da.city} da={da} t={t} />
+          <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
         ))}
       </ul>
     </div>
@@ -257,18 +292,28 @@ function splitAroundAmount(text) {
   return { before, after };
 }
 
-function buildFeeSegments(fee, threshold, t) {
+// MEH-1772 chunk 3: `from` switches the fee half to "משלוח מ-{amount}" — used
+// when per-area fees VARY, where a single number would misstate the cost for
+// every area that isn't the cheapest.
+//
+// It also suppresses the fee===0 → "משלוח חינם" shortcut, deliberately. With
+// variance, a minimum of 0 means "some areas are free, others are not", which
+// is the opposite of what "משלוח חינם" claims; "משלוח מ-0₪" is literal and
+// true. Guarding this is the difference between the free case and the
+// cheapest-area case, which look identical to a truthiness test.
+function buildFeeSegments(fee, threshold, t, { from = false } = {}) {
   const hasFee = fee != null;
   const hasThreshold = threshold != null;
   if (!hasFee && !hasThreshold) return null;
   // fee===0 suppresses the threshold on purpose. Both can be set (the
   // validators allow fee >= 0 with threshold > 0), but "delivery is free ·
   // free above 250₪" puts a condition on something already unconditional.
-  if (hasFee && fee === 0) return [{ before: t("fee_free"), amount: null, after: "" }];
+  if (hasFee && fee === 0 && !from)
+    return [{ before: t("fee_free"), amount: null, after: "" }];
   const segments = [];
   if (hasFee) {
     segments.push({
-      ...splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL })),
+      ...splitAroundAmount(t(from ? "fee_from" : "fee", { amount: AMOUNT_SENTINEL })),
       amount: formatPrice(fee),
     });
   }
@@ -297,11 +342,49 @@ export default function DeliveryBlock({
   // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
   const cutoff = getSingleOrderCutoff(producer?.order_window);
   const cutoffDayLabel = cutoff ? tWeekdays(WEEKDAY_SHORT_KEYS[cutoff.dayIndex]) : null;
+  // MEH-1772 chunk 3: per-area fee override with producer-level fallback.
+  //
+  // The API serializes delivery_fee per area WITHOUT coalescing it (schemas.py:
+  // 849-855) precisely so the fallback resolves here — a pre-coalesced value
+  // cannot distinguish "this area overrides with the same number" from "this
+  // area inherits", and that distinction is what the variance test needs.
+  //
+  // `??` and not `||` throughout: an area fee of 0 is a real override
+  // ("משלוח חינם" for that city) and `||` would fall through to the producer
+  // rate, silently charging for a free area. Areas with no effective fee at
+  // all (no override, no producer-level rate) drop out rather than counting
+  // as 0 — "not stated" is not "free".
+  const producerFee = producer?.delivery_fee ?? null;
+  const effectiveFees = areas
+    .map((da) => da.delivery_fee ?? producerFee)
+    .filter((f) => f != null);
+  const feeVaries = new Set(effectiveFees).size > 1;
+  // Only meaningful under variance; Math.min of an empty list is Infinity, so
+  // the feeVaries guard (which requires 2+ distinct values) also guarantees a
+  // non-empty list here.
+  const minAreaFee = feeVaries ? Math.min(...effectiveFees) : null;
+  // Resolved from the ORIGINAL `areas`, keyed the same way the rows are keyed
+  // — NOT from the row object handed back by groupDeliveryAreas.
+  //
+  // That helper rebuilds each row with an explicit four-field literal
+  // (deliveryGroups.js:30-35: id, city, min_order, delivery_day), so any field
+  // added to delivery_areas is dropped on the way through. Reading
+  // `row.delivery_fee` therefore yields undefined and every row silently falls
+  // back to the producer rate — rows still render, with the wrong number, and
+  // only the top line looks right. Going back to the source makes the fee
+  // independent of what that helper happens to preserve.
+  const feeByKey = new Map(
+    areas.map((da) => [da.id ?? da.city, da.delivery_fee ?? producerFee]),
+  );
+  // null unless fees vary → AreaRow renders exactly as it did pre-ticket.
+  // `?? null` (not `||`) so a resolved 0 survives as "משלוח חינם".
+  const feeOf = (da) => (feeVaries ? (feeByKey.get(da.id ?? da.city) ?? null) : null);
   // MEH-1577: null when the owner stated neither value → no line renders.
   const feeSegments = buildFeeSegments(
-    producer?.delivery_fee,
+    feeVaries ? minAreaFee : producer?.delivery_fee,
     producer?.free_delivery_above,
     t,
+    { from: feeVaries },
   );
   // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
   // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
@@ -311,7 +394,15 @@ export default function DeliveryBlock({
   const hasPickupRows = pickupLocations.length > 0;
   // MEH-1435: city-only areas (no minimum, no dispatch day) render as a compact
   // list; anything info-bearing keeps the MEH-1305 editorial rows unchanged.
-  const bare = hasAreas && areas.every((da) => !da.min_order && !da.delivery_day);
+  // MEH-1772 chunk 3: `!feeVaries` guards the collapse. CompactCities renders
+  // city NAMES only, so a producer whose areas carry differing fees but no
+  // min_order/day would show "משלוח מ-20₪" on the top line and then no
+  // per-area fee anywhere — the variance stated and then hidden. Under
+  // variance the editorial rows are required to carry it. Fees are uniform or
+  // absent for every producer that reaches compact mode today, so this cannot
+  // change an existing render (MEH-1435 lock intact).
+  const bare =
+    hasAreas && !feeVaries && areas.every((da) => !da.min_order && !da.delivery_day);
   const grouped = hasAreas && !bare ? groupDeliveryAreas(areas) : null;
   // MEH-1255: nationwide delivery with an exclusion list.
   const hasExclusions = nationwide && excluded.length > 0;
@@ -392,7 +483,7 @@ export default function DeliveryBlock({
               </p>
               <ul className="divide-y divide-border border-y border-border">
                 {grouped.rows.map((da) => (
-                  <AreaRow key={da.id ?? da.city} da={da} t={t} />
+                  <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
                 ))}
               </ul>
             </>
@@ -401,7 +492,7 @@ export default function DeliveryBlock({
           {grouped.mode === "flat" && (
             <ul className="divide-y divide-border border-y border-border">
               {grouped.rows.map((da) => (
-                <AreaRow key={da.id ?? da.city} da={da} t={t} />
+                <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
               ))}
             </ul>
           )}
@@ -425,10 +516,16 @@ export default function DeliveryBlock({
                   label={t("delivery_day_group", { day: g.day })}
                   rows={g.rows}
                   t={t}
+                  feeOf={feeOf}
                 />
               ))}
               {grouped.arranged.length > 0 && (
-                <AreaGroup label={t("arranged_group")} rows={grouped.arranged} t={t} />
+                <AreaGroup
+                  label={t("arranged_group")}
+                  rows={grouped.arranged}
+                  t={t}
+                  feeOf={feeOf}
+                />
               )}
             </div>
           )}
