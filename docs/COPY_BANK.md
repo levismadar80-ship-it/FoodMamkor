@@ -20,10 +20,10 @@
 ### Subtitle — Homepage hero
 | Field | Value |
 |---|---|
-| **Current** | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` |
-| **Previous** | `בתי עסק מקומיים, כולם במקום אחד.` |
+| **Current** | `ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.` |
+| **Previous** | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` (MEH-620 wording; `עסקים` → `בתי עסק` in MEH-1308) · earlier `בתי עסק מקומיים, כולם במקום אחד.` |
 | **i18n key** | `home.hero.subtitle` |
-| **Status** | ✅ (MEH-620, PR #690) |
+| **Status** | ✅ (MEH-620, PR #690; value corrected per MEH-1308, PR #1904) |
 | **Why** | MEH-522 ideation winner (variant κ). H1 asks "לא ידעת איפה" → Sub answers "אנחנו כבר בדקנו". Closes the arc; uses "כבר" work-already-done signal. |
 | **MEH** | MEH-620 (refs MEH-522) |
 
@@ -103,6 +103,30 @@
 | **Status** | ✅ (MEH-521) |
 | **Why** | Shows when producer count < 5. Avoids showing "0 businesses". Warm, aspirational tone. |
 | **MEH** | MEH-521 (PR #576) |
+
+### Trust band — lead, below threshold (< 25 approved businesses)
+| Field | Value |
+|---|---|
+| **Current** | `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` |
+| **Previous** | `בתי עסק שכבר בדקנו בשבילך` |
+| **i18n key** | `home.trust.lead` |
+| **Status** | ⏳ (locked by Sapir 31/07; Phase 2 ships the render) |
+| **Why** | Two independent reasons. **(1) Verbatim duplication.** The previous value was a byte-exact substring of `home.hero.subtitle` (`ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.`) — the same sentence twice on one screen, ~100 lines apart in two files. **(2) Structural fact, not outcome promise.** The new line claims only what the architecture guarantees: there is no intermediary, and fulfilment is pickup-or-delivery from the business itself. It deliberately does **not** say "cheaper" or "תחסכי כסף" — a promise about an outcome that real food from a small business frequently breaks. Precedent: Barn2Door leads on `no markups`, a structural fact, never on savings. |
+| **Anti-pattern avoided** | "נבדקו" / "אושר" are compliance register and describe a regulatory process. `verification_doc_type` can be `license` \| `exemption` \| `cosmetics`, so the blanket claim over-reaches what any single business was actually checked for. The licensing claim stays on the badge, narrowly worded per MEH-762 / ADR-022 and `.claude/rules/labels.md`. Same over-claim family as MEH-986 (kashrut), MEH-1259 (organic), MEH-1439 (dietary), MEH-1492 (editorial priority). |
+| **Open, non-blocking** | The hero says `ישר מהמקור אלייך` and this line says `ישירות מבית העסק` — an echo, not a duplication. A shortened variant `בלי מתווך באמצע · איסוף עצמי או משלוח` exists. **Default is the full string above**; it changes only on an explicit instruction from Sapir. |
+| **MEH** | MEH-1692 (lock), MEH-579 / MEH-884 (over-claim guard), MEH-762 / ADR-022 (verification wording) |
+
+### Trust band — count, at/above threshold (>= 25 approved businesses)
+| Field | Value |
+|---|---|
+| **Current** | `{count} בתי עסק · כל אחד נבחר אישית` |
+| **i18n key** | new key (Phase 2 establishes the name); `{count}` interpolated from `GET /stats` → `producers_count` |
+| **Status** | ⏳ (locked by Sapir 31/07; Phase 2 ships the render) |
+| **Why** | **"נבחר", not "נבדק" — magazine, not marketplace.** A marketplace *checks*; a magazine *chooses*. Value 1 in Brand Hub `04-mission-vision-values` (**external — not a repo file**; listed as a BRAND.md source in `docs/CONSOLIDATION-PLAN-2026-05-23.md:295`, and the value is not currently mirrored into `docs/BRAND.md`): *"כל עסק שנכנס — נבחר. ידנית. בכוונה."* "נבחר אישית" is a claim about editorial judgement, true in 100% of cases and independent of `verification_doc_type` — so unlike "נבדקו" it cannot over-claim. |
+| **Why numbers at all** | Three competitors with the same architecture all pair words with numbers and **none of them leads on a verification claim**: CrowdFarming (`directly from the source` · 3,515 farmers), LocalHarvest (`close to you` · 40,000+ farms), Open Food Network (`trade local produce` · 2,500+ businesses in 15+ countries). Words say what it is and where it came from; numbers say why to trust it. |
+| **Threshold** | **25 approved businesses.** Below it the bar shows the sentence above; at or above it the bar shows this count. Rationale: a low number is negative social proof — the count has to be worth showing before it replaces a sentence that stands on its own. Distinct from the pre-existing `STATS_DISPLAY_THRESHOLD = 5` (MEH-521), which gates the separate secondary stats line. |
+| **Numerals** | LTR-isolated per the established trust-band treatment (`dir="ltr"`, tabular-nums) — numerals never inherit RTL flow. |
+| **MEH** | MEH-1692 (lock), MEH-521 (original stats threshold) |
 
 ### Trust strip — 8 attributes
 | Field | Value |
@@ -438,6 +462,7 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-07-31 | MEH-1692 | Home trust band — `home.trust.lead` + new count key (threshold 25) | `home.trust.lead` = `בתי עסק שכבר בדקנו בשבילך` (single state, shown at any catalog depth) | below 25: `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` · at/above 25: `{count} בתי עסק · כל אחד נבחר אישית` | Closes a **byte-exact** duplication: the old value was a verbatim substring of `home.hero.subtitle`, rendering the same sentence twice on one screen. Replaces compliance register ("נבדקו" — over-claims across `license` \| `exemption` \| `cosmetics`, MEH-762 / ADR-022) with a structural fact (no intermediary; pickup-or-delivery) below the threshold, and with editorial judgement ("נבחר אישית", value 1 of Brand Hub `04-mission-vision-values`, external) above it. Deliberately avoids an outcome promise ("cheaper") — Barn2Door's `no markups` precedent. Numbers-above-threshold follows CrowdFarming / LocalHarvest / Open Food Network, none of which leads on a verification claim. **`home.hero.subtitle` and `nav.trust_strip` are unchanged** — the duplication is closed from the trust-band side only; `Header.jsx` and `HomeHero.jsx` are out of scope. |
 | 2026-06-05 | MEH-756 | /events S10 copy wave — 12 keys across `events.list.*`, `events.detail.*`, `dashboard.producer.quick_links.add_event.title`, `sweep_tail.event_new.submit`, `experiences.list.cross_link_events` (he+en) | mixed-voice set: `subtitle` `סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור`; feminine-singular `הוסיפי אירוע` / `הגישי חוויה` / `סנן לפי עיר` / `חפשי עיר...` / `טוענת אירועים...` / `טוענת חוויות...` / `טוענת את האירוע...` / `מחפשת… ראי את…`; masculine-imperative outliers `צור קשר עם בית העסק` / `הוסף אירוע` / `פרסם אירוע` | S10-aligned + ADR-014 neutralized: `subtitle` `מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור` / `What's on this month — weekend after weekend, straight from the source` · `add_event` `הוסיפו אירוע` · `submit_experience` `הוסיפו חוויה` / `Add experience` (unified add verb) · `filter_city_label` `חיפוש לפי עיר` / `Search by city` · `filter_city_placeholder` `שם עיר או יישוב` / `City or town name` · `loading_events` `טוענים אירועים...` · `loading_experiences` `טוענים חוויות...` (ellipsis `...` preserved per file convention) · `events.detail.loading` `טוענים את האירוע...` · `events.detail.contact_producer` `יצירת קשר עם בית העסק` (noun phrase — drops masculine imperative) · `dashboard.producer.quick_links.add_event.title` `הוסיפו אירוע` · `sweep_tail.event_new.submit` `פרסמו אירוע` · `experiences.list.cross_link_events` `מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←` / `Also looking for farm events? All events and experiences together ←` (arrow `←` preserved) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns the /events surfaces to S10 design (MEH-134, Direction A "The Almanac") ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (subtitle, submit_experience, filter_city_*, cross_link_events); other 7 EN strings already neutral. **Out of scope:** `events.list.empty_*` + eyebrow + per-tab H1 (JSX-dependent — land with MEH-134 port); rest of `sweep_tail.event_new.*` (~30 keys — needs separate extraction probe); `events.list.title` + tab keys + `events.categories.*` (untouched). |
 | 2026-06-05 | MEH-752 | /login `auth.login.*` chrome neutralization — 10 keys (he+en) | feminine-singular set (`ברוכה הבאה`, `שמרי עסקים`, `דרגי`, `הוסיפי…`, `הזיני סיסמה`, `הציגי/הסתירי סיסמה`, `מתחברת...`, `נסי שוב`, `הצטרפי →`) + `welcome` was generic `Welcome` | neutralized + S9-aligned: `welcome` `טוב לראות אותך שוב` / `Good to see you again` · `value_save` `שמרו עסקים` · `value_rate` `כתבו ביקורות` / `Write reviews` · `value_publish` `הוסיפו את העסק שלך` (**supersedes MEH-751 row** — was `הוסיפי…` feminine, now neutral; EN unchanged `Add your business`) · `password_required` `הזינו סיסמה` · `password_show/hide` noun phrase `הצגת/הסתרת סיסמה` · `submitting` `רגע, נכנסים…` / `One moment, signing in…` · `generic_error` `…נסו שוב` · `register_cta` `הצטרפו →` (arrow preserved per Linear note — RTL forward convention in this file) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns /login to S9 design (MEH-131) ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (welcome / value_rate / submitting); other EN strings were already neutral. |
 | 2026-06-05 | MEH-752 | /login `auth.oauth.*` 3 keys (he+en) | `…נסי בעוד דקה` / `…נסי שוב` / `…היכנסי כדי לנהל אותו` | `…נסו בעוד דקה` / `…נסו שוב` / `…היכנסו כדי לנהל אותו` | Same ADR-014 sweep for the OAuth error/conflict strings that surface from `/login`. EN already neutral — no change. |
