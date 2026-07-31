@@ -323,7 +323,9 @@
           "declaration_required": "Please confirm the declaration before joining",
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
-          "referral_source_required": "Please select where you heard about us"
+          "referral_source_required": "Please select where you heard about us",
+          "cross_step_notice": "Some details are missing — we took you to the field",
+          "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
         "terms": {
           "intro": "I have read and agree to",
@@ -438,7 +440,8 @@
       "fallback": "Starting now · across Israel"
     },
     "trust": {
-      "lead": "Businesses we've already vetted for you."
+      "lead": "No middleman in between · pickup or delivery, straight from the business",
+      "lead_count": "<num>{count}</num> businesses · each one chosen personally"
     },
     "featured": {
       "eyebrow": "Get to know",

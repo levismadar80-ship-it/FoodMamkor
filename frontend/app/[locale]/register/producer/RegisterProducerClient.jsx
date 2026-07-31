@@ -44,6 +44,38 @@ const DESCRIPTION_PENDING_KEY = "description_pending";
 // (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
 const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 
+// MEH-1807: the required fields that live on an EARLIER step than the submit
+// button. Before this, all three were checked ONLY inside the submit handler,
+// so a blank business name surfaced as "יש למלא שם עסק" next to "הצטרפו" on the
+// last step — two frames away from the field, with no way back to it.
+// The predicates are the SAME ones that ran there; they were moved, not added
+// (city stays ungated — MEH-951 made its marker visual-only on purpose).
+// Order is wizard order: the first offender decides which step a bounced
+// submit lands on.
+const CROSS_STEP_REQUIRED = [
+  {
+    field: "producer_name",
+    step: STEP.DETAILS,
+    focusId: "producer-business-name",
+    messageKey: "producer_name_required",
+    isMissing: (f) => !f.producer_name,
+  },
+  {
+    field: "phone",
+    step: STEP.DETAILS,
+    focusId: "producer-phone",
+    messageKey: "phone_required",
+    isMissing: (f) => !f.phone || !validateIsraeliPhone(f.phone),
+  },
+  {
+    field: "category_ids",
+    step: STEP.CATEGORY,
+    focusId: "register-category-selector",
+    messageKey: "category_required",
+    isMissing: (f) => f.category_ids.length === 0,
+  },
+];
+
 // MEH-1769: a stored draft only earns the resume banner when the seller
 // actually entered something. Every field write mirrors the WHOLE form to
 // localStorage (setAndSave → saveDraft, :~281), so the stored object is
@@ -156,6 +188,23 @@ function RegisterProducerPageBody() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
+  // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
+  // Only ever holds those three, which is what lets the STORY summary below
+  // derive itself from this object instead of carrying its own state — an
+  // entry disappearing on-change (Baymard) removes the summary line too.
+  const [fieldErrors, setFieldErrors] = useState({});
+  // MEH-1807: the element the NEXT render must focus. The id rides a ref and
+  // only the sequence number is state, so requesting focus twice for the SAME
+  // field still re-fires the effect and the effect never has to setState to
+  // consume the request (no cascading render). requestFocus is called in the
+  // same handler as setStep, so React batches both into one render and the
+  // effect runs after the destination frame has mounted.
+  const pendingFocusIdRef = useRef(null);
+  const [focusRequestSeq, setFocusRequestSeq] = useState(0);
+  // MEH-1807: true only while a FINAL-SUBMIT bounce is unresolved. A per-step
+  // block sets fieldErrors too, but moves nobody — the summary's copy
+  // ("הועברתם לשדה") would be a false statement there.
+  const [submitBounced, setSubmitBounced] = useState(false);
   // MEH-952: blocking error shown next to the license field on CATEGORY when a
   // license-required category is selected but the number is blank — surfaces the
   // requirement at the field instead of letting the backend 422 land on STORY.
@@ -210,6 +259,19 @@ function RegisterProducerPageBody() {
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const licenseRequired = requiresProducerLicense(categories, form.category_ids);
   const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
+  // MEH-1807: the phone field has two distinct error sources — the pre-existing
+  // as-you-type format check (fires only once something is typed) and the new
+  // required-gate message (fires on empty too). One derived string so the
+  // aria-invalid / aria-describedby / border wiring has a single condition.
+  const phoneErrorMessage =
+    fieldErrors.phone ||
+    (form.phone && !validateIsraeliPhone(form.phone)
+      ? t("auth.register.producer.validation.phone_invalid")
+      : "");
+  // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
+  // fieldErrors rather than stored, so fixing a field removes its summary row
+  // with no second piece of state to keep in sync.
+  const crossStepErrors = Object.entries(fieldErrors);
   // MEH-759 Chunk C: the grower declaration line is shown (and required) only
   // for the two agricultural categories. Name-match mirrors requiresProducerLicense
   // (IDs are seed-ordering-dependent; names are stable). Source: seed_data.py:15-16.
@@ -232,6 +294,24 @@ function RegisterProducerPageBody() {
     if (showPreflight) return;
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
   }, [step, showPreflight]);
+
+  // MEH-1807 (GOV.UK error-summary pattern): move focus to the offending field
+  // so the seller lands ON it, not merely near it. The id is queried rather
+  // than held in a ref because a cross-step bounce focuses a field that did not
+  // exist in the DOM when the submit button was clicked.
+  useEffect(() => {
+    const targetId = pendingFocusIdRef.current;
+    if (!targetId) return;
+    pendingFocusIdRef.current = null;
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.focus();
+      // No explicit `behavior`: passing "smooth" here would override CSS
+      // scroll-behavior, including the `!important` reset globals.css:122 applies
+      // under prefers-reduced-motion. Omitting it defers to the stylesheet.
+      el.scrollIntoView?.({ block: "center" });
+    }
+  }, [focusRequestSeq]);
 
   // MEH-1489: the admin case is now handled by the early gate below (a terminal
   // "separate account for admin" screen), not a silent /admin redirect — same
@@ -330,13 +410,62 @@ function RegisterProducerPageBody() {
     });
   };
 
+  // MEH-1807 (Baymard inline-validation): the message goes away the moment the
+  // field is touched, not at the next gate — an error that outlives its cause
+  // reads as "still broken" and is a documented abandonment driver.
+  const clearFieldError = (field) =>
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+
+  const requestFocus = (elementId) => {
+    pendingFocusIdRef.current = elementId;
+    setFocusRequestSeq((seq) => seq + 1);
+  };
+
+  // MEH-1807: run the CROSS_STEP_REQUIRED subset `candidates` against the
+  // current form. Writes a message for each offender and drops the message for
+  // each one that now passes, so a per-step gate never clears another step's
+  // error. Returns the offenders in wizard order; caller decides where to go.
+  //
+  // `isSubmit` owns the bounce flag on BOTH edges, which is why it lives here
+  // rather than at the call sites: adversarial review found the flag latching
+  // true after a bounce with nothing ever lowering it, so the next per-step
+  // block re-raised "הועברתם לשדה" having moved nobody. It read as
+  // self-clearing because the summary also needs a non-empty fieldErrors —
+  // the flag itself survived the fix that emptied it.
+  const runRequiredGate = (candidates, { isSubmit = false } = {}) => {
+    const offenders = candidates.filter((c) => c.isMissing(form));
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      candidates.forEach((c) => {
+        if (offenders.includes(c)) {
+          next[c.field] = t(`auth.register.producer.validation.${c.messageKey}`);
+        } else {
+          delete next[c.field];
+        }
+      });
+      return next;
+    });
+    setSubmitBounced(isSubmit && offenders.length > 0);
+    if (offenders.length > 0) requestFocus(offenders[0].focusId);
+    return offenders;
+  };
+
   const set = (field) => (e) => {
     const value = e.target.value;
     // MEH-328 Chunk D: emailExistsSubmitError clear removed with the state.
+    clearFieldError(field);
     setAndSave((prev) => ({ ...prev, [field]: value }));
   };
 
   const toggleCategory = (id) => {
+    // MEH-1807: same on-change clear as the text fields — picking anything
+    // satisfies "at least one category", so the message must not survive it.
+    clearFieldError("category_ids");
     setAndSave((prev) => ({
       ...prev,
       category_ids: prev.category_ids.includes(id)
@@ -581,6 +710,37 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
+        {/* MEH-1807: the bounce explanation (GOV.UK error summary). It sits at
+            the TOP of the wizard card, not next to "הצטרפו" as MEH-1807's AC
+            worded it, because the same click that raises it also leaves the
+            STORY frame — a notice rendered beside that button can never be on
+            screen when it matters, and an unreachable branch is the defect class
+            .claude/rules/testing.md documents ("passed identically on the broken
+            and the fixed page"). Top-of-form is also GOV.UK's own position for
+            the summary the AC cites. Shown only after a SUBMIT bounce: a
+            per-step block moves nobody, so "הועברתם לשדה" would be false there.
+            Derived from fieldErrors, so it clears itself as the fields are fixed. */}
+        {submitBounced && crossStepErrors.length > 0 && step < STEP.CONFIRM && (
+          <div
+            role="alert"
+            data-testid="register-submit-gate-notice"
+            className="border border-error/30 rounded-md px-4 py-3 mb-4 text-sm text-error text-start"
+          >
+            {crossStepErrors.length === 1 ? (
+              <p>{t("auth.register.producer.validation.cross_step_notice")}</p>
+            ) : (
+              <>
+                <p>{t("auth.register.producer.validation.cross_step_summary")}</p>
+                <ul className="list-disc ms-5 mt-1">
+                  {crossStepErrors.map(([field, message]) => (
+                    <li key={field}>{message}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+
         {prefillToken && prefillApplied && (
           <div className="bg-green-50 text-primary border border-primary/30 rounded-md p-3 mb-4 text-sm inline-flex items-center gap-2">
             <Leaf size={16} aria-hidden="true" className="shrink-0" />
@@ -669,16 +829,31 @@ function RegisterProducerPageBody() {
             <button
               data-testid="register-account-next"
               onClick={() => {
+                // MEH-1807: ACCOUNT already validated its OWN fields on its own
+                // step, so the cross-step defect never existed here — the only
+                // thing missing was focus. The form-level message + role="alert"
+                // are deliberately left alone (pinned by MEH-886); moving them
+                // into three inline slots would be a rewrite of a step that
+                // works, and would drop an assertion that exists on purpose.
                 if (!form.name || !form.email || !form.password) {
                   setStepError(t("auth.register.producer.validation.all_required"));
+                  requestFocus(
+                    !form.name
+                      ? "producer-account-name"
+                      : !form.email
+                        ? "producer-account-email"
+                        : "producer-account-password",
+                  );
                   return;
                 }
                 if (!validateEmail(form.email)) {
                   setStepError(t("auth.register.producer.validation.email_invalid"));
+                  requestFocus("producer-account-email");
                   return;
                 }
                 if (!passwordValid(form.password)) {
                   setStepError(t("auth.register.producer.validation.password_complexity"));
+                  requestFocus("producer-account-password");
                   return;
                 }
                 setStepError("");
@@ -706,6 +881,10 @@ function RegisterProducerPageBody() {
               placeholder={t("auth.register.producer.fields.producer_name")}
               value={form.producer_name}
               onChange={set("producer_name")}
+              // MEH-1807: the primitive owns aria-invalid + aria-describedby +
+              // the error text (MEH-602/MEH-1128) — this is the wiring the
+              // pre-1807 code had available and never used.
+              error={fieldErrors.producer_name}
               required
               dir="rtl"
             />
@@ -721,15 +900,15 @@ function RegisterProducerPageBody() {
                 value={form.phone}
                 onChange={set("phone")}
                 required
-                aria-invalid={form.phone && !validateIsraeliPhone(form.phone) ? "true" : undefined}
-                aria-describedby={form.phone && !validateIsraeliPhone(form.phone) ? "register-phone-error" : undefined}
+                aria-invalid={phoneErrorMessage ? "true" : undefined}
+                aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
                 className={`w-full border rounded-md px-3 py-2 min-h-[44px] ${
-                  form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
+                  phoneErrorMessage ? "border-red-400" : ""
                 }`}
                 dir="ltr"
               />
-              {form.phone && !validateIsraeliPhone(form.phone) && (
-                <p id="register-phone-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{t("auth.register.producer.validation.phone_invalid")}</p>
+              {phoneErrorMessage && (
+                <p id="register-phone-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{phoneErrorMessage}</p>
               )}
               {form.phone && validateIsraeliPhone(form.phone) && (
                 <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>
@@ -829,7 +1008,17 @@ function RegisterProducerPageBody() {
               )}
               <button
                 data-testid="register-details-next"
-                onClick={() => setStep(STEP.CATEGORY)}
+                onClick={() => {
+                  // MEH-1807: producer_name + phone are validated HERE now, on
+                  // the step that owns them, instead of two frames later next to
+                  // the submit button. runRequiredGate focuses the first
+                  // offender; a blocked advance is the whole point.
+                  const offenders = runRequiredGate(
+                    CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.DETAILS),
+                  );
+                  if (offenders.length > 0) return;
+                  setStep(STEP.CATEGORY);
+                }}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
               >
                 {t("auth.register.producer.actions.next")}
@@ -840,13 +1029,36 @@ function RegisterProducerPageBody() {
 
         {step === STEP.CATEGORY && (
           <div className="space-y-4" data-testid="register-frame-category">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
-            <CategorySelector
-              categories={categories}
-              selectedIds={form.category_ids}
-              onChange={toggleCategory}
-              onRequestCategory={() => setShowCategoryModal(true)}
-            />
+            <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
+            {/* MEH-1807: the selector is a card grid, not a form control, so it
+                has no id to focus and nothing to hang aria-describedby on. A
+                labelled group wrapper gives the required-gate both — tabIndex
+                -1 keeps it out of the tab order while staying focusable
+                programmatically. */}
+            <div
+              id="register-category-selector"
+              tabIndex={-1}
+              role="group"
+              aria-labelledby="register-category-heading"
+              aria-describedby={fieldErrors.category_ids ? "register-category-error" : undefined}
+              className="focus-ring rounded-md"
+            >
+              <CategorySelector
+                categories={categories}
+                selectedIds={form.category_ids}
+                onChange={toggleCategory}
+                onRequestCategory={() => setShowCategoryModal(true)}
+              />
+            </div>
+            {fieldErrors.category_ids && (
+              <p
+                id="register-category-error"
+                data-testid="register-category-error"
+                className="text-xs text-error mt-1 text-start"
+              >
+                {fieldErrors.category_ids}
+              </p>
+            )}
 
             {/* MEH-293: dietary labels moved to per-product (frontend/app/settings/page.jsx ProductsSection). */}
 
@@ -983,6 +1195,14 @@ function RegisterProducerPageBody() {
               <button
                 data-testid="register-category-next"
                 onClick={() => {
+                  // MEH-1807: "at least one category" is validated on the step
+                  // that owns the selector. Runs BEFORE the license gate because
+                  // licenseRequired is derived from the selection — with nothing
+                  // selected there is no license question to ask yet.
+                  const offenders = runRequiredGate(
+                    CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.CATEGORY),
+                  );
+                  if (offenders.length > 0) return;
                   // MEH-952: block advance when a license-required category is
                   // selected but the number is blank; show the error at the field.
                   // MEH-971 chunk 1: the license-pending opt-in bypasses this gate.
@@ -1231,16 +1451,18 @@ function RegisterProducerPageBody() {
                   // to "stick" across submit attempts even after the user
                   // fixes one field).
                   setError("");
-                  if (!form.producer_name) {
-                    setError(t("auth.register.producer.validation.producer_name_required"));
-                    return;
-                  }
-                  if (!form.phone || !validateIsraeliPhone(form.phone)) {
-                    setError(t("auth.register.producer.validation.phone_required"));
-                    return;
-                  }
-                  if (form.category_ids.length === 0) {
-                    setError(t("auth.register.producer.validation.category_required"));
+                  // MEH-1807: the three cross-step required fields are still
+                  // checked here — a restored draft can blank one while the
+                  // seller is already on STORY, so the per-step gates are not a
+                  // complete guarantee. What changed is the OUTCOME: instead of
+                  // painting "יש למלא שם עסק" next to a button two frames away
+                  // from the field, send the seller to the step that owns the
+                  // first offender, focused on it, with the message inline.
+                  const offenders = runRequiredGate(CROSS_STEP_REQUIRED, {
+                    isSubmit: true,
+                  });
+                  if (offenders.length > 0) {
+                    setStep(offenders[0].step);
                     return;
                   }
                   // MEH-1471: required attribution — block submit while empty.
