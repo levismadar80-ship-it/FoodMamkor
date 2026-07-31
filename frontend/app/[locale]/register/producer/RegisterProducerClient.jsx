@@ -306,7 +306,10 @@ function RegisterProducerPageBody() {
     const el = document.getElementById(targetId);
     if (el) {
       el.focus();
-      el.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      // No explicit `behavior`: passing "smooth" here would override CSS
+      // scroll-behavior, including the `!important` reset globals.css:122 applies
+      // under prefers-reduced-motion. Omitting it defers to the stylesheet.
+      el.scrollIntoView?.({ block: "center" });
     }
   }, [focusRequestSeq]);
 
@@ -427,7 +430,14 @@ function RegisterProducerPageBody() {
   // current form. Writes a message for each offender and drops the message for
   // each one that now passes, so a per-step gate never clears another step's
   // error. Returns the offenders in wizard order; caller decides where to go.
-  const runRequiredGate = (candidates) => {
+  //
+  // `isSubmit` owns the bounce flag on BOTH edges, which is why it lives here
+  // rather than at the call sites: adversarial review found the flag latching
+  // true after a bounce with nothing ever lowering it, so the next per-step
+  // block re-raised "הועברתם לשדה" having moved nobody. It read as
+  // self-clearing because the summary also needs a non-empty fieldErrors —
+  // the flag itself survived the fix that emptied it.
+  const runRequiredGate = (candidates, { isSubmit = false } = {}) => {
     const offenders = candidates.filter((c) => c.isMissing(form));
     setFieldErrors((prev) => {
       const next = { ...prev };
@@ -440,6 +450,7 @@ function RegisterProducerPageBody() {
       });
       return next;
     });
+    setSubmitBounced(isSubmit && offenders.length > 0);
     if (offenders.length > 0) requestFocus(offenders[0].focusId);
     return offenders;
   };
@@ -1447,8 +1458,9 @@ function RegisterProducerPageBody() {
                   // painting "יש למלא שם עסק" next to a button two frames away
                   // from the field, send the seller to the step that owns the
                   // first offender, focused on it, with the message inline.
-                  const offenders = runRequiredGate(CROSS_STEP_REQUIRED);
-                  setSubmitBounced(offenders.length > 0);
+                  const offenders = runRequiredGate(CROSS_STEP_REQUIRED, {
+                    isSubmit: true,
+                  });
                   if (offenders.length > 0) {
                     setStep(offenders[0].step);
                     return;

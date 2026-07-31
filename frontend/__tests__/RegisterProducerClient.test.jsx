@@ -654,6 +654,42 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
   });
 
+  // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
+  // nothing lowered it, so the NEXT same-step block re-raised "הועברתם לשדה"
+  // while nobody had been moved. The state only looked self-clearing because the
+  // render also requires a non-empty fieldErrors, and fixing the field emptied
+  // it — the flag itself survived and the very next per-step block resurrected
+  // the false sentence.
+  it("clears the bounce flag, so a later same-step block does not re-raise the summary", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({ producer_name: "", city: "חיפה" });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`)); // bounce
+    await screen.findByTestId("register-frame-details");
+    expect(screen.getByTestId("register-submit-gate-notice")).toBeInTheDocument();
+
+    // fix the bounced field, then trip a PER-STEP block on a different one
+    fireEvent.change(screen.getByTestId("register-details-name"), {
+      target: { value: "העסק שלי" },
+    });
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+
+    // blocked at the field, but nobody was navigated — no bounce sentence
+    expect(screen.getByTestId("register-details-phone")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.queryByTestId("register-submit-gate-notice")).not.toBeInTheDocument();
+  });
+
   // A per-step block moves nobody, so the "הועברתם לשדה" summary must NOT appear
   // there. Without the submitBounced guard this test goes red — the inline error
   // alone would raise it.
