@@ -245,7 +245,7 @@ def logout(request: Request, response: Response):
 # legitimate owner finds out via send_duplicate_attempt_email. No
 # access_token — caller must verify via email then POST /auth/login.
 _REGISTER_ACK_DETAIL = (
-    "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."
+    "אם האימייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."
 )
 
 
@@ -769,7 +769,7 @@ def google_auth(
     if not settings.google_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
         )
     user_info = _verify_google_token(data.id_token)
     if not user_info:
@@ -877,7 +877,7 @@ def register_producer_oauth(
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
             )
         user_info = _verify_google_token(data.id_token)
         sub_field = "google_id"
@@ -885,7 +885,7 @@ def register_producer_oauth(
         if not settings.apple_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
             )
         user_info = _verify_apple_token(data.id_token)
         sub_field = "apple_id"
@@ -1101,7 +1101,7 @@ def apple_auth(
     if not settings.apple_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
         )
     user_info = _verify_apple_token(data.id_token)
     if not user_info:
