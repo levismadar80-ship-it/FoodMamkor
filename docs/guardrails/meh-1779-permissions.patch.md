@@ -43,12 +43,29 @@ MEH-1500's answer was not a better-written doc: it was a **guard that stays red 
 the manual step happens**, discovered automatically by `scripts/checks/run-all.sh` so it
 needs no workflow edit.
 
-**Recommendation, not something CC did:** give items 2 and 3 the same treatment — a
-guard asserting the deny entries and allowlist hosts are present, shipped **warn-only
-with a date-based flip to blocking**, the pattern `builder-model-guard.sh` already uses
-(it checks the date itself, so nobody has to remember). CC did not add it: a guard that
-reds the required *Repo guards* job blocks every PR on staging until you apply the
-change, and arming that is your call, not CC's. Say the word and it is a short follow-up.
+**This now exists — `scripts/checks/permissions-patch-guard.sh`**, armed at Sapir's
+instruction after the doc was first written. It covers all three items (not just 2 and 3
+as originally proposed, because item 1 is the one with a blocked ticket behind it),
+runs under the required *Repo guards* job via `run-all.sh`, and is **warn-only until
+2026-08-07**, flipping to blocking on its own — the `builder-model-guard.sh` pattern,
+where the script checks the date so nobody has to remember.
+
+It is **outcome-based where it can be**: checks 1 and 3 do not grep the hooks, they run
+them with synthetic payloads and read the exit code, each with a **negative control**
+that fails if the hook has been globally weakened. Check 2 is textual, because a script
+cannot invoke the permission layer to observe a deny — that is the weakest of the three
+and the guard says so in its own output.
+
+Run `bash scripts/checks/permissions-patch-guard.sh --self-test` first; it feeds the
+classifier applied / unapplied / **over-permissive** fixtures and asserts how it sorts
+them. The over-permissive case is the point: an allowlist that has stopped rejecting
+satisfies every positive assertion, and is the state a text-matching guard waves through.
+
+**Verifying you are done:** apply the three sections below, then
+
+```bash
+bash scripts/checks/permissions-patch-guard.sh   # expect: OK — items 1-3 are applied
+```
 
 ⚠️ **`write-deny-parity-guard` will fail item 2 if you add only `Edit(...)`.** It
 requires a `Write()` and `MultiEdit()` counterpart for every `Edit()` deny entry — which
