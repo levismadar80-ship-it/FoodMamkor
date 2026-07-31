@@ -3,6 +3,69 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 — GSI singleton + VRT baselines + guardrail model · session state after a two-day gap and two parallel sessions
+
+**Read this section before touching anything.** It covers a 29/07→31/07 gap in which two CC sessions worked the repo concurrently and nine tickets were opened. Its purpose is to state what is true *now*, since several PR bodies from that window describe intentions that were later changed.
+
+### Merged vs open — verified against `origin/staging`, not from memory
+
+| PR | Subject | State |
+|---|---|---|
+| #2429 | MEH-1766 — canonical `AddressSearch` in producer registration + visible provider degradation | **merged** `cccb7861` |
+| #2437 | MEH-1778 — armed `09-login-console-clean` so it can actually fail | **merged** `a175f267` |
+| #2431 | MEH-1770 — for-businesses FAQ 8→10 (the *other* session) | **merged** `678fc7ed` |
+| #2446 | MEH-1778 follow-up — regenerated login+register VRT baselines, and the `vrt-update.yml` env fix that made a regen possible at all | **merged** `62742553` |
+| #2448 | MEH-1779 — the guardrail principle (rule 32) + the staged hand-off doc | **merged** `800b30ed` |
+| #2449 | `permissions-patch-guard` — the gate on that hand-off | **merged** |
+| #2453 | MEH-1784 — GSI singleton dispatcher | **merged** — ⚠️ mobile QA + a real Google sign-in were never performed |
+
+VRT baselines **are** on staging (`ddfe11e7`, via merge `62742553`) — that work is done, not pending.
+
+### E2E on staging was RED on purpose, and #2453 closed it
+
+For most of 31/07 `09-login-console-clean.spec.ts:81` failed on both projects with the GSI double-init warning. **That was the detector MEH-1778 armed doing its job, not a regression** — before that day the same assertion was green only because `e2e.yml` set no `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, so GSI never loaded and the assertion ran over an empty set.
+
+**It is closed.** #2453's dispatcher makes `initialize()` fire once per document without losing per-consumer callbacks, and the suite went **PASS — 188 executed, 32 skipped, all green**, confirmed twice: run `30642205119` and again on the staging-synced head, run `30646188251`.
+
+Two things worth carrying forward rather than the outcome alone:
+
+- **The positive assertion is the load-bearing half.** The same run asserts a *live GSI button* exists on `/login` after in-app navigation, evaluated **before** the no-warning check. A guard that silences the warning by never drawing the second button would satisfy every negative assertion in that file — so "no warning" alone was never a pass condition.
+- **It also answered the one thing that could not be verified locally:** GSI's `renderButton` **does** work against an `initialize()` from an earlier page. That was the design's load-bearing assumption and the sandbox cannot reach Google to test it. Had it been false, the correct response was STOP, not a third design.
+
+⚠️ **Still unverified, and it is auth.** #2453 merged via auto-merge without the mobile QA or the real Google sign-in its own PR body lists as outstanding. Routing is proven at unit level against a stubbed SDK, and the button is proven live in a real browser — **the actual round-trip to Google is untested by anything.** Someone should sign in on `/login` after navigating from `/register` and confirm the account lands through the consumer path, not the producer endpoint.
+
+### Three decisions waiting on Sapir — nothing moves on these without her
+
+1. ~~**The "3 שלבים" contradiction — `backend/app/routers/chat.py:95`.**~~ **RESOLVED the same day by PR #2452** — `chat.py:95` now reads *"נרשמים דרך טופס קצר"*, matching the FAQ. Recorded because the reasoning outlives the fix: the FAQ's Q9 **was** corrected before #2431 merged (`he.json:3273`, *"ההרשמה היא טופס קצר"*), so for a few hours the chatbot and the FAQ **disagreed** — and a contradiction between two surfaces is worse than the shared error they had before, because a reader can catch it and neither answer earns trust. The real step count is 4 for a new owner (`RegisterProducerClient.jsx:30`); both surfaces now avoid the number entirely rather than correcting it, so the next wizard change cannot re-break the copy. *(An earlier report in this session claimed Q9 itself shipped wrong — that was read off #2431's opening description, which the work superseded before merge.)*
+2. **Governance — Q2/Q6 on `/about/for-businesses`.** Two new public commitments not anchored in `Drive/03-Brand-Hub/`: **"אין קידום בתשלום"** (the existing LOCK covers transaction commissions only, not sponsored placement) and the upgraded-subscription revenue model. Raised in #2431's body and merged without resolution. The open question stands: if the upgraded subscription ever includes increased exposure, Q2 and Q6 contradict each other.
+3. **MEH-1779 items 1–3** — `docs/guardrails/meh-1779-permissions.patch.md`. CC **cannot** apply these: `.claude/settings.json` and `.claude/hooks/**` deny themselves, verified by attempting both edits. **Item 1 is the one that matters most** — it is MEH-1767's only unblocker, and MEH-1767 is parked until it lands.
+
+### Two verifications that were NOT performed — do not read the merges as covering them
+
+- **The "דרך שרה" network capture never ran.** #2429 shipped the fix without it (Vercel quota, then a two-day gap). We still do not know whether Google returns **403 / empty-200 / nothing**. The instrumentation now answers it in one look at DevTools on staging: `REJECTED` in the console = provider/config problem, `genuine no-match` = the provider answered normally. Until someone looks, the root cause is unconfirmed — the fix is a fix for the *silent degradation*, not proof the provider works.
+- **No real Google sign-in has been performed.** #2453's routing is proven at unit level against a stubbed SDK and by a live-button assertion in e2e; **the actual round-trip is untested**. Neither CI nor the sandbox can complete Google's auth flow. Someone has to sign in on `/login` after navigating from `/register` and confirm the account lands through the consumer path.
+
+### The pattern of the day — "a success reported over the absence of work"
+
+Three instances in one session, all the same shape: **a mechanism reports green because it did nothing, and the green is indistinguishable from the green it would emit having done the work correctly.**
+
+1. **The VRT regen that regenerated nothing.** Run `30634480132`: `conclusion: success`, zero commits. `vrt-update.yml` built without `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, so the OAuth section never rendered, `--update-snapshots` reproduced the stale baselines byte-for-byte, and the commit step took its `git diff --cached --quiet` branch — *"Baselines unchanged — nothing to commit."* The workflow's own header demanded it stay in sync with `e2e.yml`; MEH-1778 updated one file and missed the sibling. **Trusting that green would have meant reporting a regen that never happened.**
+2. **The spec that passed on an empty universe.** MEH-1778's subject: no client id → GSI never loads → `expect(gsiWarnings).toHaveLength(0)` over an empty array.
+3. **The naive GSI guard — caught before shipping, not after.** `if (initialized) return;` silences the double-init warning by never drawing the second button. It satisfies *every negative assertion* in `09-login-console-clean.spec.ts`. This is why #2453 adds a **positive** assertion that runs **first**: a warning that vanished because nothing rendered is not a success.
+
+**The counter-example is worth as much as the three failures.** On #2448 the `CI gate` aggregator refused to score a **cancelled** `Env drift` job as a pass — *"required job did not run — 'skipped' is not a pass"*. That is the same class handled correctly, and it is the standard the three above fell short of. The remedy each time is a **positive** assertion or a **negative control** evaluated *before* the assertion it can invalidate.
+
+### `permissions-patch-guard` flips to BLOCKING on 2026-08-07
+
+`scripts/checks/permissions-patch-guard.sh` (PR #2449) currently **warns**; the script checks the date itself and starts failing on **07/08**. It goes green only when MEH-1779 items 1–3 are applied. Chosen short deliberately: MEH-1767 is blocked behind item 1, so every warn-only day is a day that ticket cannot start.
+
+`run-all.sh` reports it as `WARN`, which does **not** fail the dispatcher — but the warning is now surfaced inline (MEH-1715), so it is visible on every PR rather than swallowed.
+
+### Process notes from the gap
+
+- **Two sessions ran concurrently on 29–31/07**, which rule 1's single-session audit exists to prevent. The other session's #2431 was a duplicate dispatch of work this session nearly re-did; it was caught by a non-fast-forward rejection, not by the audit.
+- **CC's GitHub App *does* hold `actions: write`.** `vrt-update.yml:15` claims the opposite ("the GitHub MCP integration in CC sessions does not have it"). It was tested rather than believed: two `workflow_dispatch` calls and one `rerun_workflow_run` all succeeded. That comment is stale and misleads the next reader.
+- **A `cancelled` `pr-checks` run does not self-heal.** On #2448 there was exactly one such run and no newer one coming, so waiting per rule 21's superseded-run pattern would have waited forever. Re-run it via the API — never a no-op commit (rule 30).
 ## 2026-07-31 (PM) — MEH-1792 + MEH-1794 merged, 2 retro findings applied — PRs #2454, #2457, #2456, this one
 
 - **MEH-1792 (PR #2454, `ce8f02e2`).** The `27-delivery-day-discoverability` spec was flaking and poisoning the E2E signal on unrelated PRs. All lookups scoped to `#main-content` (`layout.js:229`) plus a `toHaveCount(1)` settle gate. **Verified on the PR's own run: `flaky=0`, down from `flaky=1`**, three specs green first-attempt.
