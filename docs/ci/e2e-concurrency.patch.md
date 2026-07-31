@@ -6,6 +6,38 @@ this. This doc is the exact YAML for **Sapir** to apply to
 
 Same shape as [`docs/ci/repo-guards.patch.md`](./repo-guards.patch.md).
 
+> ## ✅ STATUS 2026-07-31 — mechanism 1 is APPLIED. Do not re-apply.
+>
+> `207b9894` (2026-07-27) already made the one-line change this doc prescribes.
+> The live file (`e2e.yml:56-58`) reads
+> `group: e2e-${{ github.head_ref || github.run_id }}` — **not** the
+> `|| github.ref` form quoted throughout the sections below. Everything under
+> "The problem" describing mechanism 1 is now **history, not the current state**;
+> it is preserved because Step 3's acceptance test and the MEH-999 evidence table
+> still document what the fix was for.
+>
+> **Mechanism 2 is not fixed, and it is no longer "harmless once 1 is fixed."**
+> §"The problem" below asserts that mechanism 2 "needs no change" once the group
+> is fixed. That was reasoning about *cancellation*, and it is correct about
+> cancellation. It misses a second effect that survives the fix: because
+> `e2e-gate` maps `skipped → pass`, a docs-only push publishes a fresh
+> **`success`** on the branch tip. The last run that actually executed the suite
+> may have been red, and nothing on the tip says so.
+>
+> Observed on `staging` the same day: tip `5343955b` reported E2E `success`
+> (docs-only → skipped), while the newest real execution — `0799e3c6`, run
+> `30645351152` — was **red**. Reading the tip is what produced
+> [MEH-1791](https://linear.app/mehamakor/issue/MEH-1791)'s incorrect conclusion
+> that the suite "never ran" on two code commits; it had run, on both, and gone
+> red on one.
+>
+> That residual is a **decision for Sapir**, not a patch CC can stage: it is a
+> question of what a skipped leg should publish as the branch's E2E verdict, and
+> it lives in a CC-deny file (MEH-671). Full write-up:
+> [`docs/audits/meh-1791-vrt-baseline-review.md`](../audits/meh-1791-vrt-baseline-review.md) §5.
+>
+> _The original pre-application note is kept below for the record._
+
 > **Nothing in this ticket is verifiable until you apply it.** The change is one
 > line in a CC-deny file, and its effect — two consecutive staging pushes both
 > running to completion — can only be observed on `staging` after the merge.
