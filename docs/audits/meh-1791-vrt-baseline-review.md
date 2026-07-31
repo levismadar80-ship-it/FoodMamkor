@@ -165,6 +165,18 @@ Both failures are `09-login-console-clean › no GSI double-init warning`, deskt
 the pre-existing MEH-1776 / MEH-282 defect that MEH-1778 armed the detector for, and which
 `a175f267` states is **expected red** until it lands. Not VRT, and not in this ticket's scope.
 
+> **As-of note — the world moved while this PR was open, which is the whole point of §3.**
+> `f3f59a20` (MEH-1784, *"initialize GSI once per document without losing per-consumer
+> callbacks"*) merged to `staging` at 19:19 IDT, after run `30645351152` was captured. It is
+> the fix those two reds were waiting for, so the "2 failed" figure above is **true as of
+> 16:05Z and expected to be stale now** — cite the run, not the count.
+>
+> It does **not** invalidate the four baselines. The change is confined to `initialize()`
+> de-duplication and callback ownership in `use-google-sign-in.js`; it adds no markup and
+> does not touch `renderButton`, so what the OAuth block *looks like* is unchanged. This
+> branch carries the merge, and its own `Playwright E2E` run is the check on that claim —
+> read it rather than this paragraph.
+
 ---
 
 ## 4. Verdict
