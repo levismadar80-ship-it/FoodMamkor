@@ -284,6 +284,17 @@ else
 fi
 echo "  mode: $([ "$enforcing" -eq 1 ] && echo ENFORCING || echo WARN-ONLY) — $mode_note"
 echo
+# MEH-1803 — the limit of check 1, printed on EVERY run rather than buried in a
+# comment, because a green here was read as "the gate works" and it does not
+# mean that. Proven live on 31/07: the hook emitted its ask and exited 0, and
+# the edit went through with no prompt, because the session permission mode
+# (acceptEdits) approves file edits at an earlier stage than hooks are
+# consulted. Check 1 runs the hook in a shell; the harness is not in the loop.
+echo "  NOTE check 1 proves what the HOOK EMITS, not what the HARNESS ENFORCES."
+echo "       A hook decision other than 'deny' can be pre-empted by the session"
+echo "       permission mode and never reached. Only 'deny' is evaluated ahead"
+echo "       of the mode. See docs/guardrails/meh-1779-permissions.patch.md."
+echo
 
 check_ask_mode
 check_workflow_deny
