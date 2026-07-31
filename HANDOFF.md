@@ -3,6 +3,30 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 (ערב) — MEH-1807: ולידציה חוצת-שלבים באשף הרשמת עסק
+
+**PR #2479** (קוד — **מוזג ל-staging**, auto-merge ע"י ספיר) · **ה-PR הזה** (backfill של CHANGELOG + HANDOFF, כלל 31).
+
+**ענף:** `feature/meh-1807-register-step-validation` מ-`origin/staging`. ה-harness הצביע על ענף `claude/*` — נחתך מחדש לפי כלל 3.
+
+**מה נעשה:** `producer_name` · `phone` · `category_ids` עברו מ-gate יחיד בתוך ה-submit ל-gate בשלב שמחזיק כל שדה, וה-submit נשאר backstop ש**מנווט** לשלב + נותן פוקוס + מרנדר inline. 4 קבצי קוד/i18n + טסטים + harness.
+
+### מה שווה לזכור מהסשן הזה
+
+- **"ליד כפתור השליחה" היה ענף בלתי-נגיש, וזה נאמר במקום להיות ממומש בשקט.** אותה לחיצה שמרימה את ההודעה גם עוזבת את ה-frame שבו הכפתור יושב. מימוש מילולי של ה-AC היה מייצר קוד שנראה נכון, עובר review, ולעולם לא מוצג — ובלתי-ניתן לבדיקה. ההחלטה + הנימוק נכתבו ב-PR, ב-CHANGELOG וכהערה בקוד. **spec שסותר את עצמו הוא ממצא, לא הוראה.**
+- **ה-adversarial review על הדיף שלי מצא באג שהטסטים שלי לא תפסו** — דגל ה-bounce שננעל דלוק. הוא שרד כי תנאי הרינדור דורש **שני** מצבים, ותיקון השדה ריקן רק את אחד מהם: זה נראה self-clearing מבחוץ. **בדיקה של "המצב מתנקה?" חייבת לשאול איזה מהמרכיבים התנקה** — לא להסתפק בכך שה-UI נעלם.
+- **ה-harness אומת מול build שגוי לפני שנתנו אמון בירוק שלו.** probe לא מאומת שמדווח ירוק הוא בדיוק המחלקה ש-`testing.md` מתעדת. עלות: ~2 דקות (revert + build + run). תמורה: הירוק אומר משהו.
+- **`focus` דרש ref לזהות ורק רצף כמספר ב-state** — כדי שבקשת פוקוס חוזרת **לאותו** שדה עדיין תפעיל את ה-effect, ובלי `setState` בתוך ה-effect (הליטנר `react-hooks/set-state-in-effect` תפס את הגרסה הראשונה).
+- **ה-hook של `lint-feedback` נתן 3-strike שווא** בגלל עריכות סדרתיות ששיירו `no-undef` זמני — בדיוק מה ש-exec §8 מזהיר מפניו (MEH-763). התיקון: להשלים את השינוי ולאמת ידנית, לא לנסות שוב.
+- **ה-red של `Adversarial review (calibration)` אומת מול ה-log ולא הונח.** `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, **324ms**, `ANTHROPIC_API_KEY` ריק בסביבת ה-step. **זו ראיה שימושית לספיר לקראת 2026-08-01:** היא תומכת במועמד 1 (credential חסר) על פני מועמד 2 (breaking change ב-`@v1`), אם כי `show_full_output: true` עדיין נדרש כדי לראות את שגיאת ה-action עצמה.
+
+### מה הלאה
+
+- ספיר: אין חוסם. QA נייד אמיתי על staging אם רוצה — ה-self-QA האוטומטי כיסה 390px + 1440px עם screenshots.
+- **פתוח מהסשן:** `Playwright E2E` על ה-PR רץ אחרי המיזוג; שלושת ה-specs של האשף ממלאים שם + טלפון ובוחרים קטגוריה לפני ההתקדמות, ולכן ה-gates החדשים לא אמורים לאדום אותם — נבדק בקריאה, והריצה עצמה נוטרה.
+
+---
+
 ## 2026-07-31 — MEH-1810: בלוק "מה שמשתנה בדרך" ב-`/about/why-local`
 
 **PR #2474** (קוד, פתוח — ממתין ל-QA נייד של ספיר) · **PR של ה-docs הזה** (backfill של CHANGELOG + HANDOFF).
