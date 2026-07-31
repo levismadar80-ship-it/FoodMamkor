@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 (ערב) — batch MEH-1804 / 1805 / 1806: שניים מוזגו, אחד נעצר בכוונה
+
+**מוזג:** PR #2473 (MEH-1804, `b808cede`) · PR #2482 (MEH-1805, `21c47830` — auto-merge של ספיר). **לא יושם:** MEH-1806 — STOP, הממצאים בכרטיס.
+
+### מה נחת
+
+- **MEH-1804** — הבאנר הגלובלי של אימות עבר לניסוח אבטחת-חשבון; `publish_gate` **נבדק ונשאר** (ניטרלי לגבי מי מפרסם, צרכן יחיד `UnverifiedEmailNotice.jsx:36`). ה-`aria-label` של הסגירה עבר ל-i18n — קודם משתמשת קורא-מסך ב-`/en` קיבלה תווית **בעברית**.
+- **MEH-1805** — 4 OAuth-503 + `_REGISTER_ACK_DETAIL` לשם פועל/רבים. strings בלבד; byte-identity של האנטי-enumeration נשמר (קבוע יחיד `auth.py:247` → `:357`/`:735`).
+
+### שלושה דברים ששווים יותר מהתוצאה
+
+1. **ה-clone היה shallow, וזה כמעט הפך מסקנה.** ב-MEH-1806 השאלה כולה הייתה "האם ההשמטה מכוונת". `git rev-parse --is-shallow-repository` → `true`, ובמצב הזה `git log -S` מחזיר את commit ה-graft כאילו כתב את השורות. אחרי `--unshallow` (2,831 commits) נמצאה ההערה המקורית ב-`be5ed573` (17/05): *"No verify/welcome email — the user already has a verified consumer account; she's just adding producer capability"* — **הכרעה מפורשת על ה-welcome**. `d521ea5e` (MEH-1553) תיקן רק את הטעות ב*הנחה* ושכתב את ההצדקה סביב ה-verify, וכך הסתיר את הנימוק. **בלי unshallow המסקנה הייתה "פער לא-מכוון" והייתי מיישם.**
+2. **פריט DoD שהתברר כשגוי — והחיפוש הריק הוא הממצא.** `admin.common.delete_f` לא קיים בשום path בשני ה-locales (רק `delete_failed`, ה-substring שהוזהרנו מפניו). לא נמחק דבר; תיאור הכרטיס תוקן. זה `file-preservation.md` §6 בפעולה.
+3. **תיקון שאי אפשר לראות עדיף להצהיר עליו.** `_REGISTER_ACK_DETAIL` **אינו מרונדר באף משטח frontend** — מסך ההצלחה מרנדר i18n משלו (`he.json:213`/`:380`), וה-`detail` מה-backend מגיע רק לענף השגיאה (`RegisterClient.jsx:161`) בעוד ה-ack הוא 200. השינוי נכון כתשובת API, אבל אין לו ביטוי נראה בדפדפן.
+
+### מה פתוח
+
+- **MEH-1806 ממתין להכרעת ספיר** — שלוש אופציות בכרטיס. שים לב: התיקון ה"מובן מאליו" היה שולח **שני welcome בהפרש דקות** לבעלת עסק ממקור OAuth (Step 0 שולח `"consumer"` ב-`auth.py:982`).
+- **STOP-e של MEH-1805 — לא מוזג, ממתין לאישור נוסח:** `auth.py:502`/`:958` («צרי»), `auth.py:1236` («בקשי»), `marketing.py:275` («אלייך»). `upload.py:142,216,298,366` הושאר כאמביוולנטי — לא ברור אם ההעלאה היא משטח צרכני או HOLD.
+- **`VerifyBanner.test.jsx` בודק מול מפתחות מהודהדים** ולכן לא יזהה מפתח שנמחק מ-`he.json`. הכיוון he→en מכוסה ע"י `en-parity-guard`. נרשם, מחוץ ל-scope.
+
+### תפעול
+
+`/adversarial-review` הורץ **מקומית על שלושת הדיפים** (ה-CI reviewer עדיין חסר credentials ואדום בכל PR — `continue-on-error`, מחוץ ל-`needs`). **זו סקירה עצמית וללא עצמאות.** כלל 29 נבדק מקומית לפני פתיחת כל PR ותפס ב-#2482 שלושה מזהים חשופים של כרטיסים סגורים — נוסחו מחדש כפרוזה לפני הפתיחה, כלומר לפני שה-auto-link יכול היה לפתוח אותם מחדש.
+
 ## 2026-07-31 (ערב) — MEH-1807: ולידציה חוצת-שלבים באשף הרשמת עסק
 
 **PR #2479** (קוד — **מוזג ל-staging**, auto-merge ע"י ספיר) · **ה-PR הזה** (backfill של CHANGELOG + HANDOFF, כלל 31).
