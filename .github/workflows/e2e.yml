@@ -140,6 +140,15 @@ jobs:
           # docs/DEPLOYMENT.md → env table). NEXT_PUBLIC_* is inlined at
           # build time; rewrites() reads it again at server boot.
           NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          # MEH-1778: without this the GSI script is never appended
+          # (use-google-sign-in.js:26 returns early on an absent client id), so
+          # every "no GSI console warning" assertion in
+          # e2e/flows/09-login-console-clean.spec.ts passed on an empty universe
+          # — green because nothing ran, not because the code was correct.
+          # NOT a secret: an OAuth client id is public by design (it ships in
+          # the browser bundle) and this exact value is already committed at
+          # docs/DEPLOYMENT.md:1350. Plain env, deliberately not `secrets.*`.
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
       # MEH-1044 — replaces MEH-728's "Warm up Vercel preview". Same purpose
       # (a cold server must not trip --fail-on-flaky-tests), local target:
