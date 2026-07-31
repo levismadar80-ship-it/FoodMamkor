@@ -2952,6 +2952,20 @@ class EventCreate(BaseModel):
     def _validate_image_url(cls, v):
         return _image_url_validator(v)
 
+    # MEH-1811: registration_url had NO validator and lands directly in an
+    # href (EventDetailClient.jsx:157, ProducerSections.jsx:379), so
+    # "javascript:…" / "data:…" typed into "לינק הרשמה חיצוני" was stored XSS.
+    # `<input type="url">` reports valid=true for both (measured in Chromium,
+    # MEH-1809) and rel="noopener noreferrer" only defends against tabnabbing,
+    # so the server is the only boundary. Same http(s) allowlist as
+    # website/facebook/external_order_form — NOT _image_url_validator, whose
+    # extra netloc-extension rule is image-specific.
+    # REUSES: schemas.py:1122 — ProducerCreate._validate_contact_urls.
+    @field_validator("registration_url")
+    @classmethod
+    def _validate_registration_url(cls, v):
+        return _url_scheme_validator(v)
+
 
 class EventUpdate(BaseModel):
     # MEH-1626 chunk 1: parity with the Create twin. Optional, so an omitted
@@ -2987,6 +3001,14 @@ class EventUpdate(BaseModel):
     @classmethod
     def _validate_image_url(cls, v):
         return _image_url_validator(v)
+
+    # MEH-1811: parity with the Create twin — an event created clean could
+    # otherwise be poisoned on the edit path, which is the same gap the
+    # MEH-1626 chunk-1 note above describes for `title`. See EventCreate.
+    @field_validator("registration_url")
+    @classmethod
+    def _validate_registration_url(cls, v):
+        return _url_scheme_validator(v)
 
 
 class EventOut(BaseModel):
