@@ -670,7 +670,17 @@ export function useHomePage() {
   // MEH-1692: at/above the trust threshold the band LEADS with the count, and
   // the secondary line drops its own business count so the number is stated
   // once rather than twice (categories + countrywide stay).
-  const showTrustCount = statsLoaded && statsProducersCount >= TRUST_COUNT_THRESHOLD;
+  //
+  // Gated on the AUTHORITATIVE /stats value, not on `statsProducersCount`. That
+  // accessor falls back to `producers.length` when /stats fails — and that list
+  // is the FILTERED home feed, so under a category or city filter it counts a
+  // subset, not the directory. Tolerable for the quiet secondary line it has
+  // always fed; not tolerable for a leading claim about how many businesses
+  // exist, which is the over-claim class this ticket was opened to fix. When
+  // /stats is unavailable the band falls back to the sentence, which is true
+  // regardless of any count.
+  const showTrustCount =
+    statsLoaded && (stats?.producers_count ?? 0) >= TRUST_COUNT_THRESHOLD;
 
   // MEH-1688: `newestProducers` (last 4 by created_at) is GONE along with the
   // standalone section it fed. Recency is now a per-card fact, not a separate
