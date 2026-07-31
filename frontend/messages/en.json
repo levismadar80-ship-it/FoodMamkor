@@ -2405,6 +2405,9 @@
       "error_title_short": "Title is too short",
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
+      "error_duration_range": "Duration must be between 15 and 1440 minutes",
+      "error_price_negative": "Price cannot be negative",
+      "error_max_participants_min": "Max participants must be at least 1",
       "error_generic": "Error submitting the experience. Please try again.",
       "save_cta": "Save",
       "field_image_placeholder": "https://res.cloudinary.com/..."

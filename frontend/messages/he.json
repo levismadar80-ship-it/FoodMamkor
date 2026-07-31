@@ -2426,6 +2426,9 @@
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
+      "error_duration_range": "משך החוויה חייב להיות בין 15 ל-1440 דקות",
+      "error_price_negative": "המחיר לא יכול להיות שלילי",
+      "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
       "save_cta": "שמירה",
       "field_image_placeholder": "https://res.cloudinary.com/..."

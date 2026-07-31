@@ -12,7 +12,11 @@
  *           the consuming page passes onSuccess and renders the surrounding UI.
  * Related:  experiences/new/NewExperienceClient.jsx (create wrapper),
  *           producer/dashboard/experiences/[id]/edit/page.js (edit wrapper).
- * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here).
+ * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
+ *           MEH-1809 (all required/range checks evaluated together and rendered
+ *           inline per field + focus to the first invalid one — replaced the
+ *           one-at-a-time `return setServerError(...)` chain; the banner now
+ *           carries server/moderation errors only).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -78,6 +82,47 @@ function seed(initial) {
   };
 }
 
+// MEH-1809: every required/range rule in one place. The three length/date
+// checks were already here as sequential early-returns; the duration/price/
+// participant bounds were enforced only by native `min`/`max` attributes, which
+// the form's new `noValidate` turns off — so they move here unchanged rather
+// than disappearing. Order = DOM order, so "first invalid" means topmost.
+const EXPERIENCE_FIELD_ORDER = [
+  "title",
+  "description",
+  "event_date",
+  "duration_minutes",
+  "price_per_person",
+  "max_participants",
+];
+
+const EXPERIENCE_FIELD_ID = {
+  title: "experience-title",
+  description: "experience-description",
+  event_date: "experience-date",
+  duration_minutes: "experience-duration",
+  price_per_person: "experience-price",
+  max_participants: "experience-max-participants",
+};
+
+function validateExperienceForm(f, t) {
+  const errors = {};
+  if (f.title.trim().length < 4) errors.title = t("error_title_short");
+  if (f.description.trim().length < 20) errors.description = t("error_description_short");
+  if (!f.event_date) errors.event_date = t("error_date_required");
+  if (f.duration_minutes !== "") {
+    const d = Number(f.duration_minutes);
+    if (d < 15 || d > 1440) errors.duration_minutes = t("error_duration_range");
+  }
+  if (f.price_per_person !== "" && Number(f.price_per_person) < 0) {
+    errors.price_per_person = t("error_price_negative");
+  }
+  if (f.max_participants !== "" && Number(f.max_participants) < 1) {
+    errors.max_participants = t("error_max_participants_min");
+  }
+  return errors;
+}
+
 /**
  * @param {"create"|"edit"} mode
  * @param {object|null} initial  experience (ExperienceDetailOut) to prefill
@@ -92,6 +137,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [unverified, setUnverified] = useState(false);
   const debounceRef = useRef(null);
   const isEdit = mode === "edit";
@@ -99,6 +145,8 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const setField = (name) => (e) => {
     const value = e?.target?.type === "checkbox" ? e.target.checked : e?.target?.value;
     setForm((f) => ({ ...f, [name]: value }));
+    // A field being corrected stops shouting at the owner (GOV.UK).
+    setFieldErrors((errs) => (errs[name] ? { ...errs, [name]: undefined } : errs));
   };
 
   const setCityField = useCallback((value) => {
@@ -154,9 +202,19 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     setServerError("");
     setUnverified(false);
 
-    if (form.title.trim().length < 4) return setServerError(t("error_title_short"));
-    if (form.description.trim().length < 20) return setServerError(t("error_description_short"));
-    if (!form.event_date) return setServerError(t("error_date_required"));
+    const errors = validateExperienceForm(form, t);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstInvalid = EXPERIENCE_FIELD_ORDER.find((field) => errors[field]);
+      const el = document.getElementById(EXPERIENCE_FIELD_ID[firstInvalid]);
+      el?.focus();
+      el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setFieldErrors({});
+
+    // Not a field error: the moderation verdict belongs to the whole submission
+    // and already has its own block above, so it stays in the banner.
     if (verdict?.status === "REJECTED") return setServerError(verdict.reason || t("rejected_fallback"));
 
     const payload = {
@@ -197,29 +255,36 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   };
 
   return (
-    <form onSubmit={submit} className="bg-background border border-border rounded-[16px] p-6 space-y-5">
+    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-[16px] p-6 space-y-5">
       {unverified && <UnverifiedEmailNotice />}
       {serverError && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{serverError}</div>
       )}
 
       <Input
+        id="experience-title"
         label={t("field_title")}
         type="text"
         value={form.title}
         onChange={setField("title")}
         placeholder={t("field_title_placeholder")}
         required
+        error={fieldErrors.title}
       />
 
-      <Field label={t("field_description")}>
+      <Field id="experience-description" label={t("field_description")} error={fieldErrors.description}>
         <textarea
+          id="experience-description"
           value={form.description}
           onChange={setField("description")}
           rows={5}
           placeholder={t("field_description_placeholder")}
-          className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          className={`w-full border rounded-[12px] px-3 py-2 bg-white ${
+            fieldErrors.description ? "border-error" : "border-border"
+          }`}
           required
+          aria-invalid={fieldErrors.description ? true : undefined}
+          aria-describedby={fieldErrors.description ? "experience-description-error" : undefined}
         />
       </Field>
 
@@ -268,11 +333,20 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input label={t("field_date")} type="date" value={form.event_date} onChange={setField("event_date")} required />
+        <Input
+          id="experience-date"
+          label={t("field_date")}
+          type="date"
+          value={form.event_date}
+          onChange={setField("event_date")}
+          required
+          error={fieldErrors.event_date}
+        />
         <Input label={t("field_time")} type="time" value={form.event_time} onChange={setField("event_time")} />
       </div>
 
       <Input
+        id="experience-duration"
         label={t("field_duration")}
         type="number"
         min="15"
@@ -280,6 +354,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         value={form.duration_minutes}
         onChange={setField("duration_minutes")}
         placeholder={t("field_duration_placeholder")}
+        error={fieldErrors.duration_minutes}
       />
 
       <Field label={t("field_location_type")}>
@@ -331,6 +406,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
+          id="experience-price"
           label={t("field_price")}
           type="number"
           min="0"
@@ -338,14 +414,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           value={form.price_per_person}
           onChange={setField("price_per_person")}
           placeholder={t("field_price_placeholder")}
+          error={fieldErrors.price_per_person}
         />
         <Input
+          id="experience-max-participants"
           label={t("field_max_participants")}
           type="number"
           min="1"
           value={form.max_participants}
           onChange={setField("max_participants")}
           placeholder={t("field_max_participants_placeholder")}
+          error={fieldErrors.max_participants}
         />
       </div>
 
@@ -399,11 +478,23 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   );
 }
 
-function Field({ label, children }) {
+// MEH-1809: `id` associates the label with its control and `error` renders the
+// message under it, matching ui/Input's error slot (text-xs text-error). Both
+// are optional, so the callers that pass neither render exactly as before —
+// this is the textarea/select path that ui/Input, an <input>-only primitive,
+// cannot cover.
+function Field({ id, label, error, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-text mb-1">{label}</label>
+      <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
+        {label}
+      </label>
       {children}
+      {error && (
+        <span id={id ? `${id}-error` : undefined} className="text-xs text-error mt-1 block">
+          {error}
+        </span>
+      )}
     </div>
   );
 }
