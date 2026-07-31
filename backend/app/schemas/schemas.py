@@ -811,6 +811,34 @@ class DeliveryAreaCreate(BaseModel):
     # ProducerUpdate.delivery_areas (producer_me PUT) — so one field covers
     # them all. None allowed = "בתיאום מראש".
     delivery_day: DeliveryDayField | None = None
+    # MEH-1772: per-area override of producers.delivery_fee. NULL = inherit.
+    # Same three-value semantics as the producer-level field (MEH-1577):
+    # None = not stated, 0 = "משלוח חינם", positive = the fee.
+    delivery_fee: int | None = None
+
+    # REUSES: backend/app/schemas/schemas.py:1604 (ProducerUpdate.
+    # _validate_delivery_fee, MEH-1577) — identical bounds and identical
+    # Hebrew copy, deliberately. The two live on different models (this one
+    # validates a row inside a list; that one a producer field), so Pydantic
+    # cannot share the validator without a mixin that would drag
+    # free_delivery_above — a producer-level-only field — onto this row.
+    #
+    # The upper bound is not decoration: the column is Postgres INTEGER, and
+    # without it a larger value passes validation and raises
+    # NumericValueOutOfRange at flush — a 500, which is exactly what the
+    # no-DB-CHECK design exists to avoid.
+    @field_validator("delivery_fee")
+    @classmethod
+    def _validate_area_delivery_fee(cls, v):
+        if v is None:
+            return None
+        # 0 is legal and load-bearing — "משלוח חינם" to this area, distinct
+        # from NULL ("inherit the producer's fee"). Only negatives rejected.
+        if v < 0:
+            raise ValueError("עלות משלוח לא יכולה להיות שלילית")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("עלות משלוח גבוהה מדי")
+        return v
 
 
 class DeliveryAreaOut(BaseModel):
@@ -818,6 +846,13 @@ class DeliveryAreaOut(BaseModel):
     city: str
     min_order: int | None = None
     delivery_day: str | None = None
+    # MEH-1772: emitted so the public page can render the per-area fee and
+    # fall back to the producer-level one when this is NULL. The fallback is
+    # resolved on the CLIENT (chunk 3), not here — serializing an already
+    # coalesced value would erase the difference between "this area overrides
+    # with the same number" and "this area inherits", which is the one thing
+    # the "משלוח מ-X₪" variance line needs to distinguish.
+    delivery_fee: int | None = None
 
     model_config = {"from_attributes": True}
 

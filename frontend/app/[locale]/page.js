@@ -62,7 +62,7 @@ export default function HomePage() {
     // filled "גלו בתי עסק" button was its only consumer on this page and the
     // search pill replaced it. The helper itself still lives in use-home-page
     // (it fires after a near-me / city apply); only the prop pass-through went.
-    handleWhatsAppClick, toggleChip,
+    handleWhatsAppClick, navigateToChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
 
@@ -201,7 +201,7 @@ export default function HomePage() {
         onboardAdvance={onboardAdvance}
         onboardDismiss={onboardDismiss}
         onAdvanceFromStep0={handleAdvanceFromStep0}
-        onToggleChip={toggleChip}
+        onChipNavigate={navigateToChip}
         onClearCategory={handleClearCategory}
         onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}

@@ -100,6 +100,29 @@ green? If you cannot answer from reading it, run it against a build with the ele
 deleted. That two-run control is the only thing that distinguishes a guard from a
 decoration, and it is cheap.
 
+**A green VRT is not evidence that the frame is unchanged — read the text in it (MEH-1765).**
+`playwright.config.ts:61` sets `maxDiffPixelRatio: 0.02`. On the mobile project (Pixel 5,
+393×851, no `fullPage`) that is a **6,688 px** budget; on desktop (1440×900), **25,920 px**.
+Both are large enough to swallow a complete copy change or the loss of a navigation control.
+Measured on 29/07: the `home` hero label went `«מחפשות עכשיו:»` → `«פופולרי עכשיו:»` (~2,800 px
+of ink) and VRT stayed green; the MEH-1390 producer-detail tab bar went from **4 tabs to 2**
+(~3,100 px) and a scoped regen reported *"Baselines unchanged — nothing to commit."*
+
+The second-order effect is what makes this dangerous rather than merely loose: because
+`--update-snapshots` rewrites only a **failing** snapshot, a passing comparison produces **no
+new PNG** — so there is nothing for the eye pass to review, and the change leaves no trace in
+the diff at all. *"Baselines unchanged"* means **"under tolerance"**, never **"the frame is the
+same."** Any baseline review must therefore read the rendered strings, and any claim that a
+surface is unaffected needs a source other than a green VRT. Whether 2% is the right number is
+MEH-1765 — do not change `playwright.config.ts` under another ticket.
+
+**Requesting a regen by label instead of by dispatch:**
+[docs/ci/vrt-label-trigger.patch.md](../../docs/ci/vrt-label-trigger.patch.md) (MEH-1764,
+staged for Sapir — `.github/workflows/**` is CC-deny). That doc also records, with run ids,
+that CC's GitHub App **does** hold `actions: write`: `vrt-update.yml:15`'s claim to the
+contrary is false, and the label path is a deliberate narrowing of a permission CC holds —
+not a workaround for one it lacks.
+
 **Restoring an old artifact is not ratification.** A runner-generated image carries
 **credibility, not currency** — restoring it returns the first and not the second, and the
 file name looks identical either way. Before restoring any baseline, count the commits
@@ -194,7 +217,7 @@ PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
 `staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
 MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
 wired into the required-check set — the sanctioned way to make it block merge is
-the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+the `E2E gate` aggregator (job id `e2e-gate`, `always()` +
 `needs: [filter, e2e]`) whose YAML is staged in
 [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
 (`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
@@ -233,7 +256,7 @@ docs-only).
 Governance + gate matrix:
 [ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
 amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
-aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
 

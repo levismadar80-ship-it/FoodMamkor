@@ -1,6 +1,6 @@
-# 📋 Template 06 — Linear Issue (v2.1)
+# 📋 Template 06 — Linear Issue (v2.2)
 
-למשימה מלאה ב-Linear (1-10 שעות). גרסה 2.1 — יולי 2026 (מיגרציית 3 anti-pattern deltas מה-project instructions, MEH-1248; בסיס גרסה 2.0 — אפריל 2026).
+למשימה מלאה ב-Linear (1-10 שעות). גרסה 2.2 — 31 ביולי 2026 (MEH-1782: ה-DoD פוצל לפי סוג ה-diff כך שלא יורה על צירוף ש-rule 31 חוסם, + anti-pattern מתאים). גרסה 2.1 — יולי 2026 (מיגרציית 3 anti-pattern deltas מה-project instructions, MEH-1248; בסיס גרסה 2.0 — אפריל 2026).
 
 ---
 
@@ -90,8 +90,12 @@
 - [ ] build ירוק (npm run build + pytest)
 - [ ] preview URL נשלח
 - [ ] נבדק בנייד (iOS Safari + Chrome)
-- [ ] CHANGELOG עודכן (אם שינוי משמעותי)
-- [ ] HANDOFF.md עודכן
+- [ ] CHANGELOG + HANDOFF.md עודכנו — **ב-PR הנכון לפי סוג ה-diff (rule 31):**
+  - **PR שנוגע בקוד → ב-PR docs-only נפרד.** `scripts/checks/changelog-branch-guard.sh`
+    (תחת ה-job הנדרש *Repo guards*) מאדים כל diff שנוגע גם בקוד וגם ב-`docs/CHANGELOG.md`
+    או `HANDOFF.md`. הכרטיס חייב לומר זאת מפורשות, אחרת ה-DoD שלו חוסם את המיזוג שהוא מאשר.
+  - **PR docs-only → מותר באותו PR.** ה-guard מאדים רק את הערבוב; backfill של docs
+    בלבד הוא בדיוק המסלול שהוא קיים כדי לאפשר.
 
 ---
 
@@ -280,8 +284,8 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 - [ ] Hebrew copy matches brand voice
 - [ ] Mobile preview: full flow tested on iOS Safari
 - [ ] preview URL sent
-- [ ] CHANGELOG updated
-- [ ] HANDOFF.md updated
+- [ ] CHANGELOG + HANDOFF.md updated **in a separate docs-only PR** — this ticket
+      ships code, so rule 31 / `changelog-branch-guard.sh` reds them here
 - [ ] PR description includes acceptance_criteria checklist
 
 ---
@@ -322,6 +326,14 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 ❌ **Heavy persona embellishment ב-`<role>`** — Wharton 2025: לא משפר accuracy.
 
 ❌ **Pre-fill** — דורות אחרונים הסירו תמיכה.
+
+❌ **"עדכן CHANGELOG באותו PR" בתוך prompt או DoD של כרטיס קוד** — מתנגש ב-rule 31.
+`changelog-branch-guard.sh` (job נדרש *Repo guards*) מאדים כל diff שנוגע גם בקוד וגם
+ב-`docs/CHANGELOG.md`/`HANDOFF.md`, כך שהכרטיס מורה על הצירוף שחוסם את המיזוג שהוא
+עצמו מאשר. **הוכח ב-MEH-1771:** ה-`verification_step` שם דרש "אותו PR", CC נאלצה לפצל
+לפי Truth Hierarchy (`.claude/rules/` גובר על תיאור כרטיס), והלוגים ירדו ל-PR #2435.
+בכרטיס קוד כתבי **"CHANGELOG + HANDOFF ב-PR docs-only נפרד"**; בכרטיס docs-only, אותו
+PR מותר.
 
 ---
 

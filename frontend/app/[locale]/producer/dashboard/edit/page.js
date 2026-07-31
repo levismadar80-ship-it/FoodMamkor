@@ -237,6 +237,12 @@ function EditPageInner() {
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
+  // MEH-1773: point-of-decision explainer for the order-window card. The
+  // ContactChannelsCard hook of the same name (:1202) is scoped to that
+  // component and not reachable from here.
+  // REUSES: frontend/app/[locale]/producer/dashboard/edit/page.js:1202 — same
+  // top-level whats_this namespace, same WhatsThis component (MEH-1115).
+  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
 
@@ -1015,6 +1021,17 @@ function EditPageInner() {
           open={openKey === "orderWindow"}
           onToggle={() => toggleKey("orderWindow")}
         >
+          {/* MEH-1773: "חלון הזמנות" and the "זמינות" card on the dashboard
+              landing page both read as "when am I open", so owners could not
+              tell them apart. This names the distinction at the point of
+              editing — the recurring weekly schedule — and its twin sits on
+              the availability card (dashboard/page.js) saying the other half:
+              a manual, temporary exception. */}
+          <WhatsThis
+            content={tWhat("order_window")}
+            className="mb-1"
+            testId="whats-this-order-window"
+          />
           <OrderWindowEditor
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}

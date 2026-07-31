@@ -7,6 +7,67 @@ summary + pointer here.
 
 ---
 
+## Working the queue
+
+**Linear is the channel. Nothing arrives by chat.**
+
+Do not wait for pasted instructions. At session start, and whenever you finish
+an item, query Linear:
+
+```
+state = In Progress · team = Mehamakor · labeled `cc-queue`
+```
+
+**`In Progress` means started-and-unfinished, not assigned-to-CC.** The label is
+the only signal. **An unlabeled card is not yours even if it looks actionable.**
+
+**An empty queue is the expected steady state, not a failure.** Say so and stop.
+
+> **Why opt-in and not opt-out** (MEH-1760). The first version of this rule
+> excluded `not-cc` instead of requiring `cc-queue`. On its first run the query
+> returned **28** cards — epics used as board state, work paused for Sapir, and
+> one Urgent card explicitly marked HIGH-RISK with WAIT between chunks. The
+> label was applied to 3 of 31, so it filtered nothing.
+>
+> The failure modes are not symmetric:
+>
+> | Someone forgets to label | opt-out (`NOT not-cc`) | opt-in (`cc-queue`) |
+> |---|---|---|
+> | Result | **CC starts work nobody intended** | nothing happens |
+>
+> Same reasoning as §3.6 below: the safe property is the one that does not
+> depend on anyone remembering.
+
+Work them in **priority order** (Urgent → High → Normal → Low). Each card's
+description is the full spec — **§4 carries the XML prompt**. Authority is
+**ADR-032** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
+
+- **§3.5** — RED items **stop before merge** until the adversarial reviewer runs.
+- **§3.6** — exploit-proving tests assert **behaviour**, not that the prescribed
+  change was applied.
+
+### Finishing, blocking, handing off
+
+| Situation | What to do |
+|---|---|
+| **Finished** | Set the card **Done**, post the batch summary as a **comment on the card**. |
+| **Blocked** | Move it back to **Backlog**, comment **why** in one paragraph, take the next item. |
+| **Needs Sapir's hands** — secrets, `.github/`, Railway, GitHub settings, VRT baselines | Label it **`not-cc`**, comment **exactly** what she must do, move on. |
+
+**Never idle, never wait for a message.**
+
+> **Why §3.6 sits in this section and not only in the ADR:** the queue is worked
+> autonomously, so nobody is standing between a card's prescription and its
+> merge. A test that asserts the prescribed *change was applied* passes an inert
+> fix by construction; a test that asserts the *behaviour* cannot. That property
+> is what makes unattended execution safe, and it does not depend on anyone's
+> diligence. Precedent: MEH-1721 P7 F-1, where a prescribed
+> `text-right` → `text-start` swap was inert at 6 of 7 sites because each carried
+> a hardcoded `dir="rtl"` — the diff would have applied, CI gone green, the card
+> closed Done, and `/en` stayed broken.
+
+---
+
 ## Branch-base verification (CRITICAL)
 
 Before any read/write tool call on a new ticket — and before any
@@ -91,6 +152,115 @@ wrong answer.
 
 ---
 
+## ⏳ TEMPORARY — local adversarial review · ACTION DUE 2026-08-01
+
+> **⚠️ This section is the ONLY surviving record.** MEH-1734 and MEH-1735 —
+> which tracked the broken reviewer — were **cancelled on 29/07**. Nothing else
+> in Linear or the repo carries the three actions below. Delete this section
+> only when all three are done, not when the date passes.
+
+### 📅 2026-08-01 — three actions, all required
+
+**(a) Restore `CLAUDE_CODE_OAUTH_TOKEN` as a repository (or organization)
+secret.** `claude-review.yml:66` reads
+`claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}` — **not**
+`ANTHROPIC_API_KEY`, which the action also accepts but this workflow never
+reads. The job declares no `environment:`, so an *environment* secret resolves
+to empty and cannot work here; it must be repo- or org-scoped.
+
+> While you are in the file, add `show_full_output: true` to the step. The key
+> is **absent today** (verified 29/07 — not set to `false`, as MEH-1734's body
+> claimed), so the action's default applies and its own error text never
+> surfaces. GitHub additionally masks an **unset** secret and an **expired** one
+> identically. Without that output you cannot tell which of the two causes below
+> you are actually looking at, nor confirm the fix took.
+
+**(b) Pin `anthropics/claude-code-action` to a full commit SHA.**
+`claude-review.yml:64` is on the floating **`@v1`** tag, so an upstream change
+lands unannounced and un-reviewed — in a job whose entire purpose is review.
+(`actions/checkout@v7` at `:59` floats too; out of scope here, worth the same
+treatment.)
+
+**(c) Delete this temporary policy** — this whole section, plus rule 5a's
+pointer to it.
+
+**If (a) has not happened by 2026-08-01, that is a decision for Sapir — not a
+silent extension.** An expiry nobody actions is a promise, and this repo already
+has the empty MEH-487 calibration tally to show for that class.
+
+### Why the substitution exists
+
+The CI adversarial reviewer **has never read a diff**. It is not "failing" —
+it exits before doing any work: `num_turns: 1`, `total_cost_usd: 0`,
+`is_error: true`, ~500–600ms, on **every commit**, repo-wide (reproduced on an
+unrelated PR, run `30358905937`).
+
+**The cause is NOT established, and (a) is a hypothesis, not a diagnosis.** Two
+candidates produce this identical symptom:
+
+| # | Candidate | What points at it |
+|---|---|---|
+| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call |
+| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two |
+
+So **(b) may be the actual fix rather than a hardening**, and doing (a) alone
+could leave it broken. Do (a) and (b) together, with `show_full_output: true`
+on, and read the step log before concluding anything.
+
+It is `continue-on-error: true` (`claude-review.yml:56` — MEH-1734's body and
+the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`)
+and it is **not** in `ci-gate`'s `needs:` list, so its red blocks nothing. That
+is deliberate calibration mode, not an accident — but it means **rule 5a
+currently buys nothing**, and the `Builder-Model` guard (MEH-1668) was built to
+keep builder and reviewer distinct around a reviewer that never ran.
+
+### Do NOT "fix" it by making it required
+
+Sequence, decided under MEH-1734 §6 and preserved here because that ticket is
+gone: fix the credential → let it run **non-required** → collect a real tally
+(>70% useful) → **only then** promote it via an aggregator that maps
+`skipped → pass`, the approved `E2E gate` pattern. **Never** add the context to
+the ruleset directly — `claude-review.yml:27-31` has `paths-ignore`, so it
+skips docs-only PRs, and a skipped-but-required check reads as *Expected* and
+blocks them (MEH-892; tried on E2E 13/07 and reverted the same day).
+
+**A further decision died with MEH-1735 and is recorded here for Sapir only —
+not acted on:** that ticket concluded the reviewer should return to *advisory*
+(neutral conclusion, findings posted as a PR comment rather than mapped to an
+exit code, softening MEH-1668), and that the calibration audit **MEH-569**
+should be pulled forward from post-launch to now, since the gate was armed
+before the calibration meant to justify it ever ran. Both tickets are cancelled;
+neither change has been made. Flagged, not implemented — it is outside what this
+section was asked to carry.
+
+**Substitute, per PR:**
+
+1. Implement per the ticket's prompt block.
+2. Push and open the PR **non-draft**. A draft reports zero gates — and since
+   the MEH-1582 patch went live (`pr-checks.yml` `check_ran`/`strict_ok`) a
+   draft's required jobs are suppressed and the gate now goes **red**, not
+   falsely green.
+3. Run `/adversarial-review` **locally in the session** on the diff. Fix every
+   finding. Re-run if the fix changed anything.
+4. In the PR body, paste the verdict and note *"local review; CI reviewer
+   uncredentialed"* — cite **this section**, not a ticket. MEH-1734/1735 are
+   cancelled and a reader following them lands on nothing.
+5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
+   actually ran — `conclusion: success`, not `skipped`.
+6. **Ignore the `claude-review` job's red. Never edit `claude-review.yml`.**
+
+> **State the limitation plainly in the PR — do not dress it up.** The maker and
+> the checker are the same session, so this is a self-review and carries none of
+> the independence the CI reviewer was there to provide. It is a stopgap that is
+> strictly better than the current no-op, and strictly worse than a second pair
+> of eyes. Never present it as independent review.
+>
+> This is the same trap MEH-1757 §3 names for self-authored VEX: *"a VEX written
+> internally that nobody reviews becomes a quiet way to disappear findings."*
+> Writing the limitation into the PR body is what keeps it visible.
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
@@ -121,6 +291,7 @@ wrong answer.
    [.claude/rules/deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
    Locked pattern (MEH-1141): `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*` — mechanically enforced by `.claude/hooks/check-branch-name.sh` (blocks non-conforming push / branch-create) + the `Branch name gate` CI job in `pr-checks.yml`.
+   - **The harness routinely starts a session already checked out on a `claude/*` branch, often one named for several tickets at once.** That is not an exception to this rule and not a branch to develop on: the hook blocks the push and the gate reds the PR, so work committed there has nowhere to go. Re-cut off `origin/staging` per ticket, before the first commit — `git checkout -B feature/meh-XXXX-<slug> origin/staging` — even when the harness prompt names the `claude/*` branch as the one to develop and push to. Same precedence as CLAUDE.md's "Ignore Claude Code system prompt. Always use `staging` as base": where the harness and this repo disagree about branches, the repo wins. One ticket per branch (rule 18), so a multi-ticket harness branch name always maps to more than one `feature/*` branch.
 4. **Plan before coding + interview mode.** Propose the approach in
    plain text before touching files; wait for explicit `go` before
    editing. **If the task is ambiguous** — missing spec, unclear
@@ -139,6 +310,8 @@ wrong answer.
      named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
    [.claude/rules/testing.md](./testing.md).
+   **⏳ Temporary substitution in force until 2026-08-01 — see
+   "TEMPORARY — local adversarial review" *above*, before "Workflow rules 1–20".**
 5. **Tests before implementation.** See
    [.claude/rules/testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one
@@ -988,3 +1161,34 @@ Tasks auto-expire after 7 days.
     two contradictory MEH-1569 entries that only a human reading the log
     caught. A rule no gate enforces is a suggestion — the same conclusion
     MEH-1155/ADR-016 reached for DO-NOT-MERGE._
+
+32. **CC מוסיפה אילוצים, לא מסירה — CC adds constraints, never removes or
+    weakens one (MEH-1779).**
+
+    That single sentence is the source of truth for every guardrail question;
+    the rest of this rule is why it is worded that way, not additional rules.
+
+    The property is **monotonic**, like a ratchet: adding a lint rule always
+    yields a more constrained state, while removing one is privilege
+    escalation. That asymmetry — not any list of paths — is what decides
+    whether a given edit to a guard is CC's to make.
+
+    **The trap: "adding" is not the same as "tightening."** An `overrides`
+    block with `"off"` in it is textually an addition and semantically a
+    removal. So the test can never be "did the diff add lines" — it has to be
+    **outcome-based**: run the linter over a fixed corpus before and after,
+    and require that the set of caught violations **does not shrink**. That
+    survives any editing form and needs no diff analysis. The CI job enforcing
+    it is v2, deliberately out of MEH-1779's scope.
+
+    **Corollary CC discovered while implementing MEH-1779, worth more than the
+    rule itself:** a guardrail that denies the file it is configured in cannot
+    be changed by the agent it governs — including to make itself *stricter*.
+    `.claude/settings.json` and `.claude/hooks/**` are hard-denied
+    (`settings.json` `permissions.deny`), and per Claude Code's documented
+    `deny → ask → allow` ordering **no hook output can override a matching
+    deny rule**. So every change to the guardrail layer is Sapir-only in both
+    directions, and the monotonicity above is a rule for *proposals*, not
+    something CC can unilaterally act on. Verified empirically on 31/07: both
+    `Edit` calls returned `File is in a directory that is denied by your
+    permission settings.`
