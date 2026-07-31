@@ -1,7 +1,117 @@
 # MEH-1779 — guardrail permission changes (Sapir-only)
 
-**Status:** items 1–3 staged here, unapplied. Item 4 (the principle sentence) shipped
-in `.claude/rules/workflow.md` rule 32.
+**Status:** **item 1 is CANCELLED** — applied in PR #2466, reverted in PR #2469, and the
+guard now asserts the *opposite* as an invariant. Items 2 and 3 remain staged and
+unapplied, and they are the only manual-delivery tracking left. Item 4 (the principle
+sentence) shipped in `.claude/rules/workflow.md` rule 32.
+
+---
+
+## 🚨 Item 1 is CANCELLED — reverted, and replaced by an invariant (MEH-1803, 31/07)
+
+**Do not re-apply section 1 below.** It is kept only as the record of what was tried.
+
+**Applied → reverted → verified.** The ask-tier landed on staging (PR #2466), was
+live-tested and did not gate, and was reverted (PR #2469). Confirmed against the **live**
+hook on staging after the revert: `eslint.config.mjs` **`exit=2`**, the hook's own
+self-protection `exit=2`, `.eslintrc.json` `exit=2`, and an unprotected path `exit=0`.
+The first of those flipping from `exit=0`+ask to `exit=2` is what proves the revert took
+— and the same assertion is what caught an earlier attempt that had *not* landed.
+
+**What replaced it is not a deliverable, it is an invariant.** `permissions-patch-guard.sh`
+check 1 is inverted: it now asserts `eslint.config.mjs` **blocks**, and reports
+`REGRESSION — the ask-tier is back. See MEH-1803.` if it ever stops. Its negative control
+flipped with it — an unprotected path must still return `0`, because a hook that blocked
+*everything* would satisfy "eslint blocks" for the worst possible reason. Both arms are
+covered by `--self-test` fixtures (`reverted` clean · `asktier` flagged · `blockall`
+flagged), so the check has been observed failing rather than merely passing.
+
+**MEH-1767 is not waiting on this guard.** Its route is a PROPOSED file plus a PR, which
+is independent of the permission mode — the property the ask turned out not to have.
+
+`ASK_PATHS` shipped, and `frontend/eslint.config.mjs` went from *fully blocked* to
+**freely editable with no gate at all** — strictly worse than before. Live test:
+`Edit` returned `updated successfully`, no prompt, no refusal; sha256 changed, git saw
+the file modified. Reverted and verified byte-identical.
+
+**The schema was not broken — it was never reached.** Claude Code evaluates
+**1) deny rules → 2) the session permission mode → 3) allow rules → 4) hooks.**
+This session ran in **`permissionMode: "acceptEdits"`**, which approves file edits at
+step 2, before any hook decision at step 4 is consulted. That also explains the
+contrast that looked paradoxical all day: `deny` on `.claude/hooks/**` kept refusing,
+because step 1 precedes the mode.
+
+> **Read, not inferred.** The mode is in the session transcript
+> (`~/.claude/projects/<project>/<session-id>.jsonl`) as `"permissionMode":"acceptEdits"`
+> on the entry immediately preceding the probe edit. It is **not** in any settings file
+> and **not** a CLI flag — see "Where the mode is (and isn't)" below.
+
+### The consequence is wider than this file
+
+Under `acceptEdits`, **every hook decision other than `deny` is decorative** for
+file-editing tools. A hook can still make a path *more* restricted; it cannot make one
+conditionally open. Audited in this repo (31/07):
+
+| Surface | Count | Load-bearing? |
+|---|---|---|
+| `ask` entries in `.claude/settings.json` `permissions` | **0** — the object has only `allow` and `deny` | n/a |
+| Hooks emitting `permissionDecision: "ask"` | **1** — `protect-lint-config.sh:270`, added by item 1 | it is the one being removed |
+
+**So nothing else depends on an ask today**, which is why the revert is safe. That is a
+fact about the current repo, not a guarantee: any future "ask" is decorative under this
+mode, and the audit needs re-running if one is added.
+
+### The replacement route — PROPOSED file + PR
+
+`docs/guardrails/protect-lint-config.PROPOSED.sh` is the paste-ready reverted hook.
+The same pattern is how `frontend/eslint.config.mjs` should be changed when MEH-1767
+needs it: CC writes `docs/guardrails/eslint.config.PROPOSED.mjs`, Sapir pastes via PR.
+**It is independent of the permission mode**, which is exactly the property the ask
+turned out not to have.
+
+### Verify the revert
+
+```bash
+bash -n docs/guardrails/protect-lint-config.PROPOSED.sh          # syntax
+# 1. THE INVERSION — this returned exit=0 + ask JSON before; it must now block:
+echo '{"tool_name":"Edit","tool_input":{"file_path":"frontend/eslint.config.mjs","old_string":"x","new_string":"y"}}' \
+  | bash docs/guardrails/protect-lint-config.PROPOSED.sh; echo "exit=$?"   # expect 2
+# 2-3. negative controls — must still block:
+echo '{"tool_name":"Edit","tool_input":{"file_path":".claude/hooks/protect-lint-config.sh","old_string":"x","new_string":"y"}}' \
+  | bash docs/guardrails/protect-lint-config.PROPOSED.sh >/dev/null 2>&1; echo "exit=$?"   # expect 2
+echo '{"tool_name":"Edit","tool_input":{"file_path":"frontend/.eslintrc.json","old_string":"x","new_string":"y"}}' \
+  | bash docs/guardrails/protect-lint-config.PROPOSED.sh >/dev/null 2>&1; echo "exit=$?"   # expect 2
+# 4. and it must NOT block everything:
+echo '{"tool_name":"Edit","tool_input":{"file_path":"frontend/components/Footer.jsx","old_string":"x","new_string":"y"}}' \
+  | bash docs/guardrails/protect-lint-config.PROPOSED.sh >/dev/null 2>&1; echo "exit=$?"   # expect 0
+```
+
+Measured 31/07 against the PROPOSED file: **2 · 2 · 2 · 0.** Test 1 flipping from
+`exit=0`+ask to `exit=2` is the proof the revert took; test 4 is what stops "it blocks
+everything" from passing as success.
+
+### Where the mode is (and isn't)
+
+Checked every source readable from inside the session:
+
+| Source | `defaultMode` / permission mode |
+|---|---|
+| `/root/.claude/launcher-settings.json` (the `--settings` file on argv) | absent — only `permissions.allow: ["Skill"]` |
+| `.claude/settings.json` (project) | absent — `permissions` has only `allow`, `deny` |
+| `~/.claude/settings.json` | file does not exist |
+| `~/.claude.json` | no permission-mode key |
+| `claude` process argv (`/proc/<pid>/cmdline`) | **no** `--permission-mode`, **no** `--dangerously-skip-permissions` |
+| environment variables | none naming a mode |
+| **session transcript `.jsonl`** | **`"permissionMode":"acceptEdits"`** ✅ |
+
+The mode is therefore set by the harness over its control channel, not by a file or a
+flag — consistent with `CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST=1`. **It also changes
+mid-session**: the transcript shows `default` (×9) → `acceptEdits` (×13) → `auto` (×1).
+A guard cannot assume any particular mode, which is the general lesson: **design
+guardrails to hold under `bypassPermissions`, because a mode you did not choose can be
+in force at any moment.**
+
+---
 
 ## Why this doc exists instead of a diff
 
@@ -91,7 +201,10 @@ not exist.
 
 ---
 
-## 1. `protect-lint-config.sh` — `ask` instead of block, for the ESLint config only
+## 1. ~~`protect-lint-config.sh` — `ask` instead of block~~ ❌ CANCELLED (MEH-1803)
+
+> **Historical record only — do not apply.** This shipped, did not gate, and was
+> reverted. The guard now asserts the opposite. See the CANCELLED section above.
 
 Everything else in `PROTECTED_FULL` must keep blocking. Add an ask-tier above it:
 
