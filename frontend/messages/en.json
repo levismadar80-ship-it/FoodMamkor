@@ -4896,7 +4896,7 @@
       "approval_time": "How long does approval take?"
     },
     "answers": {
-      "register": "You register through a simple 3-step form — completely free!\nOur team checks the details and approves your business usually within 3 business days, and then it appears on the site.",
+      "register": "You register through a short form — completely free!\nOur team checks the details and approves your business usually within 3 business days, and then it appears on the site.",
       "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
     },
     "fallback_reply": "I couldn't understand the question — could you rephrase it?",
