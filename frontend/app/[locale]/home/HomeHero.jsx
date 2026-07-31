@@ -26,6 +26,33 @@ const HERO_IMAGE = optimizeCloudinary(
 // <MotionConfig reducedMotion="user"> at the layout root (#1053).
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
+// MEH-1690: headline scrim reinforcement — REQUIRED by this ticket's own
+// restructure, not a style preference.
+//
+// `.scrim-ink` (globals.css) is a gradient over `inset-0`, so its stops are
+// proportional to the BAND HEIGHT. Moving the pill and chips inside the band
+// made it taller, which pushed the H1 from ~16% up the band to ~50% — into a
+// far thinner part of the same gradient. Measured worst case (scrim composited
+// over a blown-white photo highlight, the case globals.css:72 names) via
+// e2e/qa-meh1690-contrast.mjs:
+//
+//   H1 top line, before → 10.37:1 @375 · 8.41:1 @1440
+//   H1 top line, after  →  3.36:1 @375 · 3.54:1 @1440   ← under the 4.5:1 floor
+//
+// 4.5:1 is mandatory here: IS 5568 makes WCAG AA a legal requirement, and this
+// repo has the MEH-1771 precedent of dropping an `opacity-60` that measured
+// 2.78:1 rather than shipping it. Raising the band's top padding was rejected —
+// the arithmetic wants ~+118px on mobile, which re-breaks the ~700–800px laptop
+// fold MEH-788 exists to protect.
+//
+// So the veil restores an absolute darkness floor across the text zone,
+// independent of how tall the band grows, and tapers to 0 at the top so the
+// produce photo still reads there. Tuned against the probe, not by eye.
+// DO NOT edit `.scrim-ink` to fix this — it is shared, and the bottom band it
+// draws is still correct; this is additive and local to the hero.
+const HEADLINE_SCRIM =
+  "linear-gradient(to top, rgb(28 26 23 / 0.40) 0%, rgb(28 26 23 / 0.40) 70%, rgb(28 26 23 / 0) 100%)";
+
 // MEH-1684: the ONE chip style for the hero row. Shared as a constant (not
 // duplicated per button) so a future chip cannot drift into a second style,
 // which is the exact failure that ticket was undoing.
@@ -174,6 +201,9 @@ export function HomeHero({
             the chips, which is what lets a white pill and white chips hold
             contrast over any crop of the produce photo. */}
         <div className="scrim-ink absolute inset-0" />
+        {/* Additive darkness floor for the headline — see HEADLINE_SCRIM above.
+            Sits over `.scrim-ink` so the bottom band keeps its own weight. */}
+        <div className="absolute inset-0" style={{ backgroundImage: HEADLINE_SCRIM }} />
       </div>
 
       {/* Flow content — this is what DEFINES the band height now. `justify-end`
