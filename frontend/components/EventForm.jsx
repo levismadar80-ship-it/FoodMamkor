@@ -11,7 +11,10 @@
  *           the consuming page renders those and passes onSuccess/onCancel.
  * Related:  app/[locale]/producer/dashboard/events/new/page.js (create wrapper),
  *           events/[id]/edit/page.js (edit wrapper), components/AddressSearch.jsx.
- * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here).
+ * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
+ *           MEH-1809 (client-side required/range validation, inline per field
+ *           via ui/Input + focus to the first invalid one — the top banner now
+ *           carries server/network errors only).
  */
 
 import { useState } from "react";
@@ -63,6 +66,23 @@ function seed(initial) {
   };
 }
 
+// MEH-1809: the fields the browser used to police via native `required` / `min`
+// attributes. The form is `noValidate` now, so these checks replace them — all
+// evaluated together, each landing on its own field. Order = DOM order, which is
+// what makes "focus the first invalid field" mean the topmost one.
+const EVENT_FIELD_ORDER = ["title", "event_date", "price", "max_participants"];
+
+function validateEventForm(f, t) {
+  const errors = {};
+  if (!f.title.trim()) errors.title = t("error_title_required");
+  if (!f.event_date) errors.event_date = t("error_date_required");
+  if (f.price !== "" && Number(f.price) < 0) errors.price = t("error_price_negative");
+  if (f.max_participants !== "" && Number(f.max_participants) < 1) {
+    errors.max_participants = t("error_max_participants_min");
+  }
+  return errors;
+}
+
 /**
  * @param {"create"|"edit"} mode
  * @param {object|null} initial  event (EventOut) to prefill in edit mode
@@ -74,12 +94,18 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   const tCat = useTranslations("events.categories");
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [unverified, setUnverified] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const isEdit = mode === "edit";
-  const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const update = (field) => (e) => {
+    const { value } = e.target;
+    setForm((f) => ({ ...f, [field]: value }));
+    // A field the owner is fixing stops shouting at them (GOV.UK).
+    setFieldErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
+  };
 
   // MEH-988: click-to-upload replaces the raw Cloudinary-URL input.
   const handleImageUpload = async (e) => {
@@ -103,6 +129,17 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     e.preventDefault();
     setError("");
     setUnverified(false);
+
+    const errors = validateEventForm(form, t);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstInvalid = EVENT_FIELD_ORDER.find((field) => errors[field]);
+      const el = document.getElementById(firstInvalid);
+      el?.focus();
+      el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setFieldErrors({});
     setSubmitting(true);
     try {
       const payload = {
@@ -136,7 +173,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <Input
           id="title"
           type="text"
@@ -145,6 +182,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           value={form.title}
           onChange={update("title")}
           placeholder={t("field_title_placeholder")}
+          error={fieldErrors.title}
         />
 
         <Field id="description" label={t("field_description_label")}>
@@ -166,6 +204,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             required
             value={form.event_date}
             onChange={update("event_date")}
+            error={fieldErrors.event_date}
           />
           <Input
             id="event_time"
@@ -235,6 +274,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             label={t("field_price_label_full")}
             value={form.price}
             onChange={update("price")}
+            error={fieldErrors.price}
           />
           <Input
             id="max_participants"
@@ -244,6 +284,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             value={form.max_participants}
             onChange={update("max_participants")}
             placeholder={t("field_max_participants_hint")}
+            error={fieldErrors.max_participants}
           />
         </div>
 
