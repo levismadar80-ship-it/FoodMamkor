@@ -1,14 +1,33 @@
 # MEH-1779 — guardrail permission changes (Sapir-only)
 
-**Status:** item 1 was applied (PR #2466) and is being **REVERTED** — see below. Items 2
-and 3 remain staged and unapplied. Item 4 (the principle sentence) shipped in
-`.claude/rules/workflow.md` rule 32.
+**Status:** **item 1 is CANCELLED** — applied in PR #2466, reverted in PR #2469, and the
+guard now asserts the *opposite* as an invariant. Items 2 and 3 remain staged and
+unapplied, and they are the only manual-delivery tracking left. Item 4 (the principle
+sentence) shipped in `.claude/rules/workflow.md` rule 32.
 
 ---
 
-## 🚨 Item 1 is WRONG and is being reverted (MEH-1803, 31/07)
+## 🚨 Item 1 is CANCELLED — reverted, and replaced by an invariant (MEH-1803, 31/07)
 
 **Do not re-apply section 1 below.** It is kept only as the record of what was tried.
+
+**Applied → reverted → verified.** The ask-tier landed on staging (PR #2466), was
+live-tested and did not gate, and was reverted (PR #2469). Confirmed against the **live**
+hook on staging after the revert: `eslint.config.mjs` **`exit=2`**, the hook's own
+self-protection `exit=2`, `.eslintrc.json` `exit=2`, and an unprotected path `exit=0`.
+The first of those flipping from `exit=0`+ask to `exit=2` is what proves the revert took
+— and the same assertion is what caught an earlier attempt that had *not* landed.
+
+**What replaced it is not a deliverable, it is an invariant.** `permissions-patch-guard.sh`
+check 1 is inverted: it now asserts `eslint.config.mjs` **blocks**, and reports
+`REGRESSION — the ask-tier is back. See MEH-1803.` if it ever stops. Its negative control
+flipped with it — an unprotected path must still return `0`, because a hook that blocked
+*everything* would satisfy "eslint blocks" for the worst possible reason. Both arms are
+covered by `--self-test` fixtures (`reverted` clean · `asktier` flagged · `blockall`
+flagged), so the check has been observed failing rather than merely passing.
+
+**MEH-1767 is not waiting on this guard.** Its route is a PROPOSED file plus a PR, which
+is independent of the permission mode — the property the ask turned out not to have.
 
 `ASK_PATHS` shipped, and `frontend/eslint.config.mjs` went from *fully blocked* to
 **freely editable with no gate at all** — strictly worse than before. Live test:
@@ -182,7 +201,10 @@ not exist.
 
 ---
 
-## 1. `protect-lint-config.sh` — `ask` instead of block, for the ESLint config only
+## 1. ~~`protect-lint-config.sh` — `ask` instead of block~~ ❌ CANCELLED (MEH-1803)
+
+> **Historical record only — do not apply.** This shipped, did not gate, and was
+> reverted. The guard now asserts the opposite. See the CANCELLED section above.
 
 Everything else in `PROTECTED_FULL` must keep blocking. Add an ask-tier above it:
 
