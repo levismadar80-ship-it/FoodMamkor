@@ -436,7 +436,7 @@
       "trust_line": "כל בית עסק נבדק ואושר ידנית"
     },
     "search": {
-      "placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
+      "placeholder": "לחם מחמצת",
       "sr_label": "חיפוש בתי עסק וערים",
       "submit": "חיפוש",
       "placeholders": {
@@ -2427,7 +2427,12 @@
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
+      "error_duration_range": "משך החוויה חייב להיות בין 15 ל-1440 דקות",
+      "error_price_negative": "המחיר לא יכול להיות שלילי",
+      "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
+      "error_whole_number": "יש להזין מספר שלם",
+      "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
       "save_cta": "שמירה",
       "field_image_placeholder": "https://res.cloudinary.com/..."
     }
@@ -2824,7 +2829,7 @@
     },
     "search_input": {
       "label": "חיפוש בתי עסק",
-      "placeholder": "לחם מחמצת, גבינת עזים, ירקות אורגניים",
+      "placeholder": "מאפיית המחמצת",
       "submit": "חיפוש"
     },
     "discovery": {
@@ -2954,7 +2959,7 @@
     "breadcrumb_query": "חיפוש: {q}",
     "title_default": "חיפוש",
     "title_results": "תוצאות חיפוש עבור \"{q}\"",
-    "input_placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
+    "input_placeholder": "לחם מחמצת",
     "input_aria": "חיפוש",
     "submit": "חפשו",
     "no_results_hint": "לא מצאנו התאמות — נסו מילה אחרת או גלו לפי קטגוריות",
@@ -4523,6 +4528,12 @@
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
       "error_generic": "שגיאה ביצירת האירוע — נסו שוב.",
+      "error_whole_number": "יש להזין מספר שלם",
+      "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
+      "error_title_required": "חובה להזין כותרת לאירוע",
+      "error_date_required": "חובה לבחור תאריך",
+      "error_price_negative": "המחיר לא יכול להיות שלילי",
+      "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
       "pending_success_title": "האירוע נוצר בהצלחה",
       "pending_success_hint": "האירוע יוצג לציבור לאחר אישור העסק",
       "pending_success_dashboard": "חזרה לניהול העסק",
@@ -4902,6 +4913,10 @@
     "env_body": "פחות קילומטרים בדרך, פחות אריזות, פחות ימים בקירור. ומשהו שקל לשכוח: אזור שיודע להאכיל את עצמו הוא אזור חזק יותר — בכל מצב.",
     "start_h": "איפה מתחילים",
     "start_body": "בשביל זה מהמקור קיים: מקום אחד שמרכז בתי עסק מקומיים — כל אחד נבחר ואושר ידנית, לכל אחד עמוד עם הסיפור שלו, והקשר איתו ישיר. בלי עמלות, בלי מתווכים.",
+    "changes_h": "מה שמשתנה בדרך",
+    "changes_1": "מבית העסק, ישר אליך.",
+    "changes_2": "פחות ידיים בדרך. את יודעת ממי קנית.",
+    "changes_3": "אנחנו לא לוקחים עמלה. המחיר שאת רואה הוא של בית העסק.",
     "cta": "גלו בתי עסק באזור שלכם",
     "sources_prefix": "מקורות:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
