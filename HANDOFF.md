@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-31 (ערב) — MEH-1791: הכרטיס ביקש regen שכבר לא היה צריך; מה שחסר היה מעבר סקירה שני
+
+**מוזג:** PR #2461 (`c93fc792`) — docs-only. **נפתח:** MEH-1799 (P2). **אף baseline לא נגע.**
+
+### מה שצריך לזכור מזה, ולא את התוצאה
+
+**הכרטיס תיאר מצב שכבר נפתר.** ה-bot ייצר את ארבעת ה-baselines ב-`ddfe11e7`, ו-PR #2446 מיזג אותם ב-**17:12** — שתי דקות לפני שהכרטיס נפתח ב-**17:14**. כל ארבעת סעיפי "מה צריך לעשות" היו עשויים או מיותרים לפני שנכתבו. regen נוסף היה משכתב ארבעה PNG תקינים ו**גם לא היה מייצר דיף לסקירה** (MEH-1765) — כלומר תוצאה גרועה יותר מלא לעשות כלום.
+
+**ה-eye pass כן נעשה** (PR #2446, ספיר אישרה) — הטיוטה הראשונה של הסקירה טענה שלא, וגוף ה-PR של #2446 הפריך את זה. תוקן ב-`84209f3b` **לפני** פתיחת ה-PR, וזה שינה את מסגור כל המסמך. **ה-adversarial review המקומי הוא שתפס את זה** — לא קישוט.
+
+**המעבר השני הרוויח את מקומו:** הסקירה הראשונה נכתבה ע"י הסשן שייצר את ה-regen, אישרה את הדלתא שחיפשה (כפתור Google), **ולא מנתה שני שינויים נוספים באותם קבצים** — ה-LanguageToggle בדסקטופ (`9fe84a06`) והיעלמות ה-ChatWidget בנייד (`e4b725a0`). שניהם תקינים, שניהם היו בלתי-נראים ל-VRT מאז שנחתו. **regen הוא הרגע שבו drift שקט נכתב לדיסק.**
+
+### שתי טענות בכרטיס שהיו שגויות — אל תצטטו אותן
+
+1. **"E2E לא רץ עליהם אף פעם" — לא נכון.** `cccb7861` → ריצה `30633862902` (success); `a175f267` → `30633891325` (**failure**). רץ על שניהם, נפל על אחד. גוף ה-commit של `a175f267` מכריז בעצמו שה-baselines מתיישנים — דחייה מוצהרת, לא דילוג שקט.
+2. **`cccb7861` ו-`ProducerOAuthButtons.jsx` לא יכלו להזיז את ה-baselines.** parity מצלם את `/register` (`RegisterClient`), לא `/register/producer`; ל-`ProducerOAuthButtons` יש צרכן אחד ואינו `/login`; והעריכה שלו ב-`a175f267` הייתה **בלוק הערה בלבד**. הגורם היחיד: משתנה הסביבה ב-`e2e.yml`.
+
+### מה פתוח
+
+- **MEH-1799 (P2, חדש)** — ה-aggregator ממפה `skipped → pass`, ולכן דחיפת docs-only **מפרסמת ירוק טרי על ה-tip של staging** מעל אדום אמיתי. עדות: tip `5343955b` הראה `success` בזמן שההרצה האמיתית האחרונה (`0799e3c6`) הייתה אדומה. **זו הקריאה שהולידה את הטענה השגויה בכרטיס.** לא MEH-1601 מנגנון 1 — הוא נחת ב-`207b9894` ב-27/07. `.github/workflows/**` הוא CC-deny; פתרון = patch doc לספיר.
+- **להכרעת ספיר, דווח בלבד ולא בוצע:** סובלנות ה-2% ב-VRT (`playwright.config.ts:61`) העבירה **שני שינויי UI אמיתיים** בלי להאדים. זה MEH-1765. אם מהדקים — לא תחת כרטיס אחר.
+
+### מגבלה שכדאי לדעת עליה מראש
+
+**אי אפשר להריץ VRT אמיתי מסביבת CC.** `parity.spec.ts` נעול ל-chromium **v1234**, `cdn.playwright.dev` חסום בפרוקסי (`403 host not permitted`), והסביבה מחזיקה v1194. השוואת פיקסלים בין שני renderers לא מוכיחה כלום. התחליף שעבד: **אישרור תוכן** — בנייה עם ה-env של CI, אימות ש-`next start` מגיש **את הבנייה הזאת** (sha256 של chunk מוגש מול הדיסק), ולכידה טרייה. `login-mobile` יצא 393×**1770** מול baseline 393×1774 — **4px**, וכל הפער מוסבר בשני hosts חסומים (`accounts.google.com`, Cloudinary).
+
+---
+
 ## 2026-07-31 — GSI singleton + VRT baselines + guardrail model · session state after a two-day gap and two parallel sessions
 
 **Read this section before touching anything.** It covers a 29/07→31/07 gap in which two CC sessions worked the repo concurrently and nine tickets were opened. Its purpose is to state what is true *now*, since several PR bodies from that window describe intentions that were later changed.
