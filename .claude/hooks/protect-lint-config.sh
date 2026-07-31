@@ -5,8 +5,6 @@
 #   - Lint sections matching ^\[tool\.ruff(\..*)?\]$ → block
 #   - Non-lint sections ([project], [dependency-groups], [tool.uv]) → allow
 #   - Comments + blank lines inside lint sections normalized out → allow
-# v3 (MEH-1779): ask-tier for frontend/eslint.config.mjs — CC may PROPOSE,
-#   Sapir approves interactively. See ASK_PATHS below.
 # All other PROTECTED_FULL entries: full-file block (v1, MEH-442).
 # Self-protect: this hook + .claude/settings.json remain fully blocked.
 #
@@ -15,15 +13,30 @@
 # Fail-safe: any pyproject.toml read or detection failure → full block
 # (v2 never blocks fewer cases than v1 except the documented MEH-466 win).
 
-# ---- Ask-mode paths (MEH-1779 decision 1) ----
-# CC may PROPOSE an edit here; Sapir approves interactively. Never auto-applied.
-# These paths REMAIN in PROTECTED_FULL on purpose: the ask loop below skips
-# them explicitly, so if that loop is ever removed or reordered they fall back
-# to a hard block rather than to no protection at all (fail closed, not open).
-ASK_PATHS=(
-  "frontend/eslint.config.mjs"
-)
-
+# ---- DO NOT reintroduce an ASK tier here — it does not gate (MEH-1803) ----
+# MEH-1779 item 1 added an ASK_PATHS list at exactly this spot, emitting
+# {"hookSpecificOutput":{"permissionDecision":"ask"}} + exit 0 for
+# frontend/eslint.config.mjs. Live-tested on 31/07: the Edit returned
+# "updated successfully" with NO prompt and NO refusal. The file was really
+# written (sha256 changed, git saw it modified). Reverted here.
+#
+# WHY it failed open — and it is NOT a broken schema. Claude Code evaluates
+#   1) deny rules  2) the session permission mode  3) allow rules  4) hooks.
+# The session was in permissionMode "acceptEdits" (read from the session
+# transcript, not inferred), which approves file edits at step 2 — before a
+# hook decision at step 4 is ever consulted. Same reason `deny` still worked:
+# step 1 precedes the mode. The ask was not overruled, it was never reached.
+#
+# So a hook can only ever make this file MORE restricted, never conditionally
+# open. Under acceptEdits every non-deny hook decision is decorative.
+#
+# THE ROUTE FOR CHANGING THIS FILE, when a change is genuinely needed:
+# write the full intended file to docs/guardrails/eslint.config.PROPOSED.mjs
+# and have Sapir paste it through a PR. That path is independent of the
+# permission mode, survives the agent having no gate at all, and is the
+# "agent proposes, human approves" architecture (OWASP LLM06). It is also how
+# THIS file must be changed — .claude/hooks/** is denied at step 1.
+#
 # ---- Full-block protected paths (suffix match, v1 behavior preserved) ----
 PROTECTED_FULL=(
   "frontend/.eslintrc.json"
@@ -41,7 +54,6 @@ PROTECTED_SECTIONED="backend/pyproject.toml"
 
 REASON_FULL='Edits to lint configs and lint-protection hook are blocked (MEH-442). If a rule blocks your task, REPORT to user with explanation. Do NOT modify config.'
 REASON_SECTIONED='Edits to [tool.ruff*] sections in backend/pyproject.toml are blocked (MEH-442 + MEH-466). Non-lint sections ([project], [dependency-groups], [tool.uv]) are permitted. If lint rules block your task, REPORT to user with explanation.'
-REASON_ASK='MEH-1779: CC may propose ESLint config changes; Sapir approves. Constraints may be ADDED, never removed or weakened — verify the diff does not disable a rule.'
 
 # ---- jq fail-open (matches sibling hooks) ----
 if ! command -v jq >/dev/null 2>&1; then
@@ -233,11 +245,6 @@ check_section_aware() {
 }
 
 # ---- Main loop: dispatch per protected path ----
-# MEH-1779: ask-tier paths are recorded but do NOT short-circuit — every path
-# in this call is still checked against PROTECTED_FULL first, so a MultiEdit
-# touching both an ask path and a protected path still blocks.
-ASK_REQUESTED=0
-
 while IFS= read -r fp; do
   if [[ "$fp" == *"$PROTECTED_SECTIONED" ]]; then
     if ! check_section_aware "$fp"; then
@@ -245,19 +252,6 @@ while IFS= read -r fp; do
     fi
     continue
   fi
-
-  ask_hit=0
-  for askable in "${ASK_PATHS[@]}"; do
-    if [[ "$fp" == *"$askable" ]]; then
-      ASK_REQUESTED=1
-      ask_hit=1
-      break
-    fi
-  done
-  if [ "$ask_hit" = "1" ]; then
-    continue
-  fi
-
   for protected in "${PROTECTED_FULL[@]}"; do
     if [[ "$fp" == *"$protected" ]]; then
       emit_block "$fp" "$REASON_FULL" ""
@@ -265,10 +259,5 @@ while IFS= read -r fp; do
     fi
   done
 done <<< "$PATHS"
-
-if [ "$ASK_REQUESTED" = "1" ]; then
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"%s"}}\n' "$REASON_ASK"
-  exit 0
-fi
 
 exit 0
