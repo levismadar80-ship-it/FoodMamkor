@@ -425,9 +425,9 @@
       "submit": "Search",
       "placeholders": {
         "q1": "Sourdough bread",
-        "q2": "Organic eggs",
-        "q3": "Goat cheese",
-        "q4": "Field-fresh vegetables"
+        "q2": "Breads and baking",
+        "q3": "Zichron Yaakov",
+        "q4": "Ma'afiyat HaMachmetzet"
       }
     },
     "stats": {
