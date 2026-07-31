@@ -30,7 +30,12 @@ const page = await ctx.newPage();
 
 async function scrape(path) {
   await page.goto(BASE + path, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200);
+  // Wait on the ELEMENT, not the clock. A fixed sleep can sample before the
+  // content lands and report a false FAIL — the MEH-1619 "probe that samples
+  // too early" shape. This is self-timing and cheaper.
+  await page.waitForSelector('[data-testid="delivery-fee-line"]', {
+    timeout: 15_000,
+  });
   const feeLine = await page
     .getByTestId("delivery-fee-line")
     .first()
