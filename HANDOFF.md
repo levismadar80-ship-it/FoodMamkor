@@ -299,6 +299,112 @@ Still open: **#2356** (MEH-1705 item 2) — marker gate now green after an autho
 Apply `docs/ci/check-bash-safety.patch.md` (merged in #2390, **not yet applied**). Until it is, all three Bash-layer holes are live: the `git` prefix disables the whole hook, redirection to protected paths is unblocked, and missing `jq` fails open. Expect **18/18** from `bash .claude/hooks/check-bash-safety.selftest.sh .claude/hooks/check-bash-safety.sh` after applying; anything less means stop and re-paste.
 
 ---
+## 2026-07-28 — testing rule: "a green with two causes is not a signal" (GREEN, docs-only)
+
+**Branch:** `feature/meh-1732-cancelling-faults-rule`. Opened and **parked deliberately** —
+the merge queue is frozen (adversarial reviewer dead repo-wide, E2E red on staging,
+DO-NOT-MERGE markers). Not blocked on anything technical.
+
+### What shipped
+One rule in `.claude/rules/testing.md`, beside the MEH-1619 discrimination rule, plus these
+two log entries (rule 31: append-only logs belong in a docs-only PR, and this is one).
+MEH-1619 asks whether an assertion goes red when the guarded thing breaks. The new rule asks
+the mirror question — **when it is green, is "the code is correct" the only explanation?**
+Four instances in one day, on four surfaces, in a session that had MEH-1619 loaded throughout.
+
+### The VRT regen — state as of this handoff
+Baselines are stale on **five** specs, not two: `home` (desktop + mobile), `about`
+(desktop + mobile), `login` (mobile). `home` is the hard one — content drift **and** fonts.
+The other three are fonts-only and only started failing when MEH-1727's fix (`35ce2619`)
+made the runs correct while the baselines stayed wrong.
+
+**CC cannot run the regen.** `vrt-update.yml` is `workflow_dispatch`-only and its own header
+states the GitHub MCP integration in CC sessions lacks `actions:write`; a local capture is
+forbidden *and* invalid, since the same header names **the CC sandbox** as rendering a
+different font stack. It also has no dry-run: committing the PNGs to the ref it runs on is
+its only mechanism, so the reviewable state is *unmerged*, never *uncommitted*.
+
+**The contact sheet needs no regen.** Run `30373662792` (staging, 15:30Z, post-font-fix)
+already holds runner-generated `-actual` and `-diff` for all five, artifact
+`playwright-report` ID `8694181006`, 75 MB. CC cannot fetch it — **HTTP 403** measured both
+anonymously and with the env token (length 14, not a usable GitHub token). Sapir is pulling
+it from the Actions tab; CC builds the side-by-side when the zip lands.
+
+### `home` drift enumeration — two things Sapir wants on record
+1. **This is ratification of shipped work, not a blind sign-off on rot.** Per Sapir, every
+   entry maps to a closed ticket. *(Recorded as her determination — CC enumerated the
+   commits but did not independently verify the state of all 48 tickets.)*
+2. **Four entries dated 11/07 — the same day as the desktop baseline `bf71e303` — stay
+   flagged UNCERTAIN.** Whether they precede or follow the capture within that day is
+   unresolved. **Resolve by timestamp or not at all; do not resolve by inference.**
+
+Counts: desktop `bf71e303` (11/07) → now = **48** product-visible commits + **231** touching
+`he.json`. Mobile blob `3680b928` (23/07) → now = **9** + **74**. Full grouped list in the
+session transcript and in the PR body when the contact sheet is posted.
+
+### `login` is a DIFFERENT failure class — from Sapir's traces, late in the session
+The five are not one category. `parity.spec.ts:691 › login` fails on **dimensions**, not
+pixels: `Expected an image 393px by 1671px, received 393px by 1670px`. One pixel of document
+height. Three consequences, all recorded in MEH-1733's SYNC 16:45 block:
+
+- `toHaveScreenshot` **aborts on a dimension mismatch before comparing pixels**, so
+  `maxDiffPixelRatio: 0.02` **never applied to `login`**. No threshold change could ever
+  have fixed it.
+- **Probably no `-diff.png` for `login`** — Playwright cannot diff images of different sizes.
+  *Prediction from the mechanism, NOT verified.* Check against the zip.
+- **A human eye is useless on it.** Nobody sees 1px of height. `login` ratifies on the trace,
+  not on a look.
+
+Fonts confirmed **working** from the same trace: 8 successful `fonts.gstatic.com` requests
+(Heebo, Frank Ruhl Libre, DM Sans). MEH-1727 verified in the field, not just merged. Run is
+deterministic — retried, stabilised, same 1670.
+
+**So: classify before reviewing.** `login` = dimension · `home` desktop = pixel-diff (68,085,
+so the comparison actually ran) · `about` ×2 = **unclassified, no trace yet**. MEH-1733 §5
+now opens with a classification step ahead of any visual review.
+
+### Open items — Sapir
+1. Fetch artifact `8694181006` → hand to CC for the side-by-side (only the pixel-diff ones
+   need eyes).
+2. Dispatch `vrt-update.yml` from the Actions tab **on a feature branch** (not staging —
+   MEH-1689 / GH013). Commit the baselines there; do not merge.
+3. This rule PR stays parked until the queue unfreezes.
+4. **Org-level GitHub App is not connected** — the 403 body says so explicitly
+   (*"GitHub access is not enabled for this session"*). Deliberately deferred by Sapir;
+   a browser download is two minutes. Not on the critical path.
+
+### PR #2369 (MEH-1630 chunk 1) — third review pass, by a different model
+Two earlier `/adversarial-review` passes were **Opus reviewing Opus** — the exact collision
+`builder-model-guard.sh` fails a commit for, and the arrangement MEH-1654/1668 exist to
+prevent. The CI judge that would supply the independent view has been failing all day on an
+empty `ANTHROPIC_API_KEY`, so the third pass was delegated to **Sonnet** as the manual
+stand-in.
+
+It found a real gap both Opus passes missed, **in a line they had both already touched and
+signed off**: `EmptyState.jsx:93` declared `min-h-[44px]` while its own comment cited
+DESIGN.md's "≥ 44 × 44px". The floor is on the hit **area** — `docs/DESIGN.md:555-561`
+requires `min-h-[44px] min-w-[44px]` **plus** `flex items-center justify-center`. Half was
+implemented. `unblockLabel` is a free prop: a short label ("עוד") gives a ~25px-wide target
+under a 44px-tall box. Fixed in `9e41e82f`; both new cues shown failing independently.
+
+Verified before relaying, and one correction to the reviewer: it cited `WhatsThis.jsx:29`;
+the className is at **`:37`**. CC's own code comment had the same wrong number, now fixed.
+**`WhatsThis.jsx:37` carries the identical half-fix** — pre-existing, out of scope, flagged
+in a comment rather than swept in.
+
+**Takeaway for the next session: the delegation earned its keep on its first run.** Until the
+`ANTHROPIC_API_KEY` secret is set, a builder-model review of a builder-model diff should be
+treated as weak evidence by construction, regardless of outcome.
+
+### State of CC's branches at session end
+| Branch / PR | State |
+|---|---|
+| #2369 `feature/meh-1630-emptystate-consolidation-chunk-1` | open, **parked**, head `9e41e82f`, DO-NOT-MERGE marker (Sapir's to clear) |
+| #2392 `feature/meh-1732-cancelling-faults-rule` | open, **parked** — this entry's PR |
+| #2364 / #2361 / #2367 / #2366 | merged earlier today |
+
+Merged nothing this session past those four. Did not touch #2363 / #2365 (other sessions —
+**parallel-session activity confirmed**, rule 1). Nothing on MEH-1706.
 
 ## 2026-07-28 — MEH-1710 brand rule: empty-state copy convention (LOW-RISK, docs-only) — PR #2361 merged
 
