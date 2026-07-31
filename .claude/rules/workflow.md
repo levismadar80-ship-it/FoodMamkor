@@ -1161,3 +1161,34 @@ Tasks auto-expire after 7 days.
     two contradictory MEH-1569 entries that only a human reading the log
     caught. A rule no gate enforces is a suggestion — the same conclusion
     MEH-1155/ADR-016 reached for DO-NOT-MERGE._
+
+32. **CC מוסיפה אילוצים, לא מסירה — CC adds constraints, never removes or
+    weakens one (MEH-1779).**
+
+    That single sentence is the source of truth for every guardrail question;
+    the rest of this rule is why it is worded that way, not additional rules.
+
+    The property is **monotonic**, like a ratchet: adding a lint rule always
+    yields a more constrained state, while removing one is privilege
+    escalation. That asymmetry — not any list of paths — is what decides
+    whether a given edit to a guard is CC's to make.
+
+    **The trap: "adding" is not the same as "tightening."** An `overrides`
+    block with `"off"` in it is textually an addition and semantically a
+    removal. So the test can never be "did the diff add lines" — it has to be
+    **outcome-based**: run the linter over a fixed corpus before and after,
+    and require that the set of caught violations **does not shrink**. That
+    survives any editing form and needs no diff analysis. The CI job enforcing
+    it is v2, deliberately out of MEH-1779's scope.
+
+    **Corollary CC discovered while implementing MEH-1779, worth more than the
+    rule itself:** a guardrail that denies the file it is configured in cannot
+    be changed by the agent it governs — including to make itself *stricter*.
+    `.claude/settings.json` and `.claude/hooks/**` are hard-denied
+    (`settings.json` `permissions.deny`), and per Claude Code's documented
+    `deny → ask → allow` ordering **no hook output can override a matching
+    deny rule**. So every change to the guardrail layer is Sapir-only in both
+    directions, and the monotonicity above is a rule for *proposals*, not
+    something CC can unilaterally act on. Verified empirically on 31/07: both
+    `Edit` calls returned `File is in a directory that is denied by your
+    permission settings.`
