@@ -11,6 +11,7 @@
  * Usage: node e2e/qa-meh1692-band-position.mjs [baseURL]
  */
 import { chromium } from "@playwright/test";
+import { existsSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:3000";
 const VIEWPORTS = [
@@ -18,10 +19,19 @@ const VIEWPORTS = [
   { name: "mobile  (393x851)", width: 393, height: 851 },
 ];
 
-// The container's preinstalled Chromium is a different build than this repo's
+// The CC sandbox's preinstalled Chromium is a different build than this repo's
 // @playwright/test pins, so point at it rather than downloading one.
+//
+// Hardcoded rather than read from an env var on purpose. A `process.env.*` read
+// here is a NEW env var: it reds the "Env drift (.env.example)" gate, and
+// regression rule 8 forbids adding one without explicit sign-off. This is a
+// one-off local harness, so the override is an edit to this line.
+// Same constant name + existsSync guard as the sibling harnesses
+// (qa-meh1655-loading-cta.mjs, qa-meh1638-settings-skeleton.mjs, …) so this
+// file reads like the rest of e2e/ and still runs where the path is absent.
+const CHROMIUM_PATH = "/opt/pw-browsers/chromium";
 const browser = await chromium.launch({
-  executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium",
+  ...(existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
 });
 for (const vp of VIEWPORTS) {
   const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
