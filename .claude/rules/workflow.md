@@ -661,6 +661,35 @@ When a bug is found and fixed:
    [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md).
 5. **Update docs** if the fix reveals a non-obvious convention (e.g.
    physical `right-3` for LTR password toggles on RTL pages).
+6. **An anomaly seen during QA is explained or reported — never attributed
+   to the harness and dropped.** "That's an artifact of my capture script"
+   is a hypothesis, not a finding, and it is the most comfortable one
+   available. If it cannot be proven, it ships as an unexplained
+   observation, not as a resolved one.
+   - **Corollary — label an unverified diagnosis as unverified, out loud.**
+     A confident-sounding cause in a report becomes a ticket, and the
+     ticket becomes a prescribed fix that nobody re-derives. The chain runs
+     one way: whatever certainty is claimed at the observation is the
+     certainty the eventual fix inherits.
+
+   _Source: MEH-1771 → MEH-1792 (2026-07-31). During MEH-1771's self-QA a
+   `delivery-day-row` locator resolved to 2 elements; it was attributed to a
+   capture script reusing one `page` across `goto()`s and dismissed. The cause
+   was right, the conclusion was not — the app's transition window exists on a
+   fresh load too, so the spec merged flaky and poisoned the E2E signal on an
+   unrelated PR. That same unverified reasoning then became MEH-1792's
+   prescribed fix (`scope to #main-content`), which turned out to be
+   unreproducible locally across 8 plain runs and 6 under 8x CPU throttling —
+   so it shipped with a `toHaveCount(1)` gate that holds regardless, rather
+   than on the inference alone._
+   - **When a race will not reproduce, inject the end state instead of
+     waiting for it.** Three deterministic constructions (stray node outside
+     the landmark / inside and permanent / inside and transient) proved in
+     seconds what repeated running could not, *including* that a real
+     permanent double-mount still fails. Also: a probe can fail silently and
+     report the reassuring answer — `document.documentElement` is `null`
+     inside `addInitScript`, so `observe()` throws, the sampler dies, and the
+     output reads exactly like "not reproduced".
 
 Known Bug Patterns (cross-ref before touching):
 [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md).
@@ -1078,6 +1107,16 @@ Tasks auto-expire after 7 days.
     2. אותה עבודה כבר דווחה merged בשיחה הזאת או ב-HANDOFF? → STOP, אמת מול staging.
     3. Umbrella ticket + split tickets על אותם קבצים = double-dispatch.
        בחרי אחד. השני נסגר כ-duplicate לפני dispatch, לא אחרי.
+    4. **לפני תחילת כל chunk — קראי את ה-attachments החיים של הכרטיס, לא רק את
+       ה-status.** כרטיס יכול לומר "chunk 3 לא התחיל" בזמן ש-PR פתוח כבר מצורף
+       אליו: ה-status משקף מה שמישהו עדכן, ה-attachments משקפים מה שקרה בפועל.
+       גם `git ls-remote origin | grep <branch>` לפני יצירת ענף — ענף קיים מרחוק
+       הוא הסימן החד-משמעי ש-session אחר כבר בעבודה.
+
+    _Source: MEH-1772 chunk 3 (2026-07-31) — ה-SYNC בכרטיס אמר "chunk 3 (UI) לא
+    התחיל. זו כל העבודה שנותרה", בעוד PR #2445 כבר היה פתוח על אותו ענף בדיוק
+    מ-session אחר. שתי המימושים נכתבו במקביל; ה-push נדחה ע"י git וזה מה שתפס את
+    ההתנגשות — לא בדיקה כלשהי שלי. זהו המקרה השני מאותה מחלקה אחרי MEH-1215/1216._
 
     _Source: MEH-1215/1216 (2026-07-15) — ה-prompt הודבק לשיחה לפני יצירת
     ה-tickets, ואז שוב מתוכם. שני CC sessions עבדו אותן שורות: PRs #1755+#1756
