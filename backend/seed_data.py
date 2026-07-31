@@ -99,8 +99,18 @@ PRODUCERS = [
         # Effective set {20, 40, 35} has 2+ distinct values, so the public page
         # renders "משלוח מ-20₪" on the top line and a fee on every area row.
         "delivery_areas": [
-            {"city": "תל אביב", "min_order": 300, "delivery_day": "חמישי", "delivery_fee": 20},
-            {"city": "חיפה", "min_order": 250, "delivery_day": "רביעי", "delivery_fee": 40},
+            {
+                "city": "תל אביב",
+                "min_order": 300,
+                "delivery_day": "חמישי",
+                "delivery_fee": 20,
+            },
+            {
+                "city": "חיפה",
+                "min_order": 250,
+                "delivery_day": "רביעי",
+                "delivery_fee": 40,
+            },
             {"city": "ירושלים", "min_order": 300, "delivery_day": "חמישי"},
         ],
     },

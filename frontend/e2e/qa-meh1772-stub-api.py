@@ -8,6 +8,7 @@ NEXT_PUBLIC_API_URL defaults to.
 The fixture mirrors the seed change exactly: a business rate of 35 with two
 area overrides (20 / 40) and one row that states none (inherits 35).
 """
+
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -29,13 +30,22 @@ PRODUCER = {
     "delivery_fee": 35,
     "free_delivery_above": None,
     "delivery_areas": [
-        {"id": "a1", "city": "תל אביב", "min_order": 300,
-         "delivery_day": "חמישי", "delivery_fee": 20},
-        {"id": "a2", "city": "חיפה", "min_order": 250,
-         "delivery_day": "חמישי", "delivery_fee": 40},
+        {
+            "id": "a1",
+            "city": "תל אביב",
+            "min_order": 300,
+            "delivery_day": "חמישי",
+            "delivery_fee": 20,
+        },
+        {
+            "id": "a2",
+            "city": "חיפה",
+            "min_order": 250,
+            "delivery_day": "חמישי",
+            "delivery_fee": 40,
+        },
         # no delivery_fee key at all -> NULL -> inherits 35
-        {"id": "a3", "city": "ירושלים", "min_order": 300,
-         "delivery_day": "חמישי"},
+        {"id": "a3", "city": "ירושלים", "min_order": 300, "delivery_day": "חמישי"},
     ],
     "categories": [],
     "products": [],
