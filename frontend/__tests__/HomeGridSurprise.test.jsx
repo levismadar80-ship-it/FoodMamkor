@@ -35,6 +35,10 @@ vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
 vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
+// MEH-1774: this suite pulls use-home-page transitively (HomeProducersGrid
+// imports LOAD_MORE_CAP from it), and that module now imports the locale-aware
+// router. Stub it so next-intl's ESM createNavigation never loads under vitest.
+vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
 const heroProps = {
   fridayMode: false,
@@ -59,7 +63,7 @@ const gridProps = {
   onboardAdvance: () => {},
   onboardDismiss: () => {},
   onAdvanceFromStep0: () => {},
-  onToggleChip: () => {},
+  onChipNavigate: () => {},
   onClearCategory: () => {},
   onClearLocation: () => {},
   onLoadMore: () => {},
