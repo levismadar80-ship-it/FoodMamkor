@@ -10,6 +10,7 @@ import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
+import AddressSearch from "@/components/AddressSearch";
 import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
@@ -42,6 +43,28 @@ const DESCRIPTION_PENDING_KEY = "description_pending";
 // conditional grower declaration ("תוצרת שגידלתי בחלקתי בלבד"). Hebrew NAMES
 // (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
 const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
+
+// MEH-1769: a stored draft only earns the resume banner when the seller
+// actually entered something. Every field write mirrors the WHOLE form to
+// localStorage (setAndSave → saveDraft, :~281), so the stored object is
+// normally EMPTY_FORM-shaped with empty strings — its mere presence proves
+// nothing about whether there is anything to resume.
+// The pre-1769 condition tested 3 of the 12 fields
+// (`producer_name || name || email`) and was wrong in both directions: a
+// draft where the seller had only picked a city or typed a phone never
+// offered a resume, and every field added to EMPTY_FORM since was invisible
+// to it by default. Checking every persisted value closes both.
+// `password` is stripped before the write (saveDraft, :~239) so it can never
+// appear here; the guard is defensive, not load-bearing.
+function hasDraftContent(parsed) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  return Object.entries(parsed).some(([field, value]) => {
+    if (field === "password") return false;
+    if (typeof value === "string") return value.trim() !== "";
+    if (Array.isArray(value)) return value.length > 0;
+    return Boolean(value);
+  });
+}
 
 const EMPTY_FORM = {
   email: "", name: "", password: "",
@@ -121,6 +144,15 @@ function RegisterProducerPageBody() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // MEH-1769: false on the server AND on the first client render, raised only
+  // by the mount effect below once the storage read has resolved. That ordering
+  // is what keeps the banner off a first paint entirely — there is no
+  // pre-hydration frame in which it can appear and then vanish, so this is NOT
+  // the accepted first-paint flash BusinessCtaLink.jsx documents for MEH-1489
+  // (that one paints a default branch and swaps it; this one paints nothing).
+  // Same shape as InstallPrompt.jsx: default hidden, storage read inside an
+  // effect. Do not move this read into a lazy useState initialiser — that runs
+  // during SSR too, where localStorage does not exist.
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
@@ -211,8 +243,11 @@ function RegisterProducerPageBody() {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.producer_name || parsed.name || parsed.email) setShowDraftBanner(true);
+        // MEH-1769: hasDraftContent (:~46) replaces the 3-field truthiness
+        // test. An empty-storage visit never reaches here at all (getItem
+        // returns null); a draft that exists but holds nothing the seller
+        // typed no longer earns a banner promising a "מילוי קודם".
+        if (hasDraftContent(JSON.parse(saved))) setShowDraftBanner(true);
       }
     } catch {}
   }, []);
@@ -265,6 +300,18 @@ function RegisterProducerPageBody() {
       // Bad JSON or storage disabled — clear and ignore.
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
     }
+    setShowDraftBanner(false);
+  };
+
+  // MEH-1769: "לא" has to stay dismissed across a reload. showDraftBanner is
+  // component state only, so hiding it left the stored draft intact and the
+  // mount read above re-raised the banner on the very next load — the seller
+  // could decline the same prompt indefinitely. Dropping the draft IS what
+  // "no, don't continue the previous fill" means, and it keeps the decision in
+  // the one key that already owns it instead of adding a second dismissed-flag
+  // key that the next keystroke would immediately contradict.
+  const dismissDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     setShowDraftBanner(false);
   };
 
@@ -497,11 +544,11 @@ function RegisterProducerPageBody() {
         )}
 
         {showDraftBanner && step < STEP.CONFIRM && (
-          <div className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
+          <div data-testid="register-draft-banner" className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
-              <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
-              <button onClick={() => setShowDraftBanner(false)} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
+              <button data-testid="register-draft-continue" onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
+              <button data-testid="register-draft-dismiss" onClick={dismissDraft} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
             </div>
           </div>
         )}
@@ -712,17 +759,43 @@ function RegisterProducerPageBody() {
 
             {/* address is optional (no "*", not gated at submit) — label carries
                 no asterisk and the input gets no required attr. */}
-            {/* MEH-951 map-privacy reassurance now rides the Input helperText slot. */}
-            <Input
-              id="producer-address"
-              label={t("auth.register.producer.fields.address_label")}
-              data-testid="register-details-address"
-              placeholder={t("auth.register.producer.fields.address")}
-              value={form.address}
-              onChange={set("address")}
-              helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
-              dir="rtl"
-            />
+            {/* MEH-1766: this was a raw <Input>, so step 2's address field had no
+                autocomplete at all — "דרך שרה" returned 0 suggestions because
+                nothing was ever queried. AddressSearch.jsx's docstring claimed
+                "RegisterProducer consumers untouched"; that claim was never true.
+                REUSES: components/EventForm.jsx:183-200 (MEH-1405 pattern —
+                visible <label htmlFor> above, no `label` prop, so there is no
+                duplicate sr-only association).
+                onSelect fills the address TEXT ONLY: the registration payload
+                (:331-332) carries no lat/lng and adding one would be a payload
+                change, which is out of scope for MEH-1766. */}
+            <div>
+              <label
+                htmlFor="producer-address"
+                className="block text-sm font-medium text-text mb-1"
+              >
+                {t("auth.register.producer.fields.address_label")}
+              </label>
+              <AddressSearch
+                id="producer-address"
+                inputTestId="register-details-address"
+                value={form.address}
+                onChange={(v) => setAndSave((prev) => ({ ...prev, address: v }))}
+                onSelect={(picked) =>
+                  setAndSave((prev) => ({
+                    ...prev,
+                    address: picked.street || picked.displayName || prev.address,
+                  }))
+                }
+                placeholder={t("auth.register.producer.fields.address")}
+              />
+              {/* MEH-951 map-privacy reassurance — same copy, moved out of the
+                  Input helperText slot it used to ride; class recipe mirrors the
+                  city required-marker at :708. */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_map_privacy_hint")}
+              </p>
+            </div>
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
                 Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —

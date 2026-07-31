@@ -1644,6 +1644,16 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         .filter((d) => d.city)
         .map((d) => [d.city, DELIVERY_DAYS.includes(d.delivery_day) ? d.delivery_day : ""]),
     ),
+    // MEH-1772 chunk 3: optional per-city fee override. Same string-in-form-
+    // state convention as `fee`/`freeAbove` above ("" = not stated → null on
+    // save), and the same `?? ""` rather than `|| ""` — a stored 0 means
+    // "משלוח חינם for this city" and `||` would blank it on every reopen,
+    // silently converting the free case back to "inherits the business rate".
+    fees: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, d.delivery_fee ?? ""]),
+    ),
   };
   // MEH-1644: min_order isn't editable here, but the structured save must not
   // wipe values registration captured — carry them through per city.
@@ -1677,7 +1687,13 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     String(form.fee) !== String(baseline.fee) ||
     String(form.freeAbove) !== String(baseline.freeAbove) ||
     // MEH-1644: a day change on any currently-chosen city is a real edit.
-    form.cities.some((c) => (form.days[c] || "") !== (baseline.days[c] || ""));
+    form.cities.some((c) => (form.days[c] || "") !== (baseline.days[c] || "")) ||
+    // MEH-1772 chunk 3: same for a per-city fee. String() both sides for the
+    // MEH-1577 reason above — baseline holds numbers after a save, form holds
+    // input strings, and 20 !== "20" would keep the card permanently dirty.
+    form.cities.some(
+      (c) => String(form.fees[c] ?? "") !== String(baseline.fees[c] ?? ""),
+    );
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
@@ -1714,15 +1730,20 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       fee: form.offersDelivery ? toNullableInt(form.fee) : null,
       freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
       days: form.days,
+      fees: form.fees,
     };
     // MEH-1644: structured rows replace the flat delivery_area_cities send —
     // each city carries its optional canonical day ("" → null = בתיאום מראש)
     // and preserves any registration-captured min_order (previously wiped by
     // the flat delete+insert path).
+    // MEH-1772 chunk 3: delivery_fee rides the same row. toNullableInt, not
+    // `|| null` — 0 is a real override ("משלוח חינם" for that city) and must
+    // survive the save as 0, not collapse to "inherit the business rate".
     const rows = normalized.cities.map((c) => ({
       city: c,
       delivery_day: normalized.days[c] || null,
       min_order: minOrders[c] ?? null,
+      delivery_fee: toNullableInt(normalized.fees[c] ?? ""),
     }));
     try {
       await api.put("/producers/me", {
@@ -1834,10 +1855,42 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                     <p className="text-xs text-fg-muted mb-2">
                       {t("delivery_days_hint")}
                     </p>
+                    {/* MEH-1772 chunk 3: the per-city fee override shares this
+                        list — both are per-city dimensions of the same row, so
+                        a second list would ask the owner to match cities across
+                        two tables. Label + "where it appears" hint + example
+                        placeholder per the dashboard field standard
+                        (docs/audits/dashboard-field-guidance-audit.md,
+                        MEH-1539). min/max mirror the server validators
+                        (DeliveryAreaCreate._validate_area_delivery_fee). */}
+                    <span className="block text-sm text-muted mb-0.5">
+                      {t("area_fee_label")}
+                    </span>
+                    <p className="text-xs text-fg-muted mb-2">
+                      {t("area_fee_hint")}
+                    </p>
                     <ul className="space-y-1.5">
                       {form.cities.map((c) => (
-                        <li key={c} className="flex items-center justify-between gap-3 text-sm">
-                          <span className="min-w-0 truncate">{c}</span>
+                        <li
+                          key={c}
+                          className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                        >
+                          <span className="min-w-0 flex-1 truncate">{c}</span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            max={MAX_DELIVERY_MONEY}
+                            step="1"
+                            value={form.fees[c] ?? ""}
+                            aria-label={t("area_fee_aria", { city: c })}
+                            data-testid={`delivery-fee-input-${c}`}
+                            onChange={(e) =>
+                              set({ fees: { ...form.fees, [c]: e.target.value } })
+                            }
+                            placeholder={t("area_fee_placeholder")}
+                            className="w-20 border border-border rounded-[8px] px-2 py-1 text-sm bg-surface"
+                          />
                           <select
                             value={form.days[c] || ""}
                             aria-label={t("day_select_aria", { city: c })}
