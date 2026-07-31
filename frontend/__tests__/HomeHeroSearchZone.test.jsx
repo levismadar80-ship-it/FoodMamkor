@@ -90,17 +90,23 @@ describe("MEH-1684 — hero zone removal assertions (numeric)", () => {
 });
 
 describe("MEH-1684 — the zone speaks one affordance language", () => {
-  it("renders both chips in the ONE shared ghost-chip style", () => {
+  it("renders both chips in the ONE shared chip style", () => {
     render(<HomeHero {...baseProps} />);
     const row = screen.getByTestId("hero-chips-row");
     const chips = [...row.querySelectorAll("button")];
     expect(chips).toHaveLength(2);
     for (const chip of chips) {
       expect(chip.className).toContain("rounded-full");
-      expect(chip.className).toContain("border-primary/35");
+      // MEH-1690: ghost-on-cream → surface fill, because the row moved onto the
+      // scrim (primary green on rgb(28 26 23 / .88) is far under AA). What the
+      // assertion actually protects is unchanged: ONE shared style, and no
+      // second PRIMARY fill competing with the circular submit (MEH-1369).
+      expect(chip.className).toContain("bg-surface");
       expect(chip.className).toContain("text-primary");
       expect(chip.className).not.toContain("bg-action-primary");
     }
+    // Still exactly one style — both chips identical, no drift.
+    expect(chips[0].className).toBe(chips[1].className);
   });
 
   it("keeps the near-me and delivery wiring intact behind the restyle", () => {
@@ -113,15 +119,37 @@ describe("MEH-1684 — the zone speaks one affordance language", () => {
     expect(onDeliveryCta).toHaveBeenCalledTimes(1);
   });
 
-  it("carries the trust line, and relocates \"איך זה עובד\" out of the chips row", () => {
+  // MEH-1690 inverts what MEH-1684 pinned here. These are ABSENCE assertions on
+  // purpose (removal spec, MEH-1578): the trust line, its gold seal and the
+  // "how it works" link were the three orphaned rows the ticket removes, and a
+  // test that only checked the new layout would let any of them creep back.
+  it("renders NO trust line and NO gold seal in the hero zone", () => {
+    const { container } = render(<HomeHero {...baseProps} />);
+    expect(screen.queryByTestId("hero-trust-line")).not.toBeInTheDocument();
+    expect(screen.queryByText("כל בית עסק נבדק ואושר ידנית")).not.toBeInTheDocument();
+    // The accent token is the gold; nothing above the fold may carry it here.
+    expect(container.querySelectorAll(".text-accent")).toHaveLength(0);
+  });
+
+  it('no longer renders "איך זה עובד" in the hero zone', () => {
     render(<HomeHero {...baseProps} />);
-    expect(screen.getByTestId("hero-trust-line")).toHaveTextContent(
-      "כל בית עסק נבדק ואושר ידנית"
-    );
-    // Still on the page — moved, not deleted.
-    const link = screen.getByText("איך זה עובד");
-    expect(link.className).toContain("underline");
-    expect(screen.getByTestId("hero-chips-row").contains(link)).toBe(false);
+    expect(screen.queryByText("איך זה עובד")).not.toBeInTheDocument();
+  });
+
+  it("renders the chips row INSIDE the hero image section, under the pill", () => {
+    const { container } = render(<HomeHero {...baseProps} />);
+    const section = container.querySelector("section");
+    const pill = screen.getByRole("search");
+    const chips = screen.getByTestId("hero-chips-row");
+    // Both inside the banded section — the composition fix. If either were to
+    // regress to a sibling of the section (the pre-MEH-1690 shape), this reds.
+    expect(section.contains(pill)).toBe(true);
+    expect(section.contains(chips)).toBe(true);
+    // Chips follow the pill in document order.
+    expect(pill.compareDocumentPosition(chips) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The section itself must not clip, or the search dropdown would be cut off
+    // by the very band it now sits inside.
+    expect(section.className).not.toContain("overflow-hidden");
   });
 
   it("wraps the search in a full pill (rounded-full), not the old radius-16 card", () => {
@@ -129,7 +157,12 @@ describe("MEH-1684 — the zone speaks one affordance language", () => {
     const pill = screen.getByRole("search");
     expect(pill.className).toContain("rounded-full");
     expect(pill.className).not.toContain("rounded-2xl");
-    expect(screen.getByTestId("hero-search-submit").className).toContain("rounded-full");
+    const submit = screen.getByTestId("hero-search-submit");
+    expect(submit.className).toContain("rounded-full");
+    // MEH-1369: the circular submit still holds the zone's ONE primary fill —
+    // the half of the invariant HomeHeroDeliveryCta.test.jsx cannot see (it
+    // mocks HeroSearch). Load-bearing now that the chips took a surface fill.
+    expect(submit.className).toContain("bg-action-primary");
   });
 });
 
@@ -139,13 +172,18 @@ describe("MEH-1684 — rotating placeholder", () => {
 
   const placeholderOf = () => screen.getByTestId("hero-search").getAttribute("placeholder");
 
+  // MEH-1690: the pool now teaches the four scopes `search.py` actually serves
+  // — product / category / city / business-name — instead of four product-ish
+  // marketing phrases, three of which returned zero results against staging.
   it("starts on the first example and swaps on the interval", () => {
     render(<HomeHero {...baseProps} />);
     expect(placeholderOf()).toBe("לחם מחמצת");
     act(() => vi.advanceTimersByTime(3500));
-    expect(placeholderOf()).toBe("ביצים אורגניות");
+    expect(placeholderOf()).toBe("לחמים ואפייה");
     act(() => vi.advanceTimersByTime(3500));
-    expect(placeholderOf()).toBe("גבינת עיזים");
+    expect(placeholderOf()).toBe("זכרון יעקב");
+    act(() => vi.advanceTimersByTime(3500));
+    expect(placeholderOf()).toBe("מאפיית המחמצת");
   });
 
   it("pauses while the field is focused and resumes on blur", () => {
