@@ -16,22 +16,27 @@
 | #2431 | MEH-1770 — for-businesses FAQ 8→10 (the *other* session) | **merged** `678fc7ed` |
 | #2446 | MEH-1778 follow-up — regenerated login+register VRT baselines, and the `vrt-update.yml` env fix that made a regen possible at all | **merged** `62742553` |
 | #2448 | MEH-1779 — the guardrail principle (rule 32) + the staged hand-off doc | **merged** `800b30ed` |
-| #2449 | `permissions-patch-guard` — the gate on that hand-off | **open**, auto-merge armed |
-| #2453 | MEH-1784 — GSI singleton dispatcher | **open**, needs mobile QA + a real sign-in |
+| #2449 | `permissions-patch-guard` — the gate on that hand-off | **merged** |
+| #2453 | MEH-1784 — GSI singleton dispatcher | **merged** — ⚠️ mobile QA + a real Google sign-in were never performed |
 
-VRT baselines **are** on staging (`ddfe11e7`, via merge `62742553`) — that work is done, not pending. What is still open on the VRT thread is only the E2E consequence below.
+VRT baselines **are** on staging (`ddfe11e7`, via merge `62742553`) — that work is done, not pending.
 
-### E2E on staging is RED, on purpose, until #2453 lands
+### E2E on staging was RED on purpose, and #2453 closed it
 
-`09-login-console-clean.spec.ts:81` fails on both projects with the GSI double-init warning. **That is the detector MEH-1778 armed doing its job, not a regression.** Before 31/07 the same assertion was green because `e2e.yml` set no `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, so GSI never loaded and the assertion ran over an empty set.
+For most of 31/07 `09-login-console-clean.spec.ts:81` failed on both projects with the GSI double-init warning. **That was the detector MEH-1778 armed doing its job, not a regression** — before that day the same assertion was green only because `e2e.yml` set no `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, so GSI never loaded and the assertion ran over an empty set.
 
-Do not "fix" it by weakening the spec. It goes green when #2453 (MEH-1784) merges, and only then.
+**It is closed.** #2453's dispatcher makes `initialize()` fire once per document without losing per-consumer callbacks, and the suite went **PASS — 188 executed, 32 skipped, all green**, confirmed twice: run `30642205119` and again on the staging-synced head, run `30646188251`.
 
-Everything else in that suite is green: run `30636787983` = **185 passed, 33 skipped, 2 failed**, the two failures being that one test on desktop + mobile. The four regenerated VRT baselines pass (`parity.spec.ts:691` login, `:704` register).
+Two things worth carrying forward rather than the outcome alone:
+
+- **The positive assertion is the load-bearing half.** The same run asserts a *live GSI button* exists on `/login` after in-app navigation, evaluated **before** the no-warning check. A guard that silences the warning by never drawing the second button would satisfy every negative assertion in that file — so "no warning" alone was never a pass condition.
+- **It also answered the one thing that could not be verified locally:** GSI's `renderButton` **does** work against an `initialize()` from an earlier page. That was the design's load-bearing assumption and the sandbox cannot reach Google to test it. Had it been false, the correct response was STOP, not a third design.
+
+⚠️ **Still unverified, and it is auth.** #2453 merged via auto-merge without the mobile QA or the real Google sign-in its own PR body lists as outstanding. Routing is proven at unit level against a stubbed SDK, and the button is proven live in a real browser — **the actual round-trip to Google is untested by anything.** Someone should sign in on `/login` after navigating from `/register` and confirm the account lands through the consumer path, not the producer endpoint.
 
 ### Three decisions waiting on Sapir — nothing moves on these without her
 
-1. **The "3 שלבים" contradiction — `backend/app/routers/chat.py:95`.** ⚠️ *Correcting an earlier report in this session:* the FAQ's Q9 **was** fixed before #2431 merged — `he.json:3273` now says *"ההרשמה היא טופס קצר"*, no number. The live problem is that the chatbot's `SYSTEM_PROMPT` still says *"נרשמים דרך טופס פשוט בן 3 שלבים"*. Before #2431 both surfaces were wrong the same way; now they **disagree**, which is worse than a shared error. **No Linear ticket** (quota was full on 29/07). The real step count is 4 for a new owner — `RegisterProducerClient.jsx:30`. Prefer deleting the number over correcting it.
+1. ~~**The "3 שלבים" contradiction — `backend/app/routers/chat.py:95`.**~~ **RESOLVED the same day by PR #2452** — `chat.py:95` now reads *"נרשמים דרך טופס קצר"*, matching the FAQ. Recorded because the reasoning outlives the fix: the FAQ's Q9 **was** corrected before #2431 merged (`he.json:3273`, *"ההרשמה היא טופס קצר"*), so for a few hours the chatbot and the FAQ **disagreed** — and a contradiction between two surfaces is worse than the shared error they had before, because a reader can catch it and neither answer earns trust. The real step count is 4 for a new owner (`RegisterProducerClient.jsx:30`); both surfaces now avoid the number entirely rather than correcting it, so the next wizard change cannot re-break the copy. *(An earlier report in this session claimed Q9 itself shipped wrong — that was read off #2431's opening description, which the work superseded before merge.)*
 2. **Governance — Q2/Q6 on `/about/for-businesses`.** Two new public commitments not anchored in `Drive/03-Brand-Hub/`: **"אין קידום בתשלום"** (the existing LOCK covers transaction commissions only, not sponsored placement) and the upgraded-subscription revenue model. Raised in #2431's body and merged without resolution. The open question stands: if the upgraded subscription ever includes increased exposure, Q2 and Q6 contradict each other.
 3. **MEH-1779 items 1–3** — `docs/guardrails/meh-1779-permissions.patch.md`. CC **cannot** apply these: `.claude/settings.json` and `.claude/hooks/**` deny themselves, verified by attempting both edits. **Item 1 is the one that matters most** — it is MEH-1767's only unblocker, and MEH-1767 is parked until it lands.
 
