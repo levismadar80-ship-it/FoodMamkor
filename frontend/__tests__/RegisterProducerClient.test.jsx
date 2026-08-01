@@ -12,8 +12,15 @@ import api from "@/lib/api";
 
 // next-intl: no scope is used by the component (useTranslations()), so t(key)
 // returns the literal key path — assertions key off the i18n KEY, not copy.
+// MEH-1808: interpolation values are appended to the key so a test can assert
+// WHAT was substituted, not merely that some string rendered. Keys called
+// without values are byte-identical to before, so every pre-existing assertion
+// is untouched — verified: no test in this file asserts on a value-carrying key.
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key) => (scope ? `${scope}.${key}` : key),
+  useTranslations: (scope) => (key, values) => {
+    const path = scope ? `${scope}.${key}` : key;
+    return values ? `${path} ${Object.values(values).join(" ")}` : path;
+  },
 }));
 
 // The component reads useRouter + useSearchParams (Suspense-wrapped body).
@@ -66,6 +73,73 @@ vi.mock("@/components/CategorySelector", () => ({
 
 // OAuth widget has GSI side effects + is frozen — stub it out.
 vi.mock("@/components/ProducerOAuthButtons", () => ({ default: () => <div data-testid="oauth" /> }));
+
+// MEH-1808: MiniMap pulls in Leaflet, which needs a real window/canvas. The
+// component under test here is the register step's STATE MACHINE — which of the
+// three address states renders — so the map is stubbed down to the two props
+// that carry meaning across the boundary. MiniMap's own behaviour (including
+// that these two props exist and default correctly) is pinned separately in
+// MiniMap.test.jsx.
+vi.mock("@/components/MiniMap", () => ({
+  default: ({ lat, lng, zoom, showNavigation }) => (
+    <div
+      data-testid="mini-map"
+      data-lat={String(lat)}
+      data-lng={String(lng)}
+      data-zoom={String(zoom)}
+      data-show-navigation={String(showNavigation)}
+    />
+  ),
+}));
+
+// AddressSearch is stubbed so a test can drive BOTH paths deterministically:
+// free typing (onChange only — no coordinates) and picking a suggestion
+// (onSelect with a full payload). The real component's network debounce is not
+// under test here; its contract is AddressSearch.jsx:39.
+vi.mock("@/components/AddressSearch", () => ({
+  default: ({ value, onChange, onSelect, inputTestId, id, placeholder }) => (
+    <div>
+      <input
+        id={id}
+        data-testid={inputTestId}
+        placeholder={placeholder}
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button
+        type="button"
+        data-testid="address-pick"
+        onClick={() =>
+          onSelect({
+            street: "דרך שרה",
+            city: "זכרון יעקב",
+            displayName: "דרך שרה, זכרון יעקב",
+            lat: 32.5731,
+            lng: 34.9512,
+          })
+        }
+      >
+        pick
+      </button>
+      {/* A second suggestion in a DIFFERENT town — the case self-QA caught. */}
+      <button
+        type="button"
+        data-testid="address-pick-other-town"
+        onClick={() =>
+          onSelect({
+            street: "דרך שרה אהרונסון",
+            city: "חיפה",
+            displayName: "דרך שרה אהרונסון, חיפה",
+            lat: 32.794,
+            lng: 34.9896,
+          })
+        }
+      >
+        pick other
+      </button>
+    </div>
+  ),
+}));
 
 const K = "auth.register.producer";
 const ph = (key) => screen.getByPlaceholderText(`${K}.fields.${key}`);
@@ -735,5 +809,172 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
     expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
     expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
     expect(screen.queryByTestId("register-producer-gate-admin")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1808 — post-select location confirmation on the register address field.
+//
+// Phase 0 turned up a defect wider than the ticket described: picking a
+// suggestion DID produce coordinates (AddressSearch.jsx:39) but the register
+// handler wrote only the address text and the submit body carried no lat/lng at
+// all, so every business registering through the public form landed with NULL
+// coordinates and never appeared on the map — whether or not the seller picked
+// from the list. The backend has accepted and stored both the whole time
+// (schemas.py:549-550, auth.py:515-516). Without the payload fix the two locked
+// strings here would be false, which is why it is in this change and not a
+// follow-up: "✓ המיקום זוהה" would confirm a location thrown away seconds later,
+// and "so your business shows on the map" would promise something the product
+// does not do.
+//
+// Failing-by-construction: revert the onSelect handler to the pre-1808 form
+// (address text only) and tests 1, 2 and 4 go red — no coordinates means no
+// confirmation row, no map, and no lat/lng in the body. Drop the onChange
+// null-out and test 3 goes red, because stale coordinates would keep the
+// confirmation showing for an address the seller has typed over.
+describe("RegisterProducerClient — address location confirmation (MEH-1808)", () => {
+  async function reachDetails() {
+    await renderWizard();
+    await fillAccountToDetails();
+  }
+
+  it("picking a suggestion shows the friendly confirmation line + a street-zoom map", async () => {
+    await reachDetails();
+    // nothing before a pick
+    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("address-pick"));
+
+    const confirm = await screen.findByTestId("register-address-confirm");
+    // the CITY the picker resolved is named, not coordinates (MEH-1242 is the
+    // admin pattern this deliberately does not copy)
+    expect(confirm).toHaveTextContent("זכרון יעקב");
+    expect(confirm).toHaveTextContent("דרך שרה");
+    const map = screen.getByTestId("mini-map");
+    expect(map.dataset.lat).toBe("32.5731");
+    expect(map.dataset.lng).toBe("34.9512");
+    expect(map.dataset.zoom).toBe("16"); // street level, not MiniMap's default 14
+    expect(map.dataset.showNavigation).toBe("false"); // no "navigate to yourself"
+    // the no-pick nudge is the OTHER state — never both at once
+    expect(screen.queryByTestId("register-address-no-pick-hint")).not.toBeInTheDocument();
+  });
+
+  it("typed text with no pick shows a soft, non-blocking nudge and never blocks the step", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "דרך שרה" },
+    });
+    const hint = screen.getByTestId("register-address-no-pick-hint");
+    expect(hint).toBeInTheDocument();
+    // soft: not an alert, not error-red — the address is optional
+    expect(hint).not.toHaveAttribute("role", "alert");
+    expect(hint.className).not.toMatch(/text-error|text-red/);
+    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
+
+    // and the step still advances with the address left unpicked (MEH-1807 gate
+    // covers producer_name + phone only — address is NOT required)
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("typing over a confirmed address retires the confirmation (stale coords never survive)", async () => {
+    await reachDetails();
+    fireEvent.click(screen.getByTestId("address-pick"));
+    expect(await screen.findByTestId("register-address-confirm")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "רחוב אחר לגמרי" },
+    });
+    // the pin must NOT keep pointing at the previous place
+    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-address-no-pick-hint")).toBeInTheDocument();
+  });
+
+  it("the selected coordinates reach the submit payload", async () => {
+    await reachDetails();
+    // Fill the rest of DETAILS FIRST and pick last: fillDetailsToStory() types
+    // into the address field, and typing correctly nulls the coordinates, so
+    // picking before it would be testing the clear-on-type path by accident.
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("address-pick"));
+    await screen.findByTestId("register-address-confirm");
+    fireEvent.click(nextBtn()); // → CATEGORY
+    fireEvent.click(await screen.findByTestId("pick-category"));
+    fireEvent.click(nextBtn()); // → STORY
+    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body).toMatchObject({ lat: 32.5731, lng: 34.9512 });
+  });
+
+  it("sends null coordinates when the seller never picked one", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("register-details-address"), {
+      target: { value: "דרך שרה" },
+    });
+    await fillDetailsToStory();
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body.lat).toBeNull();
+    expect(body.lng).toBeNull();
+  });
+
+  // Found by the browser self-QA, not by the unit tests — the first version
+  // wrote the picked town into `form.city` with `prev.city || picked.city`, so
+  // a SECOND pick in a different town kept the FIRST town's name and the line
+  // confirmed a place the pin was no longer on. Failing-by-construction:
+  // restore that `prev.city ||` form and this test reds on "זכרון יעקב"
+  // surviving a Haifa pick.
+  it("a second pick in another town replaces the town in the confirmation", async () => {
+    await reachDetails();
+    fireEvent.click(screen.getByTestId("address-pick"));
+    expect(await screen.findByTestId("register-address-confirm")).toHaveTextContent(
+      "זכרון יעקב",
+    );
+
+    fireEvent.click(screen.getByTestId("address-pick-other-town"));
+    const confirm = screen.getByTestId("register-address-confirm");
+    expect(confirm).toHaveTextContent("חיפה");
+    expect(confirm).not.toHaveTextContent("זכרון יעקב");
+    const map = screen.getByTestId("mini-map");
+    expect(map.dataset.lat).toBe("32.794");
+    expect(map.dataset.lng).toBe("34.9896");
+  });
+
+  // MEH-213 forbids free-text towns — `city` is CitySearch's canonical value and
+  // a raw Nominatim string must never land in it (nor in the payload).
+  it("picking an address never overwrites the canonical city field", async () => {
+    await reachDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("address-pick-other-town")); // resolves חיפה
+    await screen.findByTestId("register-address-confirm");
+    expect(screen.getByTestId("city")).toHaveValue("תל אביב");
+
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.click(nextBtn());
+    fireEvent.click(await screen.findByTestId("pick-category"));
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body.city).toBe("תל אביב");
+    expect(body).not.toHaveProperty("address_city");
   });
 });

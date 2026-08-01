@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -17,6 +18,13 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import Input from "@/components/ui/Input";
 import RegisterPreflight from "./RegisterPreflight";
+// MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
+// client-only — same mount idiom as every other consumer
+// (ExperienceDetailClient.jsx:17, EventDetailClient.jsx).
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+// Street-level framing for a "is this the right spot?" check. MiniMap's own
+// default (14) is neighbourhood context for a business page — a different job.
+const ADDRESS_CONFIRM_ZOOM = 16;
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
@@ -102,6 +110,17 @@ const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
   city: "", address: "",
+  // MEH-1808: the coordinates AddressSearch hands back on select. Before this
+  // they were dropped on the floor (:963-968 only wrote the address text) and
+  // the submit body carried none, so EVERY business registering through the
+  // public form landed with lat/lng NULL and never appeared on the map — no
+  // matter whether the seller picked from the list or typed freely. The
+  // backend has accepted and stored both all along (schemas.py:549-550,
+  // auth.py:515-516); only the frontend was throwing them away.
+  lat: null, lng: null,
+  // Display-only mirror of the picked point's town (never sent; the payload's
+  // `city` stays CitySearch's canonical value).
+  address_city: "",
   short_description: "",
   category_ids: [],
   // MEH-530: optional at the form level. Backend 422s when any selected
@@ -268,6 +287,14 @@ function RegisterProducerPageBody() {
     (form.phone && !validateIsraeliPhone(form.phone)
       ? t("auth.register.producer.validation.phone_invalid")
       : "");
+  // MEH-1808: coordinates are only meaningful while they still belong to the
+  // text in the field — onChange nulls them on every free keystroke, so this
+  // doubles as "the seller picked this from the list".
+  const addressConfirmed = form.lat != null && form.lng != null;
+  // Friendly place name, never coordinates. The admin form shows raw
+  // "current: lat, lng" (MEH-1242); a seller cannot check her own shop against
+  // a decimal pair, so the street + city she recognises is the whole point.
+  const addressConfirmLabel = [form.address, form.address_city].filter(Boolean).join(", ");
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
   // with no second piece of state to keep in sync.
@@ -506,6 +533,10 @@ function RegisterProducerPageBody() {
         // paths (shared body above the !isUpgrade branch).
         city: form.city,
         address: form.address,
+        // MEH-1808: sending these is what makes the "המיקום זוהה" confirmation
+        // a true statement rather than a promise the payload breaks.
+        lat: form.lat,
+        lng: form.lng,
         category_ids: form.category_ids,
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
@@ -945,9 +976,17 @@ function RegisterProducerPageBody() {
                 REUSES: components/EventForm.jsx:183-200 (MEH-1405 pattern —
                 visible <label htmlFor> above, no `label` prop, so there is no
                 duplicate sr-only association).
-                onSelect fills the address TEXT ONLY: the registration payload
-                (:331-332) carries no lat/lng and adding one would be a payload
-                change, which is out of scope for MEH-1766. */}
+                MEH-1808 SUPERSEDES the next sentence, which used to read
+                "onSelect fills the address TEXT ONLY: the registration payload
+                carries no lat/lng and adding one would be a payload change,
+                out of scope for MEH-1766." That was true when written and is
+                false now: onSelect keeps lat/lng and the payload sends them.
+                Leaving it in place would have been worse than deleting it — a
+                stale comment is read as current fact. The deferral it describes
+                turned out to BE the bug: with no coordinates ever sent, every
+                business registering here landed with lat/lng NULL and never
+                appeared on the map, whether or not the seller picked from the
+                list. */}
             <div>
               <label
                 htmlFor="producer-address"
@@ -959,11 +998,39 @@ function RegisterProducerPageBody() {
                 id="producer-address"
                 inputTestId="register-details-address"
                 value={form.address}
-                onChange={(v) => setAndSave((prev) => ({ ...prev, address: v }))}
+                // MEH-1808: free typing INVALIDATES a previously picked point —
+                // otherwise coordinates from an earlier selection would ride
+                // along with a different address the seller typed over it, which
+                // is worse than having none: the pin would confidently show the
+                // wrong place. Clearing here is what makes `lat != null` mean
+                // "these coordinates belong to the text currently in the field".
+                onChange={(v) =>
+                  setAndSave((prev) => ({
+                    ...prev,
+                    address: v,
+                    address_city: "",
+                    lat: null,
+                    lng: null,
+                  }))
+                }
                 onSelect={(picked) =>
                   setAndSave((prev) => ({
                     ...prev,
                     address: picked.street || picked.displayName || prev.address,
+                    // MEH-1808: the picked point's own city, for the
+                    // confirmation LABEL only. Deliberately NOT written into
+                    // `city`, for two reasons found in self-QA:
+                    //  1. a second pick in a different town kept the FIRST
+                    //     town's name (`prev.city ||` never re-fires), so the
+                    //     line confirmed a place the pin was no longer on —
+                    //     the exact lying-confirmation this ticket exists to
+                    //     prevent;
+                    //  2. `city` is fed by CitySearch precisely because
+                    //     free-text towns are forbidden (MEH-213), and a raw
+                    //     Nominatim string is not a canonical value.
+                    address_city: picked.city || "",
+                    lat: picked.lat ?? null,
+                    lng: picked.lng ?? null,
                   }))
                 }
                 placeholder={t("auth.register.producer.fields.address")}
@@ -974,6 +1041,59 @@ function RegisterProducerPageBody() {
               <p className="text-xs text-fg-muted mt-1 text-start">
                 {t("auth.register.producer.fields.address_map_privacy_hint")}
               </p>
+              {/* MEH-1808: the address stays OPTIONAL — this line exists so a
+                  delivery-only or home-based seller does not read the field as a
+                  demand (MEH-213 / location_precision: approximate already
+                  support them; only the reassurance was missing). */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_optional_hint")}
+              </p>
+
+              {/* MEH-1808 — three mutually exclusive states, keyed on whether the
+                  text in the field has coordinates attached to it:
+                    empty            → nothing but the hints above
+                    typed, no coords → soft, non-blocking nudge
+                    coords           → confirmation line + street-level map
+                  The nudge is deliberately NOT error-styled: the address is
+                  optional, so a red blocker here would be a lie about the form
+                  (Baymard's documented anti-pattern of address validators that
+                  trap users, quoted in AddressSearch.jsx:29-31). */}
+              {addressConfirmed ? (
+                <div data-testid="register-address-confirm" className="mt-3">
+                  <p className="text-sm text-primary inline-flex items-center gap-1.5 text-start">
+                    <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+                    <span>
+                      {t("auth.register.producer.fields.address_confirmed", {
+                        location: addressConfirmLabel,
+                      })}
+                    </span>
+                  </p>
+                  <div className="mt-2 overflow-hidden rounded-md">
+                    {/* Confirmation only — no Waze/Google pills ("navigate to
+                        your own address" means nothing mid-signup) and a street
+                        zoom instead of MiniMap's neighbourhood default. Both are
+                        opt-in props added in MEH-1808; every other consumer of
+                        MiniMap is untouched by them. */}
+                    <MiniMap
+                      lat={form.lat}
+                      lng={form.lng}
+                      name={form.producer_name || form.address}
+                      zoom={ADDRESS_CONFIRM_ZOOM}
+                      showNavigation={false}
+                    />
+                  </div>
+                </div>
+              ) : (
+                form.address.trim() !== "" && (
+                  <p
+                    data-testid="register-address-no-pick-hint"
+                    className="text-xs text-fg-muted mt-2 inline-flex items-start gap-1.5 text-start"
+                  >
+                    <MapPin size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
+                    <span>{t("auth.register.producer.fields.address_pick_from_list")}</span>
+                  </p>
+                )
+              )}
             </div>
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
