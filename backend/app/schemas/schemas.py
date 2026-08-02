@@ -1044,6 +1044,17 @@ class ProducerOfferCreate(BaseModel):
     three (omit / null / object), and its visible effect is identical to `null`,
     which is exactly why nobody would notice it. Activation is the replace
     logic's business, not the caller's: `_sync_active_offer` hardcodes True.
+
+    **A stray `is_active` is IGNORED, not 422'd, and that is deliberate — do
+    not "harden" this with `extra="forbid"`** (Sapir, 02/08). The frontend
+    (Vercel) and the backend (Railway) deploy independently, so a forbid here
+    turns any frontend-first deploy that still sends the field into a hard 422
+    on save — a self-inflicted outage on the owner's dashboard, in exchange for
+    rejecting a key no client sends. It is also the repo's near-universal
+    convention: `extra="forbid"` appears exactly ONCE in first-party backend
+    code (`services/whatsapp_templates.py:56`, where Meta's exact template
+    contract justifies it) and zero times in this file. Making this one model
+    the exception would buy nothing.
     """
 
     offer_type: str
