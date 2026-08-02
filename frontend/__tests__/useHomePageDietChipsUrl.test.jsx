@@ -120,3 +120,94 @@ describe("homepage attribute chips → /producers deep-link (MEH-1774)", () => {
     expect(result.current.chips.kosher).toBe(true);
   });
 });
+
+// MEH-1826: the deep-link carries the active location context, so arriving on
+// /producers reproduces the state the user left rather than widening it
+// (Baymard scope-jumping). The param NAMES are asserted against what
+// ProducersClient actually hydrates — `city` + `delivery_day`
+// (ProducersClient.jsx:77/89) — NOT home's own `?day=` serializer name. That
+// asymmetry is the whole risk: home's name would be well-formed, produce no
+// error, and be silently ignored on arrival.
+describe("chip deep-link carries delivery context (MEH-1826)", () => {
+  /** Hydrate home with an active city (+ optional day) via its own URL names. */
+  const withContext = (city, day) => {
+    const p = new URLSearchParams();
+    if (city) p.set("city", city);
+    if (day) p.set("day", day);
+    window.history.replaceState(null, "", `/?${p.toString()}`);
+  };
+
+  const pushedParams = () => {
+    const [href] = localeRouter.push.mock.calls[0];
+    return { href, params: new URL(href, "http://x").searchParams };
+  };
+
+  it("city + day active → both ride along under /producers' param names", () => {
+    withContext("ירושלים", "שישי");
+    const { result } = renderHook(() => useHomePage());
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("has_delivery"));
+
+    const { params } = pushedParams();
+    expect(params.get("has_delivery")).toBe("1");
+    expect(params.get("city")).toBe("ירושלים");
+    expect(params.get("delivery_day")).toBe("שישי");
+    // Home's own serializer name must NOT be what we emit — ProducersClient
+    // reads `delivery_day` and would silently ignore `day`.
+    expect(params.get("day")).toBeNull();
+  });
+
+  it("city active, no day → city only, and no empty delivery_day param", () => {
+    withContext("ירושלים", null);
+    const { result } = renderHook(() => useHomePage());
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("kosher"));
+
+    const { href, params } = pushedParams();
+    expect(params.get("city")).toBe("ירושלים");
+    expect(params.has("delivery_day")).toBe(false);
+    expect(href).not.toContain("delivery_day=");
+  });
+
+  it("no city → URL byte-identical to before MEH-1826 (zero regression)", () => {
+    const { result } = renderHook(() => useHomePage());
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("has_delivery"));
+
+    expect(pushedParams().href).toBe("/producers?has_delivery=1");
+  });
+
+  // The precondition mirror: a day cannot travel alone. Home only hydrates a
+  // day beside a city, so this drives the state through the same public entry
+  // point a user would (handleDaySelected) with no city set.
+  it("day without a city is never carried", () => {
+    const { result } = renderHook(() => useHomePage());
+    act(() => result.current.handleDaySelected("שישי"));
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("has_delivery"));
+
+    const { href, params } = pushedParams();
+    expect(params.has("delivery_day")).toBe(false);
+    expect(params.has("city")).toBe(false);
+    expect(href).toBe("/producers?has_delivery=1");
+  });
+
+  it("context rides along for ALL 7 chip keys, not just משלוח", () => {
+    withContext("חיפה", "שלישי");
+    const { result } = renderHook(() => useHomePage());
+
+    for (const chip of CHIPS_CONFIG) {
+      localeRouter.push.mockClear();
+      act(() => result.current.navigateToChip(chip.key));
+      const { params } = pushedParams();
+      expect(params.get(chip.key)).toBe("1");
+      expect(params.get("city")).toBe("חיפה");
+      expect(params.get("delivery_day")).toBe("שלישי");
+    }
+    expect(CHIPS_CONFIG).toHaveLength(7);
+  });
+});
