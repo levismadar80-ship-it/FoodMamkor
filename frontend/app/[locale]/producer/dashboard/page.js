@@ -573,10 +573,13 @@ export default function ProducerDashboardPage() {
         <div
           role="radiogroup"
           // MEH-1842: derived from the visible heading rather than a parallel
-          // string. The old aria-label read "מצב זמינות" — the pre-MEH-1830
-          // name — so the accessible name and the visible one had drifted apart,
-          // which is the failure mode WCAG 2.5.3 exists for. Deriving it means
-          // they cannot drift again; the group_aria key is now deleted.
+          // string. The old aria-label held the pre-MEH-1830 name, so the
+          // accessible name and the visible one had drifted apart. Deriving it
+          // means they cannot drift again; the group_aria key is now deleted.
+          // NOT a WCAG 2.5.3 failure — "Label in Name" (and its ACT rule) covers
+          // widget roles named from content, and radiogroup is named from author.
+          // The basis is MDN + W3C APG: where a visible label exists, point
+          // aria-labelledby at it; aria-label is for when none does.
           aria-labelledby="availability-heading"
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
           className="flex flex-wrap gap-2"
