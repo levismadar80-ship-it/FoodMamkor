@@ -104,6 +104,8 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
               hasAvatar ? (
+                // raw img: OAuth provider avatar — host not in remotePatterns
+                // (frozen this ticket).
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (

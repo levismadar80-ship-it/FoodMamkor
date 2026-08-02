@@ -414,6 +414,12 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
           {images.map((url, i) => (
             <div key={`${url}-${i}`} className="relative group">
+              {/* raw img: producer/admin-submitted URLs reach this grid, and
+                  optimizeCloudinary passes a non-Cloudinary URL through
+                  unchanged (cloudinary.js:24). next/image THROWS on a src that
+                  is neither absolute nor leading-slash (image-loader.ts:93) —
+                  it does not degrade — so migrating here trades a broken
+                  thumbnail for a crashed dashboard. Measured, see PR. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
@@ -1046,6 +1052,9 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
         <span className="text-sm font-medium block">{t("photo_label")}</span>
         <div className="flex items-center gap-3">
           {photoUrl ? (
+            /* raw img: owner-uploaded photo preview; `photoUrl` may be the
+               local /placeholder-image.png fallback (upload.py:115), not a
+               Cloudinary URL. Authenticated dashboard chrome, 64px. */
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={photoUrl}
@@ -1539,6 +1548,8 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           <span className="text-sm font-medium block">{t("upload_label")}</span>
           <div className="flex items-center gap-3">
             {certUrl && (
+              /* raw img: certificate upload preview, same mixed provenance
+                 as the photo above (upload.py:115). */
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={certUrl}
