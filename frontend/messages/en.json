@@ -1931,16 +1931,6 @@
         "submitting": "Sending...",
         "submit": "Reject"
       },
-      "badges": {
-        "rabanut": "Rabbinate kosher",
-        "badatz": "Badatz",
-        "chalak": "Chalak",
-        "mehadrin": "Mehadrin",
-        "organic_kosher": "Organic kosher",
-        "shmitta": "Shmita",
-        "kilayim": "Without kilayim",
-        "artisan_dairy": "Farm dairy products"
-      },
       "reminders": {
         "title": "Certificate expiry reminders",
         "subtitle": "Businesses whose kashrut certificate expires within 30 days. Always previewed before sending.",
