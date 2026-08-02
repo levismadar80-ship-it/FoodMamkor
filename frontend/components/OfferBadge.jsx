@@ -102,7 +102,13 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
 
   let content;
   if (hasThreshold) {
-    const amount = `${offer.threshold_value} ${t(`units.${offer.threshold_unit}`)}`;
+    // The whole "number + unit" is ONE message, not a JS-side concatenation, so
+    // the count can select a form: threshold_value is a positive integer, so 1
+    // is reachable and «1 יחידות» must not be renderable. `units.*` stays the
+    // bare label for the dashboard's unit <select>, which has no count.
+    const amount = t(`unit_amount.${offer.threshold_unit}`, {
+      count: offer.threshold_value,
+    });
     const [before, after] = t(`text_with.${offer.offer_type}`, {
       amount: AMOUNT_SLOT,
     }).split(AMOUNT_SLOT);
