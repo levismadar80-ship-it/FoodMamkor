@@ -75,12 +75,20 @@ async function shot(name, viewport, producer) {
 const M = { width: 375, height: 812 };
 const D = { width: 1440, height: 900 };
 
+// Every variant the component can render gets a shot. Per the 02/08 QA ruling
+// on the card, these screenshots ARE the final QA gate — there is no human pass
+// behind them — so a variant that is not photographed counts as unchecked.
 const cases = [
   ["license", { verification_doc_type: "license" }],
   ["exemption", { verification_doc_type: "exemption" }],
   ["cosmetics", { verification_doc_type: "cosmetics" }],
-  // Control: no date → the clause must vanish, not render an empty stub.
+  // The defensive fallback: doc_type absent (or an unknown value from a future
+  // backend enum) must still produce a true, licence-free sentence.
+  ["generic", { verification_doc_type: null }],
+  // No date → the clause must vanish entirely: no double full stop, no trailing
+  // space, no empty placeholder.
   ["license-nodate", { verification_doc_type: "license", verified_at: null }],
+  ["generic-nodate", { verification_doc_type: null, verified_at: null }],
 ];
 
 for (const [name, patch] of cases) {
