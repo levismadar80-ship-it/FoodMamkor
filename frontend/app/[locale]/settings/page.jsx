@@ -289,6 +289,8 @@ export function ProfileTab() {
           aria-label={t("avatar_aria")}
         >
           {user.avatar_url ? (
+            // raw img: OAuth provider avatar — host not in remotePatterns
+            // (frozen this ticket).
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
           ) : (

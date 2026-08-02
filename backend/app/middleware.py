@@ -4,6 +4,7 @@ import structlog
 from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -180,6 +181,7 @@ def install_middlewares(app: FastAPI) -> None:
         SlowAPIMiddleware            # innermost
         SentryRequestScopeMiddleware # NEW — must run AFTER CorrelationId
         CorrelationIdMiddleware      # sets `request_id` contextvar
+        GZipMiddleware               # MEH-1833 — compresses the finished body
         CORSMiddleware               # outermost add_middleware
 
     Decorator middlewares (registered after, become outer of all
@@ -190,7 +192,7 @@ def install_middlewares(app: FastAPI) -> None:
 
     Request-in flow::
 
-        record_metrics → security_headers → CORS → CorrelationId
+        record_metrics → security_headers → CORS → GZip → CorrelationId
                        → SentryRequestScope → SlowAPI → handler
 
     Why this order:
@@ -209,6 +211,18 @@ def install_middlewares(app: FastAPI) -> None:
     # CorrelationId so it ends up INNER to CorrelationId on request-in.
     app.add_middleware(SentryRequestScopeMiddleware)
     app.add_middleware(CorrelationIdMiddleware, header_name="X-Request-ID")
+
+    # MEH-1833: GZip the JSON catalog responses. Added AFTER CorrelationId and
+    # BEFORE CORS, so on request-in it sits CORS → GZip → CorrelationId → … →
+    # handler. That places it OUTSIDE every layer that writes response headers
+    # (including the route's own Cache-Control), which is what it needs: GZip
+    # rewrites the body and Content-Length on the way out, and must see the
+    # finished response to do that. Inside CORS deliberately — CORS stays the
+    # outermost add_middleware layer so preflight is answered before anything
+    # else touches the response.
+    # minimum_size=1024: below ~1KB gzip's header overhead can exceed the
+    # saving, and every small 200/4xx would pay CPU for nothing.
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
 
     app.add_middleware(
         CORSMiddleware,
