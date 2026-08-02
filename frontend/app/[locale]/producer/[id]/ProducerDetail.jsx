@@ -129,11 +129,18 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           it (→ #images card). Non-owners get an empty zero-height flex div —
           no reserved space, no CLS. */}
       <div id="section-images" className="scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
+        {/* MEH-1843: verificationDocType + verifiedAt feed the masthead seal's
+            popover body, which must read word-for-word the same as BadgeRow's
+            hero chip popover — both render on this page. Without them the
+            masthead falls back to the generic sentence while the hero chip
+            shows the doc-type-specific one: two different claims, one page. */}
         <ImageGallery
           images={images}
           producerId={producer.id}
           producerName={producer.name}
           verified={producer.verification_tier === "verified"}
+          verificationDocType={producer.verification_doc_type}
+          verifiedAt={producer.verified_at}
           shareUrl={shareUrl}
           onFavorited={openAlerts}
         />
