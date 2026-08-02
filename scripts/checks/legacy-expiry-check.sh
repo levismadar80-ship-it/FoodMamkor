@@ -93,9 +93,18 @@ ANY_RE='LEGACY\('
 # ---------------------------------------------------------------------------
 scan_paths() {
   local dirs=("$@")
+  # -H is load-bearing, not decoration: grep omits the `file:` prefix when it
+  # receives exactly ONE file argument, and xargs is free to split a long list
+  # into batches whose last one may hold a single file. Without -H that batch
+  # would emit `line:content`, and check_lines' `cut -d: -f1` would read the
+  # LINE NUMBER as the filename and shift every field after it — silently
+  # misclassifying real markers instead of erroring. Today the repo passes in
+  # one batch of ~1185 files so the prefix is always present, which is exactly
+  # what makes this the kind of latent bug that surfaces after an unrelated
+  # re-org. Found by the CI adversarial reviewer on PR #2541.
   # -I skips binary; `|| true` keeps a no-match grep (exit 1) from killing us.
   git ls-files -z -- "${dirs[@]}" 2>/dev/null |
-    xargs -0 -r grep -InE "$ANY_RE" 2>/dev/null || true
+    xargs -0 -r grep -HInE "$ANY_RE" 2>/dev/null || true
 }
 
 # ---------------------------------------------------------------------------
@@ -276,9 +285,29 @@ self_test() {
     status=1
   fi
 
+  # scan_paths' OUTPUT SHAPE. The cases above feed check_lines directly, so
+  # none of them exercises the real scanner — which is precisely where the
+  # single-file `grep` prefix bug lived (PR #2541 review). Drive scan_paths
+  # over a ONE-file list, the batch size that drops the prefix without -H, and
+  # assert the first field is the path rather than the line number.
+  local one_file shape
+  one_file="$(git ls-files -- backend frontend | xargs -r grep -lE "$ANY_RE" 2>/dev/null | head -n 1)"
+  if [ -z "$one_file" ]; then
+    echo "  [--] no marker-bearing file to shape-check (skipped)"
+  else
+    shape="$(printf '%s\0' "$one_file" | xargs -0 -r grep -HInE "$ANY_RE" 2>/dev/null | head -n 1)"
+    if printf '%s' "$shape" | grep -qE '^[^:]+/[^:]*:[0-9]+:'; then
+      echo "  [ok] single-file scan keeps the file:line: prefix"
+    else
+      echo "  [XX] single-file scan lost the filename prefix — got: $shape"
+      echo "       check_lines would read the line number as the filename."
+      status=1
+    fi
+  fi
+
   echo
   if [ "$status" -eq 0 ]; then
-    echo "self-test OK — expired / future / malformed / grandfathered / suppressed all sorted correctly."
+    echo "self-test OK — expired / future / malformed / grandfathered / suppressed / scan-shape all sorted correctly."
   else
     echo "self-test FAILED."
   fi
