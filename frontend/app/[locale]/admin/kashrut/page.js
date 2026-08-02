@@ -9,18 +9,12 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { KASHRUT_BUSINESS_PORTAL_URL } from "@/lib/official-registries";
 import InfoTooltip from "@/components/InfoTooltip";
-
-// Maps badge_code → admin.kashrut.badges.* key (note hyphen-to-underscore)
-const BADGE_KEYS = {
-  rabanut: "rabanut",
-  badatz: "badatz",
-  chalak: "chalak",
-  mehadrin: "mehadrin",
-  "organic-kosher": "organic_kosher",
-  shmitta: "shmitta",
-  kilayim: "kilayim",
-  "artisan-dairy": "artisan_dairy",
-};
+// MEH-1852: the badge_code → key axis (note hyphen-to-underscore) has one
+// owner. This page used to restate it; the copy has been deleted. Note the
+// resolved key is used against the `admin.kashrut.badges.*` namespace here and
+// against `kashrut.badges.*` on consumer surfaces — same axis, different
+// message namespaces, which is a separate question (MEH-1852 chunk B).
+import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 
 function formatDate(iso, locale) {
   if (!iso) return "—";
@@ -232,7 +226,7 @@ export default function AdminKashrutPage() {
                   <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">
-                      {BADGE_KEYS[row.badge_code] ? t(`kashrut.badges.${BADGE_KEYS[row.badge_code]}`) : row.badge_code}
+                      {CODE_TO_KEY[row.badge_code] ? t(`kashrut.badges.${CODE_TO_KEY[row.badge_code]}`) : row.badge_code}
                     </span>
                   </td>
                   <td className="px-4 py-3">
