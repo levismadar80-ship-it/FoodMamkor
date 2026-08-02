@@ -149,7 +149,18 @@ def test_capture_happens_before_the_log_call(monkeypatch):
 
 
 class _FakeSession:
-    """Minimal stand-in — the handlers only pass it through and close it."""
+    """Minimal stand-in — the handlers pass it through, roll it back, close it.
+
+    MEH-1824 added `rollback()`: `_run_followup_job` now rolls back inside each
+    `except` so a DB-level failure in one pass cannot leave the Session in a
+    needs-rollback state for the next one. Without this method the rollback
+    raises AttributeError *inside* the handler's except block, which escapes
+    the job and breaks the "must swallow, not raise" contract below — so the
+    stub has to keep pace with what the real Session is asked to do.
+    """
+
+    def rollback(self):
+        pass
 
     def close(self):
         pass
@@ -169,6 +180,15 @@ def test_scheduler_job_failures_are_captured(
 
     They import their worker lazily inside the function body, so the patch
     targets the SERVICE module the import resolves to, not a startup attribute.
+
+    MEH-1824: `_run_followup_job` runs TWO senders in independent try/except
+    blocks, so the pending-nudge pass is stubbed to a no-op here. That keeps
+    this test asserting exactly what it always asserted — a failure in the
+    sender under test is captured under *that sender's* tag, and exactly once
+    — rather than also picking up a second capture from the other pass failing
+    against the `_FakeSession`. Isolating the subject is not a weakening: the
+    interaction between the two passes is the subject of
+    tests/test_scheduler_job_isolation.py, which asserts it directly.
     """
     boom = RuntimeError(f"{expected_task} exploded")
     module = {
@@ -180,6 +200,10 @@ def test_scheduler_job_failures_are_captured(
         raise boom
 
     monkeypatch.setattr(f"{module}.{patch_target}", _raise)
+    monkeypatch.setattr(
+        "app.services.pending_nudge.send_pending_nudges",
+        lambda _db: {"sent": 0, "stamped_nothing_missing": 0},
+    )
     # Keep the test off the database: the handler opens its own session.
     monkeypatch.setattr("app.database.SessionLocal", lambda: _FakeSession())
 
