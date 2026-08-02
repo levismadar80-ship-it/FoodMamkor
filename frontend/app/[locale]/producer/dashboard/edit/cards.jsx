@@ -2162,7 +2162,13 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
           }
         : null;
       await api.put("/producers/me", { active_offer: payload });
-      onSave({ active_offer: payload ? { ...payload, id: existing?.id ?? null } : null });
+      // No `id` in the optimistic patch. The save REPLACES the row, so the old
+      // id is wrong and the new one is server-assigned and unknown here —
+      // an earlier version wrote `id: existing?.id ?? null`, which asserted a
+      // null id for a business creating its first offer. Omitting the key says
+      // "unknown", which is true; `null` says "there isn't one", which isn't.
+      // Nothing reads it today; the real id arrives with the next profile load.
+      onSave({ active_offer: payload });
       setBaseline(form);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
