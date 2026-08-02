@@ -80,16 +80,21 @@ describe("BadgeRow", () => {
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
   });
 
-  it("hideKeys drops the named badges, keeps the rest (MEH-1124)", () => {
+  // MEH-1846: this used to pass hideKeys={["products", "delivery"]} and assert
+  // "מוצרים" was absent. After the products badge was removed that assertion
+  // passed for a SECOND reason — the badge no longer exists — so it held
+  // identically on a tree where hideKeys was broken. Narrowed to the one key
+  // that still exercises the mechanism, and the absence assertion is now on a
+  // badge the producer genuinely earns.
+  it("hideKeys drops the named badge, keeps the rest (MEH-1124)", () => {
     render(
       <BadgeRow
-        hideKeys={["products", "delivery"]}
+        hideKeys={["delivery"]}
         producer={{ ...VERIFIED_LICENSE, has_delivery: true, products_count: 10 }}
       />,
     );
     expect(screen.getByText("מאומת")).toBeInTheDocument();
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
-    expect(screen.queryByText("מוצרים")).not.toBeInTheDocument();
   });
 
   describe("tooltip interaction", () => {
