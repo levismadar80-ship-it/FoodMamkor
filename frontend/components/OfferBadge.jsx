@@ -89,7 +89,19 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
   // Defence in depth only — see "Does NOT" above. Date-only comparison against
   // the *Israel* date, so the viewer's own timezone cannot shave a day off a
   // live offer, nor extend a dead one past its last Israel day.
-  if (offer.expires_at && offer.expires_at < israelToday()) {
+  //
+  // BOTH ends of the window, not one. This guard used to check `expires_at`
+  // alone while calling itself defence in depth, so a leaked not-yet-started
+  // offer would have rendered as live — the server-side half of exactly this
+  // omission was already fixed once, in Producer.active_offer (models.py:395).
+  // The leak is not reachable today (the server filters both ends), but a
+  // comment promising a two-sided check over a one-sided one is what makes the
+  // next reader trust a guarantee that is not there.
+  const today = israelToday();
+  if (offer.expires_at && offer.expires_at < today) {
+    return null;
+  }
+  if (offer.starts_at && offer.starts_at > today) {
     return null;
   }
 
