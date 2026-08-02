@@ -16,10 +16,12 @@
  *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
  *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0, SUPPRESSED for a
  *                            delivery-only business (MEH-1841 — specific supersedes generic)
- *   products     (auto)    — producer.products_count >= 3
+ *   (products REMOVED — MEH-1846: it lit on products_count >= 3, true for
+ *    effectively every approved business, so it differentiated nothing and
+ *    diluted the badges that do. products_count itself is unchanged.)
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery > products
+ *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery
  *   (MEH-1492: license — a regulatory fact — outranks recommended, an opinion.)
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
@@ -138,12 +140,17 @@ export const BADGE_CONFIG = {
     tooltip: "העסק מוסר או שולח לכתובת שלך.",
     color: "muted",
   },
-  products: {
-    key: "products",
-    label: "מוצרים",
-    tooltip: "לעסק יש 3 מוצרים או יותר בקטלוג.",
-    color: "muted",
-  },
+  // MEH-1846: the products badge is REMOVED. It lit on products_count >= 3,
+  // which is true for effectively every approved business — manual approval
+  // means a business with no catalog is not live — so it differentiated
+  // nothing and diluted the badges that do (trust inflation: 3 targeted
+  // signals beat 7 diffuse ones). MEH-1124 had already hidden it from
+  // ProducerHeader as information-class noise; this completes that decision
+  // across every surface. Catalog richness is still communicated by the card's
+  // price label + description and the detail page's products section, and the
+  // nudge to fill a catalog belongs to ProfileCompletenessCard, not to a
+  // consumer-facing badge. producer.products_count is UNCHANGED — it is a
+  // data field with non-badge consumers (ProfileCompletenessCard.jsx:141).
 };
 
 // Priority order — left = highest. Exposed for tests.
@@ -162,11 +169,10 @@ export const BADGE_PRIORITY = [
   "lactose_free",
   "kosher",
   "delivery",
-  "products",
+  // MEH-1846: products removed — see the BADGE_CONFIG note above.
 ];
 
 const NEW_DAYS = 30;
-const PRODUCTS_MIN = 3;
 
 function earnsBadge(producer, key) {
   if (!producer) return false;
@@ -254,11 +260,9 @@ function earnsBadge(producer, key) {
         (typeof producer.delivery_count === "number" &&
           producer.delivery_count > 0)
       );
-    case "products":
-      return (
-        typeof producer.products_count === "number" &&
-        producer.products_count >= PRODUCTS_MIN
-      );
+    // MEH-1846: no products case — the badge is removed. producer.products_count
+    // stays on the payload and keeps its non-badge consumers; it simply drives
+    // no badge, the same shape MEH-1259 used to retire "organic".
     default:
       return false;
   }

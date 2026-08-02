@@ -1,0 +1,11 @@
+PASS card-renders-visible-badges-375: {"actual":2,"expected":2}
+PASS card-has-no-products-badge-key-375: {"actual":false,"expected":false}
+PASS overflow-label-375: {"actual":"+3","expected":"+3"}
+PASS panel-row-count-375: {"actual":3,"expected":3}
+PASS panel-products-row-count-375: {"actual":0,"expected":0}
+PASS card-renders-visible-badges-1440: {"actual":2,"expected":2}
+PASS card-has-no-products-badge-key-1440: {"actual":false,"expected":false}
+PASS overflow-label-1440: {"actual":"+3","expected":"+3"}
+PASS panel-row-count-1440: {"actual":3,"expected":3}
+PASS panel-products-row-count-1440: {"actual":0,"expected":0}
+FAILURES: 0
