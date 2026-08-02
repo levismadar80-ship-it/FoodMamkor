@@ -155,6 +155,10 @@ beforeEach(() => {
   // Non-upgrade ack: no access_token in the response → CONFIRM (non-upgrade).
   api.post.mockResolvedValue({ data: {} });
   authState.user = null; // MEH-994: upgrade-variant test mutates this
+  // MEH-1814: clearAllMocks() clears call history but NOT implementations, so
+  // the role-flipping refreshUser below would leak into every later test in
+  // this file. Reset restores the inert default (returns undefined).
+  refreshUser.mockReset();
   try { localStorage.clear(); } catch { /* jsdom */ }
 });
 
@@ -375,8 +379,8 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
     expect(screen.getByText(`${K}.success.inbox_title`)).toBeInTheDocument();
     // The upgrade success UI must NOT leak into the anonymous path.
-    expect(screen.queryByText(`${K}.success.heading`)).not.toBeInTheDocument();
-    expect(screen.queryByText(`${K}.success.dashboard_cta`)).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.success.cta`)).not.toBeInTheDocument();
     // No token was returned, so none may be stored and auth isn't refreshed.
     expect(localStorage.getItem("token")).toBeNull();
     expect(refreshUser).not.toHaveBeenCalled();
@@ -390,12 +394,58 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     await fillDetailsToStory();
     await fillStoryAndSubmit();
 
-    expect(await screen.findByText(`${K}.success.heading`)).toBeInTheDocument();
-    expect(screen.getByText(`${K}.success.dashboard_cta`)).toBeInTheDocument();
-    expect(screen.getByText(`${K}.success.body_with_whatsapp`)).toBeInTheDocument();
+    expect(await screen.findByText(`${K}.success.title`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.cta`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.body`)).toBeInTheDocument();
     expect(screen.queryByText(`${K}.success.inbox_title`)).not.toBeInTheDocument();
     expect(localStorage.getItem("token")).toBe("tok-123");
     expect(refreshUser).toHaveBeenCalled();
+  });
+
+  // MEH-1814: the regression test. The two tests above pass on the BROKEN code
+  // too, because `refreshUser` is a bare vi.fn() that never mutates authState —
+  // so user.role never becomes "producer" and the MEH-1489 gate never fires.
+  // That is a green with two causes (.claude/rules/testing.md): it reports
+  // "success screen renders" when what it actually proves is "the role never
+  // flipped". This test removes the second cause by making refreshUser do what
+  // the real one does — re-read the upgraded role into context.
+  it("upgrade success survives the role flip to producer — gate must not replace it (MEH-1814)", async () => {
+    authState.user = { email: "p@example.com" };
+    // The real refreshUser() re-reads /auth/me, which after a successful
+    // upgrade returns role: "producer". Reproduce that here.
+    refreshUser.mockImplementation(async () => {
+      authState.user = { email: "p@example.com", role: "producer" };
+    });
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    // The success screen owns the render...
+    expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.title`)).toBeInTheDocument();
+    expect(screen.getByTestId("register-success-dashboard-cta")).toBeInTheDocument();
+    // ...and the "כבר יש לך עמוד עסק" gate is nowhere on it.
+    expect(screen.queryByTestId("register-producer-gate")).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.gate.producer_heading`)).not.toBeInTheDocument();
+  });
+
+  // MEH-1814: the other half of the invariant — `submitted` must not disarm the
+  // gate for a genuine mount-time visit. Without this, a fix that simply deleted
+  // the gate would also pass the test above.
+  it("existing producer visiting /register/producer still hits the gate at mount (MEH-1814)", async () => {
+    authState.user = { email: "p@example.com", role: "producer" };
+    // NOT renderWizard() — that helper clicks the pre-flight CTA, and the whole
+    // point is that the gate short-circuits before any pre-flight renders.
+    render(<RegisterProducerClient />);
+
+    expect(await screen.findByTestId("register-producer-gate")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.gate.producer_heading`)).toBeInTheDocument();
+    // The wizard/preflight tree must be unreachable — no form to fill.
+    expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-hero-heading")).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
   });
 
   it("authenticated user whose token lapsed server-side falls back to the inbox screen (response-shape guard)", async () => {
@@ -407,7 +457,9 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     await fillStoryAndSubmit();
 
     expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
-    expect(screen.queryByText(`${K}.success.heading`)).not.toBeInTheDocument();
+    // MEH-1814: was `success.heading`, which no longer renders anywhere — the
+    // assertion would have been vacuously true against any implementation.
+    expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
     expect(localStorage.getItem("token")).toBeNull();
   });
 });
