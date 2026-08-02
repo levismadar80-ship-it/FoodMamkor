@@ -353,6 +353,10 @@
           "generic": "Connection error — please try again."
         },
         "success": {
+          "title": "Request sent — your business is in review",
+          "body": "We received your details. Our team reviews and approves new businesses, usually within 3 business days.",
+          "next": "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
+          "cta": "To my dashboard",
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
           "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
