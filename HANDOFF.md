@@ -3,6 +3,33 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-02 (לילה) — batch 3 merges: פרדיקטי משלוח · WebKit ב-git · אבחון ה-flake
+
+**PRs:** #2536 (MEH-1848, squash `fbe18d52`) · #2537 (MEH-1788 צעד A, squash `03b746bd`) · #2543 (MEH-1858, squash `6b0db1a7`) · **ה-PR הזה** (backfill, כלל 31).
+
+**ענפים:** `feature/meh-1848-offers-delivery-conjunct` · `feature/meh-1788-webkit-projects` · `feature/meh-1858-role-reachability-flake`, כל אחד מ-`origin/staging` טרי.
+
+### מה נשלח
+
+שני הפרדיקטים ב-`producer_listing.py` מכבדים `offers_delivery`; שני פרופילי WebKit נכנסו ל-`playwright.config.ts` מאחורי `PW_WEBKIT=1`; ה-flake של `25-role-reachability` אובחן ותועד. הפירוט ב-CHANGELOG; כאן מה ששווה לזכור.
+
+### שישה דברים ששווים יותר מהתוצאה
+
+1. **הפרמיסה של כרטיס יכולה להיות שגויה, וה-DOM ברגע הכשל הוא מי שאומר את זה.** MEH-1858 קבע «פי-6 ⇒ מרוץ». זה **429**. מה שהכריע לא היה ניתוח אלא שורה אחת ב-snapshot: `alert: משהו השתבש, נסו שוב` — כלומר ענף ה-catch רץ, ה-login **נכשל**, והאפליקציה נשארה ב-`/login` **נכון**. ה-spec מאסרט רק על URL ולכן דיווח "ה-URL לא השתנה": נכון, אבל לא הסיבה. **assertion שמודד רק את התוצאה הסופית מדווח כל כשל ביניים כתעלומה.**
+2. **כלל שנוסח צר נכשל בשקט על אותה מחלקה.** `frontend/e2e/CLAUDE.md` כבר מזהיר על שריפת מכסת limiter מ-IP משותף של runner — אבל על `/auth/register`, ובניסוח "אל תלולאי ב-spec **בודד**". הכשל כאן הוא **הצטברות על פני הסוויטה**, שבה כל התחברות בודדת חוקית. אף אחד לא עבר על הכלל; הכלל פשוט לא כיסה את הצורה.
+3. **התנגשות sessions שלישית, ושוב git תפס ולא אני.** `ad071d6b` כתב את אותו one-liner דקה לפניי. המימוש שלהם היה **טוב יותר** משלי (קריאת שעון אחת משותפת לשתי ההשוואות) — אז נזרק שלי ונבנה מעליו. מה שנשאר תרומה אמיתית הוא **תא הגבול**: נמדד ש-`>` → `>=` עובר את הסוויטה שלהם 22/22. בדיקה זולה שאני לא עשיתי: `git fetch` מיד לפני commit, לא רק לפני התחלה.
+4. **‏probe שבור מדווח תשובה בטוחה ושגויה — פעמיים באותה משימה.** ריצה ראשונה: 10/10 "כשלים" שכולם `chrome-headless-shell` חסר. אחריה: `ERR_CONNECTION_RESET` עד שהוצמד TLS 1.2. **אף אחד מהם לא היה ה-flake.** מה שהציל: אימות ה-probe על מקרה שהתשובה שלו ידועה **לפני** שהאמנתי לאדום או לירוק שלו. אותה משמעת הופעלה שוב אחרי כל עריכה של ה-probe.
+5. **הוספת env var עולה החלשת שער.** `PW_WEBKIT` קיבל החרגה ב-`SYSTEM_EXCLUDE_RE` — נושא-משקל, סיווג נכון לגופו (harness ולא app config), ודווח מפורשות ב-body לוויתו של ספיר. `PW_EXECUTABLE_PATH` **סורב**: הוא קונה נוחות ל-harness ידני, ו-`playwright.local.config.ts:16` כבר מקבע את אותו נתיב בלי env var. **שתי החרגות בסשן אחד היא תבנית שעדיף לא להתחיל.**
+6. **`Closes MEH-XXXX step A` סוגר את כל הכרטיס.** Linear פרסר את מילת הסגירה והתעלם מהסיוג; MEH-1788 קפץ ל-Done בזמן שצעד B פתוח. הוחזר. ב-#2543 נכתב `Refs` — והכרטיס נשאר פתוח כראוי.
+
+### מה פתוח
+
+* **‏MEH-1858 חסום על החלטת ספיר** בין שלוש התרופות שנרשמו בכרטיס. **אין לבחור אחת חד-צדדית ואין לגעת ב-rate limit של `/auth/login`.** שאלה פתוחה שתכריע בין 2 ל-3: האם ה-limiter ממופתח ב-IP או בחשבון — לא אומת, וניתן לאמת ע"י קריאת `rate_limit.py` בלי שער.
+* **‏MEH-1788 צעד B** — patch doc מלא כתוב בכרטיס תחת `## 🔧 Diff מוכן להחלה`, כולל מלכודת ה-cache (`e2e.yml:122`+`:129` באותו diff) ושלוש הכרעות עם נימוק. `.github/workflows/**` הוא CC-deny.
+* **‏PR #2502 פתוח וחסום על סמן ה-merge-block** — של ספיר בלבד לנקות (כלל 30). `b70da924` (תאי הגבול של `starts_at`) יושב עליו וייסע איתו. **הכרטיס דווח לי כ"merged" והוא אינו** — GitHub מדווח `open` / `merged:false`; אומת לפני פעולה.
+* **‏Vercel free-tier deploy cap** עדיין פגוע (>100/יום) — אין preview URLs ל-~24h, ולכן אין QA ויזואלי בשום כרטיס. **לא חוסם** את שני השערים הנדרשים.
+* **‏MEH-1249** — טרם נבדק שער ה-B3 שלו.
+
 ## 2026-08-02 (ערב) — batch 4 משימות: סגירת נתיבי כתיבה · שער LEGACY-expiry · 2 STOPs
 
 **PRs:** #2538 (MEH-1856, merge `ce97aef4`) · #2541 (MEH-1857, squash `cc14eb2d`) · **ה-PR הזה** (backfill, כלל 31).
