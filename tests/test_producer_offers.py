@@ -306,3 +306,43 @@ def test_concurrent_offer_write_returns_409_not_500(client, db, owner, monkeypat
     monkeypatch.setattr(db.__class__, "flush", exploding_flush)
     res = _put(client, user, _offer())
     assert res.status_code == 409, f"expected 409, got {res.status_code}: {res.text}"
+
+
+def test_scheduled_offer_is_not_live_before_its_start_date(client, db, owner):
+    """The NEAR end of the window, which the first implementation omitted.
+
+    A future starts_at was served as live from the moment the offer was
+    created — measured at starts_at 2026-09-01 being returned on 2026-08-02.
+    Unreachable through the dashboard (it does not expose starts_at yet), but
+    the API accepts it and the revision docstring promises the opposite.
+    """
+    user, producer = owner
+    start = israel_today() + timedelta(days=30)
+    res = _put(
+        client,
+        user,
+        _offer(
+            offer_type="gift_above",
+            starts_at=start.isoformat(),
+            expires_at=(start + timedelta(days=30)).isoformat(),
+        ),
+    )
+    assert res.status_code == 200, res.text
+    assert client.get(f"/producers/{producer.id}").json()["active_offer"] is None
+
+
+def test_offer_starting_today_is_live_today(client, db, owner):
+    """`<=`, not `<` — the mirror of the expires_at boundary. An offer that
+    starts today is live today, or every scheduled offer loses its first day."""
+    user, producer = owner
+    db.add(
+        ProducerOffer(
+            producer_id=producer.id,
+            offer_type="first_order",
+            starts_at=israel_today(),
+            expires_at=FUTURE,
+            is_active=True,
+        )
+    )
+    db.commit()
+    assert client.get(f"/producers/{producer.id}").json()["active_offer"] is not None
