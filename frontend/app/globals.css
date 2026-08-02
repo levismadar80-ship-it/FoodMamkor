@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+/* MEH-1831: the Heebo @import that used to sit on this line is gone — Heebo is
+   self-hosted by next/font in app/[locale]/layout.js, same weights (300-700),
+   plus the hebrew subset it always needed. As line 1 of the entry stylesheet it
+   was render-blocking on every page, and it was invisible to greps scoped to
+   JS/JSX, which is why the ticket counted three families instead of four. */
 
 @tailwind base;
 @tailwind components;
@@ -147,7 +151,13 @@ html {
 }
 
 body {
-  font-family: 'DM Sans', 'Heebo', sans-serif;
+  /* MEH-1831: --font-body / --font-hebrew are published by next/font in
+     app/[locale]/layout.js. The literal names stay behind them as the fallback
+     chain; without the variables this rule matches no @font-face at all,
+     because next/font's faces are named generatively. The DM-Sans-then-Heebo
+     order is the pre-existing one and must not be swapped — DM Sans carries no
+     Hebrew glyphs, so Heebo is what actually renders Hebrew body text. */
+  font-family: var(--font-body), var(--font-hebrew), 'DM Sans', 'Heebo', sans-serif;
   /* docs/archive/LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay
      at 3% opacity. Adds organic "texture" without affecting legibility.
      Inline SVG keeps it CSS-only (no extra HTTP request). */
@@ -157,11 +167,11 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: 'Frank Ruhl Libre', serif;
+  font-family: var(--font-headline), 'Frank Ruhl Libre', serif;
 }
 
 .font-english {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: var(--font-latin), 'Cormorant Garamond', serif;
 }
 
 /* Leaflet map fixes */
