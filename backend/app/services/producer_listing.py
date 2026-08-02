@@ -207,6 +207,15 @@ def _delivery_city_condition(city: str):
 
     Shared by the single `delivery_city` filter and the `delivery_cities`
     region-fallback OR-list (MEH-1487) so the two matching paths never drift.
+
+    MEH-1848: scope alone is not a delivery promise. `offers_delivery` is the
+    owner's own declaration, and nothing in the schema ties it to the scope
+    columns — the only CHECK is `has_physical_location OR offers_delivery`
+    (models.py:388), which says nothing about delivery_nationwide or about
+    delivery_areas rows. So a business that switched delivery off while stale
+    scope rows (or the nationwide flag) remained behind matched this filter and
+    was offered to a consumer as a delivering business. The flag is now a
+    conjunct on BOTH delivery predicates.
     """
     area_match = Producer.delivery_areas.any(
         func.lower(DeliveryArea.city) == city.lower()
@@ -215,7 +224,13 @@ def _delivery_city_condition(city: str):
         Producer.delivery_nationwide.is_(True),
         ~Producer.delivery_excluded_cities.any(city),
     )
-    return or_(area_match, nationwide_match)
+    # `.is_(True)` and not a bare truthiness check: the column is NOT NULL today
+    # (models.py:234) so the two agree, but `.is_(True)` keeps a future NULL
+    # from silently matching rather than relying on that staying true.
+    return and_(
+        Producer.offers_delivery.is_(True),
+        or_(area_match, nationwide_match),
+    )
 
 
 def _has_delivery_condition():
@@ -239,10 +254,18 @@ def _has_delivery_condition():
     CHECK constraint only bars nationwide + the legacy delivery_cities array,
     not delivery_areas rows). # REUSES: _delivery_city_condition:214 —
     nationwide predicate shape.
+
+    MEH-1848: `offers_delivery` is conjoined here too. Note what did NOT change
+    — the exclusion asymmetry above still holds. Both predicates now agree on
+    "the owner says they deliver"; they still disagree, deliberately, on
+    whether delivery_excluded_cities applies.
     """
-    return or_(
-        Producer.delivery_areas.any(),
-        Producer.delivery_nationwide.is_(True),
+    return and_(
+        Producer.offers_delivery.is_(True),
+        or_(
+            Producer.delivery_areas.any(),
+            Producer.delivery_nationwide.is_(True),
+        ),
     )
 
 
