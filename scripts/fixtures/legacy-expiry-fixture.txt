@@ -1,0 +1,52 @@
+legacy-expiry-check self-test fixture (MEH-1857)
+================================================
+
+NOT source code, and deliberately not a .py/.js file: a real run scans
+backend/ and frontend/ only, so these intentionally-broken markers can never
+redden CI. `scripts/checks/legacy-expiry-check.sh --self-test` reads this file
+directly and asserts the guard's verdict AND its offender counts.
+
+Five cases, each exercising a different branch of the rule. Do not "fix" any of
+them — the breakage IS the test data.
+
+EDITING RULE FOR THIS FILE: the marker keyword followed by an open paren must
+appear ONLY inside the five cases below, never in prose. The scanner matches
+that literal string wherever it sees it, so a prose mention becomes an extra
+marker and the self-test's exact counts start lying. This is not hypothetical —
+the first draft of this fixture described case 3 using the literal form and the
+self-test reported 3 malformed markers instead of 1. That is precisely the
+class of error the count assertions exist to catch, so it is written down here
+rather than quietly fixed.
+
+
+CASE 1 — EXPIRED. Must be reported.
+    # LEGACY(2020-01-01, MEH-0001) the contract step for this overlap was
+    # due years ago; a guard that misses this one is doing nothing at all.
+
+
+CASE 2 — FUTURE. Must NOT be reported.
+    # LEGACY(2099-01-01, MEH-0002) still in its overlap window. This is the
+    # discriminating case: a guard that flagged every marker would satisfy
+    # "exits 1 on the fixture" while reddening every PR in the repo.
+
+
+CASE 3 — MALFORMED. Must be reported, separately from the expired one.
+    # LEGACY(soon, MEH-0003) no ISO date, so nothing can ever expire. That is
+    # the loophole which would recreate the original problem: an unparseable
+    # date exempts the overlap forever. Malformed is a failure, not a skip.
+
+
+CASE 4 — GRANDFATHERED. Must NOT be reported.
+    # legacy alias kept for backward compatibility — GRANDFATHERED-CANARY
+    # Plain English, no marker at all. There is no retroactive sweep: this
+    # guard governs new debt only. The canary string above surfaces in the
+    # self-test output if the scan ever widens to bare "legacy", which trips
+    # the grandfather assertion instead of failing silently.
+
+
+CASE 5 — MALFORMED but SUPPRESSED. Must NOT be reported; must be COUNTED.
+    # guard-ok: SUPPRESSED-CANARY — quoting the template while documenting it
+    # LEGACY(YYYY-MM-DD, MEH-1234) is the shape of a false positive: prose in
+    # backend/ that explains the convention looks identical to a real marker.
+    # The hatch covers exactly this. It does NOT cover an expired date — that
+    # asymmetry is in the script header, and case 1 stays reportable.

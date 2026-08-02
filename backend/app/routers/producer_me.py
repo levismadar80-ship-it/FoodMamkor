@@ -401,9 +401,14 @@ def update_my_producer(
     return producer
 
 
+# LEGACY(2026-09-01, MEH-1854)
 # MEH-291 — dual-write helpers used during the 7-day overlap.
 # Phase 4 (separate PR) drops the legacy is_available_today + availability_status
 # columns and removes these helpers along with the legacy endpoints below.
+# MEH-1857: that "7-day overlap" opened in May 2026 and the contract step never
+# ran — ~14 months, which is why the expiry marker above now exists. MEH-1854
+# owns the removal; scripts/legacy-expiry-check.sh fails once the date passes,
+# so the next person either finishes it or extends the date in a reviewed PR.
 
 
 def _state_to_legacy(state: str) -> tuple[bool, str]:
