@@ -48,6 +48,11 @@ await page.evaluate(() => {
     document.body.appendChild(el);
     return el;
   };
+  // The Hebrew literal below is deliberate and is NOT an i18n oversight: this
+  // probe's entire subject is which font face renders Hebrew glyphs, so the
+  // string has to BE Hebrew. Routing it through a translation file would make
+  // the probe depend on copy that can change, for no benefit — nothing here is
+  // user-facing. Same reasoning for the two latin controls.
   mk("probe-latin", "Mehamakor local food");        // control: must be DM Sans
   mk("probe-hebrew", "עסקים מקומיים מהמקור");        // the question
   mk("probe-english-cls", "Mehamakor", "font-english"); // control: Cormorant
