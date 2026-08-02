@@ -177,6 +177,15 @@ def make_producer(
         # MEH-799: approve gate requires >=1 image; default stays imageless
         # so the gate's own tests exercise the 422 path explicitly.
         images=images or [],
+        # MEH-1848: asking this factory for delivery areas means "a business
+        # that delivers to these cities", so it must also declare that it
+        # delivers. Without this the factory minted a self-contradictory row —
+        # delivery_areas rows sitting on offers_delivery=False — which is the
+        # exact state the delivery filters now (correctly) exclude. Five tests
+        # across three modules were asserting that contradictory producer came
+        # back from a delivery filter. Producers created WITHOUT delivery_cities
+        # keep the column default (False), so no other fixture shifts.
+        offers_delivery=bool(delivery_cities),
     )
     db.add(producer)
     db.flush()
