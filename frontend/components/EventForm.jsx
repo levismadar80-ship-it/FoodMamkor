@@ -318,6 +318,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           <label className="block text-sm font-medium text-text mb-1">{t("image_label")}</label>
           {form.image_url ? (
             <div className="flex items-center gap-3">
+              {/* raw img: upload preview. `form.image_url` is whatever POST /upload returned —
+                  a Cloudinary secure_url OR the local /placeholder-image.png fallback
+                  (upload.py:115). Mixed provenance, authenticated form chrome, 96px. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={form.image_url}

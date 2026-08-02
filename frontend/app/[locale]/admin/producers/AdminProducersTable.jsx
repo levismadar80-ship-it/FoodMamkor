@@ -308,6 +308,10 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
           <Warning size={22} weight="fill" aria-hidden="true" />
         </span>
       ) : (
+        // raw img: the URL is producer-submitted and may be ANY host (the
+        // MEH-1222 "https://bread.jpg" case). next/image rejects hosts absent
+        // from remotePatterns instead of firing onError, which is exactly the
+        // broken-image signal this admin thumb exists to show.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={optimizeCloudinary(url, { width: PENDING_THUMB_CLOUDINARY_W })}
