@@ -39,14 +39,22 @@ const profile = {
 
 const browser = await chromium.launch({ executablePath: process.argv[3] || "/opt/pw-browsers/chromium" });
 
-async function shot(name, viewport) {
+// MEH-1821 adversarial pass: the default block renders whenever delivery is
+// on, including nationwide — where the per-area list it used to point at does
+// not exist. Nationwide gets its own copy, so it gets its own capture.
+const nationwide = {
+  ...profile, delivery_nationwide: true, delivery_areas: [],
+  delivery_excluded_cities: ["אילת"],
+};
+
+async function shot(name, viewport, fixture = profile) {
   const ctx = await browser.newContext({ viewport, locale: "he" });
   const page = await ctx.newPage();
   await page.addInitScript(() => localStorage.setItem("token", "qa-fake-token"));
   await page.route("**/api/**", (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith("/auth/me")) return route.fulfill({ json: user });
-    if (url.pathname.endsWith("/producers/me")) return route.fulfill({ json: profile });
+    if (url.pathname.endsWith("/producers/me")) return route.fulfill({ json: fixture });
     return route.fulfill({ json: [] });
   });
   await page.goto(`${BASE}/producer/dashboard/edit`, { waitUntil: "domcontentloaded" }).catch(() => {});
@@ -58,7 +66,7 @@ async function shot(name, viewport) {
   await page.waitForTimeout(600);
 
   const block = page.getByTestId("delivery-default-block");
-  await block.scrollIntoViewIfNeeded().catch(() => {});
+  await block.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
   // Numeric DOM-order check: 4 === DOCUMENT_POSITION_FOLLOWING (row after block).
   const order = await page.evaluate(() => {
     const b = document.querySelector('[data-testid="delivery-default-block"]');
@@ -67,9 +75,10 @@ async function shot(name, viewport) {
     return b.compareDocumentPosition(r) & 4 ? "block-BEFORE-areas OK" : "WRONG ORDER";
   });
   const hint = async (c) =>
-    (await page.getByTestId(`delivery-fee-hint-${c}`).textContent().catch(() => null)) ?? "(none)";
+    (await page.getByTestId(`delivery-fee-hint-${c}`).textContent({ timeout: 2000 }).catch(() => null)) ?? "(none)";
+  const blockCopy = (await block.innerText({ timeout: 2000 }).catch(() => "")).split("\n").slice(0, 2).join(" / ");
   console.log(
-    name, "|", order,
+    name, "|", order, "| copy:", blockCopy,
     "| חיפה(null):", await hint("חיפה"),
     "| עכו(0):", await hint("עכו"),
     "| נהריה(20):", await hint("נהריה"),
@@ -78,9 +87,9 @@ async function shot(name, viewport) {
   // Second frame scrolled onto the area list — the hints are the deliverable
   // and the first frame cuts them off below the fold. Cookie banner dismissed
   // so it can't sit on top of the rows being reviewed.
-  await page.getByRole("button", { name: "קבלו הכל" }).click().catch(() => {});
+  await page.getByRole("button", { name: "קבלו הכל" }).click({ timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(300);
-  await page.getByTestId("delivery-fee-hint-עכו").scrollIntoViewIfNeeded().catch(() => {});
+  await page.getByTestId("delivery-fee-hint-עכו").scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${OUT}/${name}-areas.png`, fullPage: false });
   await ctx.close();
@@ -88,5 +97,7 @@ async function shot(name, viewport) {
 
 await shot("delivery-card-375", { width: 375, height: 812 });
 await shot("delivery-card-1440", { width: 1440, height: 900 });
+await shot("delivery-card-nationwide-375", { width: 375, height: 812 }, nationwide);
+await shot("delivery-card-nationwide-1440", { width: 1440, height: 900 }, nationwide);
 
 await browser.close();

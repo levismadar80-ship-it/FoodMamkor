@@ -396,6 +396,30 @@ describe("MEH-1821 DeliveryCard defaults-first", () => {
     expect(screen.getByTestId("delivery-fee-hint-עכו")).toHaveTextContent(D.area_fee_free);
   });
 
+  // Both of the following were found by the adversarial pass on this PR, not
+  // by the ticket — the ticket's matrix stopped at the per-area fee and never
+  // crossed it with the nationwide branch or with a business-level 0.
+  it("(f) nationwide mode gets its own copy — it has no area list to point at", () => {
+    renderCard(DeliveryCard, {
+      profile: { ...withCities, delivery_nationwide: true, delivery_areas: [] },
+    });
+    // The block still renders (the fee applies country-wide)...
+    expect(screen.getByTestId("delivery-default-block")).toBeInTheDocument();
+    // ...but must not promise an override list that this branch never renders.
+    expect(screen.getByText(D.default_block_hint_nationwide)).toBeInTheDocument();
+    expect(screen.queryByText(D.default_block_hint)).not.toBeInTheDocument();
+    expect(screen.queryByText(D.delivery_cities_label)).not.toBeInTheDocument();
+  });
+
+  it("(g) a business-level fee of 0 is inherited as free delivery, not as '0 ₪'", () => {
+    renderCard(DeliveryCard, { profile: { ...withCities, delivery_fee: 0 } });
+    const hint = screen.getByTestId("delivery-fee-hint-חיפה");
+    expect(hint).toHaveTextContent(D.area_fee_inherits_free);
+    // The same value must not render two ways in one list: an inherited 0 and
+    // a row's own 0 both mean free delivery.
+    expect(hint).not.toHaveTextContent("0 ₪");
+  });
+
   it("(e) the PUT payload is unchanged by the reorder", async () => {
     renderCard(DeliveryCard, { profile: withCities });
     fireEvent.change(screen.getByLabelText(D.fee_label), { target: { value: "40" } });

@@ -1797,7 +1797,14 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     if (!stated) {
       const base = form.fee;
       if (base === "" || base === null || base === undefined) return null;
-      return t("area_fee_inherits", { fee: base });
+      // A business-level 0 is free delivery, and the row below states its own
+      // 0 as "משלוח חינם" — rendering the inherited one as "יורש 0 ₪" would
+      // show the same value two different ways in the same list. The 0 case
+      // is reachable on purpose: the fee input is min="0" and fee_hint tells
+      // the owner to write 0 when delivery is free.
+      return Number(base) === 0
+        ? t("area_fee_inherits_free")
+        : t("area_fee_inherits", { fee: base });
     }
     return Number(raw) === 0 ? t("area_fee_free") : null;
   };
@@ -1865,8 +1872,23 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 block is presentational only; `handleSave` below is untouched
                 and the PUT /producers/me payload is byte-identical. */}
             <div className="space-y-3 pt-1" data-testid="delivery-default-block">
-              <p className="text-sm font-medium">{t("default_block_title")}</p>
-              <p className="text-xs text-fg-muted">{t("default_block_hint")}</p>
+              {/* MEH-1821: the copy is mode-dependent because the block is
+                  not. It renders whenever delivery is on, but the per-area
+                  list it points at exists only in the non-nationwide branch
+                  below — nationwide clears `cities`, so there is no row to
+                  override and "ברירת מחדל" would name exceptions that cannot
+                  exist. Nationwide gets its own pair: one country-wide fee,
+                  nothing beneath it. */}
+              <p className="text-sm font-medium">
+                {form.nationwide
+                  ? t("default_block_title_nationwide")
+                  : t("default_block_title")}
+              </p>
+              <p className="text-xs text-fg-muted">
+                {form.nationwide
+                  ? t("default_block_hint_nationwide")
+                  : t("default_block_hint")}
+              </p>
               <div>
                 <label
                   htmlFor="delivery-fee"
