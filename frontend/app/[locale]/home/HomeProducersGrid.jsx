@@ -9,7 +9,9 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useMemo } from "react";
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { ActiveFilterChip, DeliveryDayRow } from "@/app/[locale]/home/ActiveFilterChip";
+import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
+// MEH-1825: the day row is shared with /producers — one definition in components/.
+import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
