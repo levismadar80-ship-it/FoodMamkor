@@ -26,6 +26,7 @@ from app.models import (
     Producer,
     Product,
     ProducerLocation,
+    ProducerOffer,
     ProducerPageView,
     ProducerWhatsAppClick,
     User,
@@ -146,6 +147,53 @@ def _apply_delivery_rows(db: Session, producer: Producer, rows: list[dict]):
                 delivery_fee=row.get("delivery_fee"),
             )
         )
+
+
+def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
+    """MEH-1823 chunk 2: write the owner's single offer.
+
+    Called ONLY when the key was explicitly present in the body — the caller
+    checks `model_fields_set`, because `exclude_unset` alone cannot distinguish
+    "omitted" (leave the offer alone) from "explicit null" (deactivate it), and
+    conflating those would silently wipe an offer on every unrelated PUT from
+    the dashboard.
+
+    Replace, never update: any currently-active row is flipped inactive and a
+    new row is inserted. That keeps the unique partial index
+    (`uq_producer_offers_active_per_producer`) satisfied without an UPSERT, and
+    leaves the superseded offer in place as history rather than destroying it.
+
+    # REUSES: backend/app/routers/producer_me.py:122 — _apply_delivery_rows
+    #         (same owner-writes-child-rows shape, same delete-then-insert
+    #         ordering inside the request's transaction).
+    """
+    active = (
+        db.query(ProducerOffer)
+        .filter(
+            ProducerOffer.producer_id == producer.id,
+            ProducerOffer.is_active.is_(True),
+        )
+        .all()
+    )
+    for row in active:
+        row.is_active = False
+    # Flush the deactivation before inserting, or the new row collides with the
+    # old one on the unique partial index inside the same transaction.
+    db.flush()
+    if offer is None:
+        return
+    db.add(
+        ProducerOffer(
+            producer_id=producer.id,
+            offer_type=offer["offer_type"],
+            threshold_value=offer.get("threshold_value"),
+            threshold_unit=offer.get("threshold_unit"),
+            headline=offer.get("headline"),
+            starts_at=offer.get("starts_at"),
+            expires_at=offer["expires_at"],
+            is_active=offer.get("is_active", True),
+        )
+    )
 
 
 def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
@@ -337,6 +385,12 @@ def update_my_producer(
     # dashboard DeliveryCard. Takes precedence over the flat city list when
     # both are sent; absent (exclude_unset) → the flat path behaves as before.
     delivery_rows = payload.pop("delivery_areas", None)
+    # MEH-1823 chunk 2: three-valued. `in payload` (post-exclude_unset) is the
+    # ONLY way to tell "omitted" from "explicit null" — popping the value alone
+    # collapses them, and that difference is whether an unrelated dashboard save
+    # leaves the offer alone or deletes it.
+    offer_sent = "active_offer" in payload
+    offer_payload = payload.pop("active_offer", None)
 
     _enforce_owner_license_gate(db, producer, payload, category_ids)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
@@ -359,6 +413,10 @@ def update_my_producer(
     # Handle delivery areas (replaces existing rows like the admin endpoint).
     # MEH-1644: structured rows take precedence over the flat city list.
     new_cities = _sync_delivery_areas(db, producer, delivery_rows, delivery_cities)
+
+    # MEH-1823 chunk 2: the owner's single offer (replace-or-deactivate).
+    if offer_sent:
+        _sync_active_offer(db, producer, offer_payload)
 
     # Handle category updates
     if category_ids is not None:

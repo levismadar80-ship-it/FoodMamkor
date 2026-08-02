@@ -25,6 +25,11 @@ from sqlalchemy.orm import backref, relationship
 
 from app.database import Base
 
+# MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
+# same tz basis as the vacation_until validator. clock.py imports only
+# app.config, so this adds no cycle.
+from app.utils.clock import israel_today
+
 
 class City(Base):
     """MEH-213: canonical Israeli city list seeded from data.gov.il.
@@ -357,6 +362,32 @@ class Producer(Base):
     offers = relationship(
         "ProducerOffer", back_populates="producer", cascade="all, delete-orphan"
     )
+
+    @property
+    def active_offer(self):
+        """MEH-1823 chunk 2: the one offer that is live RIGHT NOW, or None.
+
+        This is what `ProducerListOut.active_offer` serializes, and it is the
+        single place the expiry rule is applied — so an expired offer cannot
+        leave the API through any read path, rather than each consumer being
+        trusted to re-check the date.
+
+        `israel_today()` and not `date.today()`: the same tz reasoning as
+        _validate_vacation_until (schemas.py). `>=` because an offer expiring
+        today is still live today — it stops being live tomorrow.
+
+        Reads the loaded `offers` collection instead of issuing a query, so the
+        LIST paths that `selectinload(Producer.offers)` pay no N+1. The unique
+        partial index guarantees at most one row satisfies `is_active`, so the
+        loop returns at most one. It does load inactive history rows alongside;
+        acceptable while an owner has one offer at a time, and the place to
+        revisit if that ever stops being true.
+        """
+        today = israel_today()
+        for offer in self.offers:
+            if offer.is_active and offer.expires_at >= today:
+                return offer
+        return None
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
     __table_args__ = (
@@ -753,6 +784,16 @@ class ProducerOffer(Base):
     rather than the reader: an always-on offer converges on discounting buyers
     who would have paid full price. An offer that cannot expire is a permanent
     discount nobody decided to give.
+
+    **The threshold is optional for EVERY type, and is deliberately NOT gated by
+    offer_type — at this layer or any other.** An automated reviewer proposed a
+    cross-constraint forcing a threshold on free_delivery_above / gift_above and
+    forbidding it on the other two. It was rejected on 02/08 (Sapir) because the
+    forbidden combinations are real offers: "10% off pickup over ₪100" and
+    "first order over ₪150". Which types may carry a threshold is a product
+    question, not a data invariant, so there is no CHECK here and no
+    type-conditional branch in ProducerOfferCreate either. Do not add one
+    without a decision that overturns this note — five CHECKs is the agreed set.
 
     All five CHECKs and the unique partial index are declared BOTH here (so a
     fresh `create_all` test DB has them) AND in the paired Alembic revision —

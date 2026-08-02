@@ -872,6 +872,54 @@
         "overflow_heading": "More about this business"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
+    },
+    "offer": {
+      "types": {
+        "free_delivery_above": "Free delivery over an amount or quantity",
+        "gift_above": "Gift with a purchase over an amount or quantity",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift with purchase",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text_with": {
+        "free_delivery_above": "Free delivery over {amount}",
+        "gift_above": "Gift on orders over {amount}",
+        "first_order": "First-order benefit over {amount}",
+        "pickup_discount": "Self-pickup discount over {amount}"
+      },
+      "units": {
+        "ils": "₪",
+        "units": "units",
+        "liters": "L",
+        "kg": "kg"
+      },
+      "card_title": "Offer",
+      "card_subtitle": "One active offer at a time, with an end date.",
+      "scope_helper": "Your offer appears on your page and on your card in search. You can remove it any time, and it disappears on its own at the end date.",
+      "type_label": "Offer type",
+      "type_none": "No active offer",
+      "threshold_label": "Threshold (optional)",
+      "threshold_hint": "Shown to customers as part of the offer sentence. Leave empty for an unconditional offer.",
+      "threshold_placeholder": "10",
+      "unit_label": "Unit",
+      "headline_label": "Your own line (optional)",
+      "headline_hint": "Shown under the offer on your page. Up to 60 characters, no emoji.",
+      "headline_placeholder": "Delivered to your door across the north",
+      "expires_label": "Valid until",
+      "expires_hint": "Required. After this date the offer disappears from the site on its own.",
+      "active_label": "Offer is active",
+      "remove_cta": "Remove offer",
+      "expires_required": "Please choose an end date for the offer",
+      "threshold_pair_required": "A threshold and its unit are set together — both or neither",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "save_cta": "Save",
+      "save_error": "Save failed. Please try again."
     }
   },
   "recipes": {

@@ -867,6 +867,54 @@
         "overflow_heading": "עוד על העסק הזה"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
+    },
+    "offer": {
+      "types": {
+        "free_delivery_above": "משלוח חינם מעל סכום או כמות",
+        "gift_above": "מתנה בקנייה מעל סכום או כמות",
+        "first_order": "הטבה להזמנה ראשונה",
+        "pickup_discount": "הנחה באיסוף עצמי"
+      },
+      "text": {
+        "free_delivery_above": "משלוח חינם",
+        "gift_above": "מתנה בקנייה",
+        "first_order": "הטבה להזמנה ראשונה",
+        "pickup_discount": "הנחה באיסוף עצמי"
+      },
+      "text_with": {
+        "free_delivery_above": "משלוח חינם בהזמנה מעל {amount}",
+        "gift_above": "מתנה בהזמנה מעל {amount}",
+        "first_order": "הטבה להזמנה ראשונה מעל {amount}",
+        "pickup_discount": "הנחה באיסוף עצמי מעל {amount}"
+      },
+      "units": {
+        "ils": "₪",
+        "units": "יחידות",
+        "liters": "ליטר",
+        "kg": "ק\"ג"
+      },
+      "card_title": "הטבה",
+      "card_subtitle": "הטבה אחת פעילה בכל פעם, עם תאריך סיום.",
+      "scope_helper": "ההטבה תוצג ללקוחות בעמוד שלך ובכרטיס שלך בחיפוש. אפשר להסיר אותה בכל רגע, והיא נעלמת מעצמה בתאריך הסיום.",
+      "type_label": "סוג ההטבה",
+      "type_none": "אין הטבה פעילה",
+      "threshold_label": "סף (אופציונלי)",
+      "threshold_hint": "מוצג ללקוחות כחלק ממשפט ההטבה. אפשר להשאיר ריק אם ההטבה ללא תנאי.",
+      "threshold_placeholder": "10",
+      "unit_label": "יחידת מידה",
+      "headline_label": "משפט משלך (אופציונלי)",
+      "headline_hint": "מוצג מתחת להטבה בעמוד שלך. עד 60 תווים, בלי אימוג'י.",
+      "headline_placeholder": "אספקה עד הבית בכל רחבי הצפון",
+      "expires_label": "בתוקף עד",
+      "expires_hint": "חובה. אחרי התאריך הזה ההטבה נעלמת מהאתר בלי שתצטרכי לגעת בה.",
+      "active_label": "ההטבה פעילה",
+      "remove_cta": "הסרת ההטבה",
+      "expires_required": "צריך לבחור תאריך סיום להטבה",
+      "threshold_pair_required": "סף ויחידת מידה נקבעים יחד — או שניהם או אף אחד",
+      "saving": "בשמירה…",
+      "saved": "נשמר",
+      "save_cta": "שמירה",
+      "save_error": "השמירה נכשלה. נסו שוב."
     }
   },
   "recipes": {

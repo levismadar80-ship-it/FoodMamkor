@@ -242,6 +242,9 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
             # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
             # so it doesn't widen the 3-way collection joinedload cartesian).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
@@ -284,6 +287,9 @@ def get_producer(
             # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
             # so it doesn't widen the 3-way collection joinedload cartesian).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.id == producer_id)
         .first()
