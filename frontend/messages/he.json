@@ -709,7 +709,10 @@
       "aria_verified": "בית עסק מאומת. {tooltip}",
       "aria_verified_plain": "בית עסק מאומת",
       "verified_popover_title": "עסק מאומת",
-      "verified_popover_body": "כל עסק במהמקור עובר אישור ידני ופועל ברישיון.",
+      "verified_popover_body_license": "אישרנו את העסק באופן ידני אחרי בדיקת רישיון בתוקף.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
+      "verified_popover_body_exemption": "אישרנו את העסק באופן ידני אחרי בדיקת מסמכי פטור מרישיון.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
+      "verified_popover_body_cosmetics": "אישרנו את העסק באופן ידני אחרי בדיקת מסמכי פעילות בתחום התמרוקים.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
+      "verified_popover_body_generic": "אישרנו את העסק באופן ידני.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
       "verified_popover_link": "איך אנחנו מאמתים?"
     },
     "detail": {
@@ -1878,16 +1881,6 @@
         "submitting": "בשליחה...",
         "submit": "דחי"
       },
-      "badges": {
-        "rabanut": "כשר מרבנות",
-        "badatz": "בדצ\"ה",
-        "chalak": "חלק",
-        "mehadrin": "מהדרין",
-        "organic_kosher": "אורגני כשר",
-        "shmitta": "שמיטה",
-        "kilayim": "ללא כלאיים",
-        "artisan_dairy": "מוצרי חלב מהחווה"
-      },
       "reminders": {
         "title": "תזכורות פקיעת תעודה",
         "subtitle": "בתי עסק שתעודת הכשרות שלהם פוקעת ב-30 הימים הקרובים. תמיד מציגות תצוגה מקדימה לפני שליחה.",
@@ -2698,7 +2691,7 @@
         "tooltip": "כשרות מהדרין בפיקוח בית דין צדק"
       },
       "chalak": {
-        "label": "חלק",
+        "label": "בשר חלק (גלאט)",
         "tooltip": "בשר חלק לפי המסורת הספרדית"
       },
       "mehadrin": {

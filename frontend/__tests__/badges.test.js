@@ -23,8 +23,18 @@ describe("BADGE_PRIORITY", () => {
       "lactose_free",
       "kosher",
       "delivery",
-      "products",
     ]);
+  });
+
+  // MEH-1846: absence assertion. The array check above would still pass if
+  // "products" were reintroduced at a position this test happens not to pin,
+  // and it says nothing about BADGE_CONFIG. These two do, and they are the
+  // pair that fails if the key comes back through either door.
+  it("carries no products key, in either structure (MEH-1846)", () => {
+    expect(BADGE_PRIORITY).not.toContain("products");
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("products");
+    expect(BADGE_PRIORITY).toHaveLength(11);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
   });
 });
 
@@ -300,23 +310,26 @@ describe("allBadges", () => {
     it("badgeCount and topBadges agree with the suppression", () => {
       // The `+N` overflow indicator on ProducerCard is driven by badgeCount,
       // so a stale count would re-surface the badge in the popover.
+      // MEH-1846: the second earned badge was "products" until it was removed;
+      // "new" replaces it so this still asserts a MULTI-badge producer (a
+      // single-badge fixture could not detect a stale count at all).
       const p = {
         ...deliveryOnly,
         verification_tier: "verified",
-        products_count: 5,
+        days_since_created: 3,
       };
       expect(badgeCount(p)).toBe(2);
-      expect(topBadges(p, 5).map((b) => b.key)).toEqual([
-        "verified",
-        "products",
-      ]);
+      expect(topBadges(p, 5).map((b) => b.key)).toEqual(["verified", "new"]);
     });
   });
 
-  it("products — when products_count >= 3", () => {
-    expect(allBadges({ products_count: 3 }).map((b) => b.key)).toEqual(["products"]);
-    expect(allBadges({ products_count: 10 }).map((b) => b.key)).toEqual(["products"]);
-    expect(allBadges({ products_count: 2 }).map((b) => b.key)).toEqual([]);
+  // MEH-1846: replaces the old "products — when products_count >= 3" case.
+  // Asserting the BEHAVIOUR (no badge at any count) rather than the absence of
+  // a line of code: a reintroduced badge fails this whatever it is keyed on.
+  it("products_count earns NO badge at any value (MEH-1846)", () => {
+    for (const products_count of [0, 2, 3, 10, 999]) {
+      expect(allBadges({ products_count }).map((b) => b.key)).toEqual([]);
+    }
   });
 
   it("returns badges in priority order regardless of field order", () => {
@@ -347,7 +360,6 @@ describe("allBadges", () => {
       "lactose_free",
       "kosher",
       "delivery",
-      "products",
     ]);
   });
 
@@ -463,6 +475,8 @@ describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
 
 describe("badgeCount", () => {
   it("counts all earned badges", () => {
+    // MEH-1846: was 5 with the products badge; products_count is left on the
+    // fixture on purpose, so this also asserts it contributes nothing.
     expect(
       badgeCount({
         verification_tier: "verified",
@@ -471,7 +485,7 @@ describe("badgeCount", () => {
         has_delivery: true,
         products_count: 7,
       }),
-    ).toBe(5);
+    ).toBe(4);
   });
 
   it("counts the new Phase B badges (organic no longer counts — MEH-1259)", () => {

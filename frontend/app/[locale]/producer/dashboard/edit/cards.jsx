@@ -26,7 +26,7 @@ import { useTranslations } from "next-intl";
 import { Warning, X, Sparkle, CheckCircle, Eye } from "@phosphor-icons/react";
 // MEH-1167: reuse the public badge strip (+ its CODE_TO_KEY + MEH-1260 expiry
 // gate) for the KashrutCard's "approved" zone — one owner of that render.
-import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import KashrutBadgeStrip, { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -414,6 +414,12 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
           {images.map((url, i) => (
             <div key={`${url}-${i}`} className="relative group">
+              {/* raw img: producer/admin-submitted URLs reach this grid, and
+                  optimizeCloudinary passes a non-Cloudinary URL through
+                  unchanged (cloudinary.js:24). next/image THROWS on a src that
+                  is neither absolute nor leading-slash (image-loader.ts:93) —
+                  it does not degrade — so migrating here trades a broken
+                  thumbnail for a crashed dashboard. Measured, see PR. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
@@ -1046,6 +1052,9 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
         <span className="text-sm font-medium block">{t("photo_label")}</span>
         <div className="flex items-center gap-3">
           {photoUrl ? (
+            /* raw img: owner-uploaded photo preview; `photoUrl` may be the
+               local /placeholder-image.png fallback (upload.py:115), not a
+               Cloudinary URL. Authenticated dashboard chrome, 64px. */
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={photoUrl}
@@ -1364,21 +1373,11 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
 // LicenseCard (MEH-1270 role="status" success), components/KashrutBadgeStrip.
 // ============================================================
 
-// code → he.json kashrut.badges.* key. The API `code` axis snake-cases in
-// messages (organic-kosher → organic_kosher). Same 8-entry contract as
-// KashrutBadgeStrip.CODE_TO_KEY — module-private there, and scope forbids
-// editing that file, so the map is restated (one small axis, not logic).
-const KASHRUT_CODE_TO_KEY = {
-  rabanut: "rabanut",
-  badatz: "badatz",
-  chalak: "chalak",
-  mehadrin: "mehadrin",
-  "organic-kosher": "organic_kosher",
-  shmitta: "shmitta",
-  kilayim: "kilayim",
-  "artisan-dairy": "artisan_dairy",
-};
-const KASHRUT_CODES = Object.keys(KASHRUT_CODE_TO_KEY);
+// MEH-1852: the code → he.json `kashrut.badges.*` key axis is imported from
+// KashrutBadgeStrip (line 29), which already owns it and which this file
+// already imports for the approved-badges zone. There is no marginal cost here
+// and never was.
+const KASHRUT_CODES = Object.keys(CODE_TO_KEY);
 
 // Exported for isolation tests (EditTabKashrutCard.test.jsx) — see CategoriesCard.
 export function KashrutCard({ profile, reportDirty = () => {} }) {
@@ -1486,7 +1485,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
       {openRequests.length > 0 && (
         <ul className="space-y-1.5" data-testid="kashrut-requests">
           {openRequests.map((r) => {
-            const key = KASHRUT_CODE_TO_KEY[r.badge_code];
+            const key = CODE_TO_KEY[r.badge_code];
             const label = key ? tBadges(`${key}.label`) : r.badge_code;
             const rejected = r.status === "rejected";
             return (
@@ -1529,7 +1528,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
             <option value="">{t("select_placeholder")}</option>
             {KASHRUT_CODES.map((code) => (
               <option key={code} value={code}>
-                {tBadges(`${KASHRUT_CODE_TO_KEY[code]}.label`)}
+                {tBadges(`${CODE_TO_KEY[code]}.label`)}
               </option>
             ))}
           </select>
@@ -1539,6 +1538,8 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           <span className="text-sm font-medium block">{t("upload_label")}</span>
           <div className="flex items-center gap-3">
             {certUrl && (
+              /* raw img: certificate upload preview, same mixed provenance
+                 as the photo above (upload.py:115). */
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={certUrl}
