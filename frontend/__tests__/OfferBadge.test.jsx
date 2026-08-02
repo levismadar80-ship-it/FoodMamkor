@@ -85,6 +85,43 @@ describe("OfferBadge — the states that must render NOTHING", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  // The PAST case above passes under a UTC clock and an Israel clock alike, so
+  // it cannot tell the two apart — "green for two reasons". This one can: it
+  // pins the instant to the window where the two dates genuinely disagree.
+  // 2026-08-02T21:30:00Z is 2026-08-03 00:30 in Israel (IDT, UTC+3), so the
+  // UTC date is still "2026-08-02" while the Israel date is already the 3rd.
+  // An offer whose last day was the 2nd is dead in Israel and must not render.
+  // Against the previous `toISOString().slice(0, 10)` guard this test fails —
+  // "2026-08-02" < "2026-08-02" is false, so the badge rendered.
+  it("expiry is judged in Israel time, not UTC (offer dead at 00:30 Israel)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-02T21:30:00Z"));
+    try {
+      expect(new Date().toISOString().slice(0, 10)).toBe("2026-08-02"); // the trap
+      const { container } = renderIntl(
+        <OfferBadge offer={offer({ expires_at: "2026-08-02" })} />,
+      );
+      expect(container).toBeEmptyDOMElement();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // The mirror: the same instant must NOT hide an offer that is still live in
+  // Israel. Without this, "always return null" would satisfy the test above.
+  it("an offer live on the Israel date still renders at that same instant", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-02T21:30:00Z"));
+    try {
+      const { container } = renderIntl(
+        <OfferBadge offer={offer({ expires_at: "2026-08-03" })} />,
+      );
+      expect(container).not.toBeEmptyDOMElement();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("unknown offer_type → nothing, never a raw i18n key", () => {
     const { container } = renderIntl(<OfferBadge offer={offer({ offer_type: "mystery_type" })} />);
     expect(container).toBeEmptyDOMElement();
