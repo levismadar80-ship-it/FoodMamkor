@@ -135,10 +135,15 @@ def _missing_items(producer: Producer) -> list[str]:
     return items
 
 
-def _build_email(
-    producer: Producer, first_name: str, items: list[str]
-) -> tuple[str, str]:
-    """Render (subject, body) for one producer's nudge."""
+def _build_email(first_name: str, items: list[str]) -> tuple[str, str]:
+    """Render (subject, body) for one producer's nudge.
+
+    Takes no Producer, unlike onboarding_followup._build_email — that one
+    needs the row to pick the Email-5 licensed/unlicensed variant, whereas
+    every producer-dependent decision here is already resolved into `items`
+    by _missing_items(). Threading the row through anyway would imply a
+    dependency that does not exist.
+    """
     return _SUBJECT, _BODY.format(
         greeting=_greeting(first_name),
         missing_items="\n".join(items),
@@ -214,7 +219,7 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
 
             parts = (user.name or "").strip().split()
             first_name = parts[0] if parts else ""
-            subject, body = _build_email(p, first_name, items)
+            subject, body = _build_email(first_name, items)
             send_email(user.email, subject, body)
             p.email_pending_nudge_sent_at = datetime.now(timezone.utc)
             db.commit()
