@@ -1036,6 +1036,14 @@ class ProducerOfferCreate(BaseModel):
     order over ₪150" are both real offers, so which types may carry a threshold
     is a product question, not a validation one. Do not add a type-conditional
     branch here — see the note on ProducerOffer in models.py.
+
+    **`is_active` is deliberately NOT a field here.** It used to be, defaulting
+    to True, and `_sync_active_offer` passed it through — so a caller could send
+    `is_active: false` and get the deactivate-then-insert path to write a row
+    that had never been active. That is a fourth state on top of the documented
+    three (omit / null / object), and its visible effect is identical to `null`,
+    which is exactly why nobody would notice it. Activation is the replace
+    logic's business, not the caller's: `_sync_active_offer` hardcodes True.
     """
 
     offer_type: str
@@ -1044,7 +1052,6 @@ class ProducerOfferCreate(BaseModel):
     headline: str | None = None
     starts_at: date | None = None
     expires_at: date
-    is_active: bool = True
 
     @field_validator("offer_type")
     @classmethod

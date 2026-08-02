@@ -921,8 +921,6 @@
       "headline_placeholder": "The gift: a small jar of honey",
       "expires_label": "Valid until",
       "expires_hint": "Required. After this date the offer disappears from the site on its own.",
-      "active_label": "Offer is active",
-      "remove_cta": "Remove offer",
       "expires_required": "Please choose an end date for the offer",
       "threshold_pair_required": "The amount or quantity and its unit are set together — both or neither",
       "saving": "Saving…",
