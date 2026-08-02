@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-02 — MEH-1816: פינג "מוכן לאישור" נבלע כשהתמונה קדמה ל-OTP
+
+**PR #2492** (קוד — **מוזג**, squash `69052f46`) · **ה-PR הזה** (backfill של HANDOFF, כלל 31).
+
+**Root cause:** הפינג של MEH-1351 היה בבעלות אתר mutation **אחד** בלבד — `PUT /producers/me`, מגודר ב-`status == "pending"`. `confirm_phone_otp` הוא האתר השני שמסוגל להשלים את אותו מעבר: עסק שהעלה תמונה בעודו `pending_whatsapp` חוצה את סף ה-approvability ברגע אימות הטלפון, אבל ה-handler רק היפך סטטוס ולא בדק approvability — והפינג נבלע. **Fix:** snapshot של `was_approvable` לפני ההיפוך + קריאה ל-`_maybe_fire_review_ready` אחרי ה-commit, כלומר **שימוש חוזר** בהלפר הקיים ולא מימוש מחדש, כך ששני האתרים לא יכולים להיסדק.
+
+### מה שווה לזכור מהסשן הזה
+
+- **ה-spec סתר את עצמו, וההכרעה הייתה לטובת אתר הייחוס.** הכרטיס אמר גם "fire BEFORE db.commit" וגם "mirror `_maybe_fire_review_ready`'s contract 1:1" — ואתר הייחוס יורה **אחרי** ה-commit (`:376` → `:413`). בחרתי אחרי, כדי שאדמינית לא תקבל פינג על מעבר שלא נשמר. תיאור הכרטיס עודכן כדי שהסתירה לא תשוחזר.
+- **בדיקת discrimination תחת עומס משותף מחזירה תשובה הפוכה.** ההרצה הראשונה של ה-over-broad variant דיווחה שכל שלושת הטסטים אדומים — מסקנה שגויה: suite מלא רץ במקביל ועשה TRUNCATE לאותו DB מתחת לרגליים. הרצה נקייה הראתה (a) ירוק, (b)+(c) אדומים. **אימות probe על מקרה שהתשובה שלו ידועה לפני שסומכים על האדום** הוא מה שמנע דיווח ממצא מומצא — ואת ההסתייגות הזאת פרסמתי גם בגוף ה-PR.
+- **מטריצת שלושה מימושים היא מה שהופך טסט שלילי לראיה.** (a) אדום רק על הקוד השבור; (b)+(c) אדומים רק על התיקון הרחב-מדי שמוותר על ה-snapshot. בלי העמודה השנייה, (b) ו-(c) היו ירוקים תמיד ולא מבחינים בכלום.
+- **`.github/` מופשט מה-clone של CC**, ולכן `Repo guards` ו-`changelog-branch-guard.sh` לא ניתנים להרצה מקומית. הם עברו ב-CI — כלומר גם ה-Builder-Model trailer לא מתנגש בפין של ה-reviewer.
+- **auto-merge נדלק על ה-PR למרות הוראה מפורשת שלא.** כובה פעמיים; ה-actor בוובהוק אינו מבחין בין ספיר לבין אוטומציה, כי קריאות ה-API שלי מזדהות באותו חשבון. המיזוג בוצע בסוף לפי אישור מפורש, אחרי ששני השערים הנדרשים היו ירוקים.
+
+### נפתח מהסשן
+
+- כרטיס P4 חדש: מרוץ concurrency ב-`confirm_phone_otp` — שני confirm מקבילים יכולים שניהם לעבור את `used=False` ולירות פינג כפול. קיים מראש, חסום ב-3/דקה, מחוץ ל-scope של MEH-1816.
+
+---
+
 ## 2026-08-02 — MEH-1814: מסך ההצלחה בהרשמת עסק חוזר להיות נגיש
 
 **PR #2490** (קוד — **מוזג**, squash `a1f58ab6`) · **ה-PR הזה** (backfill של CHANGELOG + HANDOFF, כלל 31).
