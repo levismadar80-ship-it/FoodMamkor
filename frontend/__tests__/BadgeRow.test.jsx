@@ -169,14 +169,19 @@ describe("BadgeRow", () => {
     });
 
     // MEH-1334: the hero seal ALWAYS opens the verification popover with the
-    // LOCKED dateless copy (title + body + /about#verification link) — the
-    // pre-existing MEH-762 doc-date line was dropped from the hero surface
-    // (CLARIFY c). Same content for every doc type; cosmetics included.
+    // LOCKED dateless copy (title + body + about-link) — the pre-existing
+    // MEH-762 doc-date line was dropped from the hero surface (CLARIFY c).
+    // Same content for every doc type; cosmetics included.
+    // MEH-1840: the link target moved /about#verification → /about/process. The
+    // assertion's SUBJECT changed (the canonical destination), not its strength —
+    // it still pins an exact href, so a regression to the old target reds it.
     it("hero popover shows the locked dateless copy for license doc type", () => {
       render(<BadgeRow producer={VERIFIED_LICENSE} />);
       fireEvent.click(screen.getByText("מאומת"));
       const pop = screen.getByTestId("badge-tooltip-verified");
-      expect(pop.querySelector('a[href="/about#verification"]')).not.toBeNull();
+      expect(pop.querySelector('a[href="/about/process"]')).not.toBeNull();
+      // the retargeted link must not leave the old destination behind
+      expect(pop.querySelector('a[href="/about#verification"]')).toBeNull();
       expect(pop.textContent).toContain("verified_popover_body");
       // the pre-existing doc-date line must NOT appear on the hero surface
       expect(pop.textContent).not.toContain("הוגש ונבדק");

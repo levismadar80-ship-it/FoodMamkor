@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1358: the imageless Tinted Masthead verified seal must open the SAME
 // verification popover as the header seal (BadgeRow hero branch) — locked
-// dateless copy + "איך אנחנו מאמתים?" → /about#verification. Real ui/Popover
+// dateless copy + "איך אנחנו מאמתים?" → /about/process (MEH-1840). Real ui/Popover
 // is used (BadgeRow.test precedent); next-intl mocked flat per convention.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
@@ -59,8 +59,10 @@ describe("ImageGallery masthead verified seal → verification popover (MEH-1358
     // Locked v3 copy — title + body + about-link, byte-same keys as BadgeRow.
     expect(pop).toHaveTextContent("עסק מאומת");
     expect(pop).toHaveTextContent("כל עסק במהמקור עובר אישור ידני ופועל ברישיון.");
+    // MEH-1840: retargeted to /about/process in lockstep with BadgeRow's popover.
+    // Pinning the exact href is what keeps the two surfaces from diverging again.
     const link = screen.getByRole("link", { name: /איך אנחנו מאמתים/ });
-    expect(link).toHaveAttribute("href", "/about#verification");
+    expect(link).toHaveAttribute("href", "/about/process");
   });
 
   it("popover is dateless — no doc-date line (chunk-2 CLARIFY c parity)", () => {

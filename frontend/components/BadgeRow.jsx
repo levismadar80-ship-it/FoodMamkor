@@ -197,7 +197,12 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
   // MEH-1334: the hero seal gets the richer verification popover — the manual
   // approval + licensing story (DNA-LOCK differentiator) was invisible behind
   // a date-only tooltip. Content = the LOCKED v3 copy exactly: title + body +
-  // link to /about#verification (MEH-1336 shipped the section — live target).
+  // link out. MEH-1840: the link target moved /about#verification → /about/process
+  // — the acceptance-process page is the canonical "how we vet" surface, while the
+  // /about section is a summary. The #verification anchor stays live on /about
+  // (AboutClient.jsx) so existing deep-links keep resolving. Same retarget applied
+  // to the duplicate popover in ImageGallery.jsx (masthead seal) — the two must
+  // not diverge, they render identically on the same producer page.
   // The pre-existing MEH-762 doc-date line is intentionally dropped
   // here — the locked copy is dateless (chunk-2 CLARIFY c). The verified SEAL
   // itself only renders for verification_tier === "verified" (badges.js:140),
@@ -221,7 +226,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           </span>
           <span className="block text-[13px] leading-relaxed">{t("verified_popover_body")}</span>
           <LocaleLink
-            href="/about#verification"
+            href="/about/process"
             className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
           >
             {t("verified_popover_link")}
@@ -262,8 +267,10 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // (recommended → /about#editors-pick) turns its popover body into a link — the
   // locked tooltip copy becomes the clickable explainer to the criteria + the
   // ADR-030 "can't be bought" promise. Mirrors the verified seal's hero-only
-  // popover → /about#verification (MEH-1336); no new copy. Card surfaces keep the
-  // compact plain-text tooltip (and never mount a locale link).
+  // link-out popover above (which MEH-1840 retargeted to /about/process); no new
+  // copy. `recommended` still points at the /about#editors-pick anchor — that
+  // section has no standalone page, so the retarget did NOT apply to it.
+  // Card surfaces keep the compact plain-text tooltip (never mount a locale link).
   const linkOut = badge.aboutHref && surface === "hero";
   const popoverBody = linkOut ? (
     <LocaleLink

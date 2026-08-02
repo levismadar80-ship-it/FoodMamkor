@@ -151,8 +151,12 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   {tBadge("verified_popover_title")}
                 </span>
                 <span className="block text-[13px] leading-relaxed">{tBadge("verified_popover_body")}</span>
+                {/* MEH-1840: retargeted /about#verification → /about/process, in
+                    lockstep with the identical popover in BadgeRow.jsx. Both render
+                    on the producer page, so a split target would send the same copy
+                    to two destinations. The /about#verification anchor stays live. */}
                 <LocaleLink
-                  href="/about#verification"
+                  href="/about/process"
                   className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
                 >
                   {tBadge("verified_popover_link")}
