@@ -73,8 +73,9 @@ function CertModal({ src, expiryText, onClose, t }) {
         >
           <X size={16} weight="bold" aria-hidden="true" />
         </button>
-        {/* Plain <img>: the src is our own proxy route, not a Cloudinary URL,
-            so lib/cloudinary.js has nothing to transform here. */}
+        {/* raw img: src is our own /kashrut-cert proxy route, not a Cloudinary
+            URL — lib/cloudinary.js has nothing to transform, and the host is
+            not in next.config.js images.remotePatterns (frozen this ticket). */}
         <img
           src={src}
           alt={t("cert.image_alt")}
