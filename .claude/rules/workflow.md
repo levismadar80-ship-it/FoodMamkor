@@ -12,7 +12,10 @@ summary + pointer here.
 **Linear is the channel. Nothing arrives by chat.**
 
 Do not wait for pasted instructions. At session start, and whenever you finish
-an item, query Linear:
+an item, run **both** lane queries below. They are deliberately asymmetric — see
+the MEH-1760 blockquote for why.
+
+### Lane A — `In Progress`: opt-in only
 
 ```
 state = In Progress · team = Mehamakor · labeled `cc-queue`
@@ -21,7 +24,47 @@ state = In Progress · team = Mehamakor · labeled `cc-queue`
 **`In Progress` means started-and-unfinished, not assigned-to-CC.** The label is
 the only signal. **An unlabeled card is not yours even if it looks actionable.**
 
-**An empty queue is the expected steady state, not a failure.** Say so and stop.
+### Lane B — `Todo` / `Backlog`: opt-out, then content-gated
+
+```
+state = Todo OR Backlog · team = Mehamakor · not excluded by B1–B4 below
+```
+
+A Backlog card was never claimed by anyone, so "someone forgot to label it" is
+not a failure mode there. Labels are still not trusted as an *entry* condition:
+eligibility is **derived from the card's own description**. Labels hard-exclude;
+they never admit.
+
+**B1 — hard exclude by label:** `not-cc` · `post-launch` · `blocked-needs-sapir` ·
+`needs-sapir`
+
+**B2 — hard exclude by title substring:** `decision-first` · `HIGH-RISK` · `RED` ·
+`SIGNAL-GATED` · `[מגירה]` · `ספיר מריצה` · `[ספיר` · `ידני`
+
+**B3 — eligibility gate.** Read the FULL description and answer all four. Any
+failure → **skip the card silently** and move on. Do NOT park it — a card you
+never took is not parked.
+
+1. Is there an unresolved question addressed to Sapir anywhere in it? → skip if **yes**
+2. Does the stated fix require a denied action (alembic `upgrade`/`downgrade`/`stamp`,
+   prod mutation, force-push, editing `.claude/settings.json`)? → skip if **yes**
+3. Does it need a brand / copy / design ruling not already locked in
+   [BRAND.md](../../docs/BRAND.md) or an ADR? → skip if **yes**
+4. Can you state a pass/fail verification you can run yourself, with zero Sapir
+   input? → skip if **no**
+
+**B4 — collision gate:** no open PR touching the same files, and no
+`feature/meh-<N>-*` branch for that ticket already on `origin`.
+
+### On taking any card
+
+**Label it `cc-queue` before the first edit** — in either lane. That is the live
+audit trail: Sapir sees what you claimed while you are claiming it, and can pull
+a card back mid-run. Do **not** put `cc-queue` on a card you opened yourself;
+findings are not self-authorised work.
+
+**An empty Lane A is the expected steady state, not a failure.** An empty Lane B
+means the sweep is done. Say so and stop.
 
 > **Why opt-in and not opt-out** (MEH-1760). The first version of this rule
 > excluded `not-cc` instead of requiring `cc-queue`. On its first run the query
@@ -37,9 +80,15 @@ the only signal. **An unlabeled card is not yours even if it looks actionable.**
 >
 > Same reasoning as §3.6 below: the safe property is the one that does not
 > depend on anyone remembering.
+>
+> **Amended 02/08 (MEH-1819):** the measured evidence was entirely `In Progress`
+> cards, so the opt-in requirement is scoped to that state. Backlog cards were
+> never claimed by anyone, so a missing label is not a failure mode there —
+> eligibility is derived from the card's description instead.
 
-Work them in **priority order** (Urgent → High → Normal → Low). Each card's
-description is the full spec — **§4 carries the XML prompt**. Authority is
+Work them **Lane A first** (finish what is already open before opening anything
+new), then Lane B, each in **priority order** (Urgent → High → Normal → Low).
+Each card's description is the full spec — **§4 carries the XML prompt**. Authority is
 **ADR-032** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
 
 - **§3.5** — RED items **stop before merge** until the adversarial reviewer runs.
