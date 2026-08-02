@@ -336,3 +336,87 @@ describe("Edit-tab HoursCard (structured editor, MEH-1276)", () => {
     expect(screen.getByText(H.unparseable)).toBeInTheDocument();
   });
 });
+
+// MEH-1821: defaults-first ordering + declared inheritance. The card's field
+// order was the bug — the business-level default rendered AFTER the list of
+// per-city exceptions that inherit from it, so it read as a repetition of the
+// list rather than as its source. These assertions pin the order and the three
+// hint states; none of them touch handleSave, which is what makes the
+// "payload unchanged" claim in the fourth test meaningful.
+describe("MEH-1821 DeliveryCard defaults-first", () => {
+  const withCities = {
+    has_physical_location: true,
+    offers_delivery: true,
+    delivery_nationwide: false,
+    delivery_fee: 35,
+    free_delivery_above: 250,
+    delivery_areas: [
+      { city: "חיפה", delivery_fee: null }, // inherits
+      { city: "עכו", delivery_fee: 0 }, // free for this city
+      { city: "נהריה", delivery_fee: 20 }, // own rate
+    ],
+  };
+
+  it("(a) renders the business-level default block BEFORE the area list", () => {
+    renderCard(DeliveryCard, { profile: withCities });
+    const block = screen.getByTestId("delivery-default-block");
+    const firstAreaRow = screen.getByTestId("delivery-fee-input-חיפה");
+    // Node.DOCUMENT_POSITION_FOLLOWING === 4: the area row follows the block.
+    expect(
+      block.compareDocumentPosition(firstAreaRow) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // ...and the block announces itself as the default the rows inherit.
+    expect(screen.getByText(D.default_block_title)).toBeInTheDocument();
+    expect(screen.getByText(D.default_block_hint)).toBeInTheDocument();
+  });
+
+  it("(b) a null area fee shows the inherited business-level value", () => {
+    renderCard(DeliveryCard, { profile: withCities });
+    expect(screen.getByTestId("delivery-fee-hint-חיפה")).toHaveTextContent(
+      D.area_fee_inherits.replace("{fee}", "35"),
+    );
+  });
+
+  it("(c) an area fee of 0 shows free-delivery, never the inheritance hint", () => {
+    renderCard(DeliveryCard, { profile: withCities });
+    const hint = screen.getByTestId("delivery-fee-hint-עכו");
+    expect(hint).toHaveTextContent(D.area_fee_free);
+    // The discriminating half: 0 must not be swept into the inherit branch by
+    // a truthiness read. A row with its own positive rate declares nothing.
+    expect(hint).not.toHaveTextContent("35");
+    expect(screen.queryByTestId("delivery-fee-hint-נהריה")).not.toBeInTheDocument();
+  });
+
+  it("(d) no inheritance hint at all when the business-level fee is unstated", () => {
+    renderCard(DeliveryCard, {
+      profile: { ...withCities, delivery_fee: null },
+    });
+    expect(screen.queryByTestId("delivery-fee-hint-חיפה")).not.toBeInTheDocument();
+    // The 0-row still declares itself — it does not depend on the default.
+    expect(screen.getByTestId("delivery-fee-hint-עכו")).toHaveTextContent(D.area_fee_free);
+  });
+
+  it("(e) the PUT payload is unchanged by the reorder", async () => {
+    renderCard(DeliveryCard, { profile: withCities });
+    fireEvent.change(screen.getByLabelText(D.fee_label), { target: { value: "40" } });
+    fireEvent.click(screen.getByRole("button", { name: D.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        has_physical_location: true,
+        offers_delivery: true,
+        delivery_nationwide: false,
+        // min_order rides every row (cards.jsx:1745) — registration captures it
+        // and the structured save must not wipe it. Spelled out here so the
+        // "payload unchanged" claim covers the whole row, not just the fee.
+        delivery_areas: [
+          { city: "חיפה", delivery_day: null, min_order: null, delivery_fee: null },
+          { city: "עכו", delivery_day: null, min_order: null, delivery_fee: 0 },
+          { city: "נהריה", delivery_day: null, min_order: null, delivery_fee: 20 },
+        ],
+        delivery_excluded_cities: [],
+        delivery_fee: 40,
+        free_delivery_above: 250,
+      }),
+    );
+  });
+});
