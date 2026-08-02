@@ -714,7 +714,10 @@
       "aria_verified": "Verified business. {tooltip}",
       "aria_verified_plain": "Verified business",
       "verified_popover_title": "Verified business",
-      "verified_popover_body": "Every business on Mehamakor is manually approved and operates under license.",
+      "verified_popover_body_license": "Manually approved after checking a valid license.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_exemption": "Manually approved after checking license-exemption documents.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_cosmetics": "Manually approved after checking cosmetics-sector documents.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_generic": "Manually approved.{hasDate, select, yes { Checked on {date}.} other {}}",
       "verified_popover_link": "How do we verify?"
     },
     "detail": {

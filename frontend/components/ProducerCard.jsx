@@ -361,12 +361,43 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   `.slice(2)` are untouched: this changes what the rows SAY,
                   not which rows are here, so the max-2 visible cap and the
                   MEH-1714 heading above are unaffected. */}
-              <span className="flex flex-col gap-1" role="list">
+              {/* MEH-1847: each row gains a muted one-line explanation. The
+                  panel's heading promises "עוד על העסק הזה" and then delivered a
+                  column of bare words — a badge with no explanation is a jargon
+                  leak, and this is the surface where it was worst, since a badge
+                  in position 3+ has no chip context around it.
+                  Copy is BADGE_CONFIG[key].tooltip VERBATIM — the honest
+                  any-product wording MEH-1439 already wrote — so this adds zero
+                  new strings and inherits that copy review rather than
+                  reopening it. Same visual idiom as the FilterSheet subtext
+                  rows (MEH-1418/1507): muted, one step down, below the label.
+                  REUSES: frontend/components/FilterSheet.jsx:248 (conditional
+                  subtext line — `subtext && <p className="text-xs text-fg-muted …">`).
+                  The tooltip is read off `b`, which IS the BADGE_CONFIG entry
+                  (allBadges maps keys through it), so no extra import.
+                  Rendered CONDITIONALLY: a key with no tooltip renders the label
+                  alone rather than an empty line. Every key has one today, so
+                  that branch is defensive — it exists so adding a tooltip-less
+                  badge later cannot open a gap in the panel.
+                  gap-1 → gap-2: with two-line rows the old spacing put the next
+                  row's label as close to the previous row's description as to
+                  its own, which breaks the grouping. Row CONTENT is what changed
+                  here — `allBadges` and `.slice(2)` are untouched, so the max-2
+                  visible cap, the MEH-1714 heading and the MEH-1593 overlay
+                  behaviour are all unaffected. */}
+              <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
                   .slice(2)
                   .map((b) => (
                     <span key={b.key} role="listitem" className="block">
-                      {resolveBadgeLabel(b, producer, tKashrut)}
+                      <span className="block">
+                        {resolveBadgeLabel(b, producer, tKashrut)}
+                      </span>
+                      {b.tooltip && (
+                        <span className="block text-[12px] leading-snug text-fg-muted">
+                          {b.tooltip}
+                        </span>
+                      )}
                     </span>
                   ))}
               </span>

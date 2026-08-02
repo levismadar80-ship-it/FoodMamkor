@@ -9,6 +9,9 @@ import FavoriteButton from "./FavoriteButton";
 import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
 import Popover from "./ui/Popover";
+// MEH-1843: one owner for the verified-popover body so the masthead seal and
+// BadgeRow's hero chip cannot drift apart on the same page.
+import { getVerifiedPopoverBody } from "./BadgeRow";
 
 // The hero corner overlay is mobile-only; the desktop hero stays clean because
 // both controls live in the header's quiet-actions row there.
@@ -17,7 +20,13 @@ import Popover from "./ui/Popover";
 // longer renders at all, so the corner carries BOTH circles (share + heart) and
 // the row is the desktop-only pair. `onFavorited` is forwarded to the heart so
 // the page — not this component — owns the post-save AlertPrefsPanel.
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, shareUrl = "", onFavorited }) {
+// MEH-1843: verificationDocType / verifiedAt feed the masthead popover body,
+// which must match BadgeRow's hero popover word-for-word (both render on the
+// same producer page). Passed as narrow scalars rather than the producer object
+// to match this component's existing prop style (producerId / producerName /
+// verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
+// generic dateless sentence, which is still true, just less specific.
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited }) {
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -150,7 +159,12 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
                   {tBadge("verified_popover_title")}
                 </span>
-                <span className="block text-[13px] leading-relaxed">{tBadge("verified_popover_body")}</span>
+                <span className="block text-[13px] leading-relaxed">
+                  {getVerifiedPopoverBody(
+                    { verification_doc_type: verificationDocType, verified_at: verifiedAt },
+                    tBadge
+                  )}
+                </span>
                 {/* MEH-1840: retargeted /about#verification → /about/process, in
                     lockstep with the identical popover in BadgeRow.jsx. Both render
                     on the producer page, so a split target would send the same copy
