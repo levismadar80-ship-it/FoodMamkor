@@ -10,6 +10,10 @@ import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { CATEGORY_ICONS, CATEGORY_STYLES } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
+// MEH-1825: day axis on the canonical listing surface — same component home
+// mounts, and the same whitelist the backend validates delivery_day against.
+import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
@@ -71,6 +75,23 @@ export default function ProducersClient({
 
   const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
+  // MEH-1825: delivery-day axis. Two guards on hydration, both from the
+  // acceptance criteria: an unknown ?delivery_day= value is dropped against
+  // the DELIVERY_DAYS whitelist (so a hand-edited URL never reaches the API
+  // and 422s), and a day WITHOUT a city is dropped because the backend
+  // semantics are same-row EXISTS over (delivery_city, delivery_day) — a day
+  // alone filters nothing meaningful. `dayFilterRef` mirrors the state for
+  // the same reason `sortOrderRef` does: syncUrl/fetchFiltered are
+  // useCallback([]) and must read the current value without being recreated
+  // or growing a parameter at every existing call site. Set synchronously in
+  // the handlers below, before any callback that reads it fires.
+  const [dayFilter, setDayFilter] = useState(() => {
+    const day = searchParams.get("delivery_day");
+    if (!day || !DELIVERY_DAYS.includes(day)) return null;
+    return searchParams.get("city") ? day : null;
+  });
+  const dayFilterRef = useRef(dayFilter);
+  useEffect(() => { dayFilterRef.current = dayFilter; }, [dayFilter]);
   const [filteredItems, setFilteredItems] = useState(null);
   // MEH-1483: sort axis. `sortOrderRef` mirrors it so the stable-identity
   // callbacks (syncUrl / fetchFiltered / loadNextPage, all useCallback([])) can
@@ -152,6 +173,10 @@ export default function ProducersClient({
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
       if (city) params.set("city", city);
+      // MEH-1825: the day rides the URL only alongside a city — the same
+      // precondition the ghost row states, enforced here so a shared link can
+      // never carry a day that the page would then ignore on load.
+      if (city && dayFilterRef.current) params.set("delivery_day", dayFilterRef.current);
       if (q) params.set("q", q);
       // MEH-1483: mirror the active sort to ?sort= (omitted at the default so
       // the plain /producers URL is unchanged). Read from the ref so this
@@ -181,6 +206,9 @@ export default function ProducersClient({
   const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
+    // MEH-1825: same precondition as syncUrl — delivery_day is only sent with
+    // a delivery_city (MEH-1645 same-row EXISTS semantics).
+    if (city && dayFilterRef.current) params.delivery_day = dayFilterRef.current;
     if (q) params.q = q;
     // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
     if (category?.length) params.category = category;
@@ -362,6 +390,11 @@ export default function ProducersClient({
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
+        // MEH-1825: the day cannot outlive its city — drop it in the same
+        // action, or re-picking a city later would silently restore a filter
+        // the user never re-selected.
+        dayFilterRef.current = null;
+        setDayFilter(null);
         syncUrl(chips, null, searchQ, categoryFilter);
         fetchFiltered(chips, null, searchQ, categoryFilter);
       } else if (savedUserCity) {
@@ -388,6 +421,23 @@ export default function ProducersClient({
     trackEvent("producers_city_filter", { city });
   };
 
+  // MEH-1825: mirrors useHomePage.handleDaySelected. Without a city the row
+  // is a ghost and the tap is a discovery affordance, not a filter — it opens
+  // the LocationModal this page already mounts, which is exactly what the
+  // hint tells the user to do. With a city, tapping the active day clears it.
+  const handleDaySelected = (day) => {
+    if (!cityFilter) {
+      setLocationModalOpen(true);
+      return;
+    }
+    const next = dayFilter === day ? null : day;
+    dayFilterRef.current = next;
+    setDayFilter(next);
+    syncUrl(chips, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    trackEvent("producers_day_filter", { day: next || "" });
+  };
+
   // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
@@ -401,6 +451,9 @@ export default function ProducersClient({
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
+    // MEH-1825: day is part of "everything".
+    dayFilterRef.current = null;
+    setDayFilter(null);
     setSearchQ("");
     setCategoryFilter([]);
     setFilteredItems(null);
@@ -558,6 +611,15 @@ export default function ProducersClient({
           onChipClick={handleChipClick}
         />
       </div>
+
+      {/* MEH-1825: day refinement on the canonical listing surface. Same
+          component home mounts; without a city it self-renders the muted
+          ghost row + hint and a tap opens the LocationModal below. */}
+      <DeliveryDayRow
+        cityActive={cityFilter}
+        dayActive={dayFilter}
+        onSelectDay={handleDaySelected}
+      />
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (category ×, toggle ×, city ×, search ×) and
