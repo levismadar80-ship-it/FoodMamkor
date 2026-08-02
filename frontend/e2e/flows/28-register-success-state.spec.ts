@@ -108,6 +108,16 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
     for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
       await cb.check();
     }
+    // The bug produced a *later* render — the one after refreshUser() lands the
+    // flipped role — so an assertion that fires the instant CONFIRM mounts could
+    // pass on broken code. Arm the waiter BEFORE the click so it resolves on the
+    // refreshUser() call specifically (the boot /auth/me has long since
+    // resolved), giving a deterministic "the role has now flipped" signal
+    // instead of an arbitrary sleep.
+    const roleFlipped = page.waitForResponse(
+      (r) => r.url().includes("/auth/me") && r.request().method() === "GET",
+      { timeout: 15_000 },
+    );
     await page.getByTestId("register-story-submit").click();
 
     // ── The assertion this spec exists for ──
@@ -117,11 +127,8 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
     // The gate must be absent, not merely "behind" the success screen.
     await expect(page.getByTestId("register-producer-gate")).toHaveCount(0);
 
-    // Re-assert AFTER the role flip has certainly propagated. The bug produced
-    // a *later* render, so an assertion that fires the instant CONFIRM mounts
-    // could pass on broken code; waiting for refreshUser's /auth/me to have
-    // been served and re-checking closes that hole.
-    await page.waitForTimeout(1_000);
+    // Re-assert once the flipped role is provably in the auth context.
+    await roleFlipped;
     await expect(success).toBeVisible();
     await expect(page.getByTestId("register-producer-gate")).toHaveCount(0);
 
