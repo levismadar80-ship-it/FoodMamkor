@@ -379,7 +379,11 @@
       "MultiEdit(package.json)",
       "MultiEdit(package-lock.json)",
       "MultiEdit(pyproject.toml)",
-      "MultiEdit(uv.lock)"
+      "MultiEdit(uv.lock)",
+      "MultiEdit(uv.lock)",
+      "Edit(.github/workflows/**)",
+      "Write(.github/workflows/**)",
+      "MultiEdit(.github/workflows/**)"
     ]
   }
 }
