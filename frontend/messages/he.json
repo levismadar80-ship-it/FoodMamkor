@@ -895,7 +895,7 @@
       },
       "unit_amount": {
         "ils": "{count} ₪",
-        "units": "{count, plural, one {# יחידה} other {# יחידות}}",
+        "units": "{count, plural, one {# יחידה} two {# יחידות} other {# יחידות}}",
         "liters": "{count} ליטר",
         "kg": "{count} ק\"ג"
       },
