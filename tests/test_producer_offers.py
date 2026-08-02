@@ -267,3 +267,42 @@ def test_owner_cannot_write_an_offer_onto_another_business(client, db, owner):
     other = make_producer(db, name="עסק אחר")
     assert _put(client, user, _offer()).status_code == 200
     assert client.get(f"/producers/{other.id}").json()["active_offer"] is None
+
+
+# --------------------------------------------------------------------------- #
+# Concurrency — the reviewer's finding on PR #2502, reproduced then fixed.
+# --------------------------------------------------------------------------- #
+
+
+def test_concurrent_offer_write_returns_409_not_500(client, db, owner, monkeypatch):
+    """Two PUTs racing for the same business must not 500.
+
+    The race is real and was reproduced against a live Postgres with two
+    interleaved sessions: both SELECT the active rows before either writes, so
+    the second INSERT collides on uq_producer_offers_active_per_producer.
+
+    Reproducing that interleaving inside a single-threaded test would be
+    theatre, so this asserts the half that is actually mine — that an
+    IntegrityError from the offer INSERT is translated into a 409 rather than
+    escaping as a 500. The collision is injected at the flush the handler
+    guards; if that try/except is removed, this returns 500 and the test fails.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    from app.routers import producer_me as pm
+
+    user, _ = owner
+    orig = db.__class__.flush
+
+    def exploding_flush(self, *a, **kw):
+        # ONLY the flush that carries the new ProducerOffer explodes. Earlier
+        # flushes in the same request (delivery rows, category sync) must behave
+        # normally — otherwise the 409 could come from an unrelated failure and
+        # the test would pass for the wrong reason.
+        if any(isinstance(o, pm.ProducerOffer) for o in self.new):
+            raise IntegrityError("INSERT", {}, Exception("duplicate key"))
+        return orig(self, *a, **kw)
+
+    monkeypatch.setattr(db.__class__, "flush", exploding_flush)
+    res = _put(client, user, _offer())
+    assert res.status_code == 409, f"expected 409, got {res.status_code}: {res.text}"

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import and_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
@@ -194,6 +195,31 @@ def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
             is_active=offer.get("is_active", True),
         )
     )
+    # MEH-1823: flush HERE so a collision on uq_producer_offers_active_per_producer
+    # surfaces as a 409 instead of a 500 from an uncaught IntegrityError at commit.
+    #
+    # The race is real and was REPRODUCED, not theorised: two concurrent PUTs for
+    # the same producer both SELECT the active rows before either writes, so the
+    # second INSERT lands on a row the first committed after that SELECT. A
+    # double-clicked save is enough.
+    #
+    # `.with_for_update()` on the SELECT above does NOT close it. When the
+    # business has no offer yet there is no row to lock, so both requests lock
+    # nothing and both insert — verified: the collision reproduces with and
+    # without the lock in the no-existing-row case. The unique index is the only
+    # thing that can arbitrate, so the fix is to let it, and translate its verdict.
+    #
+    # The invariant was never at risk — the index already guaranteed at most one
+    # active offer. What changes here is the symptom: a clean 409 the dashboard
+    # can act on, rather than a 500.
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="ההטבה עודכנה במקביל מחלון אחר. רעננו את הדף ונסו שוב.",
+        ) from exc
 
 
 def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
