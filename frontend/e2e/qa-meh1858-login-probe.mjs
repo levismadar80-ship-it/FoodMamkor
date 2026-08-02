@@ -17,8 +17,9 @@
  * measurement showing the same is true of /auth/login, and that the E2E suite
  * is already crossing the line without meaning to.
  *
- * Requires a Chromium at PW_EXECUTABLE_PATH (defaults to the CC sandbox path)
- * and DEMO_OWNER_PASSWORD in the environment.
+ * Requires DEMO_OWNER_PASSWORD in the environment, and a Chromium at the
+ * hardcoded sandbox path below (see the comment there before running this
+ * anywhere other than a CC sandbox).
  *
  * Run:
  *   TEST_URL=https://staging.mehamakor.online node e2e/qa-meh1858-login-probe.mjs 30
@@ -34,14 +35,19 @@ if (!PASSWORD) {
   process.exit(2);
 }
 
-// Sandbox-specific by default: the CC image ships a pinned Chromium at this
-// path and downloads are disabled, so `@playwright/test`'s own build is absent
-// (it wants 1234, the image has 1194). Overridable so the probe is runnable
-// off this machine — without the override it throws browser-not-found, which
-// is a confusing way to learn about a path dependency. Same pin, same reason,
-// as playwright.local.config.ts:16 (MEH-997).
+// SANDBOX-SPECIFIC PATH. The CC image ships a pinned Chromium here and
+// disables downloads, so `@playwright/test`'s own build is absent (it wants
+// 1234, the image has 1194). On any other machine this throws
+// browser-not-found — point it at a local Chromium by editing this line.
+//
+// Deliberately hardcoded rather than read from an env var. An env var would
+// be nicer, but every `process.env.X` in this tree is a code read that the
+// MEH-491 env-drift gate demands `.env.example` document, and `.env.example`
+// is not writable from a CC session. The only way to add one is to widen the
+// gate's exclusion list — paying a guard weakening for a convenience. Same
+// pin, same reason, no env var: playwright.local.config.ts:16 (MEH-997).
 const browser = await chromium.launch({
-  executablePath: process.env.PW_EXECUTABLE_PATH || "/opt/pw-browsers/chromium",
+  executablePath: "/opt/pw-browsers/chromium",
   // Sandbox Chromium offers TLS 1.3; the Vercel edge drops it and it surfaces
   // as ERR_CONNECTION_RESET, which looks like the site being down.
   args: ["--ssl-version-max=tls1.2"],
