@@ -3,6 +3,38 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-02 — BATCH-2 ביצועים: GZip + edge-cache · preconnect + Leaflet מקומי
+
+**PRs:** #2519 (MEH-1833, merge `e25e8d5e`) · #2523 (MEH-1834) · **ה-PR הזה** (backfill, כלל 31).
+
+**ענפים:** `feature/meh-1833-images-gzip-cache`, `feature/meh-1834-network-diet` — סדרתית, כל אחד מ-`origin/staging` טרי אחרי ה-merge הקודם.
+
+### מה נשלח בפועל
+
+| כרטיס | נשלח | נעצר |
+|---|---|---|
+| MEH-1833 | GZip + Cache-Control על שני GETs ציבוריים + 6 טסטים | מיגרציית התמונות: **0 מתוך 15** |
+| MEH-1834 | preconnect ל-Cloudinary · Leaflet markers מקומיים | `limit` לדף הבית · CustomCursor |
+
+### ארבעה STOPs — כולם על תנאים שהכרטיסים עצמם ניסחו, או על חסימת הרשאה
+
+1. **`next/image` זורק, `<img>` מתדרדר.** כתובות תמונה של עסקים הן קלט משתמשת; `optimizeCloudinary` מעביר URL זר כמו שהוא. שלוש מיגרציות בוטלו אחרי שטסט קיים תפס את הזריקה.
+2. **`limit` לדף הבית.** `selectFeaturedProducer` סורק את כל המערך; `null` ⇒ §10 מסתיר את עצמו. הקטנה הופכת קיום סעיף לפונקציה של סדר שורות.
+3. **CustomCursor** — hook ה-lint, 3 פסילות, human review. הקובץ הוחזר למצב ידוע-טוב, לא נערך מסביב.
+4. **`next.config.js`** — CC Edit-denied ב-L1. שורת ה-CSP נשארה; snippet ב-#2523.
+
+### מה שווה יותר מהתוצאה
+
+- **בדיקת control תפסה טעות שלי בריצה הראשונה.** רצפת ה-`minimum_size` של GZip לא הייתה בתוקף כי `BaseHTTPMiddleware` פנימי משדר את התגובה כזרם. שתי בדיקות ה-happy-path עברו **בשני העולמות** — רק ה-control הבחין. הוזז ל-innermost.
+- **ספירת ה-grep הסכימה עם הכרטיס והייתה שגויה.** «21 קבצים» = התאמות grep, שש מהן פרוזה בהערות. האמת: 15 אלמנטים. הסכמה עם מספר נתון אינה אימות שלו.
+- **הכרטיס הורה על תיקון שהיה שובר את הרכיב.** `element.style.transform` ל-CustomCursor מתנגש עם `transform: scale(3)` + `transition` שכבר קיימים ב-`globals.css:529`.
+
+### הצעד הבא
+
+ארבע הכרעות פתוחות לספיר: (א) האם לשכתב את היקף התמונות של MEH-1833 עם `remotePatterns` + שומר-צורה, או לסגור כ«לא-בר-ביצוע»; (ב) `limit` — שאילתה ייעודית ל-featured, ‏limit ביניים, או להשאיר; (ג) אישור לניסיון חוזר ב-CustomCursor (עם `left`/`top`, לא transform); (ד) שורת ה-CSP.
+
+---
+
 ## 2026-08-02 — batch ניקוי תגיות: chalak · מחיקת «מוצרים» · הסברים בפאנל +N
 
 **PRs:** #2518 (MEH-1845, squash `3fe64fe7`) · #2521 (MEH-1846, squash `1ca5ec38`) · #2522 (MEH-1847, squash `925b02af`) · **ה-PR הזה** (backfill, כלל 31).
