@@ -26,10 +26,20 @@ const tokens = require("./tailwind.tokens.json");
 // adjustFontFallback note in app/[locale]/layout.js for the measured instance of
 // exactly that. frontend/__tests__/FontVariableTokens.test.js pins both
 // properties.
+//
+// This list must name EVERY family declared with next/font in
+// app/[locale]/layout.js — not merely the ones that happen to appear in
+// tailwind.tokens.json today. Cormorant Garamond is the case in point: it has a
+// variable (--font-latin) but no token currently references it, so it is
+// reachable only via the hand-written `.font-english` rule in globals.css. If a
+// future docs/DESIGN.md edit adds a Cormorant token, the entry below is what
+// stops it emitting a stack with no variable — a state that builds clean, emits
+// the utility, and renders the system serif.
 const FONT_VAR_BY_FAMILY = [
   ["Frank Ruhl Libre", "var(--font-headline)"],
   ["DM Sans", "var(--font-body)"],
   ["Heebo", "var(--font-hebrew)"],
+  ["Cormorant Garamond", "var(--font-latin)"],
 ];
 
 function withFontVariables(tokenFontFamily) {

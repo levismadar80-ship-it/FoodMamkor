@@ -21,10 +21,17 @@ import tokens from "../tailwind.tokens.json";
  * (.claude/rules/testing.md).
  */
 
+// Mirrors FONT_VAR_BY_FAMILY in tailwind.config.js and must name every
+// next/font family in app/[locale]/layout.js. Cormorant Garamond has no token
+// today — it is reached through globals.css's `.font-english` — but a family
+// missing from THIS list is invisible to the check below: verdict() returns
+// `{ needsVar: false, ok: true }` for anything it does not recognise, so the
+// gap would read as a pass. Listing it now costs nothing and closes that.
 const FAMILY_TO_VAR = [
   ["Frank Ruhl Libre", "--font-headline"],
   ["DM Sans", "--font-body"],
   ["Heebo", "--font-hebrew"],
+  ["Cormorant Garamond", "--font-latin"],
 ];
 
 /**
