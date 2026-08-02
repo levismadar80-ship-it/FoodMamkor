@@ -187,12 +187,19 @@ describe("BadgeRow", () => {
       expect(pop.querySelector('a[href="/about/process"]')).not.toBeNull();
       // the retargeted link must not leave the old destination behind
       expect(pop.querySelector('a[href="/about#verification"]')).toBeNull();
-      expect(pop.textContent).toContain("verified_popover_body");
-      // the pre-existing doc-date line must NOT appear on the hero surface
+      // MEH-1843: exact key, not a substring — every per-doc-type key starts
+      // with "verified_popover_body", so a loose match would pass no matter
+      // which variant the component picked, including the wrong one.
+      expect(pop.textContent).toContain("verified_popover_body_license");
+      // the CARD-surface tooltip phrasing must not leak onto the hero surface
       expect(pop.textContent).not.toContain("הוגש ונבדק");
     });
 
-    it("hero popover copy is identical for a cosmetics doc type (still no date)", () => {
+    // MEH-1843 inverts this case. It previously asserted cosmetics got the
+    // IDENTICAL body as license — which is exactly the flaw the ticket fixes:
+    // a cosmetics business was told it "operates under licence". The two must
+    // now differ.
+    it("hero popover copy for cosmetics differs from the license variant", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
@@ -200,12 +207,15 @@ describe("BadgeRow", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: "בית עסק מאומת" }));
       const pop = screen.getByTestId("badge-tooltip-verified");
-      expect(pop.textContent).toContain("verified_popover_body");
+      expect(pop.textContent).toContain("verified_popover_body_cosmetics");
+      expect(pop.textContent).not.toContain("verified_popover_body_license");
       expect(pop.textContent).not.toContain("הוגש ונבדק");
     });
 
     // CLARIFY a/b: the seal — and therefore this popover — never renders for a
-    // non-verified producer, so the "אישור ידני ופועל ברישיון" claim is safe.
+    // non-verified producer, so its manual-approval claim is safe. (MEH-1843
+    // retired the flat "ופועל ברישיון" wording this comment used to quote; the
+    // gate it describes is unchanged.)
     it("renders NO verified seal (and no popover) when verification_tier !== verified", () => {
       const { container } = render(
         <BadgeRow producer={{ verification_tier: "declared" }} />,
