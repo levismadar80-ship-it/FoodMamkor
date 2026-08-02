@@ -141,8 +141,10 @@ async function run(width, height, label) {
 
   // ── 2. BadgeRow hero seal (producer WITH images) ──────────────────────────
   await page.goto(`${BASE}/producer/${IMAGED_ID}`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
   const heroSeal = page.locator('[data-badge="verified"]').first();
+  // Gate on the element, not on the clock — a fixed 2s stall makes the harness
+  // machine-speed-sensitive and is the slowest step in the file.
+  await heroSeal.waitFor({ state: "visible", timeout: 30_000 });
   await heroSeal.scrollIntoViewIfNeeded();
   await heroSeal.click();
   await page.waitForSelector('[data-testid="badge-tooltip-verified"]', { timeout: 10_000 });
