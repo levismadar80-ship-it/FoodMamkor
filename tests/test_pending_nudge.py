@@ -283,6 +283,39 @@ def test_stamped_without_email_is_not_revisited_after_losing_photo(db, sent_log)
     assert sent_log == []
 
 
+def test_producer_without_a_user_row_is_skipped_and_left_unstamped(db, sent_log):
+    """A producer with no linked User has no address to send to.
+
+    Both halves matter. Nothing is sent — there is nowhere to send it. And
+    the row is deliberately left UNSTAMPED: the column means "has been
+    nudged", and this producer has not been, so if a User row appears later
+    the nudge still fires. Stamping here would silently consume the single
+    nudge this business is entitled to.
+    """
+    producer = Producer(
+        name="חוות ללא משתמשת",
+        description="Test producer with no linked user",
+        city="תל אביב",
+        lat=32.0853,
+        lng=34.7818,
+        status="pending",
+        images=[],
+        created_at=datetime.now(timezone.utc) - timedelta(hours=25),
+    )
+    db.add(producer)
+    db.commit()
+    db.refresh(producer)
+
+    counts = pending_nudge.send_pending_nudges(db)
+
+    assert counts == {"sent": 0, "stamped_nothing_missing": 0}
+    assert sent_log == []
+    db.refresh(producer)
+    assert producer.email_pending_nudge_sent_at is None, (
+        "an unaddressable producer must stay nudgeable"
+    )
+
+
 # --- 4. the 24h floor ---------------------------------------------------------
 
 
