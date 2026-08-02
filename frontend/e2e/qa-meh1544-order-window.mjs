@@ -90,7 +90,9 @@ async function openEditor(browser, width, height, orderWindow) {
   }
 
   // Expand the order-window accordion by its heading.
-  await page.getByRole("button", { name: /חלון הזמנות/ }).first().click();
+  // MEH-1830 renamed it "חלון הזמנות" → "מתי מקבלים הזמנות" (the abstract noun
+  // read as a sibling of "שעות פתיחה"); this selector follows the new label.
+  await page.getByRole("button", { name: /מתי מקבלים הזמנות/ }).first().click();
   await page.waitForTimeout(400);
   await page.locator("#order-window").scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
