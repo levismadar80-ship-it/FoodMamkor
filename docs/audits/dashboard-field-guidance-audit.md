@@ -236,7 +236,7 @@ surface; **"לא ידוע"** means no renderer was found, not that none exists.
 | 33 | `delivery_nationwide` | `producers.delivery_nationwide` | scope | `cards.jsx:1622` | `ProducerSections.jsx:415` | `delivery_excluded_cities`, `delivery_area_cities` | M | XOR מול רשימת ערים, נאכף ב-CHECK — הכרטיס מסביר | ✗ |
 | 34 | `delivery_excluded_cities` | `producers.delivery_excluded_cities` | scope | `cards.jsx:1630` | `ProducerSections.jsx:416` | `delivery_nationwide`, `delivery_area_cities` | M | רשימת ערים שמשמעה ההפוכה מרשימת הערים שלידה — הלייבל מצב-מפורש (MEH-1540) מכסה | ✗ |
 | 35 | `opening_hours` | `producers.opening_hours` | **schedule** | `cards.jsx:1221` (HoursCard → HoursEditor) | `ProducerSections.jsx:512` | `order_window`, `availability_state`, `LocationPoint.hours` | H | **אשכול הזמן** — ראו למטה. בנוסף: `LocationPoint.hours` הוא טקסט חופשי בזמן שזה עורך מובנה | ✗ |
-| 36 | `order_window` | `producers.order_window` | **schedule** | `OrderWindowEditor.jsx:37`, ממוסגר ב-`edit/page.js:1013` | `ProducerHeader.jsx:120` · `OrderWindowStrip.jsx` | `opening_hours`, `availability_state`, `external_order_form` | H | **אשכול הזמן** — יש לו helper, "איפה", ו-WhatsThis, והבלבול נשאר. הבעיה מבנית, לא copy (MEH-1830) | ✓ |
+| 36 | `order_window` | `producers.order_window` | **schedule** | `OrderWindowEditor.jsx:37`, ממוסגר ב-`edit/page.js:1011` | `ProducerHeader.jsx:120` · `OrderWindowStrip.jsx` | `opening_hours`, `availability_state`, `external_order_form` | H | **אשכול הזמן** — יש לו helper, "איפה", ו-WhatsThis, והבלבול נשאר. הבעיה מבנית, לא copy (MEH-1830) | ✓ |
 | 37 | `kosher` | `producers.kosher` | scope | `cards.jsx:1467` (KashrutCard) | `ProducerHeader.jsx:266` — **מאומת בלבד** | `producer_license_number`, `organic_certified` | M | טקסט חופשי שמוצג רק אחרי אימות אדמין (MEH-986) — הכרטיס אומר זאת | ✗ |
 | 38 | `producer_license_number` | `producers.producer_license_number` | other | `cards.jsx:1240` (LicenseCard) | לעולם לא מוצג (נשמר בתיק, MEH-1597) | תעודת כשרות, badge "מאומת" (`badges.js:54`) | M | מילוי המספר **לא** מעניק את ה-✓ (אדמין מעניק, ADR-022) — ה-`where` כבר מפריד | ✗ |
 | 39 | `is_available_today` | `producers.is_available_today` | **override** | אין עורך בדשבורד — נכתב בכפל ע"י endpoint הזמינות (`models.py:202-209`; Phase 4 יפיל אותו) | `ProducerCard.jsx:39,461` (מצב שישי) | `availability_state`, `order_window`, `opening_hours` | H | **שני מסלולי כתיבה למושג אחד** — ה-UI כותב `availability_state`, וה-PUT עדיין מקבל את העמודה הישנה ישירות. `PUT /producers/me {is_available_today}` יכול לסתור את ה-enum | ✗ |
@@ -256,7 +256,7 @@ between a counted field and one of these as often as between two counted ones.
 
 | field | where it lives | why it is not a row | its partner in the table |
 |---|---|---|---|
-| `availability_state` | `producers.availability_state` (`models.py:210`); written by `POST /producers/me/availability-state`, edited at `dashboard/page.js:552` | separate endpoint, not the PUT whitelist | `order_window` (36), `opening_hours` (35), `is_available_today` (39) |
+| `availability_state` | `producers.availability_state` (`models.py:210`); written by `POST /producers/me/availability-state`, edited at `dashboard/page.js:551` | separate endpoint, not the PUT whitelist | `order_window` (36), `opening_hours` (35), `is_available_today` (39) |
 | `vacation_until` | `producers.vacation_until`; same endpoint | כנ"ל | `availability_state` |
 | `delivery_area_cities` | popped before the whitelist (`producer_me.py:335`) | handled by `_sync_delivery_areas`, not `setattr` | `delivery_nationwide` (33), `city` (5) |
 | `delivery_areas` | popped at `producer_me.py:339`; rows in a child table | כנ"ל | `delivery_fee` (43), `pickup_points` (30) |
@@ -270,8 +270,8 @@ three is a `_PRODUCER_WRITABLE_FIELDS` neighbour of the others:
 | concept | field | layer | edited at |
 |---|---|---|---|
 | מתי העסק פתוח פיזית | `opening_hours` | schedule | `edit/page.js:994` — HoursCard |
-| מתי מקבלים הזמנות (לו"ז שבועי קבוע) | `order_window` | schedule | `edit/page.js:1013` — OrderWindowEditor |
-| חריג זמני שגובר על הלו"ז | `availability_state` *(adjunct)* | override | **`dashboard/page.js:552`** — עמוד אחר |
+| מתי מקבלים הזמנות (לו"ז שבועי קבוע) | `order_window` | schedule | `edit/page.js:1011` — OrderWindowEditor |
+| חריג זמני שגובר על הלו"ז | `availability_state` *(adjunct)* | override | **`dashboard/page.js:551`** — עמוד אחר |
 | שריד של הקודם | `is_available_today` | override | אין עורך; כתיבה כפולה |
 
 **Risk H, and copy has already been tried.** MEH-1773 added a `WhatsThis` to
