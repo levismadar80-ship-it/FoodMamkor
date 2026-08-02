@@ -39,6 +39,12 @@ def scheduler_spies(monkeypatch, db):
 
     Returns a dict the test mutates to choose which sender raises, and
     reads back to see what happened.
+
+    Takes the `db` fixture because `_run_followup_job` opens its OWN session
+    via `SessionLocal()` and closes it in a `finally`. We hand it the test
+    session wrapped in `_NonClosing` so that close() is a no-op and the
+    fixture still owns the real one — and so the DB-error test below can
+    poison and inspect a genuine session rather than a mock.
     """
     state: dict = {
         "followup_called": False,
@@ -141,6 +147,68 @@ def test_nudge_crash_does_not_suppress_a_successful_followup(scheduler_spies):
 
     assert scheduler_spies["followup_called"] is True
     assert scheduler_spies["nudge_called"] is True
+
+
+def test_db_level_failure_in_pass_one_does_not_poison_pass_two(
+    monkeypatch, db, scheduler_spies
+):
+    """The failure class the RuntimeError tests above do NOT cover.
+
+    A `RuntimeError` raised by a monkeypatched sender never touches the
+    Session, so the four tests above would pass even with no `db.rollback()`
+    anywhere. A **DB-level** failure is different: it leaves the Session in a
+    needs-rollback state, and the next query on it raises instead of running.
+    Without the rollback in the first `except`, the nudge pass is still
+    skipped — it just fails with a nudge-shaped error instead, which is worse
+    than the original bug because it looks like the nudge's own fault.
+
+    Measured before this test was written (Postgres 16, real Session):
+    poisoned → the pass-2 query raises `InternalError`; after `rollback()` →
+    it succeeds. So this asserts a real behaviour, not a theory.
+
+    The nudge here runs a REAL query rather than returning a canned dict —
+    that is the whole point. A stubbed nudge cannot detect a poisoned session.
+    """
+    import sqlalchemy as sa
+
+    from app.models.models import Producer
+
+    def poisoning_followups(session):
+        scheduler_spies["followup_called"] = True
+        # A genuine DB-level error, not a synthetic one: this is what an
+        # OperationalError on the candidate query does to the session.
+        session.execute(sa.text("SELECT * FROM table_that_does_not_exist"))
+
+    def querying_nudges(session):
+        scheduler_spies["nudge_called"] = True
+        # Reaches the DB. Raises on a poisoned session; succeeds on a clean one.
+        session.query(Producer).filter(
+            Producer.status.in_(("pending", "pending_whatsapp"))
+        ).all()
+        scheduler_spies["nudge_query_ok"] = True
+        return {"sent": 0, "stamped_nothing_missing": 0}
+
+    monkeypatch.setattr(
+        onboarding_followup, "send_due_followups", poisoning_followups
+    )
+    monkeypatch.setattr(pending_nudge, "send_pending_nudges", querying_nudges)
+    scheduler_spies["nudge_query_ok"] = False
+
+    startup._run_followup_job()
+
+    assert scheduler_spies["nudge_called"] is True
+    assert scheduler_spies["nudge_query_ok"] is True, (
+        "the nudge pass reached the DB but its query failed — the session was "
+        "left in a needs-rollback state by the first pass, so isolation only "
+        "held for Python-level errors"
+    )
+    assert scheduler_spies["sentry"] == ["onboarding_followups"], (
+        "only the first pass should have reported; a second entry means the "
+        "nudge failed on the poisoned session"
+    )
+
+    # Leave the session usable for the fixture's teardown.
+    db.rollback()
 
 
 def test_clean_run_reports_nothing_to_sentry(scheduler_spies):

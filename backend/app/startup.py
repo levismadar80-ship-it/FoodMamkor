@@ -226,6 +226,18 @@ def _run_followup_job() -> None:
             counts = send_due_followups(db)
             log.info("[FOLLOWUP] daily run complete counts=%s", counts)
         except Exception as exc:
+            # MEH-1824: roll back BEFORE anything else. A DB-level failure
+            # (OperationalError/ProgrammingError on the candidate query) leaves
+            # the Session in a needs-rollback state, and the very next query on
+            # it raises PendingRollbackError/InternalError instead of running.
+            # Without this the isolation above would hold only for Python-level
+            # errors and collapse for exactly the class most likely to occur —
+            # the nudge pass would still be skipped, just with a nudge-shaped
+            # error message. Measured, not assumed: poisoned session → pass 2
+            # raises InternalError; after rollback → pass 2 succeeds.
+            # Invariant for this function: every except leaves the session
+            # usable for whatever runs next.
+            db.rollback()
             # MEH-1533: same capture-before-log ordering as _init_db_background.
             # Daily cadence — cannot flood the Sentry quota.
             capture_background_exception(exc, task="onboarding_followups")
@@ -238,6 +250,11 @@ def _run_followup_job() -> None:
             nudges = send_pending_nudges(db)
             log.info("[PENDING-NUDGE] daily run complete counts=%s", nudges)
         except Exception as exc:
+            # Same rollback for the same reason. Nothing runs after this today,
+            # so `finally: db.close()` would cover it — but the invariant is
+            # per-block, not "all but the last", so that appending a third pass
+            # here cannot silently reintroduce the bug this ticket fixed.
+            db.rollback()
             # Its own Sentry task tag: `background_task:pending_nudge` is a
             # separate filterable stream from the follow-up sequence.
             capture_background_exception(exc, task="pending_nudge")
