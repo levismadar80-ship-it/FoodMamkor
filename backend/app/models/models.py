@@ -303,6 +303,14 @@ class Producer(Base):
     email_followup_3_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-1818: day-1 nudge for a business still awaiting approval (status
+    # pending / pending_whatsapp). Same NULL-means-not-sent contract as the
+    # MEH-539 columns above, and the same fail-open caveat. Stamped even when
+    # nothing was actually missing (nothing to nudge → stamp, no email), so
+    # the column means "this producer has been through the nudge pass once",
+    # which is what holds the send to EXACTLY ONE email.
+    # See migration d3b7f1a92c64.
+    email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     # MEH-1297: order_by position so categories[0] is deterministic (the
     # producer's primary/first-selected category), not an arbitrary row.
