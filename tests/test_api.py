@@ -117,8 +117,8 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -347,8 +347,8 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -360,6 +360,11 @@ class TestAuth:
         assert captured.get("to") == "producer_pw@test.com"
         assert captured.get("name") == "Dana"
         assert captured.get("provider") == "password"
+        # MEH-1815: the producer branch must request the producer copy. The
+        # consumer variant says only "you already have an account" and never
+        # mentions that the entire business payload was discarded, which is
+        # the silent data loss this ticket exists to close.
+        assert captured.get("flow") == "producer"
 
     def test_register_producer_existing_google_dispatches_dup_email(
         self, client, db, monkeypatch
@@ -379,8 +384,8 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -391,6 +396,7 @@ class TestAuth:
         assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
         assert captured.get("provider") == "google"
         assert captured.get("name") == "Galya"
+        assert captured.get("flow") == "producer"  # MEH-1815
 
     def test_register_producer_no_longer_returns_token_on_signup(self, client):
         """MEH-328 Chunk B: non-upgrade signup body has no token / no
@@ -722,8 +728,8 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -757,8 +763,8 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -769,6 +775,7 @@ class TestRegistrationCoverageGaps:
         assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
         assert captured.get("provider") == "apple"
         assert captured.get("name") == "Avigail"
+        assert captured.get("flow") == "producer"  # MEH-1815
 
     # --- gap 6: the provider=None defensive arm --------------------------
 
