@@ -9,17 +9,36 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // type contract under `next build --webpack`. The test imports it from there.
 import { isSlugShaped } from "@/lib/slug";
 
+// MEH-1754: `null` means ONE thing — this business does not exist. Every other
+// failure throws, so it reaches app/[locale]/error.js (Hebrew copy + retry +
+// Sentry) and the response carries a 5xx.
+//
+// The old shape returned `null` for `!res.ok` and swallowed the catch, so a 404,
+// a 500, a 429 and an 8s timeout were indistinguishable — all four rendered a
+// silent 404 with no stack, no Sentry event and no error status. That is not
+// only a debugging problem: a 404 tells Google the page is GONE and it starts
+// de-indexing, while a 5xx says "try later". A two-hour backend wobble could
+// therefore cost business pages their search presence for weeks, and Next
+// caches the notFound() result on top (vercel/next.js#79497).
+//
+// Do NOT reintroduce a bare `catch` here. Swallowing is what made the 28/07
+// incident invisible for four hours.
 async function getProducerBySlug(slug) {
   if (!isSlugShaped(slug)) return null;
-  try {
-    const res = await serverFetch(`${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
+  const url = `${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`;
+  const res = await serverFetch(url, { next: { revalidate: 60 } });
+  // The one genuine not-found. Only a 404 may become notFound().
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const err = new Error(
+      `producer by-slug lookup failed: ${res.status} ${res.statusText} (slug=${slug})`
+    );
+    // Read by Sentry in app/[locale]/error.js; keeps slug+status on the event.
+    err.status = res.status;
+    err.slug = slug;
+    throw err;
   }
+  return res.json();
 }
 
 // MEH-476 PR 3b2: per-page hreflang for producer alias route. D1 title
