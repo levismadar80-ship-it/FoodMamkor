@@ -3940,7 +3940,6 @@
         "heading": "Current status",
         "info_label": "What's the difference between the states?",
         "intro": "A temporary update that overrides the schedule — like a note on the door.",
-        "group_aria": "Availability",
         "options": {
           "accepting_orders": "Open to orders",
           "available_today": "Available today",
@@ -4292,7 +4291,7 @@
       "order_window": {
         "heading": "When you take orders",
         "subtitle": "Your fixed weekly schedule. A day left unmarked is closed for orders that day.",
-        "empty_state": "No order window set — your business page won't show order hours.",
+        "empty_state": "You haven't set when you take orders yet. Pick days and hours to show them on your page.",
         "toggle_label": "accepting orders this day",
         "toggle_closed": "Not accepting orders",
         "from_label": "opening time",
