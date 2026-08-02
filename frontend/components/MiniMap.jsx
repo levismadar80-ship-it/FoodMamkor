@@ -11,12 +11,18 @@ import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { useFocusReturn } from "@/lib/use-focus-return";
 
-// Fix Leaflet's broken default icon paths in Next.js/webpack builds
+// Fix Leaflet's broken default icon paths in Next.js/webpack builds.
+// MEH-1834: served from /public/leaflet instead of a third-party CDN — three
+// external requests on an above-the-fold surface, and a supply-chain
+// dependency we do not control, for assets that ship inside the leaflet
+// package we already install. The files are copied verbatim from
+// node_modules/leaflet@1.9.4/dist/images — the same version the previous
+// hardcoded URLs pinned, so the rendered markers are byte-identical.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
 });
 
 // MEH-1611 chunk 2: the business's OWN points, rendered on its own page.
