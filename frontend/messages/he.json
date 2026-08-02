@@ -709,7 +709,10 @@
       "aria_verified": "בית עסק מאומת. {tooltip}",
       "aria_verified_plain": "בית עסק מאומת",
       "verified_popover_title": "עסק מאומת",
-      "verified_popover_body": "כל עסק במהמקור עובר אישור ידני ופועל ברישיון.",
+      "verified_popover_body_license": "אישרנו את העסק באופן ידני אחרי בדיקת רישיון בתוקף.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
+      "verified_popover_body_exemption": "אישרנו את העסק באופן ידני אחרי בדיקת מסמכי פטור מרישיון.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
+      "verified_popover_body_cosmetics": "אישרנו את העסק באופן ידני אחרי בדיקת מסמכי פעילות בתחום התמרוקים.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
+      "verified_popover_body_generic": "אישרנו את העסק באופן ידני.{hasDate, select, yes { נבדק ב-{date}.} other {}}",
       "verified_popover_link": "איך אנחנו מאמתים?"
     },
     "detail": {
