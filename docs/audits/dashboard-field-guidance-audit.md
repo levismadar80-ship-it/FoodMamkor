@@ -340,3 +340,147 @@ patterns miss would read as `לא ידוע` here. Risk letters are a judgement, 
 measurement — the ordering within a tier is not meaningful, and a reviewer may
 reasonably move any single field one tier. Line numbers are as of the commit
 this section landed on; they drift.
+
+---
+
+## Editor-less field dispositions (MEH-1851)
+
+Phase 0 for the ten rows the confusion matrix (MEH-1827) flagged as **writable
+with no editor anywhere in the dashboard** — rows 1, 6, 17, 19, 23, 24, 28, 29,
+30, 39. Each must end with one owner: expose an editor, or close the write path.
+
+**Row 29 (`has_delivery`) is out of scope** — MEH-1850 owns it. Nine rows are
+dispositioned here. Read-only pass: no code, no migration, and no write path was
+touched in the PR that landed this section.
+
+### The premise was verified, not assumed
+
+Every `PUT /producers/me` payload built by the owner dashboard was enumerated
+before dispositioning (`frontend/app/[locale]/producer/dashboard/edit/` —
+`cards.jsx:158,281,330,511,792,989,1162,1281,1760`, `page.js:1133,1270`,
+`DietaryScopeCard.jsx:85`). The union of keys the owner can send is:
+
+```
+category_ids · images · custom_questions · owner_bio · contact_name ·
+established_year · description · short_description · top_product_name ·
+price_range · producer_license_number · city · lat · lng · phone ·
+instagram · website · whatsapp_group · contact_email · facebook ·
+external_order_form · primary_contact_method · has_physical_location ·
+offers_delivery · delivery_nationwide · delivery_areas ·
+delivery_excluded_cities · delivery_fee · free_delivery_above ·
+vegan_scope · vegetarian_scope · gluten_free_facility
+```
+
+None of the nine fields appears in it. The matrix's "no editor" claim holds for
+all nine — confirmed positively, not by absence of a grep hit.
+
+> **‏Method note, because it changed the answer for row 19.** Three of the
+> thirteen payloads are built as a `payload` **variable** and passed by name
+> (`cards.jsx:1162,1281`, `page.js:1270`), so reading keys near the `api.put`
+> call site silently misses them. The first pass of this list did exactly that
+> and omitted eleven keys — including `price_range`, which is what surfaced the
+> row 19 finding below. The conclusion held, but the evidence for it did not
+> until each `payload` was read at its construction site.
+
+### Dispositions — expected exactly 9, got 9
+
+| # | field | disposition | נימוק (עם ציטוט) |
+|---|---|---|---|
+| 1 | `name` | **EXPOSE** | הזהות הציבורית של העסק, מוצגת ב-`ProducerHeader.jsx:165`, ובעלת העסק לא יכולה לשנות אותה. נתיב הכתיבה כבר פתוח (`producer_me.py:262`) וה-handler עושה `setattr` בלי מודרציה חוזרת (`producer_me.py:356-357`) — כלומר היום אפשר לשנות שם דרך ה-API הגולמי ואף אחד לא בודק. חשיפה חייבת לכלול מודרציה חוזרת. |
+| 6 | `address` | **REMOVE-WRITE** | אין קורא ציבורי ל-`producers.address` (`models.py:53`, פרטי — MEH-829). המנגנון המקביל `ProducerLocation.address` (`models.py:686`) **כן** נערך ע"י הבעלים (`LocationsEditor.jsx:429-433` → `PUT /producers/me/locations/{id}`, `:137`). שתי עמודות לאותו מידע = בדיוק ה-smell. סוגרים את נתיב הבעלים; העמודה נשארת כי ההרשמה עדיין כותבת אליה (`auth.py:515,630`). CONTRACT רק אחרי ש-MEH-1388 יסיים להעביר את הקוראים. |
+| 17 | `slug` | **REMOVE-WRITE** | ה-slug הוא מפתח URL ייחודי (`models.py:107`, `unique=True`) שכל המסלול הציבורי תלוי בו (`producers.py:247-260`), והדשבורד מציג אותו כקישור לשיתוף (`dashboard/page.js:25-27,536`). עריכה ע"י הבעלים שוברת בשקט כל קישור שכבר שותף ויכולה להתנגש ב-unique constraint — וה-handler לא מטפל בהתנגשות (`producer_me.py:356-357`). נשאר admin/import (`producer_import.py:173`). חלופה לספיר: EXPOSE עם redirect + בדיקת ייחודיות. |
+| 19 | `starting_price_label` | **EXPOSE** | הפער הכי מוחשי מהתשעה, וגרוע ממה שהמטריצה תיארה — ראו §"שורה 19" למטה. הקורא **חי וציבורי** (`ProducerSections.jsx:206-207`), הבעלים עורכת את `top_product_name` **באותו בלוק** (`cards.jsx:1159`) ואת `price_range` **באותו טופס** (`cards.jsx:1160`) — אבל `price_range` של העסק אינו נקרא באף משטח ציבורי, והתווית שכן מוצגת נכתבת רק ע"י אדמין (`admin.py:181,264-266`). |
+| 23 | `grass_fed` | **EXPOSE** | מזין badge ציבורי (`badges.js:210-211`), צ'יפ פילטר ב-/map (`map-chips.js:93`) ופילטר backend (`producers.py:110` → `producer_listing.py:65`). לפי `.claude/rules/labels.md` ה-evidence שלו הוא `self-declared` ממילא — כלומר שמירתו כ-admin-only (`ProducerForm.jsx:735-736`) לא קונה שום אימות, רק חיכוך. |
+| 24 | `organic_certified` | **KEEP-AS-IS** | החלטה משפטית מכוונת, לא שריד: MEH-1259 (חוק תוצרת אורגנית 2005) הסיר את ה-badge ואת הפילטר, והשאיר את העמודה במפורש — `badges.js:208-209` כותב "stays on the payload (owner/admin managed) but drives NO public badge", `producer_listing.py:57` מנמק את הסרת הפילטר, ו-`tests/test_meh1259_organic_hidden.py:43-51` נועל את המצב. חשיפה לבעלים תחזיר בדיוק את הסיכון שהוסר. |
+| 28 | `lactose_free_facility` | **REMOVE-WRITE** | **"לא ידוע" של המטריצה נסגר — התשובה מתועדת, לא נגזרת מהיעדר grep.** ה-docstring של העורך עצמו אומר: *"Does NOT: … touch lactose (§6.3 — question cut, column stays 'unknown')"* (`DietaryScopeCard.jsx:17-18`). התאום `gluten_free_facility`, שנוצר באותה מיגרציה (`20260723_1000_d51508a7c9e2:47-48`) ומאומת באותו validator (`schemas.py:1494`), **כן** קיבל עורך (`DietaryScopeCard.jsx:130`) **וגם** קורא (`ProducerHeader.jsx:274,282`). ל-lactose אין אף אחד מהשניים. נתיב כתיבה נפתח (`producer_me.py:293`) לשאלה שבוטלה. |
+| 30 | `pickup_points` | **REMOVE-WRITE** | הקורא חי (`ProducerSections.jsx:412,418` → `DeliveryBlock.jsx:539`), אבל הבוליאני מכפיל את `ProducerLocation.kind='pickup'` (`models.py:683,717`) שכבר יש לו עורך לבעלים (`LocationsEditor.jsx:137`). חשיפת עורך שני **תקבע** את הכפילות במקום לפתור אותה. אדמין שומר על נתיב הכתיבה (`admin.py:185`) והקורא ממשיך לעבוד; התיקון האמיתי הוא הפניית הקורא ל-`ProducerLocation` — טיקט נפרד. |
+| 39 | `is_available_today` | **REMOVE-WRITE** | ראו §"שורה 39" למטה. העמודה **חיה**, לא מתה — אבל יש לה **שני** נתיבי כתיבה לאותו state: endpoint ה-enum ששומר סנכרון (`producer_me.py:562-563`) ו-`PUT` גולמי שלא (`producer_me.py:317` → `:356-357`). סגירת השני היא מה שמונע desync מול `availability_state`. CONTRACT חסום עד ש-`ProducerCard.jsx:492` יופנה מחדש. |
+
+### שורה 19 — הבעלים כותבת `price_range`, והעמוד מציג `starting_price_label`
+
+זה לא "שדה בלי עורך" אלא **שני שדות מחיר שהתחלפו בתפקידים**, וזו התצורה
+הקלאסית של ה-smell — שני מנגנונים לאותה עבודה, ששניהם "עובדים" בנפרד:
+
+| | מי כותב | מי קורא במשטח הציבורי |
+|---|---|---|
+| `producers.price_range` | הבעלים (`cards.jsx:1160`) + אדמין (`ProducerForm.jsx:934-937`) | **אף אחד** |
+| `producers.starting_price_label` | אדמין בלבד, דרך מראה (`admin.py:264-266`) | `ProducerSections.jsx:206-207` |
+
+הבעלים ממלאת מחיר בכרטיס "מחיר ומוצר מוביל", השמירה מצליחה, ובעמוד הציבורי
+שלה **לא מופיע כלום** — כי הבלוק מרנדר את `starting_price_label`, שהיא לא
+יכולה לכתוב. המראה של אדמין (`admin.py:264-266`) מסנכרן את השניים, אבל
+`PUT /producers/me` לא מסנכרן: הוא עושה `setattr` ישיר (`producer_me.py:356-357`)
+ו-`price_range` יושב ברשימה (`producer_me.py:281`) בלי מראה מקביל. כלומר
+הסנכרון קיים בדיוק בנתיב שהבעלים לא עוברת בו.
+
+⚠️ **הפוֹלבק לא מכסה על זה.** `ProducerSections.jsx:129-134` נופל אחורה ל-
+`signatureProduct?.price_range` — המחיר של **המוצר** (טבלת `products`), לא
+`producers.price_range`. עסק בלי מוצר תואם בקטלוג לא מקבל שום מחיר בבלוק.
+
+ההשלכה על הדיספוזיציה: EXPOSE של `starting_price_label` לבדו יוסיף **שדה מחיר
+שלישי** לאותו טופס. הכיוון הנכון הוא ככל הנראה למרכז את שני נתיבי הכתיבה של
+הבעלים לעמודה אחת — אבל זו הכרעת מוצר, והיא של ספיר. הכרטיס שבו זה מתרחש הוא
+בדיוק זה ש-MEH-1560 (T2) כתב לו הכוונה, כך שההכוונה מתארת שדה שאינו זה שמוצג.
+
+### שורה 39 — `is_available_today`: MEH-291 Phase 4 מעולם לא רץ, והעמודה חיה
+
+הכרעה חד-משמעית: **עדיין נקרא, ולא רק כ-fallback.** שני קוראים ב-`ProducerCard.jsx`,
+ורק אחד מהם הוא fallback:
+
+| מיקום | צורת הקריאה | האם fallback? |
+|---|---|---|
+| `ProducerCard.jsx:39` | `producer.availability_state \|\| (… ? … : producer.is_available_today ? …)` | **כן** — נקרא רק כש-`availability_state` ריק. |
+| `ProducerCard.jsx:492` | `{fridayMode && producer.is_available_today && (…)}` | **לא** — קריאה ישירה שלא מתייעצת ב-`availability_state` כלל. |
+
+זו ההבחנה שקובעת את הדיספוזיציה: אפילו producer שיש לו `availability_state`
+מלא, ה-pill של מצב שישי נקבע **בלעדית** ע"י העמודה הלגסי. הפלת העמודה היום
+שוברת את ה-pill ישירות — `CONTRACT` אינו זמין בלי לתקן את `:492` קודם.
+
+קוראים נוספים מחוץ ל-`ProducerCard`: פילטר ציבורי `?is_available_today=`
+(`producers.py:105` → `producer_listing.py:61`), נעול בטסט
+(`tests/test_api.py:2914-2921`).
+
+**‏`availability_status` (העמודה הלגסי השנייה) באותו מצב בדיוק** — חיה, עם חמישה
+קוראים: `ProducerCard.jsx:37`, `ProducerHeader.jsx:108`, `ProducerDetail.jsx:96`,
+`AvailabilityBadge.jsx:31`, `ProducerForm.jsx:273-275`. שתי העמודות מקבלות
+dual-write מ-`_state_to_legacy` (`producer_me.py:424-444`, נקרא ב-`:562-563`),
+וה-comment ב-`producer_me.py:419` עדיין מבטיח ש-Phase 4 יפיל אותן "in a separate
+PR" — הבטחה בת ~14 חודשים. חלון ה-overlap שהמיגרציה הגדירה היה 7 ימים
+(`20260504_1911_2a74fa41ceb1:5`).
+
+**‏שתי הפניות שגויות שנתקלנו בהן ותוקנו כאן:** גוף הכרטיס מפנה ל-
+`ProducerCard.jsx:39,461`, ו-`schemas.js:158` מפנה ל-`:39/:435`; ה-pill יושב
+בפועל ב-`:492`. מספרי שורות נודדים — הציטוטים כאן נכונים ל-commit שעליו נחת
+הסקשן הזה.
+
+### Data — לא זמין מה-sandbox, ולא מנוחש
+
+הקריטריון ביקש ספירת ערכים לא-דיפולטיביים ב-staging ובפרודקשן. **לא ניתן היה
+להפיק אותה**, ולכן היא לא מדווחת — לא באומדן ולא בקירוב:
+
+| נתיב | תוצאה שנמדדה |
+|---|---|
+| Railway backend ישירות | `curl: (56) CONNECT tunnel failed, response 403` — חסימת ה-egress המתועדת ב-CLAUDE.md § Known Bug Patterns |
+| `/api/producers` דרך frontend ה-staging | `302` → `vercel.com/sso-api?...` (חומת Vercel SSO), ואז 403 מה-proxy |
+| DB מקומי | אין: אין `*.db` בעץ ואין `DATABASE_URL` ב-environment |
+| משתנה ה-URL של DB הפרודקשן | אסור מפורשות — deny-list, `.claude/rules/security.md` § Production safety |
+
+לכן ההכרעות למעלה נשענות על **writers/readers בלבד**. שלוש מהן ישתנו אם המספרים
+יראו משהו אחר, וכדאי שספיר תריץ את הספירה לפני שמיישמים אותן: שורה 1 (`name`
+שנכתב בפועל דרך ה-API הגולמי), שורה 30 (`pickup_points=true` שכבר מוצג לצרכנים)
+ושורה 39 (`is_available_today` שסוטה מ-`availability_state`). המקרה של שורה 39
+הוא היחיד שבו ספירה יכולה גם *להוכיח* את הבאג: כל שורה שבה `is_available_today`
+לא תואם את מה ש-`_state_to_legacy` היה מייצר מ-`availability_state` היא desync
+שכבר קרה.
+
+השלוש שלא תלויות בספירה: שורה 24 (החלטה משפטית נעולה בטסט), שורה 28 (השאלה
+בוטלה במסמך), שורה 6 (יש מנגנון יורש עם עורך). כאן ספירה של 0 ושל 400 מובילה
+לאותה הכרעה. זהו הלקח של MEH-903 — עמודה ריקה אינה עמודה מתה — מופעל בכיוון
+ההפוך: כשהראיה הקובעת היא מסמך או מנגנון יורש, המספר לא מוסיף.
+
+### מה הסקשן הזה **לא** קובע
+
+אף עורך לא נבנה, אף עמודה לא הופלה, אף נתיב כתיבה לא נסגר. ארבע מהדיספוזיציות
+(שורות 6, 17, 30, 39) חוסמות `CONTRACT` מאחורי עבודת קוד בטיקט אחר, ושתיים
+(שורות 1, 23) הן חשיפה שדורשת החלטת מוצר על מודרציה. ההכרעה של ספיר היא מה
+שהופך את הטבלה לתוכנית.
