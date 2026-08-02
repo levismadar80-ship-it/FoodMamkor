@@ -178,10 +178,10 @@ def install_middlewares(app: FastAPI) -> None:
     ``add_middleware`` calls (Starlette wraps in reverse — later call =
     inner on request-in)::
 
-        SlowAPIMiddleware            # innermost
+        GZipMiddleware               # innermost — MEH-1833, see note below
+        SlowAPIMiddleware
         SentryRequestScopeMiddleware # NEW — must run AFTER CorrelationId
         CorrelationIdMiddleware      # sets `request_id` contextvar
-        GZipMiddleware               # MEH-1833 — compresses the finished body
         CORSMiddleware               # outermost add_middleware
 
     Decorator middlewares (registered after, become outer of all
@@ -192,8 +192,8 @@ def install_middlewares(app: FastAPI) -> None:
 
     Request-in flow::
 
-        record_metrics → security_headers → CORS → GZip → CorrelationId
-                       → SentryRequestScope → SlowAPI → handler
+        record_metrics → security_headers → CORS → CorrelationId
+                       → SentryRequestScope → SlowAPI → GZip → handler
 
     Why this order:
     - CorrelationId must wrap SlowAPI so 429 responses carry
@@ -206,23 +206,29 @@ def install_middlewares(app: FastAPI) -> None:
     """
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # MEH-1833: GZip added FIRST, i.e. INNERMOST — it wraps the router directly.
+    # The position is load-bearing and was corrected after a failing control
+    # test. Starlette's GZipResponder skips compression only when it sees the
+    # WHOLE body in one `http.response.body` message —
+    # `len(body) < minimum_size and not more_body`. It never consults
+    # Content-Length. `SentryRequestScopeMiddleware` is a BaseHTTPMiddleware,
+    # which re-emits the response as a STREAM (`more_body=True`), so with GZip
+    # anywhere outside it that condition is never true and every response is
+    # compressed regardless of size — measured: a few-byte `/producers/count`
+    # payload came back `content-encoding: gzip`. Innermost, GZip receives the
+    # handler's single complete chunk and the 1 KB floor actually applies.
+    # Still outside the route handler, so the Cache-Control the two catalog
+    # GETs set is written before GZip rewrites body + Content-Length.
+    # Trade-off accepted: SlowAPI's 429 short-circuits outside this layer and
+    # is therefore never compressed — those bodies are a few dozen bytes.
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
+
     app.add_middleware(SlowAPIMiddleware)
     # SentryRequestScope must be added AFTER SlowAPI but BEFORE
     # CorrelationId so it ends up INNER to CorrelationId on request-in.
     app.add_middleware(SentryRequestScopeMiddleware)
     app.add_middleware(CorrelationIdMiddleware, header_name="X-Request-ID")
-
-    # MEH-1833: GZip the JSON catalog responses. Added AFTER CorrelationId and
-    # BEFORE CORS, so on request-in it sits CORS → GZip → CorrelationId → … →
-    # handler. That places it OUTSIDE every layer that writes response headers
-    # (including the route's own Cache-Control), which is what it needs: GZip
-    # rewrites the body and Content-Length on the way out, and must see the
-    # finished response to do that. Inside CORS deliberately — CORS stays the
-    # outermost add_middleware layer so preflight is answered before anything
-    # else touches the response.
-    # minimum_size=1024: below ~1KB gzip's header overhead can exceed the
-    # saving, and every small 200/4xx would pay CPU for nothing.
-    app.add_middleware(GZipMiddleware, minimum_size=1024)
 
     app.add_middleware(
         CORSMiddleware,
