@@ -262,6 +262,10 @@ export default async function LocaleLayout({ children, params }) {
             Fonts stylesheet that used to sit here are gone — next/font serves
             every family from our own origin, so there is nothing left to
             preconnect to. */}
+        {/* MEH-1834: res.cloudinary.com serves every producer photo, including
+            the LCP image on the home grid and producer pages — it had no
+            preconnect while unsplash and the three OSM shards did. */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
         <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
