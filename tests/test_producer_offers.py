@@ -1,0 +1,269 @@
+"""MEH-1823 chunk 2 — producer_offers write + public read.
+
+Lives in tests/ (not backend/tests/, which the ticket named and which does not
+exist): the required "Backend tests (pytest)" job runs `pytest tests/` from the
+repo root, so this is where the wiring already points.
+
+Two things these tests are careful about, both learned the hard way elsewhere
+in this repo:
+
+  * `0` is a value, not an absence. A threshold of 0 must 422 EXPLICITLY rather
+    than being read as "no threshold" — the delivery_fee three-value bug
+    (MEH-1577 / MEH-1772) is the same shape one column over.
+  * An expired offer must not leave the API AT ALL. The test asserts on the
+    response body, never on a client-side filter, because the guarantee being
+    checked is "the server withheld it".
+"""
+
+import uuid
+from datetime import date, timedelta
+
+import pytest
+
+from app.models import Producer, ProducerOffer
+from app.utils.clock import israel_today
+from tests.conftest import auth_header, make_producer, make_user
+
+FUTURE = israel_today() + timedelta(days=30)
+PAST = israel_today() - timedelta(days=1)
+
+
+@pytest.fixture
+def owner(db):
+    producer = make_producer(db, name="חוות ההטבות")
+    user = make_user(db, role="producer")
+    user.producer_id = producer.id
+    db.commit()
+    return user, producer
+
+
+def _offer(**overrides):
+    base = {
+        "offer_type": "free_delivery_above",
+        "threshold_value": 10,
+        "threshold_unit": "liters",
+        "headline": "משלוח חינם בהזמנה גדולה",
+        "expires_at": FUTURE.isoformat(),
+    }
+    base.update(overrides)
+    return base
+
+
+def _put(client, user, offer):
+    return client.put(
+        "/producers/me", json={"active_offer": offer}, headers=auth_header(user)
+    )
+
+
+# --------------------------------------------------------------------------- #
+# The four types — each must round-trip through the API, not just the schema.
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    "offer_type,threshold_value,threshold_unit",
+    [
+        ("free_delivery_above", 150, "ils"),
+        ("gift_above", 10, "liters"),
+        # Deliberately WITH a threshold. Sapir, 02/08: the threshold is optional
+        # for every type and is not gated by type — "first order over ₪150" and
+        # "10% off pickup over ₪100" are real offers. If someone later adds a
+        # type↔threshold cross-constraint, these two rows are what go red.
+        ("first_order", 150, "ils"),
+        ("pickup_discount", 100, "ils"),
+    ],
+)
+def test_each_offer_type_round_trips(
+    client, db, owner, offer_type, threshold_value, threshold_unit
+):
+    user, producer = owner
+    res = _put(
+        client,
+        user,
+        _offer(
+            offer_type=offer_type,
+            threshold_value=threshold_value,
+            threshold_unit=threshold_unit,
+        ),
+    )
+    assert res.status_code == 200, res.text
+
+    got = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert got["offer_type"] == offer_type
+    assert got["threshold_value"] == threshold_value
+    assert got["threshold_unit"] == threshold_unit
+
+
+def test_offer_without_threshold_is_valid(client, db, owner):
+    user, producer = owner
+    res = _put(
+        client,
+        user,
+        _offer(offer_type="first_order", threshold_value=None, threshold_unit=None),
+    )
+    assert res.status_code == 200, res.text
+    got = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert got["threshold_value"] is None
+    assert got["threshold_unit"] is None
+
+
+# --------------------------------------------------------------------------- #
+# Rejections — each names the rule it is exercising.
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    "bad,reason",
+    [
+        ({"expires_at": PAST.isoformat()}, "expiry already passed"),
+        ({"offer_type": "bogus_type"}, "offer_type outside the closed set"),
+        ({"threshold_unit": "tons"}, "threshold_unit outside the closed set"),
+        ({"threshold_unit": None}, "value without unit"),
+        ({"threshold_value": None}, "unit without value"),
+        # 0 must be rejected EXPLICITLY, not silently read as "no threshold".
+        ({"threshold_value": 0, "threshold_unit": "ils"}, "threshold of zero"),
+        ({"threshold_value": -5, "threshold_unit": "ils"}, "negative threshold"),
+        ({"headline": "א" * 61}, "headline over 60 chars"),
+        ({"headline": "משלוח חינם 🎁"}, "emoji in headline (Emoji LOCK)"),
+        (
+            {
+                "starts_at": (FUTURE + timedelta(days=1)).isoformat(),
+                "expires_at": FUTURE.isoformat(),
+            },
+            "window closes before it opens",
+        ),
+        (
+            {"starts_at": FUTURE.isoformat(), "expires_at": FUTURE.isoformat()},
+            "same-day window",
+        ),
+    ],
+)
+def test_invalid_offer_is_rejected(client, db, owner, bad, reason):
+    user, _ = owner
+    res = _put(client, user, _offer(**bad))
+    assert res.status_code == 422, f"{reason} should 422, got {res.status_code}"
+
+
+def test_headline_at_the_limit_is_accepted(client, db, owner):
+    """The boundary in the direction that must NOT fail — 60 is legal, 61 is
+    not. Without this, a cap of 0 would pass the rejection test above."""
+    user, producer = owner
+    res = _put(client, user, _offer(headline="א" * 60))
+    assert res.status_code == 200, res.text
+    assert len(client.get(f"/producers/{producer.id}").json()["active_offer"]["headline"]) == 60
+
+
+# --------------------------------------------------------------------------- #
+# The expiry guarantee — server-side, not client-side.
+# --------------------------------------------------------------------------- #
+
+
+def test_expired_offer_never_leaves_the_api(client, db, owner):
+    """Written straight to the DB, bypassing the schema, because the API cannot
+    create an expired offer — which is exactly why this path needs its own
+    test: rows expire by the calendar moving, not by anyone writing them."""
+    user, producer = owner
+    db.add(
+        ProducerOffer(
+            producer_id=producer.id,
+            offer_type="gift_above",
+            expires_at=PAST,
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    body = client.get(f"/producers/{producer.id}").json()
+    assert body["active_offer"] is None, "an expired offer must not be serialized"
+
+    # GET /producers returns a bare list (not {"items": [...]}) — asserted
+    # against the real response shape rather than an assumed envelope.
+    listing = client.get("/producers").json()
+    row = next(p for p in listing if p["id"] == str(producer.id))
+    assert row["active_offer"] is None
+
+
+def test_offer_expiring_today_is_still_live(client, db, owner):
+    """`>=`, not `>`. An offer expiring today is live today — the off-by-one
+    that would silently shorten every offer by a day."""
+    user, producer = owner
+    db.add(
+        ProducerOffer(
+            producer_id=producer.id,
+            offer_type="first_order",
+            expires_at=israel_today(),
+            is_active=True,
+        )
+    )
+    db.commit()
+    assert client.get(f"/producers/{producer.id}").json()["active_offer"] is not None
+
+
+# --------------------------------------------------------------------------- #
+# At most one active offer, and the three-valued write contract.
+# --------------------------------------------------------------------------- #
+
+
+def test_second_active_offer_is_refused_by_the_database(db, owner):
+    """The unique partial index, exercised directly. The API cannot produce this
+    state (the write path deactivates first), so the constraint is the only
+    thing standing between a bug in that path and two live offers."""
+    from sqlalchemy.exc import IntegrityError
+
+    _, producer = owner
+    for _ in range(2):
+        db.add(
+            ProducerOffer(
+                producer_id=producer.id,
+                offer_type="first_order",
+                expires_at=FUTURE,
+                is_active=True,
+            )
+        )
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()
+
+
+def test_writing_a_second_offer_replaces_the_first(client, db, owner):
+    user, producer = owner
+    assert _put(client, user, _offer(offer_type="gift_above")).status_code == 200
+    assert _put(client, user, _offer(offer_type="pickup_discount")).status_code == 200
+
+    got = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert got["offer_type"] == "pickup_discount"
+    # The superseded row survives as history rather than being destroyed.
+    rows = db.query(ProducerOffer).filter(ProducerOffer.producer_id == producer.id).all()
+    assert len(rows) == 2
+    assert sum(1 for r in rows if r.is_active) == 1
+
+
+def test_explicit_null_deactivates_the_offer(client, db, owner):
+    user, producer = owner
+    assert _put(client, user, _offer()).status_code == 200
+    assert _put(client, user, None).status_code == 200
+    assert client.get(f"/producers/{producer.id}").json()["active_offer"] is None
+
+
+def test_an_unrelated_put_leaves_the_offer_alone(client, db, owner):
+    """The reason producer_me consults `model_fields_set` rather than the popped
+    value: omitted and explicit-null are different requests. If they collapsed,
+    every unrelated dashboard save would silently delete the owner's offer."""
+    user, producer = owner
+    assert _put(client, user, _offer(offer_type="gift_above")).status_code == 200
+
+    res = client.put(
+        "/producers/me", json={"description": "תיאור חדש"}, headers=auth_header(user)
+    )
+    assert res.status_code == 200, res.text
+    still = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert still is not None and still["offer_type"] == "gift_above"
+
+
+def test_owner_cannot_write_an_offer_onto_another_business(client, db, owner):
+    """IDOR: /producers/me resolves the producer from the token, so a second
+    business must be untouched no matter what the first owner sends."""
+    user, _ = owner
+    other = make_producer(db, name="עסק אחר")
+    assert _put(client, user, _offer()).status_code == 200
+    assert client.get(f"/producers/{other.id}").json()["active_offer"] is None
