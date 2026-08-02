@@ -12,6 +12,14 @@
  */
 
 import Link from "next/link";
+// MEH-1840: locale-aware Link. next/link is NOT — with localePrefix "as-needed"
+// (i18n/routing.js) a plain <Link href="/about/process"> renders that href
+// verbatim, so an /en reader clicking it lands on the HEBREW page. Measured on
+// /en/about (02/08): href="/about/process", click → /about/process, while
+// /en/about/process exists and returns 200. Every OTHER /about/* link in this
+// file has the same defect (6 of them, all pre-existing) — NOT fixed here,
+// that is its own change; this import exists so MEH-1840 does not add a 7th.
+import { Link as LocaleLink } from "@/i18n/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 // MEH-1113: prefill the contact-form topic from ?topic= (whitelist-guarded).
@@ -281,8 +289,12 @@ export default function AboutPage() {
       </FadeInSection>
 
       {/* ======== Verification — "איך אנחנו מאמתים" (MEH-1336 · render-gated until copy ✓) ========
-          id="verification" is the anchor target of /about#verification (verified-badge
-          popover, MEH-1334). scroll-mt-24 offsets the sticky header (same as #contact). */}
+          id="verification" is KEPT as a live anchor even though the verified-badge
+          popover no longer points here — MEH-1840 retargeted that popover to
+          /about/process (the canonical "how we vet" surface), and this section is now
+          the summary that teases it. Existing /about#verification deep-links must keep
+          resolving, so the id stays. scroll-mt-24 offsets the sticky header (same as
+          #contact). */}
       {SHOW_VERIFICATION && (
         <FadeInSection id="verification" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
           <div className="max-w-3xl mx-auto px-4 md:px-12">
@@ -292,6 +304,18 @@ export default function AboutPage() {
             <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
               {t("verification.body")}
             </p>
+            {/* MEH-1840: in-section teaser to the full acceptance process. Reuses the
+                existing process.crosslink_from_about key (also rendered in the footer
+                CTA row below) — no new copy. ArrowLeft points LEFT = forward in RTL,
+                same convention as the badge popover's CaretLeft. */}
+            <LocaleLink
+              href="/about/process"
+              data-testid="verification-process-link"
+              className="mt-4 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {tProcess("crosslink_from_about")}
+              <ArrowLeft size={15} aria-hidden="true" />
+            </LocaleLink>
           </div>
         </FadeInSection>
       )}
