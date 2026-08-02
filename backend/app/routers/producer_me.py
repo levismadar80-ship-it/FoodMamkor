@@ -943,6 +943,7 @@ def send_phone_otp(
 def confirm_phone_otp(
     request: Request,
     body: OtpConfirmIn,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -967,6 +968,14 @@ def confirm_phone_otp(
 
     token.used = True
     producer.phone_verified = True
+    # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
+    # PUT /producers/me does at :259 — this is the SECOND mutation site able to
+    # complete the review-ready transition, and MEH-1351 only covered the first.
+    # A business that uploaded its image while still pending_whatsapp crosses
+    # the threshold here, so a ping owned by one site alone gets swallowed.
+    # The snapshot is also what keeps the already-pending path silent: such a
+    # producer is approvable before the call, so the false→true edge is absent.
+    was_approvable = _pending_and_approvable(db, producer)
     # MEH-745: self-registered producers wait in pending_whatsapp until the
     # business phone is verified; a successful OTP confirm is the gate that
     # releases them into the normal admin-review queue (pending). Only advance
@@ -974,6 +983,10 @@ def confirm_phone_otp(
     if producer.status == "pending_whatsapp":
         producer.status = "pending"
     db.commit()
+    # REUSES: backend/app/routers/producer_me.py:413 — same helper, same
+    # post-commit position, so an admin is never pinged about a transition that
+    # failed to persist.
+    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     return {"detail": "הטלפון אומת בהצלחה"}
 
 
