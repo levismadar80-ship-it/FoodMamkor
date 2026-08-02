@@ -1094,7 +1094,11 @@ class ProducerOfferCreate(BaseModel):
         # precedent, so an owner in Israel isn't blocked on a date still valid
         # locally. `<` and not `<=`: an offer expiring today is still live today.
         if self.expires_at < israel_today():
-            raise ValueError("תאריך הפקיעה חייב להיות עתידי")
+            # The message states the rule the line above actually enforces.
+            # "חייב להיות עתידי" described a stricter rule than the code has —
+            # today is accepted — so an owner who entered a past date was told
+            # today would fail too. Wording per the PR review.
+            raise ValueError("תאריך הפקיעה חייב להיות היום או מאוחר יותר")
         if self.starts_at is not None and self.expires_at <= self.starts_at:
             raise ValueError("תאריך הפקיעה חייב להיות אחרי תאריך ההתחלה")
         return self
