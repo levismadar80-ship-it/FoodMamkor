@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-02 — MEH-1074 sweep, session 7 (5 PRs merged)
+
+**PRs:** #2493 (MEH-1819) · #2499 (MEH-1815) · #2506 (MEH-1585 חלק 2) · #2514 (MEH-1754) · #2515 (MEH-1759) · **ה-PR הזה** (backfill, כלל 31).
+
+### מצב סופי — מי בכל דלי
+
+| כרטיס | מצב |
+| -- | -- |
+| MEH-1819 · MEH-1815 · MEH-1745 · MEH-1759 | ✅ Done |
+| MEH-1585 · MEH-1754 | ⚠️ **הלב נמסר, שארית לספיר** — לא נסגרו בכוונה |
+| MEH-1390 | 🅿️ parked (`needs-sapir`) |
+| MEH-1812 | ⏭️ דולג בשער B3 — לא נלקח, ולכן לא parked |
+| PR #2494 (`queue-state.json`) | ⛔ חסום — ראו למטה |
+
+### מה נדרש מספיר
+
+1. **MEH-1585 חלק 1** — להפוך את `Backend dependency audit` ל-leg של `CI gate` עם `always()`. היום `on.pull_request.paths` מגביל אותו ל-PRs שנוגעים ב-`pyproject.toml`/`uv.lock`/`package*.json`, כך שרוב ה-PRs **לא מריצים אותו בכלל**.
+2. **MEH-1754 פריט 5** — `NEXT_PUBLIC_API_URL` הוא `.optional()`. הפיכתו ל-required מאדימה את `Frontend build` **שאינו מגדיר אותו**, ו-env של Vercel לא ניתן לאימות מה-sandbox. להגדיר בשני המקומות, ואז זה שינוי של שתי שורות.
+3. **MEH-1390** — לאמת שני מצבי טאבים ב-preview ולהסיר את המרקר מ-PR #2242 (כלל 30 — לא CC).
+4. **MEH-1812** — לנעול שתי מחרוזות אנגלית ב-`COPY_BANK.md`; הכרטיס חסום עליהן.
+5. **PR #2494** — למזג ידנית (קובץ JSON אחד, 19 שורות) או לאשר commit ריק.
+
+### שלושה לקחים שנרכשו בדרך
+
+- **`rerun_failed_jobs` מריץ מחדש עם ה-payload המקורי.** שער שקרא body ישן ימשיך לקרוא אותו; אין דרך לתקן זאת בלי push, וכלל 30 אוסר push שכל מטרתו להפעיל שער מחדש. לכן #2494 תקוע.
+- **אין לצטט מחרוזת מרקר בגוף PR.** השער הוא סריקת טקסט ואינו מבחין בין ציטוט להכרזה — ציטוט חוסם את ה-PR של עצמך.
+- **כרטיס שנסגר על חלק אחד מתוך שניים ייפתח מחדש, ובצדק.** קרה ל-MEH-1585 הבוקר. מאז: מסירת-לב = `needs-sapir` + שארית כתובה, לא Done.
+
 ## 2026-08-02 — MEH-1842: שתי שאריות של rename (#2509) + תיקון הציטוט הנורמטיבי (#2512)
 
 **PR #2509** (מוזג, squash `a669c722`) · **PR #2512** (auto-merge, תיקון הערה בלבד) · **ה-PR הזה** (backfill, כלל 31).
