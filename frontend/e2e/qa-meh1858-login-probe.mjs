@@ -8,6 +8,18 @@
  * did the redirect race" but "why did the request fail" — and that needs the
  * status code, which the spec never captures.
  *
+ * MANUAL HARNESS — never wire this into CI, and do not turn it into a spec.
+ * It deliberately loops logins to exhaust the limiter, which is the opposite
+ * of what a suite should do. `frontend/e2e/CLAUDE.md` already carries the
+ * rule for the sibling endpoint — "shared GitHub Actions runner IPs burn the
+ * /auth/register limiter quota across PRs … don't loop registrations in a
+ * single spec". That rule was written about register; this probe is the
+ * measurement showing the same is true of /auth/login, and that the E2E suite
+ * is already crossing the line without meaning to.
+ *
+ * Requires a Chromium at PW_EXECUTABLE_PATH (defaults to the CC sandbox path)
+ * and DEMO_OWNER_PASSWORD in the environment.
+ *
  * Run:
  *   TEST_URL=https://staging.mehamakor.online node e2e/qa-meh1858-login-probe.mjs 30
  */
@@ -22,8 +34,14 @@ if (!PASSWORD) {
   process.exit(2);
 }
 
+// Sandbox-specific by default: the CC image ships a pinned Chromium at this
+// path and downloads are disabled, so `@playwright/test`'s own build is absent
+// (it wants 1234, the image has 1194). Overridable so the probe is runnable
+// off this machine — without the override it throws browser-not-found, which
+// is a confusing way to learn about a path dependency. Same pin, same reason,
+// as playwright.local.config.ts:16 (MEH-997).
 const browser = await chromium.launch({
-  executablePath: "/opt/pw-browsers/chromium",
+  executablePath: process.env.PW_EXECUTABLE_PATH || "/opt/pw-browsers/chromium",
   // Sandbox Chromium offers TLS 1.3; the Vercel edge drops it and it surfaces
   // as ERR_CONNECTION_RESET, which looks like the site being down.
   args: ["--ssl-version-max=tls1.2"],
@@ -51,7 +69,7 @@ for (let i = 1; i <= N; i++) {
     } catch {
       body = "<unreadable>";
     }
-    seen.push({ status: r.status(), body, timing: r.request().timing?.().responseEnd });
+    seen.push({ status: r.status(), body });
   });
   page.on("requestfailed", (r) => {
     if (/\/auth\/login/.test(r.url())) {
