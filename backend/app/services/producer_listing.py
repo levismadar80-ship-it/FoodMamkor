@@ -218,6 +218,34 @@ def _delivery_city_condition(city: str):
     return or_(area_match, nationwide_match)
 
 
+def _has_delivery_condition():
+    """MEH-1836 — "delivers at all": an explicit delivery_areas row OR the
+    nationwide flag.
+
+    The XOR data model (models.py:392 `delivery_nationwide_xor_cities`) means a
+    nationwide producer typically holds ZERO delivery_areas rows, so the
+    original bare `Producer.delivery_areas.any()` made exactly the businesses
+    that deliver *furthest* invisible to the משלוח chip.
+
+    delivery_excluded_cities is deliberately NOT consulted here. This filter
+    asks "does this business deliver?", not "does it deliver to city X" — a
+    nationwide producer with a non-empty exclusion list still delivers, so it
+    still matches. That single conjunct is the whole difference from
+    _delivery_city_condition (:204), which IS city-scoped and must honour the
+    exclusions. Do not "align" the two.
+
+    Both operands are EXISTS/flag predicates rather than a JOIN, so a producer
+    holding a nationwide flag AND area rows still yields exactly one row (the
+    CHECK constraint only bars nationwide + the legacy delivery_cities array,
+    not delivery_areas rows). # REUSES: _delivery_city_condition:214 —
+    nationwide predicate shape.
+    """
+    return or_(
+        Producer.delivery_areas.any(),
+        Producer.delivery_nationwide.is_(True),
+    )
+
+
 def _delivery_day_condition(day: str, city: str | None = None):
     """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
     producers and day-less rows ("בתיאום מראש") are excluded from day
@@ -380,8 +408,12 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
             q = q.filter(city_cond)
             count_q = count_q.filter(city_cond)
     elif has_delivery:
-        q = q.filter(Producer.delivery_areas.any())
-        count_q = count_q.filter(Producer.delivery_areas.any())
+        # MEH-1836: was a bare delivery_areas.any(), which nationwide producers
+        # can never satisfy — see _has_delivery_condition for why the exclusion
+        # list is not consulted on this axis.
+        delivery_cond = _has_delivery_condition()
+        q = q.filter(delivery_cond)
+        count_q = count_q.filter(delivery_cond)
 
     city = filters.get("city")
     if city:
