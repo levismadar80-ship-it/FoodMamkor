@@ -1030,3 +1030,54 @@ describe("RegisterProducerClient — address location confirmation (MEH-1808)", 
     expect(body).not.toHaveProperty("address_city");
   });
 });
+
+// MEH-1815: draft lifecycle across the two response shapes.
+//
+// The non-upgrade 200 is anti-enumeration output (MEH-328): byte-identical
+// whether the email was free or already registered. On a collision the backend
+// discards the entire Producer payload, so that 200 is NOT proof the business
+// was saved — and the wizard used to clear the draft on it anyway, which is the
+// silent data loss. Only a response carrying access_token proves persistence.
+//
+// These assert the observable end state (what is in localStorage after submit),
+// not that a particular line moved — ADR-032 §3.6.
+const DRAFT_KEY = "producer_registration_draft";
+
+async function fillWizardAndSubmit() {
+  await renderWizard();
+  await fillAccountToDetails();
+  await fillDetailsToStory();
+  fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+    target: { value: "הכי טרי שיש" },
+  });
+  selectReferral();
+  screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+  fireEvent.click(screen.getByText(`${K}.actions.submit`));
+  await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+}
+
+describe("RegisterProducerClient — draft survives the anti-enum ack (MEH-1815)", () => {
+  it("keeps the draft after a non-upgrade ack, because that 200 may be a collision", async () => {
+    api.post.mockResolvedValue({ data: {} }); // no access_token
+    await fillWizardAndSubmit();
+    await screen.findByText(`${K}.steps.confirm.check_inbox_title`).catch(() => {});
+
+    const saved = localStorage.getItem(DRAFT_KEY);
+    expect(saved).toBeTruthy();
+    const parsed = JSON.parse(saved);
+    // The expensive part of the fill is what has to come back.
+    expect(parsed.producer_name).toBe("העסק שלי");
+    expect(parsed.city).toBe("תל אביב");
+    // saveDraft strips the password — extending the draft's lifetime must not
+    // extend a stored credential's lifetime.
+    expect(parsed).not.toHaveProperty("password");
+  });
+
+  it("clears the draft on the upgrade path, where access_token proves the write landed", async () => {
+    api.post.mockResolvedValue({
+      data: { access_token: "tok-123", whatsapp_sent: true },
+    });
+    await fillWizardAndSubmit();
+    await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).toBeNull());
+  });
+});
