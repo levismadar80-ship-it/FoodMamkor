@@ -3937,9 +3937,9 @@
         "tooltip_line_today": "Available today = fresh inventory now.",
         "tooltip_line_full": "Busy this week = appears but marked.",
         "tooltip_line_vacation": "On a break = hidden until a date you choose.",
-        "heading": "Availability",
+        "heading": "Current status",
         "info_label": "What's the difference between the states?",
-        "intro": "Choose the status to display to customers on the card and the business page.",
+        "intro": "A temporary update that overrides the schedule — like a note on the door.",
         "group_aria": "Availability",
         "options": {
           "accepting_orders": "Open to orders",
@@ -4271,7 +4271,7 @@
       },
       "hours": {
         "heading": "Opening hours",
-        "subtitle": "Your opening hours, shown on your business page.",
+        "subtitle": "When the business is physically open. Shown on the map and the business page.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
         "revert_cta": "Discard changes",
@@ -4290,8 +4290,8 @@
         "invalid_range": "Closing time must be after opening time"
       },
       "order_window": {
-        "heading": "Order window",
-        "subtitle": "Until what time each day you accept orders. Separate from opening hours.",
+        "heading": "When you take orders",
+        "subtitle": "Your fixed weekly schedule. A day left unmarked is closed for orders that day.",
         "empty_state": "No order window set — your business page won't show order hours.",
         "toggle_label": "accepting orders this day",
         "toggle_closed": "Not accepting orders",
@@ -4887,8 +4887,8 @@
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
-    "availability": "A temporary state you set by hand — a holiday or a pause, for example. Shown on your business page.",
-    "order_window": "The fixed weekly schedule in which you accept orders — Sunday–Wednesday 9:00–14:00, for example. Shown on your business page."
+    "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
+    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",
