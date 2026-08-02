@@ -967,6 +967,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
               <div key={url} className="relative group">
+                {/* raw img: admin-entered image URLs may be ANY host (the
+                    MEH-1222 "https://bread.jpg" case). next/image throws on
+                    a src outside remotePatterns / non-absolute instead of
+                    firing onError. Measured under MEH-1833, see PR. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={optimizeCloudinary(url)}

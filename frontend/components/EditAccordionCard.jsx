@@ -57,6 +57,10 @@ export function PreviewThumbs({ urls = [], max = 3 }) {
   return (
     <span className="flex items-center gap-1.5" data-testid="preview-thumbs">
       {shown.map((url, i) => (
+        // raw img: same class as the dashboard grid — optimizeCloudinary
+        // passes a non-Cloudinary URL through unchanged (cloudinary.js:24) and
+        // next/image throws on a non-absolute src (image-loader.ts:93) rather
+        // than degrading. Measured under MEH-1833, see PR.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           key={`${url}-${i}`}
