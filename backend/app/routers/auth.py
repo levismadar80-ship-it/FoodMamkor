@@ -725,11 +725,14 @@ async def register_producer(
             )
             provider = None
         if provider is not None:
+            # MEH-1815: producer variant — this branch discarded the whole
+            # business payload, so the out-of-band email has to say so.
             background_tasks.add_task(
                 _send_duplicate_attempt_email,
                 existing_user.email,
                 existing_user.name,
                 provider,
+                "producer",
             )
 
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
