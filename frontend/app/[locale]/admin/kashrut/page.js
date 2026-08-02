@@ -23,6 +23,15 @@ function formatDate(iso, locale) {
 
 export default function AdminKashrutPage() {
   const t = useTranslations("admin");
+  // MEH-1852 chunk B: the certification pill reads the CANONICAL kashrut
+  // namespace — the same strings the card pill, the +N panel and the producer
+  // page render. `admin.kashrut.badges.*` used to hold a second copy of these
+  // 8 labels and has been deleted: one reader, no writers, and it had already
+  // drifted (it still said "חלק" after MEH-1845 renamed the consumer label to
+  // "בשר חלק (גלאט)"), so a moderator saw wording we had rejected for users.
+  // A separate translator rather than repointing `t` — that one serves 42
+  // other admin keys. REUSES: dashboard/edit/cards.jsx:1385, same pattern.
+  const tBadges = useTranslations("kashrut.badges");
   const locale = useLocale();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -226,7 +235,7 @@ export default function AdminKashrutPage() {
                   <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">
-                      {CODE_TO_KEY[row.badge_code] ? t(`kashrut.badges.${CODE_TO_KEY[row.badge_code]}`) : row.badge_code}
+                      {CODE_TO_KEY[row.badge_code] ? tBadges(`${CODE_TO_KEY[row.badge_code]}.label`) : row.badge_code}
                     </span>
                   </td>
                   <td className="px-4 py-3">
