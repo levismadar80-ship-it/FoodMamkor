@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
+// MEH-1847: the overflow explanation lines are asserted against the config
+// itself, never against copied literals — a paraphrase in the component would
+// satisfy a hardcoded string but not an equality with the source.
+import { BADGE_CONFIG } from "@/lib/badges";
 
 // MEH-473: ProducerCard now reads useTranslations() from next-intl
 // (Wave 3 i18n cutover). Mocked here following the Header.test.jsx
@@ -635,5 +639,70 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     // Card root click elsewhere still works (guard is scoped to the button).
     fireEvent.click(screen.getByTestId("producer-card"));
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  // MEH-1847: each overflow row carries a muted explanation line taken
+  // VERBATIM from BADGE_CONFIG[key].tooltip. Against the pre-1847 markup all
+  // three cases below fail — the panel rendered bare labels and no tooltip
+  // text at all.
+  describe("overflow rows carry an explanation line (MEH-1847)", () => {
+    it("renders the BADGE_CONFIG tooltip under each hidden badge's label", () => {
+      render(<ProducerCard producer={overflowProducer} />);
+      fireEvent.click(screen.getByTestId("badge-overflow"));
+      const panel = screen.getByTestId("badge-overflow-popover");
+      // Hidden badges are kosher + delivery. Label AND description for both.
+      expect(panel).toHaveTextContent("משלוח");
+      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.tooltip);
+      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+      // Asserted against the config rather than a copied literal: a paraphrase
+      // in the component would pass a hardcoded string but not this.
+      expect(BADGE_CONFIG.delivery.tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
+    });
+
+    it("renders label only — no empty line — for a badge with no tooltip", () => {
+      // No badge ships without a tooltip today, so the defensive branch is
+      // unreachable from any fixture. Removing one for the duration of this
+      // test is what makes it testable at all; restored in finally so the
+      // shared config cannot leak into another case.
+      const original = BADGE_CONFIG.delivery.tooltip;
+      try {
+        delete BADGE_CONFIG.delivery.tooltip;
+        render(<ProducerCard producer={overflowProducer} />);
+        fireEvent.click(screen.getByTestId("badge-overflow"));
+        const panel = screen.getByTestId("badge-overflow-popover");
+        expect(panel).toHaveTextContent("משלוח");
+        expect(panel).not.toHaveTextContent(original);
+        // POSITIVE CONTROL, and it is the whole reason this case discriminates.
+        // Without it the assertions above pass on a panel that renders NO
+        // descriptions at all — i.e. on the pre-MEH-1847 markup — so the test
+        // would have been green for the wrong reason. The sibling row still
+        // having its own description is what proves the omission is the
+        // conditional doing its job rather than the feature being absent.
+        expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+        // The row itself is still there — a missing tooltip must not drop the
+        // badge, only its description.
+        const rows = panel.querySelectorAll('[role="listitem"]');
+        expect(rows).toHaveLength(2);
+      } finally {
+        BADGE_CONFIG.delivery.tooltip = original;
+      }
+    });
+
+    it("keeps the resolver-passed kashrut label, not the generic fallback", () => {
+      // One code → resolveBadgeLabel returns the certification's own label.
+      // The flat next-intl mock echoes the key, so seeing the key here proves
+      // the resolver ran; the raw config label would mean it did not.
+      render(
+        <ProducerCard
+          producer={{ ...overflowProducer, kashrut_badges: ["chalak"] }}
+        />,
+      );
+      fireEvent.click(screen.getByTestId("badge-overflow"));
+      const panel = screen.getByTestId("badge-overflow-popover");
+      expect(panel).toHaveTextContent("badges.chalak.label");
+      expect(panel).not.toHaveTextContent(BADGE_CONFIG.kosher.label);
+      // ...and the description is still the kosher tooltip.
+      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+    });
   });
 });
