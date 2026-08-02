@@ -82,11 +82,15 @@ describe("OfferBadge — the four types", () => {
     expect(text).toContain("1 יחידה");
   });
 
-  it("a threshold above 1 keeps the plural unit", () => {
+  // 2 is not redundant with 3: Hebrew has a DUAL, so `two` is its own CLDR
+  // branch, and .claude/scripts/check-icu-parity.py exists because that branch
+  // is the one translation passes silently drop. It caught this message with
+  // one/other only. 3 exercises `other`.
+  it.each([2, 3])("a threshold of %i keeps the plural unit", (value) => {
     renderIntl(
-      <OfferBadge offer={offer({ threshold_value: 3, threshold_unit: "units" })} />,
+      <OfferBadge offer={offer({ threshold_value: value, threshold_unit: "units" })} />,
     );
-    expect(screen.getByTestId("offer-badge").textContent).toContain("3 יחידות");
+    expect(screen.getByTestId("offer-badge").textContent).toContain(`${value} יחידות`);
   });
 
   it("renders the unconditional wording when no threshold is stated", () => {
