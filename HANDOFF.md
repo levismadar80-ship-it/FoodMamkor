@@ -3,6 +3,36 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-02 — batch ניקוי תגיות: chalak · מחיקת «מוצרים» · הסברים בפאנל +N
+
+**PRs:** #2518 (MEH-1845, squash `3fe64fe7`) · #2521 (MEH-1846, squash `1ca5ec38`) · #2522 (MEH-1847, squash `925b02af`) · **ה-PR הזה** (backfill, כלל 31).
+
+**ענפים:** `feature/meh-1845-chalak-label`, `feature/meh-1846-remove-products-badge`, `feature/meh-1847-overflow-explainers` — כל אחד מ-`origin/staging` **טרי אחרי ה-merge הקודם**. ה-harness הצביע על ענף `claude/*` — נחתך מחדש לכל כרטיס לפי כלל 3.
+
+### מה נשלח
+
+שלושת הכרטיסים נגזרו מ-screenshots של ספיר על פאנל ה-+N. הפירוט המלא ב-CHANGELOG; כאן מה ששווה לזכור.
+
+### חמישה דברים ששווים יותר מהתוצאה
+
+1. **grep על מזהה כרטיס אינו אמין — בשני הכיוונים, ושניהם קרו באותו סשן.** ה-precondition של MEH-1847 הציע `git log origin/staging --oneline | grep -i 1840`; הוא תפס את **PR #1840**, תיקון seed לא-קשור של MEH-1252, והיה מדווח על תנאי מסופק שאינו מסופק. בכיוון ההפוך, `grep MEH-1745` לא החזיר כלום למרות שהעבודה **כן** על staging — הודעת ה-squash פשוט אינה נושאת את המזהה. הצורות האמינות: `git merge-base --is-ancestor <branch> origin/staging` למצב merge, ובדיקת **artifact** בקובץ (כאן: `resolveBadgeLabel` ×3 ב-`ProducerCard.jsx`) להתנהגות. **מספר בן ארבע ספרות מופיע ב-PR numbers, ב-SHA-ים ובתאריכים — grep עליו אינו שאלה על כרטיס.**
+2. **שלושה probes שלי החזירו תשובה בטוחה ושגויה.** (א) regex ל-BEFORE count של `BADGE_PRIORITY` תפס את `"organic"` בתוך ההערה שמתעדת את הסרתו → 13 במקום 12, וכל אסרציית ה-N−1 של הכרטיס תלויה בבסיס הזה. תוקן ע"י **import של המודול** במקום parsing שלו. (ב) ה-absence assertion של הכרטיס, `grep -c '"products"' badges.js`, החזירה 3 במקום 0 — כי **ההערות החדשות שלי עצמן** הכילו את המחרוזת במרכאות. (ג) ה-harness של MEH-1847 ציפה ל-4 שורות בפאנל בעוד ה-fixture מרוויח 7−2=**5**. שלושתם נתפסו רק כי המספר היה בר-השוואה למשהו שכבר היה ידוע — לא בזכות תהליך.
+3. **טסט חדש שכתבתי עבר על העץ השבור.** המקרה «מפתח בלי tooltip → label בלבד» מתקיים **טריוויאלית** ב-markup שאינו מרנדר תיאורים כלל, כלומר הוא היה ירוק גם לפני התיקון שהוא נועד לשמור. הוא מבחין רק אחרי שהוסף **בקרה חיובית** על השורה השכנה («ולשכנה עדיין יש תיאור»). זו בדיוק המחלקה של `testing.md` §"ירוק משתי סיבות", והיא חזרה פעמיים באותו batch: טסט ה-hideKeys ב-`BadgeRow.test.jsx` קבע ש«מוצרים» נעדר בזמן שהתג כבר לא היה קיים — כלומר עבר גם על עץ שבו `hideKeys` שבור לגמרי. **בשני המקרים הסימן היה שהטסט עבר בזמן שאחיו נכשל.**
+4. **הכרטיס של MEH-1846 הורה על עריכה שאינה קיימת.** הוא ביקש `ProducerHeader hideKeys ["products","delivery"] → ["delivery"]`. מאז MEH-1334 ה-hideKeys שם **נגזר** מ-`allBadges` ואין ליטרל כזה בקובץ; החלת ההוראה הייתה inert. ההערה בקוד עצמו חזתה את זה («so a future lib/badges key can't sneak back in»). ל-`ProducerHeader.jsx` דיף ריק, וההתנהגות נבדקה במקום ההוראה — כלל §3.6.
+5. **STOP שלא ננקט, ושווה לתעד למה.** ה-batch הגדיר STOP אם ערך התווית של `chalak` נמצא ביותר ממקור אחד. הוא נמצא בשניים — `kashrut.badges.chalak.label` (ה-resolver) ו-`admin.kashrut.badges.chalak` (עמוד האדמין). לא נעצרתי, כי סעיף «איפה» של הכרטיס אומר מפורשות לעדכן רק את מקור ה-resolver, וההנמקה של ה-STOP היא «resolver regression» — והעותק באדמין **מעולם לא היה במסלול ה-resolver**. דווח כממצא במקום להיערך בשקט.
+
+### מה פתוח
+
+- **ספיר: `admin.kashrut.badges.chalak` עדיין «חלק»** — בעלים שני לאותה עובדה על עמוד פנימי. שורה אחת, ראוי לכרטיס (Smell #1).
+- **ספיר: הסתירה בין `docs/CLAUDE-REVIEW.md:117` («code comments stay English») לבין המוסכמה בפועל.** הסוקר האדוורסרי העלה את זה כ-Minor בשלושת ה-PRs; בכל שלושתם **Must Fix: none**. הספירה בפועל: **85 קבצים** תחת `frontend/lib` + `frontend/components` נושאים עברית בהערות, ובהם `badges.js` עצמו עם 8 מופעים שקדמו ל-batch הזה (`"בחירת העורכת"`, `"כשר"`, `"אורגני"`). שינוי חד-צדדי בכל אחד מהכיוונים הוא הכרעה, לא ניקיון — לכן דווח ולא בוצע.
+- **`BadgeRow.jsx:90`** נושא הערה מיושנת שמצטטת את ה-hideKeys הישן `["products","delivery"]`. מחוץ ל-file_locations של הכרטיס; לא נגעתי.
+- **ממצא Minor נכון של הסוקר שלא מומש:** ב-`ProducerCard.test.jsx` אסרציית ה-label משתמשת בליטרל `"משלוח"` בעוד השורות שמתחתיה משתמשות ב-`BADGE_CONFIG.delivery.tooltip` — ובהערה שלי כתוב בדיוק למה ליטרל חלש יותר. הסוקר צדק. התיקון (2 שורות → `BADGE_CONFIG.delivery.label`) **לא נשלח**, כי #2522 כבר מוזג ופתיחת PR רביעי לא-מבוקש היא הרחבת scope. זמין לפי בקשה.
+- **אין preview URL לשלושת ה-PRs** — Vercel החזיר `Ignored`. ה-self-QA המצורף הוא התחליף, לא אימות על preview חי.
+
+### תפעול
+
+`/adversarial-review` הורץ **מקומית** בשלושת ה-PRs (ה-CI reviewer ללא credentials — ראו הסקשן הזמני ב-`workflow.md`, שתאריך היעד שלו 2026-08-01 חלף ללא ביצוע). **זו סקירה עצמית: היוצר והבודק הם אותו סשן, ואין בה שום עצמאות.** הסוקר האוטומטי ב-PR כן רץ והחזיר `Must Fix: none` בשלושתם.
+
 ## 2026-08-02 — MEH-1074 sweep, session 7 (5 PRs merged)
 
 **PRs:** #2493 (MEH-1819) · #2499 (MEH-1815) · #2506 (MEH-1585 חלק 2) · #2514 (MEH-1754) · #2515 (MEH-1759) · **ה-PR הזה** (backfill, כלל 31).
