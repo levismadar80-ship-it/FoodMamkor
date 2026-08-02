@@ -168,9 +168,21 @@ for (const r of [a, b].filter(Boolean)) {
       console.log(`   tab "${k}": ABSENT (correctly hidden)`);
       continue;
     }
-    // Dead click = the tab is offered, its declared target does not exist, and
-    // the click changes nothing. All three, or it is not a dead click.
-    const dead = !v.moved;
+    // A tab that does not scroll is dead ONLY if scrolling was the expected
+    // outcome. Two innocent explanations have to be excluded first:
+    //   - the page cannot scroll at all  → handled by `scrollable` above, and
+    //     by the control tabs, which must move on this same page
+    //   - the target is already on screen → nothing to scroll to, so staying
+    //     put is correct behaviour, not a dead click
+    // The second guard is inert on today's markup (these tabs are <button>s
+    // with no href, so there is no declared target and targetInViewAtTop is
+    // null), but it is what stops this probe reporting a false positive the
+    // moment a tab does carry an anchor.
+    //
+    // An earlier revision read `const dead = !v.moved` under a comment claiming
+    // a three-part test. The comment described a stricter rule than the code
+    // enforced — exactly the drift that lets a probe over-report.
+    const dead = !v.moved && v.targetInViewAtTop !== true;
     console.log(
       `   tab "${k}": href=${v.href} targetExists=${v.targetExists} ` +
         `inViewAtTop=${v.targetInViewAtTop} scroll ${v.before}→${v.after} moved=${v.moved}` +
