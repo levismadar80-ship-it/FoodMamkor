@@ -17,7 +17,15 @@
  */
 
 import { chromium, devices } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync } from "node:fs";
+
+// Same idiom as the other qa-* harnesses in this directory: a hardcoded
+// sandbox path behind an existsSync guard, NOT an env var. Reading
+// process.env here would register a new variable with the env-drift gate
+// (`scripts/check_env_drift.sh`), which blocks on anything used in code but
+// absent from .env.example — and this is a local-run convenience, not app
+// configuration. Elsewhere Playwright resolves its own browser.
+const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 const OUT = "qa-artifacts/MEH-1831";
@@ -106,7 +114,9 @@ async function shoot(browser, label, viewport, deviceOpts = {}) {
   return { results, offenders, lenisActive };
 }
 
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, channel: process.env.CHROMIUM_PATH ? undefined : "chromium" });
+const browser = await chromium.launch({
+  ...(existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
+});
 mkdirSync(OUT, { recursive: true });
 
 const report = {};

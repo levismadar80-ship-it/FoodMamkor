@@ -18,13 +18,18 @@
  */
 
 import { chromium } from "@playwright/test";
+import { existsSync } from "node:fs";
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
-const EXEC = process.env.CHROMIUM_PATH;
 
-const browser = await chromium.launch(
-  EXEC ? { executablePath: EXEC } : { channel: "chromium" },
-);
+// Hardcoded + existsSync, matching the other qa-* harnesses here. An env var
+// would be registered by the env-drift gate as an undocumented variable; this
+// is a local-run convenience, not app configuration.
+const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+
+const browser = await chromium.launch({
+  ...(existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
+});
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const cdp = await page.context().newCDPSession(page);
 await cdp.send("DOM.enable");
