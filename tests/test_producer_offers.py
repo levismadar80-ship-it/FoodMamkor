@@ -400,3 +400,35 @@ def test_same_day_window_at_TODAY_is_422_not_a_500_from_the_db(client, db, owner
         "a 500 here means the DB CHECK is the only guard left"
     )
     assert "אחרי תאריך ההתחלה" in res.text
+
+
+def test_is_active_false_cannot_create_an_inactive_row(client, db, owner):
+    """`is_active: false` in the payload must not reach the row.
+
+    The field was caller-settable and passed through verbatim, so this body
+    took the deactivate-then-insert path and wrote a row that had never been
+    active. Visibly that is indistinguishable from `active_offer: null` — no
+    badge either way — which is precisely why it could sit there unnoticed,
+    accumulating a dead row per call (the unique index is partial, `WHERE
+    is_active`, so it does not constrain inactive rows at all).
+
+    `is_active` is no longer a ProducerOfferCreate field. There is no
+    `extra="forbid"` on the model, so Pydantic v2 IGNORES the unknown key
+    rather than 422-ing it — the request succeeds and produces a normal ACTIVE
+    offer. That is the intended contract: an offer object means an active
+    offer, and activation belongs to the replace logic.
+
+    Both halves are asserted. "exactly one row, and it is active" is what fails
+    under the old passthrough (which wrote is_active=False); "the API serves
+    it" is what fails if some future change starts dropping the row instead.
+    """
+    user, producer = owner
+    res = _put(client, user, _offer(is_active=False))
+    assert res.status_code == 200, res.text
+
+    rows = db.query(ProducerOffer).filter_by(producer_id=producer.id).all()
+    assert len(rows) == 1, f"expected exactly one row, got {len(rows)}"
+    assert rows[0].is_active is True, "the payload's is_active=False reached the row"
+
+    served = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert served is not None, "an offer written as active must leave the API"

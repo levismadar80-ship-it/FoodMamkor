@@ -192,7 +192,15 @@ def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
             headline=offer.get("headline"),
             starts_at=offer.get("starts_at"),
             expires_at=offer["expires_at"],
-            is_active=offer.get("is_active", True),
+            # Hardcoded, never read from the payload. `is_active` is not a
+            # ProducerOfferCreate field (see its docstring): a caller-supplied
+            # False here would deactivate the current offer and then insert a
+            # row that was never active — a fourth state whose visible effect
+            # is identical to `null`, and which accumulates dead rows because
+            # uq_producer_offers_active_per_producer is partial (WHERE is_active)
+            # and so does not constrain them. Reaching this line means the
+            # caller sent an offer object, and an offer object means active.
+            is_active=True,
         )
     )
     # MEH-1823: flush HERE so a collision on uq_producer_offers_active_per_producer
