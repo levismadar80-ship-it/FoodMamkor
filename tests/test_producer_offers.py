@@ -330,6 +330,15 @@ def test_scheduled_offer_is_not_live_before_its_start_date(client, db, owner):
     assert res.status_code == 200, res.text
     assert client.get(f"/producers/{producer.id}").json()["active_offer"] is None
 
+    # BOTH serialization paths, matching test_expired_offer_never_leaves_the_api
+    # above. One property drives both, so this is cheap — but asserting only the
+    # detail path would leave the listing half of the window rule uncovered, and
+    # asymmetric coverage between two tests of the same property is how a later
+    # refactor slips through one of them.
+    listing = client.get("/producers").json()
+    row = next(p for p in listing if p["id"] == str(producer.id))
+    assert row["active_offer"] is None
+
 
 def test_offer_starting_today_is_live_today(client, db, owner):
     """`<=`, not `<` — the mirror of the expires_at boundary. An offer that
