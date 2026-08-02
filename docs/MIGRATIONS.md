@@ -58,7 +58,7 @@ LEGACY(YYYY-MM-DD, MEH-1234)
 
 בכל הערה, לצד הטקסט שהייתם כותבים ממילא. התאריך = מתי ה-overlap חייב להיעלם; הטיקט = מי מסיר אותו.
 
-`scripts/legacy-expiry-check.sh` סורק את `backend/` ו-`frontend/` ו**נכשל** כאשר:
+`scripts/checks/legacy-expiry-check.sh` סורק את `backend/` ו-`frontend/` ו**נכשל** כאשר:
 
 | מצב | התנהגות |
 | -- | -- |
@@ -66,6 +66,16 @@ LEGACY(YYYY-MM-DD, MEH-1234)
 | מרקר **malformed** (בלי תאריך ISO או בלי טיקט) | ❌ נכשל — מרקר שלא יכול לפוג הוא בדיוק הפרצה שמחזירה את הבעיה |
 | התאריך היום או בעתיד | ✅ עובר |
 | הערת "legacy" רגילה **בלי** המרקר | ✅ מתעלם — ראו grandfather למטה |
+
+**אפס עריכות workflow.** הסקריפט יושב ב-`scripts/checks/`, ו-`run-all.sh` מגלה אותו לבד תחת ה-job הנדרש **Repo guards** — זו בדיוק הסיבה שהתיקייה קיימת (`.github/workflows/**` הוא CC-deny, MEH-671). אומת: הדיספצ'ר עבר מ-9 ל-**10 guards ran**, עם `PASS legacy-expiry-check`.
+
+### escape hatch — א-סימטרי בכוונה
+
+`guard-ok: <reason>` (במוסכמה של [`scripts/checks/README.md`](../scripts/checks/README.md)) משתיק ממצא **malformed** — ו**לעולם לא** ממצא **expired**.
+
+ה-hatch נועד ל"השער זיהה את השורה הזו לא נכון": הערה ב-`backend/` שמצטטת את תבנית המרקר בזמן שהיא מסבירה את המוסכמה נראית לסורק בדיוק כמו מרקר אמיתי. זה false positive ומגיע לו פתח.
+
+תאריך שפג אינו זיהוי שגוי — הוא **הממצא**. השתקה שלו הייתה בונה מחדש את החור שהשער סוגר: הערה אחת וה-overlap פטור לנצח, כלומר אותה פרצה של "מרקר בלי תאריך" בתחפושת. כדי להפסיק כישלון תפוגה — או מסיימים את ה-contract, או מזיזים את התאריך במקום שreviewer רואה.
 
 ### איך מאריכים
 
@@ -86,11 +96,12 @@ LEGACY(YYYY-MM-DD, MEH-1234)
 ### הרצה
 
 ```bash
-bash scripts/legacy-expiry-check.sh              # בדיקת העץ
-bash scripts/legacy-expiry-check.sh --self-test  # מוכיח שהוא מבחין
+bash scripts/checks/run-all.sh                          # כל השערים (כולל זה)
+bash scripts/checks/legacy-expiry-check.sh              # רק זה
+bash scripts/checks/legacy-expiry-check.sh --self-test  # מוכיח שהוא מבחין
 ```
 
-ה-`--self-test` רץ מול `scripts/fixtures/legacy-expiry-fixture.txt` (פג-תוקף אחד, עתידי אחד, malformed אחד, ו-grandfathered אחד) ומאמת גם את **הספירות**, לא רק את קוד היציאה — שער שנכשל מהסיבה הלא נכונה, או שמסמן גם את המרקר העתידי, אינו עושה את עבודתו. הריצו אותו לפני שסומכים על ירוק כלשהו.
+ה-`--self-test` רץ מול `scripts/fixtures/legacy-expiry-fixture.txt` — **חמישה** מקרים: פג-תוקף, עתידי, malformed, grandfathered, ו-malformed-שהושתק-ב-guard-ok — ומאמת גם את **הספירות**, לא רק את קוד היציאה. שער שנכשל מהסיבה הלא נכונה, או שמסמן גם את המרקר העתידי, אינו עושה את עבודתו. הריצו אותו לפני שסומכים על ירוק כלשהו.
 
 ⚠️ **אל תכתבו את התבנית המילולית `LEGACY(` בתוך `backend/` או `frontend/`** אלא כמרקר אמיתי — הסורק מוצא את המחרוזת בכל מקום, כולל בתוך תיעוד של המוסכמה עצמה. (זה קרה ב-fixture בזמן הכתיבה: הפרוזה שהסבירה את case 3 הכילה את התבנית והספירה קפצה מ-1 ל-3. התיעוד של המוסכמה חי כאן ב-`docs/` וב-`scripts/`, ששניהם מחוץ לסריקה.)
 

@@ -9,8 +9,9 @@
 #           pre-existing plain-English "legacy" comments (see GRANDFATHER).
 #           It also does not decide whether an expiry should be extended —
 #           that is a human call, made by editing the date in a reviewed PR.
-# Related:  scripts/checks/changelog-branch-guard.sh (guard conventions this
-#           mirrors), docs/MIGRATIONS.md (the convention, written up),
+# Related:  scripts/checks/README.md (the authoring contract this follows),
+#           scripts/checks/changelog-branch-guard.sh (conventions mirrored),
+#           docs/MIGRATIONS.md (the convention, written up),
 #           docs/decisions/ADR-007-expand-contract-schema-changes.md.
 # History:  MEH-1857 (creation).
 #
@@ -21,9 +22,11 @@
 #     * producer_me.py — "7-day overlap ... Phase 4 (separate PR)", ~14 months old
 #     * models.py      — "legacy alias for price_range", no date, no ticket
 #     * models.py      — products.price_range, follow-up ticket never opened
-#   The counter-example is MEH-293, which DID complete. The difference is not
-#   diligence, it is that a forgotten date has nothing to remind anyone. This
-#   turns "we'll finish it later" into a dated claim a check can falsify.
+#   A FOURTH turned up in the guide that mandates Expand-Contract: MIGRATIONS.md
+#   cited "MEH-456 (Phase 4)" as the canonical example, and MEH-456 does not
+#   exist in Linear. The counter-example is MEH-293, which DID complete. The
+#   difference is not diligence — a forgotten date has nothing to remind anyone.
+#   This turns "we'll finish it later" into a dated claim a check can falsify.
 #
 # THE CONVENTION
 #   LEGACY(YYYY-MM-DD, MEH-1234)
@@ -32,91 +35,126 @@
 #
 #   FAIL when the date is in the past      → finish the contract, or extend the
 #                                            date deliberately in a reviewed PR
-#   FAIL when a `LEGACY(` marker is malformed (missing/!ISO date, missing or
-#        malformed ticket) → a marker that cannot expire is the loophole that
-#        recreates the very problem this guard exists to close
+#   FAIL when a marker is malformed (missing/non-ISO date, missing ticket) →
+#        a marker that cannot expire is the loophole that recreates the very
+#        problem this guard exists to close
 #   PASS when the date is today or later
 #
 # GRANDFATHER (deliberate, not an oversight)
-#   Plain-English "legacy" comments WITHOUT the LEGACY( marker are IGNORED.
-#   There is no retroactive sweep: this guard governs new debt and the three
-#   seeded sites only. Retrofitting every historical "legacy" mention would
-#   produce a wall of red with no owner per line, and a guard nobody can green
-#   is a guard that gets disabled.
+#   Plain-English "legacy" comments WITHOUT the marker are IGNORED. There is no
+#   retroactive sweep: this guard governs new debt and the three seeded sites
+#   only. Retrofitting every historical "legacy" mention would produce a wall of
+#   red with no owner per line, and a guard nobody can green gets disabled.
+#
+# ESCAPE HATCH — asymmetric ON PURPOSE (README.md `guard-ok: <reason>`)
+#   `guard-ok: <reason>` on the line or either neighbour suppresses a MALFORMED
+#   finding, and NEVER an EXPIRED one.
+#
+#   The hatch exists for "the guard misidentified this line" — e.g. a comment in
+#   backend/ that quotes the marker template while explaining the convention,
+#   which this scanner cannot distinguish from a real marker. That is a false
+#   positive and deserves an out.
+#
+#   An expired date is not a misidentification; it is the finding. Letting
+#   `guard-ok` silence it would rebuild the exact hole this guard closes — one
+#   comment and the overlap is exempt forever, which is the "LEGACY(someday)"
+#   loophole wearing a different hat. To stop an expiry failing, either finish
+#   the contract or move the date where a reviewer sees it.
 #
 # USAGE
-#   bash scripts/legacy-expiry-check.sh              # guard the tree
-#   bash scripts/legacy-expiry-check.sh --self-test  # prove it discriminates
+#   bash scripts/checks/legacy-expiry-check.sh              # guard the tree
+#   bash scripts/checks/legacy-expiry-check.sh --self-test  # prove it discriminates
 #
-# NOTE ON WIRING
-#   rtl-ok: the workflow filename below is a path, not a pl-/pr- padding class
-#   This file lives in scripts/, so it needs a pr-checks.yml step to run in CI
-#   (that snippet ships in the PR body — .github/workflows/** is CC-deny).
-#   Moving it to scripts/checks/ would make run-all.sh discover it with NO
-#   workflow edit at all. That is Sapir's call; see the PR body.
+#   Discovered and run automatically by scripts/checks/run-all.sh under the
+#   required "Repo guards" job — no workflow edit (.github/workflows/** is
+#   CC-deny, MEH-671; this directory exists precisely so guards are a file drop).
 #
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# `|| exit 1` is load-bearing (SC2164) — see scripts/checks/README.md: a failed
+# cd would leave this grepping the wrong tree, matching nothing, and exiting 0.
 cd "$REPO_ROOT" || exit 1
 
-# Directories scanned in a real run. The fixture path is excluded explicitly:
-# it exists to contain deliberately-expired markers, so scanning it would make
-# every run red forever — the guard would fail on its own test data.
+# Directories scanned in a real run. The fixture lives OUTSIDE them on purpose:
+# it holds deliberately-expired markers, so scanning it would make every run red
+# forever — the guard failing on its own test data.
 SCAN_DIRS=("backend" "frontend")
 FIXTURE_REL="scripts/fixtures/legacy-expiry-fixture.txt"
 
-# A well-formed marker. Anchored on the literal LEGACY( so a malformed one is
-# still *detected* (below) rather than silently skipped.
+# A well-formed marker. Anchored on the literal keyword so a malformed one is
+# still DETECTED below rather than silently skipped.
 VALID_RE='LEGACY\([0-9]{4}-[0-9]{2}-[0-9]{2}, MEH-[0-9]+\)'
 ANY_RE='LEGACY\('
 
 # ---------------------------------------------------------------------------
-# scan_paths — emit "file:line:content" for every line containing LEGACY(.
-# Uses git ls-files so untracked scratch files and node_modules never count.
+# scan_paths — emit "file:line:content" for every line carrying the keyword.
+# git ls-files so untracked scratch files and node_modules never count.
 # ---------------------------------------------------------------------------
 scan_paths() {
   local dirs=("$@")
-  # -I skips binary; the || true keeps a no-match grep (exit 1) from killing us.
+  # -I skips binary; `|| true` keeps a no-match grep (exit 1) from killing us.
   git ls-files -z -- "${dirs[@]}" 2>/dev/null |
     xargs -0 -r grep -InE "$ANY_RE" 2>/dev/null || true
 }
 
 # ---------------------------------------------------------------------------
+# suppressed <file> <lineno> — is there a `guard-ok: <reason>` within ±1 line?
+# Mirrors ui-pattern-guard.sh / the rtl-ok idiom. A bare `guard-ok` with no
+# reason does NOT count: the point is that the next reader learns why.
+# ---------------------------------------------------------------------------
+suppressed() {
+  local file="$1" lineno="$2" start end
+  [ -f "$file" ] || return 1
+  start=$(( lineno > 1 ? lineno - 1 : 1 ))
+  end=$(( lineno + 1 ))
+  sed -n "${start},${end}p" "$file" 2>/dev/null | grep -qE 'guard-ok:[[:space:]]*[^[:space:]]'
+}
+
+# ---------------------------------------------------------------------------
 # check_lines — the rule. Reads "file:line:content" on stdin, prints offenders,
-# returns 1 if any. Isolated from how lines were gathered so --self-test can
-# drive the real rule over fixture data.
+# returns 1 if any. Isolated from how lines were gathered so --self-test drives
+# the real rule over fixture data.
 #
-# $1 = today's date as YYYY-MM-DD (injectable: the self-test pins it so the
-#      fixture's "future" marker cannot rot into a failure in ~2 years, which
-#      is exactly the silent-decay this guard exists to prevent).
+# $1 = today as YYYY-MM-DD (injectable: the self-test pins it so the fixture's
+#      "future" marker cannot rot into a failure in ~2 years — exactly the
+#      silent decay this guard exists to prevent).
 # ---------------------------------------------------------------------------
 check_lines() {
   local today="$1"
-  local expired=() malformed=() total=0
-  local line loc content date_str
+  local expired=() malformed=() total=0 skipped=0
+  local line loc content date_str file lineno
 
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     total=$(( total + 1 ))
-    # file:line:content — content may itself contain colons, so cut twice.
-    loc="$(printf '%s' "$line" | cut -d: -f1-2)"
+    # file:line:content — content may contain colons, so cut the first two only.
+    file="$(printf '%s' "$line" | cut -d: -f1)"
+    lineno="$(printf '%s' "$line" | cut -d: -f2)"
+    loc="$file:$lineno"
     content="$(printf '%s' "$line" | cut -d: -f3-)"
 
     if ! printf '%s' "$content" | grep -qE "$VALID_RE"; then
+      # Malformed IS suppressible — see ESCAPE HATCH in the header.
+      if suppressed "$file" "$lineno"; then
+        skipped=$(( skipped + 1 ))
+        continue
+      fi
       malformed+=("$loc|$(printf '%s' "$content" | sed 's/^[[:space:]]*//')")
       continue
     fi
 
     date_str="$(printf '%s' "$content" | grep -oE "$VALID_RE" | head -n 1 |
                 sed -E 's/LEGACY\(([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')"
-    # ISO-8601 dates sort lexically, so this needs no date arithmetic.
+    # ISO-8601 sorts lexically, so this needs no date arithmetic.
+    # NOTE: deliberately NOT suppressible. An expired date is the finding.
     if [[ "$date_str" < "$today" ]]; then
       expired+=("$loc|$date_str|$(printf '%s' "$content" | grep -oE 'MEH-[0-9]+' | head -n 1)")
     fi
   done
 
-  echo "  scanned $total LEGACY( marker(s); today is $today"
+  echo "  scanned $total marker(s); today is $today"
+  [ "$skipped" -gt 0 ] && echo "  $skipped malformed finding(s) suppressed by guard-ok"
 
   if [ ${#expired[@]} -eq 0 ] && [ ${#malformed[@]} -eq 0 ]; then
     echo "  no expired or malformed markers. OK."
@@ -131,6 +169,8 @@ check_lines() {
       echo "    ${entry%%|*}  ${entry#*|}"
     done
     echo "    expected form: LEGACY(YYYY-MM-DD, MEH-1234)"
+    echo "    false positive (e.g. quoting the template in prose)? add"
+    echo "    'guard-ok: <reason>' on that line or either neighbour."
   fi
 
   if [ ${#expired[@]} -gt 0 ]; then
@@ -147,15 +187,16 @@ check_lines() {
     echo "    (a) finish the contract: remove the legacy path and this marker"
     echo "    (b) extend deliberately: edit the date in this PR, so a reviewer"
     echo "        sees the overlap being prolonged instead of it lapsing quietly"
+    echo "    guard-ok does NOT suppress this — see ESCAPE HATCH in the header."
   fi
   return 1
 }
 
 # ---------------------------------------------------------------------------
-# --self-test — drive the REAL rule over the fixture, which carries exactly one
-# expired, one future, and one malformed marker. Asserts the verdict AND the
-# offender counts: a guard that fails for the wrong reason, or that flags the
-# future marker too, is not doing its job. Run this before trusting any green.
+# --self-test — drive the REAL rule over the fixture: one expired, one future,
+# one malformed, one grandfathered, one malformed-but-suppressed. Asserts the
+# verdict AND the counts: a guard that fails for the wrong reason, or that also
+# flags the future marker, is not doing its job. Run this before any green.
 # ---------------------------------------------------------------------------
 self_test() {
   local fixture="$REPO_ROOT/$FIXTURE_REL"
@@ -178,7 +219,6 @@ self_test() {
   printf '%s\n' "$out" | sed 's/^/     /'
   echo
 
-  # 1. It must fail at all.
   if [ "$rc" -eq 0 ]; then
     echo "  [XX] expected exit 1 on the fixture, got 0"
     status=1
@@ -186,9 +226,8 @@ self_test() {
     echo "  [ok] exit 1 as expected"
   fi
 
-  # 2. It must fail for BOTH the right reasons — one expired, one malformed.
-  #    Checking only the exit code would pass a guard that found one offender
-  #    and missed the other entirely.
+  # Both reasons, counted. Exit code alone would pass a guard that found one
+  # offender and missed the other entirely.
   n_expired="$(printf '%s\n' "$out" | grep -cE 'expired 2[0-9]{3}-')"
   n_malformed="$(printf '%s\n' "$out" | grep -cE '^ +[^ ]+:[0-9]+ +.*LEGACY\(')"
 
@@ -206,9 +245,8 @@ self_test() {
     status=1
   fi
 
-  # 3. The future marker must NOT be reported. This is the discriminating half:
-  #    a guard that flagged everything would satisfy (1) while being useless,
-  #    and would make every PR red.
+  # The discriminating half: a guard that flagged everything would satisfy the
+  # exit-code check while being useless, and would red every PR in the repo.
   if printf '%s' "$out" | grep -q "2099-01-01"; then
     echo "  [XX] the future marker (2099-01-01) was reported — guard over-fires"
     status=1
@@ -216,9 +254,8 @@ self_test() {
     echo "  [ok] the future marker was correctly ignored"
   fi
 
-  # 4. A plain "legacy" comment with no marker must be invisible (GRANDFATHER).
-  #    The fixture carries one tagged GRANDFATHERED-CANARY; if the scan ever
-  #    widens to bare "legacy", that string appears in the output and this trips.
+  # GRANDFATHER: the fixture's plain "legacy" line carries a canary string. If
+  # the scan ever widens to bare "legacy", it surfaces here instead of silently.
   if printf '%s' "$out" | grep -q "GRANDFATHERED-CANARY"; then
     echo "  [XX] a plain 'legacy' comment was picked up — grandfather clause broken"
     status=1
@@ -226,9 +263,22 @@ self_test() {
     echo "  [ok] plain 'legacy' prose ignored (grandfather clause holds)"
   fi
 
+  # ESCAPE HATCH: malformed + guard-ok must be suppressed and COUNTED as such,
+  # so a hatch that silently stopped working shows up as a missing line.
+  if printf '%s' "$out" | grep -q "1 malformed finding(s) suppressed by guard-ok"; then
+    echo "  [ok] guard-ok suppressed exactly 1 malformed finding"
+  else
+    echo "  [XX] the guard-ok fixture case was not suppressed"
+    status=1
+  fi
+  if printf '%s' "$out" | grep -q "SUPPRESSED-CANARY"; then
+    echo "  [XX] the guard-ok case was still reported — hatch not applied"
+    status=1
+  fi
+
   echo
   if [ "$status" -eq 0 ]; then
-    echo "self-test OK — the guard discriminates expired / future / malformed."
+    echo "self-test OK — expired / future / malformed / grandfathered / suppressed all sorted correctly."
   else
     echo "self-test FAILED."
   fi

@@ -3,18 +3,18 @@ legacy-expiry-check self-test fixture (MEH-1857)
 
 NOT source code, and deliberately not a .py/.js file: a real run scans
 backend/ and frontend/ only, so these intentionally-broken markers can never
-redden CI. `scripts/legacy-expiry-check.sh --self-test` reads this file
+redden CI. `scripts/checks/legacy-expiry-check.sh --self-test` reads this file
 directly and asserts the guard's verdict AND its offender counts.
 
-Four cases, each exercising a different branch of the rule. Do not "fix" any
-of them — the breakage IS the test data.
+Five cases, each exercising a different branch of the rule. Do not "fix" any of
+them — the breakage IS the test data.
 
 EDITING RULE FOR THIS FILE: the marker keyword followed by an open paren must
-appear ONLY inside the four cases below, never in prose. The scanner matches
-that literal string wherever it sees it, so a prose mention becomes a fifth
-marker and the self-test's exact counts start lying. This is not hypothetical
-— the first draft of this fixture described case 3 using the literal form and
-the self-test reported 3 malformed markers instead of 1. That is precisely the
+appear ONLY inside the five cases below, never in prose. The scanner matches
+that literal string wherever it sees it, so a prose mention becomes an extra
+marker and the self-test's exact counts start lying. This is not hypothetical —
+the first draft of this fixture described case 3 using the literal form and the
+self-test reported 3 malformed markers instead of 1. That is precisely the
 class of error the count assertions exist to catch, so it is written down here
 rather than quietly fixed.
 
@@ -42,3 +42,11 @@ CASE 4 — GRANDFATHERED. Must NOT be reported.
     # guard governs new debt only. The canary string above surfaces in the
     # self-test output if the scan ever widens to bare "legacy", which trips
     # the grandfather assertion instead of failing silently.
+
+
+CASE 5 — MALFORMED but SUPPRESSED. Must NOT be reported; must be COUNTED.
+    # guard-ok: SUPPRESSED-CANARY — quoting the template while documenting it
+    # LEGACY(YYYY-MM-DD, MEH-1234) is the shape of a false positive: prose in
+    # backend/ that explains the convention looks identical to a real marker.
+    # The hatch covers exactly this. It does NOT cover an expired date — that
+    # asymmetry is in the script header, and case 1 stays reportable.
