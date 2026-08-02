@@ -651,7 +651,7 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       fireEvent.click(screen.getByTestId("badge-overflow"));
       const panel = screen.getByTestId("badge-overflow-popover");
       // Hidden badges are kosher + delivery. Label AND description for both.
-      expect(panel).toHaveTextContent("משלוח");
+      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
       expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.tooltip);
       expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
       // Asserted against the config rather than a copied literal: a paraphrase
@@ -670,7 +670,7 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
         render(<ProducerCard producer={overflowProducer} />);
         fireEvent.click(screen.getByTestId("badge-overflow"));
         const panel = screen.getByTestId("badge-overflow-popover");
-        expect(panel).toHaveTextContent("משלוח");
+        expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
         expect(panel).not.toHaveTextContent(original);
         // POSITIVE CONTROL, and it is the whole reason this case discriminates.
         // Without it the assertions above pass on a panel that renders NO
