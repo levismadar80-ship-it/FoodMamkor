@@ -1058,7 +1058,7 @@ class ProducerOfferCreate(BaseModel):
     def _validate_threshold_unit(cls, v):
         if v is not None and v not in THRESHOLD_UNITS:
             raise ValueError(
-                f"יחידת סף חייבת להיות אחת מ: {', '.join(THRESHOLD_UNITS)}"
+                f"יחידת המידה חייבת להיות אחת מ: {', '.join(THRESHOLD_UNITS)}"
             )
         return v
 
@@ -1068,7 +1068,7 @@ class ProducerOfferCreate(BaseModel):
         # `is not None`, never truthiness: 0 must reach this check and be
         # rejected explicitly, not slip through as "absent".
         if v is not None and v <= 0:
-            raise ValueError("סף ההטבה חייב להיות גדול מאפס")
+            raise ValueError("הסכום או הכמות חייבים להיות גדולים מאפס")
         return v
 
     @field_validator("headline")
@@ -1089,7 +1089,9 @@ class ProducerOfferCreate(BaseModel):
     def _validate_offer_shape(self):
         # Both-or-neither, same equality form as the DB CHECK.
         if (self.threshold_value is None) != (self.threshold_unit is None):
-            raise ValueError("סף ויחידת מידה נקבעים יחד — או שניהם או אף אחד")
+            raise ValueError(
+                "הסכום או הכמות ויחידת המידה נקבעים יחד — או שניהם או אף אחד"
+            )
         # Israel-tz "today", not server UTC — the MEH-1543 / _validate_vacation_until
         # precedent, so an owner in Israel isn't blocked on a date still valid
         # locally. `<` and not `<=`: an offer expiring today is still live today.
@@ -1098,9 +1100,9 @@ class ProducerOfferCreate(BaseModel):
             # "חייב להיות עתידי" described a stricter rule than the code has —
             # today is accepted — so an owner who entered a past date was told
             # today would fail too. Wording per the PR review.
-            raise ValueError("תאריך הפקיעה חייב להיות היום או מאוחר יותר")
+            raise ValueError("תאריך הסיום חייב להיות היום או מאוחר יותר")
         if self.starts_at is not None and self.expires_at <= self.starts_at:
-            raise ValueError("תאריך הפקיעה חייב להיות אחרי תאריך ההתחלה")
+            raise ValueError("תאריך הסיום חייב להיות אחרי תאריך ההתחלה")
         return self
 
 

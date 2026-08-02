@@ -67,6 +67,28 @@ describe("OfferBadge — the four types", () => {
     expect(screen.getByTestId("offer-badge").textContent).toContain(expected);
   });
 
+  // threshold_value is a positive integer, so 1 is reachable — and «1 יחידות»
+  // is what a single non-plural string would render. The load-bearing assertion
+  // is the NEGATIVE one: "1 יחידה" is a substring of "1 יחידות", so a
+  // toContain("1 יחידה") check alone passes against the broken form too. That
+  // is the weak-assertion shape the testing rules warn about, so it is spelled
+  // out here rather than left for a reader to notice.
+  it("a threshold of 1 renders the singular unit, never «1 יחידות»", () => {
+    renderIntl(
+      <OfferBadge offer={offer({ threshold_value: 1, threshold_unit: "units" })} />,
+    );
+    const text = screen.getByTestId("offer-badge").textContent;
+    expect(text).not.toContain("1 יחידות");
+    expect(text).toContain("1 יחידה");
+  });
+
+  it("a threshold above 1 keeps the plural unit", () => {
+    renderIntl(
+      <OfferBadge offer={offer({ threshold_value: 3, threshold_unit: "units" })} />,
+    );
+    expect(screen.getByTestId("offer-badge").textContent).toContain("3 יחידות");
+  });
+
   it("renders the unconditional wording when no threshold is stated", () => {
     renderIntl(<OfferBadge offer={offer({ threshold_value: null, threshold_unit: null })} />);
     expect(screen.getByTestId("offer-badge")).toHaveTextContent(O.text.free_delivery_above);

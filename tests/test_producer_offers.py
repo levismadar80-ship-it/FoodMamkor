@@ -355,3 +355,48 @@ def test_offer_starting_today_is_live_today(client, db, owner):
     )
     db.commit()
     assert client.get(f"/producers/{producer.id}").json()["active_offer"] is not None
+
+
+def test_same_day_window_at_TODAY_is_422_not_a_500_from_the_db(client, db, owner):
+    """`starts_at == expires_at == today` must 422, not reach the DB.
+
+    This pins the INTERACTION of two decisions that were made separately and
+    pull in opposite directions:
+
+      * the expiry rule was deliberately relaxed to accept today
+        (`expires_at < israel_today()` — an offer expiring today is live today);
+      * the migration's CHECK `producer_offer_date_order` is STRICT
+        (`expires_at > starts_at`).
+
+    So today/today sits exactly in the gap: it sails past the expiry check on
+    the strength of the relaxation, and the only thing standing between it and
+    the DB CHECK is the date-order rule in `_validate_offer_shape`.
+
+    MEASURED, not assumed: with the date-order rule carved out for today, this
+    request returns **409**, not 500 — `_sync_active_offer` already catches
+    IntegrityError and maps it to a conflict. Still the wrong answer (a
+    validation error surfacing as a conflict, with the DB as the only guard),
+    but the symptom is a 409.
+
+    Why this is its own test rather than another parametrize row: the existing
+    "same-day window" case uses FUTURE dates, so it clears the expiry check
+    trivially. Both tests go red if `<=` is relaxed to `<` — that construction
+    does NOT discriminate between them. The one that does is a carve-out for
+    `starts_at == israel_today()`, exactly the shape the expiry relaxation
+    invites: under it the FUTURE case still passes and only this one fails.
+
+    Asserting the message, not just the status, because the parametrized case
+    checks the code alone.
+    """
+    user, _ = owner
+    today = israel_today()
+    res = _put(
+        client,
+        user,
+        _offer(starts_at=today.isoformat(), expires_at=today.isoformat()),
+    )
+    assert res.status_code == 422, (
+        f"today/today must be refused by Pydantic, got {res.status_code} — "
+        "a 500 here means the DB CHECK is the only guard left"
+    )
+    assert "אחרי תאריך ההתחלה" in res.text
