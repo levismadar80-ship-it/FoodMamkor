@@ -148,6 +148,28 @@ describe("OfferBadge — the states that must render NOTHING", () => {
     }
   });
 
+  // The mirror of the expiry guard, on the other end of the window. Server-side
+  // this was already fixed once (Producer.active_offer, models.py:395); the
+  // client guard checked only expires_at while its comment claimed defence in
+  // depth. Not reachable through the real API — the server filters both ends —
+  // so the offer is passed directly, which is the point: this asserts the
+  // CLIENT guard, not the server's.
+  it("an offer whose starts_at is in the future renders nothing", () => {
+    const { container } = renderIntl(
+      <OfferBadge offer={offer({ starts_at: FUTURE, expires_at: FUTURE })} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  // The control. Without it, "always return null when starts_at is set" would
+  // satisfy the test above — the same trap as the singular/plural pair.
+  it("an offer that already started still renders", () => {
+    const { container } = renderIntl(
+      <OfferBadge offer={offer({ starts_at: PAST, expires_at: FUTURE })} />,
+    );
+    expect(container).not.toBeEmptyDOMElement();
+  });
+
   it("unknown offer_type → nothing, never a raw i18n key", () => {
     const { container } = renderIntl(<OfferBadge offer={offer({ offer_type: "mystery_type" })} />);
     expect(container).toBeEmptyDOMElement();
