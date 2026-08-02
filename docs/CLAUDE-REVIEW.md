@@ -112,9 +112,30 @@ a fresh-eyes safety net catching what the author CC session missed.
    (CLAUDE.md workflow rule "One PR = one logical change"). Note this is a
    narrower question than "does this match the spec" — completeness against a
    spec is a NON-GOAL (see above).
-5. **Hebrew copy in code.** Hebrew strings in JS/TS/Python source (not
-   JSX user-facing text — that's expected) — flag. Hebrew belongs in
-   Linear descriptions, code comments stay English.
+5. **Hebrew copy in code.** This is an **i18n** concern — copy that should
+   live in `frontend/messages/*.json` and doesn't. It is **not** a ban on the
+   Hebrew alphabet appearing in a source file. Three cases, and only two are
+   findings:
+   - **FLAG — a Hebrew string literal that reaches a user**, hardcoded in a
+     component, router, or service instead of coming from the message files.
+     (JSX text rendered *from* those files is expected and is never a finding.)
+   - **FLAG — Hebrew prose as the body of a comment**, i.e. the explanation
+     itself written in Hebrew. Comments are written in English so that every
+     reader of this repo can follow them.
+   - **DO NOT FLAG — a Hebrew UI label or copy string quoted inside an English
+     comment.** Naming the exact rendered string is how a comment says which
+     surface it is talking about, and paraphrasing it into English makes the
+     comment *less* precise — the reader can no longer grep for the string.
+     `// MEH-1711: "כשר" was our own synthesized label — the bare word claims a
+     kashrut standard without naming which one` is correct as written.
+
+   **This distinction is measured, not stylistic.** As of 02/08 **85 files**
+   under `frontend/lib` + `frontend/components` quote Hebrew inside English
+   comments, including `lib/badges.js` with 8 such quotes predating this
+   revision. The earlier wording ("code comments stay English") read as a
+   blanket ban and produced a Minor finding on 3 of 3 PRs in the badge-cleanup
+   batch, each time against the established and correct form. A rule that
+   fires on the majority of the codebase trains reviewers to discount it.
 6. **Test coverage.** New API endpoint or React component without a
    matching test = WARN (not BLOCK during calibration). Reference:
    `docs/TESTING.md`.
