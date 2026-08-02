@@ -550,7 +550,12 @@ export default function ProducerDashboardPage() {
           overlap (Phase 4 drops them). */}
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
-          {t("availability.heading")}
+          {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
+              <p>. The <p> also contains InfoTooltip, whose trigger is a button
+              with its own aria-label ("מה ההבדל בין המצבים?") — labelling the
+              radiogroup from the <p> would fold that into the computed name and
+              yield "מצב נוכחי מה ההבדל בין המצבים?". Measured, not assumed. */}
+          <span id="availability-heading">{t("availability.heading")}</span>
           <InfoTooltip content={AVAILABILITY_TOOLTIP} label={t("availability.info_label")} position="bottom" />
         </p>
         <p className="text-fg-muted text-sm mb-4">
@@ -567,7 +572,12 @@ export default function ProducerDashboardPage() {
         />
         <div
           role="radiogroup"
-          aria-label={t("availability.group_aria")}
+          // MEH-1842: derived from the visible heading rather than a parallel
+          // string. The old aria-label read "מצב זמינות" — the pre-MEH-1830
+          // name — so the accessible name and the visible one had drifted apart,
+          // which is the failure mode WCAG 2.5.3 exists for. Deriving it means
+          // they cannot drift again; the group_aria key is now deleted.
+          aria-labelledby="availability-heading"
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
           className="flex flex-wrap gap-2"
         >
