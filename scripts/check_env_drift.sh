@@ -33,7 +33,12 @@ cd "$ROOT"
 # VERCEL_AUTOMATION_BYPASS_SECRET (MEH-1241): canonical Vercel-provided
 # Deployment-Protection automation secret — same platform-var class as the
 # legacy alias VERCEL_BYPASS_SECRET beside it; excluded, not app config.
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|SKIP_ENV_VALIDATION|TEST_URL|PATH|HOME|USER|PYTHONPATH)$'
+# PW_WEBKIT (MEH-1788): Playwright harness switch that opts the two webkit
+# projects into playwright.config.ts. Same class as TEST_URL beside it — it
+# configures the TEST RUNNER, not the application. Listing it in .env.example
+# would tell every developer to set a variable the app never reads, which is
+# the opposite of what that file is for.
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")
