@@ -210,11 +210,18 @@ def _run_followup_job() -> None:
     """
     from app.database import SessionLocal
     from app.services.onboarding_followup import send_due_followups
+    from app.services.pending_nudge import send_pending_nudges
 
     db = SessionLocal()
     try:
         counts = send_due_followups(db)
         log.info("[FOLLOWUP] daily run complete counts=%s", counts)
+        # MEH-1818: the day-1 pending nudge shares this daily tick rather than
+        # registering its own job — same single-replica assumption, same 10:00
+        # UTC cadence. It is fail-isolated per producer exactly like
+        # send_due_followups, so a bad row here cannot strand the run either.
+        nudges = send_pending_nudges(db)
+        log.info("[PENDING-NUDGE] daily run complete counts=%s", nudges)
     except Exception as exc:
         # MEH-1533: same capture-before-log ordering as _init_db_background.
         # Daily cadence — cannot flood the Sentry quota.
