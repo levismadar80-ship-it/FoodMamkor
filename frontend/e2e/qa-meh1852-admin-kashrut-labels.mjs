@@ -103,7 +103,15 @@ await page.route(/\/api\/auth\/me$/, (route) =>
   }),
 );
 await page.goto(BASE + "/he/admin/kashrut", { waitUntil: "networkidle" }).catch(() => {});
-await page.waitForTimeout(2500);
+// Gate on the thing the assertions actually read, not on a fixed sleep —
+// `networkidle` + a timeout still loses the race on a cold start or a slow
+// machine, and here that would surface as "0 rows", i.e. indistinguishable
+// from the two real failures this probe already hit.
+// The `.catch` is deliberate and is NOT swallowing the failure: it hands
+// control to `table-rendered-all-8-rows` below, which reports the miss as a
+// readable FAIL with a count. Letting waitForSelector throw would abort before
+// that load assertion — the one check that caught a vacuous pass on run 1.
+await page.waitForSelector("tbody tr", { timeout: 15_000 }).catch(() => {});
 
 const pills = await page.evaluate(() =>
   [...document.querySelectorAll("tbody tr")].map((tr) => ({
