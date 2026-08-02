@@ -350,6 +350,13 @@ class Producer(Base):
     locations = relationship(
         "ProducerLocation", back_populates="producer", cascade="all, delete-orphan"
     )
+    # MEH-1823 (chunk 1): typed, expiring offers. At most one row is active at
+    # a time (unique partial index on producer_offers), but the relationship is
+    # a collection because expired/deactivated rows stay for history. Default
+    # lazy="select" and delete-orphan mirror delivery_areas above.
+    offers = relationship(
+        "ProducerOffer", back_populates="producer", cascade="all, delete-orphan"
+    )
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
     __table_args__ = (
@@ -720,6 +727,122 @@ class ProducerLocation(Base):
         CheckConstraint(
             "location_precision IN ('exact', 'approximate')",
             name="producer_location_precision",
+        ),
+    )
+
+
+class ProducerOffer(Base):
+    """MEH-1823 chunk 1: ONE owner-declared, typed, expiring offer per business.
+
+    An offer is a bounded, dated object with its own lifecycle — it expires and
+    it is replaced — so it is a table, not columns on `producers`. The four
+    types are a closed vocabulary:
+
+      free_delivery_above  — free delivery over a threshold
+      gift_above           — a gift with a purchase over a threshold
+      first_order          — a first-order benefit
+      pickup_discount      — a discount on self-pickup
+
+    `threshold_value` + `threshold_unit` exist because the evidence that opened
+    the ticket had nowhere to live: a litres/units/kg threshold cannot be stored
+    in `producers.free_delivery_above`, which is INTEGER shekels (models.py:262).
+    The pair is both-or-neither — a number with no unit is unrenderable, a unit
+    with no number is meaningless.
+
+    `expires_at` is NOT NULL, and that is the property protecting the business
+    rather than the reader: an always-on offer converges on discounting buyers
+    who would have paid full price. An offer that cannot expire is a permanent
+    discount nobody decided to give.
+
+    All five CHECKs and the unique partial index are declared BOTH here (so a
+    fresh `create_all` test DB has them) AND in the paired Alembic revision —
+    the MEH-272 precedent (models.py:380-401) and the same choice
+    ProducerLocation made above. Alembic autogenerate does not diff CHECK
+    conditions, so there is no canonical-form worry for those; the INDEX
+    predicate does round-trip through `alembic check`, so its text is kept
+    byte-identical to the revision's `postgresql_where`.
+
+    # DO NOT add a column here without the paired Alembic revision — Alembic is
+    #        the sole schema authority since MEH-267 (revision b6e1d94a3f27).
+
+    Does NOT: serialize, validate, or expose anything. Pydantic schemas, the
+    owner write path and the public read path are chunk 2 — see
+    producer_me.py's delivery_areas pattern for the shape they will take.
+
+    History: MEH-1823 (creation, chunk 1/3).
+    """
+
+    __tablename__ = "producer_offers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    offer_type = Column(Text, nullable=False)
+    # NULL together with threshold_unit = "no threshold"; > 0 when stated.
+    threshold_value = Column(Integer, nullable=True)
+    threshold_unit = Column(Text, nullable=True)
+    headline = Column(Text, nullable=True)
+    # NULL = active now. A future date is a scheduled offer; nothing reads it
+    # in chunks 2-3.
+    starts_at = Column(Date, nullable=True)
+    expires_at = Column(Date, nullable=False)
+    is_active = Column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
+    created_at = Column(
+        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        server_default=text("now()"),
+    )
+
+    producer = relationship("Producer", back_populates="offers")
+
+    __table_args__ = (
+        CheckConstraint(
+            "offer_type IN ('free_delivery_above', 'gift_above', "
+            "'first_order', 'pickup_discount')",
+            name="producer_offer_type",
+        ),
+        CheckConstraint(
+            "threshold_unit IN ('ils', 'units', 'liters', 'kg')",
+            name="producer_offer_threshold_unit",
+        ),
+        # Equality form, not two OR'd implications: it is total, so neither
+        # direction can be added later and forgotten, and IS NULL always
+        # yields true/false (no three-valued-logic edge).
+        CheckConstraint(
+            "(threshold_value IS NULL) = (threshold_unit IS NULL)",
+            name="producer_offer_threshold_pair",
+        ),
+        # A stated threshold is positive. "Over 0" is not a threshold — it is
+        # unconditional, which NULL already spells; rejecting 0 removes a
+        # duplicate spelling rather than a meaning.
+        CheckConstraint(
+            "threshold_value IS NULL OR threshold_value > 0",
+            name="producer_offer_threshold_positive",
+        ),
+        # A dated window runs forwards. Strict `>`: a same-day window would
+        # expire on the day it opens.
+        CheckConstraint(
+            "starts_at IS NULL OR expires_at > starts_at",
+            name="producer_offer_date_order",
+        ),
+        # At most ONE active offer per business — and the lookup index for that
+        # active row, which is the same index. A non-unique twin would carry
+        # identical columns and predicate: double the write cost, no read gain.
+        Index(
+            "uq_producer_offers_active_per_producer",
+            "producer_id",
+            unique=True,
+            postgresql_where=text("is_active"),
         ),
     )
 
