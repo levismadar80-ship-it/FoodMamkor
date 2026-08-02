@@ -170,6 +170,45 @@ describe("OfferBadge — the states that must render NOTHING", () => {
     expect(container).not.toBeEmptyDOMElement();
   });
 
+  // FUTURE and PAST bracket the boundary without landing on it, so the pair
+  // above cannot see an off-by-one: measured on this file, changing the guard
+  // to `starts_at >= today` leaves it at 22/22 green. That mutation makes a
+  // one-day offer invisible on its only day — the single day it exists to be
+  // seen. This is the cell that catches it, and it is why `>` and `<` on the
+  // two ends have to be read as a matched pair rather than two independent
+  // choices.
+  it("an offer starting today is live today (`>` and not `>=`)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-02T09:00:00Z"));
+    try {
+      const { container } = renderIntl(
+        <OfferBadge offer={offer({ starts_at: "2026-08-02", expires_at: "2026-08-02" })} />,
+      );
+      expect(container).not.toBeEmptyDOMElement();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // The Israel-clock mirror of the expiry pair above, on the start boundary.
+  // 2026-08-02T21:30:00Z is already the 3rd in Israel, so an offer starting on
+  // the 3rd is live now — a UTC-based comparison still reads "2026-08-02" and
+  // would suppress it. This is what pins the start guard to israelToday()
+  // rather than letting it acquire a second clock later.
+  it("a start date is judged in Israel time, not UTC (offer opens at 00:30 Israel)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-02T21:30:00Z"));
+    try {
+      expect(new Date().toISOString().slice(0, 10)).toBe("2026-08-02"); // the trap
+      const { container } = renderIntl(
+        <OfferBadge offer={offer({ starts_at: "2026-08-03" })} />,
+      );
+      expect(container).not.toBeEmptyDOMElement();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("unknown offer_type → nothing, never a raw i18n key", () => {
     const { container } = renderIntl(<OfferBadge offer={offer({ offer_type: "mystery_type" })} />);
     expect(container).toBeEmptyDOMElement();

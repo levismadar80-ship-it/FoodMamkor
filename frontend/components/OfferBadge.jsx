@@ -5,9 +5,13 @@
  *           above the delivery block on the business page, and a short `chip`
  *           on ProducerCard.
  * Does NOT: decide whether the offer is live. The server already did — an
- *           expired offer is filtered out server-side (Producer.active_offer,
- *           models.py) and never reaches the client. The expiry check below is
- *           defence in depth for a leaked payload, not the mechanism.
+ *           offer outside its window is filtered out server-side
+ *           (Producer.active_offer, models.py) and never reaches the client.
+ *           The window check below is defence in depth for a leaked payload,
+ *           not the mechanism. It reads "window", not "expiry", because the
+ *           one-sided version of this sentence is what let the start boundary
+ *           go missing for a whole ticket while the header still sounded
+ *           complete.
  * Related:  frontend/components/DeliveryBlock.jsx:271-280 (the <bdi> reasoning
  *           this file reuses verbatim).
  * History:  MEH-1823 (creation, chunk 3/3).
