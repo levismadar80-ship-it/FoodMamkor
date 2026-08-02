@@ -262,6 +262,13 @@ function RegisterProducerPageBody() {
   // (response had access_token); false after a successful non-upgrade
   // signup (response was the OWASP ack). Drives step-3 render branching.
   const [didUpgrade, setDidUpgrade] = useState(false);
+  // MEH-1814: the post-submit screen OWNS the render from the moment the
+  // submit succeeds. Set BEFORE refreshUser() so there is no render in which
+  // the role has flipped to "producer" while this is still false — the two
+  // updates are in program order, so React can never apply the later one
+  // first. This is what makes the fix an ordering guarantee rather than a
+  // race that usually wins.
+  const [submitted, setSubmitted] = useState(false);
   // MEH-532: seasonal placeholder is locked to the value at first render
   // so it doesn't flicker if the user crosses a season boundary mid-session.
   // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
@@ -571,6 +578,10 @@ function RegisterProducerPageBody() {
       // the non-upgrade path).
       const isUpgradeResult = "access_token" in (res.data || {});
       setDidUpgrade(isUpgradeResult);
+      // MEH-1814: claim the render BEFORE the role can flip. Must stay above
+      // the refreshUser() await below — moving it after reintroduces the
+      // window where the gate outranks the success screen.
+      setSubmitted(true);
       localStorage.removeItem(DRAFT_KEY);
       if (isUpgradeResult) {
         // UPGRADE PATH (UNCHANGED post-MEH-328): store token, refresh
@@ -625,7 +636,19 @@ function RegisterProducerPageBody() {
   // terminal screen up-front instead. Guests + logged-in consumers (MEH-143 upgrade
   // path, role !== producer/admin) fall through unchanged. Sits ABOVE the
   // showPreflight return so the wizard tree below stays byte-identical (MEH-132).
-  if (user?.role === "producer") {
+  //
+  // MEH-1814: both gates are `!submitted`-guarded. MEH-1489 added them ABOVE
+  // the wizard return without excluding the post-submit state, so on the
+  // upgrade path refreshUser() (:593) flipped user.role to "producer" and this
+  // early return then outranked the STEP.CONFIRM success screen (:1658) on
+  // every subsequent render — a seller who had just finished the 10-minute
+  // wizard was told "כבר יש לך עמוד עסק". Not a timing race: the gate sits
+  // above the wizard return, so once the role flips there is no interleaving
+  // in which the success screen renders at all.
+  // The gates themselves are unchanged — a genuine mount-time visit by an
+  // existing producer/admin still short-circuits before any form interaction,
+  // because `submitted` is false until a submit has actually succeeded.
+  if (!submitted && user?.role === "producer") {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate">
@@ -645,7 +668,7 @@ function RegisterProducerPageBody() {
       </div>
     );
   }
-  if (user?.role === "admin") {
+  if (!submitted && user?.role === "admin") {
     // No dashboard CTA — an admin's daily-work account has no producer page to
     // manage; the message points them at creating a separate business account.
     return (
@@ -1633,16 +1656,17 @@ function RegisterProducerPageBody() {
             Non-upgrade path renders the OWASP-aligned inbox-check screen
             — identical body across new-email / collision branches. */}
         {step === STEP.CONFIRM && didUpgrade && (
-          <div className="text-center py-8">
+          <div className="text-center py-8" data-testid="register-success-pending">
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
-            <p className="text-fg-muted mb-6">
-              {whatsappSent
-                ? t("auth.register.producer.success.body_with_whatsapp")
-                : t("auth.register.producer.success.body_no_whatsapp")}
-            </p>
+            {/* MEH-1814: names the state ("בבדיקה") and the expected wait, then
+                the two owner actions that speed approval — the Google Business
+                Profile "pending review, ~3 business days" pattern. Replaces the
+                old heading/body/next-stages block, which described OUR process
+                stages rather than what the seller should do next. */}
+            <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.title")}</h2>
+            <p className="text-fg-muted mb-6">{t("auth.register.producer.success.body")}</p>
             {!whatsappSent && (
               <div
                 role="status"
@@ -1652,24 +1676,18 @@ function RegisterProducerPageBody() {
               </div>
             )}
             <div className="bg-green-50 rounded-lg p-5 text-start mb-6">
-              <h3 className="font-semibold text-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
-              <ul className="text-sm text-fg-muted space-y-2">
-                <li>{t("auth.register.producer.success.next_step1")}</li>
-                <li>{t("auth.register.producer.success.next_step2")}</li>
-                <li>{t("auth.register.producer.success.next_step3")}</li>
-              </ul>
-              {/* MEH-914: photo-to-publish disclosure — mirrors the story step. */}
-              <p data-testid="photo-disclosure-success" className="text-sm text-fg-muted text-start leading-relaxed mt-3">{t("auth.register.producer.photo_disclosure")}</p>
+              <p className="text-sm text-text leading-relaxed">{t("auth.register.producer.success.next")}</p>
             </div>
             {/* MEH-132: S7 06A founder sign-off */}
             <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
+                data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
                 className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
               >
-                {t("auth.register.producer.success.dashboard_cta")}
+                {t("auth.register.producer.success.cta")}
               </button>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}
