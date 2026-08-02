@@ -385,7 +385,15 @@ class Producer(Base):
         """
         today = israel_today()
         for offer in self.offers:
-            if offer.is_active and offer.expires_at >= today:
+            # BOTH ends of the window, not just the far one. Omitting the
+            # starts_at half served a scheduled offer as live from the moment it
+            # was created — measured: starts_at 2026-09-01 returned on
+            # 2026-08-02. The dashboard does not expose starts_at yet, so it was
+            # unreachable through the UI, but the API accepts it and the
+            # revision docstring already promised "a future date is a scheduled
+            # offer". The code contradicted its own documentation.
+            started = offer.starts_at is None or offer.starts_at <= today
+            if offer.is_active and started and offer.expires_at >= today:
                 return offer
         return None
 
