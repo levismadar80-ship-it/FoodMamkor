@@ -247,6 +247,12 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
     return True
 
 
+# MEH-1815: the frontend route the producer duplicate-attempt email points at.
+# Named rather than inlined so a route rename has something to grep for — an
+# email already in someone's inbox cannot be corrected after the fact.
+_PRODUCER_REGISTER_PATH = "/register/producer"
+
+
 def send_duplicate_attempt_email(
     email: str, name: str, provider: str, flow: str = "consumer"
 ) -> None:
@@ -270,6 +276,9 @@ def send_duplicate_attempt_email(
     """
     login_url = f"{settings.frontend_url}/login"
     if flow == "producer":
+        # Frontend route, embedded in an email body. Named so a rename has a
+        # grep surface here — already-sent mail cannot be fixed retroactively.
+        producer_register_path = _PRODUCER_REGISTER_PATH
         if provider == "password":
             identity = (
                 "את כבר רשומה אצלנו עם סיסמה — אם זו את, שימי לב: "
@@ -289,7 +298,7 @@ def send_duplicate_attempt_email(
             f"{identity}\n"
             f"כדי לרשום את העסק, היכנסי לחשבון ומלאי את הטופס — "
             f"הפרטים ששמרנו בדפדפן ימתינו לך:\n"
-            f"{login_url}?redirect=/register/producer\n\n"
+            f"{login_url}?redirect={producer_register_path}\n\n"
             f"{closing}\n"
             f"בברכה,\n"
             f"צוות מהמקור"
