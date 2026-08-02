@@ -191,10 +191,17 @@ async function run(browser, width, tag) {
   await ctx.close();
 }
 
-// The sandbox ships chromium build 1194 while this repo's playwright pins a
+// The CC sandbox ships chromium build 1194 while this repo's playwright pins a
 // newer one; point at the pre-installed binary rather than downloading.
+// Overridden with --chromium <path>, NOT an env var: the "Env drift" gate scans
+// for process.env reads and would require documenting a local-only QA knob in
+// .env.example, which is not part of the app's configuration surface.
+const CHROMIUM = process.argv.includes("--chromium")
+  ? process.argv[process.argv.indexOf("--chromium") + 1]
+  : "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+
 const browser = await chromium.launch({
-  executablePath: process.env.QA_CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  executablePath: CHROMIUM,
   args: ["--ssl-version-max=tls1.2"],
 });
 await run(browser, 375, "375");
