@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-02 — batch ציר יום-המשלוח: שני merges, שני STOPs
+
+**PRs:** #2530 (squash `ff2ea2ea`) · #2533 (squash `1db0b0a2`) · **ה-PR הזה** (backfill, כלל 31).
+
+**ענפים:** `feature/meh-1825-producers-delivery-day-row` ו-`feature/meh-1826-chip-deeplink-context`, כל אחד מ-`origin/staging` טרי (השני נחתך **אחרי** שהראשון נחת, כפי שהכרטיס דרש). ה-harness הצביע על ענף `claude/*` — נחתך מחדש לפי כלל 3. ה-clone היה **shallow**; `git fetch --unshallow` רץ לפני כל שאלת provenance.
+
+### מה נשלח
+
+**MEH-1825** — `DeliveryDayRow` ל-`components/` (הגדרה אחת; absence assertion: **1** הגדרה בריפו, **0** ב-`ActiveFilterChip.jsx`), ו-/producers חובר ל-URL-sync + fetch. **MEH-1826** — `navigateToChip` נושא `city` + `delivery_day`.
+
+vitest מלא: **2133 → 2138** (‏+5 ב-1826, ‏+7 ב-1825 שכבר נכללו ב-2133 בזמן מדידתו). build exit 0 בשניהם. eslint 0 errors; ב-`use-home-page.js` מספר ה-warnings **3 → 3**, נמדד מול הקובץ שלפני ולא הונח.
+
+### שני ה-STOPs — וזה החלק שדורש הכרעה שלך
+
+**MEH-1849 chunk 1 (RED):** שני המספרים **לא הופקו**. אין `DATABASE_URL`, Railway מחזיר `000`, ו-URL הפרודקשן ב-deny-list. השאילתות מנוסחות ומוכנות ב-PR — צריך להריץ אותן מהטרמינל שלך. **בלי המספרים אי אפשר לכתוב את המיגרציה**, כי השאלה אם צריך שלב backfill היא בדיוק מה שהם עונים.
+
+**MEH-1838 (YELLOW):** `POST /auth/register/producer` מקבל `ProducerRegister`, וארבעת שדות המשלוח **נעדרים** ממנו. הכרטיס הגדיר את זה כ-STOP מפורש. **זה כרטיס backend קודם.** הפרט המסוכן: `extra="ignore"` הוא ברירת המחדל, אז frontend ששולח אותם מקבל 200 והשדות נזרקים — מימוש UI לבדו היה **נראה** מוצלח ולא כותב דבר ל-DB.
+
+### שלושה דברים ששווים יותר מהתוצאה
+
+1. **‏`aria-disabled` הופך בדיקת Playwright לירוקה-שקרית בכיוון ההפוך — היא נכשלת על קוד תקין.** הכלי מתייחס אליו כ-`disabled` ומסרב ללחוץ, בעוד שכל הנקודה של MEH-1771 היא שהגלולה **כן** לחיצה. `force: true` נדרש, ותועד ב-harness — אחרת הקורא הבא מסיק שהקומפוננטה שבורה ו«מתקן» אותה.
+2. **שני משטחים, שני שמות לאותו פילטר, אפס שגיאות ביניהם.** `?day=` בבית מול `?delivery_day=` ב-/producers. זה לא נתפס ע"י build, לא ע"י lint, ולא ע"י טסט קיים — רק ע"י קריאת קוד ה-hydration שנמזג. הכרטיס אמר «verify, do not assume»; זו הסיבה.
+3. **הימצאות הכלי אינה יכולת.** `psql` מותקן בסנדבוקס. אין לו אף credential להתחבר איתו, ופרודקשן אסור ממילא. הפיתוי הוא לדווח מספר משוער; מה שנרשם במקום הוא מה **חסר** ומי יכולה להפיק אותו.
+
+### הבא בתור
+
+MEH-1849 chunk 2 חסום עד שהמספרים יגיעו. MEH-1838 חסום עד שכרטיס backend ירחיב את `ProducerRegister`. ממצא צדדי לתיוק: ב-/producers, tap על גלולת ghost פותח תמיד את `LocationModal` גם כשקיימת `savedUserCity` — בעוד שצ'יפ העיר מחיל אותה מיידית (MEH-1503). שני פקדים על אותו עמוד עונים אחרת לאותו precondition חסר. תואם את הבית, ולכן לא תוקן כאן.
+
 ## 2026-08-02 — MEH-1851: dispositions לתשעת השדות ה-writable בלי עורך
 
 **PR:** #2531 (squash `ac339924`, merged ל-staging) · **ה-PR הזה** (backfill, כלל 31).
