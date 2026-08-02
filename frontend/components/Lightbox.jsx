@@ -110,6 +110,11 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
 
         {/* Main image */}
         <div className="px-16 flex items-center justify-center w-full h-full">
+          {/* raw img: full-bleed lightbox. Sized by its own intrinsic ratio
+              under max-w-[95vw]/max-h-[90vh] + object-contain — there is no
+              fixed box for next/image, and `fill` would change the layout
+              contract on a public surface this ticket requires to be visually
+              unchanged. Not an LCP image: it mounts on user click. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={index}
