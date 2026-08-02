@@ -12,11 +12,18 @@ import Lenis from "lenis";
  * Respects `prefers-reduced-motion`: if the user has it enabled, we do
  * NOT init Lenis and the browser's native scrolling stays untouched.
  * Accessibility > aesthetics.
+ *
+ * MEH-1831: skipped on touch pointers too. Lenis's only smoothing input here
+ * is `smoothWheel`, which a touch device never produces — so on phones the rAF
+ * loop below ran on every frame, for the lifetime of every page, to smooth an
+ * event that never arrives. Native momentum scrolling is unaffected either way;
+ * the loop was pure main-thread and battery cost for a mobile-first audience.
  */
 export default function SmoothScrollProvider({ children }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia?.("(pointer: coarse)").matches) return;
 
     const lenis = new Lenis({
       duration: 1.2,

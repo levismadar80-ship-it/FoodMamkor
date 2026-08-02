@@ -232,6 +232,87 @@ describe("allBadges", () => {
     );
   });
 
+  // MEH-1841 — specific supersedes generic. ProducerCard renders its own
+  // "משלוחים בלבד" pill for a delivery-only business; the generic "משלוח"
+  // badge alongside it was a second chip for the same fact. Suppression lives
+  // in lib/badges.js so every consumer (card top-2, `+N` overflow popover,
+  // badgeCount) agrees.
+  describe("delivery — delivery-only suppression (MEH-1841)", () => {
+    const deliveryOnly = {
+      has_physical_location: false,
+      offers_delivery: true,
+      has_delivery: true,
+      delivery_count: 4,
+    };
+
+    it("delivery-only producer earns NO generic delivery badge", () => {
+      expect(allBadges(deliveryOnly).map((b) => b.key)).not.toContain("delivery");
+      expect(allBadges(deliveryOnly)).toEqual([]);
+    });
+
+    it("suppression holds when only delivery_count drives the badge", () => {
+      expect(
+        allBadges({
+          has_physical_location: false,
+          offers_delivery: true,
+          delivery_count: 4,
+        }).map((b) => b.key),
+      ).toEqual([]);
+    });
+
+    it("physical + delivery business KEEPS the generic delivery badge", () => {
+      expect(
+        allBadges({
+          has_physical_location: true,
+          offers_delivery: true,
+          has_delivery: true,
+        }).map((b) => b.key),
+      ).toContain("delivery");
+    });
+
+    it("a payload without has_physical_location keeps the badge", () => {
+      // Backend defaults has_physical_location to True (schemas/schemas.py:1772);
+      // only an explicit `false` suppresses. A partial payload must not silently
+      // lose its delivery indication.
+      expect(allBadges({ has_delivery: true }).map((b) => b.key)).toContain(
+        "delivery",
+      );
+      expect(
+        allBadges({ has_physical_location: null, has_delivery: true }).map(
+          (b) => b.key,
+        ),
+      ).toContain("delivery");
+    });
+
+    it("keeps the badge when the pill would NOT render (no offers_delivery)", () => {
+      // ProducerCard's pill needs BOTH fields. This combination is rejected by
+      // the owner form and the backend model, but a legacy row in this state
+      // must not end up with zero delivery indication.
+      expect(
+        allBadges({
+          has_physical_location: false,
+          offers_delivery: false,
+          has_delivery: true,
+        }).map((b) => b.key),
+      ).toContain("delivery");
+    });
+
+    it("badgeCount and topBadges agree with the suppression", () => {
+      // The `+N` overflow indicator on ProducerCard is driven by badgeCount,
+      // so a stale count would re-surface the badge in the popover.
+      const p = {
+        ...deliveryOnly,
+        verification_tier: "verified",
+        products_count: 5,
+      };
+      expect(badgeCount(p)).toBe(2);
+      expect(topBadges(p, 5).map((b) => b.key)).toEqual([
+        "verified",
+        "products",
+      ]);
+    });
+  });
+
   it("products — when products_count >= 3", () => {
     expect(allBadges({ products_count: 3 }).map((b) => b.key)).toEqual(["products"]);
     expect(allBadges({ products_count: 10 }).map((b) => b.key)).toEqual(["products"]);

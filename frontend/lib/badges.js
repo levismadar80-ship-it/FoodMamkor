@@ -14,7 +14,8 @@
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
- *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0
+ *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0, SUPPRESSED for a
+ *                            delivery-only business (MEH-1841 — specific supersedes generic)
  *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
@@ -228,6 +229,26 @@ function earnsBadge(producer, key) {
           new Date(producer.kashrut_expires_at) > new Date())
       );
     case "delivery":
+      // MEH-1841 — specific supersedes generic. A delivery-only business
+      // already carries the "משלוחים בלבד" pill on ProducerCard
+      // (ProducerCard.jsx:382), so the generic "משלוח" badge sat next to it
+      // saying strictly less about the same fact — two delivery chips on one
+      // card. Suppressed here, at the derivation layer, so EVERY consumer
+      // stays consistent: the card's top-2 row, the `+N` overflow popover
+      // (which reads allBadges().slice(2)), and badgeCount which drives that
+      // `+N`. Display-only — the ?delivery=true listing filter is a backend
+      // query and is untouched.
+      //
+      // Gated on BOTH fields, mirroring the pill's condition verbatim, so the
+      // generic badge yields only where the specific one actually renders.
+      // (has_physical_location=false, offers_delivery=false) is rejected by the
+      // owner form (ProducerForm.jsx:1047) and by the backend model
+      // (schemas/schemas.py:1262) — but should a legacy row reach a card in
+      // that state, the pill does not render, and suppressing here too would
+      // leave it with no delivery indication at all.
+      if (producer.has_physical_location === false && producer.offers_delivery) {
+        return false;
+      }
       return (
         !!producer.has_delivery ||
         (typeof producer.delivery_count === "number" &&
