@@ -59,6 +59,7 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 | [docs/templates/](./docs/templates/README.md) | 9 prompt templates (00-08) for Linear issues, CC tasks, Claude.ai design — see [ADR-020](./docs/decisions/ADR-020-templates-in-repo.md) |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
 | [docs/audits/dashboard-field-guidance-audit.md](./docs/audits/dashboard-field-guidance-audit.md) | **Dashboard field standard** — every new owner-dashboard field needs a clear label + a "where it appears" line + an example placeholder, and prefers select-from-existing over free text. Per-field audit + open gaps (MEH-1539) |
+| [docs/audits/2026-08-business-shape-matrix.md](./docs/audits/2026-08-business-shape-matrix.md) | **מטריצת צורות בית עסק** — 16 צירופים × 6 משטחים, 52 תאים לא-ירוקים עם ציטוט. הפער החמור: עסק ארצי לא נתפס בפילטר "משלוחים" (`producer_listing.py:382` בודק שורות `delivery_areas`, ולארצי אין). הרשמה לא קולטת שום ציר משלוח. קלט ל-MEH-1706 (MEH-1822) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
 
 ## Known Bug Patterns / Gotchas
