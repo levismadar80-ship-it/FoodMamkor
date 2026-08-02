@@ -5,10 +5,10 @@
 const tokens = require("./tailwind.tokens.json");
 
 // MEH-1831: next/font self-hosts the brand families and publishes each one as a
-// CSS variable on <html> (app/[locale]/layout.js). The variable has to lead
-// every stack, otherwise a rule naming "DM Sans" literally matches no
-// @font-face — next/font's faces carry generated names — and silently renders
-// the Heebo/system fallback.
+// CSS variable on <html> (app/[locale]/layout.js). Every family named in a stack
+// needs its variable in front of it, otherwise a rule naming "DM Sans" literally
+// matches no @font-face — next/font's faces carry generated names — and silently
+// renders a system fallback.
 //
 // The prepend happens HERE and not in tailwind.tokens.json because that file is
 // generated from docs/DESIGN.md by `npm run design:export`, and the required CI
@@ -17,12 +17,15 @@ const tokens = require("./tailwind.tokens.json");
 // Matching on the family name rather than the token key keeps docs/DESIGN.md the
 // single owner of which family a token uses — rename a family there and this
 // still follows it.
-// Order matters as much as membership. Each variable is inserted in the same
-// relative position its family already occupied, so the sequence a browser
-// walks is unchanged: DM Sans (latin) before Heebo (Hebrew), never the reverse.
-// Getting this backwards would render Hebrew body text in a latin face on a
-// Hebrew-first site, with nothing failing — see the adjustFontFallback note in
-// app/[locale]/layout.js for the measured instance of exactly that.
+//
+// Order matters as much as membership. A body stack carries TWO variables, and
+// each is inserted in the same relative position its family already occupied, so
+// the sequence a browser walks is unchanged: DM Sans (latin) before Heebo
+// (Hebrew), never the reverse. Getting this backwards would render Hebrew body
+// text in a latin face on a Hebrew-first site, with nothing failing — see the
+// adjustFontFallback note in app/[locale]/layout.js for the measured instance of
+// exactly that. frontend/__tests__/FontVariableTokens.test.js pins both
+// properties.
 const FONT_VAR_BY_FAMILY = [
   ["Frank Ruhl Libre", "var(--font-headline)"],
   ["DM Sans", "var(--font-body)"],

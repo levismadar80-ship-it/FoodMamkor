@@ -83,8 +83,9 @@ const securityHeaders = [
       `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
       // MEH-1831: fonts.googleapis.com dropped from style-src — next/font
-      // self-hosts the three brand families, so no Google stylesheet is
-      // fetched any more.
+      // self-hosts every family, so no Google stylesheet is fetched any more
+      // (neither the <link> in layout.js nor the @import that headed
+      // globals.css).
       `style-src 'self' 'unsafe-inline' https://accounts.google.com${vercelLiveStyle}`,
       // MEH-1831: fonts.gstatic.com is DELIBERATELY KEPT here, against the
       // ticket's acceptance criteria. It is no longer the page's font source

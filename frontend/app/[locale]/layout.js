@@ -27,11 +27,12 @@ import {
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
 
-// MEH-1831: the three brand families are self-hosted by next/font instead of
-// fetched from fonts.googleapis.com at runtime. Two things follow from that and
-// neither is cosmetic: there is no external request in front of first text
-// paint, and next/font emits a size-adjusted local fallback face per family, so
-// the swap from fallback to webfont no longer reflows text (font CLS → 0).
+// MEH-1831: all FOUR Google-hosted families are self-hosted by next/font
+// instead of fetched from fonts.googleapis.com at runtime. Two things follow
+// from that and neither is cosmetic: there is no external request in front of
+// first text paint, and next/font emits a size-adjusted local fallback face per
+// family, so the swap from fallback to webfont no longer reflows text
+// (font CLS → 0).
 // Each family is exposed as a CSS variable on <html>; the consumers are
 // tailwind.config.js (fontFamily, which keeps the literal names behind the
 // variable as its fallback chain) and the three base rules in globals.css.
@@ -259,7 +260,8 @@ export default async function LocaleLayout({ children, params }) {
       <head>
         {/* MEH-1831: the fonts.googleapis/gstatic preconnects and the Google
             Fonts stylesheet that used to sit here are gone — next/font serves
-            all three families from our own origin. */}
+            every family from our own origin, so there is nothing left to
+            preconnect to. */}
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
         <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
