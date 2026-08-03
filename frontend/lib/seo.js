@@ -16,6 +16,7 @@
 // working unchanged.
 import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
+import { parseHours } from "./hours";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -120,13 +121,17 @@ export function buildPageUrl(producer) {
     : `${SITE_URL}/producer/${producer.id}`;
 }
 
-// MEH-452: day-axis mapping for openingHoursSpecification. DAY_ABBR matches
-// the backend opening_hours string format ("Sun-Thu 09:00-18:00"); DAY_FULL
-// holds the schema.org canonical dayOfWeek values. Logic is copied (not
-// imported) from components/OpeningHours.jsx::parseHours — that file is a
-// client component with React/next-intl deps and a different output shape
-// (status map for the UI), so this stays a separate pure helper.
-const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// MEH-452: day-axis mapping for openingHoursSpecification. DAY_FULL holds the
+// schema.org canonical dayOfWeek values.
+//
+// MEH-1870: the parsing itself is NO LONGER copied here. It used to be, with
+// the stated reason that the parser lived in the client component
+// OpeningHours.jsx — but MEH-826 had already extracted it to lib/hours.js,
+// which is pure (no React, no next-intl), so the reason was stale and what
+// remained was two owners of one grammar. Extending the grammar for split
+// hours would have silently dropped every split day from the JSON-LD, because
+// this copy's anchored regex rejects the second range and `continue`s past the
+// whole entry. One owner now: lib/hours.js::parseHours.
 const DAY_FULL = [
   "Sunday",
   "Monday",
@@ -146,34 +151,21 @@ const DAY_FULL = [
  * rather than emitting an empty array.
  */
 function parseOpeningHoursSpec(raw) {
-  if (!raw || typeof raw !== "string") return null;
-  const map = {}; // dayIndex → { open, close }
-  const entries = raw.split(",").map((s) => s.trim()).filter(Boolean);
-
-  for (const entry of entries) {
-    const match = entry.match(/^([A-Za-z]+)(?:-([A-Za-z]+))?\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-    if (!match) continue;
-    const [, startDay, endDay, open, close] = match;
-    const startIdx = DAY_ABBR.findIndex((d) => d.toLowerCase() === startDay.toLowerCase());
-    if (startIdx === -1) continue;
-    const endIdx = endDay
-      ? DAY_ABBR.findIndex((d) => d.toLowerCase() === endDay.toLowerCase())
-      : startIdx;
-    if (endIdx === -1) continue;
-    const indices = endIdx >= startIdx
-      ? Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i)
-      : [startIdx];
-    for (const i of indices) map[i] = { open, close };
-  }
+  if (typeof raw !== "string") return null;
+  const map = parseHours(raw); // dayIndex → [{ open, close }, …]
+  if (!map) return null;
 
   const spec = [];
   for (let i = 0; i < 7; i++) {
-    if (map[i]) {
+    // MEH-1870: a day can carry several ranges. schema.org models that as
+    // several OpeningHoursSpecification entries sharing one dayOfWeek — there
+    // is no "two windows in one entry" form — so a lunch break emits two.
+    for (const range of map[i] ?? []) {
       spec.push({
         "@type": "OpeningHoursSpecification",
         dayOfWeek: DAY_FULL[i],
-        opens: map[i].open,
-        closes: map[i].close,
+        opens: range.open,
+        closes: range.close,
       });
     }
   }
