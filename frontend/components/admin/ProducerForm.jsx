@@ -828,7 +828,27 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             <input
               type="checkbox"
               checked={form.offers_delivery}
-              onChange={(e) => update("offers_delivery", e.target.checked)}
+              onChange={(e) => {
+                const on = e.target.checked;
+                update("offers_delivery", on);
+                // MEH-1879: the delivery block below is CONDITIONALLY RENDERED
+                // (`form.offers_delivery &&`), and unmounting it leaves its
+                // state untouched — so unticking here used to submit
+                // delivery_nationwide=true alongside offers_delivery=false,
+                // which CHECK producer_nationwide_requires_delivery (MEH-1849)
+                // rejects as a 500 on the manual-approval path.
+                // All THREE fields the block owns are cleared, mirroring the
+                // owner dashboard's normalisation (edit/cards.jsx). delivery_
+                // cities is included deliberately: it submits as
+                // delivery_area_cities ungated, so leaving it would write
+                // delivery_areas rows onto a business declaring no delivery —
+                // the cross-table contradiction no CHECK can express.
+                if (!on) {
+                  update("delivery_nationwide", false);
+                  update("delivery_cities", []);
+                  update("delivery_excluded_cities", []);
+                }
+              }}
               className="w-4 h-4 accent-primary"
             />
             {t("producers.form.fields.offers_delivery")}
