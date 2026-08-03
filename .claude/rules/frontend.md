@@ -46,6 +46,22 @@ Either the claim is worth a test or it is worth deleting. The recurring
 PR-template checkbox is the cheap half of the same job — it catches drift at the
 moment it is introduced, which is the only moment anyone knows about it.
 
+> **How this squares with the `(verified …)` / `(as of …, unverified)` stamps
+> that MEH-1861 added elsewhere in `.claude/rules/` (2026-08-03).** They are
+> different things and both survive. A *"last checked"* marker is a **chore** —
+> it asserts nothing and asks the next reader to do work. An *as-of* stamp is
+> **provenance** — it says when a claim was last true, so a reader can subtract.
+> `testing.md` already demands exactly that for artifacts ("record the as-of next
+> to the artifact so the next reader can do the subtraction"), and MEH-1857 does
+> it for code via `LEGACY(date, ticket)`.
+>
+> **This file needed neither, and got neither.** Its dependency claims are the
+> case the rule above prescribes: they carry tests that re-derive them from
+> `node_modules` on every run — `leaflet-inline-writers.test.js` and
+> `leaflet-attribution-default.test.js`, both present and confirmed
+> 2026-08-03. A test is a stamp that re-dates itself, which is strictly better
+> than either. Prefer it wherever it is available; stamp only where it is not.
+
 ---
 
 ## Stack
