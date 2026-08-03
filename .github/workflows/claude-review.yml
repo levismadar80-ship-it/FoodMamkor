@@ -78,16 +78,7 @@ jobs:
           # publicly visible." Diagnostic aid only — turn it back off once the
           # reviewer is proven running.
           show_full_output: true
-          # MEH-1844: Read,Glob,Grep are REQUIRED, not a convenience. The prompt
-          # below orders the reviewer to read CLAUDE.md and docs/CLAUDE-REVIEW.md
-          # before commenting, while the allow-list previously permitted only the
-          # comment tool — so every one of those reads was denied and the job
-          # still posted. Measured: permission_denials_count 4 on PR #2517 (job
-          # 91492418295) and 9 on PR #2529 (job 91541285519), both with
-          # is_error:false. That is the dangerous shape — not a crash, a review
-          # that never read the standards it claims to apply, published under a
-          # green check. Pinning the SHA without this makes it LOOK fixed.
-          claude_args: "--model claude-sonnet-4-6 --allowed-tools mcp__github__add_issue_comment,Read,Glob,Grep"
+          claude_args: "--model claude-sonnet-4-6 --allowed-tools mcp__github__add_issue_comment"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
