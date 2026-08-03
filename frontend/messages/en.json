@@ -875,6 +875,58 @@
         "overflow_heading": "More about this business"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
+    },
+    "offer": {
+      "types": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift on every order",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text_with": {
+        "free_delivery_above": "Free delivery on orders over {amount}",
+        "gift_above": "Gift on orders over {amount}",
+        "first_order": "First-order benefit on orders over {amount}",
+        "pickup_discount": "Self-pickup discount on orders over {amount}"
+      },
+      "units": {
+        "ils": "₪",
+        "units": "units",
+        "liters": "L",
+        "kg": "kg"
+      },
+      "unit_amount": {
+        "ils": "{count} ₪",
+        "units": "{count, plural, one {# unit} other {# units}}",
+        "liters": "{count} L",
+        "kg": "{count} kg"
+      },
+      "card_title": "Offer",
+      "card_subtitle": "One active offer at a time, with an end date.",
+      "scope_helper": "Your offer appears on your page and on your card in listings. You can remove it any time, and it disappears on its own at the end date.",
+      "type_label": "Offer type",
+      "type_none": "No active offer",
+      "threshold_label": "Over what amount or quantity? (optional)",
+      "threshold_hint": "Shown to customers as part of the offer sentence. Leave empty for an unconditional offer.",
+      "threshold_placeholder": "10",
+      "unit_label": "Unit",
+      "headline_label": "Your own line (optional)",
+      "headline_hint": "Shown under the offer on your page. Up to 60 characters, no emoji.",
+      "headline_placeholder": "The gift: a small jar of honey",
+      "expires_label": "Valid until",
+      "expires_hint": "Required. After this date the offer disappears from the site on its own.",
+      "expires_required": "Please choose an end date for the offer",
+      "threshold_pair_required": "The amount or quantity and its unit are set together — both or neither",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "save_cta": "Save",
+      "save_error": "Save failed. Please try again."
     }
   },
   "recipes": {
