@@ -3,9 +3,10 @@
  *
  * This is the frontend half of a two-part guard. The backend half
  * (`tests/test_producer_contract_snapshot.py`) writes the field names of
- * `ProducerListOut` (`backend/app/schemas/schemas.py:1907`) and
- * `ProducerDetailOut` (`:2128`) to a committed JSON file and fails if that file
- * is stale. This test reads the same file and asserts `lib/schemas.js` declares
+ * `ProducerListOut` and `ProducerDetailOut` (classes in
+ * `backend/app/schemas/schemas.py` — grep the names; their line numbers moved
+ * twice on 2026-08-03 alone) to a committed JSON file and fails if that file is
+ * stale. This test reads the same file and asserts `lib/schemas.js` declares
  * every key in it.
  *
  * Both halves ride CI legs that already exist — "Backend tests (pytest)" and

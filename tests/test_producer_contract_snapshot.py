@@ -8,8 +8,10 @@ Touches:  writes backend/app/schemas/producer_contract_snapshot.json when
 Does NOT: assert anything about the frontend — that half lives in
           frontend/__tests__/backend-contract-parity.test.js, which reads the
           same file. This side owns only "the snapshot matches the classes".
-Related:  backend/app/schemas/schemas.py:1907 (ProducerListOut), :2128
-          (ProducerDetailOut); frontend/__tests__/backend-contract-parity.test.js
+Related:  classes ProducerListOut / ProducerDetailOut in
+          backend/app/schemas/schemas.py — grep the names rather than trusting a
+          line number; both moved twice on 2026-08-03 alone.
+          frontend/__tests__/backend-contract-parity.test.js
 History:  MEH-1891 (creation)
 
 Why a committed snapshot rather than a direct comparison: pytest and vitest run
