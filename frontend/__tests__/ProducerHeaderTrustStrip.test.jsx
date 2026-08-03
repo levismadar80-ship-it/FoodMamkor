@@ -19,7 +19,6 @@ vi.mock("next-intl", () => ({
 vi.mock("@/lib/api", () => ({ default: { get: () => Promise.resolve({ data: { reviews: [] } }) } }));
 
 // Stub the child components + Phosphor icons ProducerHeader composes.
-vi.mock("@/components/AvailabilityBadge", () => ({ default: () => <div data-testid="availability" /> }));
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge-row" /> }));
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span data-testid="cat" /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div data-testid="kashrut" /> }));
