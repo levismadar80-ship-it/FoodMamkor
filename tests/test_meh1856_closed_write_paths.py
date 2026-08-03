@@ -1,16 +1,22 @@
 """
 Module:   test_meh1856_closed_write_paths
-Purpose:  Lock the four ownerless write paths closed — address, slug,
-          lactose_free_facility, pickup_points are no longer writable through
-          PUT /producers/me. Each was accepted by the API with no editor
-          anywhere in the owner dashboard (MEH-1851 dispositions).
+Purpose:  Lock the ownerless write paths closed — address, slug,
+          lactose_free_facility, pickup_points, name, starting_price_label and
+          is_available_today are no longer writable through PUT /producers/me.
+          Each was accepted by the API with no editor anywhere in the owner
+          dashboard (MEH-1851 dispositions).
 Does NOT: test the admin (`admin.py`) or import (`producer_import.py`) write
           paths — those stay open by design and keep their own coverage.
           Column existence is untouched; this is about the owner endpoint only.
+          Does NOT cover the OTHER paths that legitimately write
+          `is_available_today` (POST /producers/me/availability-state and the
+          legacy /availability toggle) — those are `test_availability_*`'s.
 Related:  backend/app/routers/producer_me.py (_PRODUCER_WRITABLE_FIELDS) ·
           tests/test_api.py::TestReservedSlugs (slug's own contract)
-History:  MEH-1856 (creation), implementing the REMOVE-WRITE dispositions
-          from MEH-1851.
+History:  MEH-1856 (creation), implementing the first four REMOVE-WRITE
+          dispositions from MEH-1851; MEH-1851 rows 1/19/39 (extension) added
+          name, starting_price_label, is_available_today after Sapir's 03/08
+          ruling changed the first two from EXPOSE to REMOVE-WRITE.
 """
 
 import ast
@@ -31,6 +37,13 @@ CLOSED_FIELDS = {
     "slug": "some-owner-chosen-slug",
     "lactose_free_facility": "dedicated",
     "pickup_points": True,
+    # MEH-1851 rows 1 · 19 · 39 (Sapir's ruling, 03/08). All three are declared
+    # on ProducerUpdate (schemas.py :1301 name, :1332 starting_price_label,
+    # :1369 is_available_today), so they parse and are dropped by the handler's
+    # whitelist loop — the same ignored-not-rejected shape as the four above.
+    "name": "שם עסק אחר לגמרי",
+    "starting_price_label": "מ-₪999",
+    "is_available_today": True,
 }
 
 # Sanity anchor: a field that IS still owner-writable. If the whitelist were
@@ -50,6 +63,9 @@ def owner_and_producer(db):
     producer.slug = "original-slug"
     producer.lactose_free_facility = "unknown"
     producer.pickup_points = False
+    producer.name = "השם המקורי של העסק"
+    producer.starting_price_label = "מ-₪10"
+    producer.is_available_today = False
     db.commit()
     db.refresh(producer)
     return user, producer
@@ -81,8 +97,8 @@ def test_closed_field_is_ignored_not_rejected(
     )
 
 
-def test_all_four_sent_together_are_ignored(client, db, owner_and_producer):
-    """The realistic attack shape: one payload carrying all four at once."""
+def test_all_closed_fields_sent_together_are_ignored(client, db, owner_and_producer):
+    """The realistic attack shape: one payload carrying every closed field."""
     user, producer = owner_and_producer
     before = {f: getattr(producer, f) for f in CLOSED_FIELDS}
 
@@ -143,10 +159,20 @@ def _read_whitelist() -> set[str]:
     raise AssertionError("could not find _PRODUCER_WRITABLE_FIELDS in the source")
 
 
-def test_whitelist_does_not_contain_the_four():
-    """Absence assertion — 4 before this ticket, 0 after."""
+def test_whitelist_does_not_contain_any_closed_field():
+    """Absence assertion — every closed field appears 0 times in the whitelist.
+
+    Numeric form (removal spec, per_ticket_protocol.2): 7 fields checked,
+    expected exactly 0 present, not 1. MEH-1856 closed 4; MEH-1851 rows
+    1/19/39 closed the remaining 3.
+    """
     whitelist = _read_whitelist()
 
+    assert len(CLOSED_FIELDS) == 7, (
+        f"expected 7 closed fields, got {len(CLOSED_FIELDS)} — update this count "
+        f"deliberately when a disposition adds one, so the absence assertion "
+        f"cannot silently shrink"
+    )
     present = sorted(f for f in CLOSED_FIELDS if f in whitelist)
     assert present == [], f"still writable by the owner: {present}"
     # Positive control on the same parsed object: proves the parse found the
