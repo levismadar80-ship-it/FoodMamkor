@@ -82,9 +82,12 @@ export default function MapPage() {
   // distance labels, so "מרחק" orders by exactly what the user sees.
   const [sortBy, setSortBy] = useState(null);
   const userLoc = useUserLocation();
-  // MEH-1864: the requested axis, before the rating-data gate below (the gate
-  // needs `feed`, which is established further down).
-  const requestedSort = sortBy ?? (userLoc ? "nearest" : "newest");
+  // MEH-1864: the auto default is now read from two places (here and the
+  // rating-data fallback below), so it is named once instead of spelled twice.
+  const autoSort = userLoc ? "nearest" : "newest";
+  // The requested axis, before the rating-data gate below (the gate needs
+  // `feed`, which is established further down).
+  const requestedSort = sortBy ?? autoSort;
 
   // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
   // bottom strip of the full-bleed map and clips a marker there. Reserve that
@@ -241,13 +244,12 @@ export default function MapPage() {
   // read straight off it — no extra request. An axis already selected when the
   // feed drops below the threshold falls back to the auto default rather than
   // leaving the <select> on a value it no longer renders.
-  const ratingSortEnabled = isRatingSortEnabled(feed.allProducers);
+  const ratingSortEnabled = useMemo(
+    () => isRatingSortEnabled(feed.allProducers),
+    [feed.allProducers],
+  );
   const effectiveSort =
-    requestedSort === "rating" && !ratingSortEnabled
-      ? userLoc
-        ? "nearest"
-        : "newest"
-      : requestedSort;
+    requestedSort === "rating" && !ratingSortEnabled ? autoSort : requestedSort;
   const filters = useMapFilters({
     allProducers: feed.allProducers,
     categories: feed.categories,

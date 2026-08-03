@@ -39,12 +39,19 @@ export function countRatedProducers(list) {
  * `list` may be a full client-side feed (/map) OR a `?sort=rating` window of
  * exactly RATING_SORT_THRESHOLD rows (/producers SSR). The window is a sound
  * source for this question, not a pagination guess: review stars are
- * `ge=1, le=5` (schemas.py:2391), so every reviewed business has
- * `avg_rating >= 1` while an unreviewed one has 0.0 or NULL — and
- * `?sort=rating` orders `avg_rating` DESC with NULLs last
- * (producer_listing.py:164-172). Every reviewed business therefore sorts
- * strictly above every unreviewed one, so a top-N window that holds fewer
- * than N reviewed rows proves fewer than N exist catalog-wide.
+ * `ge=1, le=5` (schemas.py:2391) and `_recompute` writes the pair together
+ * (reviews.py:110-124), so a reviewed business has `avg_rating >= 1` while an
+ * unreviewed one has 0.0 — and `?sort=rating` orders `avg_rating` DESC with
+ * NULLs last (producer_listing.py:164-172). Every reviewed business therefore
+ * sorts strictly above every unreviewed one, so a top-N window holding fewer
+ * than N reviewed rows means fewer than N exist catalog-wide.
+ *
+ * That conclusion rests on the `reviews_count >= 1 ⟺ avg_rating >= 1`
+ * invariant, so state it rather than claim the window is exact unconditionally.
+ * Drift in either direction (a reviewed row with a NULL/0 average, an
+ * unreviewed row with a stale average) can only push a reviewed row out of the
+ * window, i.e. UNDERCOUNT — which hides the control. The error is fail-closed,
+ * never a rating sort offered on data that isn't there.
  */
 export function isRatingSortEnabled(list) {
   return countRatedProducers(list) >= RATING_SORT_THRESHOLD;

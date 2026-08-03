@@ -180,7 +180,17 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     // plain default one. (The backend route itself is untouched — a direct
     // GET /producers?sort=rating still answers 200.)
     await waitFor(() => expect(apiGet).toHaveBeenCalled()); // mount settled
+    // `sortCalls()` is the assertion that discriminates: the sibling case in
+    // ProducersClientSort.test.jsx shows the SAME deep-link firing a
+    // `sort=rating` fetch once the gate is open, so zero here is caused by the
+    // gate and not by the deep link being inert.
+    //
+    // (An earlier revision also asserted `window.location.search` lacks
+    // `sort=rating`. That passed for a second reason — beforeEach resets the
+    // URL to "/" and the component only writes the URL on a user action — so
+    // it was green regardless of the gate. Removed rather than kept as
+    // decoration.)
     expect(sortCalls()).toHaveLength(0);
-    expect(window.location.search).not.toContain("sort=rating");
+    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
   });
 });
