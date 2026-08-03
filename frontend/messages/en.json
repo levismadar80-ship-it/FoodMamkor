@@ -849,7 +849,18 @@
         "vacation_msg": "Send a message — they will respond soon"
       },
       "order_window": {
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen"
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
+        "schedule_heading": "When orders are accepted",
+        "schedule_subtitle": "The days and hours this business accepts orders",
+        "days": {
+          "sun": "Sunday",
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday"
+        }
       }
     },
     "card": {
