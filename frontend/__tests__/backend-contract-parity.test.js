@@ -1,0 +1,181 @@
+/**
+ * MEH-1891 — every field the backend serves has a Zod counterpart.
+ *
+ * This is the frontend half of a two-part guard. The backend half
+ * (`tests/test_producer_contract_snapshot.py`) writes the field names of
+ * `ProducerListOut` (`backend/app/schemas/schemas.py:1891`) and
+ * `ProducerDetailOut` (`:2112`) to a committed JSON file and fails if that file
+ * is stale. This test reads the same file and asserts `lib/schemas.js` declares
+ * every key in it.
+ *
+ * Both halves ride CI legs that already exist — "Backend tests (pytest)" and
+ * "Frontend unit tests (vitest)", both under `CI gate (required)`. No
+ * `.github/workflows/**` change was needed or made (CC-deny, MEH-671).
+ *
+ * ── DIRECTION: backend ⊆ frontend, enforced ONE WAY. ────────────────────────
+ * A backend field with no Zod counterpart is RED. The reverse is deliberately
+ * NOT enforced: the frontend may legitimately declare a field the API has not
+ * shipped yet (feature prep), or one removed server-side and awaiting cleanup.
+ * Enforcing both directions would turn every forward declaration red and create
+ * pressure to delete declarations rather than fix contracts — and the direction
+ * that actually produces a user-visible bug is backend→frontend, because
+ * `z.object` STRIPS what it does not declare. That is the mechanism behind all
+ * seven recurrences (MEH-826, 901, 902, 766 ch5, 1412, 1704, 1719).
+ *
+ * ── THE BASELINE, AND WHY IT EXISTS ────────────────────────────────────────
+ * Measured on 03/08/2026: the backend serves 64 list fields and 81 detail
+ * fields; `lib/schemas.js` declares 47 and 51. So 17 list and 30 detail fields
+ * are undeclared TODAY. That is not news — it is exactly defects D1 and D2 in
+ * `docs/audits/producer-schema-call-sites.md` §5, reported there and knowingly
+ * left in place.
+ *
+ * A guard that reds on all 47 of them from its first commit is a guard nobody
+ * can merge, so the pre-existing gap is baselined below and NEW drift is what
+ * fails. Two things keep that from rotting into a permanent excuse:
+ *   - a baselined field that HAS since been declared fails the test, so the
+ *     list can only shrink (it can never silently carry a stale entry);
+ *   - a baselined field the backend no longer serves also fails, so the list
+ *     cannot describe a contract that stopped existing.
+ * Closing the baseline out entirely means declaring those fields in
+ * `lib/schemas.js`, which changes what five parse sites receive — a behaviour
+ * change, and a separate ticket. This ticket only OBSERVES lib/schemas.js.
+ */
+import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { ProducerListSchema, ProducerDetailSchema } from "@/lib/schemas";
+
+const SNAPSHOT_PATH = path.join(
+  process.cwd(),
+  "..",
+  "backend",
+  "app",
+  "schemas",
+  "producer_contract_snapshot.json",
+);
+
+const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8"));
+
+/**
+ * Backend fields with no Zod declaration as of 03/08/2026 — audit D1 (list)
+ * and D2 (detail). NOT an approval: a to-do with a mechanical shape.
+ *
+ * To remove an entry: declare the field in `lib/schemas.js`, then delete the
+ * line here. Doing only the first half fails "the baseline carries no stale
+ * entries" below, so the two cannot drift apart.
+ *
+ * NEVER add to this list to make a red build green. A new backend field with no
+ * Zod counterpart is precisely the bug this file exists to catch; baselining it
+ * is disarming the guard, not satisfying it.
+ */
+const KNOWN_UNDECLARED = {
+  // D1 — served by ProducerListOut, stripped on all five list parse sites.
+  ProducerListOut: [
+    "ambassador",
+    "delivery_cities",
+    "delivery_excluded_cities",
+    "delivery_fee",
+    "delivery_nationwide",
+    "description",
+    "free_delivery_above",
+    "gluten_free_facility",
+    "kashrut_certs",
+    "lactose_free_facility",
+    "organic_certified",
+    "phone_verified",
+    "pickup_points",
+    "status",
+    "vacation_until",
+    "vegan_scope",
+    "vegetarian_scope",
+  ],
+  // D2 — the 17 above (inherited) plus the 13 detail-only fields the Zod
+  // detail schema does not declare. Six of these ARE rendered by the producer
+  // page today (`established_year` ProducerHeader.jsx:241, `products`
+  // ProducerSections.jsx:112, `contact_name` + `owner_bio` OwnerCard.jsx:31/:35,
+  // `whatsapp_group` + `order_window` ContactCard.jsx:125/:252) — they survive
+  // only because that route does not run a stripping parse. See MEH-1888.
+  ProducerDetailOut: [
+    "ambassador",
+    "contact_name",
+    "created_at",
+    "custom_questions",
+    "delivery_cities",
+    "delivery_excluded_cities",
+    "delivery_fee",
+    "delivery_nationwide",
+    "description",
+    "established_year",
+    "free_delivery_above",
+    "gluten_free_facility",
+    "google_place_id",
+    "kashrut_certs",
+    "lactose_free_facility",
+    "order_window",
+    "organic_certified",
+    "owner_bio",
+    "owner_photo_url",
+    "phone_verified",
+    "pickup_points",
+    "products",
+    "report_count",
+    "status",
+    "story_card_url",
+    "updated_at",
+    "vacation_until",
+    "vegan_scope",
+    "vegetarian_scope",
+    "whatsapp_group",
+  ],
+};
+
+const PAIRS = [
+  { backend: "ProducerListOut", zodName: "ProducerListSchema", zod: ProducerListSchema },
+  { backend: "ProducerDetailOut", zodName: "ProducerDetailSchema", zod: ProducerDetailSchema },
+];
+
+describe("MEH-1891 — Pydantic → Zod parity", () => {
+  it("the snapshot file is present and shaped as expected", () => {
+    expect(Array.isArray(snapshot.ProducerListOut)).toBe(true);
+    expect(Array.isArray(snapshot.ProducerDetailOut)).toBe(true);
+    expect(snapshot.ProducerListOut.length).toBeGreaterThan(0);
+    // The header is what tells the next reader not to hand-edit the file.
+    expect(String(snapshot._README)).toMatch(/GENERATED FILE/);
+  });
+
+  describe.each(PAIRS)("$backend → $zodName", ({ backend, zodName, zod }) => {
+    const backendKeys = snapshot[backend];
+    const zodKeys = new Set(Object.keys(zod.shape));
+    const baseline = KNOWN_UNDECLARED[backend];
+
+    it(`every ${backend} field is declared on ${zodName} (or explicitly baselined)`, () => {
+      const missing = backendKeys.filter(
+        (k) => !zodKeys.has(k) && !baseline.includes(k),
+      );
+      expect(
+        missing,
+        `${backend} serves ${missing.length} field(s) that ${zodName} does not declare. ` +
+          "z.object strips undeclared keys, so these vanish silently wherever this schema " +
+          "is parsed. Declare them in lib/schemas.js — do NOT add them to KNOWN_UNDECLARED.",
+      ).toEqual([]);
+    });
+
+    it("the baseline carries no stale entries — every baselined field is still undeclared", () => {
+      const nowDeclared = baseline.filter((k) => zodKeys.has(k));
+      expect(
+        nowDeclared,
+        `These are declared on ${zodName} now. Delete them from KNOWN_UNDECLARED ` +
+          "so the baseline keeps shrinking instead of quietly outliving the gap.",
+      ).toEqual([]);
+    });
+
+    it("the baseline describes the live contract — every baselined field is still served", () => {
+      const gone = baseline.filter((k) => !backendKeys.includes(k));
+      expect(
+        gone,
+        `${backend} no longer serves these. Delete them from KNOWN_UNDECLARED — a ` +
+          "baseline naming fields that do not exist is fiction, not a to-do.",
+      ).toEqual([]);
+    });
+  });
+});
