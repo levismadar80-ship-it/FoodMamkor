@@ -97,4 +97,64 @@ describe("ui/Tooltip", () => {
     fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
     expect(screen.getByRole("tooltip").className).toContain("bottom-full");
   });
+
+  // MEH-1871 — mirrors the ui/Popover contract exactly (separate primitives,
+  // MEH-792: same behaviour, no shared abstraction).
+  describe("overlay mode — dismiss on scroll (MEH-1871)", () => {
+    const renderOverlay = () =>
+      render(
+        <Tooltip content="הסבר" overlay>
+          <span>טריגר</span>
+        </Tooltip>,
+      );
+
+    it("closes when the window scrolls while visible", () => {
+      renderOverlay();
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("closes when an ANCESTOR container scrolls (capture phase)", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      try {
+        renderOverlay();
+        fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+        expect(screen.getByRole("tooltip")).toBeInTheDocument();
+        fireEvent.scroll(container);
+        expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      } finally {
+        container.remove();
+      }
+    });
+
+    it("closes on resize and on orientationchange", () => {
+      renderOverlay();
+      const trigger = screen.getByText("טריגר").parentElement;
+      fireEvent.mouseEnter(trigger);
+      fireEvent(globalThis, new Event("resize"));
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+      fireEvent.mouseEnter(trigger);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      fireEvent(globalThis, new Event("orientationchange"));
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("NON-overlay is unaffected: scroll leaves the anchored bubble visible", () => {
+      render(
+        <Tooltip content="הסבר">
+          <span>טריגר</span>
+        </Tooltip>,
+      );
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      fireEvent.scroll(globalThis);
+      fireEvent(globalThis, new Event("resize"));
+      const bubble = screen.getByRole("tooltip");
+      expect(bubble).toBeInTheDocument();
+      expect(bubble.className).toContain("absolute");
+    });
+  });
 });

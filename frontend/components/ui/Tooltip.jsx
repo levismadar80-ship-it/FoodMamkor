@@ -13,7 +13,9 @@ import { createPortal } from "react-dom";
  * Related:  components/ui/Popover.jsx (the click primitive this mirrors) ·
  *           components/TrustBadge.jsx (the only `overlay` consumer today).
  * History:  MEH-602 (atom); MEH-1459 ("bottom-start" — the clipping workaround
- *           this supersedes on the card surface); MEH-1593 (overlay mode).
+ *           this supersedes on the card surface); MEH-1593 (overlay mode);
+ *           MEH-1871 (overlay dismisses on scroll/resize instead of
+ *           repositioning — see the effect below).
  *
  * MEH-1593: `overlay` mirrors the MEH-1592 Popover fix exactly — portal to
  * <body>, `position: fixed`, flip above a caller-supplied boundary, shift into
@@ -93,17 +95,26 @@ export default function Tooltip({ content, children, position = "top", overlay =
     setPos({ top, start });
   }, [avoidRef]);
 
+  // MEH-1871: measured ONCE per open, then dismissed on the first
+  // scroll/resize/orientationchange — mirrors ui/Popover exactly (the two stay
+  // separate primitives, MEH-792). The reposition-on-scroll loop this replaces
+  // clamped `top` into the viewport, so a bubble whose anchor had scrolled away
+  // pinned at OVERLAY_PAD and rode the viewport instead of leaving with it.
   useIsomorphicLayoutEffect(() => {
     if (!overlayActive) {
       setPos(null);
       return undefined;
     }
     reposition();
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    const dismiss = () => setVisible(false);
+    // Capture phase catches scrolling ancestors (scroll does not bubble).
+    window.addEventListener("scroll", dismiss, { capture: true, passive: true });
+    window.addEventListener("resize", dismiss);
+    window.addEventListener("orientationchange", dismiss);
     return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", dismiss, { capture: true });
+      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("orientationchange", dismiss);
     };
   }, [overlayActive, reposition]);
 

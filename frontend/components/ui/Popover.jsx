@@ -36,7 +36,10 @@ import { createPortal } from "react-dom";
  *           MEH-1334 chunk 3 (mobile bottom-sheet + focus trap);
  *           MEH-1547 (ProducerCard +N becomes a Popover trigger);
  *           MEH-1592 (overlay mode — the +N panel collided with sibling
- *           badge pills + the card title, see below).
+ *           badge pills + the card title, see below);
+ *           MEH-1871 (overlay dismisses on scroll/resize instead of
+ *           repositioning — the clamped reposition pinned the panel to the
+ *           viewport once its anchor scrolled away).
  */
 
 // MEH-1592: overlay-mode geometry. GAP = distance between the panel and the
@@ -160,18 +163,36 @@ export default function Popover({
   }, [avoidRef]);
 
   // Measure AFTER the panel is in the DOM but BEFORE paint.
+  //
+  // MEH-1871: the panel is measured ONCE per open and then DISMISSED on the
+  // first scroll/resize/orientationchange — it is not re-positioned.
+  //
+  // This replaces a reposition-on-scroll loop that was here before. That loop
+  // was not merely insufficient, it produced the reported bug: `reposition`
+  // clamps `top` into the viewport (see the clamp above), so once the anchor
+  // scrolled off-screen the panel stopped tracking it and PINNED at
+  // OVERLAY_PAD — riding the viewport instead of leaving with its anchor
+  // ("בא איתי למעלה", Sapir's 03/08 repro on the +N badge panel). Tracking it
+  // properly needs an autoUpdate/ancestorScroll loop (Floating UI's model);
+  // for a transient tap-disclosure the accepted pattern is dismissal, which is
+  // also what keeps this primitive zero-dependency.
   useIsomorphicLayoutEffect(() => {
     if (!overlayActive) {
       setPos(null);
       return undefined;
     }
     reposition();
-    // `scroll` in capture phase catches scrolling ancestors, not just window.
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    const dismiss = () => setOpen(false);
+    // Capture phase so a scrolling ANCESTOR counts too: scroll does not bubble
+    // to window from a scrollable container, but it does reach window on the
+    // way down. Passive — the handler never calls preventDefault.
+    window.addEventListener("scroll", dismiss, { capture: true, passive: true });
+    window.addEventListener("resize", dismiss);
+    window.addEventListener("orientationchange", dismiss);
     return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", dismiss, { capture: true });
+      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("orientationchange", dismiss);
     };
   }, [overlayActive, reposition]);
 
