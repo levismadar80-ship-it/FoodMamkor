@@ -44,6 +44,16 @@
 
 **לא נבנה כאן שום דבר — בהוראה מפורשת.** זה רשום כסיכון פתוח כדי שה-session הבא יגדיר לו היקף. השאלה הפתוחה: מה בכלל *יכול* לאכוף זאת, בהינתן ש-`.claude/settings.json` ו-`.claude/hooks/**` הם deny לשני הכיוונים (כלל 32) — כלומר CC לא יכולה לבנות את השומר הזה בעצמה גם אם תרצה.
 
+### ⚠️ סיכון פתוח שני — ה-reviewer לעולם לא בודק PR שמשנה את ה-reviewer
+
+`claude-review.yml:27-31` נושא `paths-ignore` (`**/*.md`, `docs/**`, `.changeset/**`, `CHANGELOG.md`). **דיף שנוגע רק ב-`.github/workflows/` אינו מודר** — ולמרות זאת, ב-#2511 (קובץ workflow יחיד) ה-job דיווח `skipped`. כלומר **ה-PR היחיד שמשנה את ה-reviewer הוא בדיוק ה-PR שה-reviewer לא מעריך**, וזאת בלי שאיש ביקש זאת.
+
+**וה-skip נקרא כירוק.** רגל שמדולגת עוברת ב-aggregator (אותה מכניקה שמתועדת ל-docs-only ב-`.claude/rules/testing.md` § "Required status checks", ול-drafts בכלל 21). מי שקורא `Adversarial review (calibration): skipped` לצד `CI gate: success` רואה שער בריא. **היעדרו של ה-reviewer אינו pass.**
+
+זו אותה מחלקה כמו כל השאר בסשן הזה — **no-op שקט לובש פנים בריאות**, בדיוק כמו ה-reviewer עצמו ב-`is_error:false` / `num_turns 22` / `$0.53` ואפס פלט. הפעם המשטח הוא ה-*trigger*, לא ה-*runtime*.
+
+**לא נגעתי בזה** — `.github/workflows/**` הוא CC-deny, וממילא זו הכרעה ולא תיקון: להדיר את `.github/workflows/**` מה-`paths-ignore` פירושו שכל PR של workflow ייסקר, וזה בדיוק מה שלא קרה כאן. ל-session הבא, יחד עם הסיכון של sessions מקבילים.
+
 ### הבא בתור
 
 זנב C של MEH-1859 (כיסוי CI ל-missing-key של next-intl) — **לא להתחיל**; הוכרע כתכנון ולא כהצמדה ל-merge. ‏MEH-1844 נושא כעת שורת DoD מפורשת שמחזירה את `show_full_output` ל-`false` ברגע שריצה אחת מוכיחה תגובת bot — הריפו ציבורי והדגל מדפיס כל פלט כלי.
