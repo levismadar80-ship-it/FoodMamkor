@@ -37,6 +37,53 @@ _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 _MAX_ORDER_RANGES_PER_DAY = 3
 
 
+def _validate_order_day(day: str, hours) -> list[dict[str, str]]:
+    """Validate ONE day's ranges and return them normalised.
+
+    Split out of `_order_window_validator` so that function stays under the
+    C901 complexity ceiling (it hit 12 > 10 once split ranges landed) — and
+    because "is this one day well-formed?" is a separable question from "is
+    this a well-formed week?".
+
+    Accepts the legacy single-dict shape and returns a one-element list.
+    """
+    # Legacy single dict → one-element list. Done before any other check so
+    # both shapes take exactly one validation path.
+    ranges = [hours] if isinstance(hours, dict) else hours
+    if not isinstance(ranges, list) or not ranges:
+        raise ValueError(f"היום {day} חייב לכלול לפחות טווח אחד")
+    if len(ranges) > _MAX_ORDER_RANGES_PER_DAY:
+        raise ValueError(
+            f"אפשר להגדיר עד {_MAX_ORDER_RANGES_PER_DAY} טווחים ביום {day}"
+        )
+
+    day_ranges: list[dict[str, str]] = []
+    prev_close: str | None = None
+    for entry in ranges:
+        if not isinstance(entry, dict) or "open" not in entry or "close" not in entry:
+            raise ValueError(f"היום {day} חייב לכלול שעת פתיחה ושעת סגירה")
+        open_t, close_t = entry["open"], entry["close"]
+        if not (isinstance(open_t, str) and _HHMM_REGEX.match(open_t)) or not (
+            isinstance(close_t, str) and _HHMM_REGEX.match(close_t)
+        ):
+            raise ValueError(
+                f"שעה לא תקינה ליום {day} — הפורמט חייב להיות HH:MM (24 שעות)"
+            )
+        if close_t <= open_t:
+            raise ValueError(f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}")
+        # One comparison covers BOTH ordering and overlap: a later range that
+        # starts before the previous one ended is either out of order or
+        # overlapping, and neither is representable. Adjacency
+        # (next.open == prev.close) is allowed.
+        if prev_close is not None and open_t < prev_close:
+            raise ValueError(
+                f"הטווחים ביום {day} חייבים להיות ממוינים לפי השעה ובלי חפיפה"
+            )
+        prev_close = close_t
+        day_ranges.append({"open": open_t, "close": close_t})
+    return day_ranges
+
+
 def _order_window_validator(v):
     """Validate producers.order_window on write (MEH-1543, MEH-1869).
 
@@ -67,44 +114,7 @@ def _order_window_validator(v):
                 f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
                 + ", ".join(sorted(_ORDER_WINDOW_DAYS))
             )
-        # Legacy single dict → one-element list. Done before any other check so
-        # both shapes take exactly one validation path.
-        ranges = [hours] if isinstance(hours, dict) else hours
-        if not isinstance(ranges, list) or not ranges:
-            raise ValueError(f"היום {day} חייב לכלול לפחות טווח אחד")
-        if len(ranges) > _MAX_ORDER_RANGES_PER_DAY:
-            raise ValueError(
-                f"אפשר להגדיר עד {_MAX_ORDER_RANGES_PER_DAY} טווחים ביום {day}"
-            )
-        day_ranges: list[dict[str, str]] = []
-        prev_close: str | None = None
-        for entry in ranges:
-            if (
-                not isinstance(entry, dict)
-                or "open" not in entry
-                or "close" not in entry
-            ):
-                raise ValueError(f"היום {day} חייב לכלול שעת פתיחה ושעת סגירה")
-            open_t, close_t = entry["open"], entry["close"]
-            if not (isinstance(open_t, str) and _HHMM_REGEX.match(open_t)) or not (
-                isinstance(close_t, str) and _HHMM_REGEX.match(close_t)
-            ):
-                raise ValueError(
-                    f"שעה לא תקינה ליום {day} — הפורמט חייב להיות HH:MM (24 שעות)"
-                )
-            if close_t <= open_t:
-                raise ValueError(f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}")
-            # One comparison covers BOTH ordering and overlap: a later range
-            # that starts before the previous one ended is either out of order
-            # or overlapping, and neither is representable. Adjacency
-            # (next.open == prev.close) is allowed.
-            if prev_close is not None and open_t < prev_close:
-                raise ValueError(
-                    f"הטווחים ביום {day} חייבים להיות ממוינים לפי השעה ובלי חפיפה"
-                )
-            prev_close = close_t
-            day_ranges.append({"open": open_t, "close": close_t})
-        normalized[day] = day_ranges
+        normalized[day] = _validate_order_day(day, hours)
     return normalized
 
 
