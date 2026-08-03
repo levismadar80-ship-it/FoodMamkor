@@ -3,10 +3,13 @@
 /**
  * Module:   HoursEditor
  * Purpose:  Structured Hebrew opening-hours editor for the producer dashboard —
- *           7 day rows (א׳–ש׳), open/closed toggle + two time inputs per open
- *           day, a one-click preset, and a serializer that writes the existing
- *           canonical string ("Sun-Thu 09:00-18:00, Fri 09:00-14:00"). Replaces
- *           the MEH-1242 PR5 free-text field that expected the machine format.
+ *           7 day rows (א׳–ש׳), open/closed toggle + up to MAX_RANGES_PER_DAY
+ *           ranges per open day (two time inputs each), a one-click preset, and
+ *           a serializer that writes the canonical string
+ *           ("Sun-Thu 09:00-18:00, Fri 09:00-13:00 16:00-19:00" — a space
+ *           separates ranges inside a day, a comma separates day groups).
+ *           Replaces the MEH-1242 PR5 free-text field that expected the
+ *           machine format.
  * Does NOT: change storage/API/parseHours — it only builds the string via
  *           lib/hours-serialize and PUTs /producers/me. Consumer display
  *           (OpeningHours.jsx / MapProducerCard) is untouched.
@@ -16,7 +19,8 @@
  *           (MEH-1270 persistent-✓ save pattern this mirrors).
  * History:  MEH-1276 — Google-Business-Profile-style structured editor;
  *           MEH-1344 — revert-to-saved affordance; MEH-1403 — preset became
- *           a labeled two-way toggle (apply ⇄ clear all 7 days).
+ *           a labeled two-way toggle (apply ⇄ clear all 7 days);
+ *           MEH-1870 — several ranges per day (lunch break), add/remove row.
  */
 
 import { useState, useEffect, useMemo } from "react";
