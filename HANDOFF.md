@@ -44,15 +44,21 @@
 
 **לא נבנה כאן שום דבר — בהוראה מפורשת.** זה רשום כסיכון פתוח כדי שה-session הבא יגדיר לו היקף. השאלה הפתוחה: מה בכלל *יכול* לאכוף זאת, בהינתן ש-`.claude/settings.json` ו-`.claude/hooks/**` הם deny לשני הכיוונים (כלל 32) — כלומר CC לא יכולה לבנות את השומר הזה בעצמה גם אם תרצה.
 
-### ⚠️ סיכון פתוח שני — ה-reviewer לעולם לא בודק PR שמשנה את ה-reviewer
+### ⚠️ סיכון פתוח שני — ה-reviewer דילג על ה-PR שמשנה את ה-reviewer. **הסיבה לא נקבעה.**
 
-`claude-review.yml:27-31` נושא `paths-ignore` (`**/*.md`, `docs/**`, `.changeset/**`, `CHANGELOG.md`). **דיף שנוגע רק ב-`.github/workflows/` אינו מודר** — ולמרות זאת, ב-#2511 (קובץ workflow יחיד) ה-job דיווח `skipped`. כלומר **ה-PR היחיד שמשנה את ה-reviewer הוא בדיוק ה-PR שה-reviewer לא מעריך**, וזאת בלי שאיש ביקש זאת.
+**נמדד:** ב-#2511 — דיף של קובץ workflow יחיד — ה-job `Adversarial review (calibration)` דיווח `skipped`.
 
-**וה-skip נקרא כירוק.** רגל שמדולגת עוברת ב-aggregator (אותה מכניקה שמתועדת ל-docs-only ב-`.claude/rules/testing.md` § "Required status checks", ול-drafts בכלל 21). מי שקורא `Adversarial review (calibration): skipped` לצד `CI gate: success` רואה שער בריא. **היעדרו של ה-reviewer אינו pass.**
+**מה שנשלל:** `paths-ignore` ב-`claude-review.yml:27-31` מדיר `**/*.md` · `docs/**` · `.changeset/**` · `CHANGELOG.md` בלבד. **דיף של `.github/workflows/` אינו מודר שם.** כלומר `paths-ignore` **אינו** ההסבר, וניסוח קודם של הפסקה הזו שתלה בו את הסיבה היה שגוי.
 
-זו אותה מחלקה כמו כל השאר בסשן הזה — **no-op שקט לובש פנים בריאות**, בדיוק כמו ה-reviewer עצמו ב-`is_error:false` / `num_turns 22` / `$0.53` ואפס פלט. הפעם המשטח הוא ה-*trigger*, לא ה-*runtime*.
+**מועמד שלא אומת:** `claude-review.yml:52` נושא `if: github.event.pull_request.draft == false` (MEH-925), ו-#2511 **הוא draft**. זה יסביר את ה-skip במלואו — אבל **לא נבדק**: הדרך היחידה לאשש היא להוציא את ה-PR מ-draft ולראות אם ה-job רץ, וזה לא נעשה. עקבי עם #2540/#2542, שאינם draft ושבהם ה-reviewer כן רץ — אבל עקביות אינה הוכחה, ושתי הצורות נבדלות גם בסוג הדיף.
 
-**לא נגעתי בזה** — `.github/workflows/**` הוא CC-deny, וממילא זו הכרעה ולא תיקון: להדיר את `.github/workflows/**` מה-`paths-ignore` פירושו שכל PR של workflow ייסקר, וזה בדיוק מה שלא קרה כאן. ל-session הבא, יחד עם הסיכון של sessions מקבילים.
+**מה שנשאר פתוח בשתי צורות:** (א) מדוע ה-job דילג כאן, ו-(ב) האם PR של workflow **שאינו** draft כן נסקר. אף אחת מהשתיים לא נבדקה.
+
+**וה-skip נקרא כירוק בכל מקרה.** רגל שמדולגת עוברת ב-aggregator (אותה מכניקה שמתועדת ל-docs-only ב-`.claude/rules/testing.md` § "Required status checks", ול-drafts בכלל 21). מי שקורא `Adversarial review (calibration): skipped` לצד `CI gate: success` רואה שער בריא. **היעדרו של ה-reviewer אינו pass** — וזה נכון בלי תלות בשאלה מה גרם ל-skip.
+
+**זה הפריט השלישי בשכבת ה-reviewer שנמדד ולא הוסבר היום**, לצד ספירות ההכחה (4 ב-#2517 · 9 ב-#2529 · 7 ב-#2540, כולן `is_error:false`) ולצד הכשל המקורי שהכרטיס נפתח עליו ושאיש לא שחזר. אותה מחלקה כמו כל השאר בסשן — **no-op שקט לובש פנים בריאות** — והפעם המשטח הוא ה-*trigger*, לא ה-*runtime*.
+
+**לא נחקר ולא נגעתי בזה, בהוראה מפורשת.** `.github/workflows/**` הוא CC-deny ממילא. ל-session הבא, יחד עם הסיכון של sessions מקבילים — ולפני כל תיקון, לקבוע את הסיבה.
 
 ### הבא בתור
 
