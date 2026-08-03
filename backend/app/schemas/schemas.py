@@ -31,26 +31,38 @@ _ORDER_WINDOW_DAYS = frozenset(
 _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
-def _order_window_validator(v):
-    """Validate producers.order_window on write (MEH-1543).
+# MEH-1869: a day may carry several disjoint ranges (morning + evening, the
+# Israeli לunch-break and Friday/מוצ"ש patterns). Capped so the editor stays a
+# form rather than a scheduler.
+_MAX_ORDER_RANGES_PER_DAY = 3
 
-    None passes through — an explicit null clears the field, an omitted field
-    never reaches here (exclude_unset). Any structural or value violation raises
-    ValueError, surfaced by FastAPI as a 422 with the Hebrew detail.
+
+def _validate_order_day(day: str, hours) -> list[dict[str, str]]:
+    """Validate ONE day's ranges and return them normalised.
+
+    Split out of `_order_window_validator` so that function stays under the
+    C901 complexity ceiling (it hit 12 > 10 once split ranges landed) — and
+    because "is this one day well-formed?" is a separable question from "is
+    this a well-formed week?".
+
+    Accepts the legacy single-dict shape and returns a one-element list.
     """
-    if v is None:
-        return None
-    if not isinstance(v, dict):
-        raise ValueError("חלון הזמנות חייב להיות אובייקט של ימים")
-    for day, hours in v.items():
-        if day not in _ORDER_WINDOW_DAYS:
-            raise ValueError(
-                f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
-                + ", ".join(sorted(_ORDER_WINDOW_DAYS))
-            )
-        if not isinstance(hours, dict) or "open" not in hours or "close" not in hours:
+    # Legacy single dict → one-element list. Done before any other check so
+    # both shapes take exactly one validation path.
+    ranges = [hours] if isinstance(hours, dict) else hours
+    if not isinstance(ranges, list) or not ranges:
+        raise ValueError(f"היום {day} חייב לכלול לפחות טווח אחד")
+    if len(ranges) > _MAX_ORDER_RANGES_PER_DAY:
+        raise ValueError(
+            f"אפשר להגדיר עד {_MAX_ORDER_RANGES_PER_DAY} טווחים ביום {day}"
+        )
+
+    day_ranges: list[dict[str, str]] = []
+    prev_close: str | None = None
+    for entry in ranges:
+        if not isinstance(entry, dict) or "open" not in entry or "close" not in entry:
             raise ValueError(f"היום {day} חייב לכלול שעת פתיחה ושעת סגירה")
-        open_t, close_t = hours["open"], hours["close"]
+        open_t, close_t = entry["open"], entry["close"]
         if not (isinstance(open_t, str) and _HHMM_REGEX.match(open_t)) or not (
             isinstance(close_t, str) and _HHMM_REGEX.match(close_t)
         ):
@@ -59,7 +71,51 @@ def _order_window_validator(v):
             )
         if close_t <= open_t:
             raise ValueError(f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}")
-    return v
+        # One comparison covers BOTH ordering and overlap: a later range that
+        # starts before the previous one ended is either out of order or
+        # overlapping, and neither is representable. Adjacency
+        # (next.open == prev.close) is allowed.
+        if prev_close is not None and open_t < prev_close:
+            raise ValueError(
+                f"הטווחים ביום {day} חייבים להיות ממוינים לפי השעה ובלי חפיפה"
+            )
+        prev_close = close_t
+        day_ranges.append({"open": open_t, "close": close_t})
+    return day_ranges
+
+
+def _order_window_validator(v):
+    """Validate producers.order_window on write (MEH-1543, MEH-1869).
+
+    Canonical shape is a LIST of ranges per day:
+        {"sunday": [{"open": "09:00", "close": "13:00"},
+                    {"open": "16:00", "close": "20:00"}]}
+
+    MEH-1869 — parallel change, readers first. The legacy single-dict shape
+    ({"sunday": {"open", "close"}}) is still ACCEPTED and normalised to a
+    one-element list, so rows written before the cutover keep validating and
+    every write leaves the canonical list shape behind. This is a JSONB VALUE
+    change only: the column is untouched, so there is no Alembic revision.
+
+    None passes through — an explicit null clears the field, an omitted field
+    never reaches here (exclude_unset). Any structural or value violation raises
+    ValueError, surfaced by FastAPI as a 422 with the Hebrew detail.
+
+    Returns the NORMALISED value, so the stored row is always the list shape.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("חלון הזמנות חייב להיות אובייקט של ימים")
+    normalized: dict[str, list[dict[str, str]]] = {}
+    for day, hours in v.items():
+        if day not in _ORDER_WINDOW_DAYS:
+            raise ValueError(
+                f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
+                + ", ".join(sorted(_ORDER_WINDOW_DAYS))
+            )
+        normalized[day] = _validate_order_day(day, hours)
+    return normalized
 
 
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
@@ -811,6 +867,34 @@ class DeliveryAreaCreate(BaseModel):
     # ProducerUpdate.delivery_areas (producer_me PUT) — so one field covers
     # them all. None allowed = "בתיאום מראש".
     delivery_day: DeliveryDayField | None = None
+    # MEH-1772: per-area override of producers.delivery_fee. NULL = inherit.
+    # Same three-value semantics as the producer-level field (MEH-1577):
+    # None = not stated, 0 = "משלוח חינם", positive = the fee.
+    delivery_fee: int | None = None
+
+    # REUSES: backend/app/schemas/schemas.py:1604 (ProducerUpdate.
+    # _validate_delivery_fee, MEH-1577) — identical bounds and identical
+    # Hebrew copy, deliberately. The two live on different models (this one
+    # validates a row inside a list; that one a producer field), so Pydantic
+    # cannot share the validator without a mixin that would drag
+    # free_delivery_above — a producer-level-only field — onto this row.
+    #
+    # The upper bound is not decoration: the column is Postgres INTEGER, and
+    # without it a larger value passes validation and raises
+    # NumericValueOutOfRange at flush — a 500, which is exactly what the
+    # no-DB-CHECK design exists to avoid.
+    @field_validator("delivery_fee")
+    @classmethod
+    def _validate_area_delivery_fee(cls, v):
+        if v is None:
+            return None
+        # 0 is legal and load-bearing — "משלוח חינם" to this area, distinct
+        # from NULL ("inherit the producer's fee"). Only negatives rejected.
+        if v < 0:
+            raise ValueError("עלות משלוח לא יכולה להיות שלילית")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("עלות משלוח גבוהה מדי")
+        return v
 
 
 class DeliveryAreaOut(BaseModel):
@@ -818,6 +902,13 @@ class DeliveryAreaOut(BaseModel):
     city: str
     min_order: int | None = None
     delivery_day: str | None = None
+    # MEH-1772: emitted so the public page can render the per-area fee and
+    # fall back to the producer-level one when this is NULL. The fallback is
+    # resolved on the CLIENT (chunk 3), not here — serializing an already
+    # coalesced value would erase the difference between "this area overrides
+    # with the same number" and "this area inherits", which is the one thing
+    # the "משלוח מ-X₪" variance line needs to distinguish.
+    delivery_fee: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -956,6 +1047,151 @@ class ProducerLocationOwnerOut(BaseModel):
     phone: str | None = None
     is_primary: bool = False
     location_precision: str = "exact"
+
+    model_config = {"from_attributes": True}
+
+
+# --- Producer offers (MEH-1823 chunk 2) ---
+# Closed vocabularies, mirrored from the DB CHECKs on producer_offers
+# (models.py `ProducerOffer.__table_args__`, revision b6e1d94a3f27). Kept as
+# module constants so the router, the tests and the 422 message all read the
+# same list — a second hand-written copy is how MEH-272 happened.
+OFFER_TYPES = ("free_delivery_above", "gift_above", "first_order", "pickup_discount")
+THRESHOLD_UNITS = ("ils", "units", "liters", "kg")
+MAX_OFFER_HEADLINE = 60
+
+# MEH-1823: Emoji LOCK on the owner-supplied headline. Ranges mirror
+# routers/alerts.py:376-383, including the MEH-1373 lesson — ZWJ and VS16 are
+# written as explicit \u escapes, never as invisible literals in the class,
+# because copy-paste / linters / merges silently drop or duplicate those.
+# Unanchored (the alerts one is `^`-anchored): an emoji anywhere in a headline
+# is rejected, not stripped, so the owner sees a 422 and fixes her own copy
+# rather than having it silently altered.
+_ZWJ = "\u200d"  # zero-width joiner
+_VS16 = "\ufe0f"  # variation selector-16 (emoji presentation)
+_EMOJI_ANYWHERE = re.compile(
+    "[" + _ZWJ + _VS16 + "\U0001f300-\U0001faff"
+    "\U00002600-\U000027bf"
+    "\U0001f1e6-\U0001f1ff"
+    "]"
+)
+
+
+class ProducerOfferCreate(BaseModel):
+    """MEH-1823: the owner's declaration of her single active offer.
+
+    Validation mirrors the five DB CHECKs rather than replacing them — the
+    CHECKs guard direct-SQL paths (seed / import / psql), this layer turns the
+    same violations into a 422 with a Hebrew message instead of a 500 from a
+    constraint violation. Two rules exist ONLY here because they are not
+    expressible as a CHECK against a moving "today": the future-expiry rule and
+    the headline rules.
+
+    **The threshold pair is optional for EVERY offer_type and is deliberately
+    NOT gated by type** (Sapir, 02/08). "10% off pickup over ₪100" and "first
+    order over ₪150" are both real offers, so which types may carry a threshold
+    is a product question, not a validation one. Do not add a type-conditional
+    branch here — see the note on ProducerOffer in models.py.
+
+    **`is_active` is deliberately NOT a field here.** It used to be, defaulting
+    to True, and `_sync_active_offer` passed it through — so a caller could send
+    `is_active: false` and get the deactivate-then-insert path to write a row
+    that had never been active. That is a fourth state on top of the documented
+    three (omit / null / object), and its visible effect is identical to `null`,
+    which is exactly why nobody would notice it. Activation is the replace
+    logic's business, not the caller's: `_sync_active_offer` hardcodes True.
+
+    **A stray `is_active` is IGNORED, not 422'd, and that is deliberate — do
+    not "harden" this with `extra="forbid"`** (Sapir, 02/08). The frontend
+    (Vercel) and the backend (Railway) deploy independently, so a forbid here
+    turns any frontend-first deploy that still sends the field into a hard 422
+    on save — a self-inflicted outage on the owner's dashboard, in exchange for
+    rejecting a key no client sends. It is also the repo's near-universal
+    convention: `extra="forbid"` appears exactly ONCE in first-party backend
+    code (`services/whatsapp_templates.py:56`, where Meta's exact template
+    contract justifies it) and zero times in this file. Making this one model
+    the exception would buy nothing.
+    """
+
+    offer_type: str
+    threshold_value: int | None = None
+    threshold_unit: str | None = None
+    headline: str | None = None
+    starts_at: date | None = None
+    expires_at: date
+
+    @field_validator("offer_type")
+    @classmethod
+    def _validate_offer_type(cls, v):
+        if v not in OFFER_TYPES:
+            raise ValueError(f"סוג הטבה חייב להיות אחד מ: {', '.join(OFFER_TYPES)}")
+        return v
+
+    @field_validator("threshold_unit")
+    @classmethod
+    def _validate_threshold_unit(cls, v):
+        if v is not None and v not in THRESHOLD_UNITS:
+            raise ValueError(
+                f"יחידת המידה חייבת להיות אחת מ: {', '.join(THRESHOLD_UNITS)}"
+            )
+        return v
+
+    @field_validator("threshold_value")
+    @classmethod
+    def _validate_threshold_value(cls, v):
+        # `is not None`, never truthiness: 0 must reach this check and be
+        # rejected explicitly, not slip through as "absent".
+        if v is not None and v <= 0:
+            raise ValueError("הסכום או הכמות חייבים להיות גדולים מאפס")
+        return v
+
+    @field_validator("headline")
+    @classmethod
+    def _validate_headline(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return None
+        if len(v) > MAX_OFFER_HEADLINE:
+            raise ValueError(f"כותרת ההטבה מוגבלת ל-{MAX_OFFER_HEADLINE} תווים")
+        if _EMOJI_ANYWHERE.search(v):
+            raise ValueError("אין להשתמש באימוג'י בכותרת ההטבה")
+        return v
+
+    @model_validator(mode="after")
+    def _validate_offer_shape(self):
+        # Both-or-neither, same equality form as the DB CHECK.
+        if (self.threshold_value is None) != (self.threshold_unit is None):
+            raise ValueError(
+                "הסכום או הכמות ויחידת המידה נקבעים יחד — או שניהם או אף אחד"
+            )
+        # Israel-tz "today", not server UTC — the MEH-1543 / _validate_vacation_until
+        # precedent, so an owner in Israel isn't blocked on a date still valid
+        # locally. `<` and not `<=`: an offer expiring today is still live today.
+        if self.expires_at < israel_today():
+            # The message states the rule the line above actually enforces.
+            # "חייב להיות עתידי" described a stricter rule than the code has —
+            # today is accepted — so an owner who entered a past date was told
+            # today would fail too. Wording per the PR review.
+            raise ValueError("תאריך הסיום חייב להיות היום או מאוחר יותר")
+        if self.starts_at is not None and self.expires_at <= self.starts_at:
+            raise ValueError("תאריך הסיום חייב להיות אחרי תאריך ההתחלה")
+        return self
+
+
+class ProducerOfferOut(BaseModel):
+    """Public read of an active, unexpired offer. The server never emits an
+    expired one (producer_listing / producers.py filter on expires_at), so a
+    consumer holding this object can render it without re-checking the date."""
+
+    id: UUID
+    offer_type: str
+    threshold_value: int | None = None
+    threshold_unit: str | None = None
+    headline: str | None = None
+    starts_at: date | None = None
+    expires_at: date
 
     model_config = {"from_attributes": True}
 
@@ -1342,6 +1578,16 @@ class ProducerUpdate(BaseModel):
     # whitelist-validated delivery_day per city (DeliveryAreaCreate). Takes
     # precedence over delivery_area_cities in producer_me when both are sent.
     delivery_areas: list[DeliveryAreaCreate] | None = None
+    # MEH-1823 chunk 2: the owner's single offer, written through the same PUT
+    # as delivery_areas. Three-valued on purpose, and the distinction is
+    # load-bearing because `exclude_unset` cannot tell the last two apart on
+    # its own — producer_me consults `model_fields_set`:
+    #   omitted            -> no change (the existing offer is left alone)
+    #   explicit null      -> deactivate the current offer
+    #   an object          -> replace: deactivate any active row, insert this one
+    # Replace-not-update keeps the unique partial index satisfied without an
+    # UPSERT, and leaves the superseded row as history.
+    active_offer: ProducerOfferCreate | None = None
     # MEH-213 — location mode
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
@@ -1780,6 +2026,19 @@ class ProducerListOut(BaseModel):
     # Chunk 3 (map UI) is the consumer; the frontend ProducerSchema (non-strict
     # z.object, schemas.js:7) silently strips this until chunk 3 declares it.
     locations: list[ProducerLocationOut] = []
+    # MEH-1823 chunk 2: the single active, unexpired offer, or None. Exposed on
+    # ListOut (not DetailOut) so ProducerDetailOut inherits it — the MEH-1577
+    # delivery_fee precedent, and what lets the card and the business page read
+    # one field from two endpoints.
+    #
+    # FILTERED SERVER-SIDE, never client-side: producer_listing.py / producers.py
+    # load only rows with is_active AND expires_at >= israel_today(), so an
+    # expired offer does not leave the API at all. A consumer therefore renders
+    # this without re-checking the date, and a leaked expired offer is
+    # impossible rather than merely unlikely. The OfferBadge still refuses to
+    # render an expired one (frontend defence in depth), but that guard should
+    # never fire.
+    active_offer: ProducerOfferOut | None = None
     # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
     # (`producer_queries.py`) from `producer.producer_license_number is not
     # None and stripped`. The raw number is admin-only via ProducerAdminOut.
@@ -2917,6 +3176,20 @@ class EventCreate(BaseModel):
     def _validate_image_url(cls, v):
         return _image_url_validator(v)
 
+    # MEH-1811: registration_url had NO validator and lands directly in an
+    # href (EventDetailClient.jsx:157, ProducerSections.jsx:379), so
+    # "javascript:…" / "data:…" typed into "לינק הרשמה חיצוני" was stored XSS.
+    # `<input type="url">` reports valid=true for both (measured in Chromium,
+    # MEH-1809) and rel="noopener noreferrer" only defends against tabnabbing,
+    # so the server is the only boundary. Same http(s) allowlist as
+    # website/facebook/external_order_form — NOT _image_url_validator, whose
+    # extra netloc-extension rule is image-specific.
+    # REUSES: schemas.py:1122 — ProducerCreate._validate_contact_urls.
+    @field_validator("registration_url")
+    @classmethod
+    def _validate_registration_url(cls, v):
+        return _url_scheme_validator(v)
+
 
 class EventUpdate(BaseModel):
     # MEH-1626 chunk 1: parity with the Create twin. Optional, so an omitted
@@ -2952,6 +3225,14 @@ class EventUpdate(BaseModel):
     @classmethod
     def _validate_image_url(cls, v):
         return _image_url_validator(v)
+
+    # MEH-1811: parity with the Create twin — an event created clean could
+    # otherwise be poisoned on the edit path, which is the same gap the
+    # MEH-1626 chunk-1 note above describes for `title`. See EventCreate.
+    @field_validator("registration_url")
+    @classmethod
+    def _validate_registration_url(cls, v):
+        return _url_scheme_validator(v)
 
 
 class EventOut(BaseModel):

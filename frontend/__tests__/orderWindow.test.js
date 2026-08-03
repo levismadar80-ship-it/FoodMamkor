@@ -37,10 +37,53 @@ describe("daysFromOrderWindow", () => {
   it("maps each stored day onto its index and leaves the rest closed", () => {
     const days = daysFromOrderWindow(WINDOW);
     expect(days).toHaveLength(7);
-    expect(days[0]).toEqual({ open: true, from: "09:00", to: "14:00" });
-    expect(days[4]).toEqual({ open: true, from: "10:00", to: "23:00" });
+    // MEH-1869: a row now carries a LIST of ranges. The legacy single-dict
+    // stored shape reads as exactly one range — that equivalence is the
+    // backward-compat guarantee, so it is asserted rather than assumed.
+    expect(days[0]).toEqual({ open: true, ranges: [{ from: "09:00", to: "14:00" }] });
+    expect(days[4]).toEqual({ open: true, ranges: [{ from: "10:00", to: "23:00" }] });
     // Every other row stays closed.
     [1, 2, 3, 5, 6].forEach((i) => expect(days[i].open).toBe(false));
+  });
+
+  // MEH-1869 — the new capability.
+  it("reads a stored day with several ranges as several editor ranges", () => {
+    const days = daysFromOrderWindow({
+      sunday: [
+        { open: "09:00", close: "13:00" },
+        { open: "16:00", close: "20:00" },
+      ],
+    });
+    expect(days[0]).toEqual({
+      open: true,
+      ranges: [
+        { from: "09:00", to: "13:00" },
+        { from: "16:00", to: "20:00" },
+      ],
+    });
+  });
+
+  it("drops only the malformed range, keeping the good one on the same day", () => {
+    const days = daysFromOrderWindow({
+      sunday: [
+        { open: "09:00", close: "13:00" },
+        { open: "9:00", close: "20:00" },
+      ],
+    });
+    expect(days[0].open).toBe(true);
+    expect(days[0].ranges).toEqual([{ from: "09:00", to: "13:00" }]);
+  });
+
+  it("caps a stored day at 3 ranges rather than rendering a 4th row", () => {
+    const days = daysFromOrderWindow({
+      sunday: [
+        { open: "06:00", close: "07:00" },
+        { open: "08:00", close: "09:00" },
+        { open: "10:00", close: "11:00" },
+        { open: "12:00", close: "13:00" },
+      ],
+    });
+    expect(days[0].ranges).toHaveLength(3);
   });
 
   it("treats null / undefined / {} as seven closed rows (feature unused)", () => {
@@ -63,8 +106,26 @@ describe("daysFromOrderWindow", () => {
 });
 
 describe("serializeOrderWindow", () => {
-  it("round-trips a stored window unchanged", () => {
-    expect(serializeOrderWindow(daysFromOrderWindow(WINDOW))).toEqual(WINDOW);
+  it("normalises a legacy stored window into the canonical list shape", () => {
+    // MEH-1869: writes are ALWAYS the list shape, so a legacy dict does not
+    // round-trip byte-identically — it round-trips SEMANTICALLY, into the shape
+    // the backend validator now stores. Asserting the exact output is what
+    // proves the client and the server agree on the canonical form.
+    expect(serializeOrderWindow(daysFromOrderWindow(WINDOW))).toEqual({
+      sunday: [{ open: "09:00", close: "14:00" }],
+      thursday: [{ open: "10:00", close: "23:00" }],
+    });
+  });
+
+  it("round-trips a canonical multi-range window unchanged", () => {
+    const canonical = {
+      sunday: [
+        { open: "09:00", close: "13:00" },
+        { open: "16:00", close: "20:00" },
+      ],
+      thursday: [{ open: "10:00", close: "23:00" }],
+    };
+    expect(serializeOrderWindow(daysFromOrderWindow(canonical))).toEqual(canonical);
   });
 
   it("returns null when no day is open (the null-clear body)", () => {
@@ -79,9 +140,9 @@ describe("serializeOrderWindow", () => {
 
   it("emits only open days, keyed by the backend day names", () => {
     const days = daysFromOrderWindow(null);
-    days[5] = { open: true, from: "08:00", to: "12:30" };
+    days[5] = { open: true, ranges: [{ from: "08:00", to: "12:30" }] };
     expect(serializeOrderWindow(days)).toEqual({
-      friday: { open: "08:00", close: "12:30" },
+      friday: [{ open: "08:00", close: "12:30" }],
     });
   });
 });

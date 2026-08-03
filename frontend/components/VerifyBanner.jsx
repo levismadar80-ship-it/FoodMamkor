@@ -80,7 +80,7 @@ export default function VerifyBanner() {
       <button
         type="button"
         onClick={handleDismiss}
-        aria-label="סגירת הודעת אימות"
+        aria-label={t("auth.verify.dismiss")}
         className="absolute end-1 top-1/2 -translate-y-1/2 flex items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-text focus-ring"
       >
         <X size={18} aria-hidden="true" />

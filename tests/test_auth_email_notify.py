@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 
 _REGISTER_ACK_DETAIL = (
-    "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."
+    "אם האימייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."
 )
 
 VALID_CONSUMER_REG = {

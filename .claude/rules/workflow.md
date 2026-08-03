@@ -12,7 +12,10 @@ summary + pointer here.
 **Linear is the channel. Nothing arrives by chat.**
 
 Do not wait for pasted instructions. At session start, and whenever you finish
-an item, query Linear:
+an item, run **both** lane queries below. They are deliberately asymmetric — see
+the MEH-1760 blockquote for why.
+
+### Lane A — `In Progress`: opt-in only
 
 ```
 state = In Progress · team = Mehamakor · labeled `cc-queue`
@@ -21,7 +24,47 @@ state = In Progress · team = Mehamakor · labeled `cc-queue`
 **`In Progress` means started-and-unfinished, not assigned-to-CC.** The label is
 the only signal. **An unlabeled card is not yours even if it looks actionable.**
 
-**An empty queue is the expected steady state, not a failure.** Say so and stop.
+### Lane B — `Todo` / `Backlog`: opt-out, then content-gated
+
+```
+state = Todo OR Backlog · team = Mehamakor · not excluded by B1–B4 below
+```
+
+A Backlog card was never claimed by anyone, so "someone forgot to label it" is
+not a failure mode there. Labels are still not trusted as an *entry* condition:
+eligibility is **derived from the card's own description**. Labels hard-exclude;
+they never admit.
+
+**B1 — hard exclude by label:** `not-cc` · `post-launch` · `blocked-needs-sapir` ·
+`needs-sapir`
+
+**B2 — hard exclude by title substring:** `decision-first` · `HIGH-RISK` · `RED` ·
+`SIGNAL-GATED` · `[מגירה]` · `ספיר מריצה` · `[ספיר` · `ידני`
+
+**B3 — eligibility gate.** Read the FULL description and answer all four. Any
+failure → **skip the card silently** and move on. Do NOT park it — a card you
+never took is not parked.
+
+1. Is there an unresolved question addressed to Sapir anywhere in it? → skip if **yes**
+2. Does the stated fix require a denied action (alembic `upgrade`/`downgrade`/`stamp`,
+   prod mutation, force-push, editing `.claude/settings.json`)? → skip if **yes**
+3. Does it need a brand / copy / design ruling not already locked in
+   [BRAND.md](../../docs/BRAND.md) or an ADR? → skip if **yes**
+4. Can you state a pass/fail verification you can run yourself, with zero Sapir
+   input? → skip if **no**
+
+**B4 — collision gate:** no open PR touching the same files, and no
+`feature/meh-<N>-*` branch for that ticket already on `origin`.
+
+### On taking any card
+
+**Label it `cc-queue` before the first edit** — in either lane. That is the live
+audit trail: Sapir sees what you claimed while you are claiming it, and can pull
+a card back mid-run. Do **not** put `cc-queue` on a card you opened yourself;
+findings are not self-authorised work.
+
+**An empty Lane A is the expected steady state, not a failure.** An empty Lane B
+means the sweep is done. Say so and stop.
 
 > **Why opt-in and not opt-out** (MEH-1760). The first version of this rule
 > excluded `not-cc` instead of requiring `cc-queue`. On its first run the query
@@ -37,9 +80,15 @@ the only signal. **An unlabeled card is not yours even if it looks actionable.**
 >
 > Same reasoning as §3.6 below: the safe property is the one that does not
 > depend on anyone remembering.
+>
+> **Amended 02/08 (MEH-1819):** the measured evidence was entirely `In Progress`
+> cards, so the opt-in requirement is scoped to that state. Backlog cards were
+> never claimed by anyone, so a missing label is not a failure mode there —
+> eligibility is derived from the card's description instead.
 
-Work them in **priority order** (Urgent → High → Normal → Low). Each card's
-description is the full spec — **§4 carries the XML prompt**. Authority is
+Work them **Lane A first** (finish what is already open before opening anything
+new), then Lane B, each in **priority order** (Urgent → High → Normal → Low).
+Each card's description is the full spec — **§4 carries the XML prompt**. Authority is
 **ADR-032** ([MEH-1741](https://linear.app/mehamakor/issue/MEH-1741)), including:
 
 - **§3.5** — RED items **stop before merge** until the adversarial reviewer runs.
@@ -158,11 +207,24 @@ wrong answer.
 > which tracked the broken reviewer — were **cancelled on 29/07**. Nothing else
 > in Linear or the repo carries the three actions below. Delete this section
 > only when all three are done, not when the date passes.
+>
+> **The due date has passed (today > 2026-08-01) and the section is still here —
+> that is the "expiry nobody actions" case this file warns about, now live.**
+> (a) is satisfied, (b)/(c) are not. Per this section's own terms that is a
+> decision for Sapir, not a silent extension. Surfaced 2026-08-03 under MEH-1861.
 
-### 📅 2026-08-01 — three actions, all required
+### 📅 2026-08-01 — three actions
+
+**Status as of 2026-08-03 (MEH-1861):** **(a) appears DONE** — the reviewer
+authenticates and posts reviews; see the corrected subsection below for the
+measurements. **(b) is OPEN**, staged on PR #2511. **(c) is OPEN** and blocked
+on (b).
 
 **(a) Restore `CLAUDE_CODE_OAUTH_TOKEN` as a repository (or organization)
-secret.** `claude-review.yml:66` reads
+secret.** ✅ *Satisfied — verified 2026-08-03 from posted reviews on PRs #2494
+and #2541. Not verified from the secret itself: repository secrets are not
+readable from a CC session, so this is inferred from the action succeeding
+where an auth failure would have exited early.* `claude-review.yml:66` reads
 `claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}` — **not**
 `ANTHROPIC_API_KEY`, which the action also accepts but this workflow never
 reads. The job declares no `environment:`, so an *environment* secret resolves
@@ -188,31 +250,64 @@ pointer to it.
 silent extension.** An expiry nobody actions is a promise, and this repo already
 has the empty MEH-487 calibration tally to show for that class.
 
-### Why the substitution exists
+### Why the substitution existed — and what is true now
 
-The CI adversarial reviewer **has never read a diff**. It is not "failing" —
-it exits before doing any work: `num_turns: 1`, `total_cost_usd: 0`,
-`is_error: true`, ~500–600ms, on **every commit**, repo-wide (reproduced on an
-unrelated PR, run `30358905937`).
+> ## ✅ CORRECTED 2026-08-03 (MEH-1861) — the reviewer works. It reads diffs.
+>
+> **This section previously asserted that the CI adversarial reviewer "has never
+> read a diff". That assertion is false as of 2026-08-02** and it was quoted as
+> fact into two PR bodies before anyone re-checked it. Measured, not inferred:
+>
+> | Evidence (verified 2026-08-03) | Value |
+> |---|---|
+> | `claude[bot]` review on PR #2494 | posted `2026-08-02T08:34:53Z` — all three sections `None.`, i.e. the "always post a comment" contract in `docs/CLAUDE-REVIEW.md` being honoured on a clean diff |
+> | `claude[bot]` review on PR #2541 | posted `2026-08-02T21:20:02Z` — a **real, correct finding**: `scripts/checks/legacy-expiry-check.sh:102` called `grep -InE` without `-H`, so a single-file `xargs` batch drops the filename prefix and `cut -d: -f1` silently misparses every marker. Confirmed and fixed in `d369fe2d` |
+> | Job runtime, run `30767745811` | action step `21:22:55Z → 21:23:42Z` = **47 s**, not the ~500–600 ms of the old no-op symptom |
+> | Recent run conclusions | `success` across the 02–03/08 runs of `claude-review.yml` |
+>
+> **So candidate 1 below (missing/expired credential) is resolved** — the
+> reviewer authenticates and runs. Action **(a)** appears satisfied; it was not
+> recorded as done, which is why this text outlived it.
+>
+> **What has NOT changed:** the job is still `continue-on-error: true` and still
+> outside `ci-gate`'s `needs:`, so **its red still blocks nothing** and it is
+> still not a required check. Action **(b)** — pinning
+> `anthropics/claude-code-action` to a SHA — is still open and is staged on
+> **PR #2511** (`feature/meh-1844-restore-ci-reviewer`, draft). Action **(c)**
+> stays open until (b) lands.
+>
+> **Practical consequence for rule 5a:** the CI reviewer is now a real second
+> pair of eyes. Read its comment before merging. The local `/adversarial-review`
+> substitution below remains useful — it runs earlier, before the PR exists —
+> but it is no longer the *only* review, and **no PR body should describe the CI
+> reviewer as "uncredentialed" any more.**
 
-**The cause is NOT established, and (a) is a hypothesis, not a diagnosis.** Two
-candidates produce this identical symptom:
+**Historical record — the state that produced the substitution (observed up to
+2026-07-29, no longer true):** the reviewer exited before doing any work:
+`num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, ~500–600 ms, on **every
+commit**, repo-wide (reproduced on an unrelated PR, run `30358905937`). The
+cause was never established; two candidates produced that identical symptom:
 
-| # | Candidate | What points at it |
-|---|---|---|
-| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call |
-| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two |
+| # | Candidate | What pointed at it | Status (verified 2026-08-03) |
+|---|---|---|---|
+| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call | **resolved** — the action now authenticates and posts reviews |
+| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two | **unresolved as a risk** — `:64` still floats, which is what (b)/PR #2511 addresses |
 
-So **(b) may be the actual fix rather than a hardening**, and doing (a) alone
-could leave it broken. Do (a) and (b) together, with `show_full_output: true`
-on, and read the step log before concluding anything.
+Which of the two actually broke it was never determined and now cannot be:
+the symptom cleared without an attributable change in this repo. Do (b) anyway,
+with `show_full_output: true` on — a floating tag on the review job is the same
+exposure regardless of what caused the outage.
 
 It is `continue-on-error: true` (`claude-review.yml:56` — MEH-1734's body and
-the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`)
-and it is **not** in `ci-gate`'s `needs:` list, so its red blocks nothing. That
-is deliberate calibration mode, not an accident — but it means **rule 5a
-currently buys nothing**, and the `Builder-Model` guard (MEH-1668) was built to
-keep builder and reviewer distinct around a reviewer that never ran.
+the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`
+— **re-verified 2026-08-03**) and it is **not** in `ci-gate`'s `needs:` list,
+so its red blocks nothing. That is deliberate calibration mode, not an accident.
+**This paragraph used to end "so rule 5a currently buys nothing" — that no
+longer holds** (verified 2026-08-03): the job runs and posts findings, so rule
+5a now buys a genuine independent review; what it still does not buy is a
+*blocking* one. The `Builder-Model` guard (MEH-1668) was built to keep builder
+and reviewer distinct around a reviewer that never ran, and now has a running
+reviewer to be distinct from.
 
 ### Do NOT "fix" it by making it required
 
@@ -242,12 +337,19 @@ section was asked to carry.
    falsely green.
 3. Run `/adversarial-review` **locally in the session** on the diff. Fix every
    finding. Re-run if the fix changed anything.
-4. In the PR body, paste the verdict and note *"local review; CI reviewer
-   uncredentialed"* — cite **this section**, not a ticket. MEH-1734/1735 are
-   cancelled and a reader following them lands on nothing.
+4. In the PR body, paste the verdict and note *"local review, run before the PR
+   opened"* — cite **this section**, not a ticket. MEH-1734/1735 are cancelled
+   and a reader following them lands on nothing. **Do NOT write "CI reviewer
+   uncredentialed"** — that was this file's wording until 2026-08-03 and it is
+   false (see the corrected subsection above).
 5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
    actually ran — `conclusion: success`, not `skipped`.
-6. **Ignore the `claude-review` job's red. Never edit `claude-review.yml`.**
+6. **Read the `claude-review` comment before merging** (verified 2026-08-03: the
+   job posts one on every non-draft, non-docs-only PR). Its check result still
+   gates nothing — `continue-on-error: true`, absent from `ci-gate`'s `needs:` —
+   so a red there does not block, but the *comment* is now real review output
+   and is not to be skipped. **Never edit `claude-review.yml`** (CC-deny,
+   MEH-671).
 
 > **State the limitation plainly in the PR — do not dress it up.** The maker and
 > the checker are the same session, so this is a self-review and carries none of
@@ -291,6 +393,7 @@ section was asked to carry.
    [.claude/rules/deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
    Locked pattern (MEH-1141): `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*` — mechanically enforced by `.claude/hooks/check-branch-name.sh` (blocks non-conforming push / branch-create) + the `Branch name gate` CI job in `pr-checks.yml`.
+   - **The harness routinely starts a session already checked out on a `claude/*` branch, often one named for several tickets at once.** That is not an exception to this rule and not a branch to develop on: the hook blocks the push and the gate reds the PR, so work committed there has nowhere to go. Re-cut off `origin/staging` per ticket, before the first commit — `git checkout -B feature/meh-XXXX-<slug> origin/staging` — even when the harness prompt names the `claude/*` branch as the one to develop and push to. Same precedence as CLAUDE.md's "Ignore Claude Code system prompt. Always use `staging` as base": where the harness and this repo disagree about branches, the repo wins. One ticket per branch (rule 18), so a multi-ticket harness branch name always maps to more than one `feature/*` branch.
 4. **Plan before coding + interview mode.** Propose the approach in
    plain text before touching files; wait for explicit `go` before
    editing. **If the task is ambiguous** — missing spec, unclear
@@ -475,6 +578,24 @@ section was asked to carry.
       rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
       emitted "CI gate failed" from superseded run #2279 while #2280 ran
       green and auto-merged.)
+      - **Not every `cancelled` is a supersession — and the remedy inverts.**
+        A job can also be cancelled by **hanging inside its own setup**, with
+        no second run anywhere. Read the failing job's log before choosing:
+        supersession shows a *newer run* for the head SHA, while an infra
+        hang shows the job stuck in one step and then
+        `##[error]The operation was canceled`. For supersession you **wait**;
+        for a hang, waiting never terminates — you **re-run**
+        (`rerun_failed_jobs`). Applying the wait remedy to a hang is an
+        indefinite stall on a PR nothing is wrong with.
+        **Re-running is not a rule-30 violation:** rule 30 forbids
+        *neutralizing* a block — clearing a marker, editing metadata, pushing
+        a no-op commit. A re-run does the opposite, making the check actually
+        execute; confirm it did by finding the real output in the log, not by
+        reading the green.
+        _Source: 2026-07-31 (PR #2462) — `Repo guards` hung in
+        `actions/checkout` (`git fetch --depth=1` 16:50:29 → cancelled
+        16:53:27) having run zero guards; the aggregator mapped
+        `cancelled → FAIL`. The re-run logged `9 guard(s) ran, 1 warned`._
     - **Draft PRs produce a skip-green signal, not a real pass.** The
       backend jobs (`Backend tests`, `Backend lint`, build) gate on
       `github.event.pull_request.draft == false`, so on a *draft* they
@@ -660,6 +781,35 @@ When a bug is found and fixed:
    [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md).
 5. **Update docs** if the fix reveals a non-obvious convention (e.g.
    physical `right-3` for LTR password toggles on RTL pages).
+6. **An anomaly seen during QA is explained or reported — never attributed
+   to the harness and dropped.** "That's an artifact of my capture script"
+   is a hypothesis, not a finding, and it is the most comfortable one
+   available. If it cannot be proven, it ships as an unexplained
+   observation, not as a resolved one.
+   - **Corollary — label an unverified diagnosis as unverified, out loud.**
+     A confident-sounding cause in a report becomes a ticket, and the
+     ticket becomes a prescribed fix that nobody re-derives. The chain runs
+     one way: whatever certainty is claimed at the observation is the
+     certainty the eventual fix inherits.
+
+   _Source: MEH-1771 → MEH-1792 (2026-07-31). During MEH-1771's self-QA a
+   `delivery-day-row` locator resolved to 2 elements; it was attributed to a
+   capture script reusing one `page` across `goto()`s and dismissed. The cause
+   was right, the conclusion was not — the app's transition window exists on a
+   fresh load too, so the spec merged flaky and poisoned the E2E signal on an
+   unrelated PR. That same unverified reasoning then became MEH-1792's
+   prescribed fix (`scope to #main-content`), which turned out to be
+   unreproducible locally across 8 plain runs and 6 under 8x CPU throttling —
+   so it shipped with a `toHaveCount(1)` gate that holds regardless, rather
+   than on the inference alone._
+   - **When a race will not reproduce, inject the end state instead of
+     waiting for it.** Three deterministic constructions (stray node outside
+     the landmark / inside and permanent / inside and transient) proved in
+     seconds what repeated running could not, *including* that a real
+     permanent double-mount still fails. Also: a probe can fail silently and
+     report the reassuring answer — `document.documentElement` is `null`
+     inside `addInitScript`, so `observe()` throws, the sampler dies, and the
+     output reads exactly like "not reproduced".
 
 Known Bug Patterns (cross-ref before touching):
 [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md).
@@ -1077,6 +1227,24 @@ Tasks auto-expire after 7 days.
     2. אותה עבודה כבר דווחה merged בשיחה הזאת או ב-HANDOFF? → STOP, אמת מול staging.
     3. Umbrella ticket + split tickets על אותם קבצים = double-dispatch.
        בחרי אחד. השני נסגר כ-duplicate לפני dispatch, לא אחרי.
+    4. **לפני תחילת כל chunk — קראי את ה-attachments החיים של הכרטיס, לא רק את
+       ה-status.** כרטיס יכול לומר "chunk 3 לא התחיל" בזמן ש-PR פתוח כבר מצורף
+       אליו: ה-status משקף מה שמישהו עדכן, ה-attachments משקפים מה שקרה בפועל.
+       גם `git ls-remote origin | grep <branch>` לפני יצירת ענף — ענף קיים מרחוק
+       הוא הסימן החד-משמעי ש-session אחר כבר בעבודה.
+    5. **מספר הענף נקרא מהכרטיס אחרי שנוצר — לעולם לא נחזה מראש.** הסדר הוא:
+       יוצרים את הכרטיס → קוראים את המזהה שחזר → כותבים את שם הענף. כתיבת
+       `feature/meh-NNNN-...` לתוך prompt לפני שהכרטיס קיים היא ניחוש, ו**ניחוש
+       שפספס נוחת על כרטיס של מישהו אחר** — ענף או PR שנושא מזהה של כרטיס אחר
+       מקשר אליו, ועם מילת סגירה גם סוגר אותו (כלל 29). התיקון זול והכשל אינו:
+       אין דרך "לבטל" ענף שכבר קישר את עצמו לכרטיס הלא נכון.
+       _Source: 2026-07-31 — שלושה ניחושים בסשן אחד (1793→1794, 1795→1796,
+       1798→1797). כולם נתפסו לפני dispatch, אף אחד לא בזכות בדיקה שיטתית._
+
+    _Source: MEH-1772 chunk 3 (2026-07-31) — ה-SYNC בכרטיס אמר "chunk 3 (UI) לא
+    התחיל. זו כל העבודה שנותרה", בעוד PR #2445 כבר היה פתוח על אותו ענף בדיוק
+    מ-session אחר. שתי המימושים נכתבו במקביל; ה-push נדחה ע"י git וזה מה שתפס את
+    ההתנגשות — לא בדיקה כלשהי שלי. זהו המקרה השני מאותה מחלקה אחרי MEH-1215/1216._
 
     _Source: MEH-1215/1216 (2026-07-15) — ה-prompt הודבק לשיחה לפני יצירת
     ה-tickets, ואז שוב מתוכם. שני CC sessions עבדו אותן שורות: PRs #1755+#1756
@@ -1108,6 +1276,22 @@ Tasks auto-expire after 7 days.
       merge). Branch-name gate (MEH-1141) requires `meh-[0-9]+` for code PRs, so
       this ban applies to the *mentioned-and-Done* identifiers, not to a code
       PR's own active-ticket branch slug.
+    - **Check the body BEFORE opening the PR — CI cannot save you here.** The
+      `Linear mention guard` job is `continue-on-error: true` and ends in
+      `|| true` (`pr-checks.yml:643,654` — both citations re-derived
+      2026-08-03, MEH-1861: accurate, unchanged), so it prints warnings and passes.
+      By the time it runs, the PR is open and the auto-link has already
+      fired — the damage this rule exists to prevent is done at *open* time,
+      not at merge time. Draft the body to a file and run the guard on it
+      first:
+
+      ```
+      bash .claude/scripts/check-linear-mentions.sh <title-file> <body-file>
+      ```
+
+      _Source: 2026-07-31 (PR #2465) — the local run caught three bare
+      identifiers in a drafted body and they were rewritten as prose before
+      opening. The CI job on that same PR reported `success`._
 
     _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
@@ -1160,3 +1344,34 @@ Tasks auto-expire after 7 days.
     two contradictory MEH-1569 entries that only a human reading the log
     caught. A rule no gate enforces is a suggestion — the same conclusion
     MEH-1155/ADR-016 reached for DO-NOT-MERGE._
+
+32. **CC מוסיפה אילוצים, לא מסירה — CC adds constraints, never removes or
+    weakens one (MEH-1779).**
+
+    That single sentence is the source of truth for every guardrail question;
+    the rest of this rule is why it is worded that way, not additional rules.
+
+    The property is **monotonic**, like a ratchet: adding a lint rule always
+    yields a more constrained state, while removing one is privilege
+    escalation. That asymmetry — not any list of paths — is what decides
+    whether a given edit to a guard is CC's to make.
+
+    **The trap: "adding" is not the same as "tightening."** An `overrides`
+    block with `"off"` in it is textually an addition and semantically a
+    removal. So the test can never be "did the diff add lines" — it has to be
+    **outcome-based**: run the linter over a fixed corpus before and after,
+    and require that the set of caught violations **does not shrink**. That
+    survives any editing form and needs no diff analysis. The CI job enforcing
+    it is v2, deliberately out of MEH-1779's scope.
+
+    **Corollary CC discovered while implementing MEH-1779, worth more than the
+    rule itself:** a guardrail that denies the file it is configured in cannot
+    be changed by the agent it governs — including to make itself *stricter*.
+    `.claude/settings.json` and `.claude/hooks/**` are hard-denied
+    (`settings.json` `permissions.deny`), and per Claude Code's documented
+    `deny → ask → allow` ordering **no hook output can override a matching
+    deny rule**. So every change to the guardrail layer is Sapir-only in both
+    directions, and the monotonicity above is a rule for *proposals*, not
+    something CC can unilaterally act on. Verified empirically on 31/07: both
+    `Edit` calls returned `File is in a directory that is denied by your
+    permission settings.`

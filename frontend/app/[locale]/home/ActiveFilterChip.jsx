@@ -2,7 +2,6 @@
 
 import { MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { DELIVERY_DAYS } from "@/lib/delivery-days";
 
 /**
  * ActiveFilterChip — dismissible location-filter chip shown above the
@@ -21,8 +20,8 @@ import { DELIVERY_DAYS } from "@/lib/delivery-days";
  * text-primary), Phosphor icons, RTL logical props (ps-/pe-).
  *
  * Does NOT: own filter state or fetching (useHomePage) — purely presentational.
- * The sibling DeliveryDayRow below is the MEH-1645 progressive-disclosure
- * day picker; it renders ONLY while a city filter is active.
+ * The day picker that renders beside it is DeliveryDayRow, which MEH-1825
+ * moved to components/DeliveryDayRow.jsx so /producers mounts the same one.
  */
 export function ActiveFilterChip({ geoActive, cityActive, dayActive, onClear }) {
   const t = useTranslations();
@@ -47,53 +46,6 @@ export function ActiveFilterChip({ geoActive, cityActive, dayActive, onClear }) 
         <span>{label}</span>
         <X size={12} weight="bold" aria-hidden="true" />
       </button>
-    </div>
-  );
-}
-
-/**
- * DeliveryDayRow (MEH-1645) — progressive-disclosure day refinement for the
- * active city filter. Renders NULL unless a city filter is active (the day
- * is a refinement, never a primary chip — the MEH-1461 no-new-quick-chip
- * discipline). One pill per canonical day (lib/delivery-days.js — the exact
- * values GET /producers?delivery_day= accepts); tapping the active day
- * clears it (handled in useHomePage.handleDaySelected).
- *
- * Placement note (Phase 0 correction, documented in the PR): the MEH-1645
- * spec names "FilterSheet", but FilterSheet.jsx is mounted only by /map's
- * FilterChipsBar — and /map is explicitly out of the ticket's scope. The
- * home has no filter sheet; this row beside the ActiveFilterChip is the
- * home-surface equivalent.
- *
- * Does NOT: own filter state or fetching (useHomePage).
- */
-export function DeliveryDayRow({ cityActive, dayActive, onSelectDay }) {
-  const t = useTranslations();
-  if (!cityActive) return null;
-
-  return (
-    <div className="mb-6 flex flex-wrap items-center gap-2" data-testid="delivery-day-row">
-      <span className="text-sm text-fg-muted">{t("home.producers.day_row_label")}</span>
-      {DELIVERY_DAYS.map((day) => {
-        const active = day === dayActive;
-        return (
-          <button
-            key={day}
-            type="button"
-            onClick={() => onSelectDay(day)}
-            aria-pressed={active}
-            aria-label={t("home.producers.day_option_aria", { day })}
-            data-testid={`delivery-day-pill-${day}`}
-            className={`px-3 py-1 rounded-full text-sm border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-              active
-                ? "bg-primary text-white border-primary"
-                : "bg-surface text-text border-border hover:bg-green-50"
-            }`}
-          >
-            {day}
-          </button>
-        );
-      })}
     </div>
   );
 }

@@ -128,6 +128,9 @@ def _build_base_queries(
                 selectinload(Producer.delivery_areas),
                 # MEH-1402 — serialize locations[] on ProducerListOut w/o N+1.
                 selectinload(Producer.locations),
+                # MEH-1823: active_offer reads this collection — eager-load it here
+                # or the property fires one query per producer on every list page.
+                selectinload(Producer.offers),
             )
             .filter(Producer.status == "approved")
         )
@@ -183,6 +186,9 @@ def _build_base_queries(
             selectinload(Producer.delivery_areas),
             # MEH-1402 — locations[] on ProducerListOut (LIST/DETAIL shape parity).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.status == "approved")
         .order_by(*order)
@@ -207,6 +213,15 @@ def _delivery_city_condition(city: str):
 
     Shared by the single `delivery_city` filter and the `delivery_cities`
     region-fallback OR-list (MEH-1487) so the two matching paths never drift.
+
+    MEH-1848: scope alone is not a delivery promise. `offers_delivery` is the
+    owner's own declaration, and nothing in the schema ties it to the scope
+    columns — the only CHECK is `has_physical_location OR offers_delivery`
+    (models.py:388), which says nothing about delivery_nationwide or about
+    delivery_areas rows. So a business that switched delivery off while stale
+    scope rows (or the nationwide flag) remained behind matched this filter and
+    was offered to a consumer as a delivering business. The flag is now a
+    conjunct on BOTH delivery predicates.
     """
     area_match = Producer.delivery_areas.any(
         func.lower(DeliveryArea.city) == city.lower()
@@ -215,7 +230,49 @@ def _delivery_city_condition(city: str):
         Producer.delivery_nationwide.is_(True),
         ~Producer.delivery_excluded_cities.any(city),
     )
-    return or_(area_match, nationwide_match)
+    # `.is_(True)` and not a bare truthiness check: the column is NOT NULL today
+    # (models.py:234) so the two agree, but `.is_(True)` keeps a future NULL
+    # from silently matching rather than relying on that staying true.
+    return and_(
+        Producer.offers_delivery.is_(True),
+        or_(area_match, nationwide_match),
+    )
+
+
+def _has_delivery_condition():
+    """MEH-1836 — "delivers at all": an explicit delivery_areas row OR the
+    nationwide flag.
+
+    The XOR data model (models.py:392 `delivery_nationwide_xor_cities`) means a
+    nationwide producer typically holds ZERO delivery_areas rows, so the
+    original bare `Producer.delivery_areas.any()` made exactly the businesses
+    that deliver *furthest* invisible to the משלוח chip.
+
+    delivery_excluded_cities is deliberately NOT consulted here. This filter
+    asks "does this business deliver?", not "does it deliver to city X" — a
+    nationwide producer with a non-empty exclusion list still delivers, so it
+    still matches. That single conjunct is the whole difference from
+    _delivery_city_condition (:204), which IS city-scoped and must honour the
+    exclusions. Do not "align" the two.
+
+    Both operands are EXISTS/flag predicates rather than a JOIN, so a producer
+    holding a nationwide flag AND area rows still yields exactly one row (the
+    CHECK constraint only bars nationwide + the legacy delivery_cities array,
+    not delivery_areas rows). # REUSES: _delivery_city_condition:214 —
+    nationwide predicate shape.
+
+    MEH-1848: `offers_delivery` is conjoined here too. Note what did NOT change
+    — the exclusion asymmetry above still holds. Both predicates now agree on
+    "the owner says they deliver"; they still disagree, deliberately, on
+    whether delivery_excluded_cities applies.
+    """
+    return and_(
+        Producer.offers_delivery.is_(True),
+        or_(
+            Producer.delivery_areas.any(),
+            Producer.delivery_nationwide.is_(True),
+        ),
+    )
 
 
 def _delivery_day_condition(day: str, city: str | None = None):
@@ -380,8 +437,12 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
             q = q.filter(city_cond)
             count_q = count_q.filter(city_cond)
     elif has_delivery:
-        q = q.filter(Producer.delivery_areas.any())
-        count_q = count_q.filter(Producer.delivery_areas.any())
+        # MEH-1836: was a bare delivery_areas.any(), which nationwide producers
+        # can never satisfy — see _has_delivery_condition for why the exclusion
+        # list is not consulted on this axis.
+        delivery_cond = _has_delivery_condition()
+        q = q.filter(delivery_cond)
+        count_q = count_q.filter(delivery_cond)
 
     city = filters.get("city")
     if city:

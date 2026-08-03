@@ -48,34 +48,47 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// MEH-1770: FAQ set replaced 8 -> 10 (research-backed; money -> ownership ->
+// numbers -> return). The locked copy fixes the Q1..Q10 order, and this array is
+// what produces render order, so each category must hold a CONTIGUOUS run of that
+// sequence — section order therefore follows the copy, not the previous grouping.
+// DO NOT collapse this back to 4 sections. Q10 ("difference") needs its own:
+// it lands after Q9, and `trust` — where it belongs by subject — is already spent
+// on Q7/Q8, so any 4-section arrangement of this sequence mis-files at least one
+// question. `categories.difference` ("ההבדל והאנשים") was approved for exactly
+// this slot; the 4 pre-existing headings are unchanged (MEH-579: an unauthorized
+// heading change cost a revert PR).
 const CATEGORIES = [
   {
     key: "money_value",
     items: [
       { key: "cost", open: true },
-      { key: "value" },
-    ],
-  },
-  {
-    key: "time_effort",
-    items: [
-      { key: "time" },
-      { key: "writing" },
-    ],
-  },
-  {
-    key: "trust",
-    items: [
-      { key: "founder" },
-      { key: "leads" },
+      { key: "revenue_model" },
     ],
   },
   {
     key: "control",
     items: [
+      { key: "customer_ownership" },
+      { key: "analytics" },
+      { key: "repeat_customers" },
       { key: "visibility" },
-      { key: "control" },
     ],
+  },
+  {
+    key: "trust",
+    items: [
+      { key: "reviews" },
+      { key: "license" },
+    ],
+  },
+  {
+    key: "time_effort",
+    items: [{ key: "time" }],
+  },
+  {
+    key: "difference",
+    items: [{ key: "difference" }],
   },
 ];
 

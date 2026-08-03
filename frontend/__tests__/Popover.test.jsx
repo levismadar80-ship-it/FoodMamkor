@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Popover from "@/components/ui/Popover";
 
@@ -179,6 +179,104 @@ describe("ui/Popover", () => {
       expect(panel).toHaveAttribute("role", "tooltip");
       expect(panel.className).toContain("absolute");
       expect(screen.queryByTestId("pop-content-backdrop")).not.toBeInTheDocument();
+    });
+  });
+
+  // MEH-1871: an open overlay panel is portalled to <body> and `position:
+  // fixed`, so it is anchored to the viewport, not to the card. Before this
+  // change the panel repositioned on scroll — and because `reposition` clamps
+  // into the viewport, a panel whose anchor had scrolled away pinned at the
+  // top edge and rode the scroll instead of leaving with it. It now dismisses.
+  describe("overlay mode — dismiss on scroll (MEH-1871)", () => {
+    // The page position is part of the contract: dismissal is triggered by the
+    // viewport MOVING, not by a scroll event arriving.
+    const setScroll = (y) => {
+      Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
+    };
+    afterEach(() => setScroll(0));
+
+    it("closes when the window scrolls while open", () => {
+      renderPopover({ overlay: true });
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.getByTestId("pop-content")).toBeInTheDocument();
+      setScroll(240);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+    });
+
+    // The MEH-1871 regression this suite exists to prevent a SECOND time:
+    // opening a below-the-fold trigger scrolls it into view first, and the
+    // resulting scroll event lands ~150ms AFTER the panel opened, already at
+    // the settled position. Dismissing on that event closes the panel the tap
+    // just opened — measured on e2e badge-tooltip-collision S1 at 375px.
+    it("does NOT close on a scroll event at the SAME position it opened at", () => {
+      setScroll(281);
+      renderPopover({ overlay: true });
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.getByTestId("pop-content")).toBeInTheDocument();
+      fireEvent.scroll(globalThis); // late event, position unchanged
+      expect(screen.getByTestId("pop-content")).toBeInTheDocument();
+      // …and a genuine move still closes it.
+      setScroll(400);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+    });
+
+    it("closes when an ANCESTOR container scrolls (scroll does not bubble — capture does)", () => {
+      // The listener is registered with {capture:true} precisely so an inner
+      // scrollable container counts. A bubble-phase window listener would
+      // never see this event, so this case is what makes `capture` load-bearing.
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      try {
+        renderPopover({ overlay: true });
+        fireEvent.click(screen.getByText("פתחי"));
+        expect(screen.getByTestId("pop-content")).toBeInTheDocument();
+        setScroll(120);
+        fireEvent.scroll(container);
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+      } finally {
+        container.remove();
+      }
+    });
+
+    it("closes on resize and on orientationchange", () => {
+      renderPopover({ overlay: true });
+      fireEvent.click(screen.getByText("פתחי"));
+      fireEvent(globalThis, new Event("resize"));
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.getByTestId("pop-content")).toBeInTheDocument();
+      fireEvent(globalThis, new Event("orientationchange"));
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+    });
+
+    it("NON-overlay is unaffected: scroll leaves the anchored panel open", () => {
+      renderPopover();
+      fireEvent.click(screen.getByText("פתחי"));
+      fireEvent.scroll(globalThis);
+      fireEvent(globalThis, new Event("resize"));
+      const panel = screen.getByTestId("pop-content");
+      expect(panel).toBeInTheDocument();
+      expect(panel.className).toContain("absolute");
+    });
+
+    it("removes its listeners on close, so a later scroll is inert", () => {
+      const spy = vi.spyOn(window, "removeEventListener");
+      renderPopover({ overlay: true });
+      fireEvent.click(screen.getByText("פתחי"));
+      setScroll(300);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+      const removed = spy.mock.calls.map((c) => c[0]);
+      expect(removed).toContain("scroll");
+      expect(removed).toContain("resize");
+      expect(removed).toContain("orientationchange");
+      spy.mockRestore();
+      // Re-open: still works, i.e. cleanup did not tear down the open path.
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.getByTestId("pop-content")).toBeInTheDocument();
     });
   });
 });

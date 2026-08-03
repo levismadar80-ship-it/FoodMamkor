@@ -204,22 +204,61 @@ async def _init_db_background(app: FastAPI) -> None:
 def _run_followup_job() -> None:
     """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
     (the BackgroundScheduler worker thread does not share the request-scoped
-    Session), invokes the per-step sender, and logs the per-step counts.
-    Any exception is swallowed so the scheduler thread itself never dies —
-    onboarding_followup.send_due_followups already fail-isolates per producer.
+    Session), invokes each sender, and logs its counts. Any exception is
+    swallowed so the scheduler thread itself never dies — both senders
+    already fail-isolate per producer.
+
+    MEH-1824: the two passes get INDEPENDENT try/except blocks. They shared
+    one until this change, which cost two things: a session-level failure in
+    send_due_followups (raised outside its own per-producer loop) skipped the
+    pending nudge entirely for that day, and a failure in the nudge pass was
+    reported to Sentry under `task="onboarding_followups"` — the wrong stream
+    to be reading when debugging it. Neither sender is a precondition for the
+    other, so neither should be able to suppress or mislabel the other.
     """
     from app.database import SessionLocal
     from app.services.onboarding_followup import send_due_followups
+    from app.services.pending_nudge import send_pending_nudges
 
     db = SessionLocal()
     try:
-        counts = send_due_followups(db)
-        log.info("[FOLLOWUP] daily run complete counts=%s", counts)
-    except Exception as exc:
-        # MEH-1533: same capture-before-log ordering as _init_db_background.
-        # Daily cadence — cannot flood the Sentry quota.
-        capture_background_exception(exc, task="onboarding_followups")
-        log.error("[FOLLOWUP] daily run crashed", exc_info=True)
+        try:
+            counts = send_due_followups(db)
+            log.info("[FOLLOWUP] daily run complete counts=%s", counts)
+        except Exception as exc:
+            # MEH-1824: roll back BEFORE anything else. A DB-level failure
+            # (OperationalError/ProgrammingError on the candidate query) leaves
+            # the Session in a needs-rollback state, and the very next query on
+            # it raises PendingRollbackError/InternalError instead of running.
+            # Without this the isolation above would hold only for Python-level
+            # errors and collapse for exactly the class most likely to occur —
+            # the nudge pass would still be skipped, just with a nudge-shaped
+            # error message. Measured, not assumed: poisoned session → pass 2
+            # raises InternalError; after rollback → pass 2 succeeds.
+            # Invariant for this function: every except leaves the session
+            # usable for whatever runs next.
+            db.rollback()
+            # MEH-1533: same capture-before-log ordering as _init_db_background.
+            # Daily cadence — cannot flood the Sentry quota.
+            capture_background_exception(exc, task="onboarding_followups")
+            log.error("[FOLLOWUP] daily run crashed", exc_info=True)
+
+        # MEH-1818: the day-1 pending nudge shares this daily tick rather than
+        # registering its own job — same single-replica assumption, same 10:00
+        # UTC cadence. MEH-1824: reached even when the block above raised.
+        try:
+            nudges = send_pending_nudges(db)
+            log.info("[PENDING-NUDGE] daily run complete counts=%s", nudges)
+        except Exception as exc:
+            # Same rollback for the same reason. Nothing runs after this today,
+            # so `finally: db.close()` would cover it — but the invariant is
+            # per-block, not "all but the last", so that appending a third pass
+            # here cannot silently reintroduce the bug this ticket fixed.
+            db.rollback()
+            # Its own Sentry task tag: `background_task:pending_nudge` is a
+            # separate filterable stream from the follow-up sequence.
+            capture_background_exception(exc, task="pending_nudge")
+            log.error("[PENDING-NUDGE] daily run crashed", exc_info=True)
     finally:
         db.close()
 

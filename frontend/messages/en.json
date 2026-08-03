@@ -62,7 +62,8 @@
   },
   "auth": {
     "verify": {
-      "banner": "Verify your email to publish content",
+      "banner": "Verify your email address — it keeps your account secure",
+      "dismiss": "Dismiss verification notice",
       "resend": "Resend",
       "sent": "✓ Sent!",
       "rate_limited": "Rate limited — try again in an hour",
@@ -282,6 +283,9 @@
           "city_label": "City *",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
+          "address_optional_hint": "No exact address? The town is enough.",
+          "address_confirmed": "✓ Location found: {location}",
+          "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
           "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
           "description_label": "Tell us about your business",
@@ -322,7 +326,9 @@
           "declaration_required": "Please confirm the declaration before joining",
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
-          "referral_source_required": "Please select where you heard about us"
+          "referral_source_required": "Please select where you heard about us",
+          "cross_step_notice": "Some details are missing — we took you to the field",
+          "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
         "terms": {
           "intro": "I have read and agree to",
@@ -347,6 +353,10 @@
           "generic": "Connection error — please try again."
         },
         "success": {
+          "title": "Request sent — your business is in review",
+          "body": "We received your details. Our team reviews and approves new businesses, usually within 3 business days.",
+          "next": "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
+          "cta": "To my dashboard",
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
           "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
@@ -425,9 +435,9 @@
       "submit": "Search",
       "placeholders": {
         "q1": "Sourdough bread",
-        "q2": "Organic eggs",
-        "q3": "Goat cheese",
-        "q4": "Field-fresh vegetables"
+        "q2": "Breads and baking",
+        "q3": "Zichron Yaakov",
+        "q4": "Ma'afiyat HaMachmetzet"
       }
     },
     "stats": {
@@ -437,7 +447,8 @@
       "fallback": "Starting now · across Israel"
     },
     "trust": {
-      "lead": "Businesses we've already vetted for you."
+      "lead": "No middleman in between · pickup or delivery, straight from the business",
+      "lead_count": "<num>{count}</num> businesses · each one chosen personally"
     },
     "featured": {
       "eyebrow": "Get to know",
@@ -479,6 +490,7 @@
       "city_chip": "Businesses in {city}",
       "city_day_chip": "Delivery to {city} · {day}",
       "day_row_label": "Delivery day:",
+      "day_row_hint": "Choose an area to filter by delivery day",
       "day_option_aria": "Filter deliveries on {day}",
       "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
       "day_empty_clear_cta": "Remove day filter",
@@ -702,7 +714,10 @@
       "aria_verified": "Verified business. {tooltip}",
       "aria_verified_plain": "Verified business",
       "verified_popover_title": "Verified business",
-      "verified_popover_body": "Every business on Mehamakor is manually approved and operates under license.",
+      "verified_popover_body_license": "Manually approved after checking a valid license.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_exemption": "Manually approved after checking license-exemption documents.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_cosmetics": "Manually approved after checking cosmetics-sector documents.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_generic": "Manually approved.{hasDate, select, yes { Checked on {date}.} other {}}",
       "verified_popover_link": "How do we verify?"
     },
     "detail": {
@@ -860,6 +875,58 @@
         "overflow_heading": "More about this business"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
+    },
+    "offer": {
+      "types": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift on every order",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text_with": {
+        "free_delivery_above": "Free delivery on orders over {amount}",
+        "gift_above": "Gift on orders over {amount}",
+        "first_order": "First-order benefit on orders over {amount}",
+        "pickup_discount": "Self-pickup discount on orders over {amount}"
+      },
+      "units": {
+        "ils": "₪",
+        "units": "units",
+        "liters": "L",
+        "kg": "kg"
+      },
+      "unit_amount": {
+        "ils": "{count} ₪",
+        "units": "{count, plural, one {# unit} other {# units}}",
+        "liters": "{count} L",
+        "kg": "{count} kg"
+      },
+      "card_title": "Offer",
+      "card_subtitle": "One active offer at a time, with an end date.",
+      "scope_helper": "Your offer appears on your page and on your card in listings. You can remove it any time, and it disappears on its own at the end date.",
+      "type_label": "Offer type",
+      "type_none": "No active offer",
+      "threshold_label": "Over what amount or quantity? (optional)",
+      "threshold_hint": "Shown to customers as part of the offer sentence. Leave empty for an unconditional offer.",
+      "threshold_placeholder": "10",
+      "unit_label": "Unit",
+      "headline_label": "Your own line (optional)",
+      "headline_hint": "Shown under the offer on your page. Up to 60 characters, no emoji.",
+      "headline_placeholder": "The gift: a small jar of honey",
+      "expires_label": "Valid until",
+      "expires_hint": "Required. After this date the offer disappears from the site on its own.",
+      "expires_required": "Please choose an end date for the offer",
+      "threshold_pair_required": "The amount or quantity and its unit are set together — both or neither",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "save_cta": "Save",
+      "save_error": "Save failed. Please try again."
     }
   },
   "recipes": {
@@ -1080,6 +1147,7 @@
       "free": "Free",
       "fee": "Delivery: {amount}",
       "fee_free": "Free delivery",
+      "fee_from": "Delivery from {amount}",
       "free_above": "Free over {amount}",
       "delivery_day_group": "{day}",
       "arranged_group": "By arrangement",
@@ -1863,16 +1931,6 @@
         "submitting": "Sending...",
         "submit": "Reject"
       },
-      "badges": {
-        "rabanut": "Rabbinate kosher",
-        "badatz": "Badatz",
-        "chalak": "Chalak",
-        "mehadrin": "Mehadrin",
-        "organic_kosher": "Organic kosher",
-        "shmitta": "Shmita",
-        "kilayim": "Without kilayim",
-        "artisan_dairy": "Farm dairy products"
-      },
       "reminders": {
         "title": "Certificate expiry reminders",
         "subtitle": "Businesses whose kashrut certificate expires within 30 days. Always previewed before sending.",
@@ -2403,7 +2461,12 @@
       "error_title_short": "Title is too short",
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
+      "error_duration_range": "Duration must be between 15 and 1440 minutes",
+      "error_price_negative": "Price cannot be negative",
+      "error_max_participants_min": "Max participants must be at least 1",
       "error_generic": "Error submitting the experience. Please try again.",
+      "error_whole_number": "Please enter a whole number",
+      "error_invalid_url": "That address is not valid — start with https://",
       "save_cta": "Save",
       "field_image_placeholder": "https://res.cloudinary.com/..."
     }
@@ -2659,7 +2722,7 @@
         "tooltip": "Mehadrin kosher supervised by the Beit Din Tzedek"
       },
       "chalak": {
-        "label": "Chalak",
+        "label": "Halak (Glatt) meat",
         "tooltip": "Chalak beef per Sephardic tradition"
       },
       "mehadrin": {
@@ -2974,7 +3037,8 @@
       "clear_aria": "Clear city"
     },
     "address_search": {
-      "placeholder": "Search address..."
+      "placeholder": "Search address...",
+      "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
     }
   },
   "favorites": {
@@ -3208,40 +3272,49 @@
       "money_value": "Money and value",
       "time_effort": "Time and effort",
       "trust": "Trust in Mehamakor",
-      "control": "Control and stance"
+      "control": "Control and stance",
+      "difference": "Difference and people"
     },
     "faq": {
       "cost": {
-        "q": "How much does it cost to sign up?",
-        "a": "Zero. You don't pay us anything — no order commission, no subscription fee. Customers reach you directly on WhatsApp or by phone, and you keep 100% of their payment."
+        "q": "How much does it cost — and what happens when you start charging?",
+        "a": "Your page is free, and there are no transaction commissions — ever. That's a founding principle, not a launch promotion: payment goes between you and your customers only. In the future we'll also offer an upgraded subscription with extra tools for anyone who wants it — but that will be entirely your choice, and the basic page will stay free, always."
       },
-      "value": {
-        "q": "What do I get out of it?",
-        "a": "Two things you didn't have before:\n\n**That people will find you on Google.** Someone searching Google for local food — finds you. Today, if you're not buying an ad budget, you're nearly invisible. With us every business gets a page that ranks in search.\n\n**A stable page that doesn't disappear.** Instagram disappears after 24 hours. WhatsApp disappears when someone isn't in the group. Your page on Mehamakor — stays. With your story, your photos, and the contact channels you choose. You can share it as a link and put it in your Instagram bio."
+      "revenue_model": {
+        "q": "If everything is free — how does Mehamakor make money?",
+        "a": "Right now? It doesn't. Mehamakor is a young project, and I'm building it because I believe real, local food deserves a home. In the future the revenue will come from the upgraded subscription — extra tools that businesses choose, willingly. Not from commissions on your transactions, and not from selling a spot at the top of the list. That's how our interest stays aligned with yours: the site succeeds only if it genuinely works for you."
       },
-      "time": {
-        "q": "How long will this take me?",
-        "a": "About 10 minutes for the initial setup. After that — you don't manage anything else with us. You keep working the way you work. If something changes — opening hours, a new product, a break — you update it with one tap, or send me a message on WhatsApp and I'll update."
+      "customer_ownership": {
+        "q": "Who gets the customers — you or me?",
+        "a": "You do. Every enquiry reaches you directly on WhatsApp (or another channel you choose). We don't stand in the middle, we don't see the payment, and your relationship with your customers stays yours — even if one day you decide to leave."
       },
-      "writing": {
-        "q": "I don't know how to write about myself. Will the page look thin?",
-        "a": "You don't have to write it alone. Tell me about your business in whatever way you usually write — WhatsApp, Instagram, however is comfortable — and I'll help phrase it. Phone photos are great, you don't need a professional photographer. If you want — we can spend 15 minutes on the phone and build it together."
+      "analytics": {
+        "q": "How will I know if this is even working for me?",
+        "a": "You get your own dashboard: how many viewed your page this week, how many tapped WhatsApp, which cities they came from, and how many saved you to their favourites. No need to guess — you can see it."
       },
-      "founder": {
-        "q": "Who's behind Mehamakor?",
-        "a": "I'm Sapir, from Zikhron Ya'akov. I built Mehamakor because I was also looking for places to buy real, local food, and it was hard — WhatsApp groups, Instagram searches. I wanted one place. I'm on my own for now, no investors, no big company. You can talk to me on WhatsApp directly and ask anything you want."
-      },
-      "leads": {
-        "q": "The customers who arrive through you — yours or mine?",
-        "a": "Yours. Completely. Customers reach out to you directly on WhatsApp or by phone — you get their details, you manage the relationship. We're not in the middle, we don't see the messages, we don't take their info. Even if Mehamakor closed tomorrow, the customers who reached you through us stay yours. It's the opposite of Wolt or Yango."
+      "repeat_customers": {
+        "q": "What makes customers come back to me?",
+        "a": "Everyone who saves you to their favourites gets an automatic update whenever you have something new — a product, an event, a recipe or a delivery area. Like a mailing list that works for you, without you having to manage it."
       },
       "visibility": {
-        "q": "I'm already on Instagram and WhatsApp — why do I need another place?",
-        "a": "Instagram only works when someone already follows you. WhatsApp groups only work when someone is already in the group. Mehamakor works even when you're not thinking about it — someone searching Google for local food finds you. It's not instead of your channels, it's in addition.\n\nAnd it matters to know — on Mehamakor there is no comparison. No prices side by side, no star ratings, no \"see 10 similar businesses\" button. Each business stands on its own. The customer sees you, not you-versus-others."
+        "q": "How do I avoid disappearing among all the businesses on the site? Is there paid promotion?",
+        "a": "There is no paid promotion — no business buys a place above you. What sets you apart on Mehamakor is your story, and we help you write it: guides, examples and personal support during your first month. And your page also shows up in Google search — an online presence even if you don't have a site of your own."
       },
-      "control": {
-        "q": "I want to decide who I work with and when.",
-        "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
+      "reviews": {
+        "q": "What happens if someone writes a hurtful review about me anonymously?",
+        "a": "They can't. On Mehamakor there are no anonymous ratings — every review appears with a real name and a real story. And if something still isn't right, write to us and we'll look into it."
+      },
+      "license": {
+        "q": "Why do you require a licence — and what if I'm still in the process?",
+        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after a cross-check against the Ministry of Health's official registry, and a kashrut badge if you have a certificate."
+      },
+      "time": {
+        "q": "How much time and effort does this take from me?",
+        "a": "Signing up is a short form, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
+      },
+      "difference": {
+        "q": "How is this different from Instagram or delivery apps — and who's behind it?",
+        "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
       }
     },
     "showcase": {
@@ -3909,10 +3982,9 @@
         "tooltip_line_today": "Available today = fresh inventory now.",
         "tooltip_line_full": "Busy this week = appears but marked.",
         "tooltip_line_vacation": "On a break = hidden until a date you choose.",
-        "heading": "Availability",
+        "heading": "Current status",
         "info_label": "What's the difference between the states?",
-        "intro": "Choose the status to display to customers on the card and the business page.",
-        "group_aria": "Availability",
+        "intro": "A temporary update that overrides the schedule — like a note on the door.",
         "options": {
           "accepting_orders": "Open to orders",
           "available_today": "Available today",
@@ -4190,6 +4262,11 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
       },
+      "grassFed": {
+        "heading": "Pasture raised",
+        "label": "Grass-fed",
+        "scope_helper": "Adds the grass-fed chip to your business on the map page. Shown as your own declaration."
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",
@@ -4225,6 +4302,17 @@
         "delivery_days_hint": "Shown to customers on your business page — e.g. \"Dispatch on Friday\". Without a choice, \"By arrangement\" is shown.",
         "day_select_aria": "Delivery day for {city}",
         "day_arranged": "By arrangement",
+        "area_fee_label": "Delivery fee for this area (₪)",
+        "area_fee_hint": "Optional — if left empty, we show the business-wide delivery fee",
+        "area_fee_placeholder": "20",
+        "area_fee_aria": "Delivery fee for {city}",
+        "area_fee_inherits": "Inherits {fee} ₪",
+        "area_fee_inherits_free": "Inherits: free delivery",
+        "default_block_title_nationwide": "Nationwide delivery fee",
+        "default_block_hint_nationwide": "This fee applies to all your deliveries.",
+        "area_fee_free": "Free delivery",
+        "default_block_title": "Default for all areas",
+        "default_block_hint": "This fee applies to every delivery area. You can override it per area in the list below.",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4232,7 +4320,7 @@
       },
       "hours": {
         "heading": "Opening hours",
-        "subtitle": "Your opening hours, shown on your business page.",
+        "subtitle": "When the business is physically open. Shown on the map and the business page.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
         "revert_cta": "Discard changes",
@@ -4248,17 +4336,23 @@
         "preset": "Sun–Thu 9:00–18:00, Fri until 14:00",
         "clear_cta": "Clear hours",
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
-        "invalid_range": "Closing time must be after opening time"
+        "invalid_range": "Closing time must be after opening time",
+        "invalid_overlap": "Ranges must be in order and must not overlap",
+        "add_range": "Add range",
+        "remove_range": "Remove range"
       },
       "order_window": {
-        "heading": "Order window",
-        "subtitle": "Until what time each day you accept orders. Separate from opening hours.",
-        "empty_state": "No order window set — your business page won't show order hours.",
+        "heading": "When you take orders",
+        "subtitle": "Your fixed weekly schedule. A day left unmarked is closed for orders that day.",
+        "empty_state": "You haven't set when you take orders yet. Pick days and hours to show them on your page.",
         "toggle_label": "accepting orders this day",
         "toggle_closed": "Not accepting orders",
         "from_label": "opening time",
         "to_label": "closing time",
         "invalid_range": "Closing time must be after opening time",
+        "invalid_overlap": "Ranges must be in order and must not overlap",
+        "add_range": "Add range",
+        "remove_range": "Remove range",
         "save_cta": "Save",
         "saving": "Saving…",
         "save_success": "Order window saved",
@@ -4485,6 +4579,12 @@
       "submit": "Publish event",
       "cancel": "Cancel",
       "error_generic": "Error creating the event — please try again.",
+      "error_whole_number": "Please enter a whole number",
+      "error_invalid_url": "That address is not valid — start with https://",
+      "error_title_required": "An event title is required",
+      "error_date_required": "A date is required",
+      "error_price_negative": "Price cannot be negative",
+      "error_max_participants_min": "Max participants must be at least 1",
       "pending_success_title": "The event was created successfully",
       "pending_success_hint": "The event will be shown to the public once the business is approved",
       "pending_success_dashboard": "Back to business management",
@@ -4841,7 +4941,9 @@
     "trigger": "What's this?",
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
-    "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty."
+    "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
+    "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
+    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",
@@ -4862,6 +4964,10 @@
     "env_body": "Fewer road miles, less packaging, less time in cold storage. And something easy to forget: a region that can feed itself is a stronger region — whatever happens.",
     "start_h": "Where to start",
     "start_body": "That's why Mehamakor exists: one place gathering local businesses — each hand-picked and approved, each with a page telling its story and a direct line to reach it. No commissions, no middlemen.",
+    "changes_h": "What changes along the way",
+    "changes_1": "From the business, straight to you.",
+    "changes_2": "Fewer hands along the way. You know who you bought from.",
+    "changes_3": "We take no commission. The price you see is the business's own.",
     "cta": "Discover businesses in your area",
     "sources_prefix": "Sources:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
@@ -4878,7 +4984,7 @@
       "approval_time": "How long does approval take?"
     },
     "answers": {
-      "register": "You register through a simple 3-step form — completely free!\nOur team checks the details and approves your business usually within 3 business days, and then it appears on the site.",
+      "register": "You register through a short form — completely free!\nOur team checks the details and approves your business usually within 3 business days, and then it appears on the site.",
       "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
     },
     "fallback_reply": "I couldn't understand the question — could you rephrase it?",
