@@ -42,7 +42,6 @@ export function emptyRange() {
 
 const MINUTES_IN_DAY = 24 * 60;
 const NEW_RANGE_LENGTH_MIN = 2 * 60;
-const LAST_MINUTE_OF_DAY = "23:59";
 const HHMM_RE = /^\d{2}:\d{2}$/;
 
 const toHHMM = (min) =>
