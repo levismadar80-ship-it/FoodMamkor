@@ -57,6 +57,16 @@ router = APIRouter(tags=["producers"])
 router.include_router(producer_follows_router)
 
 
+# MEH-1833: the shared CDN policy for the two PUBLIC catalog GETs. 60s at the
+# edge with a 5-minute stale-while-revalidate window — a catalog edit shows up
+# within a minute, and the revalidation happens off the critical path.
+# `public` is load-bearing and is exactly why this must never be applied to an
+# endpoint that reads auth/user state: a shared cache may serve one user's
+# response to another. Mirrors the mechanics of the no-store block in
+# get_kashrut_cert below, with the policy inverted.
+_PUBLIC_CATALOG_CACHE = "public, s-maxage=60, stale-while-revalidate=300"
+
+
 @router.get("/producers", response_model=list[ProducerListOut])
 @limiter.limit("120/minute")
 def list_producers(
@@ -167,6 +177,10 @@ def list_producers(
     )
     if response is not None:
         response.headers["X-Total-Count"] = str(total_count)
+        # MEH-1833: public catalog listing — safe to cache at the edge. Set on
+        # the same guarded branch as X-Total-Count because `response` is an
+        # optional injected param here (defaults to None in direct-call tests).
+        response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE
     return results
 
 
@@ -242,6 +256,9 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
             # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
             # so it doesn't widen the 3-way collection joinedload cartesian).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
@@ -284,6 +301,9 @@ def get_producer(
             # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
             # so it doesn't widen the 3-way collection joinedload cartesian).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.id == producer_id)
         .first()
@@ -430,7 +450,10 @@ def create_producer(
 
 
 @router.get("/categories", response_model=list[CategoryOut])
-def list_categories(db: Session = Depends(get_db)):
+def list_categories(response: Response, db: Session = Depends(get_db)):
+    # MEH-1833: the category list is the most static public payload we serve —
+    # same edge policy as /producers. No auth or user state is read here.
+    response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE
     return db.query(Category).order_by(Category.id).all()
 
 

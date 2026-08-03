@@ -269,6 +269,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         <span className="block text-sm font-medium mb-1">{t("image_label")}</span>
         {form.image_url ? (
           <div className="flex items-center gap-3">
+            {/* raw img: upload preview, same mixed provenance as EventForm (upload.py:115). */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={form.image_url}

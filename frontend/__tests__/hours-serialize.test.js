@@ -3,6 +3,7 @@ import {
   serializeHours,
   daysFromString,
   invalidDayIndices,
+  dayIssues,
   emptyDay,
   DEFAULT_OPEN,
   DEFAULT_CLOSE,
@@ -22,29 +23,29 @@ function days(overrides = {}) {
 describe("serializeHours", () => {
   it("compresses consecutive identical days into a range", () => {
     const model = days({
-      0: { open: true, from: "09:00", to: "18:00" },
-      1: { open: true, from: "09:00", to: "18:00" },
-      2: { open: true, from: "09:00", to: "18:00" },
-      3: { open: true, from: "09:00", to: "18:00" },
-      4: { open: true, from: "09:00", to: "18:00" },
-      5: { open: true, from: "09:00", to: "14:00" },
+      0: { open: true, ranges: [{ from: "09:00", to: "18:00" }] },
+      1: { open: true, ranges: [{ from: "09:00", to: "18:00" }] },
+      2: { open: true, ranges: [{ from: "09:00", to: "18:00" }] },
+      3: { open: true, ranges: [{ from: "09:00", to: "18:00" }] },
+      4: { open: true, ranges: [{ from: "09:00", to: "18:00" }] },
+      5: { open: true, ranges: [{ from: "09:00", to: "14:00" }] },
     });
     expect(serializeHours(model)).toBe("Sun-Thu 09:00-18:00, Fri 09:00-14:00");
   });
 
   it("emits single days for lone open rows and breaks in a run", () => {
     const model = days({
-      0: { open: true, from: "09:00", to: "13:00" },
+      0: { open: true, ranges: [{ from: "09:00", to: "13:00" }] },
       // Mon closed → breaks the run
-      2: { open: true, from: "09:00", to: "13:00" },
+      2: { open: true, ranges: [{ from: "09:00", to: "13:00" }] },
     });
     expect(serializeHours(model)).toBe("Sun 09:00-13:00, Tue 09:00-13:00");
   });
 
   it("does NOT merge adjacent days with different hours", () => {
     const model = days({
-      0: { open: true, from: "09:00", to: "18:00" },
-      1: { open: true, from: "10:00", to: "18:00" },
+      0: { open: true, ranges: [{ from: "09:00", to: "18:00" }] },
+      1: { open: true, ranges: [{ from: "10:00", to: "18:00" }] },
     });
     expect(serializeHours(model)).toBe("Sun 09:00-18:00, Mon 10:00-18:00");
   });
@@ -55,8 +56,8 @@ describe("serializeHours", () => {
 
   it("does not wrap Sat→Sun into a single range", () => {
     const model = days({
-      6: { open: true, from: "09:00", to: "12:00" },
-      0: { open: true, from: "09:00", to: "12:00" },
+      6: { open: true, ranges: [{ from: "09:00", to: "12:00" }] },
+      0: { open: true, ranges: [{ from: "09:00", to: "12:00" }] },
     });
     // Sun is index 0 (first), Sat index 6 (last) — no week-wrap merge.
     expect(serializeHours(model)).toBe("Sun 09:00-12:00, Sat 09:00-12:00");
@@ -66,10 +67,10 @@ describe("serializeHours", () => {
 describe("daysFromString", () => {
   it("prefills the editor model from a canonical string", () => {
     const model = daysFromString("Sun-Thu 09:00-18:00, Fri 09:00-14:00");
-    expect(model[0]).toEqual({ open: true, from: "09:00", to: "18:00" });
-    expect(model[4]).toEqual({ open: true, from: "09:00", to: "18:00" });
-    expect(model[5]).toEqual({ open: true, from: "09:00", to: "14:00" });
-    expect(model[6]).toEqual({ open: false, from: DEFAULT_OPEN, to: DEFAULT_CLOSE });
+    expect(model[0]).toEqual({ open: true, ranges: [{ from: "09:00", to: "18:00" }] });
+    expect(model[4]).toEqual({ open: true, ranges: [{ from: "09:00", to: "18:00" }] });
+    expect(model[5]).toEqual({ open: true, ranges: [{ from: "09:00", to: "14:00" }] });
+    expect(model[6]).toEqual({ open: false, ranges: [{ from: DEFAULT_OPEN, to: DEFAULT_CLOSE }] });
   });
 
   it("returns all-closed rows for an empty or unparseable string", () => {
@@ -84,10 +85,10 @@ describe("daysFromString", () => {
 describe("invalidDayIndices", () => {
   it("flags open days whose close is not after open", () => {
     const model = days({
-      0: { open: true, from: "18:00", to: "09:00" }, // reversed
-      1: { open: true, from: "09:00", to: "09:00" }, // equal
-      2: { open: true, from: "09:00", to: "17:00" }, // valid
-      3: { open: false, from: "18:00", to: "09:00" }, // closed → ignored
+      0: { open: true, ranges: [{ from: "18:00", to: "09:00" }] }, // reversed
+      1: { open: true, ranges: [{ from: "09:00", to: "09:00" }] }, // equal
+      2: { open: true, ranges: [{ from: "09:00", to: "17:00" }] }, // valid
+      3: { open: false, ranges: [{ from: "18:00", to: "09:00" }] }, // closed → ignored
     });
     expect(invalidDayIndices(model)).toEqual([0, 1]);
   });
@@ -114,4 +115,78 @@ describe("round-trip: serialize → parseHours → serialize", () => {
       expect(parseHours(once)).toEqual(parseHours(canonical));
     });
   }
+});
+
+// MEH-1870 — the extended grammar on the write side.
+describe("serializeHours / daysFromString — several ranges per day (MEH-1870)", () => {
+  it("round-trips a split day through the space-separated grammar", () => {
+    const raw = "Fri 09:00-13:00 16:00-19:00";
+    expect(serializeHours(daysFromString(raw))).toBe(raw);
+  });
+
+  it("round-trips a mixed string (single-range group + split group)", () => {
+    const raw = "Sun-Thu 09:00-18:00, Fri 08:00-13:00 16:00-19:00";
+    expect(serializeHours(daysFromString(raw))).toBe(raw);
+  });
+
+  it("merges consecutive days only when the WHOLE range list matches", () => {
+    expect(serializeHours(daysFromString("Sun 09:00-13:00 16:00-19:00, Mon 09:00-13:00 16:00-19:00")))
+      .toBe("Sun-Mon 09:00-13:00 16:00-19:00");
+    // Same morning, different evening → two entries. Merging would silently
+    // drop one day's second range.
+    expect(serializeHours(daysFromString("Sun 09:00-13:00 16:00-19:00, Mon 09:00-13:00")))
+      .toBe("Sun 09:00-13:00 16:00-19:00, Mon 09:00-13:00");
+  });
+
+  it("prefills the editor model with one row per stored range", () => {
+    const model = daysFromString("Fri 09:00-13:00 16:00-19:00");
+    expect(model[5]).toEqual({
+      open: true,
+      ranges: [
+        { from: "09:00", to: "13:00" },
+        { from: "16:00", to: "19:00" },
+      ],
+    });
+  });
+
+  it("caps a stored day at 3 ranges", () => {
+    const model = daysFromString("Fri 06:00-07:00 08:00-09:00 10:00-11:00 12:00-13:00");
+    expect(model[5].ranges).toHaveLength(3);
+  });
+
+  it("EVERY legacy string round-trips byte-identically", () => {
+    for (const raw of [
+      "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+      "Mon 09:00-18:00",
+      "Mon 09:00-18:00, Tue 09:00-14:00",
+      "Sat 00:00-02:00",
+      "Sun-Sat 08:00-20:00",
+    ]) {
+      expect(serializeHours(daysFromString(raw))).toBe(raw);
+    }
+  });
+});
+
+describe("dayIssues (MEH-1870)", () => {
+  const day = (...ranges) => [{ open: true, ranges }];
+
+  it("distinguishes overlap from close<=open", () => {
+    expect(dayIssues(day({ from: "09:00", to: "13:00" }, { from: "12:00", to: "15:00" })))
+      .toEqual([{ index: 0, reason: "invalid_overlap" }]);
+    expect(dayIssues(day({ from: "13:00", to: "09:00" })))
+      .toEqual([{ index: 0, reason: "invalid_range" }]);
+  });
+
+  it("allows an adjacent pair (13:00 → 13:00)", () => {
+    expect(dayIssues(day({ from: "09:00", to: "13:00" }, { from: "13:00", to: "15:00" }))).toEqual([]);
+  });
+
+  it("flags out-of-order ranges as overlap too (one comparison covers both)", () => {
+    expect(dayIssues(day({ from: "16:00", to: "19:00" }, { from: "09:00", to: "13:00" })))
+      .toEqual([{ index: 0, reason: "invalid_overlap" }]);
+  });
+
+  it("ignores closed rows entirely", () => {
+    expect(dayIssues([{ open: false, ranges: [{ from: "18:00", to: "09:00" }] }])).toEqual([]);
+  });
 });

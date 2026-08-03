@@ -8,6 +8,7 @@ import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
+import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
 import { useUserLocation, setUserLocation } from "@/lib/user-location";
@@ -81,7 +82,12 @@ export default function MapPage() {
   // distance labels, so "מרחק" orders by exactly what the user sees.
   const [sortBy, setSortBy] = useState(null);
   const userLoc = useUserLocation();
-  const effectiveSort = sortBy ?? (userLoc ? "nearest" : "newest");
+  // MEH-1864: the auto default is now read from two places (here and the
+  // rating-data fallback below), so it is named once instead of spelled twice.
+  const autoSort = userLoc ? "nearest" : "newest";
+  // The requested axis, before the rating-data gate below (the gate needs
+  // `feed`, which is established further down).
+  const requestedSort = sortBy ?? autoSort;
 
   // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
   // bottom strip of the full-bleed map and clips a marker there. Reserve that
@@ -233,6 +239,17 @@ export default function MapPage() {
   }, []);
 
   const feed = useProducersFeed();
+  // MEH-1864: "לפי דירוג" is offered only once RATING_SORT_THRESHOLD businesses
+  // carry >= 1 review. /map holds the whole feed client-side, so the count is
+  // read straight off it — no extra request. An axis already selected when the
+  // feed drops below the threshold falls back to the auto default rather than
+  // leaving the <select> on a value it no longer renders.
+  const ratingSortEnabled = useMemo(
+    () => isRatingSortEnabled(feed.allProducers),
+    [feed.allProducers],
+  );
+  const effectiveSort =
+    requestedSort === "rating" && !ratingSortEnabled ? autoSort : requestedSort;
   const filters = useMapFilters({
     allProducers: feed.allProducers,
     categories: feed.categories,
@@ -501,7 +518,12 @@ export default function MapPage() {
                   {/* "מרחק" needs a GPS fix to mean anything — disabled without one
                       (the auto default then falls back to newest). */}
                   <option value="nearest" disabled={!userLoc}>{t("map.client.sort.nearest")}</option>
-                  <option value="rating">{t("map.client.sort.top_rated")}</option>
+                  {/* MEH-1864: rating axis only once enough businesses carry a
+                      review — otherwise it orders the list on data almost
+                      nobody has. nearest + newest remain, so the control stays. */}
+                  {ratingSortEnabled && (
+                    <option value="rating">{t("map.client.sort.top_rated")}</option>
+                  )}
                   <option value="newest">{t("map.client.sort.newest")}</option>
                 </select>
                 <CaretDown

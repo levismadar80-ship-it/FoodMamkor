@@ -13,6 +13,30 @@
 # Fail-safe: any pyproject.toml read or detection failure → full block
 # (v2 never blocks fewer cases than v1 except the documented MEH-466 win).
 
+# ---- DO NOT reintroduce an ASK tier here — it does not gate (MEH-1803) ----
+# MEH-1779 item 1 added an ASK_PATHS list at exactly this spot, emitting
+# {"hookSpecificOutput":{"permissionDecision":"ask"}} + exit 0 for
+# frontend/eslint.config.mjs. Live-tested on 31/07: the Edit returned
+# "updated successfully" with NO prompt and NO refusal. The file was really
+# written (sha256 changed, git saw it modified). Reverted here.
+#
+# WHY it failed open — and it is NOT a broken schema. Claude Code evaluates
+#   1) deny rules  2) the session permission mode  3) allow rules  4) hooks.
+# The session was in permissionMode "acceptEdits" (read from the session
+# transcript, not inferred), which approves file edits at step 2 — before a
+# hook decision at step 4 is ever consulted. Same reason `deny` still worked:
+# step 1 precedes the mode. The ask was not overruled, it was never reached.
+#
+# So a hook can only ever make this file MORE restricted, never conditionally
+# open. Under acceptEdits every non-deny hook decision is decorative.
+#
+# THE ROUTE FOR CHANGING THIS FILE, when a change is genuinely needed:
+# write the full intended file to docs/guardrails/eslint.config.PROPOSED.mjs
+# and have Sapir paste it through a PR. That path is independent of the
+# permission mode, survives the agent having no gate at all, and is the
+# "agent proposes, human approves" architecture (OWASP LLM06). It is also how
+# THIS file must be changed — .claude/hooks/** is denied at step 1.
+#
 # ---- Full-block protected paths (suffix match, v1 behavior preserved) ----
 PROTECTED_FULL=(
   "frontend/.eslintrc.json"

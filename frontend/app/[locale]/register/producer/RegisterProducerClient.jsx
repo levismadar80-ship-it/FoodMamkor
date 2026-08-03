@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -10,12 +11,20 @@ import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
+import AddressSearch from "@/components/AddressSearch";
 import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import Input from "@/components/ui/Input";
 import RegisterPreflight from "./RegisterPreflight";
+// MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
+// client-only — same mount idiom as every other consumer
+// (ExperienceDetailClient.jsx:17, EventDetailClient.jsx).
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+// Street-level framing for a "is this the right spot?" check. MiniMap's own
+// default (14) is neighbourhood context for a business page — a different job.
+const ADDRESS_CONFIRM_ZOOM = 16;
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
@@ -43,10 +52,75 @@ const DESCRIPTION_PENDING_KEY = "description_pending";
 // (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
 const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 
+// MEH-1807: the required fields that live on an EARLIER step than the submit
+// button. Before this, all three were checked ONLY inside the submit handler,
+// so a blank business name surfaced as "יש למלא שם עסק" next to "הצטרפו" on the
+// last step — two frames away from the field, with no way back to it.
+// The predicates are the SAME ones that ran there; they were moved, not added
+// (city stays ungated — MEH-951 made its marker visual-only on purpose).
+// Order is wizard order: the first offender decides which step a bounced
+// submit lands on.
+const CROSS_STEP_REQUIRED = [
+  {
+    field: "producer_name",
+    step: STEP.DETAILS,
+    focusId: "producer-business-name",
+    messageKey: "producer_name_required",
+    isMissing: (f) => !f.producer_name,
+  },
+  {
+    field: "phone",
+    step: STEP.DETAILS,
+    focusId: "producer-phone",
+    messageKey: "phone_required",
+    isMissing: (f) => !f.phone || !validateIsraeliPhone(f.phone),
+  },
+  {
+    field: "category_ids",
+    step: STEP.CATEGORY,
+    focusId: "register-category-selector",
+    messageKey: "category_required",
+    isMissing: (f) => f.category_ids.length === 0,
+  },
+];
+
+// MEH-1769: a stored draft only earns the resume banner when the seller
+// actually entered something. Every field write mirrors the WHOLE form to
+// localStorage (setAndSave → saveDraft, :~281), so the stored object is
+// normally EMPTY_FORM-shaped with empty strings — its mere presence proves
+// nothing about whether there is anything to resume.
+// The pre-1769 condition tested 3 of the 12 fields
+// (`producer_name || name || email`) and was wrong in both directions: a
+// draft where the seller had only picked a city or typed a phone never
+// offered a resume, and every field added to EMPTY_FORM since was invisible
+// to it by default. Checking every persisted value closes both.
+// `password` is stripped before the write (saveDraft, :~239) so it can never
+// appear here; the guard is defensive, not load-bearing.
+function hasDraftContent(parsed) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  return Object.entries(parsed).some(([field, value]) => {
+    if (field === "password") return false;
+    if (typeof value === "string") return value.trim() !== "";
+    if (Array.isArray(value)) return value.length > 0;
+    return Boolean(value);
+  });
+}
+
 const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
   city: "", address: "",
+  // MEH-1808: the coordinates AddressSearch hands back on select. Before this
+  // they were dropped on the floor (:963-968 only wrote the address text) and
+  // the submit body carried none, so EVERY business registering through the
+  // public form landed with lat/lng NULL and never appeared on the map — no
+  // matter whether the seller picked from the list or typed freely. The
+  // backend has accepted and stored both all along (schemas.py:549-550,
+  // auth.py:515-516); only the frontend was throwing them away.
+  lat: null, lng: null,
+  // Display-only mirror of the picked point's town (never sent; the payload's
+  // `city` stays CitySearch's canonical value).
+  address_city: "",
   short_description: "",
   category_ids: [],
   // MEH-530: optional at the form level. Backend 422s when any selected
@@ -121,9 +195,35 @@ function RegisterProducerPageBody() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // MEH-1769: false on the server AND on the first client render, raised only
+  // by the mount effect below once the storage read has resolved. That ordering
+  // is what keeps the banner off a first paint entirely — there is no
+  // pre-hydration frame in which it can appear and then vanish, so this is NOT
+  // the accepted first-paint flash BusinessCtaLink.jsx documents for MEH-1489
+  // (that one paints a default branch and swaps it; this one paints nothing).
+  // Same shape as InstallPrompt.jsx: default hidden, storage read inside an
+  // effect. Do not move this read into a lazy useState initialiser — that runs
+  // during SSR too, where localStorage does not exist.
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
+  // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
+  // Only ever holds those three, which is what lets the STORY summary below
+  // derive itself from this object instead of carrying its own state — an
+  // entry disappearing on-change (Baymard) removes the summary line too.
+  const [fieldErrors, setFieldErrors] = useState({});
+  // MEH-1807: the element the NEXT render must focus. The id rides a ref and
+  // only the sequence number is state, so requesting focus twice for the SAME
+  // field still re-fires the effect and the effect never has to setState to
+  // consume the request (no cascading render). requestFocus is called in the
+  // same handler as setStep, so React batches both into one render and the
+  // effect runs after the destination frame has mounted.
+  const pendingFocusIdRef = useRef(null);
+  const [focusRequestSeq, setFocusRequestSeq] = useState(0);
+  // MEH-1807: true only while a FINAL-SUBMIT bounce is unresolved. A per-step
+  // block sets fieldErrors too, but moves nobody — the summary's copy
+  // ("הועברתם לשדה") would be a false statement there.
+  const [submitBounced, setSubmitBounced] = useState(false);
   // MEH-952: blocking error shown next to the license field on CATEGORY when a
   // license-required category is selected but the number is blank — surfaces the
   // requirement at the field instead of letting the backend 422 land on STORY.
@@ -162,6 +262,13 @@ function RegisterProducerPageBody() {
   // (response had access_token); false after a successful non-upgrade
   // signup (response was the OWASP ack). Drives step-3 render branching.
   const [didUpgrade, setDidUpgrade] = useState(false);
+  // MEH-1814: the post-submit screen OWNS the render from the moment the
+  // submit succeeds. Set BEFORE refreshUser() so there is no render in which
+  // the role has flipped to "producer" while this is still false — the two
+  // updates are in program order, so React can never apply the later one
+  // first. This is what makes the fix an ordering guarantee rather than a
+  // race that usually wins.
+  const [submitted, setSubmitted] = useState(false);
   // MEH-532: seasonal placeholder is locked to the value at first render
   // so it doesn't flicker if the user crosses a season boundary mid-session.
   // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
@@ -178,6 +285,27 @@ function RegisterProducerPageBody() {
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const licenseRequired = requiresProducerLicense(categories, form.category_ids);
   const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
+  // MEH-1807: the phone field has two distinct error sources — the pre-existing
+  // as-you-type format check (fires only once something is typed) and the new
+  // required-gate message (fires on empty too). One derived string so the
+  // aria-invalid / aria-describedby / border wiring has a single condition.
+  const phoneErrorMessage =
+    fieldErrors.phone ||
+    (form.phone && !validateIsraeliPhone(form.phone)
+      ? t("auth.register.producer.validation.phone_invalid")
+      : "");
+  // MEH-1808: coordinates are only meaningful while they still belong to the
+  // text in the field — onChange nulls them on every free keystroke, so this
+  // doubles as "the seller picked this from the list".
+  const addressConfirmed = form.lat != null && form.lng != null;
+  // Friendly place name, never coordinates. The admin form shows raw
+  // "current: lat, lng" (MEH-1242); a seller cannot check her own shop against
+  // a decimal pair, so the street + city she recognises is the whole point.
+  const addressConfirmLabel = [form.address, form.address_city].filter(Boolean).join(", ");
+  // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
+  // fieldErrors rather than stored, so fixing a field removes its summary row
+  // with no second piece of state to keep in sync.
+  const crossStepErrors = Object.entries(fieldErrors);
   // MEH-759 Chunk C: the grower declaration line is shown (and required) only
   // for the two agricultural categories. Name-match mirrors requiresProducerLicense
   // (IDs are seed-ordering-dependent; names are stable). Source: seed_data.py:15-16.
@@ -201,6 +329,24 @@ function RegisterProducerPageBody() {
     trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
   }, [step, showPreflight]);
 
+  // MEH-1807 (GOV.UK error-summary pattern): move focus to the offending field
+  // so the seller lands ON it, not merely near it. The id is queried rather
+  // than held in a ref because a cross-step bounce focuses a field that did not
+  // exist in the DOM when the submit button was clicked.
+  useEffect(() => {
+    const targetId = pendingFocusIdRef.current;
+    if (!targetId) return;
+    pendingFocusIdRef.current = null;
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.focus();
+      // No explicit `behavior`: passing "smooth" here would override CSS
+      // scroll-behavior, including the `!important` reset globals.css:122 applies
+      // under prefers-reduced-motion. Omitting it defers to the stylesheet.
+      el.scrollIntoView?.({ block: "center" });
+    }
+  }, [focusRequestSeq]);
+
   // MEH-1489: the admin case is now handled by the early gate below (a terminal
   // "separate account for admin" screen), not a silent /admin redirect — same
   // intent as the auth.py:~477 403 backstop, surfaced up-front instead of at
@@ -211,8 +357,11 @@ function RegisterProducerPageBody() {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.producer_name || parsed.name || parsed.email) setShowDraftBanner(true);
+        // MEH-1769: hasDraftContent (:~46) replaces the 3-field truthiness
+        // test. An empty-storage visit never reaches here at all (getItem
+        // returns null); a draft that exists but holds nothing the seller
+        // typed no longer earns a banner promising a "מילוי קודם".
+        if (hasDraftContent(JSON.parse(saved))) setShowDraftBanner(true);
       }
     } catch {}
   }, []);
@@ -268,6 +417,18 @@ function RegisterProducerPageBody() {
     setShowDraftBanner(false);
   };
 
+  // MEH-1769: "לא" has to stay dismissed across a reload. showDraftBanner is
+  // component state only, so hiding it left the stored draft intact and the
+  // mount read above re-raised the banner on the very next load — the seller
+  // could decline the same prompt indefinitely. Dropping the draft IS what
+  // "no, don't continue the previous fill" means, and it keeps the decision in
+  // the one key that already owns it instead of adding a second dismissed-flag
+  // key that the next keystroke would immediately contradict.
+  const dismissDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    setShowDraftBanner(false);
+  };
+
   // Functional updater + draft save in one step. Used for every field —
   // text inputs, checkboxes, multi-select category list — so draft
   // persistence covers all writes uniformly (previously only text inputs
@@ -283,13 +444,62 @@ function RegisterProducerPageBody() {
     });
   };
 
+  // MEH-1807 (Baymard inline-validation): the message goes away the moment the
+  // field is touched, not at the next gate — an error that outlives its cause
+  // reads as "still broken" and is a documented abandonment driver.
+  const clearFieldError = (field) =>
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+
+  const requestFocus = (elementId) => {
+    pendingFocusIdRef.current = elementId;
+    setFocusRequestSeq((seq) => seq + 1);
+  };
+
+  // MEH-1807: run the CROSS_STEP_REQUIRED subset `candidates` against the
+  // current form. Writes a message for each offender and drops the message for
+  // each one that now passes, so a per-step gate never clears another step's
+  // error. Returns the offenders in wizard order; caller decides where to go.
+  //
+  // `isSubmit` owns the bounce flag on BOTH edges, which is why it lives here
+  // rather than at the call sites: adversarial review found the flag latching
+  // true after a bounce with nothing ever lowering it, so the next per-step
+  // block re-raised "הועברתם לשדה" having moved nobody. It read as
+  // self-clearing because the summary also needs a non-empty fieldErrors —
+  // the flag itself survived the fix that emptied it.
+  const runRequiredGate = (candidates, { isSubmit = false } = {}) => {
+    const offenders = candidates.filter((c) => c.isMissing(form));
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      candidates.forEach((c) => {
+        if (offenders.includes(c)) {
+          next[c.field] = t(`auth.register.producer.validation.${c.messageKey}`);
+        } else {
+          delete next[c.field];
+        }
+      });
+      return next;
+    });
+    setSubmitBounced(isSubmit && offenders.length > 0);
+    if (offenders.length > 0) requestFocus(offenders[0].focusId);
+    return offenders;
+  };
+
   const set = (field) => (e) => {
     const value = e.target.value;
     // MEH-328 Chunk D: emailExistsSubmitError clear removed with the state.
+    clearFieldError(field);
     setAndSave((prev) => ({ ...prev, [field]: value }));
   };
 
   const toggleCategory = (id) => {
+    // MEH-1807: same on-change clear as the text fields — picking anything
+    // satisfies "at least one category", so the message must not survive it.
+    clearFieldError("category_ids");
     setAndSave((prev) => ({
       ...prev,
       category_ids: prev.category_ids.includes(id)
@@ -330,6 +540,10 @@ function RegisterProducerPageBody() {
         // paths (shared body above the !isUpgrade branch).
         city: form.city,
         address: form.address,
+        // MEH-1808: sending these is what makes the "המיקום זוהה" confirmation
+        // a true statement rather than a promise the payload breaks.
+        lat: form.lat,
+        lng: form.lng,
         category_ids: form.category_ids,
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
@@ -364,8 +578,20 @@ function RegisterProducerPageBody() {
       // the non-upgrade path).
       const isUpgradeResult = "access_token" in (res.data || {});
       setDidUpgrade(isUpgradeResult);
-      localStorage.removeItem(DRAFT_KEY);
+      // MEH-1814: claim the render BEFORE the role can flip. Must stay above
+      // the refreshUser() await below — moving it after reintroduces the
+      // window where the gate outranks the success screen.
+      setSubmitted(true);
       if (isUpgradeResult) {
+        // MEH-1815: the draft is dropped ONLY here, where a token proves the
+        // server actually persisted the business. The non-upgrade ack is
+        // anti-enumeration output (MEH-328): identical bytes whether the
+        // email was free or already taken, so a 200 on that path does NOT
+        // mean the Producer was written — on a collision the backend
+        // discards it entirely. Clearing on every 200 is what silently ate
+        // a full wizard fill. The draft now waits in localStorage and the
+        // existing banner offers it back; "לא" still drops it (dismissDraft).
+        localStorage.removeItem(DRAFT_KEY);
         // UPGRADE PATH (UNCHANGED post-MEH-328): store token, refresh
         // auth context, surface whatsapp_sent on step 3.
         localStorage.setItem("token", res.data.access_token);
@@ -418,7 +644,19 @@ function RegisterProducerPageBody() {
   // terminal screen up-front instead. Guests + logged-in consumers (MEH-143 upgrade
   // path, role !== producer/admin) fall through unchanged. Sits ABOVE the
   // showPreflight return so the wizard tree below stays byte-identical (MEH-132).
-  if (user?.role === "producer") {
+  //
+  // MEH-1814: both gates are `!submitted`-guarded. MEH-1489 added them ABOVE
+  // the wizard return without excluding the post-submit state, so on the
+  // upgrade path refreshUser() (:593) flipped user.role to "producer" and this
+  // early return then outranked the STEP.CONFIRM success screen (:1658) on
+  // every subsequent render — a seller who had just finished the 10-minute
+  // wizard was told "כבר יש לך עמוד עסק". Not a timing race: the gate sits
+  // above the wizard return, so once the role flips there is no interleaving
+  // in which the success screen renders at all.
+  // The gates themselves are unchanged — a genuine mount-time visit by an
+  // existing producer/admin still short-circuits before any form interaction,
+  // because `submitted` is false until a submit has actually succeeded.
+  if (!submitted && user?.role === "producer") {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate">
@@ -438,7 +676,7 @@ function RegisterProducerPageBody() {
       </div>
     );
   }
-  if (user?.role === "admin") {
+  if (!submitted && user?.role === "admin") {
     // No dashboard CTA — an admin's daily-work account has no producer page to
     // manage; the message points them at creating a separate business account.
     return (
@@ -497,11 +735,11 @@ function RegisterProducerPageBody() {
         )}
 
         {showDraftBanner && step < STEP.CONFIRM && (
-          <div className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
+          <div data-testid="register-draft-banner" className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
-              <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
-              <button onClick={() => setShowDraftBanner(false)} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
+              <button data-testid="register-draft-continue" onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
+              <button data-testid="register-draft-dismiss" onClick={dismissDraft} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
             </div>
           </div>
         )}
@@ -531,6 +769,37 @@ function RegisterProducerPageBody() {
                 <span className="text-xs font-medium leading-none">{caption}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* MEH-1807: the bounce explanation (GOV.UK error summary). It sits at
+            the TOP of the wizard card, not next to "הצטרפו" as MEH-1807's AC
+            worded it, because the same click that raises it also leaves the
+            STORY frame — a notice rendered beside that button can never be on
+            screen when it matters, and an unreachable branch is the defect class
+            .claude/rules/testing.md documents ("passed identically on the broken
+            and the fixed page"). Top-of-form is also GOV.UK's own position for
+            the summary the AC cites. Shown only after a SUBMIT bounce: a
+            per-step block moves nobody, so "הועברתם לשדה" would be false there.
+            Derived from fieldErrors, so it clears itself as the fields are fixed. */}
+        {submitBounced && crossStepErrors.length > 0 && step < STEP.CONFIRM && (
+          <div
+            role="alert"
+            data-testid="register-submit-gate-notice"
+            className="border border-error/30 rounded-md px-4 py-3 mb-4 text-sm text-error text-start"
+          >
+            {crossStepErrors.length === 1 ? (
+              <p>{t("auth.register.producer.validation.cross_step_notice")}</p>
+            ) : (
+              <>
+                <p>{t("auth.register.producer.validation.cross_step_summary")}</p>
+                <ul className="list-disc ms-5 mt-1">
+                  {crossStepErrors.map(([field, message]) => (
+                    <li key={field}>{message}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         )}
 
@@ -622,16 +891,31 @@ function RegisterProducerPageBody() {
             <button
               data-testid="register-account-next"
               onClick={() => {
+                // MEH-1807: ACCOUNT already validated its OWN fields on its own
+                // step, so the cross-step defect never existed here — the only
+                // thing missing was focus. The form-level message + role="alert"
+                // are deliberately left alone (pinned by MEH-886); moving them
+                // into three inline slots would be a rewrite of a step that
+                // works, and would drop an assertion that exists on purpose.
                 if (!form.name || !form.email || !form.password) {
                   setStepError(t("auth.register.producer.validation.all_required"));
+                  requestFocus(
+                    !form.name
+                      ? "producer-account-name"
+                      : !form.email
+                        ? "producer-account-email"
+                        : "producer-account-password",
+                  );
                   return;
                 }
                 if (!validateEmail(form.email)) {
                   setStepError(t("auth.register.producer.validation.email_invalid"));
+                  requestFocus("producer-account-email");
                   return;
                 }
                 if (!passwordValid(form.password)) {
                   setStepError(t("auth.register.producer.validation.password_complexity"));
+                  requestFocus("producer-account-password");
                   return;
                 }
                 setStepError("");
@@ -659,6 +943,10 @@ function RegisterProducerPageBody() {
               placeholder={t("auth.register.producer.fields.producer_name")}
               value={form.producer_name}
               onChange={set("producer_name")}
+              // MEH-1807: the primitive owns aria-invalid + aria-describedby +
+              // the error text (MEH-602/MEH-1128) — this is the wiring the
+              // pre-1807 code had available and never used.
+              error={fieldErrors.producer_name}
               required
               dir="rtl"
             />
@@ -674,15 +962,15 @@ function RegisterProducerPageBody() {
                 value={form.phone}
                 onChange={set("phone")}
                 required
-                aria-invalid={form.phone && !validateIsraeliPhone(form.phone) ? "true" : undefined}
-                aria-describedby={form.phone && !validateIsraeliPhone(form.phone) ? "register-phone-error" : undefined}
+                aria-invalid={phoneErrorMessage ? "true" : undefined}
+                aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
                 className={`w-full border rounded-md px-3 py-2 min-h-[44px] ${
-                  form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
+                  phoneErrorMessage ? "border-red-400" : ""
                 }`}
                 dir="ltr"
               />
-              {form.phone && !validateIsraeliPhone(form.phone) && (
-                <p id="register-phone-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{t("auth.register.producer.validation.phone_invalid")}</p>
+              {phoneErrorMessage && (
+                <p id="register-phone-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{phoneErrorMessage}</p>
               )}
               {form.phone && validateIsraeliPhone(form.phone) && (
                 <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>
@@ -712,17 +1000,132 @@ function RegisterProducerPageBody() {
 
             {/* address is optional (no "*", not gated at submit) — label carries
                 no asterisk and the input gets no required attr. */}
-            {/* MEH-951 map-privacy reassurance now rides the Input helperText slot. */}
-            <Input
-              id="producer-address"
-              label={t("auth.register.producer.fields.address_label")}
-              data-testid="register-details-address"
-              placeholder={t("auth.register.producer.fields.address")}
-              value={form.address}
-              onChange={set("address")}
-              helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
-              dir="rtl"
-            />
+            {/* MEH-1766: this was a raw <Input>, so step 2's address field had no
+                autocomplete at all — "דרך שרה" returned 0 suggestions because
+                nothing was ever queried. AddressSearch.jsx's docstring claimed
+                "RegisterProducer consumers untouched"; that claim was never true.
+                REUSES: components/EventForm.jsx:183-200 (MEH-1405 pattern —
+                visible <label htmlFor> above, no `label` prop, so there is no
+                duplicate sr-only association).
+                MEH-1808 SUPERSEDES the next sentence, which used to read
+                "onSelect fills the address TEXT ONLY: the registration payload
+                carries no lat/lng and adding one would be a payload change,
+                out of scope for MEH-1766." That was true when written and is
+                false now: onSelect keeps lat/lng and the payload sends them.
+                Leaving it in place would have been worse than deleting it — a
+                stale comment is read as current fact. The deferral it describes
+                turned out to BE the bug: with no coordinates ever sent, every
+                business registering here landed with lat/lng NULL and never
+                appeared on the map, whether or not the seller picked from the
+                list. */}
+            <div>
+              <label
+                htmlFor="producer-address"
+                className="block text-sm font-medium text-text mb-1"
+              >
+                {t("auth.register.producer.fields.address_label")}
+              </label>
+              <AddressSearch
+                id="producer-address"
+                inputTestId="register-details-address"
+                value={form.address}
+                // MEH-1808: free typing INVALIDATES a previously picked point —
+                // otherwise coordinates from an earlier selection would ride
+                // along with a different address the seller typed over it, which
+                // is worse than having none: the pin would confidently show the
+                // wrong place. Clearing here is what makes `lat != null` mean
+                // "these coordinates belong to the text currently in the field".
+                onChange={(v) =>
+                  setAndSave((prev) => ({
+                    ...prev,
+                    address: v,
+                    address_city: "",
+                    lat: null,
+                    lng: null,
+                  }))
+                }
+                onSelect={(picked) =>
+                  setAndSave((prev) => ({
+                    ...prev,
+                    address: picked.street || picked.displayName || prev.address,
+                    // MEH-1808: the picked point's own city, for the
+                    // confirmation LABEL only. Deliberately NOT written into
+                    // `city`, for two reasons found in self-QA:
+                    //  1. a second pick in a different town kept the FIRST
+                    //     town's name (`prev.city ||` never re-fires), so the
+                    //     line confirmed a place the pin was no longer on —
+                    //     the exact lying-confirmation this ticket exists to
+                    //     prevent;
+                    //  2. `city` is fed by CitySearch precisely because
+                    //     free-text towns are forbidden (MEH-213), and a raw
+                    //     Nominatim string is not a canonical value.
+                    address_city: picked.city || "",
+                    lat: picked.lat ?? null,
+                    lng: picked.lng ?? null,
+                  }))
+                }
+                placeholder={t("auth.register.producer.fields.address")}
+              />
+              {/* MEH-951 map-privacy reassurance — same copy, moved out of the
+                  Input helperText slot it used to ride; class recipe mirrors the
+                  city required-marker at :708. */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_map_privacy_hint")}
+              </p>
+              {/* MEH-1808: the address stays OPTIONAL — this line exists so a
+                  delivery-only or home-based seller does not read the field as a
+                  demand (MEH-213 / location_precision: approximate already
+                  support them; only the reassurance was missing). */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_optional_hint")}
+              </p>
+
+              {/* MEH-1808 — three mutually exclusive states, keyed on whether the
+                  text in the field has coordinates attached to it:
+                    empty            → nothing but the hints above
+                    typed, no coords → soft, non-blocking nudge
+                    coords           → confirmation line + street-level map
+                  The nudge is deliberately NOT error-styled: the address is
+                  optional, so a red blocker here would be a lie about the form
+                  (Baymard's documented anti-pattern of address validators that
+                  trap users, quoted in AddressSearch.jsx:29-31). */}
+              {addressConfirmed ? (
+                <div data-testid="register-address-confirm" className="mt-3">
+                  <p className="text-sm text-primary inline-flex items-center gap-1.5 text-start">
+                    <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+                    <span>
+                      {t("auth.register.producer.fields.address_confirmed", {
+                        location: addressConfirmLabel,
+                      })}
+                    </span>
+                  </p>
+                  <div className="mt-2 overflow-hidden rounded-md">
+                    {/* Confirmation only — no Waze/Google pills ("navigate to
+                        your own address" means nothing mid-signup) and a street
+                        zoom instead of MiniMap's neighbourhood default. Both are
+                        opt-in props added in MEH-1808; every other consumer of
+                        MiniMap is untouched by them. */}
+                    <MiniMap
+                      lat={form.lat}
+                      lng={form.lng}
+                      name={form.producer_name || form.address}
+                      zoom={ADDRESS_CONFIRM_ZOOM}
+                      showNavigation={false}
+                    />
+                  </div>
+                </div>
+              ) : (
+                form.address.trim() !== "" && (
+                  <p
+                    data-testid="register-address-no-pick-hint"
+                    className="text-xs text-fg-muted mt-2 inline-flex items-start gap-1.5 text-start"
+                  >
+                    <MapPin size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
+                    <span>{t("auth.register.producer.fields.address_pick_from_list")}</span>
+                  </p>
+                )
+              )}
+            </div>
 
             {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
                 Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
@@ -756,7 +1159,17 @@ function RegisterProducerPageBody() {
               )}
               <button
                 data-testid="register-details-next"
-                onClick={() => setStep(STEP.CATEGORY)}
+                onClick={() => {
+                  // MEH-1807: producer_name + phone are validated HERE now, on
+                  // the step that owns them, instead of two frames later next to
+                  // the submit button. runRequiredGate focuses the first
+                  // offender; a blocked advance is the whole point.
+                  const offenders = runRequiredGate(
+                    CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.DETAILS),
+                  );
+                  if (offenders.length > 0) return;
+                  setStep(STEP.CATEGORY);
+                }}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
               >
                 {t("auth.register.producer.actions.next")}
@@ -767,13 +1180,36 @@ function RegisterProducerPageBody() {
 
         {step === STEP.CATEGORY && (
           <div className="space-y-4" data-testid="register-frame-category">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
-            <CategorySelector
-              categories={categories}
-              selectedIds={form.category_ids}
-              onChange={toggleCategory}
-              onRequestCategory={() => setShowCategoryModal(true)}
-            />
+            <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
+            {/* MEH-1807: the selector is a card grid, not a form control, so it
+                has no id to focus and nothing to hang aria-describedby on. A
+                labelled group wrapper gives the required-gate both — tabIndex
+                -1 keeps it out of the tab order while staying focusable
+                programmatically. */}
+            <div
+              id="register-category-selector"
+              tabIndex={-1}
+              role="group"
+              aria-labelledby="register-category-heading"
+              aria-describedby={fieldErrors.category_ids ? "register-category-error" : undefined}
+              className="focus-ring rounded-md"
+            >
+              <CategorySelector
+                categories={categories}
+                selectedIds={form.category_ids}
+                onChange={toggleCategory}
+                onRequestCategory={() => setShowCategoryModal(true)}
+              />
+            </div>
+            {fieldErrors.category_ids && (
+              <p
+                id="register-category-error"
+                data-testid="register-category-error"
+                className="text-xs text-error mt-1 text-start"
+              >
+                {fieldErrors.category_ids}
+              </p>
+            )}
 
             {/* MEH-293: dietary labels moved to per-product (frontend/app/settings/page.jsx ProductsSection). */}
 
@@ -910,6 +1346,14 @@ function RegisterProducerPageBody() {
               <button
                 data-testid="register-category-next"
                 onClick={() => {
+                  // MEH-1807: "at least one category" is validated on the step
+                  // that owns the selector. Runs BEFORE the license gate because
+                  // licenseRequired is derived from the selection — with nothing
+                  // selected there is no license question to ask yet.
+                  const offenders = runRequiredGate(
+                    CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.CATEGORY),
+                  );
+                  if (offenders.length > 0) return;
                   // MEH-952: block advance when a license-required category is
                   // selected but the number is blank; show the error at the field.
                   // MEH-971 chunk 1: the license-pending opt-in bypasses this gate.
@@ -1158,16 +1602,18 @@ function RegisterProducerPageBody() {
                   // to "stick" across submit attempts even after the user
                   // fixes one field).
                   setError("");
-                  if (!form.producer_name) {
-                    setError(t("auth.register.producer.validation.producer_name_required"));
-                    return;
-                  }
-                  if (!form.phone || !validateIsraeliPhone(form.phone)) {
-                    setError(t("auth.register.producer.validation.phone_required"));
-                    return;
-                  }
-                  if (form.category_ids.length === 0) {
-                    setError(t("auth.register.producer.validation.category_required"));
+                  // MEH-1807: the three cross-step required fields are still
+                  // checked here — a restored draft can blank one while the
+                  // seller is already on STORY, so the per-step gates are not a
+                  // complete guarantee. What changed is the OUTCOME: instead of
+                  // painting "יש למלא שם עסק" next to a button two frames away
+                  // from the field, send the seller to the step that owns the
+                  // first offender, focused on it, with the message inline.
+                  const offenders = runRequiredGate(CROSS_STEP_REQUIRED, {
+                    isSubmit: true,
+                  });
+                  if (offenders.length > 0) {
+                    setStep(offenders[0].step);
                     return;
                   }
                   // MEH-1471: required attribution — block submit while empty.
@@ -1218,16 +1664,17 @@ function RegisterProducerPageBody() {
             Non-upgrade path renders the OWASP-aligned inbox-check screen
             — identical body across new-email / collision branches. */}
         {step === STEP.CONFIRM && didUpgrade && (
-          <div className="text-center py-8">
+          <div className="text-center py-8" data-testid="register-success-pending">
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
-            <p className="text-fg-muted mb-6">
-              {whatsappSent
-                ? t("auth.register.producer.success.body_with_whatsapp")
-                : t("auth.register.producer.success.body_no_whatsapp")}
-            </p>
+            {/* MEH-1814: names the state ("בבדיקה") and the expected wait, then
+                the two owner actions that speed approval — the Google Business
+                Profile "pending review, ~3 business days" pattern. Replaces the
+                old heading/body/next-stages block, which described OUR process
+                stages rather than what the seller should do next. */}
+            <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.title")}</h2>
+            <p className="text-fg-muted mb-6">{t("auth.register.producer.success.body")}</p>
             {!whatsappSent && (
               <div
                 role="status"
@@ -1237,24 +1684,18 @@ function RegisterProducerPageBody() {
               </div>
             )}
             <div className="bg-green-50 rounded-lg p-5 text-start mb-6">
-              <h3 className="font-semibold text-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
-              <ul className="text-sm text-fg-muted space-y-2">
-                <li>{t("auth.register.producer.success.next_step1")}</li>
-                <li>{t("auth.register.producer.success.next_step2")}</li>
-                <li>{t("auth.register.producer.success.next_step3")}</li>
-              </ul>
-              {/* MEH-914: photo-to-publish disclosure — mirrors the story step. */}
-              <p data-testid="photo-disclosure-success" className="text-sm text-fg-muted text-start leading-relaxed mt-3">{t("auth.register.producer.photo_disclosure")}</p>
+              <p className="text-sm text-text leading-relaxed">{t("auth.register.producer.success.next")}</p>
             </div>
             {/* MEH-132: S7 06A founder sign-off */}
             <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
+                data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
                 className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
               >
-                {t("auth.register.producer.success.dashboard_cta")}
+                {t("auth.register.producer.success.cta")}
               </button>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}

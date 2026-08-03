@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useHomePage } from "@/lib/use-home-page";
 import api from "@/lib/api";
+// MEH-1774: read-only import — the round-trip guard below asserts against the
+// SAME array ProducersClient.initChipsFromParams iterates, which is what makes
+// `?<chip.key>=1` correct for every key by construction rather than by luck.
+import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { trackEvent } from "@/lib/analytics";
 
 // MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders the CHIPS_CONFIG
 // chips and buildChipParams sends them to the API, but updateURL serialized
@@ -17,6 +22,14 @@ const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
 }));
+// MEH-1774: the chip deep-link pushes through the LOCALE-AWARE router, so the
+// assertions below watch this one — a bare next/navigation push would drop an
+// /en session (localePrefix "as-needed").
+const localeRouter = { replace: vi.fn(), push: vi.fn() };
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => localeRouter,
+}));
+vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
 }));
@@ -43,43 +56,44 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe("homepage diet chips → URL (MEH-1083)", () => {
-  it("toggling a diet chip writes its param to the URL", () => {
+// MEH-1774: home chips stopped filtering in place — a tap deep-links to
+// /producers. The two tests that used to pin toggle→home-URL serialization are
+// replaced by the round-trip contract below; the hydration tests further down
+// are UNCHANGED, because home's reading of its own params is out of scope here
+// (MEH-1083) and still works.
+describe("homepage attribute chips → /producers deep-link (MEH-1774)", () => {
+  it("every CHIPS_CONFIG key emits ?key=1 — the literal string the listing reads", () => {
     const { result } = renderHook(() => useHomePage());
-    act(() => result.current.toggleChip("gluten_free"));
-    // MEH-1293: updateURL now mirrors via window.history.replaceState (shallow)
-    // instead of router.replace — assert on the real URL, transport-agnostic.
-    expect(window.location.search).toContain("gluten_free=1");
+    for (const chip of CHIPS_CONFIG) {
+      localeRouter.push.mockClear();
+      act(() => result.current.navigateToChip(chip.key));
+      const [href] = localeRouter.push.mock.calls[0];
+      expect(href).toBe(`/producers?${chip.key}=1`);
+      // The whole point: ProducersClient tests `get(key) === "1"`, so a boolean
+      // `true` (what buildChipParams emits) would leave the chip dark on arrival
+      // with no error. Assert the VALUE, parsed the way the listing parses it.
+      expect(new URL(href, "http://x").searchParams.get(chip.key)).toBe("1");
+    }
+    expect(CHIPS_CONFIG).toHaveLength(7);
   });
 
-  it("serializes all 7 chip keys when all are active", () => {
+  it("has_delivery deep-links as ?has_delivery=1, NOT home's legacy ?delivery=1", () => {
     const { result } = renderHook(() => useHomePage());
-    for (const key of [
-      "kosher",
-      "gluten_free",
-      "vegan",
-      "vegetarian",
-      "lactose_free",
-      "has_delivery",
-      "verified",
-    ]) {
-      act(() => result.current.toggleChip(key));
-    }
-    // MEH-1293: assert on the real URL (history.replaceState), not router.replace.
-    const lastUrl = window.location.search;
-    for (const param of [
-      "kosher=1",
-      "gluten_free=1",
-      "vegan=1",
-      "vegetarian=1",
-      "lactose_free=1",
-      "delivery=1",
-      "verified=1",
-    ]) {
-      expect(lastUrl).toContain(param);
-    }
-    // MEH-1259: organic is no longer serialized.
-    expect(lastUrl).not.toContain("organic=1");
+    localeRouter.push.mockClear();
+    act(() => result.current.navigateToChip("has_delivery"));
+    const [href] = localeRouter.push.mock.calls[0];
+    expect(href).toBe("/producers?has_delivery=1");
+    expect(href).not.toContain("delivery=1&");
+    expect(new URL(href, "http://x").searchParams.get("delivery")).toBeNull();
+  });
+
+  it("emits home_chip_navigate and leaves the home URL alone", () => {
+    const before = window.location.search;
+    const { result } = renderHook(() => useHomePage());
+    act(() => result.current.navigateToChip("vegan"));
+    expect(trackEvent).toHaveBeenCalledWith("home_chip_navigate", { chip: "vegan" });
+    // No in-place filtering: home's own URL is untouched by the tap.
+    expect(window.location.search).toBe(before);
   });
 
   it("deep-link ?vegan=1 hydrates the chip and the initial fetch", () => {
@@ -104,5 +118,96 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     window.history.replaceState(null, "", "/?kosher=1");
     const { result } = renderHook(() => useHomePage());
     expect(result.current.chips.kosher).toBe(true);
+  });
+});
+
+// MEH-1826: the deep-link carries the active location context, so arriving on
+// /producers reproduces the state the user left rather than widening it
+// (Baymard scope-jumping). The param NAMES are asserted against what
+// ProducersClient actually hydrates — `city` + `delivery_day`
+// (ProducersClient.jsx:77/89) — NOT home's own `?day=` serializer name. That
+// asymmetry is the whole risk: home's name would be well-formed, produce no
+// error, and be silently ignored on arrival.
+describe("chip deep-link carries delivery context (MEH-1826)", () => {
+  /** Hydrate home with an active city (+ optional day) via its own URL names. */
+  const withContext = (city, day) => {
+    const p = new URLSearchParams();
+    if (city) p.set("city", city);
+    if (day) p.set("day", day);
+    window.history.replaceState(null, "", `/?${p.toString()}`);
+  };
+
+  const pushedParams = () => {
+    const [href] = localeRouter.push.mock.calls[0];
+    return { href, params: new URL(href, "http://x").searchParams };
+  };
+
+  it("city + day active → both ride along under /producers' param names", () => {
+    withContext("ירושלים", "שישי");
+    const { result } = renderHook(() => useHomePage());
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("has_delivery"));
+
+    const { params } = pushedParams();
+    expect(params.get("has_delivery")).toBe("1");
+    expect(params.get("city")).toBe("ירושלים");
+    expect(params.get("delivery_day")).toBe("שישי");
+    // Home's own serializer name must NOT be what we emit — ProducersClient
+    // reads `delivery_day` and would silently ignore `day`.
+    expect(params.get("day")).toBeNull();
+  });
+
+  it("city active, no day → city only, and no empty delivery_day param", () => {
+    withContext("ירושלים", null);
+    const { result } = renderHook(() => useHomePage());
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("kosher"));
+
+    const { href, params } = pushedParams();
+    expect(params.get("city")).toBe("ירושלים");
+    expect(params.has("delivery_day")).toBe(false);
+    expect(href).not.toContain("delivery_day=");
+  });
+
+  it("no city → URL byte-identical to before MEH-1826 (zero regression)", () => {
+    const { result } = renderHook(() => useHomePage());
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("has_delivery"));
+
+    expect(pushedParams().href).toBe("/producers?has_delivery=1");
+  });
+
+  // The precondition mirror: a day cannot travel alone. Home only hydrates a
+  // day beside a city, so this drives the state through the same public entry
+  // point a user would (handleDaySelected) with no city set.
+  it("day without a city is never carried", () => {
+    const { result } = renderHook(() => useHomePage());
+    act(() => result.current.handleDaySelected("שישי"));
+    localeRouter.push.mockClear();
+
+    act(() => result.current.navigateToChip("has_delivery"));
+
+    const { href, params } = pushedParams();
+    expect(params.has("delivery_day")).toBe(false);
+    expect(params.has("city")).toBe(false);
+    expect(href).toBe("/producers?has_delivery=1");
+  });
+
+  it("context rides along for ALL 7 chip keys, not just משלוח", () => {
+    withContext("חיפה", "שלישי");
+    const { result } = renderHook(() => useHomePage());
+
+    for (const chip of CHIPS_CONFIG) {
+      localeRouter.push.mockClear();
+      act(() => result.current.navigateToChip(chip.key));
+      const { params } = pushedParams();
+      expect(params.get(chip.key)).toBe("1");
+      expect(params.get("city")).toBe("חיפה");
+      expect(params.get("delivery_day")).toBe("שלישי");
+    }
+    expect(CHIPS_CONFIG).toHaveLength(7);
   });
 });

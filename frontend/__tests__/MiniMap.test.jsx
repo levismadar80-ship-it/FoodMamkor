@@ -74,7 +74,7 @@ vi.mock("react-leaflet", async () => {
     },
   });
 
-  const MapContainer = ({ children, zoomControl, attributionControl }) => {
+  const MapContainer = ({ children, zoomControl, attributionControl, zoom }) => {
     const [stub] = useState(() => {
       const created = makeMapStub();
       leafletStubs.maps.push(created);
@@ -90,6 +90,10 @@ vi.mock("react-leaflet", async () => {
         // both turned out to be.
         data-zoom-control={String(zoomControl)}
         data-attribution-control={String(attributionControl)}
+        // MEH-1808: the camera the container is built with. Exposed so the
+        // default-preserving assertions below read the real value instead of
+        // trusting that nothing moved.
+        data-zoom={String(zoom)}
       >
         <MapStubContext.Provider value={stub}>{children}</MapStubContext.Provider>
       </div>
@@ -498,5 +502,43 @@ describe("MEH-1682 — tooltip anchored above the pin, not auto-placed", () => {
     // (a single -18 clears both pins, but floats the 24px one too high).
     expect(primary[0].tooltip.dataset.offsetY).toBe("-18");
     for (const { tooltip } of secondary) expect(tooltip.dataset.offsetY).toBe("-14");
+  });
+});
+
+// MEH-1808 — `zoom` and `showNavigation` were added so the register address
+// confirmation can reuse this component instead of growing a second
+// map-rendering path. Both are OPT-IN: the producer / events / experiences
+// mounts pass neither, so their behaviour has to be bit-for-bit what it was.
+//
+// Failing-by-construction, and each construction discriminates: flip either
+// default (zoom → 16, showNavigation → false) and the two "unchanged" tests go
+// red on the exact values the three existing consumers depend on; drop the
+// prop plumbing entirely (hardcode SINGLE_POINT_ZOOM / always render the pills)
+// and the two "override" tests go red instead. No single edit satisfies both
+// pairs, which is what makes them evidence rather than decoration.
+describe("MiniMap — opt-in zoom + showNavigation (MEH-1808)", () => {
+  beforeEach(() => {
+    leafletStubs.maps.length = 0;
+  });
+
+  it("defaults are unchanged: zoom 14 and both nav pills, when neither prop is passed", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" />);
+    expect(screen.getByTestId("map").dataset.zoom).toBe("14");
+    expect(screen.getByText("Waze")).toBeInTheDocument();
+    expect(screen.getByText("מפות Google")).toBeInTheDocument();
+  });
+
+  it("zoom override reaches the map container", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" zoom={16} />);
+    expect(screen.getByTestId("map").dataset.zoom).toBe("16");
+  });
+
+  it("showNavigation={false} drops BOTH nav pills and nothing else", () => {
+    render(<MiniMap lat={32.5} lng={34.9} name="הבית של רותי" showNavigation={false} />);
+    expect(screen.queryByText("Waze")).not.toBeInTheDocument();
+    expect(screen.queryByText("מפות Google")).not.toBeInTheDocument();
+    // the map itself still renders — this prop hides the CTAs, not the map
+    expect(screen.getByTestId("map")).toBeInTheDocument();
+    expect(screen.getByTestId("marker")).toBeInTheDocument();
   });
 });

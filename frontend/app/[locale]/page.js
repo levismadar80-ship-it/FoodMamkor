@@ -55,14 +55,14 @@ export default function HomePage() {
     fridayMode, step0Visible, userCity,
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter,
+    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showTrustCount,
     featuredProducer, geoActive, cityActive, dayActive, geoEmptyNotice,
     handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleCitySelected, handleClearLocation,
     // MEH-1684: `scrollToProducers` is no longer destructured here — the hero's
     // filled "גלו בתי עסק" button was its only consumer on this page and the
     // search pill replaced it. The helper itself still lives in use-home-page
     // (it fires after a near-me / city apply); only the prop pass-through went.
-    handleWhatsAppClick, toggleChip,
+    handleWhatsAppClick, navigateToChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
 
@@ -105,12 +105,21 @@ export default function HomePage() {
       {/* =========================
           TRUST STRIP — MEH-879 re-anchor (over MEH-524 lock / MEH-521
           threshold / MEH-607 F10 skeleton):
-          - LEADS with the already-live, approved verification phrase
-            "עסקים שכבר בדקנו בשבילך" (reused from home.hero.subtitle) — the
-            trust now reads at ANY catalog depth, not just >= 5.
+          - The LEAD reads at ANY catalog depth, not just >= 5.
+          - MEH-1692 replaced the leading verification phrase. It was a
+            byte-exact substring of home.hero.subtitle, so one sentence
+            rendered twice on the same screen; and "בדקנו" over-claimed,
+            since verification_doc_type is one of license | exemption |
+            cosmetics (schemas.py) and the narrow licensing claim belongs on
+            the badge (ADR-022), not on a blanket band. The lead is now a
+            structural fact below TRUST_COUNT_THRESHOLD (25) and a count at
+            or above it. home.hero.subtitle and nav.trust_strip are UNCHANGED
+            — the duplication is closed from this side only.
           - The /stats COUNT line is DEMOTED to a quiet secondary line, shown
             only at >= 5 (showStatsCounter). The MEH-521 "מתחילות עכשיו" <5
             fallback no longer LEADS (low counts = negative social proof).
+            MEH-1692: that secondary line drops its own business count once
+            the lead carries it, so the number is never stated twice.
           - S4 quiet-strip voice preserved: cream + hairline borders; numerals
             gold italic, LTR-isolated (bidi). Numbers from /stats, never
             hardcoded. Stats logic (use-home-page.js flags) unchanged.
@@ -132,16 +141,33 @@ export default function HomePage() {
       )}
       {statsLoaded && (
         <section className="bg-background border-y border-border py-8 text-center">
-          <p className="font-body-md text-base text-text tracking-wide">
-            {t("home.trust.lead")}
+          <p className="font-body-md text-base text-text tracking-wide" data-testid="trust-lead">
+            {showTrustCount
+              ? t.rich("home.trust.lead_count", {
+                  count: statsProducersCount,
+                  num: (chunks) => (
+                    <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
+                      {chunks}
+                    </span>
+                  ),
+                })
+              : t("home.trust.lead")}
           </p>
           {showStatsCounter && (
-            <p className="font-body-sm text-sm text-fg-muted tracking-wide mt-1">
-              <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                {statsProducersCount}
-              </span>{" "}
-              {t("home.stats.businesses")}
-              &nbsp;·&nbsp;
+            <p className="font-body-sm text-sm text-fg-muted tracking-wide mt-1" data-testid="trust-secondary">
+              {/* MEH-1692: the business count is suppressed here once the LEAD
+                  above carries it, so the number is stated once in the band and
+                  not twice. Below the trust threshold the lead is a sentence and
+                  this line remains the only place the count appears. */}
+              {!showTrustCount && (
+                <>
+                  <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
+                    {statsProducersCount}
+                  </span>{" "}
+                  {t("home.stats.businesses")}
+                  &nbsp;·&nbsp;
+                </>
+              )}
               <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
                 {statsCategoriesCount}
               </span>{" "}
@@ -201,7 +227,7 @@ export default function HomePage() {
         onboardAdvance={onboardAdvance}
         onboardDismiss={onboardDismiss}
         onAdvanceFromStep0={handleAdvanceFromStep0}
-        onToggleChip={toggleChip}
+        onChipNavigate={navigateToChip}
         onClearCategory={handleClearCategory}
         onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}
