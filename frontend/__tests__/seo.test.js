@@ -296,6 +296,31 @@ describe("buildJsonLd", () => {
     });
   });
 
+  // MEH-1870: a split day emits TWO entries sharing one dayOfWeek — schema.org
+  // has no "two windows in one entry" form. Before this, seo.js carried its own
+  // COPY of the parser whose anchored regex rejected the second range and
+  // skipped the whole entry, so a split day would have vanished from the
+  // structured data entirely. There is one parser now (lib/hours.js).
+  it("emits one spec entry per range on a split day", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, opening_hours: "Fri 09:00-13:00 16:00-19:00" }),
+    );
+    expect(business.openingHoursSpecification).toEqual([
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: "Friday",
+        opens: "09:00",
+        closes: "13:00",
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: "Friday",
+        opens: "16:00",
+        closes: "19:00",
+      },
+    ]);
+  });
+
   it("omits openingHoursSpecification when opening_hours is null", () => {
     const business = getBusiness(
       buildJsonLd({ ...fullProducer, opening_hours: null }),

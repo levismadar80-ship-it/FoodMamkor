@@ -128,6 +128,9 @@ def _build_base_queries(
                 selectinload(Producer.delivery_areas),
                 # MEH-1402 — serialize locations[] on ProducerListOut w/o N+1.
                 selectinload(Producer.locations),
+                # MEH-1823: active_offer reads this collection — eager-load it here
+                # or the property fires one query per producer on every list page.
+                selectinload(Producer.offers),
             )
             .filter(Producer.status == "approved")
         )
@@ -183,6 +186,9 @@ def _build_base_queries(
             selectinload(Producer.delivery_areas),
             # MEH-1402 — locations[] on ProducerListOut (LIST/DETAIL shape parity).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.status == "approved")
         .order_by(*order)

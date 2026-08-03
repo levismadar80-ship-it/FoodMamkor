@@ -286,6 +286,19 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
   });
 
+  // MEH-1864: the zero-review case stated explicitly. The `< 3` case above
+  // covers it arithmetically, but "a card with no reviews renders no rating
+  // block at all — no stars, no 0, no filler" is the acceptance criterion, so
+  // it gets its own named assertion rather than being inferred.
+  it("renders no rating block at all when reviews_count is 0", () => {
+    const { container } = render(
+      <ProducerCard producer={{ ...fullProducer, reviews_count: 0, avg_rating: 0 }} />,
+    );
+    expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
+    expect(container.querySelectorAll('[data-testid="icon-star"]')).toHaveLength(0);
+    expect(container.textContent).not.toMatch(/0\.0/);
+  });
+
   it("hides rating when avg_rating is null even if reviews_count is high", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, reviews_count: 10, avg_rating: null }} />,

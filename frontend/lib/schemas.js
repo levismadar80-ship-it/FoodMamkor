@@ -92,6 +92,23 @@ export const ProducerSchema = z.object({
     is_primary: z.boolean().nullable().optional(),
     precision: z.string().nullable().optional(),
   })).optional().default([]),
+  // MEH-1823: the single active offer, or null. Declared for the same reason
+  // as locations/delivery_areas above — an undeclared key is STRIPPED by
+  // z.object, so the chip would silently never render on the two Zod-parsed
+  // feeds (home grid + /map) while working fine on the unparsed ones. That is
+  // the MEH-826 / MEH-901 / MEH-902 / MEH-1704 mechanism, five times over.
+  // Permissive per field: the all-or-nothing parse must not drop a whole
+  // producer because one offer field arrived in an unexpected shape, and
+  // OfferBadge already refuses to render an unknown offer_type.
+  active_offer: z.object({
+    id: z.union([z.string(), z.number()]).nullable().optional(),
+    offer_type: z.string().nullable().optional(),
+    threshold_value: z.number().nullable().optional(),
+    threshold_unit: z.string().nullable().optional(),
+    headline: z.string().nullable().optional(),
+    starts_at: z.string().nullable().optional(),
+    expires_at: z.string().nullable().optional(),
+  }).nullable().optional(),
   // MEH-1704: the 13 remaining badge inputs. `lib/badges.js::earnsBadge` reads
   // 14 producer fields; only `verification_tier` (:25) was declared, so on both
   // Zod-parsed feeds — home grid (use-home-page.js:326/:360/:430) and /map
