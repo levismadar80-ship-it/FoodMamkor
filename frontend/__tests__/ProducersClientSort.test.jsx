@@ -61,12 +61,17 @@ const apiGet = vi.fn(() => Promise.resolve({ data: [], headers: { "x-total-count
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => apiGet(...a) } }));
 
 // One SSR item + total 1 so the results counter (and thus the sort select) render.
+// MEH-1864: the sort control is gated on the catalog having enough reviewed
+// businesses; every case in THIS file describes the above-threshold behaviour,
+// so the flag is on. The gated (below-threshold) behaviour lives in
+// RatingDataGate.test.jsx.
 const PROPS = {
   initialItems: [{ id: "1", categories: [] }],
   initialTotal: 1,
   initialPage: 1,
   totalPages: 1,
   perPage: 24,
+  ratingSortEnabled: true,
 };
 
 const sortCalls = () =>
