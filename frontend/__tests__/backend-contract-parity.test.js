@@ -3,8 +3,8 @@
  *
  * This is the frontend half of a two-part guard. The backend half
  * (`tests/test_producer_contract_snapshot.py`) writes the field names of
- * `ProducerListOut` (`backend/app/schemas/schemas.py:1891`) and
- * `ProducerDetailOut` (`:2112`) to a committed JSON file and fails if that file
+ * `ProducerListOut` (`backend/app/schemas/schemas.py:1907`) and
+ * `ProducerDetailOut` (`:2128`) to a committed JSON file and fails if that file
  * is stale. This test reads the same file and asserts `lib/schemas.js` declares
  * every key in it.
  *

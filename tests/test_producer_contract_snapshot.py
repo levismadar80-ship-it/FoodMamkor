@@ -8,7 +8,7 @@ Touches:  writes backend/app/schemas/producer_contract_snapshot.json when
 Does NOT: assert anything about the frontend — that half lives in
           frontend/__tests__/backend-contract-parity.test.js, which reads the
           same file. This side owns only "the snapshot matches the classes".
-Related:  backend/app/schemas/schemas.py:1891 (ProducerListOut), :2112
+Related:  backend/app/schemas/schemas.py:1907 (ProducerListOut), :2128
           (ProducerDetailOut); frontend/__tests__/backend-contract-parity.test.js
 History:  MEH-1891 (creation)
 
@@ -51,7 +51,7 @@ _HEADER = [
     "GENERATED FILE — do not hand-edit.",
     f"Regenerate with: {REGEN_COMMAND}",
     "Owner of this fact: the Pydantic classes in backend/app/schemas/schemas.py",
-    "(ProducerListOut:1891, ProducerDetailOut:2112). This file is a committed",
+    "(ProducerListOut:1907, ProducerDetailOut:2128). This file is a committed",
     "copy of their field names so frontend vitest can check Zod against them",
     "without importing Python.",
     "Hand-editing it defeats the guard: the frontend parity test would then be",

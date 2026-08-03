@@ -3,7 +3,7 @@
     "GENERATED FILE — do not hand-edit.",
     "Regenerate with: UPDATE_CONTRACT_SNAPSHOT=1 pytest tests/test_producer_contract_snapshot.py",
     "Owner of this fact: the Pydantic classes in backend/app/schemas/schemas.py",
-    "(ProducerListOut:1891, ProducerDetailOut:2112). This file is a committed",
+    "(ProducerListOut:1907, ProducerDetailOut:2128). This file is a committed",
     "copy of their field names so frontend vitest can check Zod against them",
     "without importing Python.",
     "Hand-editing it defeats the guard: the frontend parity test would then be",
