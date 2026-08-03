@@ -231,7 +231,6 @@ def update_my_producer(
     was_approvable = _pending_and_approvable(db, producer)
 
     _PRODUCER_WRITABLE_FIELDS = {
-        "name",
         "contact_name",
         "description",
         "short_description",
@@ -247,7 +246,6 @@ def update_my_producer(
         "facebook",
         "external_order_form",
         "top_product_name",
-        "starting_price_label",
         "price_range",
         # MEH-1335: owner story fields (public OwnerCard data path). Validated
         # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
@@ -275,6 +273,29 @@ def update_my_producer(
         #   lactose_free_facility→ its question was cut (DietaryScopeCard.jsx
         #                          "Does NOT: … touch lactose"); no reader exists
         #   pickup_points        → duplicates ProducerLocation.kind='pickup'
+        # MEH-1851 (Sapir's 03/08 ruling, rows 1 · 19 · 39): three more owner
+        # write paths closed for the same reason — the API accepted a value no
+        # owner UI produces. Columns stay; admin (`admin.py`) and import
+        # (`producer_import.py`) are untouched. Note MEH-1856's body deferred
+        # these three as "EXPOSE, future ticket"; the 03/08 ruling supersedes
+        # that and made all three REMOVE-WRITE. Do not re-add one without
+        # shipping its editor in the same PR:
+        #   name                 → a DNA-LOCK hole, not a missing feature: the
+        #                          setattr loop below writes it with NO re-review,
+        #                          so an APPROVED business could rename itself
+        #                          into something else entirely through the raw
+        #                          API. An editor with re-moderation is MEH-1872.
+        #   starting_price_label → the owner edits `price_range` (PricingCard);
+        #                          this second, older price string has no editor
+        #                          and is what ProducerSections.jsx:206 actually
+        #                          renders. MEH-1855 owns mirroring price_range
+        #                          into it — deliberately NOT done here, so the
+        #                          two PRs cannot collide in either merge order.
+        #   is_available_today   → written by POST /producers/me/availability-state
+        #                          (and the legacy /availability toggle), BOTH of
+        #                          which mirror `availability_state`. This path
+        #                          did not, so a raw PUT desynced the pair. The
+        #                          column's removal is MEH-1854, not this.
         # MEH-1242 PR5: owner permission-surface extension — location mode +
         # opening hours (previously admin-only). delivery_area_cities is still
         # popped + processed separately below. The (has_physical_location OR
@@ -296,7 +317,6 @@ def update_my_producer(
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
-        "is_available_today",
         "images",
         "custom_questions",
         # MEH-1541: owner sets her own founding year. Range-validated
