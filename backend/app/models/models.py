@@ -229,14 +229,22 @@ class Producer(Base):
     opening_hours = Column(String, nullable=True)
     # MEH-1543: optional weekly ORDER-acceptance window — distinct from
     # opening_hours (store hours) and from ProducerLocation.opening_hours
-    # (pickup-point hours, MEH-1509). Format:
-    #   {"sunday": {"open": "09:00", "close": "14:00"}, ...}
+    # (pickup-point hours, MEH-1509). Format (MEH-1869 — a LIST per day):
+    #   {"sunday": [{"open": "09:00", "close": "13:00"},
+    #               {"open": "16:00", "close": "20:00"}], ...}
     # keys a subset of sunday..saturday; a day absent = orders closed that day.
+    # Up to 3 ranges per day, ascending and non-overlapping (a lunch break, or
+    # Friday morning + מוצ"ש). The pre-MEH-1869 single-dict form
+    # ({"sunday": {"open", "close"}}) is still ACCEPTED on write and normalised
+    # to a one-element list, and every reader normalises both — so rows written
+    # before the cutover keep working untouched. This was a JSONB VALUE-shape
+    # change only: no column change, hence NO Alembic revision for MEH-1869.
     # NULL = feature unused → nothing rendered. Backend only stores/validates/
     # returns; the "open now" derivation is client-side (MEH-1546). JSONB (not
     # JSON) so a future EXISTS/containment query stays cheap. Owner-writable via
     # producer_me PUT; validated in schemas.ProducerUpdate (day keys, HH:MM 24h,
-    # close>open → 422). Expand-only per ADR-007. Paired migration: f4a1e9c3b7d2.
+    # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
+    # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
     # MEH-213: location mode. Two independent booleans (not an enum) because
     # a producer can have BOTH a physical store AND offer delivery.

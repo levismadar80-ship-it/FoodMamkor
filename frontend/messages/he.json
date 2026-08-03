@@ -1914,7 +1914,7 @@
       "rejected_toast": "בקשה נדחתה",
       "columns": {
         "producer": "בית עסק",
-        "badge": "Badge",
+        "badge": "תג כשרות",
         "cert": "תעודה",
         "date": "תאריך בקשה",
         "notes": "הערות",
@@ -4368,6 +4368,9 @@
         "from_label": "פתיחה",
         "to_label": "סגירה",
         "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה",
+        "invalid_overlap": "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם",
+        "add_range": "טווח נוסף",
+        "remove_range": "הסרת הטווח",
         "save_cta": "שמירה",
         "saving": "בשמירה…",
         "save_success": "חלון ההזמנות נשמר",
