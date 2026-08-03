@@ -123,7 +123,8 @@ describe("HoursEditor — ranges per day (MEH-1870)", () => {
   it("hides the add control when the day has no room left", () => {
     renderEditor("Fri 09:00-23:59");
     expect(screen.queryByTestId("hours-add-range-5")).toBeNull();
-    // …and a day that DOES have room still offers it.
+    // …and a CLOSED day has no control either, for a different reason: there
+    // are no ranges to append to. The "has room" case is the next test.
     expect(screen.queryByTestId("hours-add-range-4")).toBeNull(); // Thu closed
   });
 
