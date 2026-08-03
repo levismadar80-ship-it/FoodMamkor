@@ -2,8 +2,8 @@
  * MEH-1752 — the Zod producer schemas mirror the backend inheritance.
  *
  * The server declares `class ProducerListOut(BaseModel)`
- * (backend/app/schemas/schemas.py:1891) and
- * `class ProducerDetailOut(ProducerListOut)` (:2112). `lib/schemas.js` now
+ * (backend/app/schemas/schemas.py:1907, as of 03/08/2026) and
+ * `class ProducerDetailOut(ProducerListOut)` (:2128). `lib/schemas.js` now
  * expresses the same relation with `ProducerListSchema` +
  * `ProducerDetailSchema = ProducerListSchema.extend({...})`.
  *
@@ -27,8 +27,17 @@ import {
   ProducerSchema,
 } from "@/lib/schemas";
 
-// Declared by ProducerDetailOut and NOT by ProducerListOut — measured from
+// The four detail-only fields **currently expressed in Zod** — measured from
 // the Pydantic classes, not copied from a ticket.
+//
+// NOT the whole backend delta: ProducerDetailOut adds **17** fields to
+// ProducerListOut, and 13 of them are undeclared on either Zod schema (listed
+// by name in lib/schemas.js § MEH-1752, audit D2). Read this constant as "the
+// part of the delta the frontend models today", never as "the delta" — a field
+// absent here may still be detail-only, so placing a new field in
+// ProducerListSchema because it is missing from this list would be wrong.
+// The Pydantic classes are the authority for placement; MEH-1891's parity
+// guard checks the coverage.
 const DETAIL_ONLY = ["website", "instagram", "facebook", "external_order_form"];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);
