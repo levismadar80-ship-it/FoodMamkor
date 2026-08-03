@@ -55,7 +55,10 @@ from app.schemas.schemas import (
     ProductUpdate,
 )
 from app.services.auth_notifications import notify_admin_producer_review_ready
-from app.services.delivery_validation import ensure_exclusion_requires_nationwide
+from app.services.delivery_validation import (
+    ensure_exclusion_requires_nationwide,
+    ensure_nationwide_requires_delivery,
+)
 from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
@@ -431,6 +434,9 @@ def update_my_producer(
     _enforce_owner_license_gate(db, producer, payload, category_ids)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
+    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
+    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
+    ensure_nationwide_requires_delivery(producer, payload)
 
     # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
     # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would

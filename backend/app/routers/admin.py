@@ -14,7 +14,10 @@ from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
 )
-from app.services.delivery_validation import ensure_exclusion_requires_nationwide
+from app.services.delivery_validation import (
+    ensure_exclusion_requires_nationwide,
+    ensure_nationwide_requires_delivery,
+)
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
@@ -232,6 +235,9 @@ def admin_update_producer(
     payload.pop("delivery_cities", None)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
+    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
+    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
+    ensure_nationwide_requires_delivery(producer, payload)
 
     # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
     # the update. If category_ids is being changed → use the new list,

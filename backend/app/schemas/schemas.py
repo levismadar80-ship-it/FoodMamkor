@@ -1470,6 +1470,15 @@ class ProducerAdminCreate(BaseModel):
         # MEH-1255: an exclusion list is only meaningful in nationwide mode.
         if self.delivery_excluded_cities and not self.delivery_nationwide:
             raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
+        # MEH-1879: nationwide scope on a business that declares no delivery is
+        # the contradiction CHECK producer_nationwide_requires_delivery rejects
+        # (MEH-1849, models.py:466). Create has no stored row to merge against,
+        # so the effective-state guard in services/delivery_validation.py does
+        # not fit here — this is the create-path half of the same invariant.
+        # Both fields carry defaults (False/False), so a payload naming only
+        # delivery_nationwide would otherwise reach the DB and 500.
+        if self.delivery_nationwide and not self.offers_delivery:
+            raise ValueError("משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים")
         return self
 
 
@@ -1802,6 +1811,13 @@ class ProducerUpdate(BaseModel):
         # check lives in the routers).
         if self.delivery_excluded_cities and dn is False:
             raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
+        # MEH-1879: nationwide=true sent together with an explicit
+        # offers_delivery=false is always invalid, whatever the stored row
+        # says. `od is False` and not `not od`: None means "field absent from
+        # this partial update", which is the effective-state guard's job
+        # (services/delivery_validation.py), not this one.
+        if dn and od is False:
+            raise ValueError("משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים")
         return self
 
     @model_validator(mode="after")
