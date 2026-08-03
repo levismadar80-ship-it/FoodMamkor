@@ -96,11 +96,14 @@ of `_ds_bundle.css` (valid) and reach designs via `styles.css`'s `@import` closu
 
 ## Authored-preview learnings (core ~25 set)
 
-Folded from the batch waves. The 25 authored components: Button, Card, Heading,
+Folded from the batch waves. The 25 authored components at the time of that batch:
+Button, Card, Heading,
 Badge, Input, Link, EmptyState, Tooltip, Popover, InfoTooltip, StarRating,
-StarSelector, TrustBadge, CategoryTag, AvailabilityBadge, RecipeStatusBadge,
+StarSelector, TrustBadge, CategoryTag, RecipeStatusBadge,
 KashrutBadgeStrip, BadgeRow, ButtonSpinner, Breadcrumb, Pagination, ChipScrollRow,
-SkeletonCard, SkeletonLine, SkeletonProducerGrid.
+SkeletonCard, SkeletonLine, SkeletonProducerGrid — **24 today**:
+`AvailabilityBadge` was removed under MEH-1860 (2026-08-03) as a component with no
+production callers, along with its preview and its `componentSrcMap` entry.
 
 - **Preview idiom that works:** import components from `"mehamakor-frontend"`; named
   exports = cells; inline styles for layout glue (NOT Tailwind className — the preview
@@ -113,9 +116,10 @@ SkeletonCard, SkeletonLine, SkeletonProducerGrid.
 - **Interaction-only overlays:** Tooltip, Popover, InfoTooltip open their bubble/panel via
   uncontrolled hover/click state — the open state can't render in a static screenshot. Their
   previews show the styled trigger only (graded good; do NOT hand-fake the open state).
-- **next-intl namespaces are healthy** for all authored components. Non-obvious: AvailabilityBadge
-  reads `group_buys.availability` (not `producer.availability`).
-- **AvailabilityBadge** `variant="card"` returns `null` for "open" states — previews use visible states.
+- **next-intl namespaces are healthy** for all authored components. (The non-obvious
+  example recorded here was `AvailabilityBadge` reading `group_buys.availability` rather
+  than `producer.availability`; that component was removed under MEH-1860, 2026-08-03, so
+  the example is historical — the namespace-check habit it illustrates is not.)
 - **Avoid relative-time story cells:** KashrutBadgeStrip's near-expiry warning chip depends on
   `new Date()` math vs the headless clock and won't render deterministically — used a
   clock-independent cell instead.

@@ -66,6 +66,11 @@
 ## הקשר / הבעיה (אם רלוונטי)
 [מה לא עובד היום, עם דוגמאות ספציפיות]
 
+**Anchor חובה:** כרטיס שמזכיר קומפוננטה / קובץ / קבוע / מחרוזת קיימים —
+חייב anchor אחד לפחות בפורמט `path/to/file.jsx:NN`, מאומת מול staging ולא
+משוחזר מהזיכרון. אם לא נמצא anchor: זה סימן שהכרטיס מתאר משהו שלא קיים —
+לעצור ולברר לפני יצירה.
+
 ---
 
 ## Model + Effort + Thinking
@@ -312,6 +317,11 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 ❌ **Issue בלי model/effort** — Claude Code לא יודעת לבחור אוטומטית.
 
 ❌ **Prompt בלי file_locations** — Opus 4.8 literal interpretation, ה-context הזה קריטי.
+
+❌ **כרטיס על קומפוננטה קיימת בלי anchor `file:line` מאומת** — ב-batch של 03/08
+שלושה מארבעה כרטיסים עצרו ב-Phase 0 כי תיארו עולם שאינו הקוד: `SocialProofBar`
+שלא קיים, צ'יפ «מגיע עד הבית» שכבר קיים כ-`CHIPS_CONFIG[5]`, ו-`/events` שהוא
+שתי טאבים ולא אחת. כולם נכתבו מ-screenshot בלי anchor אחד.
 
 ❌ **DoD ללא observable outcomes** — "feature works" ≠ DoD. צריך bullet points מדידים.
 

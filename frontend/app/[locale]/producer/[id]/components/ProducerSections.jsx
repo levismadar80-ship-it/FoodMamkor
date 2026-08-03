@@ -12,6 +12,7 @@ import ImageWithFallback from "@/components/ImageWithFallback";
 import { formatPrice, formatPriceRange } from "@/lib/utils";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
+import OfferBadge from "@/components/OfferBadge";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -407,6 +408,16 @@ export default function ProducerSections({
           (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
           order CTA stays tone="tertiary" so it never competes with the contact
           card's single primary CTA. */}
+      {/* MEH-1823: the active offer sits ABOVE the delivery block, and outside
+          its gate on purpose — an offer is not a delivery fact, and a business
+          with an offer but no delivery (pickup_discount, first_order) would
+          otherwise never show it. Renders nothing when there is no offer. */}
+      {producer.active_offer && (
+        <div className="mt-8" data-testid="offer-badge-section">
+          <OfferBadge offer={producer.active_offer} variant="badge" />
+        </div>
+      )}
+
       {(producer.offers_delivery ||
         producer.delivery_areas?.length > 0 ||
         producer.pickup_points) && (

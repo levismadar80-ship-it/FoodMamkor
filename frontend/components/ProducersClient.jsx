@@ -33,9 +33,18 @@ const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
 // nulls-last ordering. Two options only (over-engineering guard).
 const SORT_DEFAULT = "newest";
 const SORT_VALUES = ["newest", "rating"];
-function initSortFromParams(searchParams) {
+// MEH-1864: "rating" is only a legal axis once the catalog actually has
+// reviewed businesses (RATING_SORT_THRESHOLD, lib/rating-gate.js). Below the
+// threshold the option is not rendered, and a hand-typed ?sort=rating degrades
+// to the default here — the backend still answers that URL with 200, the
+// frontend just doesn't present an ordering with no data behind it.
+function sortValuesFor(ratingSortEnabled) {
+  return ratingSortEnabled ? SORT_VALUES : [SORT_DEFAULT];
+}
+function initSortFromParams(searchParams, ratingSortEnabled) {
   const s = searchParams.get("sort");
-  return SORT_VALUES.includes(s) ? s : SORT_DEFAULT; // unknown → default
+  // unknown (or gated-off) → default
+  return sortValuesFor(ratingSortEnabled).includes(s) ? s : SORT_DEFAULT;
 }
 
 // Display axis = i18n key for the translated label.
@@ -65,6 +74,9 @@ export default function ProducersClient({
   initialPage,
   totalPages,
   perPage,
+  // MEH-1864: server-computed rating-data gate. Defaults to false so any caller
+  // that has not measured the catalog gets the conservative (hidden) state.
+  ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
   const searchParams = useSearchParams();
@@ -97,7 +109,9 @@ export default function ProducersClient({
   // callbacks (syncUrl / fetchFiltered / loadNextPage, all useCallback([])) can
   // read the current value without being recreated on every sort change; the
   // ref is set synchronously in handleSortChange (before any callback fires).
-  const [sortOrder, setSortOrder] = useState(() => initSortFromParams(searchParams));
+  const [sortOrder, setSortOrder] = useState(() =>
+    initSortFromParams(searchParams, ratingSortEnabled),
+  );
   const sortOrderRef = useRef(sortOrder);
   useEffect(() => { sortOrderRef.current = sortOrder; }, [sortOrder]);
   // Unfiltered-mode base list: the SSR page by default; replaced with a freshly
@@ -377,7 +391,9 @@ export default function ProducersClient({
   // unfiltered base), and refetch the filtered list in place when filters are
   // active so the visible results re-order immediately.
   const handleSortChange = (e) => {
-    const next = SORT_VALUES.includes(e.target.value) ? e.target.value : SORT_DEFAULT;
+    const next = sortValuesFor(ratingSortEnabled).includes(e.target.value)
+      ? e.target.value
+      : SORT_DEFAULT;
     if (next === sortOrder) return;
     sortOrderRef.current = next;
     setSortOrder(next);
@@ -693,7 +709,14 @@ export default function ProducersClient({
           {/* MEH-1483: backend-driven sort — pushed to the inline-end. Changing
               it re-syncs ?sort=, resets pagination, and refetches (both the
               filtered fetch and infinite-scroll pages). Mirrors the /map sort
-              control shape (MapClient.jsx). */}
+              control shape (MapClient.jsx).
+              MEH-1864: this axis has exactly two values, so gating "rating" off
+              would leave a select whose only option is the value already
+              applied — a dead affordance. The whole control goes with it; it
+              returns intact the moment the catalog crosses the threshold.
+              (/map keeps its control below the threshold: it still has
+              nearest + newest to switch between.) */}
+          {ratingSortEnabled && (
           <div className="relative inline-flex items-center shrink-0 ms-auto">
             <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
             <select
@@ -713,6 +736,7 @@ export default function ProducersClient({
               className="pointer-events-none absolute end-1 text-primary"
             />
           </div>
+          )}
         </div>
       )}
 
