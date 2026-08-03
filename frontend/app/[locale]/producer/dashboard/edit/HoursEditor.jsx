@@ -3,10 +3,13 @@
 /**
  * Module:   HoursEditor
  * Purpose:  Structured Hebrew opening-hours editor for the producer dashboard —
- *           7 day rows (א׳–ש׳), open/closed toggle + two time inputs per open
- *           day, a one-click preset, and a serializer that writes the existing
- *           canonical string ("Sun-Thu 09:00-18:00, Fri 09:00-14:00"). Replaces
- *           the MEH-1242 PR5 free-text field that expected the machine format.
+ *           7 day rows (א׳–ש׳), open/closed toggle + up to MAX_RANGES_PER_DAY
+ *           ranges per open day (two time inputs each), a one-click preset, and
+ *           a serializer that writes the canonical string
+ *           ("Sun-Thu 09:00-18:00, Fri 09:00-13:00 16:00-19:00" — a space
+ *           separates ranges inside a day, a comma separates day groups).
+ *           Replaces the MEH-1242 PR5 free-text field that expected the
+ *           machine format.
  * Does NOT: change storage/API/parseHours — it only builds the string via
  *           lib/hours-serialize and PUTs /producers/me. Consumer display
  *           (OpeningHours.jsx / MapProducerCard) is untouched.
@@ -16,28 +19,32 @@
  *           (MEH-1270 persistent-✓ save pattern this mirrors).
  * History:  MEH-1276 — Google-Business-Profile-style structured editor;
  *           MEH-1344 — revert-to-saved affordance; MEH-1403 — preset became
- *           a labeled two-way toggle (apply ⇄ clear all 7 days).
+ *           a labeled two-way toggle (apply ⇄ clear all 7 days);
+ *           MEH-1870 — several ranges per day (lunch break), add/remove row.
  */
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Warning, CheckCircle } from "@phosphor-icons/react";
+import { Warning, CheckCircle, Plus, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { parseHours, DAY_KEYS } from "@/lib/hours";
 import {
   daysFromString,
   serializeHours,
-  invalidDayIndices,
+  dayIssues,
+  nextRange,
+  canAddRange,
+  MAX_RANGES_PER_DAY,
 } from "@/lib/hours-serialize";
 
 // Preset: א׳–ה׳ 09:00–18:00, ו׳ 09:00–14:00, ש׳ closed. Zero-padded so the
 // serialized output matches parseHours' \d{2}:\d{2} axis.
 function presetDays() {
   return DAY_KEYS.map((_, i) => {
-    if (i <= 4) return { open: true, from: "09:00", to: "18:00" };
-    if (i === 5) return { open: true, from: "09:00", to: "14:00" };
-    return { open: false, from: "09:00", to: "17:00" };
+    if (i <= 4) return { open: true, ranges: [{ from: "09:00", to: "18:00" }] };
+    if (i === 5) return { open: true, ranges: [{ from: "09:00", to: "14:00" }] };
+    return { open: false, ranges: [{ from: "09:00", to: "17:00" }] };
   });
 }
 
@@ -78,7 +85,48 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
   // from an empty editor. The original string is NOT discarded until an explicit
   // save (dirty stays true, but seed is only overwritten by handleSave).
   const unparseable = seed.trim() !== "" && parseHours(seed) === null;
-  const badDays = invalidDayIndices(days);
+  const issues = dayIssues(days);
+  const issueByDay = new Map(issues.map((issue) => [issue.index, issue.reason]));
+
+  // MEH-1870: range-level edits. Each returns a new ranges array rather than
+  // mutating, so the serialize/dirty comparison still sees a new value.
+  const patchRange = (i, rangeIdx, patch) => {
+    setDays((prev) =>
+      prev.map((d, idx) =>
+        idx === i
+          ? { ...d, ranges: d.ranges.map((r, ri) => (ri === rangeIdx ? { ...r, ...patch } : r)) }
+          : d,
+      ),
+    );
+    setSaved(false);
+    setErrorMsg(null);
+  };
+
+  const addRange = (i) => {
+    setDays((prev) =>
+      prev.map((d, idx) =>
+        idx === i && canAddRange(d)
+          ? { ...d, ranges: [...d.ranges, nextRange(d.ranges[d.ranges.length - 1])] }
+          : d,
+      ),
+    );
+    setSaved(false);
+    setErrorMsg(null);
+  };
+
+  // The last range is never removable — an open day must keep one. Closing the
+  // day is what the checkbox is for.
+  const removeRange = (i, rangeIdx) => {
+    setDays((prev) =>
+      prev.map((d, idx) =>
+        idx === i && d.ranges.length > 1
+          ? { ...d, ranges: d.ranges.filter((_, ri) => ri !== rangeIdx) }
+          : d,
+      ),
+    );
+    setSaved(false);
+    setErrorMsg(null);
+  };
 
   const patchDay = (i, patch) => {
     setDays((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
@@ -113,8 +161,10 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
   };
 
   const handleSave = async () => {
-    if (badDays.length > 0) {
-      setErrorMsg(t("invalid_range"));
+    if (issues.length > 0) {
+      // Name the actual problem: the row already says "overlap" or
+      // "close before open", and a fixed top-level string would contradict it.
+      setErrorMsg(t(issues[0].reason));
       return;
     }
     setSaving(true);
@@ -161,10 +211,10 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
       <div className="space-y-2.5">
         {DAY_KEYS.map((key, i) => {
           const day = days[i];
-          const invalid = badDays.includes(i);
+          const issueReason = issueByDay.get(i);
           return (
-            <div key={key} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer w-28 shrink-0">
+            <div key={key} className="flex flex-wrap items-start gap-x-3 gap-y-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer w-28 shrink-0 min-h-[34px]">
                 <input
                   type="checkbox"
                   checked={day.open}
@@ -176,32 +226,74 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
               </label>
 
               {day.open ? (
-                // Time range is inherently LTR numeric (HH:MM–HH:MM); dir="ltr"
-                // keeps the two inputs in reading order on the RTL page. rtl-ok
-                <div className="flex items-center gap-2" dir="ltr">
-                  <input
-                    type="time"
-                    value={day.from}
-                    onChange={(e) => patchDay(i, { from: e.target.value })}
-                    aria-label={`${tDays(key)} ${t("from_label")}`}
-                    className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
-                  />
-                  <span aria-hidden="true" className="text-fg-muted">–</span>
-                  <input
-                    type="time"
-                    value={day.to}
-                    onChange={(e) => patchDay(i, { to: e.target.value })}
-                    aria-label={`${tDays(key)} ${t("to_label")}`}
-                    className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
-                  />
+                // MEH-1870: a day holds up to MAX_RANGES_PER_DAY ranges
+                // (lunch break, Friday morning + מוצ"ש), stacked vertically.
+                <div className="flex flex-col gap-1.5">
+                  {day.ranges.map((range, rangeIdx) => {
+                    // Number the inputs ONLY when the day actually has more
+                    // than one range — on the common single-range day the
+                    // label stays exactly what it has always been.
+                    const nth = day.ranges.length > 1 ? ` ${rangeIdx + 1}` : "";
+                    return (
+                    // Index key: rows are positional, carry no identity, and
+                    // cannot be reordered (ranges stay sorted by construction).
+                    <div key={rangeIdx} className="flex items-center gap-2">
+                      {/* Time range is inherently LTR numeric (HH:MM–HH:MM);
+                          dir="ltr" keeps the two inputs in reading order on the
+                          RTL page. rtl-ok */}
+                      <div className="flex items-center gap-2" dir="ltr">
+                        <input
+                          type="time"
+                          value={range.from}
+                          onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
+                          aria-label={`${tDays(key)} ${t("from_label")}${nth}`}
+                          className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
+                        />
+                        <span aria-hidden="true" className="text-fg-muted">–</span>
+                        <input
+                          type="time"
+                          value={range.to}
+                          onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
+                          aria-label={`${tDays(key)} ${t("to_label")}${nth}`}
+                          className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
+                        />
+                      </div>
+                      {day.ranges.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRange(i, rangeIdx)}
+                          aria-label={`${tDays(key)} — ${t("remove_range")}`}
+                          data-testid={`hours-remove-${i}-${rangeIdx}`}
+                          className="text-fg-muted hover:text-red-600 transition p-1"
+                        >
+                          <X size={14} aria-hidden="true" />
+                        </button>
+                      )}
+                      </div>
+                    );
+                  })}
+
+                  {canAddRange(day) && (
+                    <button
+                      type="button"
+                      onClick={() => addRange(i)}
+                      data-testid={`hours-add-range-${i}`}
+                      className="inline-flex items-center gap-1 self-start text-xs font-medium text-primary hover:text-primary-dark transition"
+                    >
+                      <Plus size={12} weight="bold" aria-hidden="true" />
+                      {t("add_range")}
+                    </button>
+                  )}
                 </div>
               ) : (
-                <span className="text-xs text-fg-muted">{t("toggle_closed")}</span>
+                <span className="text-xs text-fg-muted min-h-[34px] flex items-center">
+                  {t("toggle_closed")}
+                </span>
               )}
 
-              {invalid && (
+              {issueReason && (
                 <span className="w-full text-xs text-red-600" role="alert">
-                  {t("invalid_range")}
+                  {t(issueReason)}
                 </span>
               )}
             </div>
