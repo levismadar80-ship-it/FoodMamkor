@@ -4,7 +4,27 @@ import { z } from "zod";
 // without geocoding). Marked optional/nullable so the schema doesn't reject
 // them outright; callers (marker creation, flyTo) guard against null/NaN
 // before use.
-export const ProducerSchema = z.object({
+//
+// MEH-1752: base + extend, mirroring the backend one-to-one. The server
+// declares `class ProducerListOut(BaseModel)`
+// (backend/app/schemas/schemas.py:1907) and
+// `class ProducerDetailOut(ProducerListOut)` (:2128) — literal inheritance,
+// with `GET /producers/{producer_id}` and `GET /producers/by-slug/{slug}`
+// declaring `response_model=ProducerDetailOut`
+// (backend/app/routers/producers.py:286, :247). Measured against those two
+// classes on 03/08/2026: ProducerListOut = 64 fields, ProducerDetailOut = 81,
+// detail-only = 17, **list-only = 0**. That exact subset relation is what
+// `.extend()` expresses in Zod, so the two schemas below carry the shared
+// fields once instead of twice.
+//
+// Field placement here is DERIVED, not guessed: every key sits in the schema
+// whose Pydantic class declares it. Zod keys declared by NEITHER class: none
+// (checked 03/08/2026 — the absence is the finding).
+//
+// This split is structural only. `ProducerSchema` remains exported as an alias
+// of the detail schema below, so no call site changes shape in this PR;
+// migrating the six parse sites is a separate ticket.
+export const ProducerListSchema = z.object({
   id: z.union([z.string(), z.number()]),
   name: z.string(),
   lat: z.number().finite().nullable().optional(),
@@ -61,11 +81,10 @@ export const ProducerSchema = z.object({
   avg_rating: z.number().nullable().optional(),
   reviews_count: z.number().int().nullable().optional(),
   primary_contact_method: z.string().nullable().optional(),
-  website: z.string().nullable().optional(),
   contact_email: z.string().nullable().optional(),
-  instagram: z.string().nullable().optional(),
-  facebook: z.string().nullable().optional(),
-  external_order_form: z.string().nullable().optional(),
+  // MEH-1752: `website` · `instagram` · `facebook` · `external_order_form`
+  // used to sit here. They are declared by ProducerDetailOut and NOT by
+  // ProducerListOut, so they now live on ProducerDetailSchema below.
   // MEH-902: delivery relation — array of {city, delivery_day, ...} that
   // MapProducerCard.jsx:44-46 reads to render the "delivers to your city"
   // pill. Permissive on every field (incl. city/delivery_day) so the
@@ -183,6 +202,44 @@ export const ProducerSchema = z.object({
   kashrut_badges: z.array(z.string()).nullable().optional(), // → MEH-1711 card kashrut label (certification name)
 });
 
+// MEH-1752: the detail contract — `GET /producers/{producer_id}` and
+// `GET /producers/by-slug/{slug}`. Mirrors
+// `class ProducerDetailOut(ProducerListOut)`
+// (backend/app/schemas/schemas.py:2128) with `.extend()`, which is the Zod
+// spelling of that inheritance: the shared fields are declared once, on
+// ProducerListSchema, and only the delta appears here.
+//
+// The four fields below are the detail-only keys the hand-written schema
+// already declared. `docs/audits/producer-detail-page-validation.md` §3 ruled
+// them NOT-to-delete after measuring that all four are read by
+// `ContactCard.jsx` (`instagram`:105, `website`:114, `facebook`:120,
+// `external_order_form`:121) and that `website` is additionally read
+// server-side by `lib/seo.js`. They were inert only because they were
+// declared on a schema that five list feeds parse; this gives them the
+// contract they actually belong to instead of removing them.
+//
+// The other 13 detail-only fields ProducerDetailOut serves — `contact_name`,
+// `created_at`, `custom_questions`, `established_year`, `google_place_id`,
+// `order_window`, `owner_bio`, `owner_photo_url`, `products`, `report_count`,
+// `story_card_url`, `updated_at`, `whatsapp_group` — are still undeclared,
+// exactly as they were before this split (audit D2). Declaring them would
+// change what the parse sites receive, which this structural PR deliberately
+// does not do.
+export const ProducerDetailSchema = ProducerListSchema.extend({
+  website: z.string().nullable().optional(),
+  instagram: z.string().nullable().optional(),
+  facebook: z.string().nullable().optional(),
+  external_order_form: z.string().nullable().optional(),
+});
+
+// MEH-1752: back-compat alias. Every existing importer of `ProducerSchema`
+// keeps the exact field set it had before the split — the pre-split schema
+// declared all four detail-only fields, so the detail schema is its literal
+// equivalent, not an approximation. Migrating the six call sites to
+// the schema each one actually needs is a separate ticket; until then this
+// alias guarantees the split is a no-op at runtime.
+export const ProducerSchema = ProducerDetailSchema;
+
 // MEH-779: response shape of GET /producers — an array of producers.
 // Rule-19 belt-and-braces on the *response* side (the request side is
 // GeoSearchSchema below). z.object strips unknown keys by default, so the
@@ -191,6 +248,72 @@ export const ProducerSchema = z.object({
 // the parse. On failure the feed falls back to its existing error state
 // (empty list + toast) rather than crashing the map — see useProducersFeed.
 export const ProducersResponseSchema = z.array(ProducerSchema);
+
+// MEH-1885: minimal SSR-metadata schemas for the three non-producer detail
+// routes. These exist ONLY so the four server-side `getX()` helpers can tell
+// the operator when a payload stopped matching its contract — they are never
+// used to build what the page renders (each helper returns the raw payload
+// either way; see the "returns raw, never parsed.data" comment at each site).
+//
+// Deliberately minimal per the ticket: each declares only the fields the
+// route's `generateMetadata` + JSON-LD actually read, not the whole entity.
+// Required-vs-optional MIRRORS THE PYDANTIC CONTRACT for that read subset —
+// a field the backend declares required is required here, because "the
+// contract was not honoured" is exactly the signal these schemas exist to
+// emit. Consumer-side guards (`event.price != null`) are not a reason to
+// relax the declaration; they are what keeps the page rendering while the
+// report goes out.
+//
+// Field sets derived from the live Pydantic classes on 03/08/2026, not from a
+// ticket: EventOut (backend/app/schemas/schemas.py:1742),
+// GroupBuyOut, ExperienceDetailOut (:2783, inherits ExperienceListOut :2754).
+
+// Read by app/[locale]/events/[id]/page.js generateMetadata (title,
+// description, image_url) + lib/seo.js buildEventJsonLd (:458-529 — id,
+// event_date, event_time, location, city, lat, lng, producer_name,
+// producer_id, price, registration_url).
+export const EventMetadataSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  title: z.string(),
+  event_date: z.string(),
+  price: z.number(),
+  producer_id: z.union([z.string(), z.number()]),
+  description: z.string().nullable().optional(),
+  image_url: z.string().nullable().optional(),
+  event_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
+  producer_name: z.string().nullable().optional(),
+  registration_url: z.string().nullable().optional(),
+});
+
+// Read by app/[locale]/group-buys/[id]/page.js generateMetadata. No JSON-LD on
+// this route.
+//
+// Reported, not fixed (MEH-1885 is a validation ticket): `:31` reads
+// `groupBuy?.name` and `:57` reads `groupBuy?.image_url`, and GroupBuyOut
+// declares NEITHER. Both reads are dead against the live contract. They are
+// left undeclared here rather than modelled, so the schema keeps describing
+// the contract instead of describing the mistake.
+export const GroupBuyMetadataSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+});
+
+// Read by app/[locale]/experiences/[id]/page.js generateMetadata.
+//
+// Same reported-not-fixed note: `:33` reads `experience?.name`, which
+// ExperienceDetailOut does not declare. `image_url` DOES exist on that
+// contract, so it is declared.
+export const ExperienceMetadataSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  title: z.string(),
+  description: z.string(),
+  image_url: z.string().nullable().optional(),
+});
 
 // Geo search params sent to GET /producers.
 // radius_km is capped at 50 to prevent Haversine full-table scans that

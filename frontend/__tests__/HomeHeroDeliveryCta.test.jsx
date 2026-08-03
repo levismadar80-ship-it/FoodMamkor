@@ -2,6 +2,14 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 
+// MEH-1812: HomeHero now mounts EnSearchNotice, which calls useLocale() and
+// pulls in LanguageToggle -> @/i18n/navigation. This spec covers HomeHero's own
+// behaviour, so the notice is stubbed out rather than dragging the i18n
+// navigation stack into it. Its own contract is asserted in
+// __tests__/EnSearchNotice.test.jsx, including the /he absence case.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
+
+
 // MEH-1643 — hero delivery-to-me CTA (4th CTA, .action-ghost beside near-me).
 // Two label states (conditional-UI rule — both cells spec'd):
 //  A) no saved user_city → generic label (home.hero.delivery_cta); click fires

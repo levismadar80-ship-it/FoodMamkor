@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import Breadcrumb from "@/components/Breadcrumb";
+import EnSearchNotice from "@/components/EnSearchNotice";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 
 /**
@@ -101,6 +102,8 @@ function SearchPageBody() {
       <h1 className="font-headline-lg text-3xl font-bold text-text mb-4">
         {q ? t("title_results", { q }) : t("title_default")}
       </h1>
+      {/* MEH-1812: same notice, cream surface — muted tone is correct here. */}
+      <EnSearchNotice className="mb-4 text-muted" />
 
       {/* Search bar */}
       <form onSubmit={handleSearch} className="flex items-center gap-2 mb-6 max-w-xl">
