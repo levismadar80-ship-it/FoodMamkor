@@ -8,8 +8,9 @@ Does NOT: validate the nationwide-XOR-cities invariant — that stays in
           delivery_nationwide_xor_cities.
 Related:  app/routers/producer_me.py (owner PUT), app/routers/admin.py
           (admin PUT), migration e7c4b1f95a2d (DB CHECK
-          delivery_excluded_requires_nationwide).
-History:  MEH-1255 (creation).
+          delivery_excluded_requires_nationwide), migration d8c3f1a75e29
+          (DB CHECK producer_nationwide_requires_delivery).
+History:  MEH-1255 (creation); MEH-1879 (nationwide-requires-delivery guard).
 """
 
 from fastapi import HTTPException
@@ -41,4 +42,38 @@ def ensure_exclusion_requires_nationwide(producer: Producer, payload: dict) -> N
         raise HTTPException(
             status_code=422,
             detail="ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ",
+        )
+
+
+def ensure_nationwide_requires_delivery(producer: Producer, payload: dict) -> None:
+    """Raise 422 when the EFFECTIVE post-update state would be nationwide
+    delivery on a business that declares it does not deliver.
+
+    Same shape and same reason as the sibling above: the Pydantic validator
+    only sees fields present in the request, so a partial update — nationwide
+    sent alone while the stored offers_delivery is false, or delivery switched
+    off while a stored nationwide flag survives — reaches the DB and surfaces
+    as CHECK producer_nationwide_requires_delivery (MEH-1849, models.py:466),
+    i.e. an IntegrityError 500 rather than a reasoned 422.
+
+    That 500 was live on the admin manual-approval path from 09fbfbe9 until
+    MEH-1879: the admin form renders its nationwide block conditionally
+    (ProducerForm.jsx:839) but never cleared the state behind it, so unticking
+    "משלוחים" submitted offers_delivery=false alongside delivery_nationwide=true.
+    The form now clears it, and this guard is the defence-in-depth half — the
+    form is not the only writer of these two columns.
+
+    REUSES: ensure_exclusion_requires_nationwide above (effective-state shape).
+    """
+    touches = "delivery_nationwide" in payload or "offers_delivery" in payload
+    if not touches:
+        return
+    effective_nationwide = payload.get(
+        "delivery_nationwide", producer.delivery_nationwide
+    )
+    effective_offers = payload.get("offers_delivery", producer.offers_delivery)
+    if effective_nationwide and not effective_offers:
+        raise HTTPException(
+            status_code=422,
+            detail="משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים",
         )
