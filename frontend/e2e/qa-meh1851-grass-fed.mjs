@@ -21,6 +21,15 @@
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
+// Read the chrome strings from he.json rather than hardcoding them, the same
+// way GrassFedCard.test.jsx does. A literal here would let a rename of
+// `save_cta` silently stop the harness finding the button while the unit test
+// stayed green — the harness would then report on a page it never interacted
+// with. Raised by the CI reviewer on PR #2554.
+const HE = JSON.parse(fs.readFileSync(new URL("../messages/he.json", import.meta.url), "utf8"));
+const SAVE_CTA = HE.dashboard.producer.pricing.save_cta;
+const GRASS_FED_LABEL = HE.dashboard.producer.grassFed.label;
+
 // Repo-root qa-artifacts/ (the path the MEH-1156 size-cap gate scans).
 const OUT = "../qa-artifacts/MEH-1851";
 // Hard-coded, not env-driven: the env-drift gate (.env.example) treats any
@@ -141,10 +150,19 @@ async function main() {
       const { ctx, page } = await openTrustGroup(browser, width, height, false);
       const box = page.locator("#grass-fed input[type=checkbox]");
       const checked = await box.isChecked();
+      // Assert the label against he.json rather than a literal — and via the
+      // checkbox's ACCESSIBLE NAME, not a text match. Two reasons: a bare
+      // getByText matches both the <label> and its text node (strict-mode
+      // violation), and the accessible name is what actually ties the string
+      // to the control a screen-reader user would hear.
+      const labelSeen = await page
+        .locator("#grass-fed")
+        .getByRole("checkbox", { name: GRASS_FED_LABEL })
+        .isVisible();
       // The save button inside the grass-fed sub-section, not a sibling card's.
-      const save = page.locator("#grass-fed").getByRole("button", { name: "שמירה" });
+      const save = page.locator("#grass-fed").getByRole("button", { name: SAVE_CTA });
       const disabled = await save.isDisabled();
-      console.log(`[${label}] state=off  checked=${checked} saveDisabled=${disabled}`);
+      console.log(`[${label}] state=off  checked=${checked} saveDisabled=${disabled} labelSeen=${labelSeen}`);
       await page.screenshot({ path: `${OUT}/grass-fed-${label}-1-off.png`, fullPage: false });
 
       // ---- State 2: the owner declares it, then saves ----
