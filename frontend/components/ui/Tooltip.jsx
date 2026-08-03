@@ -107,12 +107,20 @@ export default function Tooltip({ content, children, position = "top", overlay =
     }
     reposition();
     const dismiss = () => setVisible(false);
+    // Position at open — a scroll dismisses only once the page has actually
+    // moved. Same reasoning (and the same measured 150ms late event) as
+    // ui/Popover; see the comment there.
+    const openX = window.scrollX;
+    const openY = window.scrollY;
+    const dismissOnScroll = () => {
+      if (window.scrollX !== openX || window.scrollY !== openY) setVisible(false);
+    };
     // Capture phase catches scrolling ancestors (scroll does not bubble).
-    window.addEventListener("scroll", dismiss, { capture: true, passive: true });
+    window.addEventListener("scroll", dismissOnScroll, { capture: true, passive: true });
     window.addEventListener("resize", dismiss);
     window.addEventListener("orientationchange", dismiss);
     return () => {
-      window.removeEventListener("scroll", dismiss, { capture: true });
+      window.removeEventListener("scroll", dismissOnScroll, { capture: true });
       window.removeEventListener("resize", dismiss);
       window.removeEventListener("orientationchange", dismiss);
     };

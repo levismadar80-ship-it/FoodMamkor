@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Tooltip from "@/components/ui/Tooltip";
 
@@ -101,6 +101,13 @@ describe("ui/Tooltip", () => {
   // MEH-1871 — mirrors the ui/Popover contract exactly (separate primitives,
   // MEH-792: same behaviour, no shared abstraction).
   describe("overlay mode — dismiss on scroll (MEH-1871)", () => {
+    // Dismissal is triggered by the viewport MOVING, not by a scroll event
+    // arriving — see the ui/Popover suite for the measured 150ms-late event.
+    const setScroll = (y) => {
+      Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
+    };
+    afterEach(() => setScroll(0));
+
     const renderOverlay = () =>
       render(
         <Tooltip content="הסבר" overlay>
@@ -112,6 +119,19 @@ describe("ui/Tooltip", () => {
       renderOverlay();
       fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
       expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      setScroll(240);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("does NOT close on a scroll event at the SAME position it opened at", () => {
+      setScroll(281);
+      renderOverlay();
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      fireEvent.scroll(globalThis); // late event, position unchanged
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+      setScroll(400);
       fireEvent.scroll(globalThis);
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
     });
@@ -123,6 +143,7 @@ describe("ui/Tooltip", () => {
         renderOverlay();
         fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
         expect(screen.getByRole("tooltip")).toBeInTheDocument();
+        setScroll(120);
         fireEvent.scroll(container);
         expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       } finally {
@@ -150,6 +171,7 @@ describe("ui/Tooltip", () => {
       renderOverlay();
       const trigger = screen.getByText("טריגר").parentElement;
       fireEvent.mouseEnter(trigger);
+      setScroll(300);
       fireEvent.scroll(globalThis);
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       const removed = spy.mock.calls.map((call) => call[0]);

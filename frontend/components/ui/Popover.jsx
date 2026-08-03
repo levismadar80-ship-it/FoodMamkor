@@ -183,14 +183,32 @@ export default function Popover({
     }
     reposition();
     const dismiss = () => setOpen(false);
+    // The viewport position AT OPEN. A scroll dismisses only when the page has
+    // actually MOVED since then — a scroll event whose position equals the
+    // opening position means the panel opened during a scroll that had already
+    // landed, and dismissing on it would close the panel the tap just opened.
+    //
+    // Measured 03/08 (MEH-1871): on a 375px viewport, tapping a badge pill that
+    // sits below the fold scrolls it into view first; the resulting scroll EVENT
+    // arrives ~150ms AFTER the panel opened, at the position the page had
+    // already reached. The e2e spec `badge-tooltip-collision S1` caught this at
+    // 375 while desktop (no scroll needed, 0 events) passed. The real-user form
+    // is the same: tapping during iOS momentum scroll would open and instantly
+    // close. This is a position comparison, not a debounce or a distance
+    // threshold — the first real movement still closes immediately.
+    const openX = window.scrollX;
+    const openY = window.scrollY;
+    const dismissOnScroll = () => {
+      if (window.scrollX !== openX || window.scrollY !== openY) setOpen(false);
+    };
     // Capture phase so a scrolling ANCESTOR counts too: scroll does not bubble
     // to window from a scrollable container, but it does reach window on the
     // way down. Passive — the handler never calls preventDefault.
-    window.addEventListener("scroll", dismiss, { capture: true, passive: true });
+    window.addEventListener("scroll", dismissOnScroll, { capture: true, passive: true });
     window.addEventListener("resize", dismiss);
     window.addEventListener("orientationchange", dismiss);
     return () => {
-      window.removeEventListener("scroll", dismiss, { capture: true });
+      window.removeEventListener("scroll", dismissOnScroll, { capture: true });
       window.removeEventListener("resize", dismiss);
       window.removeEventListener("orientationchange", dismiss);
     };
