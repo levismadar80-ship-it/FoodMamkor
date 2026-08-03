@@ -116,6 +116,12 @@ class Producer(Base):
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
+    # LEGACY(2026-09-01, MEH-1855)
+    # MEH-1857: the alias below carried no date and no ticket, so nothing could
+    # ever make it expire. Ownership is also INVERTED today — the public page
+    # reads this alias (ProducerSections.jsx) while the owner writes the
+    # canonical price_range, so a price she fills in renders nowhere. MEH-1855
+    # collapses the pair; the marker makes the deadline enforceable.
     starting_price_label = Column(
         String(50), nullable=True
     )  # legacy alias for price_range
@@ -564,6 +570,13 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
+    # LEGACY(2026-09-01, MEH-1857)
+    # MEH-1857: the "MEH-295 follow-up" this line points at DOES NOT EXIST in
+    # Linear (checked 02/08) — the classic shape this guard exists to catch, a
+    # promise addressed to a ticket nobody opened. The marker references THIS
+    # ticket until a real removal ticket is created; whoever opens it should
+    # swap the id here. Separate instance from producers.starting_price_label
+    # above (MEH-1855) — same class, different column.
     price_range = Column(String(50))  # legacy: removal tracked in MEH-295 follow-up
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
