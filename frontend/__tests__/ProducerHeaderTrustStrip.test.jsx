@@ -19,7 +19,6 @@ vi.mock("next-intl", () => ({
 vi.mock("@/lib/api", () => ({ default: { get: () => Promise.resolve({ data: { reviews: [] } }) } }));
 
 // Stub the child components + Phosphor icons ProducerHeader composes.
-vi.mock("@/components/AvailabilityBadge", () => ({ default: () => <div data-testid="availability" /> }));
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge-row" /> }));
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span data-testid="cat" /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div data-testid="kashrut" /> }));
@@ -90,13 +89,16 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  // MEH-1168 P1: availability moved OUT of the header logistics line into the
-  // contact-card status line / vacation+slow-response banners — it must not
-  // render in the header anymore (closes the calibration-review coverage gap).
-  it("does not render the availability badge in the header", () => {
-    render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
-    expect(screen.queryByTestId("availability")).not.toBeInTheDocument();
-  });
+  // MEH-1168 P1 moved availability OUT of the header logistics line into the
+  // contact-card status line / vacation+slow-response banners. The test that
+  // guarded that ("does not render the availability badge in the header",
+  // asserting queryByTestId("availability") is absent) was DELETED under
+  // MEH-1860, not merely un-mocked: `data-testid="availability"` was produced
+  // ONLY by the vi.mock factory in this file, so once the mock went the
+  // assertion could never fail — it passed in every possible world, the
+  // "decoration, not a guard" shape in .claude/rules/testing.md. The
+  // regression it watched for is unreachable now anyway: AvailabilityBadge no
+  // longer exists, so nothing can put it back in the header.
 });
 
 // MEH-1170: the removed BadgeRow "מוצהר" chip's tooltip was the only surface of
