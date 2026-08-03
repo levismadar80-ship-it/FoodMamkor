@@ -249,6 +249,72 @@ export const ProducerSchema = ProducerDetailSchema;
 // (empty list + toast) rather than crashing the map — see useProducersFeed.
 export const ProducersResponseSchema = z.array(ProducerSchema);
 
+// MEH-1885: minimal SSR-metadata schemas for the three non-producer detail
+// routes. These exist ONLY so the four server-side `getX()` helpers can tell
+// the operator when a payload stopped matching its contract — they are never
+// used to build what the page renders (each helper returns the raw payload
+// either way; see the "returns raw, never parsed.data" comment at each site).
+//
+// Deliberately minimal per the ticket: each declares only the fields the
+// route's `generateMetadata` + JSON-LD actually read, not the whole entity.
+// Required-vs-optional MIRRORS THE PYDANTIC CONTRACT for that read subset —
+// a field the backend declares required is required here, because "the
+// contract was not honoured" is exactly the signal these schemas exist to
+// emit. Consumer-side guards (`event.price != null`) are not a reason to
+// relax the declaration; they are what keeps the page rendering while the
+// report goes out.
+//
+// Field sets derived from the live Pydantic classes on 03/08/2026, not from a
+// ticket: EventOut (backend/app/schemas/schemas.py:1742),
+// GroupBuyOut, ExperienceDetailOut (:2783, inherits ExperienceListOut :2754).
+
+// Read by app/[locale]/events/[id]/page.js generateMetadata (title,
+// description, image_url) + lib/seo.js buildEventJsonLd (:458-529 — id,
+// event_date, event_time, location, city, lat, lng, producer_name,
+// producer_id, price, registration_url).
+export const EventMetadataSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  title: z.string(),
+  event_date: z.string(),
+  price: z.number(),
+  producer_id: z.union([z.string(), z.number()]),
+  description: z.string().nullable().optional(),
+  image_url: z.string().nullable().optional(),
+  event_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
+  producer_name: z.string().nullable().optional(),
+  registration_url: z.string().nullable().optional(),
+});
+
+// Read by app/[locale]/group-buys/[id]/page.js generateMetadata. No JSON-LD on
+// this route.
+//
+// Reported, not fixed (MEH-1885 is a validation ticket): `:31` reads
+// `groupBuy?.name` and `:57` reads `groupBuy?.image_url`, and GroupBuyOut
+// declares NEITHER. Both reads are dead against the live contract. They are
+// left undeclared here rather than modelled, so the schema keeps describing
+// the contract instead of describing the mistake.
+export const GroupBuyMetadataSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+});
+
+// Read by app/[locale]/experiences/[id]/page.js generateMetadata.
+//
+// Same reported-not-fixed note: `:33` reads `experience?.name`, which
+// ExperienceDetailOut does not declare. `image_url` DOES exist on that
+// contract, so it is declared.
+export const ExperienceMetadataSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  title: z.string(),
+  description: z.string(),
+  image_url: z.string().nullable().optional(),
+});
+
 // Geo search params sent to GET /producers.
 // radius_km is capped at 50 to prevent Haversine full-table scans that
 // 500 on the backend for very zoomed-out viewports (≥70 km observed).
