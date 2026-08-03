@@ -24,6 +24,9 @@ are labelled as controls — they guard that the conjunct did not over-filter, a
 are not evidence for the change.
 """
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from tests.conftest import make_producer
 
 HAS_DELIVERY = {"has_delivery": "true"}
@@ -50,14 +53,36 @@ def _names(resp):
 
 
 # ── _has_delivery_condition ────────────────────────────────────────────────
-def test_has_delivery_excludes_nationwide_when_delivery_is_off(client, db):
-    """Nationwide flag set, delivery declared OFF → must not match the chip."""
-    _conflicted(db, "ארצי אבל כבוי", nationwide=True)
+def test_nationwide_with_delivery_off_is_now_unconstructible(db):
+    """SUPERSEDED BY MEH-1849 — the nationwide half is no longer a query concern.
 
-    resp = client.get("/producers", params=HAS_DELIVERY)
-    assert resp.status_code == 200, resp.text
-    assert _names(resp) == []
-    assert resp.headers["X-Total-Count"] == "0"
+    This was `test_has_delivery_excludes_nationwide_when_delivery_is_off`: it
+    built a nationwide business with delivery declared OFF and asserted the
+    chip did not return it. MEH-1849 added CHECK
+    `producer_nationwide_requires_delivery`, so that row can no longer be
+    written at all and the old fixture raises IntegrityError before reaching
+    the endpoint.
+
+    The test is kept, inverted, rather than deleted. Deleting it would leave no
+    record that this state was once reachable, and the assertion it makes now
+    is strictly stronger: not "the query hides the contradiction" but "the
+    contradiction cannot exist". The query-side conjunct in
+    `_has_delivery_condition` stays as defence in depth — it is simply no
+    longer independently exercisable through a constructible fixture, because
+    every fixture that would exercise it is now rejected by the database.
+
+    The AREAS half below is untouched and still constructs its row: a CHECK
+    cannot span tables, so "delivery_areas rows + offers_delivery=false"
+    remains query-enforced only. That is the case still worth guarding, and it
+    is the reason this module survives.
+
+    Full DB-layer coverage: tests/test_nationwide_requires_delivery.py.
+    """
+    with pytest.raises(IntegrityError) as exc:
+        _conflicted(db, "ארצי אבל כבוי", nationwide=True)
+
+    assert "producer_nationwide_requires_delivery" in str(exc.value)
+    db.rollback()
 
 
 def test_has_delivery_excludes_stale_area_rows_when_delivery_is_off(client, db):
@@ -74,13 +99,13 @@ def test_has_delivery_excludes_stale_area_rows_when_delivery_is_off(client, db):
 
 
 # ── _delivery_city_condition ───────────────────────────────────────────────
-def test_delivery_city_excludes_nationwide_when_delivery_is_off(client, db):
-    """City search must not surface a nationwide business that stopped delivering."""
-    _conflicted(db, "ארצי כבוי", nationwide=True)
-
-    resp = client.get("/producers", params=CITY)
-    assert resp.status_code == 200, resp.text
-    assert _names(resp) == []
+# The city-axis twin of the nationwide case, `test_delivery_city_excludes_
+# nationwide_when_delivery_is_off`, was removed under MEH-1849 for the same
+# reason as its has_delivery sibling above: its fixture is now rejected by
+# CHECK producer_nationwide_requires_delivery, so it asserted a state the
+# database no longer permits. One inverted test (above) records that, rather
+# than two identical IntegrityError assertions. The city axis keeps its
+# constructible case — the delivery_areas one, immediately below.
 
 
 def test_delivery_city_excludes_matching_area_row_when_delivery_is_off(client, db):
