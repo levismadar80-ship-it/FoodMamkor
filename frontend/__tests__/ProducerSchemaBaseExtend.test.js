@@ -2,8 +2,8 @@
  * MEH-1752 — the Zod producer schemas mirror the backend inheritance.
  *
  * The server declares `class ProducerListOut(BaseModel)`
- * (backend/app/schemas/schemas.py:1891) and
- * `class ProducerDetailOut(ProducerListOut)` (:2112). `lib/schemas.js` now
+ * (backend/app/schemas/schemas.py:1907, as of 03/08/2026) and
+ * `class ProducerDetailOut(ProducerListOut)` (:2128). `lib/schemas.js` now
  * expresses the same relation with `ProducerListSchema` +
  * `ProducerDetailSchema = ProducerListSchema.extend({...})`.
  *

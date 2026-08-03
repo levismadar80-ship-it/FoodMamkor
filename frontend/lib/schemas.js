@@ -7,8 +7,8 @@ import { z } from "zod";
 //
 // MEH-1752: base + extend, mirroring the backend one-to-one. The server
 // declares `class ProducerListOut(BaseModel)`
-// (backend/app/schemas/schemas.py:1891) and
-// `class ProducerDetailOut(ProducerListOut)` (:2112) — literal inheritance,
+// (backend/app/schemas/schemas.py:1907) and
+// `class ProducerDetailOut(ProducerListOut)` (:2128) — literal inheritance,
 // with `GET /producers/{producer_id}` and `GET /producers/by-slug/{slug}`
 // declaring `response_model=ProducerDetailOut`
 // (backend/app/routers/producers.py:286, :247). Measured against those two
@@ -205,7 +205,7 @@ export const ProducerListSchema = z.object({
 // MEH-1752: the detail contract — `GET /producers/{producer_id}` and
 // `GET /producers/by-slug/{slug}`. Mirrors
 // `class ProducerDetailOut(ProducerListOut)`
-// (backend/app/schemas/schemas.py:2112) with `.extend()`, which is the Zod
+// (backend/app/schemas/schemas.py:2128) with `.extend()`, which is the Zod
 // spelling of that inheritance: the shared fields are declared once, on
 // ProducerListSchema, and only the delta appears here.
 //
