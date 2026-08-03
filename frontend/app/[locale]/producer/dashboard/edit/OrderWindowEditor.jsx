@@ -26,6 +26,7 @@ import {
   serializeOrderWindow,
   orderDayIssues,
   nextOrderRange,
+  canAddOrderRange,
   MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
 
@@ -94,7 +95,7 @@ export default function OrderWindowEditor({
   const addRange = (i) => {
     setDays((prev) =>
       prev.map((d, idx) =>
-        idx === i && d.ranges.length < MAX_ORDER_RANGES_PER_DAY
+        idx === i && canAddOrderRange(d)
           ? { ...d, ranges: [...d.ranges, nextOrderRange(d.ranges[d.ranges.length - 1])] }
           : d,
       ),
@@ -133,7 +134,9 @@ export default function OrderWindowEditor({
 
   const handleSave = async () => {
     if (issues.length > 0) {
-      setErrorMsg(t("invalid_range"));
+      // Name the actual problem: the row already says "overlap" or
+      // "close before open", and a fixed top-level string would contradict it.
+      setErrorMsg(t(issues[0].reason));
       return;
     }
     setSaving(true);
@@ -226,7 +229,7 @@ export default function OrderWindowEditor({
                     </div>
                   ))}
 
-                  {day.ranges.length < MAX_ORDER_RANGES_PER_DAY && (
+                  {canAddOrderRange(day) && (
                     <button
                       type="button"
                       onClick={() => addRange(i)}

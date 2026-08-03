@@ -88,6 +88,24 @@ describe("OrderWindowEditor — ranges per day (MEH-1869)", () => {
     expect(screen.getByDisplayValue("23:59")).toBeTruthy();
   });
 
+  // Reported by the CI adversarial reviewer: a day ending at 23:59 has no room
+  // left, so an append could only produce a zero-length (invalid) range. The
+  // control is hidden rather than handing over an unsaveable form.
+  it("hides the add control when the day has no room left", () => {
+    renderEditor({ sunday: [{ open: "20:00", close: "23:59" }] });
+    expect(screen.queryByTestId("order-window-add-range-0")).toBeNull();
+  });
+
+  it("names the OVERLAP reason in the top-level error, not just the row", () => {
+    renderEditor(SUNDAY_SPLIT);
+    fireEvent.change(screen.getByDisplayValue("16:00"), { target: { value: "12:00" } });
+    fireEvent.click(screen.getByText("save_cta"));
+    // Two elements now: the row message and the top-level one. Before, the
+    // top-level always said "close must be after open" while the row said
+    // "overlap" — two different explanations of one mistake.
+    expect(screen.getAllByText("invalid_overlap").length).toBeGreaterThanOrEqual(2);
+  });
+
   it("adds a range, and hides the add control at the 3-range cap", () => {
     renderEditor(LEGACY);
     const add = () => screen.queryByTestId("order-window-add-range-0");

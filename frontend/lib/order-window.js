@@ -50,7 +50,6 @@ export function emptyOrderRange() {
 
 const MINUTES_IN_DAY = 24 * 60;
 const NEW_RANGE_LENGTH_MIN = 2 * 60;
-const LAST_MINUTE_OF_DAY = "23:59";
 
 const toMin = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 const toHHMM = (min) =>
@@ -69,9 +68,24 @@ const toHHMM = (min) =>
 export function nextOrderRange(last) {
   if (!last || !HHMM.test(last.to ?? "")) return emptyOrderRange();
   const from = toMin(last.to);
-  if (from >= MINUTES_IN_DAY - 1) return { from: last.to, to: LAST_MINUTE_OF_DAY };
+  // No room left in the day. Returning {from:"23:59", to:"23:59"} here would
+  // hand the owner a row that fails validation the moment it appears — an
+  // unsaveable form she did not break. `canAddOrderRange` hides the control.
+  if (from >= MINUTES_IN_DAY - 1) return null;
   const to = Math.min(from + NEW_RANGE_LENGTH_MIN, MINUTES_IN_DAY - 1);
   return { from: toHHMM(from), to: toHHMM(to) };
+}
+
+/**
+ * Whether "+ range" should be offered: under the cap AND with room left in the
+ * day after the last range. Both conditions — the cap alone would still offer
+ * an append that cannot produce a valid range.
+ */
+export function canAddOrderRange(day) {
+  if (!day?.open) return false;
+  const ranges = day.ranges ?? [];
+  if (ranges.length >= MAX_ORDER_RANGES_PER_DAY) return false;
+  return nextOrderRange(ranges[ranges.length - 1]) !== null;
 }
 
 /** A closed row carrying one default range, so toggling it on is one click. */
