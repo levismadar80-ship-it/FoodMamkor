@@ -43,10 +43,20 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { ProducerListSchema, ProducerDetailSchema } from "@/lib/schemas";
 
-const SNAPSHOT_PATH = path.join(
-  process.cwd(),
+const REGEN_COMMAND =
+  "UPDATE_CONTRACT_SNAPSHOT=1 pytest tests/test_producer_contract_snapshot.py";
+
+// Anchored to THIS FILE, not to process.cwd(): the path must resolve the same
+// whether vitest is invoked from frontend/, from the repo root, or by a config
+// that sets its own root. A cwd-relative path would fail with an opaque ENOENT
+// in exactly the setups nobody tests locally.
+const HERE = path.dirname(fileURLToPath(import.meta.url)); // <repo>/frontend/__tests__
+const SNAPSHOT_PATH = path.resolve(
+  HERE,
+  "..",
   "..",
   "backend",
   "app",
@@ -54,7 +64,32 @@ const SNAPSHOT_PATH = path.join(
   "producer_contract_snapshot.json",
 );
 
-const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8"));
+/**
+ * Read lazily and rethrow with the regenerate command attached.
+ *
+ * A top-level `readFileSync` would throw during module load if the snapshot
+ * were missing, collapsing every test in this file into one unexplained
+ * module-load error — including the test whose whole job is to say the file is
+ * missing. The guard has to fail *legibly*, or the next person deletes it.
+ *
+ * Rethrow rather than a `beforeAll`: the per-contract `describe.each` below
+ * needs the key sets at COLLECTION time, so deferring the read would mean
+ * restructuring the suite into one opaque test. The read still happens at
+ * module load; what changes is that the failure now names the file and the
+ * command that regenerates it.
+ */
+function loadSnapshot() {
+  try {
+    return JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8"));
+  } catch (err) {
+    throw new Error(
+      `Could not read the contract snapshot at ${SNAPSHOT_PATH}: ${err.message}\n` +
+        `Regenerate it: ${REGEN_COMMAND}`,
+    );
+  }
+}
+
+const snapshot = loadSnapshot();
 
 /**
  * Backend fields with no Zod declaration as of 03/08/2026 — audit D1 (list)

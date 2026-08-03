@@ -50,10 +50,11 @@ REGEN_COMMAND = (
 _HEADER = [
     "GENERATED FILE — do not hand-edit.",
     f"Regenerate with: {REGEN_COMMAND}",
-    "Owner of this fact: the Pydantic classes in backend/app/schemas/schemas.py",
-    "(ProducerListOut:1907, ProducerDetailOut:2128). This file is a committed",
-    "copy of their field names so frontend vitest can check Zod against them",
-    "without importing Python.",
+    "Owner of this fact: classes ProducerListOut and ProducerDetailOut in",
+    "backend/app/schemas/schemas.py. Deliberately no line numbers — they moved",
+    "twice on 2026-08-03 alone; grep the class names, or just run the command",
+    "above. This file is a committed copy of their field names so frontend",
+    "vitest can check Zod against them without importing Python.",
     "Hand-editing it defeats the guard: the frontend parity test would then be",
     "checking the frontend against itself.",
 ]
