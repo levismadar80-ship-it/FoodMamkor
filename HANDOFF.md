@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-03 — batch הטבות (T1/T2/T3): שלושה merges + backfill
+
+**PRs:** #2497 (T1) · #2500 (T2) · #2502 (T3, squash מ-`6a9737e6`) · **ה-PR הזה** (backfill, כלל 31).
+
+**ענפים:** `feature/meh-1821-delivery-card-defaults-first`, `feature/meh-1822-business-shape-matrix`, `feature/meh-1823-producer-offers` — כל אחד מ-`origin/staging` טרי. ה-harness הצביע על ענף `claude/*`; נחתך מחדש לפי כלל 3.
+
+**אימות אחרון (‏`6a9737e6`):** pytest מלא **2324 passed** / 369 skipped / 1 xfailed · מודול ההטבות 29/29 · vitest 2160 · build ירוק · eslint 0 errors · ruff נקי · he/en parity 40/40 · ICU guard exit 0 (ו-`--self-test` יוצא 1).
+
+### ארבע הערות שנרשמות כאן כדי שלא ייבדקו מחדש
+
+1. **עברית ב-`detail=` של ה-backend היא חובה, לא חוב.** `backend/app/routers/CLAUDE.md` מורה מפורשות `raise HTTPException(status_code=…, detail="<עברית>")`. הממצא הזה הועלה ע"י הסוקר האוטומטי **חמש פעמים** על אותו PR ונדחה חמש פעמים על אותו בסיס. מוסכמה שמתועדת בריפו גוברת על היוריסטיקה של סוקר — אין צורך בסבב שישי.
+2. **ל-`.claude/rules/` אין כלל נגד עברית בהערות Python**, ו-15 מתוך 51 revisions של alembic כבר משתמשות בה. נבדק, לא הונח. (שורה מקבילה נוספה ל-`CLAUDE.md`.)
+3. **הציטוטים של אותו סוקר היו שגויים לרוחב הפאס.** הוא ציטט `OfferBadge.jsx:1581` בקובץ בן **157 שורות**, ו-`schemas.py:693–745` לקוד שיושב ב-1024–1110. שניהם אומתו כשגויים. **ממצא מהסוקר הזה נבדק אחד-אחד מול הקוד — לעולם לא נסרק כמקשה.** בפאס אחר הוא טען ש-`db.rollback()` זורק בשקט כתיבות קודמות באותו PUT; המעקב הראה ש-`get_db` (‏`database.py:114-119`) **לעולם לא עושה commit**, וה-`commit` היחיד הוא `producer_me.py:468` — אחרי נקודת ה-409. כלומר שום דבר לא נשמר, וההצעה (savepoint) הייתה הופכת PUT אטומי לכתיבה חלקית שמדווחת כישלון. נדחה עם ראיות.
+4. **תיחום גבול אינו כיסוי גבול — פער בטסטים שלי.** `FUTURE`/`PAST` (2099/2000) תוחמים את «היום» בלי לנחות עליו, ולכן מוטציה של `>` ל-`>=` על `starts_at` נשארה 22/22 ירוקה. תא על הגבול עצמו הוא מה שתופס off-by-one; זה נמצא ע"י session אחר, לא על ידי.
+
+### מה נותר פתוח
+
+- **`by-slug` של Railway staging מהבהב** — 500 לסירוגין מול `collection` 200 (4 דגימות ב-02/08). המשמעות רחבה מ-CI: דפי עסק עם slug נכשלים למבקרים אמיתיים חלק מהזמן. ה-traceback נמצא בלוגים של Railway; ה-sandbox חסום (MEH-360).
+- **`25-role-reachability.spec.ts:196` flaky** — נפל פעמיים ביום אחד על SHA-ים לא קשורים (כולל על staging עצמו), ומפיל את שער ה-flake. לא טופל, ולא נוגעים ב-spec.
+- **`data-testid="offer-badge-section"`** ב-`ProducerSections.jsx` אינו מכוסה ברמת אינטגרציה; התכונה «אפס שינוי ויזואלי» מוכחת ברמת הקומפוננטה ובספירות ה-harness בלבד.
+
 ## 2026-08-02 — batch ציר יום-המשלוח: שני merges, שני STOPs
 
 **PRs:** #2530 (squash `ff2ea2ea`) · #2533 (squash `1db0b0a2`) · **ה-PR הזה** (backfill, כלל 31).
