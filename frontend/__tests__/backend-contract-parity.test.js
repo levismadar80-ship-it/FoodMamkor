@@ -66,7 +66,7 @@ const SNAPSHOT_PATH = path.resolve(
 );
 
 /**
- * Read lazily and rethrow with the regenerate command attached.
+ * Load the snapshot, rethrowing with the regenerate command attached.
  *
  * To be precise about what this does and does not change: the read STILL
  * happens at module load, and a missing snapshot STILL fails the whole file.
