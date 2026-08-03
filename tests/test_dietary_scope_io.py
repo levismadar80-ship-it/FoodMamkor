@@ -26,6 +26,20 @@ def _producer_user(db):
 
 
 def test_owner_put_persists_dietary_scope(client, db):
+    """THREE of the four scope fields persist from the owner path — not four.
+
+    MEH-1856 removed `lactose_free_facility` from _PRODUCER_WRITABLE_FIELDS, so
+    the owner PUT no longer writes it. That asymmetry is deliberate and is the
+    whole point of the ticket: MEH-1508 §6.3 CUT the lactose question, which
+    DietaryScopeCard.jsx states in its own docstring ("Does NOT: … touch
+    lactose … column stays 'unknown'"). Its three siblings each have an editor
+    in that card; lactose has neither an editor nor any reader.
+
+    This test previously asserted all four persisted, which is what a write
+    path with no UI behind it looks like from the API side. Do NOT "fix" a
+    future failure here by re-adding lactose to the whitelist — re-add it only
+    together with the editor that produces it.
+    """
     user, producer = _producer_user(db)
     resp = client.put(
         "/producers/me",
@@ -37,13 +51,18 @@ def test_owner_put_persists_dietary_scope(client, db):
         },
         headers=auth_header(user),
     )
+    # Still 200, not 422: the field is declared on ProducerUpdate, so Pydantic
+    # parses it happily; the whitelist loop is what drops it.
     assert resp.status_code == 200, resp.text
 
     db.refresh(producer)
     assert producer.vegan_scope == "all"
     assert producer.vegetarian_scope == "some"
     assert producer.gluten_free_facility == "dedicated"
-    assert producer.lactose_free_facility == "shared"
+    # The one that must NOT move. Seeded default is "unknown" (chunk-2 migration).
+    assert producer.lactose_free_facility == "unknown", (
+        "lactose_free_facility was written by the owner path — MEH-1856 closed it"
+    )
 
 
 def test_owner_put_invalid_scope_value_returns_422(client, db):

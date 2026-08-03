@@ -108,9 +108,71 @@ export default defineConfig({
       name: "mobile",
       use: {
         ...devices["Pixel 5"],
-        // Chromium only — no webkit binary in sandbox or CI
+        // MEH-1788: this project is Chromium by design and stays that way.
+        // Precise status of webkit, which this comment used to get wrong:
+        //   sandbox — AVAILABLE, behind PW_WEBKIT=1 (see the projects below,
+        //             and docs/qa/webkit-local.md for the install procedure)
+        //   CI      — NOT wired yet. That is step B and it is Sapir's: it
+        //             needs .github/workflows/**, which is CC-deny (MEH-671).
+        // Until step B lands, every "mobile QA" claim from CI or from a CC
+        // session that did not set the flag is a Chromium claim.
         browserName: "chromium",
       },
     },
+    // MEH-1788 step A — real Safari engine coverage, opt-in.
+    //
+    // Gated on PW_WEBKIT so the default project list is byte-identical to
+    // before this change: without the flag the spread contributes nothing, so
+    // CI (which does not set it) cannot be affected by this commit. That is
+    // asserted, not assumed — see the two runs quoted in the PR body.
+    //
+    // Deliberately NOT applied to e2e/visual/**: VRT baselines are per-project,
+    // so a new project would demand a whole fresh baseline set. Out of scope.
+    ...(process.env.PW_WEBKIT === "1"
+      ? [
+          {
+            // Real iPhone 13 metrics — the device class the Israeli consumer
+            // audience actually carries.
+            name: "webkit-iphone13",
+            // VRT baselines are stored PER PROJECT, and no webkit baseline set
+            // exists. Without this the project would run visual/parity.spec.ts
+            // and mint a fresh baseline for every shot — a bot-authored
+            // baseline freezes whatever state the code is in, bug included
+            // (MEH-1552 / MEH-1765). Measured: without testIgnore the flag
+            // took the suite 224 -> 448 tests, i.e. it had silently inherited
+            // the whole VRT set.
+            testIgnore: /visual\//,
+            use: {
+              browserName: "webkit" as const,
+              viewport: { width: 390, height: 664 },
+              deviceScaleFactor: 3,
+              isMobile: true,
+              hasTouch: true,
+            },
+          },
+          {
+            // Same viewport as the Chromium `mobile` project, different engine.
+            // This is the controlled comparison: when a spec passes on `mobile`
+            // and fails here, the viewport is held constant so the engine is
+            // the only variable left.
+            name: "webkit-pixel5-viewport",
+            // VRT baselines are stored PER PROJECT, and no webkit baseline set
+            // exists. Without this the project would run visual/parity.spec.ts
+            // and mint a fresh baseline for every shot — a bot-authored
+            // baseline freezes whatever state the code is in, bug included
+            // (MEH-1552 / MEH-1765). Measured: without testIgnore the flag
+            // took the suite 224 -> 448 tests, i.e. it had silently inherited
+            // the whole VRT set.
+            testIgnore: /visual\//,
+            use: {
+              browserName: "webkit" as const,
+              viewport: { width: 393, height: 727 },
+              deviceScaleFactor: 2.75,
+              isMobile: true,
+              hasTouch: true,
+            },
+          },
+        ]
+      : []),
   ],
 });

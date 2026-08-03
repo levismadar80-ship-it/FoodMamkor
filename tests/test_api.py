@@ -2339,19 +2339,40 @@ class TestReservedSlugs:
         assert resp.status_code == 400
         assert "שמור" in resp.json()["detail"]
 
-    def test_producer_me_update_with_reserved_slug_returns_400(self, client, db):
-        """A producer user cannot set their own slug to a reserved word."""
+    def test_producer_me_update_cannot_set_slug_at_all(self, client, db):
+        """MEH-1856: a producer user cannot set her own slug — reserved or not.
+
+        This REPLACES test_producer_me_update_with_reserved_slug_returns_400,
+        which asserted a 400 for the reserved word specifically. That 400 came
+        from a validate-and-deduplicate step that ran BEFORE the writable-field
+        whitelist; with `slug` out of the whitelist the step was removed, since
+        keeping it would have left the endpoint rejecting a value it no longer
+        writes (`slug: "about"` → 400, `slug: "anything"` → 200-and-ignored).
+
+        The guarantee is now stronger, so this asserts the stronger thing: the
+        request succeeds and the slug is UNCHANGED. A 400 only ever proved the
+        reserved word was refused; an unchanged column proves nothing was
+        written on either path. Admin/import keep their own reserved-slug
+        checks — covered by the sibling tests in this class.
+        """
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
         db.commit()
-        resp = client.put(
-            "/producers/me",
-            json={"slug": "admin"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 400
-        assert "שמור" in resp.json()["detail"]
+        original_slug = producer.slug
+
+        for attempted in ("admin", "a-perfectly-fine-slug"):
+            resp = client.put(
+                "/producers/me",
+                json={"slug": attempted},
+                headers=auth_header(user),
+            )
+            assert resp.status_code == 200, resp.text
+            db.refresh(producer)
+            assert producer.slug == original_slug, (
+                f"slug changed to {producer.slug!r} after PUT with {attempted!r} — "
+                "the owner write path for slug must be closed"
+            )
 
     def test_non_reserved_slug_is_accepted(self, client, db):
         admin = make_user(db, role="admin")
