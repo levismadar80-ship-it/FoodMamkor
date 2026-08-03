@@ -444,6 +444,20 @@ class Producer(Base):
             "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
             name="delivery_nationwide_xor_cities",
         ),
+        # MEH-1849: nationwide scope without the delivery switch is a
+        # contradiction — the strongest delivery configuration on a business
+        # that declares it does not deliver. Mirrors CHECK
+        # producer_nationwide_requires_delivery, added in d8c3f1a75e29.
+        # The write-path half of MEH-1848, which made producer_listing.py's
+        # two delivery predicates consult offers_delivery: that stops the row
+        # being SHOWN, this stops it EXISTING (seeds, imports, psql).
+        # NOTE: a CHECK cannot span tables, so the sibling contradiction
+        # "delivery_areas rows + offers_delivery=false" is enforced ONLY in
+        # the query layer.
+        CheckConstraint(
+            "NOT (delivery_nationwide AND NOT offers_delivery)",
+            name="producer_nationwide_requires_delivery",
+        ),
         # MEH-1255: an exclusion list without nationwide mode is contradictory.
         # Column is NOT NULL so the equality form is NULL-free (no
         # array_length three-valued-logic edge). Added in e7c4b1f95a2d.
