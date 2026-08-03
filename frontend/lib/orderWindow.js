@@ -80,16 +80,41 @@ function isEmptyWindow(orderWindow) {
   );
 }
 
-/** Normalised {openMin, closeMin} for a day index, or null when closed/invalid. */
-function dayRange(orderWindow, dayIndex) {
-  const entry = orderWindow?.[ORDER_DAY_KEYS[dayIndex]];
-  if (!entry) return null;
-  const openMin = toMinutes(entry.open);
-  const closeMin = toMinutes(entry.close);
-  // The backend guarantees close > open; a hand-edited row that violates it is
-  // treated as closed rather than rendered as a nonsense range.
-  if (openMin === null || closeMin === null || closeMin <= openMin) return null;
-  return { openMin, closeMin };
+/**
+ * MEH-1869 — the single normalisation point for BOTH stored shapes.
+ *
+ * Canonical is a list of ranges per day; the pre-1869 single dict is wrapped
+ * into a one-element list. Every reader in this module goes through here, so
+ * legacy rows cannot reach a consumer un-normalised.
+ *
+ * @returns {Array<{open: string, close: string}>} raw entries, already
+ *   filtered to the well-formed ones and sorted by open time. Empty = closed.
+ */
+export function normalizeDayEntries(entry) {
+  if (!entry) return [];
+  const list = Array.isArray(entry) ? entry : [entry];
+  return list
+    .filter((r) => {
+      const openMin = toMinutes(r?.open);
+      const closeMin = toMinutes(r?.close);
+      // The backend guarantees close > open; a hand-edited row that violates
+      // it is dropped rather than rendered as a nonsense range.
+      return openMin !== null && closeMin !== null && closeMin > openMin;
+    })
+    // Zero-padded HH:MM sorts correctly as plain text. `.filter` above already
+    // returned a fresh array, so sorting in place never touches the caller's.
+    .sort((first, second) => first.open.localeCompare(second.open));
+}
+
+/**
+ * Normalised [{openMin, closeMin}, …] for a day index, ascending by open time.
+ * Empty array when the day is closed or every stored range is malformed.
+ */
+function dayRanges(orderWindow, dayIndex) {
+  return normalizeDayEntries(orderWindow?.[ORDER_DAY_KEYS[dayIndex]]).map((r) => ({
+    openMin: toMinutes(r.open),
+    closeMin: toMinutes(r.close),
+  }));
 }
 
 /**
@@ -106,25 +131,30 @@ export function getOrderWindowStatus(orderWindow, now = new Date()) {
   const { dayIndex, minutes } = israelNowParts(now);
   if (dayIndex < 0) return null;
 
-  const today = dayRange(orderWindow, dayIndex);
-  if (today && minutes >= today.openMin && minutes < today.closeMin) {
-    const untilClose = today.closeMin - minutes;
+  // MEH-1869: a day can hold several disjoint ranges, so "am I inside one?" is
+  // a scan, not a single comparison — and "closed" between two ranges of the
+  // same day is a real state (the lunch break this feature exists for).
+  const today = dayRanges(orderWindow, dayIndex);
+  const current = today.find((r) => minutes >= r.openMin && minutes < r.closeMin);
+  if (current) {
+    const untilClose = current.closeMin - minutes;
     return {
       state: untilClose <= CLOSING_SOON_MINUTES ? "closing_soon" : "open",
-      nextChange: dateFromOffset(now, today.closeMin - minutes),
+      nextChange: dateFromOffset(now, untilClose),
     };
   }
 
-  // Closed now — find the next opening, scanning today (later today) then the
-  // following 7 days so a single-day window wraps to next week.
-  if (today && minutes < today.openMin) {
-    return { state: "closed", nextChange: dateFromOffset(now, today.openMin - minutes) };
+  // Closed now — the next opening may still be LATER TODAY (after a break),
+  // otherwise scan the following 7 days so a single-day window wraps.
+  const laterToday = today.find((r) => minutes < r.openMin);
+  if (laterToday) {
+    return { state: "closed", nextChange: dateFromOffset(now, laterToday.openMin - minutes) };
   }
   for (let ahead = 1; ahead <= 7; ahead += 1) {
     const idx = (dayIndex + ahead) % 7;
-    const range = dayRange(orderWindow, idx);
-    if (!range) continue;
-    const offset = ahead * MINUTES_PER_DAY - minutes + range.openMin;
+    const [first] = dayRanges(orderWindow, idx);
+    if (!first) continue;
+    const offset = ahead * MINUTES_PER_DAY - minutes + first.openMin;
     return { state: "closed", nextChange: dateFromOffset(now, offset) };
   }
   // A window object exists but no day is usable (all invalid).
@@ -152,36 +182,53 @@ export function getSingleOrderCutoff(orderWindow) {
   if (isEmptyWindow(orderWindow)) return null;
   let found = null;
   for (let i = 0; i < 7; i += 1) {
-    const range = dayRange(orderWindow, i);
-    if (!range) continue;
+    const entries = normalizeDayEntries(orderWindow[ORDER_DAY_KEYS[i]]);
+    if (entries.length === 0) continue;
     if (found) return null; // 2+ open days → ambiguous
-    found = { dayIndex: i, close: orderWindow[ORDER_DAY_KEYS[i]].close };
+    // MEH-1869: with several ranges on that one day the cutoff is the LAST
+    // close — the moment orders stop for the day. Still unambiguous, which is
+    // the property MEH-1646 requires; a mid-day break does not create a second
+    // candidate "until" time, it only moves the final one.
+    found = { dayIndex: i, close: entries[entries.length - 1].close };
   }
   return found;
 }
 
+/** Two normalised range lists describe the same schedule (order included). */
+function sameRanges(left, right) {
+  return (
+    left.length === right.length &&
+    left.every(
+      (range, i) => range.open === right[i].open && range.close === right[i].close,
+    )
+  );
+}
+
 /**
  * Compress the weekly window into display ranges, merging CONSECUTIVE days
- * that share identical hours: [{fromDay: 0, toDay: 4, open, close}, …].
+ * that share identical hours:
+ *   [{fromDay: 0, toDay: 4, ranges: [{open, close}, …]}, …]
  * Days are indices into DAY_KEYS so the caller supplies localized labels.
+ *
+ * MEH-1869: `ranges` replaces the former flat `open`/`close` pair, because a
+ * day can now hold up to three. Days merge only when their FULL range list
+ * matches — two days that share a morning block but differ in the evening are
+ * genuinely different schedules and must not collapse into one row.
  */
 export function getOrderWindowRanges(orderWindow) {
   if (isEmptyWindow(orderWindow)) return [];
   const out = [];
   for (let i = 0; i < 7; i += 1) {
-    const range = dayRange(orderWindow, i);
-    if (!range) continue;
-    const entry = orderWindow[ORDER_DAY_KEYS[i]];
+    const entries = normalizeDayEntries(orderWindow[ORDER_DAY_KEYS[i]]).map((r) => ({
+      open: r.open,
+      close: r.close,
+    }));
+    if (entries.length === 0) continue;
     const prev = out[out.length - 1];
-    if (
-      prev &&
-      prev.toDay === i - 1 &&
-      prev.open === entry.open &&
-      prev.close === entry.close
-    ) {
+    if (prev && prev.toDay === i - 1 && sameRanges(prev.ranges, entries)) {
       prev.toDay = i;
     } else {
-      out.push({ fromDay: i, toDay: i, open: entry.open, close: entry.close });
+      out.push({ fromDay: i, toDay: i, ranges: entries });
     }
   }
   return out;

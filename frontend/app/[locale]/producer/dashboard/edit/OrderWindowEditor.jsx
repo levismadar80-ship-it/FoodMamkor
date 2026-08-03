@@ -17,14 +17,16 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Warning, CheckCircle } from "@phosphor-icons/react";
+import { Warning, CheckCircle, Plus, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { DAY_KEYS } from "@/lib/hours";
 import {
   daysFromOrderWindow,
   serializeOrderWindow,
-  invalidOrderDayIndices,
+  orderDayIssues,
+  nextOrderRange,
+  MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
 
 export default function OrderWindowEditor({
@@ -54,7 +56,8 @@ export default function OrderWindowEditor({
 
   const current = serializeOrderWindow(days);
   const dirty = JSON.stringify(current) !== seedPayload;
-  const badDays = invalidOrderDayIndices(days);
+  const issues = orderDayIssues(days);
+  const issueByDay = new Map(issues.map((issue) => [issue.index, issue.reason]));
   const isEmpty = current === null;
 
   useEffect(() => {
@@ -62,10 +65,55 @@ export default function OrderWindowEditor({
     return () => reportDirty("orderWindow", false);
   }, [dirty, reportDirty]);
 
-  const patchDay = (i, patch) => {
-    setDays((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
+  const touch = () => {
     setSaved(false);
     setErrorMsg(null);
+  };
+
+  const patchDay = (i, patch) => {
+    setDays((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
+    touch();
+  };
+
+  // MEH-1869: range-level edits. Each returns a new ranges array rather than
+  // mutating, so the serialize/dirty comparison above still sees a new value.
+  const patchRange = (i, rangeIdx, patch) => {
+    setDays((prev) =>
+      prev.map((d, idx) =>
+        idx === i
+          ? {
+              ...d,
+              ranges: d.ranges.map((r, ri) => (ri === rangeIdx ? { ...r, ...patch } : r)),
+            }
+          : d,
+      ),
+    );
+    touch();
+  };
+
+  const addRange = (i) => {
+    setDays((prev) =>
+      prev.map((d, idx) =>
+        idx === i && d.ranges.length < MAX_ORDER_RANGES_PER_DAY
+          ? { ...d, ranges: [...d.ranges, nextOrderRange(d.ranges[d.ranges.length - 1])] }
+          : d,
+      ),
+    );
+    touch();
+  };
+
+  // The last range is never removable — a day that is open must keep one range.
+  // Closing the day is what the checkbox is for, and leaving a rangeless open
+  // row would serialize to a day key the backend rejects.
+  const removeRange = (i, rangeIdx) => {
+    setDays((prev) =>
+      prev.map((d, idx) =>
+        idx === i && d.ranges.length > 1
+          ? { ...d, ranges: d.ranges.filter((_, ri) => ri !== rangeIdx) }
+          : d,
+      ),
+    );
+    touch();
   };
 
   // "נקי הכל" — closes all 7 rows, which serializes to null (the clear body).
@@ -84,7 +132,7 @@ export default function OrderWindowEditor({
   };
 
   const handleSave = async () => {
-    if (badDays.length > 0) {
+    if (issues.length > 0) {
       setErrorMsg(t("invalid_range"));
       return;
     }
@@ -122,10 +170,10 @@ export default function OrderWindowEditor({
       <div className="space-y-2.5">
         {DAY_KEYS.map((key, i) => {
           const day = days[i];
-          const invalid = badDays.includes(i);
+          const issueReason = issueByDay.get(i);
           return (
-            <div key={key} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer w-28 shrink-0">
+            <div key={key} className="flex flex-wrap items-start gap-x-3 gap-y-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer w-28 shrink-0 min-h-[34px]">
                 <input
                   type="checkbox"
                   checked={day.open}
@@ -137,32 +185,68 @@ export default function OrderWindowEditor({
               </label>
 
               {day.open ? (
-                // Time range is inherently LTR numeric (HH:MM–HH:MM); dir="ltr"
-                // keeps the two inputs in reading order on the RTL page. rtl-ok
-                <div className="flex items-center gap-2" dir="ltr">
-                  <input
-                    type="time"
-                    value={day.from}
-                    onChange={(e) => patchDay(i, { from: e.target.value })}
-                    aria-label={`${tDays(key)} ${t("from_label")}`}
-                    className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
-                  />
-                  <span aria-hidden="true" className="text-fg-muted">–</span>
-                  <input
-                    type="time"
-                    value={day.to}
-                    onChange={(e) => patchDay(i, { to: e.target.value })}
-                    aria-label={`${tDays(key)} ${t("to_label")}`}
-                    className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
-                  />
+                // MEH-1869: a day holds up to MAX_ORDER_RANGES_PER_DAY ranges
+                // (lunch break, Friday morning + מוצ"ש), stacked vertically.
+                <div className="flex flex-col gap-1.5">
+                  {day.ranges.map((range, rangeIdx) => (
+                    // Index key: rows are positional, carry no identity, and
+                    // cannot be reordered (ranges stay sorted by construction).
+                    <div key={rangeIdx} className="flex items-center gap-2">
+                      {/* Time range is inherently LTR numeric (HH:MM–HH:MM);
+                          dir="ltr" keeps the two inputs in reading order on the
+                          RTL page. rtl-ok */}
+                      <div className="flex items-center gap-2" dir="ltr">
+                        <input
+                          type="time"
+                          value={range.from}
+                          onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
+                          aria-label={`${tDays(key)} ${t("from_label")} ${rangeIdx + 1}`}
+                          className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
+                        />
+                        <span aria-hidden="true" className="text-fg-muted">–</span>
+                        <input
+                          type="time"
+                          value={range.to}
+                          onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
+                          aria-label={`${tDays(key)} ${t("to_label")} ${rangeIdx + 1}`}
+                          className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
+                        />
+                      </div>
+                      {day.ranges.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRange(i, rangeIdx)}
+                          aria-label={`${tDays(key)} — ${t("remove_range")}`}
+                          data-testid={`order-window-remove-${i}-${rangeIdx}`}
+                          className="text-fg-muted hover:text-red-600 transition p-1"
+                        >
+                          <X size={14} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  {day.ranges.length < MAX_ORDER_RANGES_PER_DAY && (
+                    <button
+                      type="button"
+                      onClick={() => addRange(i)}
+                      data-testid={`order-window-add-range-${i}`}
+                      className="inline-flex items-center gap-1 self-start text-xs font-medium text-primary hover:text-primary-dark transition"
+                    >
+                      <Plus size={12} weight="bold" aria-hidden="true" />
+                      {t("add_range")}
+                    </button>
+                  )}
                 </div>
               ) : (
-                <span className="text-xs text-fg-muted">{t("toggle_closed")}</span>
+                <span className="text-xs text-fg-muted min-h-[34px] flex items-center">
+                  {t("toggle_closed")}
+                </span>
               )}
 
-              {invalid && (
+              {issueReason && (
                 <span className="w-full text-xs text-red-600" role="alert">
-                  {t("invalid_range")}
+                  {t(issueReason)}
                 </span>
               )}
             </div>
