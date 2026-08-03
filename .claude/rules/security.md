@@ -25,6 +25,14 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   and a request-fingerprint binding — all enforced inside
   `get_current_user` (`auth.py:261-275`). Do not weaken any of these to
   lengthen a session.
+  _Every citation in this bullet re-derived from the source 2026-08-03
+  (MEH-1861) and found **accurate, unchanged**: `config.py:28` `HS256`,
+  `:35` `access_token_expire_minutes = 15`, `:36`
+  `refresh_token_expire_days = 14`, `:161-166` the production
+  `raise RuntimeError`, `:171` the dev ephemeral secret; and
+  `auth.py:261/273/274/275` = `_validate_access_scope`,
+  `_check_password_change_invalidation`, `_check_token_version`,
+  `_check_fingerprint`._
 - **Rate limiting via slowapi.** See `backend/app/rate_limit.py`.
   Per-route limits are set in the router file, not inline.
 - **IDOR ownership checks with admin override.** Every resource mutation
