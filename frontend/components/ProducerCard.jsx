@@ -8,6 +8,7 @@ import Image from "next/image";
 import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
+import OfferBadge from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
@@ -494,6 +495,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {t("producer.card.badges.available_today")}
           </span>
         )}
+
+        {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
+            when active_offer is absent, so a business without an offer renders
+            byte-identically to before — no wrapper, no gap, no flow change. */}
+        <OfferBadge offer={producer.active_offer} variant="chip" />
+        {/* /MEH-1823 */}
 
         {localFavCount >= 5 && (
           <p className="flex items-center gap-1 text-[12px] text-fg-muted">

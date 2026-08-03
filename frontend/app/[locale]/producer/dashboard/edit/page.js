@@ -77,7 +77,7 @@ import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -163,6 +163,11 @@ const KEY_TO_ANCHOR = {
   delivery: "delivery",
   hours: "hours",
   orderWindow: "order-window",
+  // MEH-1823: registered here so #offer deep-links resolve like every other
+  // card. These three maps are a guarded registry — a card added to the JSX
+  // without an entry renders but is unreachable by anchor, which is the
+  // silent-gap class .claude/rules/testing.md documents for path registries.
+  offer: "offer",
 };
 
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
@@ -188,6 +193,13 @@ const KEY_TO_GROUP = {
   delivery: "location",
   hours: "location",
   orderWindow: "location",
+  // MEH-1823: the offer lives in the location group — it is read against the
+  // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
+  // for the same reason orderWindow isn't: membership drives the hub's
+  // "{done}/{total}", and an opt-in field would show every existing business
+  // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
+  // for — the GBP-staleness risk that note already cites.
+  offer: "location",
   contact: "contact",
   questions: "contact",
 };
@@ -238,6 +250,9 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-1823: the offer feature owns one namespace shared by the dashboard
+  // card and the public badge, so the four type labels have a single source.
+  const tOffer = useTranslations("producer.offer");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
   // MEH-1773: point-of-decision explainer for the order-window card. The
@@ -1010,6 +1025,29 @@ function EditPageInner() {
           onToggle={() => toggleKey("delivery")}
         >
           <DeliveryCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-1823 — the owner's single typed offer. Sits after delivery
+            because the most common offer (free delivery over a threshold) is
+            read against the delivery terms above it. Summary shows the live
+            offer sentence, or "no active offer" — the empty state is a real
+            state here, not a placeholder. */}
+        <EditAccordionCard
+          anchorId="offer"
+          title={tOffer("card_title")}
+          summary={
+            profile.active_offer
+              ? tOffer(`types.${profile.active_offer.offer_type}`)
+              : tOffer("type_none")
+          }
+          open={openKey === "offer"}
+          onToggle={() => toggleKey("offer")}
+        >
+          <OffersCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
