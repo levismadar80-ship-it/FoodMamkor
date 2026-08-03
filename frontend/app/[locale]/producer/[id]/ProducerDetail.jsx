@@ -1,5 +1,10 @@
 "use client";
 
+// MEH-1785 inert-delta control: this comment is the ENTIRE change on this
+// branch. It exists to force a real Playwright E2E execution on a diff that
+// cannot alter behaviour, so the producer-detail spec failures seen on #2560
+// and #2561 can be attributed to the environment or to those diffs. Measurement
+// only — this branch is never merged.
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
