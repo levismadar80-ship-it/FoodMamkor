@@ -93,7 +93,9 @@ under test, `length === 0 → skip`, `if (!el) return` — each reads as defensi
 hygiene and each converts "the thing is gone" (the exact condition worth failing on) into
 "nothing to check". Gate on something the product cannot move instead: a static project
 identity (`test.skip(testInfo.project.name !== "desktop")`, as
-`e2e/visual/parity.spec.ts:522` does), an env var, a fixture file's presence.
+`e2e/visual/parity.spec.ts:585` does), an env var, a fixture file's presence.
+_(Citation re-derived 2026-08-03 — this read `:522`, which is now a comment; the
+pattern lives at `:585`, with siblings at `:615` and `:648`.)_
 
 **The review question:** if the element vanished entirely, does this test go red — or
 green? If you cannot answer from reading it, run it against a build with the element
@@ -101,7 +103,8 @@ deleted. That two-run control is the only thing that distinguishes a guard from 
 decoration, and it is cheap.
 
 **A green VRT is not evidence that the frame is unchanged — read the text in it (MEH-1765).**
-`playwright.config.ts:61` sets `maxDiffPixelRatio: 0.02`. On the mobile project (Pixel 5,
+`playwright.config.ts:61` sets `maxDiffPixelRatio: 0.02` (citation re-derived
+2026-08-03, MEH-1861 — accurate, unchanged). On the mobile project (Pixel 5,
 393×851, no `fullPage`) that is a **6,688 px** budget; on desktop (1440×900), **25,920 px**.
 Both are large enough to swallow a complete copy change or the loss of a navigation control.
 Measured on 29/07: the `home` hero label went `«מחפשות עכשיו:»` → `«פופולרי עכשיו:»` (~2,800 px
@@ -265,8 +268,9 @@ ruleset only ever gated on the 2 aggregators). Full mechanism:
 
 **`Playwright E2E (Vercel preview)` (mobile Pixel 5 + VRT parity) runs on every
 PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
-`staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
-MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
+`staging` (`e2e.yml:36-40`, re-derived 2026-08-03 — this read `:33-37`, which is
+now the trailing comment block — the old `deployment_status` trigger was dropped
+when MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
 wired into the required-check set — the sanctioned way to make it block merge is
 the `E2E gate` aggregator (job id `e2e-gate`, `always()` +
 `needs: [filter, e2e]`) whose YAML is staged in
@@ -278,7 +282,8 @@ docs-only).
 
 > **✅ Precondition A is now MET — `e2e.yml`'s paths-filter DOES skip docs-only.**
 > This note previously said the opposite; that was true when written and is not
-> true now. The filter (`e2e.yml:62-70`) is **positive-only** today —
+> true now. The filter (`e2e.yml:74-78`, re-verified 2026-08-03 — the citation
+> read `:62-70`, which is now the `filter` job's `steps:`) is **positive-only** today —
 > `frontend/**`, `public/**`, `package.json`, `package-lock.json` — with **no**
 > negation patterns and **no** `predicate-quantifier`, which is exactly the
 > replacement block `e2e-gate.patch.md` prescribed for precondition A.
@@ -292,11 +297,23 @@ docs-only).
 > recoverable — squash-merge flattened `e2e.yml`'s history — so this rests on the
 > live file plus the run above, not on a blame line.)
 >
-> **The gate is still NOT ready for the ruleset — precondition B alone now blocks
-> it.** The suite is not green: 2 VRT `parity.spec.ts` failures (`map` desktop,
-> `home` mobile) as of run `30220096957`. Adding the context while red would
-> block every PR. See [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
-> ("תנאי מוקדם A/B").
+> **Precondition B — STALE, re-measured 2026-08-03 (MEH-1861).** This paragraph
+> read *"The suite is not green: 2 VRT `parity.spec.ts` failures (`map` desktop,
+> `home` mobile) as of run `30220096957`."* **That has not been true since at
+> least 2026-08-02.** Measured: the eight most recent `e2e.yml` runs (through
+> `30793569028`, 2026-08-03T07:24:58Z) all report `conclusion: success`,
+> including on `staging` (`30770303168`); and the QA bot on PR #2542 reported
+> **192 tests executed, 32 skipped, all green with `--fail-on-flaky-tests`
+> on** (run `30767398989`).
+>
+> **So both preconditions now look met** — A since 26/07, B as of 02–03/08. What
+> still blocks the gate is not a red suite: applying `e2e-gate.patch.md` edits
+> `.github/workflows/**` (CC-deny, MEH-671) and adding the context to ruleset
+> 15240090 is a GitHub-settings change. **Both are Sapir's**, and neither is
+> something a green suite makes automatic. See
+> [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
+> ("תנאי מוקדם A/B"). Re-measure before acting — this line is itself an
+> empirical claim with an as-of date, and one green window is not a trend.
 >
 > **Not to be confused with the *other* e2e.yml problem:** the filter skipping
 > docs-only is correct, but combined with the collapsed staging concurrency group
