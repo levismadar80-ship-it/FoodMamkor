@@ -41,6 +41,19 @@ export default function EnSearchNotice({ className = "" }) {
     <div
       data-testid="en-search-notice"
       role="note"
+      // dir="ltr" is required, not cosmetic. The document root is dir="rtl"
+      // (globals.css `html { direction: rtl }`), so an English sentence inside
+      // it has its trailing punctuation reordered by the bidi algorithm — the
+      // self-QA capture at 375 showed this string wrapping as
+      // «.returns no results», with the full stop moved to the head of the line.
+      // This component renders English copy ONLY (it returns null on every other
+      // locale, a few lines up), so scoping direction to it is unconditionally
+      // correct and cannot affect Hebrew anywhere.
+      // NOTE: the same bidi flaw is visible on OTHER /en strings in that capture
+      // (the hero subtitle renders «.we've already vetted for you», the chips
+      // prefix «:Popular now»). Those are pre-existing and site-wide, NOT fixed
+      // here — out of this ticket's scope, and worth their own card.
+      dir="ltr"
       // NO text colour here on purpose — the caller owns it. The two mount
       // points sit on opposite backgrounds: the hero pill rides the photo scrim
       // (where HomeHero.jsx:285 records that `text-fg-muted` fails AA, so the
