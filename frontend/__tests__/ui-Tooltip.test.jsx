@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Tooltip from "@/components/ui/Tooltip";
 
@@ -141,6 +141,25 @@ describe("ui/Tooltip", () => {
       expect(screen.getByRole("tooltip")).toBeInTheDocument();
       fireEvent(globalThis, new Event("orientationchange"));
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    // Parity with the ui/Popover suite (MEH-792: mirror implementations, so
+    // cleanup is asserted on BOTH rather than inferred from one).
+    it("removes its listeners on close, so a later scroll is inert", () => {
+      const spy = vi.spyOn(window, "removeEventListener");
+      renderOverlay();
+      const trigger = screen.getByText("טריגר").parentElement;
+      fireEvent.mouseEnter(trigger);
+      fireEvent.scroll(globalThis);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      const removed = spy.mock.calls.map((call) => call[0]);
+      expect(removed).toContain("scroll");
+      expect(removed).toContain("resize");
+      expect(removed).toContain("orientationchange");
+      spy.mockRestore();
+      // Re-open still works — cleanup did not tear down the show path.
+      fireEvent.mouseEnter(trigger);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
     });
 
     it("NON-overlay is unaffected: scroll leaves the anchored bubble visible", () => {
