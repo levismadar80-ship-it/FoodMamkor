@@ -67,16 +67,16 @@ const SNAPSHOT_PATH = path.resolve(
 /**
  * Read lazily and rethrow with the regenerate command attached.
  *
- * A top-level `readFileSync` would throw during module load if the snapshot
- * were missing, collapsing every test in this file into one unexplained
- * module-load error — including the test whose whole job is to say the file is
- * missing. The guard has to fail *legibly*, or the next person deletes it.
+ * To be precise about what this does and does not change: the read STILL
+ * happens at module load, and a missing snapshot STILL fails the whole file.
+ * What changes is only the message — a bare `readFileSync` reports `ENOENT`
+ * with a path and nothing else, which tells a developer nothing about how to
+ * fix it. Here they get the path AND the regenerate command.
  *
- * Rethrow rather than a `beforeAll`: the per-contract `describe.each` below
- * needs the key sets at COLLECTION time, so deferring the read would mean
- * restructuring the suite into one opaque test. The read still happens at
- * module load; what changes is that the failure now names the file and the
- * command that regenerates it.
+ * Deferring into a `beforeAll` would genuinely avoid the load-time throw, and
+ * it was rejected: the per-contract `describe.each` below needs the key sets at
+ * COLLECTION time, so deferring would collapse six named assertions into one
+ * opaque test. Better message, same timing, was the trade.
  */
 function loadSnapshot() {
   try {
@@ -181,7 +181,20 @@ describe("MEH-1891 — Pydantic → Zod parity", () => {
   describe.each(PAIRS)("$backend → $zodName", ({ backend, zodName, zod }) => {
     const backendKeys = snapshot[backend];
     const zodKeys = new Set(Object.keys(zod.shape));
-    const baseline = KNOWN_UNDECLARED[backend];
+    // `?? []` + the explicit assertion below: adding a pair without a matching
+    // KNOWN_UNDECLARED key would otherwise throw `baseline.includes is not a
+    // function` from inside an assertion, which reads as a broken test rather
+    // than as the misconfiguration it is. An empty baseline is also the SAFE
+    // default — it enforces more, never less.
+    const baseline = KNOWN_UNDECLARED[backend] ?? [];
+
+    it(`${backend} has a baseline entry (even an empty one)`, () => {
+      expect(
+        Object.hasOwn(KNOWN_UNDECLARED, backend),
+        `PAIRS lists ${backend} but KNOWN_UNDECLARED has no key for it. Add one — ` +
+          "`[]` if the Zod schema already declares every field.",
+      ).toBe(true);
+    });
 
     it(`every ${backend} field is declared on ${zodName} (or explicitly baselined)`, () => {
       const missing = backendKeys.filter(
