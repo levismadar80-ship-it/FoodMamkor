@@ -4210,6 +4210,11 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
       },
+      "grassFed": {
+        "heading": "Pasture raised",
+        "label": "Grass-fed",
+        "scope_helper": "Adds the grass-fed chip to your business on the map page. Shown as your own declaration."
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",

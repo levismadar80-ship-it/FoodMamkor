@@ -81,6 +81,9 @@ import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCa
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
+// MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
+// cards.jsx is already >1600 lines).
+import GrassFedCard from "./GrassFedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
@@ -910,6 +913,29 @@ function EditPageInner() {
               {t("dietaryScope.heading")}
             </h3>
             <DietaryScopeCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
+
+          {/* ②e MEH-1851 row 23 — owner-declared grass_fed. Sits in the trust
+              group next to dietary scope because it is the same KIND of claim:
+              a business-level property the owner asserts and nobody verifies
+              (labels.md records its evidence as `self-declared` already). It is
+              NOT inside DietaryScopeCard: that card asks what the catalog
+              CONTAINS, and how livestock was raised is not a dietary scope —
+              folding it in would mislabel the question. The column was already
+              writable via PUT /producers/me; only the ADMIN form could produce
+              a value, which bought friction and no verification. */}
+          <div
+            id="grass-fed"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("grassFed.heading")}
+            </h3>
+            <GrassFedCard
               profile={profile}
               onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
               reportDirty={reportDirty}
