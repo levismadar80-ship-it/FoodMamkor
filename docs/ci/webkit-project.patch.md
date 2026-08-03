@@ -263,12 +263,62 @@ about it.** If the install step fails, read the apt output before changing
 anything else — it will name the missing package, and the fix is usually
 pinning `ubuntu-24.04` explicitly rather than tracking `ubuntu-latest`.
 
-A second, smaller unknown: the authenticated specs provision `storageState` via
-`globalSetup` (`playwright.config.ts:32`). Cookie-jar JSON is engine-portable
-in principle, but MEH-1590 §3 documents a live `__Secure-Fgp` interaction over
-plain HTTP on `localhost` that already affects authed specs. Whether WebKit
-handles that cookie prefix identically to Chromium is **not verified**. If
-authed flows fail on webkit only, look there first.
+### The predicted failure: `__Secure-` cookie prefixes over `http://localhost`
+
+This section used to read *"a second, smaller unknown … not verified"*, citing
+MEH-1590 §3 in passing. **That understated what is known.** This is a specific,
+named, engine-level divergence with a predicted symptom, and it is the most
+likely reason a WebKit job goes red on its first run. Read it before diagnosing
+anything.
+
+Every authenticated spec passes through `_check_fingerprint`
+(`backend/app/auth.py:211-230`), which requires a cookie named `__Secure-Fgp`.
+That cookie is set `secure=True` unconditionally
+(`backend/app/routers/auth.py:137`), and the CI target is
+**`http://localhost:3000`** — plain HTTP. It works today only because browsers
+treat `localhost` as a *potentially trustworthy origin* and waive the HTTPS
+requirement for `Secure`.
+
+**That waiver is not uniform across engines.** Handling of the `__Secure-` /
+`__Host-` cookie **name prefixes** on localhost differs between implementations
+— tracked upstream as rfc6265bis issue **#2605** (Firefox implements it fully,
+Chrome partially). The suite is green on this today for one reason: **CI runs
+Chromium and nothing else.** That is a green with a second cause, and adding
+WebKit is exactly the change that exposes it.
+
+**Predicted symptom, so you recognise it:** every authenticated request returns
+**401**, on WebKit only. It will look like broken auth. It is not.
+
+**Three consequences, in the order you will need them:**
+
+1. **Do not diagnose a WebKit 401 as a regression before ruling this out.** The
+   cheap discriminator: run the same spec against **staging (HTTPS)**. Passes
+   there and fails on `localhost` → it is the cookie prefix, not the code.
+2. **This is the stronger of the two reasons for `continue-on-error: true`** on
+   the WebKit job. The first (above) is speculative — `--with-deps` *might* fail
+   on `ubuntu-latest`. This one is a documented, predicted failure in the cookie
+   layer that is **not a bug in this repo**, so the job must not be able to block
+   a PR on its first outing.
+3. **If it happens, point the WebKit job at an HTTPS target** (staging or a
+   preview) instead of `localhost`. Do **not** relax `secure=True` in
+   `routers/auth.py:137`. That flag is the defence against token sidejacking, and
+   weakening a security invariant to make a test pass is precisely what
+   `.claude/rules/security.md` forbids — *"If a test needs one of these disabled
+   to pass, the test is wrong."*
+
+**What is measured and what is not.** The Chromium half is measured: the probe
+`frontend/e2e/qa-meh1858-fingerprint-proof.mjs` (PR #2550) exercises both targets
+with a 401 control. The WebKit half is **not measured** — but it is now one
+command away, because step A landed the profiles: run that same probe under
+`PW_WEBKIT=1` with `--project=webkit-iphone13`. It uses Playwright's `request`
+API, which honours the selected engine's cookie semantics, so it answers the
+question directly rather than by inference. **Do that before applying this patch,
+not after** — it converts the largest unknown here into a fact for the cost of a
+single run.
+
+_Found during the MEH-1858 flake investigation and carried here because it
+predicts a failure at the moment WebKit enters CI — which is this document's
+moment, not that ticket's._
 
 ---
 
