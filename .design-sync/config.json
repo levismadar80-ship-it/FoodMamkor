@@ -15,7 +15,6 @@
     "AddressSearch": "components/AddressSearch.jsx",
     "AlertPrefsPanel": "components/AlertPrefsPanel.jsx",
     "AppleAuthButton": "components/AppleAuthButton.jsx",
-    "AvailabilityBadge": "components/AvailabilityBadge.jsx",
     "BackToTop": "components/BackToTop.jsx",
     "BadgeRow": "components/BadgeRow.jsx",
     "BottomNav": "components/BottomNav.jsx",

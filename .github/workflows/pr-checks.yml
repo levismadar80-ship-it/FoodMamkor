@@ -351,7 +351,7 @@ jobs:
           # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
           # risk_reasoning) to producers — additive, no table count change.
           # MEH-1338: alert_log (frequency-cap ledger for fire_alerts) — 36 -> 37.
-          EXPECTED_TABLES=38
+          EXPECTED_TABLES=39
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables

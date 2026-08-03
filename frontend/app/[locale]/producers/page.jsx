@@ -6,6 +6,7 @@ import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
+import { RATING_SORT_THRESHOLD, isRatingSortEnabled } from "@/lib/rating-gate";
 
 /**
  * Public paginated index (MEH-23). Server-rendered so crawlers can
@@ -32,6 +33,32 @@ async function fetchPage(page) {
     return { items: Array.isArray(items) ? items : [], total };
   } catch {
     return { items: [], total: 0 };
+  }
+}
+
+/**
+ * MEH-1864: is a sort-by-rating control worth offering at all?
+ *
+ * One extra SSR request against the SAME endpoint, cached for 60s alongside
+ * the page fetch — no new backend surface, no client-side cost. `?sort=rating`
+ * orders reviewed businesses strictly above unreviewed ones, so counting the
+ * reviewed rows inside a RATING_SORT_THRESHOLD-sized window answers
+ * "are there >= threshold reviewed businesses?" exactly (see lib/rating-gate.js).
+ *
+ * Fail-closed: any network/parse error hides the rating sort rather than
+ * offering an ordering we could not verify has data behind it.
+ */
+async function fetchRatingSortEnabled() {
+  try {
+    const res = await fetch(
+      `${API_URL}/producers?sort=rating&limit=${RATING_SORT_THRESHOLD}&offset=0`,
+      { next: { revalidate: 60 } },
+    );
+    if (!res.ok) return false;
+    const items = await res.json();
+    return isRatingSortEnabled(items);
+  } catch {
+    return false;
   }
 }
 
@@ -103,7 +130,10 @@ export async function generateMetadata(props) {
 export default async function ProducersIndexPage(props) {
   const searchParams = await props.searchParams;
   const requestedPage = Math.max(1, Math.floor(Number(searchParams?.page) || 1));
-  const { items, total } = await fetchPage(requestedPage);
+  const [{ items, total }, ratingSortEnabled] = await Promise.all([
+    fetchPage(requestedPage),
+    fetchRatingSortEnabled(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const page = clampPage(requestedPage, totalPages);
 
@@ -116,6 +146,7 @@ export default async function ProducersIndexPage(props) {
           initialPage={page}
           totalPages={totalPages}
           perPage={PER_PAGE}
+          ratingSortEnabled={ratingSortEnabled}
         />
       </Suspense>
     </div>
