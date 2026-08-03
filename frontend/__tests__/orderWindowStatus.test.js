@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import {
   getOrderWindowStatus,
   getOrderWindowRanges,
+  getSingleOrderCutoff,
   israelNowParts,
   CLOSING_SOON_MINUTES,
 } from "@/lib/orderWindow";
@@ -106,6 +107,71 @@ describe("getOrderWindowStatus — closed", () => {
   });
 });
 
+// MEH-1869 — the lunch break. A day with two ranges has a genuinely CLOSED
+// stretch in the middle, and the next opening is later the SAME day. Before
+// the split-ranges change this state was not representable at all.
+describe("getOrderWindowStatus — split day (MEH-1869)", () => {
+  const SPLIT = {
+    sunday: [
+      { open: "09:00", close: "13:00" },
+      { open: "16:00", close: "20:00" },
+    ],
+  };
+
+  it("is open inside the FIRST range", () => {
+    // 08:00Z == 11:00 Israel.
+    expect(getOrderWindowStatus(SPLIT, SUNDAY("08:00")).state).toBe("open");
+  });
+
+  it("is CLOSED in the gap, and reopens later the same day", () => {
+    // 11:30Z == 14:30 Israel — after the morning close, before the evening open.
+    const s = getOrderWindowStatus(SPLIT, SUNDAY("11:30"));
+    expect(s.state).toBe("closed");
+    // 16:00 Israel == 13:00Z, i.e. 90 minutes after 14:30 Israel.
+    expect(s.nextChange.toISOString()).toBe("2026-07-26T13:00:00.000Z");
+  });
+
+  it("is open inside the SECOND range", () => {
+    // 15:00Z == 18:00 Israel.
+    expect(getOrderWindowStatus(SPLIT, SUNDAY("15:00")).state).toBe("open");
+  });
+
+  it("closes for the day after the LAST range", () => {
+    // 18:00Z == 21:00 Israel, past the 20:00 close.
+    expect(getOrderWindowStatus(SPLIT, SUNDAY("18:00")).state).toBe("closed");
+  });
+
+  it("reads a legacy single-dict day identically to a one-range list", () => {
+    const legacy = { sunday: { open: "09:00", close: "13:00" } };
+    const listed = { sunday: [{ open: "09:00", close: "13:00" }] };
+    const at = SUNDAY("08:00");
+    expect(getOrderWindowStatus(legacy, at)).toEqual(getOrderWindowStatus(listed, at));
+  });
+});
+
+describe("getSingleOrderCutoff — split day (MEH-1869)", () => {
+  it("reports the LAST close of the single open day", () => {
+    const cutoff = getSingleOrderCutoff({
+      sunday: [
+        { open: "09:00", close: "13:00" },
+        { open: "16:00", close: "20:00" },
+      ],
+    });
+    // A mid-day break does not create a second "until" candidate; it moves the
+    // final one. Returning 13:00 here would understate the cutoff by 7 hours.
+    expect(cutoff).toEqual({ dayIndex: 0, close: "20:00" });
+  });
+
+  it("still returns null when TWO days are open (ambiguous — MEH-1646)", () => {
+    expect(
+      getSingleOrderCutoff({
+        sunday: [{ open: "09:00", close: "13:00" }],
+        monday: [{ open: "09:00", close: "13:00" }],
+      }),
+    ).toBeNull();
+  });
+});
+
 describe("getOrderWindowRanges", () => {
   it("merges consecutive days with identical hours", () => {
     const ranges = getOrderWindowRanges({
@@ -114,10 +180,36 @@ describe("getOrderWindowRanges", () => {
       tuesday: { open: "09:00", close: "14:00" },
       thursday: { open: "10:00", close: "23:00" },
     });
+    // MEH-1869: a row carries `ranges` (a list) instead of a flat open/close.
     expect(ranges).toEqual([
-      { fromDay: 0, toDay: 2, open: "09:00", close: "14:00" },
-      { fromDay: 4, toDay: 4, open: "10:00", close: "23:00" },
+      { fromDay: 0, toDay: 2, ranges: [{ open: "09:00", close: "14:00" }] },
+      { fromDay: 4, toDay: 4, ranges: [{ open: "10:00", close: "23:00" }] },
     ]);
+  });
+
+  // MEH-1869 — merging is now a comparison of the WHOLE range list. Two days
+  // that share a morning block but differ in the evening are different
+  // schedules; collapsing them would silently drop one day's second range.
+  it("merges consecutive days only when their FULL range list matches", () => {
+    const merged = getOrderWindowRanges({
+      sunday: [{ open: "09:00", close: "13:00" }, { open: "16:00", close: "20:00" }],
+      monday: [{ open: "09:00", close: "13:00" }, { open: "16:00", close: "20:00" }],
+    });
+    expect(merged).toEqual([
+      {
+        fromDay: 0,
+        toDay: 1,
+        ranges: [{ open: "09:00", close: "13:00" }, { open: "16:00", close: "20:00" }],
+      },
+    ]);
+
+    const notMerged = getOrderWindowRanges({
+      sunday: [{ open: "09:00", close: "13:00" }, { open: "16:00", close: "20:00" }],
+      monday: [{ open: "09:00", close: "13:00" }],
+    });
+    expect(notMerged).toHaveLength(2);
+    expect(notMerged[0].ranges).toHaveLength(2);
+    expect(notMerged[1].ranges).toHaveLength(1);
   });
 
   it("does NOT merge across a gap even when hours match", () => {
