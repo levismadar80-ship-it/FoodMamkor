@@ -3050,6 +3050,10 @@
     "address_search": {
       "placeholder": "Search address...",
       "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
+    },
+    "en_notice": {
+      "body": "Business listings are in Hebrew — searching in English returns no results.",
+      "cta": "Switch to Hebrew"
     }
   },
   "favorites": {
