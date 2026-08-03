@@ -3,7 +3,35 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-08-03 — batch טווחים מפוצלים: שלושה merges + ניסוי CI שסגר האשמה שגויה
+## 2026-08-03 — sweep אוטונומי (המשך): ה-inset התחתון המשותף + שתי טענות שלי שנמדדו כשגויות
+
+**PRs:** #2566 (פתוח, auto-merge חמוש — WCAG SC 2.4.11) · **ה-PR הזה** (backfill, כלל 31). קודם באותו סשן: #2552 · #2554 · #2556 · #2560 מוזגו.
+
+**ענפים:** `feature/meh-1775-sticky-bottom-inset` · `feature/meh-1853-producer-minimap-cls` (נחתך, ריק) — כל אחד מ-`origin/staging` טרי, divergence 0, ה-clone אומת כלא-shallow לפני כל שאלת provenance.
+
+**מה נסגר:** באנר העוגיות כיסה את «הבא» בהרשמת עסק. השורש הוא **סכום חסר**: `<body>` נשא `pb-20 md:pb-0` ששיריין את רצועת ה-BottomNav בלבד, בעוד הבאנר מרחף ברצועה משלו שמתחילה מעליה (`CookieBanner.jsx:68`). `--bottom-inset` על `html` מסכם עכשיו את שלושת האיברים, ו-`scroll-padding-bottom` מוסר אותו ל-scroll container (טכניקה C43 — החצי שנוגע ל**פוקוס**).
+
+**אימות:** build 0 · vitest 2195 passed · eslint 0 errors · שני השערים הנדרשים ירוקים על `bf0f0455` עם ה-jobs האמיתיים שרצו (לא skipped).
+
+### ארבע הערות שנרשמות כדי שלא ייבדקו מחדש
+
+1. **הדסקטופ היה גרוע יותר מהנייד שדווח, ואף אחד לא פתח על זה כרטיס.** `md:pb-0` משריין אפס, כך שהבאנר כיסה את האלמנט האחרון של **כל** עמוד. זה גם מה שהשתחזר דטרמיניסטית: CTA ב-`y=848..900` בתוך רצועת באנר `832..900`.
+
+2. **שתי גרסאות של ה-probe דיווחו על המצב-שלפני כ«נקי».** `scrollIntoViewIfNeeded()` עוצר ברגע שהאלמנט בתוך ה-**viewport**, ו-scroll לסוף המסמך מגלגל את ה-CTA מעל המסך (ה-CTA אינו האלמנט האחרון). הכלי היה שגוי, לא הבאג נעדר. שני המבויים הסתומים מתועדים בקובץ ה-harness עצמו. **הכלל:** ה-viewport אינו השטח הנראה כששכבה קבועה מעליו, והמרחק בין השניים הוא הבאג.
+
+3. **טענת «VRT impact: none, measured» שלי הייתה שגויה, וצורת השגיאה היא הלקח.** ה-diff נגע ב**שתי** תכונות; בדקתי אחת (`--cookie-banner-h` דרך `cookieConsent="essential"`) ולא שקלתי כלל את `scroll-padding-bottom`. **טענה חייבת לכסות כל תכונה שה-diff נוגע בה** — מונים את משטח ה-diff, ואז טוענים פר-פריט. «נמדד» שמכסה אחת משתיים הוא אותו כשל כמו grep שאינו יכול להתאים. ה-baseline אכן זז (`parity.spec.ts:647`), הוא **drift מכוון**, הוא חודש ע"י ספיר ונסקר ויזואלית לפני merge, וגוף ה-PR תוקן — כי squash-merge הופך אותו להודעת ה-commit הקבועה, ותגובת התיקון אינה נוסעת ל-git history.
+
+4. **ה-PR עמד לתקוע לנצח בלי אף אדום שיסביר למה.** ה-commit של בוט ה-VRT נדחף עם `GITHUB_TOKEN`, שלעולם אינו מפעיל workflows — `get_check_runs` על ה-head החזיר **`total_count: 0`**, כלומר שני השערים הנדרשים פשוט נעדרו ו-auto-merge לא היה לו מה לספק. נמדד, לא הוסק. התרופה המתועדת: דחיפת המשך **בתור עצמי**. **היעדר של check אינו ירוק ואינו אדום — הוא צריך בדיקה מפורשת.**
+
+### מה נותר פתוח
+
+- **#2566 פתוח.** שני השערים הנדרשים ירוקים; `mergeable_state: behind` (staging זז שוב) — **לא רודפים אחריו**: auto-merge מעדכן את הענף בעצמו, ו-merge חוזר של staging על כל churn הוא סופת ה-merge המקבילה שכלל 25 מזהיר מפניה. הדחף לפעול היה הבאג.
+- **סעיף DoD «נבדק בנייד (מכשיר אמיתי)» לא סומן** — הראיה היא Chromium ב-375×667 / 375×812 / 1440×900 בלבד. נשאר לספיר.
+- **`25-role-reachability.spec.ts:196` flaky** — נפל שוב. ה-assertion שנפלה היא `toHaveURL` אחרי סבב רשת של login, והקליק שלפניה הצליח; padding תחתון אינו יכול להשפיע על הכרעת redirect. לא רגרסיה של ה-diff הזה.
+- **MEH-1853 (CLS בדף פרופיל העסק) — Phase 0 בנוי ומאומת, היישום לא התחיל.** גובה ה-MiniMap הוא **קבוע** `height: 300` (`MiniMap.jsx:502`), כלומר ערך יחיד ל-placeholder הוא התשובה הנכונה — מה שמפריך חשש שכתוב ב-AC של הכרטיס עצמו. ה-placeholder חייב לרכוב על ה-gate הפנימי (`parseHasLocation` בלבד), אחרת עסק עם שעות-פתיחה וללא מיקום ישריין מקום למפה שלא תרונדר.
+- **חסם סביבתי חדש שנמדד היום: אי אפשר להריץ מדידת CLS מול staging מהסנדבוקס.** `curl` מגיע (302), אבל ה-Chromium המצורף ל-Playwright לא: דרך ה-proxy הוא מחזיר `ERR_CERT_AUTHORITY_INVALID` על github (הפרופיל שלו אינו נושא את ה-CA של ה-proxy — הערת ה-NSS ב-`/root/.ccr/README.md` אינה חלה עליו), ו-`ERR_CONNECTION_RESET` / `ERR_TUNNEL_CONNECTION_FAILED` על שני המארחים של mehamakor. **ה-DoD של MEH-1853 דורש 12 מדידות CLS מול staging** — כרגע זה לא ניתן לביצוע מכאן בלי להחליש אימות TLS, וזה לא נעשה.
+
+
 
 **PRs:** #2553 (squash `045d7e24`) · #2560 (squash `8f14b309`) · #2561 · **ה-PR הזה** (backfill, כלל 31).
 
