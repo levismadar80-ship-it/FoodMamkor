@@ -4336,7 +4336,10 @@
         "preset": "Sun–Thu 9:00–18:00, Fri until 14:00",
         "clear_cta": "Clear hours",
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
-        "invalid_range": "Closing time must be after opening time"
+        "invalid_range": "Closing time must be after opening time",
+        "invalid_overlap": "Ranges must be in order and must not overlap",
+        "add_range": "Add range",
+        "remove_range": "Remove range"
       },
       "order_window": {
         "heading": "When you take orders",
