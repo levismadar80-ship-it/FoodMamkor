@@ -31,26 +31,38 @@ _ORDER_WINDOW_DAYS = frozenset(
 _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
-def _order_window_validator(v):
-    """Validate producers.order_window on write (MEH-1543).
+# MEH-1869: a day may carry several disjoint ranges (morning + evening, the
+# Israeli לunch-break and Friday/מוצ"ש patterns). Capped so the editor stays a
+# form rather than a scheduler.
+_MAX_ORDER_RANGES_PER_DAY = 3
 
-    None passes through — an explicit null clears the field, an omitted field
-    never reaches here (exclude_unset). Any structural or value violation raises
-    ValueError, surfaced by FastAPI as a 422 with the Hebrew detail.
+
+def _validate_order_day(day: str, hours) -> list[dict[str, str]]:
+    """Validate ONE day's ranges and return them normalised.
+
+    Split out of `_order_window_validator` so that function stays under the
+    C901 complexity ceiling (it hit 12 > 10 once split ranges landed) — and
+    because "is this one day well-formed?" is a separable question from "is
+    this a well-formed week?".
+
+    Accepts the legacy single-dict shape and returns a one-element list.
     """
-    if v is None:
-        return None
-    if not isinstance(v, dict):
-        raise ValueError("חלון הזמנות חייב להיות אובייקט של ימים")
-    for day, hours in v.items():
-        if day not in _ORDER_WINDOW_DAYS:
-            raise ValueError(
-                f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
-                + ", ".join(sorted(_ORDER_WINDOW_DAYS))
-            )
-        if not isinstance(hours, dict) or "open" not in hours or "close" not in hours:
+    # Legacy single dict → one-element list. Done before any other check so
+    # both shapes take exactly one validation path.
+    ranges = [hours] if isinstance(hours, dict) else hours
+    if not isinstance(ranges, list) or not ranges:
+        raise ValueError(f"היום {day} חייב לכלול לפחות טווח אחד")
+    if len(ranges) > _MAX_ORDER_RANGES_PER_DAY:
+        raise ValueError(
+            f"אפשר להגדיר עד {_MAX_ORDER_RANGES_PER_DAY} טווחים ביום {day}"
+        )
+
+    day_ranges: list[dict[str, str]] = []
+    prev_close: str | None = None
+    for entry in ranges:
+        if not isinstance(entry, dict) or "open" not in entry or "close" not in entry:
             raise ValueError(f"היום {day} חייב לכלול שעת פתיחה ושעת סגירה")
-        open_t, close_t = hours["open"], hours["close"]
+        open_t, close_t = entry["open"], entry["close"]
         if not (isinstance(open_t, str) and _HHMM_REGEX.match(open_t)) or not (
             isinstance(close_t, str) and _HHMM_REGEX.match(close_t)
         ):
@@ -59,7 +71,51 @@ def _order_window_validator(v):
             )
         if close_t <= open_t:
             raise ValueError(f"שעת הסגירה חייבת להיות אחרי שעת הפתיחה ביום {day}")
-    return v
+        # One comparison covers BOTH ordering and overlap: a later range that
+        # starts before the previous one ended is either out of order or
+        # overlapping, and neither is representable. Adjacency
+        # (next.open == prev.close) is allowed.
+        if prev_close is not None and open_t < prev_close:
+            raise ValueError(
+                f"הטווחים ביום {day} חייבים להיות ממוינים לפי השעה ובלי חפיפה"
+            )
+        prev_close = close_t
+        day_ranges.append({"open": open_t, "close": close_t})
+    return day_ranges
+
+
+def _order_window_validator(v):
+    """Validate producers.order_window on write (MEH-1543, MEH-1869).
+
+    Canonical shape is a LIST of ranges per day:
+        {"sunday": [{"open": "09:00", "close": "13:00"},
+                    {"open": "16:00", "close": "20:00"}]}
+
+    MEH-1869 — parallel change, readers first. The legacy single-dict shape
+    ({"sunday": {"open", "close"}}) is still ACCEPTED and normalised to a
+    one-element list, so rows written before the cutover keep validating and
+    every write leaves the canonical list shape behind. This is a JSONB VALUE
+    change only: the column is untouched, so there is no Alembic revision.
+
+    None passes through — an explicit null clears the field, an omitted field
+    never reaches here (exclude_unset). Any structural or value violation raises
+    ValueError, surfaced by FastAPI as a 422 with the Hebrew detail.
+
+    Returns the NORMALISED value, so the stored row is always the list shape.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("חלון הזמנות חייב להיות אובייקט של ימים")
+    normalized: dict[str, list[dict[str, str]]] = {}
+    for day, hours in v.items():
+        if day not in _ORDER_WINDOW_DAYS:
+            raise ValueError(
+                f"מפתח יום לא תקין: {day} — חייב להיות אחד מ: "
+                + ", ".join(sorted(_ORDER_WINDOW_DAYS))
+            )
+        normalized[day] = _validate_order_day(day, hours)
+    return normalized
 
 
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
