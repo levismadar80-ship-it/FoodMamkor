@@ -207,11 +207,24 @@ wrong answer.
 > which tracked the broken reviewer — were **cancelled on 29/07**. Nothing else
 > in Linear or the repo carries the three actions below. Delete this section
 > only when all three are done, not when the date passes.
+>
+> **The due date has passed (today > 2026-08-01) and the section is still here —
+> that is the "expiry nobody actions" case this file warns about, now live.**
+> (a) is satisfied, (b)/(c) are not. Per this section's own terms that is a
+> decision for Sapir, not a silent extension. Surfaced 2026-08-03 under MEH-1861.
 
-### 📅 2026-08-01 — three actions, all required
+### 📅 2026-08-01 — three actions
+
+**Status as of 2026-08-03 (MEH-1861):** **(a) appears DONE** — the reviewer
+authenticates and posts reviews; see the corrected subsection below for the
+measurements. **(b) is OPEN**, staged on PR #2511. **(c) is OPEN** and blocked
+on (b).
 
 **(a) Restore `CLAUDE_CODE_OAUTH_TOKEN` as a repository (or organization)
-secret.** `claude-review.yml:66` reads
+secret.** ✅ *Satisfied — verified 2026-08-03 from posted reviews on PRs #2494
+and #2541. Not verified from the secret itself: repository secrets are not
+readable from a CC session, so this is inferred from the action succeeding
+where an auth failure would have exited early.* `claude-review.yml:66` reads
 `claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}` — **not**
 `ANTHROPIC_API_KEY`, which the action also accepts but this workflow never
 reads. The job declares no `environment:`, so an *environment* secret resolves
@@ -237,31 +250,64 @@ pointer to it.
 silent extension.** An expiry nobody actions is a promise, and this repo already
 has the empty MEH-487 calibration tally to show for that class.
 
-### Why the substitution exists
+### Why the substitution existed — and what is true now
 
-The CI adversarial reviewer **has never read a diff**. It is not "failing" —
-it exits before doing any work: `num_turns: 1`, `total_cost_usd: 0`,
-`is_error: true`, ~500–600ms, on **every commit**, repo-wide (reproduced on an
-unrelated PR, run `30358905937`).
+> ## ✅ CORRECTED 2026-08-03 (MEH-1861) — the reviewer works. It reads diffs.
+>
+> **This section previously asserted that the CI adversarial reviewer "has never
+> read a diff". That assertion is false as of 2026-08-02** and it was quoted as
+> fact into two PR bodies before anyone re-checked it. Measured, not inferred:
+>
+> | Evidence (verified 2026-08-03) | Value |
+> |---|---|
+> | `claude[bot]` review on PR #2494 | posted `2026-08-02T08:34:53Z` — all three sections `None.`, i.e. the "always post a comment" contract in `docs/CLAUDE-REVIEW.md` being honoured on a clean diff |
+> | `claude[bot]` review on PR #2541 | posted `2026-08-02T21:20:02Z` — a **real, correct finding**: `scripts/checks/legacy-expiry-check.sh:102` called `grep -InE` without `-H`, so a single-file `xargs` batch drops the filename prefix and `cut -d: -f1` silently misparses every marker. Confirmed and fixed in `d369fe2d` |
+> | Job runtime, run `30767745811` | action step `21:22:55Z → 21:23:42Z` = **47 s**, not the ~500–600 ms of the old no-op symptom |
+> | Recent run conclusions | `success` across the 02–03/08 runs of `claude-review.yml` |
+>
+> **So candidate 1 below (missing/expired credential) is resolved** — the
+> reviewer authenticates and runs. Action **(a)** appears satisfied; it was not
+> recorded as done, which is why this text outlived it.
+>
+> **What has NOT changed:** the job is still `continue-on-error: true` and still
+> outside `ci-gate`'s `needs:`, so **its red still blocks nothing** and it is
+> still not a required check. Action **(b)** — pinning
+> `anthropics/claude-code-action` to a SHA — is still open and is staged on
+> **PR #2511** (`feature/meh-1844-restore-ci-reviewer`, draft). Action **(c)**
+> stays open until (b) lands.
+>
+> **Practical consequence for rule 5a:** the CI reviewer is now a real second
+> pair of eyes. Read its comment before merging. The local `/adversarial-review`
+> substitution below remains useful — it runs earlier, before the PR exists —
+> but it is no longer the *only* review, and **no PR body should describe the CI
+> reviewer as "uncredentialed" any more.**
 
-**The cause is NOT established, and (a) is a hypothesis, not a diagnosis.** Two
-candidates produce this identical symptom:
+**Historical record — the state that produced the substitution (observed up to
+2026-07-29, no longer true):** the reviewer exited before doing any work:
+`num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, ~500–600 ms, on **every
+commit**, repo-wide (reproduced on an unrelated PR, run `30358905937`). The
+cause was never established; two candidates produced that identical symptom:
 
-| # | Candidate | What points at it |
-|---|---|---|
-| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call |
-| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two |
+| # | Candidate | What pointed at it | Status (verified 2026-08-03) |
+|---|---|---|---|
+| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call | **resolved** — the action now authenticates and posts reviews |
+| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two | **unresolved as a risk** — `:64` still floats, which is what (b)/PR #2511 addresses |
 
-So **(b) may be the actual fix rather than a hardening**, and doing (a) alone
-could leave it broken. Do (a) and (b) together, with `show_full_output: true`
-on, and read the step log before concluding anything.
+Which of the two actually broke it was never determined and now cannot be:
+the symptom cleared without an attributable change in this repo. Do (b) anyway,
+with `show_full_output: true` on — a floating tag on the review job is the same
+exposure regardless of what caused the outage.
 
 It is `continue-on-error: true` (`claude-review.yml:56` — MEH-1734's body and
-the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`)
-and it is **not** in `ci-gate`'s `needs:` list, so its red blocks nothing. That
-is deliberate calibration mode, not an accident — but it means **rule 5a
-currently buys nothing**, and the `Builder-Model` guard (MEH-1668) was built to
-keep builder and reviewer distinct around a reviewer that never ran.
+the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`
+— **re-verified 2026-08-03**) and it is **not** in `ci-gate`'s `needs:` list,
+so its red blocks nothing. That is deliberate calibration mode, not an accident.
+**This paragraph used to end "so rule 5a currently buys nothing" — that no
+longer holds** (verified 2026-08-03): the job runs and posts findings, so rule
+5a now buys a genuine independent review; what it still does not buy is a
+*blocking* one. The `Builder-Model` guard (MEH-1668) was built to keep builder
+and reviewer distinct around a reviewer that never ran, and now has a running
+reviewer to be distinct from.
 
 ### Do NOT "fix" it by making it required
 
@@ -291,12 +337,19 @@ section was asked to carry.
    falsely green.
 3. Run `/adversarial-review` **locally in the session** on the diff. Fix every
    finding. Re-run if the fix changed anything.
-4. In the PR body, paste the verdict and note *"local review; CI reviewer
-   uncredentialed"* — cite **this section**, not a ticket. MEH-1734/1735 are
-   cancelled and a reader following them lands on nothing.
+4. In the PR body, paste the verdict and note *"local review, run before the PR
+   opened"* — cite **this section**, not a ticket. MEH-1734/1735 are cancelled
+   and a reader following them lands on nothing. **Do NOT write "CI reviewer
+   uncredentialed"** — that was this file's wording until 2026-08-03 and it is
+   false (see the corrected subsection above).
 5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
    actually ran — `conclusion: success`, not `skipped`.
-6. **Ignore the `claude-review` job's red. Never edit `claude-review.yml`.**
+6. **Read the `claude-review` comment before merging** (verified 2026-08-03: the
+   job posts one on every non-draft, non-docs-only PR). Its check result still
+   gates nothing — `continue-on-error: true`, absent from `ci-gate`'s `needs:` —
+   so a red there does not block, but the *comment* is now real review output
+   and is not to be skipped. **Never edit `claude-review.yml`** (CC-deny,
+   MEH-671).
 
 > **State the limitation plainly in the PR — do not dress it up.** The maker and
 > the checker are the same session, so this is a self-review and carries none of
@@ -1225,7 +1278,8 @@ Tasks auto-expire after 7 days.
       PR's own active-ticket branch slug.
     - **Check the body BEFORE opening the PR — CI cannot save you here.** The
       `Linear mention guard` job is `continue-on-error: true` and ends in
-      `|| true` (`pr-checks.yml:643,654`), so it prints warnings and passes.
+      `|| true` (`pr-checks.yml:643,654` — both citations re-derived
+      2026-08-03, MEH-1861: accurate, unchanged), so it prints warnings and passes.
       By the time it runs, the PR is open and the auto-link has already
       fired — the damage this rule exists to prevent is done at *open* time,
       not at merge time. Draft the body to a file and run the guard on it
