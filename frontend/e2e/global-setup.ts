@@ -28,15 +28,32 @@
  *   import { test } from "@playwright/test";
  *   test.use({ storageState: "e2e/.auth/admin.json" });
  *
- * The older admin fixture (SMOKE_ADMIN_* → POST /auth/login in flows/19,20) is a
- * disposable-producer lifecycle admin and is unrelated to this file's admin.json
- * (the seeded demo-admin QA account) — both are left intact.
+ * MEH-1858: the SMOKE_ADMIN_* account (a disposable-producer lifecycle admin,
+ * still a DIFFERENT identity from this file's demo-admin) is provisioned here
+ * too, as smoke-admin.json. flows/19, 20 and 22 used to log it in separately —
+ * three logins for one identity against a 5/minute per-IP limit. It is
+ * `optional`: unset credentials skip the fixture rather than throw, because
+ * those three specs gate on the same env vars.
  */
 import { request, type FullConfig } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-type Role = { name: string; email: string; passwordEnv: string };
+type Role = {
+  name: string;
+  /** Code constant, for the seeded demo accounts. Mutually exclusive with emailEnv. */
+  email?: string;
+  /** Env-supplied address, for accounts whose identity is not a repo constant. */
+  emailEnv?: string;
+  passwordEnv: string;
+  /**
+   * Missing credentials skip this role instead of throwing. ONLY for roles whose
+   * consuming specs already `test.skip` on the same env vars — elsewhere a silent
+   * skip would hide real provisioning breakage, the failure MEH-999 exists to
+   * prevent.
+   */
+  optional?: boolean;
+};
 
 // MEH-1528: three roles, one storageState file each (never shared) — the proof
 // specs (e2e/flows/25-role-reachability) assert admin reaches /admin and the
@@ -49,6 +66,20 @@ const ROLES: Role[] = [
   { name: "producer", email: "demo-owner@example.com", passwordEnv: "DEMO_OWNER_PASSWORD" },
   { name: "consumer", email: "demo-consumer@example.com", passwordEnv: "DEMO_CONSUMER_PASSWORD" },
   { name: "admin", email: "demo-admin@example.com", passwordEnv: "DEMO_ADMIN_PASSWORD" },
+  // MEH-1858: a rate-limit fix, not a tidy-up. /auth/login is 5/minute per IP
+  // (auth.py:999, slowapi default key_func — no email component) and one Actions
+  // runner is one IP for the whole suite. Specs 19, 20 and 22 each logged in as
+  // this SAME account, spending three of the five permits on one identity before
+  // any assertion ran; the overflow surfaced as a 20s timeout in spec 25.
+  // Provisioned once here instead. Two logins stay: 22's persona (the account
+  // does not exist until the test creates it) and 25's form login (that spec's
+  // subject IS the login screen).
+  {
+    name: "smoke-admin",
+    emailEnv: "SMOKE_ADMIN_EMAIL",
+    passwordEnv: "SMOKE_ADMIN_PASSWORD",
+    optional: true,
+  },
 ];
 
 export const AUTH_DIR = path.join(__dirname, ".auth");
@@ -61,7 +92,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     "http://localhost:3000";
 
   const isLocal = /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(baseURL);
-  const anyPasswordSet = ROLES.some((r) => !!process.env[r.passwordEnv]);
+  // REQUIRED roles only. Counting the optional smoke-admin would let a local run
+  // with just SMOKE_ADMIN_PASSWORD set fall past the unauthenticated skip and
+  // then throw on DEMO_OWNER_PASSWORD — turning a deliberate skip into a hard
+  // failure over a variable this gate was never about.
+  const anyPasswordSet = ROLES.some((r) => !r.optional && !!process.env[r.passwordEnv]);
 
   // A purely-local run with NO QA passwords set is the default UNAUTHENTICATED
   // suite — skip provisioning (a spec that opts into a role's storageState then
@@ -101,6 +136,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
   for (const role of ROLES) {
     const password = process.env[role.passwordEnv];
+    const email = role.email ?? process.env[role.emailEnv as string];
+    if (role.optional && (!password || !email)) {
+      console.warn(
+        `[global-setup] ${role.emailEnv}/${role.passwordEnv} not set — skipping the ` +
+          `${role.name} fixture. Specs 19/20/22 gate on the same vars and will skip.`,
+      );
+      continue;
+    }
     if (!password) {
       throw new Error(
         `[global-setup] ${role.passwordEnv} is not set — cannot provision the ` +
@@ -118,10 +161,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       // — never logged, never committed). Omitted entirely on a local target.
       extraHTTPHeaders: bypassSecret ? { "x-vercel-protection-bypass": bypassSecret } : {},
     });
-    const res = await ctx.post("/api/auth/login", { data: { email: role.email, password } });
+    const res = await ctx.post("/api/auth/login", { data: { email, password } });
     if (!res.ok()) {
       throw new Error(
-        `[global-setup] login failed for ${role.name} (${role.email}) at ${baseURL}: ` +
+        `[global-setup] login failed for ${role.name} (${email}) at ${baseURL}: ` +
           `HTTP ${res.status()}. Did the staging --sync-users run succeed?`,
       );
     }
@@ -150,6 +193,6 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       },
     ];
     fs.writeFileSync(path.join(AUTH_DIR, `${role.name}.json`), JSON.stringify(state, null, 2));
-    console.log(`[global-setup] wrote ${role.name} storageState (${role.email}).`);
+    console.log(`[global-setup] wrote ${role.name} storageState (${email}).`);
   }
 }

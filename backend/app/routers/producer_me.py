@@ -61,7 +61,6 @@ from app.services.license_validation import (
     ensure_license_for_categories,
 )
 from app.services.trust_tier import VALID_BADGE_CODES
-from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
 log = logging.getLogger(__name__)
 
@@ -230,33 +229,6 @@ def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
         ) from exc
 
 
-def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
-    """MEH-447: extracted from update_my_producer to keep that handler under
-    C901's complexity threshold. Validates against RESERVED_SLUGS and finds
-    a non-colliding suffix (`-2`, `-3`, ...) against other producers."""
-    raw = _slugify_me(raw_slug)
-    if raw in RESERVED_SLUGS:
-        raise HTTPException(
-            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
-        )
-    candidate = raw
-    counter = 2
-    while True:
-        if candidate not in RESERVED_SLUGS:
-            existing = (
-                db.query(Producer)
-                .filter(
-                    Producer.slug == candidate,
-                    Producer.id != producer_id,
-                )
-                .first()
-            )
-            if not existing:
-                return candidate
-        candidate = f"{raw}-{counter}"
-        counter += 1
-
-
 def _enforce_owner_license_gate(db, producer, payload, category_ids):
     """MEH-999: grandfather rule — validate NEWLY-ADDED categories only, never
     the set the producer already holds. The MEH-530 full-set re-check bricked
@@ -346,7 +318,6 @@ def update_my_producer(
         "description",
         "short_description",
         "city",
-        "address",  # MEH-829: owner can edit her own street address (private)
         "lat",
         "lng",
         "phone",
@@ -357,7 +328,6 @@ def update_my_producer(
         "contact_email",
         "facebook",
         "external_order_form",
-        "slug",
         "top_product_name",
         "starting_price_label",
         "price_range",
@@ -372,9 +342,21 @@ def update_my_producer(
         "vegan_scope",
         "vegetarian_scope",
         "gluten_free_facility",
-        "lactose_free_facility",
         "has_delivery",
-        "pickup_points",
+        # MEH-1856 (dispositions from MEH-1851): `address`, `slug`,
+        # `lactose_free_facility` and `pickup_points` were REMOVED from this set.
+        # Each was writable here with no editor anywhere in the owner dashboard —
+        # the API accepted a value no owner UI could produce. The columns stay,
+        # and the admin (`admin.py`) + import (`producer_import.py`) write paths
+        # are unchanged; only the owner PUT path is closed. Do not re-add one
+        # without shipping its editor in the same PR:
+        #   address              → superseded by ProducerLocation.address, which
+        #                          the owner DOES edit (LocationsEditor.jsx)
+        #   slug                 → owner edit silently breaks every shared /p/<slug>
+        #                          link; needs a redirect story first
+        #   lactose_free_facility→ its question was cut (DietaryScopeCard.jsx
+        #                          "Does NOT: … touch lactose"); no reader exists
+        #   pickup_points        → duplicates ProducerLocation.kind='pickup'
         # MEH-1242 PR5: owner permission-surface extension — location mode +
         # opening hours (previously admin-only). delivery_area_cities is still
         # popped + processed separately below. The (has_physical_location OR
@@ -430,9 +412,13 @@ def update_my_producer(
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
 
-    # Validate and deduplicate slug if explicitly provided.
-    if "slug" in payload and payload["slug"]:
-        payload["slug"] = _resolve_unique_slug(db, payload["slug"], producer.id)
+    # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
+    # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would
+    # have been worse than dead code: `_resolve_unique_slug` raises 400 on a
+    # RESERVED_SLUGS value, so this endpoint would have kept REJECTING a slug it
+    # no longer writes — `slug: "about"` → 400 while `slug: "anything"` → 200
+    # and silently ignored. Slug uniqueness for the paths that do write it lives
+    # in admin.py (:81, :148, :258) and producer_import.py (:59), untouched.
 
     # MEH-375: snapshot the gallery BEFORE mutation so we can diff old vs
     # new and clean up dropped URLs AFTER db.commit succeeds. Destroying
@@ -507,9 +493,14 @@ def update_my_producer(
     return producer
 
 
+# LEGACY(2026-09-01, MEH-1854)
 # MEH-291 — dual-write helpers used during the 7-day overlap.
 # Phase 4 (separate PR) drops the legacy is_available_today + availability_status
 # columns and removes these helpers along with the legacy endpoints below.
+# MEH-1857: that "7-day overlap" opened in May 2026 and the contract step never
+# ran — ~14 months, which is why the expiry marker above now exists. MEH-1854
+# owns the removal; scripts/legacy-expiry-check.sh fails once the date passes,
+# so the next person either finishes it or extends the date in a reviewed PR.
 
 
 def _state_to_legacy(state: str) -> tuple[bool, str]:
