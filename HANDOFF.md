@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-03 — batch שערי-נתונים: merge אחד, שלושה STOPs
+
+**PR:** #2555 (squash `403714d9`) · **ה-PR הזה** (backfill, כלל 31).
+
+**ענפים:** `feature/meh-1864-rating-data-gate` מ-`origin/staging` טרי. ה-harness הצביע על ענף `claude/*` — נחתך מחדש לפי כלל 3. ה-clone היה **shallow**; `git fetch --unshallow` רץ לפני כל שאלת provenance.
+
+### מה נשלח
+
+**MEH-1864** — מיון «הכי מדורגות» מגודר על `RATING_SORT_THRESHOLD = 5` עסקים עם ‎>= 1 ביקורת, בשני משטחי המיון (/producers ו-/map). התצוגה לא נגעה: מפקד Phase 0 מצא 8 אתרי רינדור, כולם כבר מגודרים. vitest מלא **2137 ✓**, build exit 0, guard test הודגם אדום-בבנייה (2 failed) ואז ירוק (7 passed).
+
+### שלושה STOPs — כולם «הכרטיס תיאר עולם שאינו הקוד»
+
+**MEH-1865:** `/events` מארח שתי טאבים על שני datasets, ו-`/experiences` מקשר פנימה. ה-empty state שהוגדר היה מוחק את טאב החוויות. **דורש הכרעת מוצר** (האם הסף הוא «0 אירועים **וגם** 0 חוויות»? האם ה-empty state הוא per-tab?).
+
+**MEH-1867:** **אין `SocialProofBar`.** רצועת האמון כבר מממשת את זה עם שני ספים (5 / 25), וה-lead מתחת לסף כבר נטול ספרות. הקובץ אומר «do not collapse them». **דורש הכרעת מוצר/קופי** — גם המחרוזת שהוצעה היא פרפרזה על הקופי הקיים מעל-הסף, וקרובה למחלקת ההצהרה-היתר ש-MEH-1692 הסיר.
+
+**MEH-1863:** אין ב-/producers שום זרימת geo לעשות לה reuse (grep → 0), וצ'יפ המשלוח כבר קיים כ-`CHIPS_CONFIG[5]`. זה ה-STOP שהכרטיס עצמו הגדיר.
+
+### פתוח — דורש מעקב
+
+**E2E על ה-PR נכשל ב-3 specs** (`03-view-producer-detail`, `04-whatsapp-click`, `06-lightbox`), כולם באותה צורה: `#__next_error__` בדף פרטי העסק אחרי לחיצה על כרטיס. **אף אחד מהמשטחים האלה אינו ב-diff.** `E2E gate` אינו required, אז ה-PR נמזג על שני שערי ה-aggregator הירוקים. staging היה **ירוק ב-12 הריצות האחרונות** כולל בסיס המיזוג `e82a31cb` — כלומר זה לא מתרבה על הבסיס. ריצת staging שאחרי המיזוג (`30799402006` על `403714d9`) הייתה **עדיין רצה** בזמן כתיבת השורה הזאת. **זה הדבר הראשון לבדוק בסשן הבא:** אם היא אדומה באותם 3 specs — זה שלנו ודורש תיקון-קדימה; אם ירוקה — הכישלון היה סביבתי/נתונים בריצת ה-PR, ושווה לתעד כדי שלא ייחקר מחדש.
+
 ## 2026-08-02 — batch ציר יום-המשלוח: שני merges, שני STOPs
 
 **PRs:** #2530 (squash `ff2ea2ea`) · #2533 (squash `1db0b0a2`) · **ה-PR הזה** (backfill, כלל 31).
