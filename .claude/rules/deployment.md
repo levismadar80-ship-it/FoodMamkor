@@ -58,6 +58,29 @@ After every PR — send the Vercel preview URL:
 בדיקי על: https://food-mamkor-[hash].vercel.app
 ```
 
+> **The preview is not always there to send (measured 2026-08-02/03, MEH-1861).**
+> The instruction above is normative and unchanged; this note dates its
+> *premise*. Two states observed on real PRs:
+>
+> - **Rate-limited.** PRs #2541 and #2542 (02/08) got
+>   `Resource is limited - try again in 24 hours (more than 100, code:
+>   "api-deployments-free-per-day")` — the Hobby-tier daily deployment cap,
+>   an account quota, not a repo or diff problem. No preview URL exists to send.
+> - **Ignored.** PRs #2494 and #2547 show the deployment as `Ignored`
+>   (Vercel's ignore-build-step), with a preview link listed but no fresh build
+>   behind it.
+>
+> When there is no preview, say so in the PR and name which of the two it was —
+> do not silently drop rule 9, and do not report a stale or ignored URL as if it
+> rendered the diff. This is an as-of observation on a quota that resets daily;
+> re-check rather than quoting it.
+>
+> **Not to be confused with the E2E change.** MEH-1044 moved the Playwright
+> suite off Vercel previews onto a local `next start` target — that is about the
+> *test runner's* target, not about whether feature branches get previews at
+> all. Nothing in `.claude/rules/` or `CLAUDE.md` claims feature branches get no
+> previews; `grep -n preview` over both, 2026-08-03, found no such statement.
+
 **Wait for approval before merging to staging.** Full mobile checklist:
 [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) → "Testing workflow".
 
