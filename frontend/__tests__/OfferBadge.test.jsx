@@ -308,3 +308,209 @@ describe("OffersCard — the three write states", () => {
     expect(screen.getByTestId("offer-save")).toBeDisabled();
   });
 });
+
+// ===========================================================================
+// MEH-1898 — the fifth type, `custom`.
+//
+// `custom` inverts the relationship between the two strings OfferBadge can
+// render. For the other four the platform sentence is primary and the owner's
+// headline is a secondary line under it; for `custom` there is no platform
+// sentence at all, so the headline IS the offer. Both halves of that inversion
+// are asserted below, because either one alone passes on a broken component:
+// showing the headline is only correct if it is ALSO not duplicated as the
+// secondary line, and vice versa.
+// ===========================================================================
+
+const customOffer = (over = {}) =>
+  offer({
+    offer_type: "custom",
+    threshold_value: null,
+    threshold_unit: null,
+    headline: "שני מגשי בורקס במחיר אחד בימי שישי",
+    ...over,
+  });
+
+describe("OfferBadge — custom (MEH-1898)", () => {
+  it("renders the headline as the offer text, in both variants", () => {
+    const words = "שני מגשי בורקס במחיר אחד בימי שישי";
+    const { unmount } = renderIntl(<OfferBadge offer={customOffer()} />);
+    expect(screen.getByTestId("offer-badge")).toHaveTextContent(words);
+    unmount();
+
+    renderIntl(<OfferBadge offer={customOffer()} variant="chip" />);
+    expect(screen.getByTestId("offer-chip")).toHaveTextContent(words);
+  });
+
+  it("shows the headline ONCE — not also as the secondary line", () => {
+    // The duplication this guards against is invisible in a `toHaveTextContent`
+    // assertion (the string is present either way) and looks like a styling
+    // quirk on screen: the same sentence bold, then repeated muted under it.
+    renderIntl(<OfferBadge offer={customOffer()} />);
+    expect(screen.queryByTestId("offer-headline")).not.toBeInTheDocument();
+    const shown = screen.getByTestId("offer-badge").textContent;
+    expect(shown.split("שני מגשי בורקס").length - 1).toBe(1);
+  });
+
+  it("renders NOTHING when the headline is empty — no icon, no empty badge", () => {
+    // The API accepts this row (uniform validation, tests/test_producer_offers
+    // .py::test_custom_without_a_headline_is_accepted_by_the_api), so this is
+    // a reachable state and not a can't-happen guard. A bare Gift icon with no
+    // words next to it would assert a benefit the business never described.
+    for (const empty of [null, "", "   "]) {
+      const { container, unmount } = renderIntl(
+        <OfferBadge offer={customOffer({ headline: empty })} />,
+      );
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
+  });
+
+  it("never renders a platform sentence for custom — there is no text.custom key", () => {
+    // The negative that keeps the empty case honest. If someone adds
+    // `producer.offer.text.custom` to the bundles, a headline-less custom
+    // offer starts rendering copy the owner never wrote, and the test above
+    // stops being able to tell. Assert the key's ABSENCE at its source.
+    expect(O.text.custom).toBeUndefined();
+    expect(O.text_with.custom).toBeUndefined();
+    // …while the dropdown label, which is a different thing, does exist.
+    expect(O.types.custom).toBe("הטבה בניסוח חופשי");
+  });
+
+  it("ignores a stored threshold — custom has no sentence to put it in", () => {
+    // The backend permits a threshold on every type (Sapir, 02/08), so a row
+    // switched to custom can still carry one. It must not leak into the text.
+    renderIntl(
+      <OfferBadge offer={customOffer({ threshold_value: 150, threshold_unit: "ils" })} />,
+    );
+    const shown = screen.getByTestId("offer-badge").textContent;
+    expect(shown).toContain("שני מגשי בורקס");
+    expect(shown).not.toContain("150");
+  });
+
+  it("still obeys the offer window", () => {
+    const { container } = renderIntl(
+      <OfferBadge offer={customOffer({ expires_at: PAST })} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("OffersCard — custom (MEH-1898)", () => {
+  const renderCard = (profile = {}) => {
+    const onSave = vi.fn();
+    renderIntl(<OffersCard profile={profile} onSave={onSave} />);
+    return onSave;
+  };
+
+  const chooseCustom = () =>
+    fireEvent.change(screen.getByTestId("offer-type-select"), {
+      target: { value: "custom" },
+    });
+
+  it("the dropdown offers exactly five types plus the «no offer» option", () => {
+    renderCard({});
+    const options = [...screen.getByTestId("offer-type-select").options];
+    expect(options).toHaveLength(6);
+    expect(options[0]).toHaveTextContent(O.type_none);
+    expect(options.map((option) => option.value)).toEqual([
+      "",
+      "free_delivery_above",
+      "gift_above",
+      "first_order",
+      "pickup_discount",
+      "custom",
+    ]);
+    expect(options[5]).toHaveTextContent("הטבה בניסוח חופשי");
+  });
+
+  it("hides the threshold fields when custom is chosen, and shows them otherwise", () => {
+    renderCard({});
+    fireEvent.change(screen.getByTestId("offer-type-select"), {
+      target: { value: "gift_above" },
+    });
+    expect(screen.getByTestId("offer-threshold-input")).toBeInTheDocument();
+
+    chooseCustom();
+    expect(screen.queryByTestId("offer-threshold-input")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("offer-unit-select")).not.toBeInTheDocument();
+    // Unmounted, not merely hidden — a disabled field still reads as one this
+    // offer has. The headline field, by contrast, is very much still here.
+    expect(screen.getByTestId("offer-headline-input")).toBeInTheDocument();
+  });
+
+  it("requires the headline: save stays blocked and the Hebrew error shows", () => {
+    renderCard({});
+    chooseCustom();
+    fireEvent.change(screen.getByTestId("offer-expires-input"), {
+      target: { value: FUTURE },
+    });
+    // Expiry is satisfied, so the ONLY thing blocking save is the headline —
+    // which is what makes this discriminating rather than a restatement of the
+    // existing expiry guard.
+    expect(screen.queryByTestId("offer-expiry-error")).not.toBeInTheDocument();
+    expect(screen.getByTestId("offer-save")).toBeDisabled();
+    expect(screen.getByTestId("offer-headline-error")).toHaveTextContent(
+      "להטבה בניסוח חופשי חייבת להיות כותרת",
+    );
+
+    fireEvent.change(screen.getByTestId("offer-headline-input"), {
+      target: { value: "   " },
+    });
+    expect(screen.getByTestId("offer-save")).toBeDisabled();
+
+    fireEvent.change(screen.getByTestId("offer-headline-input"), {
+      target: { value: "שני מגשים במחיר אחד" },
+    });
+    expect(screen.queryByTestId("offer-headline-error")).not.toBeInTheDocument();
+    expect(screen.getByTestId("offer-save")).not.toBeDisabled();
+  });
+
+  it("sends a null threshold pair even if one was typed under a previous type", async () => {
+    renderCard({});
+    fireEvent.change(screen.getByTestId("offer-type-select"), {
+      target: { value: "gift_above" },
+    });
+    fireEvent.change(screen.getByTestId("offer-threshold-input"), {
+      target: { value: "150" },
+    });
+    fireEvent.change(screen.getByTestId("offer-unit-select"), {
+      target: { value: "ils" },
+    });
+    chooseCustom();
+    fireEvent.change(screen.getByTestId("offer-headline-input"), {
+      target: { value: "שני מגשים במחיר אחד" },
+    });
+    fireEvent.change(screen.getByTestId("offer-expires-input"), {
+      target: { value: FUTURE },
+    });
+    fireEvent.click(screen.getByTestId("offer-save"));
+
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        active_offer: {
+          offer_type: "custom",
+          threshold_value: null,
+          threshold_unit: null,
+          headline: "שני מגשים במחיר אחד",
+          expires_at: FUTURE,
+        },
+      }),
+    );
+  });
+
+  it("seeds from an existing custom offer without tripping its own guard", () => {
+    // A saved custom offer must not open showing the required-headline error.
+    renderCard({
+      active_offer: {
+        offer_type: "custom",
+        threshold_value: null,
+        threshold_unit: null,
+        headline: "שני מגשים במחיר אחד",
+        expires_at: FUTURE,
+      },
+    });
+    expect(screen.queryByTestId("offer-headline-error")).not.toBeInTheDocument();
+    expect(screen.getByTestId("offer-save")).toBeDisabled(); // clean, not blocked
+    expect(screen.queryByTestId("offer-threshold-input")).not.toBeInTheDocument();
+  });
+});
