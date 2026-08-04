@@ -1478,7 +1478,9 @@ class ProducerAdminCreate(BaseModel):
         # Both fields carry defaults (False/False), so a payload naming only
         # delivery_nationwide would otherwise reach the DB and 500.
         if self.delivery_nationwide and not self.offers_delivery:
-            raise ValueError("משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים")
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
         return self
 
 
@@ -1817,7 +1819,9 @@ class ProducerUpdate(BaseModel):
         # this partial update", which is the effective-state guard's job
         # (services/delivery_validation.py), not this one.
         if dn and od is False:
-            raise ValueError("משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים")
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
         return self
 
     @model_validator(mode="after")
