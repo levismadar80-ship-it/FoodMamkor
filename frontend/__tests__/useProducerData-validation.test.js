@@ -40,7 +40,13 @@ const { useProducerData } = await import(
  */
 const UNDECLARED_BUT_RENDERED = {
   whatsapp_group: "https://chat.whatsapp.com/xyz", // ContactCard.jsx:125
-  order_window: { opens: "08:00" }, //                ContactCard.jsx:252
+  // MEH-1880 gave order_window a real shape on the LIST contract
+  // (lib/schemas.js: record<day, OrderWindowRange | OrderWindowRange[] | null>).
+  // This fixture used an invented `{ opens: "08:00" }`, which the schema
+  // correctly rejected the moment that landed — caught by this file's own
+  // "reports NOTHING on a valid payload" assertion rather than by review, which
+  // is the assertion earning its keep. Canonical per-day list shape:
+  order_window: { sunday: [{ open: "09:00", close: "13:00" }] }, // ContactCard.jsx:252
   contact_name: "רותי", //                            OwnerCard.jsx:31
   owner_bio: "אופה מזה 12 שנה", //                    OwnerCard.jsx:35
   established_year: 2014, //                          ProducerHeader.jsx:241
