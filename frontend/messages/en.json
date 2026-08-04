@@ -902,7 +902,8 @@
         "free_delivery_above": "Free delivery",
         "gift_above": "Gift",
         "first_order": "First-order benefit",
-        "pickup_discount": "Self-pickup discount"
+        "pickup_discount": "Self-pickup discount",
+        "custom": "Custom wording"
       },
       "text": {
         "free_delivery_above": "Free delivery",
@@ -940,6 +941,8 @@
       "headline_label": "Your own line (optional)",
       "headline_hint": "Shown under the offer on your page. Up to 60 characters, no emoji.",
       "headline_placeholder": "The gift: a small jar of honey",
+      "custom_hint": "Word the offer yourself — up to 60 characters",
+      "custom_headline_required": "A custom offer needs a headline",
       "expires_label": "Valid until",
       "expires_hint": "Required. After this date the offer disappears from the site on its own.",
       "expires_required": "Please choose an end date for the offer",
