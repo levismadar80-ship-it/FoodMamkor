@@ -64,7 +64,35 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model claude-sonnet-4-6 --allowed-tools mcp__github__add_issue_comment"
+          # MEH-1844 — three changes, shipped together on purpose.
+          #
+          # Read/Glob/Grep: the prompt below orders the reviewer to read
+          # CLAUDE.md and docs/CLAUDE-REVIEW.md, and it had no tool permitted
+          # to open either — 4 permission denials per run, measured 02/08. It
+          # was reviewing against a contract it could not read. Glob and Grep
+          # are needed too: without them it can only open a path it already
+          # knows, not locate the files the diff touched.
+          #
+          # allowed_bots: without it the action refuses every bot-opened PR.
+          # Measured 03/08 — 4 bot-opened PRs refused, 5 human-opened runs
+          # posted; who opened the PR was the only variable. Claude Code opens
+          # most PRs in this repo, so workflow rule 5a ("read the reviewer's
+          # comment before merging") was unsatisfiable by construction on
+          # exactly the PRs that most need a review.
+          #
+          # Model claude-sonnet-5 (GA 30/06/26): PR review here is tool-heavy
+          # work (it reads files), which is where Sonnet 5 sits within ~1-3
+          # points of Opus 4.8 — at Sonnet 4.6's list price ($3/$15; intro
+          # $2/$10 until 31/08/26) versus Opus 4.8's $5/$25. The new tokenizer
+          # bills ~1.0-1.35x tokens vs 4.6 and adaptive thinking is always on,
+          # so a somewhat higher per-run cost is expected and intended.
+          # All three land at once because the existing calibration tally is
+          # already contaminated by the two bugs above — there is no clean
+          # baseline to protect, so the measurement restarts from the final
+          # configuration. Do NOT change the model again before ~10 PRs of
+          # tally (docs/CLAUDE-REVIEW.md, >70%-useful rule).
+          claude_args: "--model claude-sonnet-5 --allowed-tools Read,Glob,Grep,mcp__github__add_issue_comment"
+          allowed_bots: "claude"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
