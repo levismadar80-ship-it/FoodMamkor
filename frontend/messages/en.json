@@ -2024,7 +2024,9 @@
       "confirm_delete": "Delete the review by {user} on {producer}?",
       "default_user": "User",
       "default_producer": "the business",
-      "deleted_toast": "Review deleted"
+      "deleted_toast": "Review deleted",
+      "expand": "More",
+      "collapse": "Less"
     },
     "settings": {
       "title": "Settings",
