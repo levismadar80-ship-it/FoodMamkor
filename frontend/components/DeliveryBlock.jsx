@@ -481,16 +481,19 @@ export default function DeliveryBlock({
       ? []
       : grouped.mode === "group"
         ? [
+            // Keys are namespaced (`day:` / `bucket:`) so a delivery_day whose
+            // literal text happened to match a sentinel cannot collide with the
+            // arranged bucket — delivery_day is owner-entered text, not an enum.
             ...grouped.groups.map((g) => ({
-              key: g.day,
+              key: `day:${g.day}`,
               label: t("delivery_day_group", { day: g.day }),
               rows: g.rows,
             })),
             ...(grouped.arranged.length > 0
-              ? [{ key: "__arranged__", label: t("arranged_group"), rows: grouped.arranged }]
+              ? [{ key: "bucket:arranged", label: t("arranged_group"), rows: grouped.arranged }]
               : []),
           ]
-        : [{ key: "__rows__", label: null, rows: grouped.rows }];
+        : [{ key: "bucket:rows", label: null, rows: grouped.rows }];
   const areaRowCount = areaSections.reduce((n, s) => n + s.rows.length, 0);
   const areasOverLimit = areaRowCount > AREA_PREVIEW_LIMIT;
   const areasHiddenCount = areaRowCount - AREA_PREVIEW_LIMIT;
@@ -501,8 +504,13 @@ export default function DeliveryBlock({
   const visibleSections = showAllAreas
     ? areaSections
     : capSections(areaSections, AREA_PREVIEW_LIMIT);
-  // hoist/flat read the single section's rows back out.
-  const visibleAreaRows = visibleSections[0]?.rows ?? [];
+  // hoist/flat read the single section's rows back out. Explicitly empty in
+  // group mode: `visibleSections[0]` is the first DAY GROUP there, so an
+  // unguarded read would hand a group's rows to a branch that renders them
+  // ungrouped. The three mode branches below are mutually exclusive, so this
+  // cannot fire today — the guard is here so that stays true if one moves.
+  const visibleAreaRows =
+    grouped?.mode === "group" ? [] : (visibleSections[0]?.rows ?? []);
   const areaToggle = areasOverLimit ? (
     <AreaToggle
       expanded={areasExpanded}
