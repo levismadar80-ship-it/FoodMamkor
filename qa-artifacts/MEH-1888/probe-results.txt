@@ -1,0 +1,110 @@
+MEH-1888 — hard gate + self-QA, measured 2026-08-03
+====================================================
+
+1 · KEY-COUNT GATE  (the merge condition)
+-----------------------------------------
+Payload: a real GET /producers/{id} response, serialized by the live
+FastAPI route through response_model=ProducerDetailOut, for a producer
+with phone / website / instagram / facebook / external_order_form /
+whatsapp_group / order_window / contact_name / owner_bio /
+established_year populated.
+
+  parse succeeded (loose): true    (strict, control only): true
+  BEFORE keys ............................................. 81
+  AFTER  keys  (.loose() — what ships) .................... 81
+  AFTER  keys  (plain z.object — CONTROL, not shipped) .... 51
+  missing under .loose() ................................... 0   []
+  missing under strict ..................................... 30
+    description, status, organic_certified, vegan_scope,
+    vegetarian_scope, gluten_free_facility, lactose_free_facility,
+    pickup_points, vacation_until, phone_verified, ambassador,
+    kashrut_certs, delivery_nationwide, delivery_cities,
+    delivery_excluded_cities, delivery_fee, free_delivery_above,
+    contact_name, whatsapp_group, products, report_count, created_at,
+    updated_at, story_card_url, owner_bio, owner_photo_url,
+    order_window, custom_questions, google_place_id, established_year
+
+  GATE: PASS (AFTER == BEFORE)
+
+The strict column is the control, and it is why .loose() is mandatory
+rather than stylistic: seven of those 30 are rendered by this page —
+established_year (ProducerHeader.jsx:241), products
+(ProducerSections.jsx:112), contact_name + owner_bio (OwnerCard.jsx:31,
+:35), whatsapp_group (ContactCard.jsx:125), and order_window, which
+MEH-1875 (#2581) turned into a visible weekly-schedule block on this
+very page hours before this measurement.
+
+SOURCE OF THE PAYLOAD — stated plainly. The ticket says "fetch from
+staging". The CC sandbox cannot reach *.up.railway.app (MEH-360, envoy
+`host_not_allowed`), so this is NOT a staging fetch. It is the same
+contract produced by the same code: the real route + real serializer,
+against a local Postgres. What it cannot prove is anything about
+staging's DATA; what it does prove is the parse's behaviour on a full
+81-field ProducerDetailOut, which is what the gate asks.
+
+2 · A SECOND, NARROWER LOSS — found, measured, reported not fixed
+-----------------------------------------------------------------
+`.loose()` applies to the TOP LEVEL ONLY. Nested z.object schemas
+(categories[], delivery_areas[], locations[], active_offer) still strip
+their own undeclared keys. A deep raw-vs-parsed diff over the full
+payload found exactly one such key:
+
+  LOST  producer.categories[0].producer_count = null
+
+Consumer check before calling it harmless: `producer_count` is read at
+frontend/app/[locale]/admin/content/page.js:93, :164, :200 — the admin
+categories screen, fed by GET /categories, NOT by this route. Nothing
+in the producer-page tree reads it. So this loss is inert TODAY, and it
+is a live example of the same mechanism one level down.
+
+Not fixed here: making the nested objects loose means editing
+lib/schemas.js, which is outside this ticket's file_locations (the hook
+and its test). Reported so it is a known gap with a name rather than a
+surprise.
+
+3 · SELF-QA — producer page, 375 + 1440
+----------------------------------------
+Two production builds off the same tip (1013668e, which includes #2581),
+differing ONLY in useProducerData.js: one at the pre-change blob from
+f5dcd3df, one with the change. Local `next start` restarted cleanly
+between them (port verified free), local backend, same seeded producer.
+
+  viewport 375   BEFORE == AFTER   sha256 b70de98a2745a02d815ffe807befd0364dedecbb871c075d21a4e0f217a0a095
+  viewport 1440  BEFORE == AFTER   (identical, same method)
+
+Byte-identical full-page renders. Rendered text also byte-identical —
+`diff` of the extracted body text is empty, and the lengths match
+(375: 1491 chars, 1440: 1568). The text is read rather than eyeballed,
+because a pixel comparison alone is the thing .claude/rules/testing.md
+warns about.
+
+ContactCard channels present, asserted by href rather than by eye, in
+BOTH phases at BOTH widths:
+
+  phone (tel:) ....................... true / true
+  website (ruach-hasade.co.il) ....... true / true
+  instagram (instagram.com) .......... true / true
+  facebook (facebook.com) ............ true / true
+  external_order_form (forms.gle) .... true / true
+  whatsapp_group (chat.whatsapp.com) . true / true
+  order-window block (09:00 rendered)  true / true
+
+4 · AN ANOMALY DURING QA — explained, not waved away
+----------------------------------------------------
+An intermediate capture reported 1394/1471 chars against 1491/1568,
+which read as "the parse dropped ~97 characters". It did not. That run
+hit a `next start` process whose .next directory had been overwritten by
+a later build while it was still serving — the new `next start` had
+failed with EADDRINUSE, so the old server stayed up and answered from a
+half-replaced build. Two things establish this rather than assert it: a
+repeat capture against the SAME server returned a byte-identical PNG (so
+the harness is deterministic), and the controlled pair above — built and
+served with the port verified free between phases — is byte-identical in
+both directions.
+
+Recorded per the Bug Protocol: an anomaly seen during QA is explained or
+reported, never attributed to the harness and dropped. Here it WAS the
+harness, and this is the evidence for saying so rather than the excuse.
+
+Screenshots: producer-{375,1440}-{before,after}.webp (WebP q80 per
+MEH-1156; 266 KB total, cap 2 MB).
