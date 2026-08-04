@@ -887,7 +887,8 @@
         "free_delivery_above": "משלוח חינם",
         "gift_above": "מתנה",
         "first_order": "הטבה להזמנה ראשונה",
-        "pickup_discount": "הנחה באיסוף עצמי"
+        "pickup_discount": "הנחה באיסוף עצמי",
+        "custom": "הטבה בניסוח חופשי"
       },
       "text": {
         "free_delivery_above": "משלוח חינם",
@@ -925,6 +926,8 @@
       "headline_label": "משפט משלך (לא חובה)",
       "headline_hint": "מוצג מתחת להטבה בעמוד שלך. עד 60 תווים, בלי אימוג'י.",
       "headline_placeholder": "המתנה: צנצנת דבש קטנה",
+      "custom_hint": "נסחי את ההטבה במילים שלך — עד 60 תווים",
+      "custom_headline_required": "להטבה בניסוח חופשי חייבת להיות כותרת",
       "expires_label": "בתוקף עד",
       "expires_hint": "חובה. אחרי התאריך הזה ההטבה נעלמת מהאתר בלי שתצטרכי לגעת בה.",
       "expires_required": "צריך לבחור תאריך סיום להטבה",

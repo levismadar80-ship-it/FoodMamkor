@@ -192,7 +192,8 @@ producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
   -- MEH-1823 (b6e1d94a3f27). FIVE CHECKs, all declared on the model too so a
   -- fresh create_all test DB carries them (the MEH-272 precedent):
   --   producer_offer_type              offer_type IN (free_delivery_above,
-  --                                    gift_above, first_order, pickup_discount)
+  --                                    gift_above, first_order, pickup_discount,
+  --                                    custom)   -- MEH-1898 (e4b1c72d9a35)
   --   producer_offer_threshold_unit    threshold_unit IN (ils, units, liters, kg)
   --   producer_offer_threshold_pair    (threshold_value IS NULL) = (threshold_unit IS NULL)
   --   producer_offer_threshold_positive threshold_value IS NULL OR > 0
@@ -204,6 +205,15 @@ producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
   -- pickup over ₪100" and "first order over ₪150" are real offers.
   -- expires_at is NOT NULL by design: an offer that cannot expire is a
   -- permanent discount nobody decided to give.
+  -- MEH-1898 widened producer_offer_type to FIVE values by DROP + re-ADD
+  -- (Postgres has no ALTER CHECK). The CHECK COUNT is still five — only the
+  -- value list changed. `custom` = the owner words the offer herself: it has
+  -- no platform sentence, so `headline` IS the offer text on the consumer
+  -- surface instead of a secondary line under one, and a custom row with an
+  -- empty headline renders NOTHING (OfferBadge.jsx). That empty row is a 200
+  -- at the API on purpose — validation stays uniform across offer_types, with
+  -- no type-conditional branch and no sixth CHECK; the dashboard requires the
+  -- headline client-side, which is where the owner can act on it.
   -- uq_producer_offers_active_per_producer: UNIQUE partial index on
   -- (producer_id) WHERE is_active — enforces at-most-one-active AND serves the
   -- active-row lookup. One index, not two; a non-unique twin would carry the
