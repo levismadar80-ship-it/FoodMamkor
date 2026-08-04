@@ -54,6 +54,7 @@
     "name",
     "offers_delivery",
     "opening_hours",
+    "order_window",
     "organic_certified",
     "phone",
     "phone_verified",

@@ -4,6 +4,12 @@ Backend chunk 1/3 of the "חלון הזמנות" feature. Covers the ORM column 
 Pydantic validation + owner write path (PUT /producers/me) + public read
 (GET /producers/{id} → ProducerDetailOut.order_window).
 
+MEH-1880 extends the public-read half to the LIST contract: `order_window` is
+now serialized by ProducerListOut too, so `GET /producers` carries it and the
+card can derive its "open for orders" line. Serializer-only — the column has
+existed since the migration this header names, so there is no Alembic revision
+in that PR either.
+
 Validation contract (schemas.ProducerUpdate._validate_order_window):
   - keys ∈ {sunday..saturday}; a day absent = orders closed that day
   - each present day = a LIST of 1..3 {"open": "HH:MM", "close": "HH:MM"}
@@ -289,3 +295,56 @@ def test_null_window_in_public_detail(client, db):
     resp = client.get(f"/producers/{producer.id}")
     assert resp.status_code == 200, resp.text
     assert resp.json()["order_window"] is None
+
+
+# ── MEH-1880 — the same public-read contract on the LIST endpoint ────────────
+#
+# The detail pair above passed the whole time `GET /producers` served nothing,
+# because ProducerDetailOut declared the field and ProducerListOut did not. A
+# card fed by a list feed therefore could not see a window at all. The two
+# tests below are the list mirror of that pair, and the first is the
+# discriminating half: remove the ProducerListOut field and it goes red while
+# all 17 pre-existing tests here stay green.
+
+
+def _find_in_list(resp, producer):
+    """The producer's row out of GET /producers, by id.
+
+    By id and not by position: the listing's default sort is created_at DESC
+    and this module creates producers in other tests too, so asserting on
+    `[0]` would pass or fail for reasons unrelated to order_window.
+    """
+    rows = [r for r in resp.json() if str(r["id"]) == str(producer.id)]
+    assert len(rows) == 1, f"expected one row for {producer.id}, got {len(rows)}"
+    return rows[0]
+
+
+def test_order_window_appears_in_public_list(client, db):
+    _, producer = _producer_user(db)
+    producer.order_window = VALID_WINDOW
+    db.commit()
+
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    row = _find_in_list(resp, producer)
+    # The whole nested structure, not merely presence of the key: the frontend
+    # derivation reads open/close per range, so a serializer that flattened or
+    # truncated the value would still satisfy `"order_window" in row`.
+    assert row["order_window"] == VALID_WINDOW
+
+
+def test_null_window_in_public_list(client, db):
+    """A producer that never set a window serves an explicit null, not a gap.
+
+    `null` is what the frontend treats as "feature unused → render nothing"
+    (getOrderWindowStatus returns null on an empty window). A MISSING key
+    reaches the same screen result by a different route, so pinning it to null
+    keeps the contract single-valued.
+    """
+    _, producer = _producer_user(db)
+
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    row = _find_in_list(resp, producer)
+    assert "order_window" in row
+    assert row["order_window"] is None
