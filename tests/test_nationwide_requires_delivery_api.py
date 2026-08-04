@@ -34,7 +34,7 @@ from tests.conftest import auth_header, make_producer, make_user
 # The contradiction's message, from services/delivery_validation.py and the two
 # schema validators. Asserted as a substring so the three stay honest about
 # being one invariant with one wording.
-MSG = "משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים"
+MSG = '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
 
 
 @pytest.fixture
@@ -42,10 +42,31 @@ def admin(db):
     return make_user(db, email="admin-1879@example.com", role="admin")
 
 
+def _detail_text(resp) -> str:
+    """The DECODED message, not the wire text.
+
+    Two response shapes reach here and both must be readable:
+      HTTPException(422, detail=str)  -> {"detail": "<msg>"}          (the routers)
+      Pydantic ValueError            -> {"detail": [{"msg": "Value error, <msg>"}]}
+
+    Decoding matters and is not defensive tidying: the copy contains ASCII
+    double quotes (it names the two checkboxes by label), and JSON escapes those
+    to \\" on the wire. A substring match against `resp.text` therefore FAILS on
+    a perfectly correct 422 — which is exactly what happened when this copy
+    landed. The previous wording had no quotes, so the shortcut passed by luck.
+    """
+    body = resp.json()
+    detail = body.get("detail")
+    if isinstance(detail, str):
+        return detail
+    return " ".join(item.get("msg", "") for item in detail)
+
+
 def _assert_contradiction_rejected(resp):
     """422 AND the message that names this contradiction — not merely 422."""
     assert resp.status_code == 422, f"expected 422, got {resp.status_code}: {resp.text}"
-    assert MSG in resp.text, f"422 arrived for the wrong reason: {resp.text}"
+    detail = _detail_text(resp)
+    assert MSG in detail, f"422 arrived for the wrong reason: {detail}"
 
 
 def test_admin_create_rejects_contradiction(client, admin):
