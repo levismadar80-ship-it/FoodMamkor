@@ -70,6 +70,17 @@ vi.mock("@/lib/producer-filters", () => ({
   buildChipParams: () => ({}),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
+  // MEH-1881: ProducersClient now imports this threshold, and a partial
+  // vi.mock throws on any export it omits — so the stub has to carry it
+  // even though nothing here exercises the gate. A number keeps the gate
+  // arithmetic well-defined; `undefined` would make `n >= undefined`
+  // false forever and silently hide the chip in every one of these specs.
+  OPEN_NOW_CHIP_MIN: 5,
+  // MEH-1881: /producers renders a superset of the shared chip row; these
+  // are the names ProducersClient imports. Empty/`{}` keeps these specs
+  // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
+  PRODUCERS_CHIPS_CONFIG: [],
+  PRODUCERS_CHIPS_DEFAULT: {},
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),
