@@ -75,5 +75,5 @@ def ensure_nationwide_requires_delivery(producer: Producer, payload: dict) -> No
     if effective_nationwide and not effective_offers:
         raise HTTPException(
             status_code=422,
-            detail="משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים",
+            detail='"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".',
         )
