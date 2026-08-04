@@ -11,10 +11,19 @@ import { assertDetailRendered, watchPageErrors } from "./_producer-fixture";
  * implementation, never a copy."* Numbered `00` so it sorts first.
  *
  * Both directions are exercised on synthetic documents, so this is
- * deterministic and needs no server, no seed and no network: a healthy page
- * must produce silence, and Next's error document must produce a report that
- * carries every field a reader needs to act — the producer, the URL, the HTTP
- * status, the uncaught error, and the page's own text.
+ * deterministic and needs no seed and no test data: a healthy page must produce
+ * silence, and Next's error document must produce a report that carries every
+ * field a reader needs to act — the producer, the URL, the HTTP status, the
+ * uncaught error, and the page's own text.
+ *
+ * It is NOT network-free, and saying so would be a false claim in a comment.
+ * Case (b) drives `assertDetailRendered` into its failure branch, which fires
+ * the sibling-route probe as a real request to `baseURL` (the job's local
+ * `next start`, per e2e.yml — not staging). The probe's outcome cannot change
+ * this test's verdict: its result is interpolated into a report the test only
+ * greps for known substrings, and a connection failure is caught and rendered
+ * as "probe failed". The determinism claim survives; the isolation claim had to
+ * be narrowed to what is actually true.
  */
 const ERROR_DOC =
   `<!doctype html><html id="__next_error__"><head><meta charset="utf-8"></head>` +
