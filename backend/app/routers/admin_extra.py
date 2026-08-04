@@ -773,7 +773,9 @@ def get_dashboard(
     # the oldest bucket keeps its first 2-3 hours.
     today = israel_today()
     dau_cutoff = (
-        datetime.combine(today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ)
+        datetime.combine(
+            today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ
+        )
         .astimezone(timezone.utc)
         .replace(tzinfo=None)
     )

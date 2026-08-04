@@ -864,12 +864,16 @@ def producer_analytics(
     #      previous day.
     today = israel_today()
     window_start = (
-        datetime.combine(today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ)
+        datetime.combine(
+            today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ
+        )
         .astimezone(timezone.utc)
         .replace(tzinfo=None)
     )
     israel_day = func.date(
-        func.timezone("Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at))
+        func.timezone(
+            "Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at)
+        )
     )
     daily_rows = (
         db.query(
