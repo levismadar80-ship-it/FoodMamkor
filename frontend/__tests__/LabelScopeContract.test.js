@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
-import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { CHIPS_CONFIG, PRODUCERS_CHIPS_CONFIG } from "@/lib/producer-filters";
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
 
 // MEH-1507 — Label Scope Contract guard.
@@ -45,6 +45,12 @@ function contractProblems(name, entry) {
 const SURFACES = {
   ATTRIBUTE_LABELS: Object.entries(ATTRIBUTE_LABELS),
   CHIPS_CONFIG: CHIPS_CONFIG.map((c) => [c.key, c]),
+  // MEH-1881: /producers renders a superset of CHIPS_CONFIG — its extra
+  // chip is defined in producer-filters.js, not in ATTRIBUTE_LABELS, so
+  // without this line the newest consumer-facing chip on the site would be
+  // the one surface the scope contract does not check. Listing the whole
+  // array (not just the delta) keeps that true for whatever is added next.
+  PRODUCERS_CHIPS_CONFIG: PRODUCERS_CHIPS_CONFIG.map((c) => [c.key, c]),
   TOGGLE_CHIPS: TOGGLE_CHIPS.map((c) => [c.key, c]),
 };
 

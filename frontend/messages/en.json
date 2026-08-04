@@ -849,7 +849,18 @@
         "vacation_msg": "Send a message — they will respond soon"
       },
       "order_window": {
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen"
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
+        "schedule_heading": "When orders are accepted",
+        "schedule_subtitle": "The days and hours this business accepts orders",
+        "days": {
+          "sun": "Sunday",
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday"
+        }
       }
     },
     "card": {
@@ -3039,6 +3050,10 @@
     "address_search": {
       "placeholder": "Search address...",
       "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
+    },
+    "en_notice": {
+      "body": "Business listings are in Hebrew — searching in English returns no results.",
+      "cta": "Switch to Hebrew"
     }
   },
   "favorites": {
@@ -4321,6 +4336,7 @@
       "hours": {
         "heading": "Opening hours",
         "subtitle": "When the business is physically open. Shown on the map and the business page.",
+        "hours_empty_hint": "Hours set here appear on the business page and are sent to search engines.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
         "revert_cta": "Discard changes",

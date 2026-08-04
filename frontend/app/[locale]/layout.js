@@ -272,7 +272,16 @@ export default async function LocaleLayout({ children, params }) {
         <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
       </head>
-      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-20 md:pb-0">
+      {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
+          NOTHING else, so the cookie banner — which floats in its own band
+          starting ABOVE that one (CookieBanner.jsx:68, bottom = safe-area+80px)
+          — covered whatever in-flow content sat at the end of the scroll. On
+          /register/producer step 2 that was the «הבא» button: a WCAG 2.2 AA
+          failure (SC 2.4.11, W3C failure F110), not a cosmetic one.
+          `--bottom-inset` (globals.css, under `html`) now owns that sum. It
+          still evaluates to exactly 5rem when the banner is absent, which is
+          what the old class said — so this is a superset, not a re-spacing. */}
+      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
