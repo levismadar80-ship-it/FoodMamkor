@@ -171,12 +171,35 @@ export async function assertDetailRendered(
     .slice(0, 300);
 
   let siblingRoute = "n/a — this producer has no slug, so the requested URL WAS the id route";
+  let bySlug = "n/a — no slug to look up";
+  let slugBytes = "n/a";
   if (producer.slug) {
-    const alt = await page.request
+    siblingRoute = await page.request
       .get(`/producer/${producer.id}`)
       .then((r) => `GET /producer/${producer.id} → HTTP ${r.status()}`)
       .catch((e) => `GET /producer/${producer.id} → probe failed: ${String(e)}`);
-    siblingRoute = alt;
+
+    // THE decisive datum. middleware.js:47-48 returns `res.ok` from exactly this
+    // endpoint, so ANY non-2xx — 404, 500, 429 — rewrites to /__mm_not_found__
+    // with status 404 (middleware.js:98-103). The 404 the browser sees therefore
+    // carries no information about which it was, and the middleware logs nothing.
+    // Sampling it here, for THIS slug, at the moment of failure, is what splits:
+    //   404 → the slug genuinely does not resolve in the DB (compare slugBytes)
+    //   5xx → a backend fault turned into a false 404 on the canonical, indexable
+    //         URL — not a not-found at all
+    // `/api/*` proxies to the same backend the middleware queries
+    // (next.config.js:154-173), so this reaches the same resolver.
+    bySlug = await page.request
+      .get(`/api/producers/by-slug/${encodeURIComponent(producer.slug)}`)
+      .then((r) => `GET /api/producers/by-slug/${producer.slug} → HTTP ${r.status()}`)
+      .catch((e) => `by-slug probe failed: ${String(e)}`);
+
+    // Codepoints, not the rendered string. A trailing space or a Hebrew-lookalike
+    // character passes the middleware's isSlugShaped() and still fails the DB
+    // comparison, and by eye the two spellings are identical.
+    slugBytes = [...producer.slug]
+      .map((c) => (/[a-z0-9-]/.test(c) ? c : `U+${c.codePointAt(0)!.toString(16).toUpperCase()}`))
+      .join("");
   }
 
   throw new Error(
@@ -187,14 +210,20 @@ export async function assertDetailRendered(
       `  http status ....... ${httpStatus ?? "n/a (navigated by click)"}`,
       `  landed on ......... ${page.url()}`,
       `  sibling route ..... ${siblingRoute}`,
+      `  backend by-slug ... ${bySlug}`,
+      `  slug codepoints ... ${slugBytes}`,
       `  page errors ....... ${pageErrors.length ? pageErrors.join(" | ").slice(0, 600) : "none"}`,
       `  page text ......... ${bodyText || "(empty)"}`,
       "",
-      "Next renders #__next_error__ for a deliberate notFound() AND for a crash in the tree.",
-      "HTTP 404 with no page errors = the business is unreachable at the URL its own card links",
-      "to (routing/visibility — MEH-1712's family). HTTP 200 with page errors = a component threw",
-      "(read the page-errors line for which). Either way it is a product defect, not a data",
-      "condition to skip past.",
+      "Read the `backend by-slug` line FIRST — it is the one that discriminates.",
+      "middleware.js:47-48 returns res.ok, so any non-2xx from that endpoint becomes a hard",
+      "404 rewrite (middleware.js:98-103) and app/[locale]/[slug]/page.js never runs. The 404",
+      "in the browser is therefore the middleware's, and it looks identical whether the backend",
+      "said 404, 500 or 429:",
+      "  by-slug 404 → the slug does not resolve; compare `slug codepoints` against the DB row",
+      "  by-slug 5xx → a backend fault presented as a not-found on the canonical, indexable URL",
+      "  by-slug 200 → the failure was transient, or the fault is downstream of the middleware",
+      "Either way it is a product defect, not a data condition to skip past.",
     ].join("\n"),
   );
 }
