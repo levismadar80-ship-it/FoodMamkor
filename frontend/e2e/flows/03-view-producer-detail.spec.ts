@@ -1,83 +1,89 @@
 import { test, expect } from "@playwright/test";
+import {
+  pickProducer,
+  detailPath,
+  assertDetailRendered,
+  watchPageErrors,
+  REQUIREMENTS,
+} from "./_producer-fixture";
 
 // MEH-1440: this spec used to click the FIRST producer card and assert the
 // contact CTA — but PrimaryContactButton self-collapses (returns null) when
 // the producer has no derivable contact href (PrimaryContactButton.jsx:70),
 // so the assertion silently depended on whichever producer staging happens to
-// serve first. The 2026-07-21 producer_locations re-seed reordered the feed
-// and the spec went red on clean staging (both projects, run 29897314926).
-// Deterministic form: pick a producer that HAS contact data from the live
-// /producers feed (phone covers the whatsapp/phone primary methods,
-// contact_email covers email) and click ITS card. The CTA assertion stays
-// strict — for a contactable producer the CTA MUST render; its absence is a
-// real regression, not a data accident.
+// serve first.
+//
+// MEH-1717: that fix picked a contactable producer from the feed but still
+// required ITS card to be present on the first render of /producers, and
+// skipped when it was not. Two defects rode on that:
+//
+//   - a RACE. The card count was read immediately after `domcontentloaded`,
+//     and the cards are client-rendered — measured, `cards: 0 → skip` while a
+//     probe that waited 2.5s saw 12. The spec's verdict tracked scheduling.
+//   - a DATA SKIP. Whether any contactable business was visible at all moved
+//     with the vacation calendar (MEH-1883's nightly window) and with feed
+//     ranking, so the spec skipped silently and the suite still read green.
+//
+// Now: the target producer is chosen by an explicit requirement and a stable
+// sort (_producer-fixture.ts), the wait is an assertion with a timeout rather
+// than an instantaneous count, and a missing seed FAILS by name. Skip is
+// reserved for explicit env conditions — never for data.
+//
+// The assertions themselves are unchanged; only what the spec depends on to
+// reach them is.
 test.describe("Producer detail", () => {
   test("clicking a contactable producer card opens detail page with h1 and CTA", async ({ page }) => {
-    const res = await page.request.get("/api/producers");
-    expect(res.ok(), "GET /producers must respond 2xx").toBeTruthy();
-    const producers = (await res.json()) as Array<{
-      id: string;
-      slug?: string | null;
-      phone?: string | null;
-      contact_email?: string | null;
-    }>;
-    const contactable = producers.filter((p) => p.phone || p.contact_email);
-    if (contactable.length === 0) {
-      test.skip(true, "No producer with contact data in the feed — staging data problem, not a UI regression");
-      return;
-    }
+    const pageErrors = watchPageErrors(page);
+    const producer = await pickProducer(page.request, REQUIREMENTS.contactable);
+    const href = detailPath(producer);
 
     await page.goto("/producers");
-    await page.waitForLoadState("domcontentloaded");
+
+    // MEH-1717: the cards are client-rendered, so this must be an assertion
+    // with a timeout, not a count read at `domcontentloaded`. A zero here now
+    // fails the spec after waiting, instead of skipping it instantly.
     const cards = page.locator('[data-testid="producer-card"]');
-    if ((await cards.count()) === 0) {
-      test.skip(true, "No producer cards found — staging DB may be empty");
-      return;
-    }
+    await expect(
+      cards,
+      "no producer cards rendered on /producers — the feed or the grid is broken",
+    ).not.toHaveCount(0, { timeout: 20_000 });
 
-    // ProducerCard.jsx:173 — card href is /{slug} or /producer/{id} (an
-    // optional ?from= referrer suffix may follow). Find the first contactable
-    // producer whose card is rendered on the page.
-    let card = null;
-    for (const p of contactable) {
-      const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-      const candidate = page
-        .locator(`[data-testid="producer-card"]:has(a[href="${href}"]), [data-testid="producer-card"]:has(a[href^="${href}?"])`)
-        .first();
-      if ((await candidate.count()) > 0) {
-        card = candidate;
-        break;
-      }
-    }
-    if (!card) {
-      test.skip(true, "No contactable producer's card rendered on /producers — data problem, not a UI regression");
-      return;
-    }
+    // ProducerCard.jsx:173 — the card's href is `/{slug}` or `/producer/{id}`,
+    // optionally followed by a `?from=` referrer suffix.
+    const card = page
+      .locator(
+        `[data-testid="producer-card"]:has(a[href="${href}"]), [data-testid="producer-card"]:has(a[href^="${href}?"])`,
+      )
+      .first();
+    await expect(
+      card,
+      `the chosen producer's card (${href}) is not on /producers. It satisfies ` +
+        `"${REQUIREMENTS.contactable.label}" per the API, so either the grid dropped it or the ` +
+        "listing filters disagree with the feed — both are real regressions, not reasons to skip.",
+    ).toBeVisible({ timeout: 20_000 });
 
-    await expect(card).toBeVisible({ timeout: 15_000 });
     // MEH-1369: click the card's inner nav anchor (real <a href>, navigates
     // natively pre-hydration), not the <article> wrapper whose click routes
     // through a React onClick that races hydration. See parity.spec.ts header.
     await card.locator('a[href^="/"]').first().click();
-    // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
-    await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
+    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), { timeout: 20_000 });
 
     // MEH-1550: the predicate above is permissive — a 404/redirect satisfies it
     // too — and Next's error document carries its own <h1>, so neither it nor
     // the CTA check below can tell a failed navigation from a real detail page
     // (the CTA would just fail as "missing", pointing at the wrong thing).
     // Assert the error boundary is absent first so the failure names the cause.
-    await expect(
-      page.locator("#__next_error__"),
-      "navigation failed — landed on Next's error page instead of a producer detail",
-    ).toHaveCount(0);
+    // MEH-1712: this boundary also renders a deliberate notFound() on the slug
+    // route, so a red here means "the detail route did not resolve", NOT
+    // necessarily a crash.
+    await assertDetailRendered(page, producer, href, pageErrors);
     await expect(page.locator("h1").first()).toBeVisible();
     // Either the unified PrimaryContactButton or a standalone WhatsApp button.
     // :visible filters out the md:hidden mobile CTA that appears first in DOM.
     await expect(
       page
         .locator('[data-testid="primary-contact-button"]:visible, [data-testid="whatsapp-cta"]:visible')
-        .first()
+        .first(),
     ).toBeVisible();
   });
 });
