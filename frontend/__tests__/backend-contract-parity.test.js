@@ -24,11 +24,14 @@
  * seven recurrences (MEH-826, 901, 902, 766 ch5, 1412, 1704, 1719).
  *
  * ── THE BASELINE, AND WHY IT EXISTS ────────────────────────────────────────
- * Measured on 03/08/2026: the backend serves 64 list fields and 81 detail
- * fields; `lib/schemas.js` declares 47 and 51. So 17 list and 30 detail fields
+ * Re-measured on 04/08/2026: the backend serves 65 list fields and 81 detail
+ * fields; `lib/schemas.js` declares 48 and 52. So 17 list and 29 detail fields
  * are undeclared TODAY. That is not news — it is exactly defects D1 and D2 in
  * `docs/audits/producer-schema-call-sites.md` §5, reported there and knowingly
- * left in place.
+ * left in place. (The 03/08 reading was 64/81 served and 47/51 declared, 17
+ * list and 30 detail undeclared; MEH-1880 added `order_window` to the list
+ * contract AND declared it, which is why the served count rose while the
+ * undeclared counts did not.)
  *
  * A guard that reds on all 47 of them from its first commit is a guard nobody
  * can merge, so the pre-existing gap is baselined below and NEW drift is what
@@ -147,7 +150,12 @@ const KNOWN_UNDECLARED = {
     "google_place_id",
     "kashrut_certs",
     "lactose_free_facility",
-    "order_window",
+    // MEH-1880 removed `order_window` from this baseline — not by baselining a
+    // new gap away, but the other direction: the field moved onto
+    // ProducerListOut and is now DECLARED on ProducerListSchema, which
+    // ProducerDetailSchema extends. Leaving it here would fail "the baseline
+    // carries no stale entries", which is exactly the check that keeps this
+    // list shrinking.
     "organic_certified",
     "owner_bio",
     "owner_photo_url",
