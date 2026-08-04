@@ -32,10 +32,9 @@ The condition text is kept BYTE-IDENTICAL to `ProducerOffer.__table_args__` in
 backend/app/models/models.py, including the string-literal line break. Both
 places declare it — the defence-in-depth CHECK precedent, and the same choice
 revision b6e1d94a3f27 made when it created the table — because `alembic check`
-does NOT
-diff CHECK conditions. A drift between the two would therefore be invisible to
-CI: a fresh `create_all` test DB would accept `custom` while a migrated
-staging DB rejected it, and only a production 500 would say so.
+does NOT diff CHECK conditions. A drift between the two would therefore be
+invisible to CI: a fresh `create_all` test DB would accept `custom` while a
+migrated staging DB rejected it, and only a production 500 would say so.
 
 # DO NOT re-order the four original values while editing this list — the
 #        condition is compared by eye against models.py, and a reordered
