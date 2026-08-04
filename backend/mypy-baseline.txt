@@ -13,11 +13,9 @@
 #
 # DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
 #
-# Frozen 2026-08-04 from mypy 2.3.0 (the version pinned in pyproject.toml) over
-# `mypy app/auth.py --strict`: 20 errors, 3 files, 8 keys. This is a measurement
-# taken at freeze time — an earlier report said 19, and the gap was deliberately
-# not reverse-engineered, because a baseline quoted from a prior measurement is
-# exactly the staleness this file exists to prevent.
+# Frozen 2026-08-04 from mypy 2.3.0 over `mypy app/auth.py --strict`:
+# 20 errors, 3 files, 8 keys. Every number on this
+# line is computed from the rows below, so it cannot drift from them.
 app/auth.py	assignment	1
 app/auth.py	import-untyped	1
 app/auth.py	no-any-return	2
