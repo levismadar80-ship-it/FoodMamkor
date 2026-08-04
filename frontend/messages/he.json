@@ -769,7 +769,17 @@
         },
         "products": {
           "heading": "מוצרים",
-          "signature_label": "המוצר המוביל"
+          "signature_label": "המוצר המוביל",
+          "diet": {
+            "gluten_free": "ללא גלוטן",
+            "vegan": "טבעוני",
+            "vegetarian": "צמחוני",
+            "lactose_free": "ללא לקטוז"
+          },
+          "sheet_open_aria": "פרטים על {name}",
+          "sheet_close_aria": "סגירת פרטי המוצר",
+          "sheet_cta": "שאלי על המוצר בוואטסאפ",
+          "sheet_wa_prefill": "היי, ראיתי את ״{name}״ בעמוד שלכם במהמקור ואשמח לשמוע פרטים"
         },
         "recipes": {
           "cta": "המתכונים שלנו"
