@@ -261,7 +261,10 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getAllByText("מודיעין")).toHaveLength(1);
   });
 
-  it("MEH-1512: 10 pickup rows show a 5-row preview + the existing show-more toggle", () => {
+  // MEH-1903 lowered PICKUP_PREVIEW_LIMIT 5 → 3; this test's numbers move with
+  // it (3 shown / 4th hidden / 7 named by the toggle). The shape it pins — a
+  // preview plus the reused toggle — is unchanged.
+  it("MEH-1512 + MEH-1903: 10 pickup rows show a 3-row preview + the existing show-more toggle", () => {
     const locations = Array.from({ length: 10 }, (_, i) => ({
       kind: "pickup",
       label: `נקודה ${String(i + 1).padStart(2, "0")}`,
@@ -272,13 +275,30 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     render(
       <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={{ ...producer, locations }} />,
     );
-    // First 5 shown (sorted city→label), the 6th hidden behind the reused toggle.
-    expect(screen.getByText("נקודה 05")).toBeInTheDocument();
-    expect(screen.queryByText("נקודה 06")).not.toBeInTheDocument();
-    const toggle = screen.getByRole("button", { name: "הצג עוד 5 ערים" });
+    // First 3 shown (sorted city→label), the 4th hidden behind the reused toggle.
+    expect(screen.getByText("נקודה 03")).toBeInTheDocument();
+    expect(screen.queryByText("נקודה 04")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "הצג עוד 7 ערים" });
     fireEvent.click(toggle);
     expect(screen.getByText("נקודה 10")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "הצג פחות" })).toBeInTheDocument();
+  });
+
+  it("MEH-1903: 4 pickup locations preview 3 + a toggle naming the 1 remaining", () => {
+    const locations = Array.from({ length: 4 }, (_, i) => ({
+      kind: "pickup",
+      label: `נקודה ${String(i + 1).padStart(2, "0")}`,
+      city: `עיר ${String(i + 1).padStart(2, "0")}`,
+      lat: 32 + i / 100,
+      lng: 35,
+    }));
+    render(
+      <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={{ ...producer, locations }} />,
+    );
+    expect(screen.getByText("נקודה 03")).toBeInTheDocument();
+    expect(screen.queryByText("נקודה 04")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "הצג עוד 1 ערים" }));
+    expect(screen.getByText("נקודה 04")).toBeInTheDocument();
   });
 
   it("MEH-1512: fallback — pickup=true with zero pickup rows still renders the generic line", () => {
@@ -464,6 +484,143 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     // Regression lock: if the fee line were ever reduced to the bare word, the
     // block would show "חינם" twice with nothing saying which is which.
     expect(feeLine()).not.toHaveTextContent(/^חינם$/);
+  });
+
+  // ---------- MEH-1903: AREA_PREVIEW_LIMIT = 6 across hoist / flat / group ----
+  //
+  // The cap is on the TOTAL number of visible AreaRows, not on each day group.
+  // That distinction is the whole feature and it is invisible in any fixture
+  // whose groups are individually under 6 — the group tests below are sized so
+  // a per-group cap of 6 would render every row and go red.
+
+  // Rows carry min_order so `bare` stays false and the editorial rows render
+  // (a city-only fixture collapses to the MEH-1435 compact list instead).
+  const areaRows = (n, { day = "שישי", from = 1 } = {}) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: from + i,
+      city: `עיר ${String(from + i).padStart(2, "0")}`,
+      min_order: 100,
+      delivery_day: day,
+    }));
+
+  // The single most likely way to break this: an off-by-one that hides a row at
+  // exactly the limit. At 6 the markup must be what it was before the ticket.
+  it("MEH-1903 boundary: exactly 6 rows render in full with ZERO toggles in the area section", () => {
+    const { container } = render(
+      <DeliveryBlock nationwide={false} areas={areaRows(6)} pickup={false} producer={producer} />,
+    );
+    expect(screen.getByText("עיר 06")).toBeInTheDocument();
+    expect(container.querySelectorAll("li").length).toBe(6);
+    // Numeric assertion, not a name match: no disclosure control of any kind.
+    expect(container.querySelectorAll("button[aria-expanded]").length).toBe(0);
+    expect(screen.queryByRole("button", { name: /הצג/ })).not.toBeInTheDocument();
+  });
+
+  it("MEH-1903 hoist: 7 rows preview 6 + a toggle that expands to all 7 and collapses back", () => {
+    render(
+      <DeliveryBlock nationwide={false} areas={areaRows(7)} pickup={false} producer={producer} />,
+    );
+    expect(screen.getByText("עיר 06")).toBeInTheDocument();
+    expect(screen.queryByText("עיר 07")).not.toBeInTheDocument();
+    // The hoisted day is still stated exactly once (MEH-1305), cap or no cap.
+    expect(screen.getByText("יוצאים בימי שישי")).toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "הצג עוד 1 ערים" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(screen.getByText("עיר 07")).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "הצג פחות" })).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.queryByText("עיר 07")).not.toBeInTheDocument();
+  });
+
+  it("MEH-1903 flat: 8 dayless rows with minimums preview 6 + toggle", () => {
+    const areas = areaRows(8).map(({ delivery_day, ...rest }) => rest);
+    render(
+      <DeliveryBlock nationwide={false} areas={areas} pickup={false} producer={producer} />,
+    );
+    expect(screen.getByText("עיר 06")).toBeInTheDocument();
+    expect(screen.queryByText("עיר 07")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "הצג עוד 2 ערים" }));
+    expect(screen.getByText("עיר 08")).toBeInTheDocument();
+  });
+
+  it("MEH-1903 group: the cap walks ACROSS groups — one group truncates mid-way, the next hides header and all", () => {
+    // 4 + 4 + 2 = 10 rows. Cap 6 → group A whole (4), group B truncated to 2,
+    // group C absent entirely. A per-group cap of 6 would show all ten and no
+    // toggle, so this fixture is what separates the two implementations.
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          ...areaRows(4, { day: "ראשון", from: 1 }),
+          ...areaRows(4, { day: "שני", from: 5 }),
+          ...areaRows(2, { day: "שלישי", from: 9 }),
+        ]}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    // Group A: all four rows + header.
+    expect(screen.getByText("ימי ראשון")).toBeInTheDocument();
+    expect(screen.getByText("עיר 04")).toBeInTheDocument();
+    // Group B: header shown, truncated to the 2 rows the budget allowed.
+    expect(screen.getByText("ימי שני")).toBeInTheDocument();
+    expect(screen.getByText("עיר 06")).toBeInTheDocument();
+    expect(screen.queryByText("עיר 07")).not.toBeInTheDocument();
+    // Group C: entirely past the cap → the HEADER is hidden too, not an empty
+    // day heading promising a dispatch day with no rows under it.
+    expect(screen.queryByText("ימי שלישי")).not.toBeInTheDocument();
+    expect(screen.queryByText("עיר 09")).not.toBeInTheDocument();
+    // One toggle for the whole section — not one per group.
+    const toggles = screen.getAllByRole("button", { name: /הצג/ });
+    expect(toggles).toHaveLength(1);
+    fireEvent.click(toggles[0]);
+    expect(screen.getByText("ימי שלישי")).toBeInTheDocument();
+    expect(screen.getByText("עיר 10")).toBeInTheDocument();
+  });
+
+  it("MEH-1903 group: the dayless 'arranged' bucket is walked LAST and is what the cap drops first", () => {
+    // 4 (ראשון) + 3 (שני) + 2 dayless = 9. Cap 6 → ראשון whole, שני truncated
+    // to 2, the arranged bucket never reached.
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          ...areaRows(4, { day: "ראשון", from: 1 }),
+          ...areaRows(3, { day: "שני", from: 5 }),
+          { id: 8, city: "עיר 08", min_order: 100 },
+          { id: 9, city: "עיר 09", min_order: 100 },
+        ]}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    expect(screen.getByText("ימי ראשון")).toBeInTheDocument();
+    expect(screen.getByText("ימי שני")).toBeInTheDocument();
+    expect(screen.queryByText("בתיאום מראש")).not.toBeInTheDocument();
+    expect(screen.queryByText("עיר 08")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "הצג עוד 3 ערים" }));
+    expect(screen.getByText("בתיאום מראש")).toBeInTheDocument();
+    expect(screen.getByText("עיר 09")).toBeInTheDocument();
+  });
+
+  it("MEH-1903 lock: the MEH-1435 compact city list keeps its own 15 limit, untouched by the area cap", () => {
+    // 10 city-only areas: over the area cap of 6, under the compact cap of 15.
+    // If the area cap leaked into compact mode this would show 6 + a toggle.
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={Array.from({ length: 10 }, (_, i) => ({
+          id: i + 1,
+          city: `עיר ${String(i + 1).padStart(2, "0")}`,
+        }))}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    expect(screen.getByText("עיר 10")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /הצג/ })).not.toBeInTheDocument();
   });
 
   // ---------- MEH-1772 chunk 3: per-area fee override ----------

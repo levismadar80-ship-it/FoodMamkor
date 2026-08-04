@@ -97,6 +97,65 @@ function AreaRow({ da, t, fee = null }) {
   );
 }
 
+// MEH-1903: preview cap for the MEH-1305 editorial area rows, which rendered
+// every area unbounded in all three modes. Same progressive-disclosure idiom
+// already proven twice in this file — CompactCities (CITY_PREVIEW_LIMIT, :125)
+// and PickupRows (PICKUP_PREVIEW_LIMIT, :209): slice + one reused
+// show_all/show_less toggle. Nothing is deleted; the rest is one tap away.
+//
+// 6 and not the compact list's 15 because these rows are ~7x taller: a city
+// row here carries min_order and (under MEH-1772 variance) a per-area fee,
+// while a compact entry is a bare middot-separated name.
+const AREA_PREVIEW_LIMIT = 6;
+
+// MEH-1903: the area section's show-more/less control. Anatomy is copied from
+// CompactCities' toggle verbatim — same two i18n keys, same Phosphor carets,
+// same aria-expanded and text-primary — so the third disclosure surface in this
+// file is indistinguishable from the two that predate it.
+// REUSES: frontend/components/DeliveryBlock.jsx:147-161 (CompactCities toggle)
+function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
+    >
+      {expanded ? t("show_less") : t("show_all", { count: hiddenCount })}
+      {expanded ? (
+        <CaretUp size={16} aria-hidden="true" />
+      ) : (
+        <CaretDown size={16} aria-hidden="true" />
+      )}
+    </button>
+  );
+}
+
+// MEH-1903: apply the cap ACROSS a list of day groups rather than within each
+// one — the criterion is the total number of visible rows, so a single toggle
+// can honestly name how many rows remain.
+//
+// Walks in the order given (day groups first, "arranged" bucket last) and stops
+// once the budget is spent. A group whose rows all fall past the cap drops out
+// ENTIRELY, header included — rendering a day heading over zero rows would state
+// a dispatch day the reader cannot act on, which is the opposite of the
+// MEH-1305 day-once discipline this preserves.
+//
+// Callers never pass a section with zero rows, so every section returned here
+// has at least one visible row (the `budget <= 0` break guarantees the slice is
+// non-empty).
+function capSections(sections, limit) {
+  let budget = limit;
+  const visible = [];
+  for (const section of sections) {
+    if (budget <= 0) break;
+    const rows = section.rows.slice(0, budget);
+    visible.push({ ...section, rows });
+    budget -= rows.length;
+  }
+  return visible;
+}
+
 // A day-headed group (2+ distinct days) or the trailing "arranged" bucket.
 // MEH-1772 chunk 3: `feeOf` resolves a row's effective fee (or null when fees
 // don't vary) — threaded through rather than recomputed here so the variance
@@ -206,7 +265,12 @@ function PickupRow({ loc, t, tMap }) {
 // + slice + a reused show_all/show_less toggle — so a long market-stand list
 // stays short (preview PICKUP_PREVIEW_LIMIT + "הצג עוד"). Sorted city→label,
 // stable. Heading reuses the MEH-1461-locked "איסוף עצמי" string (t("pickup")).
-const PICKUP_PREVIEW_LIMIT = 5;
+//
+// MEH-1903: 5 → 3. Pickup rows are the tallest rows in the block (heading +
+// up to two sublines + a Waze link each), so five of them push the section
+// below the fold on 375px before the reader has seen the delivery answer.
+// Only the number changes — the component below is untouched.
+const PICKUP_PREVIEW_LIMIT = 3;
 
 function PickupRows({ locations, t, tMap }) {
   const [expanded, setExpanded] = useState(false);
@@ -337,6 +401,10 @@ export default function DeliveryBlock({
   const tMap = useTranslations("map.mini");
   // MEH-1646 (a): weekday labels for the cutoff day ("יום רביעי").
   const tWeekdays = useTranslations("opening_hours.weekdays");
+  // MEH-1903: one expansion state for the whole area section — the cap is on
+  // the TOTAL row count across modes, so a per-group state would be a different
+  // feature (and is explicitly out of scope).
+  const [areasExpanded, setAreasExpanded] = useState(false);
   const hasAreas = areas.length > 0;
   // MEH-1646 (a): non-null ONLY when order_window has exactly one open day —
   // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
@@ -404,6 +472,45 @@ export default function DeliveryBlock({
   const bare =
     hasAreas && !feeVaries && areas.every((da) => !da.min_order && !da.delivery_day);
   const grouped = hasAreas && !bare ? groupDeliveryAreas(areas) : null;
+  // MEH-1903: the editorial rows, flattened to ONE shape the cap can reason
+  // about regardless of mode. Group mode is a list of labelled sections;
+  // hoist/flat are a single unlabelled section, so they share the same walk and
+  // the same total. `arranged` goes last, matching the render order below.
+  const areaSections =
+    grouped == null
+      ? []
+      : grouped.mode === "group"
+        ? [
+            ...grouped.groups.map((g) => ({
+              key: g.day,
+              label: t("delivery_day_group", { day: g.day }),
+              rows: g.rows,
+            })),
+            ...(grouped.arranged.length > 0
+              ? [{ key: "__arranged__", label: t("arranged_group"), rows: grouped.arranged }]
+              : []),
+          ]
+        : [{ key: "__rows__", label: null, rows: grouped.rows }];
+  const areaRowCount = areaSections.reduce((n, s) => n + s.rows.length, 0);
+  const areasOverLimit = areaRowCount > AREA_PREVIEW_LIMIT;
+  const areasHiddenCount = areaRowCount - AREA_PREVIEW_LIMIT;
+  // At or under the cap this is the identity, so the markup is byte-identical
+  // to the pre-ticket render — the "≤6 rows changes nothing" criterion is
+  // enforced here, by the pass-through, not by a separate branch below.
+  const showAllAreas = areasExpanded || !areasOverLimit;
+  const visibleSections = showAllAreas
+    ? areaSections
+    : capSections(areaSections, AREA_PREVIEW_LIMIT);
+  // hoist/flat read the single section's rows back out.
+  const visibleAreaRows = visibleSections[0]?.rows ?? [];
+  const areaToggle = areasOverLimit ? (
+    <AreaToggle
+      expanded={areasExpanded}
+      onToggle={() => setAreasExpanded((v) => !v)}
+      hiddenCount={areasHiddenCount}
+      t={t}
+    />
+  ) : null;
   // MEH-1255: nationwide delivery with an exclusion list.
   const hasExclusions = nationwide && excluded.length > 0;
   return (
@@ -481,20 +588,25 @@ export default function DeliveryBlock({
                     })
                   : t("dispatch_days", { day: grouped.day })}
               </p>
+              {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
               <ul className="divide-y divide-border border-y border-border">
-                {grouped.rows.map((da) => (
+                {visibleAreaRows.map((da) => (
                   <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
                 ))}
               </ul>
+              {areaToggle}
             </>
           )}
 
           {grouped.mode === "flat" && (
-            <ul className="divide-y divide-border border-y border-border">
-              {grouped.rows.map((da) => (
-                <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-              ))}
-            </ul>
+            <>
+              <ul className="divide-y divide-border border-y border-border">
+                {visibleAreaRows.map((da) => (
+                  <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
+                ))}
+              </ul>
+              {areaToggle}
+            </>
           )}
 
           {grouped.mode === "group" && (
@@ -510,23 +622,13 @@ export default function DeliveryBlock({
                   {t("order_cutoff", { day: cutoffDayLabel, time: cutoff.close })}
                 </p>
               )}
-              {grouped.groups.map((g) => (
-                <AreaGroup
-                  key={g.day}
-                  label={t("delivery_day_group", { day: g.day })}
-                  rows={g.rows}
-                  t={t}
-                  feeOf={feeOf}
-                />
+              {/* MEH-1903: day groups then the "arranged" bucket, capped on the
+                  TOTAL visible rows — a group entirely past the cap is absent
+                  header and all while collapsed. One toggle for the section. */}
+              {visibleSections.map((s) => (
+                <AreaGroup key={s.key} label={s.label} rows={s.rows} t={t} feeOf={feeOf} />
               ))}
-              {grouped.arranged.length > 0 && (
-                <AreaGroup
-                  label={t("arranged_group")}
-                  rows={grouped.arranged}
-                  t={t}
-                  feeOf={feeOf}
-                />
-              )}
+              {areaToggle}
             </div>
           )}
         </div>
