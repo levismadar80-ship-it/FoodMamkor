@@ -4336,6 +4336,7 @@
       "hours": {
         "heading": "Opening hours",
         "subtitle": "When the business is physically open. Shown on the map and the business page.",
+        "hours_empty_hint": "Hours set here appear on the business page and are sent to search engines.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
         "revert_cta": "Discard changes",

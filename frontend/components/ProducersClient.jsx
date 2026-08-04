@@ -16,7 +16,16 @@ import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
-import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
+import {
+  buildChipParams,
+  OPEN_NOW_CHIP_MIN,
+  // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
+  // CHIPS_DEFAULT are SHARED with the home grid (HomeProducersGrid.jsx:70), so
+  // importing those here and appending to them leaks the open-now chip onto a
+  // surface this ticket does not touch.
+  PRODUCERS_CHIPS_CONFIG as CHIPS_CONFIG,
+  PRODUCERS_CHIPS_DEFAULT as CHIPS_DEFAULT,
+} from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
 import { trackEvent } from "@/lib/analytics";
@@ -480,7 +489,6 @@ export default function ProducersClient({
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
   // MEH-1418: Phosphor leading icons on the attribute chips; the city chip has
   // no icon entry, so it passes through text-only (byte-identical).
-  const allChips = withChipIcons([...CHIPS_CONFIG, cityChip]);
   const activeKeys = { ...chips, city: !!cityFilter };
   // MEH-1088 Part A: hide dead-end category chips — a category with 0 approved
   // producers is not rendered (fewer chips > disabled chips at this catalog
@@ -491,12 +499,34 @@ export default function ProducersClient({
   // is filtered until then. "הכל" always shows; a category active via the URL
   // stays visible even at 0 so its active-tag + clear flow keep working.
   const loadedCategoryIds = new Set();
+  // MEH-1881: order-window coverage, counted in the same pass and from the same
+  // source as the category set above — the UNFILTERED loaded catalog. Counting
+  // it from the filtered result would be circular: switch the chip on and
+  // coverage instantly reads 100%, so the gate could never close again.
+  let openWindowCount = 0;
   // MEH-1483: derive from the same source as displayItems (baseItems is the SSR
   // page, or the sorted page 1 when a non-default sort is active) so the
   // MEH-1088 dead-end-category hiding stays consistent with what's rendered.
   for (const p of [...baseItems, ...appendItems]) {
     for (const c of p?.categories ?? []) loadedCategoryIds.add(String(c.id));
+    if (p?.order_window) openWindowCount += 1;
   }
+
+  // MEH-1881: below the coverage threshold the open-now chip is ABSENT, not
+  // disabled — zero trace in the DOM, so nothing hints at a filter that would
+  // return an empty list today.
+  //
+  // The `|| chips.open_for_orders_now` is not a convenience: an active filter
+  // must keep its chip even under the gate, or a deep-linked
+  // ?open_for_orders_now=1 strands the visitor with a filter she can see the
+  // effect of and cannot switch off. Same carve-out MEH-1088 makes two blocks
+  // below for a URL-active category at zero results.
+  const showOpenNowChip =
+    openWindowCount >= OPEN_NOW_CHIP_MIN || chips.open_for_orders_now;
+  const visibleChipDefs = showOpenNowChip
+    ? CHIPS_CONFIG
+    : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now");
+  const allChips = withChipIcons([...visibleChipDefs, cityChip]);
   const catalogFullyLoaded = !hasMore;
   const visibleCategories = categories.filter(
     (c) =>
