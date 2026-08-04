@@ -174,9 +174,14 @@ function TabButton({ active, onClick, icon, children }) {
 // פרופיל
 // ---------------------------------------------------------------------------
 
-// Exported for isolation tests (SettingsPhoneDisabledReason.test.jsx) — the
-// full-page mount is skipped in vitest (stale mock drift, see
-// SettingsPage.test.jsx), so the phone-validation UX is asserted directly.
+// Exported for isolation tests (SettingsPhoneDisabledReason.test.jsx), which
+// assert the phone-validation UX directly.
+// MEH-1700: this comment used to add "the full-page mount is skipped in vitest
+// (stale mock drift, see SettingsPage.test.jsx)". That stopped being true on
+// 2026-08-04 — SettingsPage.test.jsx is un-skipped and green — and a comment
+// asserting a skip that no longer exists is how the next reader concludes this
+// page has no full-mount coverage. The export stays: isolation tests are still
+// the right shape for per-field UX.
 export function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
   // MEH-1485: mirror a saved profile city into localStorage user_city so the
