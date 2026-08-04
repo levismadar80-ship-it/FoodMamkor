@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { pickProducer, detailPath, REQUIREMENTS } from "./_producer-fixture";
+import {
+  pickProducer,
+  detailPath,
+  assertDetailRendered,
+  watchPageErrors,
+  REQUIREMENTS,
+} from "./_producer-fixture";
 
 // MEH-1440: this spec used to click the FIRST producer card and assert the
 // contact CTA — but PrimaryContactButton self-collapses (returns null) when
@@ -27,6 +33,7 @@ import { pickProducer, detailPath, REQUIREMENTS } from "./_producer-fixture";
 // reach them is.
 test.describe("Producer detail", () => {
   test("clicking a contactable producer card opens detail page with h1 and CTA", async ({ page }) => {
+    const pageErrors = watchPageErrors(page);
     const producer = await pickProducer(page.request, REQUIREMENTS.contactable);
     const href = detailPath(producer);
 
@@ -69,10 +76,7 @@ test.describe("Producer detail", () => {
     // MEH-1712: this boundary also renders a deliberate notFound() on the slug
     // route, so a red here means "the detail route did not resolve", NOT
     // necessarily a crash.
-    await expect(
-      page.locator("#__next_error__"),
-      "navigation failed — landed on Next's error page instead of a producer detail",
-    ).toHaveCount(0);
+    await assertDetailRendered(page, producer, href, pageErrors);
     await expect(page.locator("h1").first()).toBeVisible();
     // Either the unified PrimaryContactButton or a standalone WhatsApp button.
     // :visible filters out the md:hidden mobile CTA that appears first in DOM.

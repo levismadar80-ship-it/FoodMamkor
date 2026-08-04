@@ -36,7 +36,8 @@
  * describes: a guard that consults its own subject and converts "the thing is
  * gone" into "nothing to check". Here, absence throws.
  */
-import type { APIRequestContext } from "@playwright/test";
+import { expect } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 
 export type FeedProducer = {
   id: string;
@@ -103,6 +104,93 @@ export async function pickProducer(
   }
 
   return matching[0];
+}
+
+/**
+ * Start collecting uncaught page errors. Call BEFORE the first navigation.
+ *
+ * Diagnostics only — nothing asserts on the returned array. It exists because
+ * `#__next_error__` is rendered for BOTH a deliberate `notFound()` and a crash
+ * in the tree, and the two need opposite fixes. A red that says only "landed on
+ * Next's error page" sends the next reader to the wrong half.
+ */
+export function watchPageErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(`pageerror: ${e?.message ?? String(e)}`));
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(`console.error: ${m.text()}`);
+  });
+  return errors;
+}
+
+/**
+ * Assert the producer-detail route actually rendered, and — when it did not —
+ * throw a report that names WHICH failure it was.
+ *
+ * MEH-1712 §2 is why the report probes the sibling route: the slug resolver was
+ * 404ing for every business while `/producer/{id}` stayed healthy, and a check
+ * that only knew "the detail page didn't render" could not have said so. The
+ * probe runs exclusively inside the failure branch — it cannot turn a red green.
+ */
+export async function assertDetailRendered(
+  page: Page,
+  producer: FeedProducer,
+  requested: string,
+  pageErrors: string[],
+  httpStatus?: number,
+): Promise<void> {
+  try {
+    // The real assertion, with the config's 20s retry budget — an instantaneous
+    // count() here would read a still-navigating page as healthy.
+    await expect(page.locator("#__next_error__")).toHaveCount(0);
+    return;
+  } catch {
+    // fall through to build the report
+  }
+
+  const bodyText = (await page.locator("body").innerText().catch(() => ""))
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
+
+  let siblingRoute = "n/a — this producer has no slug, so the requested URL WAS the id route";
+  if (producer.slug) {
+    const alt = await page.request
+      .get(`/producer/${producer.id}`)
+      .then((r) => `GET /producer/${producer.id} → HTTP ${r.status()}`)
+      .catch((e) => `GET /producer/${producer.id} → probe failed: ${String(e)}`);
+    siblingRoute = alt;
+  }
+
+  throw new Error(
+    [
+      `The detail route did not render for producer ${producer.id} (${producer.name ?? "unnamed"}), ` +
+        "which the /producers feed is serving right now.",
+      `  requested ......... ${requested}`,
+      `  http status ....... ${httpStatus ?? "n/a (navigated by click)"}`,
+      `  landed on ......... ${page.url()}`,
+      `  sibling route ..... ${siblingRoute}`,
+      `  page errors ....... ${pageErrors.length ? pageErrors.join(" | ").slice(0, 600) : "none"}`,
+      `  page text ......... ${bodyText || "(empty)"}`,
+      "",
+      "Next renders #__next_error__ for a deliberate notFound() AND for a crash in the tree.",
+      "HTTP 404 with no page errors = the business is unreachable at the URL its own card links",
+      "to (routing/visibility — MEH-1712's family). HTTP 200 with page errors = a component threw",
+      "(read the page-errors line for which). Either way it is a product defect, not a data",
+      "condition to skip past.",
+    ].join("\n"),
+  );
+}
+
+/** Navigate straight to a producer's detail page and assert it rendered. */
+export async function openDetail(
+  page: Page,
+  producer: FeedProducer,
+  pageErrors: string[],
+): Promise<void> {
+  const path = detailPath(producer);
+  const res = await page.goto(path);
+  await assertDetailRendered(page, producer, path, pageErrors, res?.status());
 }
 
 /** Requirements the flow specs select on, named once so they read the same everywhere. */

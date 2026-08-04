@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { pickProducer, detailPath, REQUIREMENTS } from "./_producer-fixture";
+import { pickProducer, detailPath, openDetail, watchPageErrors, REQUIREMENTS } from "./_producer-fixture";
 
 /**
  * MEH-83 — Lightbox on gallery images.
@@ -19,17 +19,13 @@ import { pickProducer, detailPath, REQUIREMENTS } from "./_producer-fixture";
  */
 test.describe("Lightbox", () => {
   test("clicking gallery image opens lightbox and ESC closes it", async ({ page }) => {
+    const pageErrors = watchPageErrors(page);
     const producer = await pickProducer(page.request, REQUIREMENTS.hasGalleryImage);
-    await page.goto(detailPath(producer));
-
-    // MEH-1550 / MEH-1712: assert the error boundary is absent first. Without
-    // it, a failed navigation would surface below as "no gallery images" —
-    // which is how this spec previously converted a routing failure into a
-    // silent skip and lost the coverage entirely.
-    await expect(
-      page.locator("#__next_error__"),
-      "navigation failed — landed on Next's error page instead of a producer detail",
-    ).toHaveCount(0);
+    // MEH-1550 / MEH-1712: openDetail asserts the error boundary is absent
+    // first. Without it, a failed navigation would surface below as "no gallery
+    // images" — which is how this spec previously converted a routing failure
+    // into a silent skip and lost the coverage entirely.
+    await openDetail(page, producer, pageErrors);
 
     // Gallery image button — the producer was selected for having ≥1 photo, so
     // its absence is a rendering regression, not a data state.
