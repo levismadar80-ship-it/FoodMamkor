@@ -10,7 +10,7 @@ DELETE /events/{id}              delete (owner only)
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-from datetime import date, datetime
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -26,6 +26,7 @@ from app.auth import (
 from app.database import get_db
 from app.models import Event, Producer, User
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
+from app.utils.clock import israel_today
 
 router = APIRouter(tags=["events"])
 
@@ -104,7 +105,11 @@ def list_events(
         q = q.filter(Event.event_date >= filters.from_date)
     else:
         # Default: only show events from today onward
-        q = q.filter(Event.event_date >= date.today())
+        # MEH-1883: `event_date` is a plain Date, so "upcoming" is a calendar
+        # question and the calendar that matters is Israel's. Under UTC an
+        # event happening TODAY dropped out of the feed at 21:00 the evening
+        # before, because the server had already rolled to the next day.
+        q = q.filter(Event.event_date >= israel_today())
     if filters.to_date:
         q = q.filter(Event.event_date <= filters.to_date)
 
@@ -124,7 +129,7 @@ def upcoming_events(
         .join(Producer, Event.producer_id == Producer.id)
         .filter(
             Event.is_active.is_(True),
-            Event.event_date >= date.today(),
+            Event.event_date >= israel_today(),
             Producer.status == "approved",
         )
         .order_by(Event.event_date.asc(), Event.event_time.asc())

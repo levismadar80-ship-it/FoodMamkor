@@ -32,6 +32,10 @@
  *
  * Surface-specific keys stay LOCAL, on purpose — they are NOT in this map:
  *   - `grass_fed` — /map only (its own scope×evidence object lives in map-chips.js).
+ *   - `open_for_orders_now` — /producers only (MEH-1881; its object lives in
+ *     producer-filters.js). It was briefly added here and the attributeLabels
+ *     parity test caught it: a key in this map is a promise that BOTH surfaces
+ *     render it, and /map was explicitly out of that ticket's scope.
  *
  * MEH-1418: labels stay text-only (Emoji-LOCK v2 forbids emoji literals). The
  * chips now carry Phosphor LEADING ICONS via lib/chip-icons.js — aria-hidden

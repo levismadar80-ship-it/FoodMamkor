@@ -1470,6 +1470,15 @@ class ProducerAdminCreate(BaseModel):
         # MEH-1255: an exclusion list is only meaningful in nationwide mode.
         if self.delivery_excluded_cities and not self.delivery_nationwide:
             raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
+        # MEH-1879: nationwide scope on a business that declares no delivery is
+        # the contradiction CHECK producer_nationwide_requires_delivery rejects
+        # (MEH-1849, models.py:466). Create has no stored row to merge against,
+        # so the effective-state guard in services/delivery_validation.py does
+        # not fit here — this is the create-path half of the same invariant.
+        # Both fields carry defaults (False/False), so a payload naming only
+        # delivery_nationwide would otherwise reach the DB and 500.
+        if self.delivery_nationwide and not self.offers_delivery:
+            raise ValueError("משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים")
         return self
 
 
@@ -1802,6 +1811,13 @@ class ProducerUpdate(BaseModel):
         # check lives in the routers).
         if self.delivery_excluded_cities and dn is False:
             raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
+        # MEH-1879: nationwide=true sent together with an explicit
+        # offers_delivery=false is always invalid, whatever the stored row
+        # says. `od is False` and not `not od`: None means "field absent from
+        # this partial update", which is the effective-state guard's job
+        # (services/delivery_validation.py), not this one.
+        if dn and od is False:
+            raise ValueError("משלוחים לכל הארץ אפשריים רק כשהעסק מספק משלוחים")
         return self
 
     @model_validator(mode="after")
@@ -1943,6 +1959,13 @@ class ProducerListOut(BaseModel):
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
+    # MEH-1880: the declared weekly order window. Expand-only (ADR-007) and no
+    # migration — the column has existed since f4a1e9c3b7d2; only the LIST
+    # serializer was missing it, which is why no list surface (home grid,
+    # /producers, /map cards, favorites) could derive "open for orders now"
+    # while the producer PAGE already could. Defaults to None, so every
+    # existing response is byte-identical for a producer that has no window.
+    order_window: dict | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -2072,7 +2095,12 @@ class ProducerListOut(BaseModel):
         # both surfaces stay consistent during the 7-day overlap.
         if (
             self.vacation_until is not None
-            and self.vacation_until < date.today()
+            # MEH-1883: Israel calendar day, not the server's UTC one.
+            # `vacation_until` is a Date the owner picked in Israel terms, so
+            # between 00:00 and ~03:00 Israel the UTC clock still reads
+            # yesterday and the business stayed hidden from the listings
+            # (default-hide on on_vacation) for those extra hours every night.
+            and self.vacation_until < israel_today()
             and (
                 self.availability_status == "vacation"
                 or self.availability_state == "on_vacation"
