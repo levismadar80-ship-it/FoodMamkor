@@ -127,6 +127,58 @@ HEADER = """\
 """
 
 
+def parse_mypy_output(
+    stdout: str, returncode: int, stderr: str
+) -> collections.Counter[tuple[str, str]]:
+    """Turn one mypy run into counts per (file, code), or die loudly.
+
+    Split out from run_mypy() so --self-test can drive it with pinned inputs. A
+    crash guard that has never been shown rejecting a crash is a guard of
+    unknown wiring, and this one guards the exact failure the whole script
+    exists to end.
+
+    THE CRASH GUARD IS UNCONDITIONAL, AND THAT IS THE POINT. mypy exits 0 when
+    clean and 1 when it found errors; anything >= 2 is the tool itself failing
+    (measured 2026-08-04: missing file -> 2, bad config file -> 2, normal run
+    with 20 findings -> 1). An earlier version only rejected a crash when the
+    counts came back EMPTY — which misses the dangerous case entirely: mypy
+    emits some JSON, then dies. The counts are then non-empty but SHORT, so
+    they compare BELOW the baseline, the gate exits 0, and the run is reported
+    as an improvement. Worse, `--update-baseline` would happily write the
+    truncated numbers and silently loosen the ratchet.
+
+    That would be this script reproducing the bug it was written to fix: a
+    green that means "the tool did not finish", read as "the code is fine".
+    Caught by the CI reviewer on the PR that introduced it (MEH-1868 chunk 0).
+    """
+    if returncode >= 2:
+        print(
+            f"mypy exited {returncode} — tool error, not a verdict. Refusing to\n"
+            f"compare a possibly-truncated result against the baseline.\n"
+            f"{stderr.strip()}",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
+    counts: collections.Counter[tuple[str, str]] = collections.Counter()
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            # A non-JSON line on stdout means mypy printed a human-readable
+            # summary instead of records. Fail loud rather than silently
+            # skipping it.
+            print(f"mypy emitted non-JSON output: {line}", file=sys.stderr)
+            raise SystemExit(2)
+        if record.get("severity") != "error":
+            continue
+        counts[(record["file"], record["code"])] += 1
+    return counts
+
+
 def run_mypy() -> tuple[collections.Counter[tuple[str, str]], str]:
     """Run mypy with JSON output and count errors per (file, code).
 
@@ -139,34 +191,7 @@ def run_mypy() -> tuple[collections.Counter[tuple[str, str]], str]:
         capture_output=True,
         text=True,
     )
-    counts: collections.Counter[tuple[str, str]] = collections.Counter()
-    for line in proc.stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            # A non-JSON line on stdout means mypy failed before emitting
-            # results (bad config, missing plugin). Fail loud rather than
-            # reporting an empty — and therefore passing — count.
-            print(f"mypy emitted non-JSON output: {line}", file=sys.stderr)
-            raise SystemExit(2)
-        if record.get("severity") != "error":
-            continue
-        counts[(record["file"], record["code"])] += 1
-
-    # An empty result is ambiguous: a genuinely clean tree looks identical to
-    # mypy dying before it checked anything. Disambiguate on the exit code —
-    # mypy exits 0 when clean, 1 when it found errors, >=2 when it crashed.
-    if not counts and proc.returncode not in (0, 1):
-        print(
-            f"mypy exited {proc.returncode} with no findings — it did not run.\n"
-            f"{proc.stderr.strip()}",
-            file=sys.stderr,
-        )
-        raise SystemExit(2)
-    return counts, proc.stderr
+    return parse_mypy_output(proc.stdout, proc.returncode, proc.stderr), proc.stderr
 
 
 def read_baseline(
@@ -199,7 +224,14 @@ def read_baseline(
             print(f"{path}:{lineno}: expected 3 tab-separated fields", file=sys.stderr)
             raise SystemExit(2)
         file_, code, num = parts[0].strip(), parts[1].strip(), parts[2].strip()
-        counts[(file_, code)] += int(num)
+        try:
+            counts[(file_, code)] += int(num)
+        except ValueError:
+            # The file is machine-generated, so this only fires on a hand-edit
+            # or a bad merge resolution — both of which are exactly when a
+            # readable error beats a raw traceback.
+            print(f"{path}:{lineno}: non-integer count {num!r}", file=sys.stderr)
+            raise SystemExit(2)
     return counts
 
 
@@ -283,15 +315,31 @@ def check(update: bool, allow_increase: bool) -> int:
     return 0
 
 
+def _exit_code_of(fn, *args) -> int | None:
+    """Run fn(*args) and return the SystemExit code it raised, or None if it
+    returned normally. Used by --self-test to assert WHICH failure a guard
+    produces, not merely that something went wrong."""
+    try:
+        fn(*args)
+    except SystemExit as exc:
+        return int(exc.code or 0)
+    return None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
-# --self-test — drive the REAL comparator over synthetic counters.
+# --self-test — drive the REAL comparator over pinned inputs.
 #
-# It exercises diff() and the render/parse round-trip, which are what decide
-# pass/fail. It deliberately does NOT re-run mypy: the question this answers is
-# "can the comparator tell a regression from an improvement", and pinning
-# synthetic inputs is the only way to assert that deterministically. Asserts
-# COUNTS, not merely exit codes — a self-test that checks only "exited non-zero"
-# cannot tell a correct rejection from a crash.
+# It exercises diff(), the render/parse round-trip, and parse_mypy_output()'s
+# crash guard — the three things that decide pass/fail. It deliberately does NOT
+# re-run mypy: the question this answers is "can the comparator tell a
+# regression from an improvement, and a verdict from a crash", and pinning
+# inputs is the only way to assert that deterministically.
+#
+# Asserts COUNTS and EXIT CODES, not merely "something went wrong" — a
+# self-test that checks only "exited non-zero" cannot tell a correct rejection
+# from a crash. The crash-guard cases additionally score each input against the
+# WEAKER predicate this file shipped with first, and print which rows the two
+# disagree on. A case both versions reject is not evidence for the change.
 # ─────────────────────────────────────────────────────────────────────────────
 def self_test() -> int:
     print("mypy_baseline --self-test")
@@ -345,15 +393,43 @@ def self_test() -> int:
     try:
         tmp.write_text(render(base), encoding="utf-8")
         expect("render/parse round-trip", read_baseline(tmp), base)
+
+        # 7. a hand-edited / badly-merged count must produce the script's own
+        #    error, not a raw ValueError traceback.
+        tmp.write_text(HEADER + "a.py\ttype-arg\tfive\n", encoding="utf-8")
+        expect("non-integer count -> exit 2", _exit_code_of(read_baseline, tmp), 2)
     finally:
         tmp.unlink(missing_ok=True)
+
+    # ── 8-10. the crash guard, and whether it DISCRIMINATES ──────────────────
+    # The dangerous case is not "mypy printed nothing". It is "mypy printed
+    # SOME records, then died": the counts come back short, compare below the
+    # baseline, and the gate exits 0 reporting an improvement.
+    #
+    # Each case is scored twice — once by the guard that ships, once by the
+    # WEAKER predicate this file carried before the CI reviewer flagged it
+    # (`not counts and returncode not in (0, 1)`). A case where both agree is
+    # not evidence for the change; only the row where they differ is.
+    partial = '{"file": "a.py", "line": 1, "code": "type-arg", "severity": "error"}\n'
+    for label, stdout, rc, want in [
+        ("crash, PARTIAL output (the reviewer's case)", partial, 2, 2),
+        ("crash, empty output", "", 2, 2),
+        ("clean run", "", 0, None),
+        ("errors found", partial, 1, None),
+    ]:
+        got = _exit_code_of(parse_mypy_output, stdout, rc, "boom")
+        expect(f"{label} -> exit {want}", got, want)
+        weak_would_reject = (not stdout.strip()) and rc not in (0, 1)
+        ships_rejects = got == 2
+        if ships_rejects and not weak_would_reject:
+            print("       ^ DISCRIMINATES: the old predicate PASSED this case")
 
     if failures:
         print(f"self-test FAILED — {len(failures)} assertion(s): {', '.join(failures)}")
         return 1
     print(
-        "self-test OK — increase, decrease, new key, removed key, and round-trip "
-        "all sorted correctly."
+        "self-test OK — increase, decrease, new key, removed key, round-trip, "
+        "corrupt count, and the crash guard all sorted correctly."
     )
     return 0
 
