@@ -24,6 +24,12 @@ vi.mock("next-intl", () => ({
       my_area: "האזור שלי",
       delivery_to_city: `אפשר משלוח ל${vars?.city ?? ""}?`,
       greeting_template: `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
+      // These two MUST be mapped. `map[key] ?? key` falls back to the key
+      // itself, so an unmapped key makes the href assertion below pass
+      // identically whether the string resolves or is broken — a green with two
+      // causes. Mapping them means the expected href is production's shape.
+      source_line: "הגעתי דרך מהמקור",
+      recipe_idea_message: "יש לי רעיון למתכון",
     };
     return map[key] ?? key;
   },
@@ -131,8 +137,30 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
     render(<WhatsAppQuestionChips producer={{ ...base, custom_questions: ["יש חלה לשבת?"] }} />);
     const href = screen.getByText("יש חלה לשבת?").closest("a").getAttribute("href");
     expect(decodeURIComponent(href)).toBe(
-      "https://wa.me/972501234567?text=שלום חוות השקמה, יש חלה לשבת?\n\nsource_line",
+      "https://wa.me/972501234567?text=שלום חוות השקמה, יש חלה לשבת?\n\nהגעתי דרך מהמקור",
     );
+  });
+
+  // The recipe-idea link carries its OWN Sapir-locked prefill (MEH-1462), not
+  // the greeting_template that wraps every other question, so the assertion
+  // above cannot speak for it.
+  it("leaves the recipe-idea link on its own locked prefill", () => {
+    render(<WhatsAppQuestionChips producer={base} />);
+    const href = screen.getByTestId("recipe-idea-link").getAttribute("href");
+    expect(decodeURIComponent(href)).toBe(
+      "https://wa.me/972501234567?text=יש לי רעיון למתכון\n\nהגעתי דרך מהמקור",
+    );
+  });
+
+  // The disclosure and expander cases above prove no ancestor listener fires on
+  // a click that BUBBLES from a child. This one targets the list element
+  // itself, which is the only way to see a handler attached directly to it.
+  it("has no listener on the list element or the wrapper", () => {
+    const { container } = render(<WhatsAppQuestionChips producer={base} />);
+    fireEvent.click(container.querySelector("ul"));
+    fireEvent.click(container.firstChild);
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+    expect(markWhatsAppClickedLocal).not.toHaveBeenCalled();
   });
 
   it("is inert without a producer id (no id → no attributed click)", () => {
