@@ -141,9 +141,11 @@ function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
 // a dispatch day the reader cannot act on, which is the opposite of the
 // MEH-1305 day-once discipline this preserves.
 //
-// Callers never pass a section with zero rows, so every section returned here
-// has at least one visible row (the `budget <= 0` break guarantees the slice is
-// non-empty).
+// Every section returned here has at least one visible row, which takes BOTH
+// conditions: the `budget <= 0` break guarantees `budget > 0` at the slice, and
+// the caller contract guarantees the section's own rows are non-empty. Neither
+// alone is sufficient — a caller that passed an empty section would put an
+// empty one straight through.
 function capSections(sections, limit) {
   let budget = limit;
   const visible = [];
