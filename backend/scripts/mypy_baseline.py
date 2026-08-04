@@ -85,6 +85,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import datetime
 import json
 import subprocess
 import sys
@@ -103,7 +104,10 @@ BASELINE_PATH = BACKEND_DIR / "mypy-baseline.txt"
 # baseline and belongs in its own ticket.
 MYPY_ARGV = ["app/auth.py", "--strict"]
 
-HEADER = """\
+# The invariant half of the header: prose that is true regardless of what the
+# numbers are. Anything that DESCRIBES a particular measurement belongs in
+# _provenance() below, derived from the data — see the comment there.
+HEADER_STATIC = """\
 # mypy baseline — MEH-1868 chunk 0
 #
 # One line per (file, error-code, count). TAB-separated, sorted, so a diff shows
@@ -119,12 +123,37 @@ HEADER = """\
 #
 # DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
 #
-# Frozen 2026-08-04 from mypy 2.3.0 (the version pinned in pyproject.toml) over
-# `mypy app/auth.py --strict`: 20 errors, 3 files, 8 keys. This is a measurement
-# taken at freeze time — an earlier report said 19, and the gap was deliberately
-# not reverse-engineered, because a baseline quoted from a prior measurement is
-# exactly the staleness this file exists to prevent.
 """
+
+
+def _provenance(counts: collections.Counter[tuple[str, str]]) -> str:
+    """The as-of line, DERIVED from the data it describes — never hand-written.
+
+    The first version of this file embedded "Frozen 2026-08-04 … 20 errors, 3
+    files, 8 keys" as a literal inside the header template, which render()
+    rewrote verbatim on every --update-baseline. One regeneration later the
+    prose would have claimed the wrong date and the wrong counts while the rows
+    below it were correct — a stale stamp with no visual tell, sitting three
+    lines under a paragraph warning about exactly that. Caught by the CI
+    reviewer on the PR that introduced it (MEH-1868 chunk 0).
+
+    Deriving it is strictly better than remembering to update it: the stamp
+    cannot disagree with the data, because it is computed from the data.
+    """
+    try:
+        import mypy.version
+
+        version = mypy.version.__version__
+    except Exception:  # pragma: no cover — never worth failing a write over
+        version = "unknown"
+    total = sum(counts.values())
+    files = len({f for f, _ in counts})
+    return (
+        f"# Frozen {datetime.date.today().isoformat()} from mypy {version} over "
+        f"`mypy {' '.join(MYPY_ARGV)}`:\n"
+        f"# {total} errors, {files} files, {len(counts)} keys. Every number on this\n"
+        f"# line is computed from the rows below, so it cannot drift from them.\n"
+    )
 
 
 def parse_mypy_output(
@@ -175,7 +204,21 @@ def parse_mypy_output(
             raise SystemExit(2)
         if record.get("severity") != "error":
             continue
-        counts[(record["file"], record["code"])] += 1
+        # .get() on severity above but [] here would be an inconsistency with
+        # teeth: a future mypy schema change, or a truncated record on an
+        # exit-1 run, would raise a bare KeyError traceback instead of this
+        # script's own SystemExit(2). The crash guard covers returncode >= 2;
+        # this covers malformed-yet-normal-exit. Loud either way, never a
+        # silently-dropped record — a dropped record lowers the count, which
+        # reads as an improvement.
+        try:
+            counts[(record["file"], record["code"])] += 1
+        except KeyError as exc:
+            print(
+                f"mypy emitted an error record missing {exc}: {record!r}",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
     return counts
 
 
@@ -237,7 +280,7 @@ def read_baseline(
 
 def render(counts: collections.Counter[tuple[str, str]]) -> str:
     lines = [f"{f}\t{code}\t{n}" for (f, code), n in sorted(counts.items()) if n]
-    return HEADER + "\n".join(lines) + "\n"
+    return HEADER_STATIC + _provenance(counts) + "\n".join(lines) + "\n"
 
 
 def diff(
@@ -341,12 +384,119 @@ def _exit_code_of(fn, *args) -> int | None:
 # WEAKER predicate this file shipped with first, and print which rows the two
 # disagree on. A case both versions reject is not evidence for the change.
 # ─────────────────────────────────────────────────────────────────────────────
+def _check_diff(expect, base) -> None:
+    """Cases 1-5: can diff() sort a regression from an improvement?"""
+    r, i = diff(base, collections.Counter(base))
+    expect("unchanged -> 0 regressions", len(r), 0)
+    expect("unchanged -> 0 improvements", len(i), 0)
+
+    up = collections.Counter(base)
+    up[("a.py", "type-arg")] = 6
+    r, i = diff(base, up)
+    expect("increase -> 1 regression", len(r), 1)
+    expect("increase -> 0 improvements", len(i), 0)
+
+    down = collections.Counter(base)
+    down[("b.py", "var-annotated")] = 1
+    r, i = diff(base, down)
+    expect("decrease -> 0 regressions", len(r), 0)
+    expect("decrease -> 1 improvement", len(i), 1)
+
+    # A NEW (file, code) key is a regression, not a silent addition — the
+    # failure mode where a whole new error class slips in unnoticed.
+    added = collections.Counter(base)
+    added[("c.py", "no-any-return")] = 1
+    r, i = diff(base, added)
+    expect("new key -> 1 regression", len(r), 1)
+
+    removed = collections.Counter(base)
+    del removed[("b.py", "var-annotated")]
+    r, i = diff(base, removed)
+    expect("removed key -> 1 improvement", len(i), 1)
+    expect("removed key -> 0 regressions", len(r), 0)
+
+
+def _check_baseline_io(expect, base) -> None:
+    """Cases 6-7: render() -> read_baseline() must round-trip exactly, or an
+    --update-baseline write would silently alter counts. And a hand-edited or
+    badly-merged count must produce this script's own error, not a traceback."""
+    tmp = BACKEND_DIR / ".mypy-baseline.selftest.tmp"
+    try:
+        tmp.write_text(render(base), encoding="utf-8")
+        expect("render/parse round-trip", read_baseline(tmp), base)
+        tmp.write_text(HEADER_STATIC + "a.py\ttype-arg\tfive\n", encoding="utf-8")
+        expect("non-integer count -> exit 2", _exit_code_of(read_baseline, tmp), 2)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def _check_crash_guard(expect) -> None:
+    """Cases 8-10, and the only ones that are evidence for the guard's CHANGE.
+
+    The dangerous case is not "mypy printed nothing". It is "mypy printed SOME
+    records, then died": the counts come back short, compare below the
+    baseline, and the gate exits 0 reporting an improvement.
+
+    Each case is scored twice — once by the guard that ships, once by the
+    WEAKER predicate this file carried before the CI reviewer flagged it
+    (`not counts and returncode not in (0, 1)`). A case where both agree is not
+    evidence for the change; only a row where they differ is, and those rows
+    say so.
+    """
+    partial = '{"file": "a.py", "line": 1, "code": "type-arg", "severity": "error"}\n'
+    malformed = '{"file": "a.py", "line": 1, "severity": "error"}\n'
+    for label, stdout, rc, want in [
+        ("crash, PARTIAL output (the reviewer's case)", partial, 2, 2),
+        ("crash, empty output", "", 2, 2),
+        ("clean run", "", 0, None),
+        ("errors found", partial, 1, None),
+        # exit 1 is a normal verdict, so the crash guard does NOT fire here — a
+        # record missing 'code' has to be caught on its own or it becomes a bare
+        # traceback. Silently skipping it would be worse still: a dropped record
+        # lowers the count, which reads as an improvement.
+        ("malformed record, normal exit", malformed, 1, 2),
+    ]:
+        got = _exit_code_of(parse_mypy_output, stdout, rc, "boom")
+        expect(f"{label} -> exit {want}", got, want)
+        weak_would_reject = (not stdout.strip()) and rc not in (0, 1)
+        if got == 2 and not weak_would_reject:
+            print("       ^ DISCRIMINATES: the old predicate PASSED this case")
+
+
+def _check_provenance(expect, base) -> None:
+    """Case 11: the as-of line must be DERIVED from the rows, not carried.
+
+    Renders a counter whose totals differ from the committed baseline's and
+    asserts the header reports the RENDERED numbers. This is the assertion that
+    would have failed against the hand-written "Frozen 2026-08-04 … 20 errors"
+    the CI reviewer flagged, because that literal survived every regeneration.
+    """
+    header = render(base).split("\n")
+    frozen = next((ln for ln in header if ln.startswith("# Frozen")), "")
+    stamp = " ".join(header)
+    expect(
+        "provenance carries today's date",
+        datetime.date.today().isoformat() in frozen,
+        True,
+    )
+    expect(
+        "provenance totals are derived (7 errors, 2 files, 2 keys)",
+        ("7 errors" in stamp, "2 files" in stamp, "2 keys" in stamp),
+        (True, True, True),
+    )
+    expect(
+        "no hand-written count survives in the template",
+        "20 errors" in HEADER_STATIC,
+        False,
+    )
+
+
 def self_test() -> int:
     print("mypy_baseline --self-test")
     base: collections.Counter[tuple[str, str]] = collections.Counter(
         {("a.py", "type-arg"): 5, ("b.py", "var-annotated"): 2}
     )
-    failures = []
+    failures: list[str] = []
 
     def expect(label: str, got: object, want: object) -> None:
         ok = got == want
@@ -354,75 +504,10 @@ def self_test() -> int:
         if not ok:
             failures.append(label)
 
-    # 1. identical → nothing either way
-    r, i = diff(base, collections.Counter(base))
-    expect("unchanged -> 0 regressions", len(r), 0)
-    expect("unchanged -> 0 improvements", len(i), 0)
-
-    # 2. a count RISES → exactly one regression, no improvement
-    up = collections.Counter(base)
-    up[("a.py", "type-arg")] = 6
-    r, i = diff(base, up)
-    expect("increase -> 1 regression", len(r), 1)
-    expect("increase -> 0 improvements", len(i), 0)
-
-    # 3. a count FALLS → exactly one improvement, no regression
-    down = collections.Counter(base)
-    down[("b.py", "var-annotated")] = 1
-    r, i = diff(base, down)
-    expect("decrease -> 0 regressions", len(r), 0)
-    expect("decrease -> 1 improvement", len(i), 1)
-
-    # 4. a NEW (file, code) key is a regression, not a silent addition —
-    #    the failure mode where a whole new error class slips in unnoticed.
-    added = collections.Counter(base)
-    added[("c.py", "no-any-return")] = 1
-    r, i = diff(base, added)
-    expect("new key -> 1 regression", len(r), 1)
-
-    # 5. a key that disappears entirely counts as an improvement
-    removed = collections.Counter(base)
-    del removed[("b.py", "var-annotated")]
-    r, i = diff(base, removed)
-    expect("removed key -> 1 improvement", len(i), 1)
-    expect("removed key -> 0 regressions", len(r), 0)
-
-    # 6. the round-trip: render() then read_baseline() must reproduce the input
-    #    exactly, or an --update-baseline write would silently alter counts.
-    tmp = BACKEND_DIR / ".mypy-baseline.selftest.tmp"
-    try:
-        tmp.write_text(render(base), encoding="utf-8")
-        expect("render/parse round-trip", read_baseline(tmp), base)
-
-        # 7. a hand-edited / badly-merged count must produce the script's own
-        #    error, not a raw ValueError traceback.
-        tmp.write_text(HEADER + "a.py\ttype-arg\tfive\n", encoding="utf-8")
-        expect("non-integer count -> exit 2", _exit_code_of(read_baseline, tmp), 2)
-    finally:
-        tmp.unlink(missing_ok=True)
-
-    # ── 8-10. the crash guard, and whether it DISCRIMINATES ──────────────────
-    # The dangerous case is not "mypy printed nothing". It is "mypy printed
-    # SOME records, then died": the counts come back short, compare below the
-    # baseline, and the gate exits 0 reporting an improvement.
-    #
-    # Each case is scored twice — once by the guard that ships, once by the
-    # WEAKER predicate this file carried before the CI reviewer flagged it
-    # (`not counts and returncode not in (0, 1)`). A case where both agree is
-    # not evidence for the change; only the row where they differ is.
-    partial = '{"file": "a.py", "line": 1, "code": "type-arg", "severity": "error"}\n'
-    for label, stdout, rc, want in [
-        ("crash, PARTIAL output (the reviewer's case)", partial, 2, 2),
-        ("crash, empty output", "", 2, 2),
-        ("clean run", "", 0, None),
-        ("errors found", partial, 1, None),
-    ]:
-        got = _exit_code_of(parse_mypy_output, stdout, rc, "boom")
-        expect(f"{label} -> exit {want}", got, want)
-        weak_would_reject = (not stdout.strip()) and rc not in (0, 1)
-        ships_rejects = got == 2
-        if ships_rejects and not weak_would_reject:
-            print("       ^ DISCRIMINATES: the old predicate PASSED this case")
+    _check_diff(expect, base)
+    _check_baseline_io(expect, base)
+    _check_crash_guard(expect)
+    _check_provenance(expect, base)
 
     if failures:
         print(f"self-test FAILED — {len(failures)} assertion(s): {', '.join(failures)}")
