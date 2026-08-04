@@ -1,0 +1,21 @@
+import { chromium } from "@playwright/test";
+const BASE = "https://staging.mehamakor.online";
+const T='[data-testid="badge-overflow"]', P='[data-testid="badge-overflow-popover"]';
+const browser = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args:["--ssl-version-max=tls1.2"] });
+const ctx = await browser.newContext({ viewport:{width:375,height:812}, hasTouch:true, isMobile:true,
+  extraHTTPHeaders:{ "x-vercel-protection-bypass":process.env.VERCEL_AUTOMATION_BYPASS_SECRET||"", "x-vercel-set-bypass-cookie":"true","x-vercel-skip-toolbar":"1" }});
+const page = await ctx.newPage();
+await page.goto(`${BASE}/`,{waitUntil:"domcontentloaded",timeout:60000});
+await page.waitForSelector('[data-testid="producer-card"]',{timeout:45000});
+const t = page.locator(T).first();
+await t.scrollIntoViewIfNeeded(); await page.waitForTimeout(500);
+console.log("BEFORE tap: panels =", await page.locator(P).count(), "| aria-expanded =", await t.getAttribute("aria-expanded"));
+const b = await t.boundingBox();
+await page.touchscreen.tap(b.x+b.width/2, b.y+b.height/2);
+await page.waitForTimeout(400);
+console.log("AFTER tap : panels =", await page.locator(P).count(), "| aria-expanded =", await t.getAttribute("aria-expanded"));
+await page.evaluate(()=>window.scrollBy(0,250)); await page.waitForTimeout(600);
+console.log("AFTER scr : panels =", await page.locator(P).count(), "| aria-expanded =", await t.getAttribute("aria-expanded"));
+const vis = await page.locator(P).first().isVisible().catch(()=>null);
+console.log("panel isVisible after scroll:", vis);
+await browser.close();
