@@ -6,9 +6,7 @@ import { CaretDown, ChatCircle } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { getProducerQuestions } from "@/lib/categoryQuestions";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
-// REUSES: frontend/app/[locale]/producer/[id]/components/ContactCard.jsx:235-238
-// — the same two-call attribution idiom the primary CTA fires.
-import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
+import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 /**
  * Quick Answers under the primary CTA in the producer contact card.
@@ -63,14 +61,14 @@ function Disclosure({ question, children }) {
 }
 
 /** WhatsApp deep-link row (unchanged idiom: ChatCircle glyph + quiet link). */
-function WaItem({ href, question, onOpen }) {
+function WaItem({ href, question, onTrack }) {
   return (
     <li>
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={onOpen}
+        onClick={onTrack}
         data-testid="question-link"
         className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
       >
@@ -154,25 +152,25 @@ function OrderingContent({ answer, t }) {
 export default function WhatsAppQuestionChips({ producer }) {
   const t = useTranslations("whatsapp.question_chips");
   const digits = normalizePhone(producer?.phone);
-  const city = producer?.city || t("my_area");
-  const name = producer?.name || "";
 
-  // MEH-1886: a chat opened from a question chip is a real WhatsApp
-  // conversation, so it carries the SAME attribution + review-unlock the
-  // primary CTA carries (ContactCard.jsx:235-238). MEH-1426's invariant reads
-  // "every WhatsApp click = attribution + unlock" — the chips were a full
-  // WhatsApp path sitting outside it, so a customer who asked the owner's own
-  // question was never counted and could never reach the review form.
+  // MEH-1886: a chip that opens WhatsApp is a full WhatsApp path, so it owes
+  // the same two calls the primary CTA makes (ContactCard.jsx:235-238) — the
+  // MEH-1426 invariant: "every WhatsApp click = attribution + unlock; non-WA =
+  // neither". Before this, a customer who opened a chat through a chip — even
+  // one the owner wrote herself — produced a conversation that was never
+  // counted and never unlocked her review form (reviews.py guard 3 → 403).
   //
-  // Attached PER LINK, never to the <ul> or the wrapper: a shared ancestor
-  // would also catch the disclosure toggles, which open NO conversation.
-  // `markWhatsAppClickedLocal` has no id guard of its own (contact-tracking.js:83),
-  // so the id check lives here rather than being assumed downstream.
-  const onWaOpen = () => {
+  // Attached to the <a> elements ONLY. The answer-first disclosures below open
+  // no conversation, so they deliberately do not fire; that is the
+  // discriminating case, not an oversight. One handler per link and no
+  // listener on any shared ancestor, so a tap fires exactly once.
+  const trackWhatsAppOpen = () => {
     if (!producer?.id) return;
     pingWhatsAppBeacon(producer.id);
     markWhatsAppClickedLocal(producer.id);
   };
+  const city = producer?.city || t("my_area");
+  const name = producer?.name || "";
 
   const deliveryQ = t("delivery_to_city", { city });
   const orderingQ = t("ordering_q");
@@ -210,7 +208,6 @@ export default function WhatsAppQuestionChips({ producer }) {
     .filter((q) => q !== orderingQ && q !== deliveryQ && q !== "יש משלוח?");
 
   const items = [];
-  const waItem = (key, q) => <WaItem key={key} href={waHref(q)} question={q} onOpen={onWaOpen} />;
 
   // Q1 — delivery: answer-first, else WhatsApp fallback (today's behaviour).
   if (delivery) {
@@ -220,7 +217,9 @@ export default function WhatsAppQuestionChips({ producer }) {
       </Disclosure>,
     );
   } else if (digits) {
-    items.push(waItem("delivery", deliveryQ));
+    items.push(
+      <WaItem key="delivery" href={waHref(deliveryQ)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
+    );
   }
 
   // Q2 — ordering: answer-first. A WhatsApp-method answer only makes sense
@@ -233,13 +232,17 @@ export default function WhatsAppQuestionChips({ producer }) {
       </Disclosure>,
     );
   } else if (!ordering && digits) {
-    items.push(waItem("ordering", orderingQ));
+    items.push(
+      <WaItem key="ordering" href={waHref(orderingQ)} question={orderingQ} onTrack={trackWhatsAppOpen} />,
+    );
   }
 
   // Q3+ — stock / custom, WhatsApp only.
   if (digits) {
     waQuestions.forEach((q, i) => {
-      items.push(waItem(`wa-${i}-${q}`, q));
+      items.push(
+        <WaItem key={`wa-${i}-${q}`} href={waHref(q)} question={q} onTrack={trackWhatsAppOpen} />,
+      );
     });
   }
 
@@ -251,7 +254,7 @@ export default function WhatsAppQuestionChips({ producer }) {
       showEscalation={!!digits}
       escalationHref={waHref(t("escalation"))}
       recipeIdeaHref={recipeIdeaHref}
-      onWhatsAppOpen={onWaOpen}
+      onTrack={trackWhatsAppOpen}
       t={t}
     />
   );
@@ -265,7 +268,7 @@ export default function WhatsAppQuestionChips({ producer }) {
 // tighter row rhythm) per the approved mockup.
 const VISIBLE_MAX = 3;
 
-function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, onWhatsAppOpen, t }) {
+function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, onTrack, t }) {
   const [expanded, setExpanded] = useState(false);
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
@@ -296,7 +299,7 @@ function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, o
           href={escalationHref}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onWhatsAppOpen}
+          onClick={onTrack}
           data-testid="escalation-link"
           className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-fg-muted transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
         >
@@ -314,7 +317,7 @@ function QuestionList({ items, showEscalation, escalationHref, recipeIdeaHref, o
           href={recipeIdeaHref}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onWhatsAppOpen}
+          onClick={onTrack}
           data-testid="recipe-idea-link"
           className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
         >
