@@ -100,7 +100,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-images`);
   });
 
-  it("missing 2 steps → 50% (yellow-low, calm progress headline)", () => {
+  it("missing 2 steps → 60% (yellow-low, calm progress headline)", () => {
     // images + contact missing → 3 of 5 done → 60%.
     render(
       <ProfileCompletenessCard
