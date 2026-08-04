@@ -20,6 +20,7 @@ previous date, under Israel bucketing on the new one.
 Clock idiom: monkeypatch the router module's `israel_today`, matching
 tests/test_availability_validation.py and tests/test_meh1881_open_now_filter.py.
 """
+
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -62,7 +63,9 @@ class TestProducerViewsByDayIsraelBoundary:
         db.commit()
         return p, user
 
-    def test_view_at_2330_israel_lands_on_that_israel_date(self, client, db, monkeypatch):
+    def test_view_at_2330_israel_lands_on_that_israel_date(
+        self, client, db, monkeypatch
+    ):
         """Control: late-evening view stays on its own Israel date."""
         p, user = self._setup(db, "b1@test.com")
         monkeypatch.setattr(producer_me, "israel_today", lambda: ANCHOR)
@@ -73,7 +76,9 @@ class TestProducerViewsByDayIsraelBoundary:
         assert series["2026-07-14"] == 1
         assert series.get("2026-07-15", 0) == 0
 
-    def test_view_at_0030_israel_lands_on_the_NEW_israel_date(self, client, db, monkeypatch):
+    def test_view_at_0030_israel_lands_on_the_NEW_israel_date(
+        self, client, db, monkeypatch
+    ):
         """THE discriminating case.
 
         00:30 Israel on 15/07 is 21:30 UTC on 14/07. Bucketing on the raw UTC
@@ -87,8 +92,12 @@ class TestProducerViewsByDayIsraelBoundary:
         assert _utc_naive(israel_dt).date() == date(2026, 7, 14)
         _seed_view_at(db, p.id, israel_dt)
 
-        series = _series(client.get("/producers/me/analytics", headers=auth_header(user)).json())
-        assert series["2026-07-15"] == 1, "00:30 Israel must count as the NEW Israel day"
+        series = _series(
+            client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        )
+        assert series["2026-07-15"] == 1, (
+            "00:30 Israel must count as the NEW Israel day"
+        )
         assert series.get("2026-07-14", 0) == 0, "and must NOT count as the UTC day"
 
     def test_oldest_bucket_keeps_its_first_hours(self, client, db, monkeypatch):
@@ -101,9 +110,15 @@ class TestProducerViewsByDayIsraelBoundary:
         p, user = self._setup(db, "b3@test.com")
         monkeypatch.setattr(producer_me, "israel_today", lambda: ANCHOR)
         oldest = ANCHOR - timedelta(days=29)
-        _seed_view_at(db, p.id, datetime(oldest.year, oldest.month, oldest.day, 0, 30, tzinfo=ISRAEL))
+        _seed_view_at(
+            db,
+            p.id,
+            datetime(oldest.year, oldest.month, oldest.day, 0, 30, tzinfo=ISRAEL),
+        )
 
-        series = _series(client.get("/producers/me/analytics", headers=auth_header(user)).json())
+        series = _series(
+            client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        )
         assert series[oldest.isoformat()] == 1
 
     def test_series_still_has_exactly_30_israel_dates(self, client, db, monkeypatch):
@@ -114,11 +129,15 @@ class TestProducerViewsByDayIsraelBoundary:
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert len(body["views_by_day"]) == 30
         assert body["views_by_day"][-1]["date"] == ANCHOR.isoformat()
-        assert body["views_by_day"][0]["date"] == (ANCHOR - timedelta(days=29)).isoformat()
+        assert (
+            body["views_by_day"][0]["date"] == (ANCHOR - timedelta(days=29)).isoformat()
+        )
 
 
 class TestAdminDauIsraelBoundary:
-    def test_session_at_0030_israel_lands_on_the_NEW_israel_date(self, client, db, monkeypatch):
+    def test_session_at_0030_israel_lands_on_the_NEW_israel_date(
+        self, client, db, monkeypatch
+    ):
         """Same discriminating case on the admin DAU series."""
         admin = make_user(db, email="adm1@test.com", role="admin")
         member = make_user(db, email="dau1@test.com", role="consumer")
