@@ -18,7 +18,15 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (u) => u,
 }));
-vi.mock("@phosphor-icons/react", () => ({ Leaf: () => <span /> }));
+// MEH-1901: CaretLeft joins the set — the product grid row and signature card
+// carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
+vi.mock("@phosphor-icons/react", () => ({
+  Leaf: () => <span />,
+  CaretLeft: () => <span />,
+  MapPin: () => <span />,
+  WhatsappLogo: () => <span />,
+  X: () => <span />,
+}));
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));
 vi.mock("@/components/ReviewsSection", () => ({ default: () => <div data-testid="reviews" /> }));
