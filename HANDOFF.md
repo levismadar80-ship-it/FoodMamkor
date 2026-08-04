@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-04 — MEH-1700 Phase 2 + פרישת עוגן ה-resume הכפול
+
+**PRs:** #2600 (מוזג — MEH-1700 Phase 2, tests-only) · PR הנוכחי (docs-בלבד: CHANGELOG/HANDOFF + מחיקת `.cc-sweep/queue-state.json`).
+
+**ענף:** `feature/meh-1074-retire-queue-state` מ-`origin/staging` טרי.
+
+### מה שצריך לדעת לפני שממשיכים
+
+1. **בלוק ה-SYNC ב-MEH-1074 הוא עוגן ה-resume היחיד מעכשיו.** `.cc-sweep/queue-state.json` נמחק ו-`<session_bootstrap>` צעד 3 באפיק תוקן להצביע על ה-SYNC. **אל תיצרי אותו מחדש.** הסיבה אינה שהוא לא תוחזק — היא שהוא **נחת על staging מיושן ביומיים** (מוזג 08:08Z נושא state מ-02/08, `cycles: 2` מול cycle 10 בפועל), בדיוק מצב הכשל ש-`<state_file>` כבר תיאר וש-#2494 כבר הדגים.
+
+2. **המחלקה שחזרה שלוש פעמים בסשן אחד: הקוד נכון, התיאור של הקוד שגוי.** הכלל שנוסח בסשן הקודם — «אחרי כל החלפה, grep ל**ערך הישן עצמו**, בכל הריפו, לא לאתרים שמנית» — תפס ב-#2600 שריד אמיתי אחד: `SettingsPhoneDisabledReason.test.jsx:18` הצדיק את קיומו בכך ש«חבילת SettingsPage מדולגת». חבילה ירוקה לגמרי לא הייתה תופסת אותו — שום דבר לא מריץ docstring. **הפעילי את זה אחרי כל substitution, ודווחי את הספירה.**
+
+3. **`changePassword` ב-`lib/auth-context.js:185` הוא export יתום — אפס קוראים.** דווח ולא תוקן (קוד production, מחוץ להיקף הכרטיס). מועמד לכרטיס ניקוי; לא נפתח כרטיס — ממצא אינו עבודה שאני מאשרת לעצמי.
+
+4. **MEH-1700 Phase 3 פתוח** — משפחת ה-~20 אתרים תלויי-דאטה, `12-axe-a11y` ראשון. שלושה מהם נכתבים מחדש ב-#2592. **הכרטיס נשאר In Progress** — אומת אחרי המיזוג ש-`feature/meh-1700-*` לא סגר אותו אוטומטית (סכנת MEH-1736); `Refs` במקום `Closes` החזיק.
+
+5. **MEH-1876 parked** עם `needs-sapir` ו-Phase 0 מלא בתיאור. ההכרעה האחת: האם `/map` (`map/page.js:54`, `revalidate: 3600` על אותו endpoint) נכנס להיקף, או שההערה מנוסחת כחלון **לפי משטח**. האימות המדוד על staging נשאר אצל ספיר — ה-sandbox חסום מ-`*.up.railway.app`.
+
 ## 2026-08-04 — MEH-1900: כלל שתיאר מנגנון הפוך, ושאלה פתוחה שנשארה פתוחה בכוונה
 
 **PR:** MEH-1900 (docs-בלבד — כולל CHANGELOG/HANDOFF, מותר לפי כלל 31: ה-guard נופל רק כשה-diff נוגע גם בקובץ **מחוץ** ל-`docs/**` · `.claude/**` · `HANDOFF.md`; ריצה docs-בלבד עוברת. נקרא מ-`scripts/checks/changelog-branch-guard.sh:31-40`, לא מהזיכרון).
