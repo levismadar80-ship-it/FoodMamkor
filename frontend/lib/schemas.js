@@ -11,9 +11,13 @@ import { z } from "zod";
 // `class ProducerDetailOut(ProducerListOut)` (:2128) — literal inheritance,
 // with `GET /producers/{producer_id}` and `GET /producers/by-slug/{slug}`
 // declaring `response_model=ProducerDetailOut`
-// (backend/app/routers/producers.py:286, :247). Measured against those two
-// classes on 03/08/2026: ProducerListOut = 64 fields, ProducerDetailOut = 81,
-// detail-only = 17, **list-only = 0**. That exact subset relation is what
+// (backend/app/routers/producers.py:286, :247). Re-measured against those two
+// classes on 04/08/2026 (MEH-1880 moved `order_window` onto the list contract,
+// so the 03/08 reading of 64/81/17 is superseded): ProducerListOut = 65 fields,
+// ProducerDetailOut = 81, detail-only = 16, **list-only = 0**. Nothing derives
+// these numbers — `tests/test_producer_contract_snapshot.py` owns the field
+// sets mechanically; this line is orientation, so treat it as an as-of reading
+// and re-measure rather than quote it. That exact subset relation is what
 // `.extend()` expresses in Zod, so the two schemas below carry the shared
 // fields once instead of twice.
 //
@@ -24,6 +28,14 @@ import { z } from "zod";
 // This split is structural only. `ProducerSchema` remains exported as an alias
 // of the detail schema below, so no call site changes shape in this PR;
 // migrating the six parse sites is a separate ticket.
+// MEH-1880: one day's order-acceptance range. Both `open` and `close` are
+// nullable/optional on purpose — see the `order_window` declaration below for
+// why permissiveness here is load-bearing rather than lazy.
+const OrderWindowRange = z.object({
+  open: z.string().nullable().optional(),
+  close: z.string().nullable().optional(),
+});
+
 export const ProducerListSchema = z.object({
   id: z.union([z.string(), z.number()]),
   name: z.string(),
@@ -200,6 +212,30 @@ export const ProducerListSchema = z.object({
   // and CANNOT fire while z.object strips it; that ticket is blocked on this
   // line. Covered by the round-trip assertion in the guard, not by extraction.
   kashrut_badges: z.array(z.string()).nullable().optional(), // → MEH-1711 card kashrut label (certification name)
+  // MEH-1880: the weekly order-acceptance window, newly served by
+  // ProducerListOut and read by ProducerCard.jsx to derive the "פתוח להזמנות ·
+  // עד HH:MM" line. Declared for the same reason as `locations` /
+  // `delivery_areas` / `offer` above — an undeclared key is STRIPPED by
+  // z.object, so the line would silently never render on the two Zod-parsed
+  // feeds (home grid + /map) while working fine on the unparsed ones. That is
+  // the MEH-826 / 901 / 902 / 1704 / 1719 / 1823 mechanism, and it was
+  // MEASURED here before the fix rather than assumed: with the field added to
+  // ProducerListOut but not to this schema, the pre-existing card-read guard
+  // (__tests__/ProducerSchemaBadgeParity.test.js:371) reds with
+  // `undeclared in ProducerSchema … order_window`.
+  //
+  // Both stored shapes are accepted: the canonical per-day LIST of ranges and
+  // the pre-MEH-1869 single dict. Every row has passed
+  // `_order_window_validator` (backend/app/schemas/schemas.py:87), which
+  // rejects anything else on write, so the record's value union cannot be the
+  // thing that fails a parse. Inner fields stay permissive anyway, because the
+  // /map feed parses all-or-nothing (useProducersFeed.js:41) and one odd range
+  // must never cost a whole business — `normalizeDayEntries`
+  // (lib/orderWindow.js:93) already drops any range that is not valid HH:MM.
+  order_window: z
+    .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
+    .nullable()
+    .optional(),
 });
 
 // MEH-1752: the detail contract — `GET /producers/{producer_id}` and
@@ -218,9 +254,9 @@ export const ProducerListSchema = z.object({
 // declared on a schema that five list feeds parse; this gives them the
 // contract they actually belong to instead of removing them.
 //
-// The other 13 detail-only fields ProducerDetailOut serves — `contact_name`,
+// The other 12 detail-only fields ProducerDetailOut serves — `contact_name`,
 // `created_at`, `custom_questions`, `established_year`, `google_place_id`,
-// `order_window`, `owner_bio`, `owner_photo_url`, `products`, `report_count`,
+// `owner_bio`, `owner_photo_url`, `products`, `report_count`,
 // `story_card_url`, `updated_at`, `whatsapp_group` — are still undeclared,
 // exactly as they were before this split (audit D2). Declaring them would
 // change what the parse sites receive, which this structural PR deliberately

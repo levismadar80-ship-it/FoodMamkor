@@ -1959,6 +1959,13 @@ class ProducerListOut(BaseModel):
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
+    # MEH-1880: the declared weekly order window. Expand-only (ADR-007) and no
+    # migration — the column has existed since f4a1e9c3b7d2; only the LIST
+    # serializer was missing it, which is why no list surface (home grid,
+    # /producers, /map cards, favorites) could derive "open for orders now"
+    # while the producer PAGE already could. Defaults to None, so every
+    # existing response is byte-identical for a producer that has no window.
+    order_window: dict | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
