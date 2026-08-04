@@ -90,6 +90,9 @@ export async function pickProducer(
     );
   }
 
+  // Lexicographic BY DESIGN — the goal is determinism, not numeric order. Two
+  // runs against the same feed must choose the same producer; whether "9" sorts
+  // after "10" is irrelevant to that, and these ids are UUIDs in any case.
   const matching = feed
     .filter((p) => p && p.id && requirement.matches(p))
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
