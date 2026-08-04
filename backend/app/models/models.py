@@ -809,13 +809,29 @@ class ProducerOffer(Base):
     """MEH-1823 chunk 1: ONE owner-declared, typed, expiring offer per business.
 
     An offer is a bounded, dated object with its own lifecycle — it expires and
-    it is replaced — so it is a table, not columns on `producers`. The four
+    it is replaced — so it is a table, not columns on `producers`. The five
     types are a closed vocabulary:
 
       free_delivery_above  — free delivery over a threshold
       gift_above           — a gift with a purchase over a threshold
       first_order          — a first-order benefit
       pickup_discount      — a discount on self-pickup
+      custom               — MEH-1898: the owner words the offer herself
+
+    `custom` is the only type with no typed sentence behind it, so on every
+    consumer surface its `headline` IS the offer text rather than a secondary
+    line under one. That is a RENDERING rule and it lives on the rendering
+    side (OfferBadge.jsx), which is also where the empty case resolves: a
+    `custom` offer with no headline renders nothing at all, instead of a bare
+    gift icon with no words next to it.
+
+    **It is deliberately NOT a sixth CHECK.** "custom implies headline IS NOT
+    NULL" is expressible in SQL and was still rejected: the agreed set is five
+    CHECKs (02/08), and it would be the first constraint in this table that
+    branches on `offer_type` — the exact shape of the cross-constraint that
+    decision turned down. The empty-headline row is not corrupt data; it is an
+    offer the site declines to display, which the reader never sees either way.
+    Full reasoning: ProducerOfferCreate's docstring in schemas.py.
 
     `threshold_value` + `threshold_unit` exist because the evidence that opened
     the ticket had nowhere to live: a litres/units/kg threshold cannot be stored
@@ -891,8 +907,12 @@ class ProducerOffer(Base):
 
     __table_args__ = (
         CheckConstraint(
+            # MEH-1898 added 'custom'. Kept byte-identical to the condition in
+            # revision e4b1c72d9a35, which DROPs and re-ADDs this constraint —
+            # Postgres has no ALTER CHECK, and autogenerate does not diff CHECK
+            # conditions, so a drift between the two surfaces would be silent.
             "offer_type IN ('free_delivery_above', 'gift_above', "
-            "'first_order', 'pickup_discount')",
+            "'first_order', 'pickup_discount', 'custom')",
             name="producer_offer_type",
         ),
         CheckConstraint(
