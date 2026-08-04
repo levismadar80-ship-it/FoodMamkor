@@ -774,7 +774,17 @@
         },
         "products": {
           "heading": "Products",
-          "signature_label": "Signature product"
+          "signature_label": "Signature product",
+          "diet": {
+            "gluten_free": "Gluten-free",
+            "vegan": "Vegan",
+            "vegetarian": "Vegetarian",
+            "lactose_free": "Lactose-free"
+          },
+          "sheet_open_aria": "Details about {name}",
+          "sheet_close_aria": "Close product details",
+          "sheet_cta": "Ask about this product on WhatsApp",
+          "sheet_wa_prefill": "Hi, I saw “{name}” on your Mehamakor page and would love to hear more"
         },
         "recipes": {
           "cta": "Our recipes"
