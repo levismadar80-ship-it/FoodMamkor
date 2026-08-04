@@ -150,6 +150,9 @@ function createCategoryMarker(
     ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.square })
     : null;
   const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  // raw img: this is an HTML *string* handed to Leaflet's divIcon, not JSX.
+  // next/image is a React component and cannot be serialised into it — there
+  // is no React tree here to render into. Structural, not a preference.
   const inner = imgUrl
     ? `<img src="${imgUrl}" loading="lazy" alt="${escapeHtmlAttr(producer.name)}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon)}</div>`;

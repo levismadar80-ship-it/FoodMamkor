@@ -8,8 +8,17 @@ import Image from "next/image";
 import { HeartStraight, Leaf, Star, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
+import OfferBadge from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
+import { getOrderWindowStatus } from "@/lib/orderWindow";
+// MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
+// the canonical Israel-local "HH:MM" formatter and the card interpolates it
+// into the very same `orders_open` string the page renders — a second copy here
+// would be two owners for one format, and they would drift on the first change.
+// The alternative (relocating it to lib/) touches a file outside this ticket's
+// scope. Nothing is mutated there; this is a read-only reuse of a pure helper.
+import { israelTime } from "@/app/[locale]/producer/[id]/lib/order-status";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { allBadges, badgeCount } from "@/lib/badges";
@@ -211,6 +220,40 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
   const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
 
+  // MEH-1880 — derived "open for orders" line.
+  //
+  // Time-derived, so it must not run during SSR: the server and the client
+  // would disagree and React would flag a hydration mismatch. Until mounted,
+  // `orderStatus` stays null and NOTHING renders — the same guard idiom
+  // ProducerHeader.jsx:118-120 uses for the identical value.
+  const [orderWindowMounted, setOrderWindowMounted] = useState(false);
+  useEffect(() => setOrderWindowMounted(true), []);
+  const orderStatus = orderWindowMounted
+    ? getOrderWindowStatus(producer.order_window)
+    : null;
+
+  // Only the OPEN half is shown. `closing_soon` is folded in deliberately —
+  // order-status.js:62 records that it is not a separate visual state, and the
+  // "עד {time}" suffix already carries the cutoff honestly (no urgency styling,
+  // no countdown). Closed and no-window render nothing at all: a card must not
+  // shout "סגור" (MEH-1652 copy-honesty — describe declared mechanics, never
+  // promise on the business's behalf), and the async CTA stays either way.
+  //
+  // Vacation wins, matching the page's existing precedence. `dotStatus` is
+  // reused rather than re-reading availability_state so there is one owner for
+  // "is this producer on vacation" on this card.
+  //
+  // `nextChange` is checked, not assumed. On the open branch it is always a
+  // Date today — but MEH-1546's review caught the mirror of this on the CLOSED
+  // branch, where a window whose every day violated `close > open` yielded
+  // `nextChange: null` and the label rendered the epoch ("עד 02:00"). Rather
+  // than re-derive that the open branch is safe on every future edit to
+  // getOrderWindowStatus, the render is gated on the value it actually needs.
+  const showOrderWindowLine =
+    dotStatus !== "on_vacation" &&
+    (orderStatus?.state === "open" || orderStatus?.state === "closing_soon") &&
+    orderStatus.nextChange != null;
+
   const handleRootClick = (e) => {
     if (e.target.closest("a, button")) return;
     if (onClick) {
@@ -360,12 +403,43 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   `.slice(2)` are untouched: this changes what the rows SAY,
                   not which rows are here, so the max-2 visible cap and the
                   MEH-1714 heading above are unaffected. */}
-              <span className="flex flex-col gap-1" role="list">
+              {/* MEH-1847: each row gains a muted one-line explanation. The
+                  panel's heading promises "עוד על העסק הזה" and then delivered a
+                  column of bare words — a badge with no explanation is a jargon
+                  leak, and this is the surface where it was worst, since a badge
+                  in position 3+ has no chip context around it.
+                  Copy is BADGE_CONFIG[key].tooltip VERBATIM — the honest
+                  any-product wording MEH-1439 already wrote — so this adds zero
+                  new strings and inherits that copy review rather than
+                  reopening it. Same visual idiom as the FilterSheet subtext
+                  rows (MEH-1418/1507): muted, one step down, below the label.
+                  REUSES: frontend/components/FilterSheet.jsx:248 (conditional
+                  subtext line — `subtext && <p className="text-xs text-fg-muted …">`).
+                  The tooltip is read off `b`, which IS the BADGE_CONFIG entry
+                  (allBadges maps keys through it), so no extra import.
+                  Rendered CONDITIONALLY: a key with no tooltip renders the label
+                  alone rather than an empty line. Every key has one today, so
+                  that branch is defensive — it exists so adding a tooltip-less
+                  badge later cannot open a gap in the panel.
+                  gap-1 → gap-2: with two-line rows the old spacing put the next
+                  row's label as close to the previous row's description as to
+                  its own, which breaks the grouping. Row CONTENT is what changed
+                  here — `allBadges` and `.slice(2)` are untouched, so the max-2
+                  visible cap, the MEH-1714 heading and the MEH-1593 overlay
+                  behaviour are all unaffected. */}
+              <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
                   .slice(2)
                   .map((b) => (
                     <span key={b.key} role="listitem" className="block">
-                      {resolveBadgeLabel(b, producer, tKashrut)}
+                      <span className="block">
+                        {resolveBadgeLabel(b, producer, tKashrut)}
+                      </span>
+                      {b.tooltip && (
+                        <span className="block text-[12px] leading-snug text-fg-muted">
+                          {b.tooltip}
+                        </span>
+                      )}
                     </span>
                   ))}
               </span>
@@ -447,6 +521,35 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </span>
         </p>
 
+        {/* MEH-1880: rendered ONLY when the declared window is open right now.
+            Closed, absent, or pre-mount → this whole node is absent, so a card
+            without an open window is byte-identical to before this ticket (no
+            reserved space, no layout shift). Copy is reused verbatim from the
+            producer page's status branch — zero new keys in either locale. */}
+        {showOrderWindowLine && (
+          // `text-primary` is not a free choice: it is the tone the producer
+          // page's own `open` branch resolves to (order-status.js:99), so the
+          // card says the same thing in the same colour. No new colour token.
+          //
+          // NOT `truncate`, and that is a measured decision. At 375px the card
+          // body is 132px wide and this string needs 138 — a 6px overflow, the
+          // only width where it does not fit (414/768/1440 all clear). In RTL
+          // the ellipsis lands at the visual left, which is exactly where the
+          // cutoff time sits, so truncating drops the ONE datum the line
+          // carries and leaves a line that says "open · until…". Wrapping
+          // keeps the time. It costs a second line at 375px on open cards
+          // only; the closed/null/vacation states render no node at all, so
+          // the AC's "no layout shift" case is untouched.
+          <p
+            className="text-[13px] text-primary"
+            data-testid="card-order-window"
+          >
+            {t("producer.detail.header.status.orders_open", {
+              time: israelTime(orderStatus.nextChange),
+            })}
+          </p>
+        )}
+
         {descriptionText && (
           // MEH-1028 (CARD-27): one-line description hidden on mobile (<640px),
           // visible sm: up — part of the mobile density variant.
@@ -463,6 +566,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {t("producer.card.badges.available_today")}
           </span>
         )}
+
+        {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
+            when active_offer is absent, so a business without an offer renders
+            byte-identically to before — no wrapper, no gap, no flow change. */}
+        <OfferBadge offer={producer.active_offer} variant="chip" />
+        {/* /MEH-1823 */}
 
         {localFavCount >= 5 && (
           <p className="flex items-center gap-1 text-[12px] text-fg-muted">

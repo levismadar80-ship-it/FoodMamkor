@@ -247,7 +247,14 @@ function overflowKosherLabel(producer) {
   fireEvent.click(trigger);
   const panel = document.querySelector('[data-testid="badge-overflow-popover"]');
   if (!panel) return null;
-  const rows = [...panel.querySelectorAll('[role="listitem"]')].map((el) => el.textContent.trim());
+  // MEH-1847: a row is now TWO lines — the label, then a muted description from
+  // BADGE_CONFIG[key].tooltip. Reading the row's whole textContent would
+  // concatenate them and match none of the candidates below, so the label line
+  // (the row's first child) is what this reads. The fallback keeps the helper
+  // working for a row that renders label-only (a badge with no tooltip).
+  const rows = [...panel.querySelectorAll('[role="listitem"]')].map((el) =>
+    (el.firstElementChild?.textContent ?? el.textContent).trim(),
+  );
   // The overflow lists LABELS only, so identify the kosher row by matching the
   // set of strings the resolver can produce — not by index, which would silently
   // pass if the ordering changed.

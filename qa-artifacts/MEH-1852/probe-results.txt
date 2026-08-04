@@ -1,0 +1,6 @@
+PASS table-rendered-all-8-rows: {"actual":8,"expected":8}
+PASS every-pill-renders-the-canonical-label: {"actual":["כשר מרבנות","בדצ\"ה","בשר חלק (גלאט)","מהדרין","אורגני כשר","שמיטה","ללא כלאיים","מוצרי חלב מהחווה"],"expected":["כשר מרבנות","בדצ\"ה","בשר חלק (גלאט)","מהדרין","אורגני כשר","שמיטה","ללא כלאיים","מוצרי חלב מהחווה"]}
+PASS chalak-pill-text: {"actual":"בשר חלק (גלאט)","expected":"בשר חלק (גלאט)"}
+PASS chalak-is-not-the-retired-admin-wording: {"actual":false,"expected":false}
+PASS no-pill-rendered-as-a-raw-key: {"actual":[],"expected":[]}
+FAILURES: 0

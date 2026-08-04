@@ -26,7 +26,7 @@ import { useTranslations } from "next-intl";
 import { Warning, X, Sparkle, CheckCircle, Eye } from "@phosphor-icons/react";
 // MEH-1167: reuse the public badge strip (+ its CODE_TO_KEY + MEH-1260 expiry
 // gate) for the KashrutCard's "approved" zone — one owner of that render.
-import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import KashrutBadgeStrip, { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -414,6 +414,12 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
           {images.map((url, i) => (
             <div key={`${url}-${i}`} className="relative group">
+              {/* raw img: producer/admin-submitted URLs reach this grid, and
+                  optimizeCloudinary passes a non-Cloudinary URL through
+                  unchanged (cloudinary.js:24). next/image THROWS on a src that
+                  is neither absolute nor leading-slash (image-loader.ts:93) —
+                  it does not degrade — so migrating here trades a broken
+                  thumbnail for a crashed dashboard. Measured, see PR. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
@@ -1046,6 +1052,9 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
         <span className="text-sm font-medium block">{t("photo_label")}</span>
         <div className="flex items-center gap-3">
           {photoUrl ? (
+            /* raw img: owner-uploaded photo preview; `photoUrl` may be the
+               local /placeholder-image.png fallback (upload.py:115), not a
+               Cloudinary URL. Authenticated dashboard chrome, 64px. */
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={photoUrl}
@@ -1364,21 +1373,11 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
 // LicenseCard (MEH-1270 role="status" success), components/KashrutBadgeStrip.
 // ============================================================
 
-// code → he.json kashrut.badges.* key. The API `code` axis snake-cases in
-// messages (organic-kosher → organic_kosher). Same 8-entry contract as
-// KashrutBadgeStrip.CODE_TO_KEY — module-private there, and scope forbids
-// editing that file, so the map is restated (one small axis, not logic).
-const KASHRUT_CODE_TO_KEY = {
-  rabanut: "rabanut",
-  badatz: "badatz",
-  chalak: "chalak",
-  mehadrin: "mehadrin",
-  "organic-kosher": "organic_kosher",
-  shmitta: "shmitta",
-  kilayim: "kilayim",
-  "artisan-dairy": "artisan_dairy",
-};
-const KASHRUT_CODES = Object.keys(KASHRUT_CODE_TO_KEY);
+// MEH-1852: the code → he.json `kashrut.badges.*` key axis is imported from
+// KashrutBadgeStrip (line 29), which already owns it and which this file
+// already imports for the approved-badges zone. There is no marginal cost here
+// and never was.
+const KASHRUT_CODES = Object.keys(CODE_TO_KEY);
 
 // Exported for isolation tests (EditTabKashrutCard.test.jsx) — see CategoriesCard.
 export function KashrutCard({ profile, reportDirty = () => {} }) {
@@ -1486,7 +1485,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
       {openRequests.length > 0 && (
         <ul className="space-y-1.5" data-testid="kashrut-requests">
           {openRequests.map((r) => {
-            const key = KASHRUT_CODE_TO_KEY[r.badge_code];
+            const key = CODE_TO_KEY[r.badge_code];
             const label = key ? tBadges(`${key}.label`) : r.badge_code;
             const rejected = r.status === "rejected";
             return (
@@ -1529,7 +1528,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
             <option value="">{t("select_placeholder")}</option>
             {KASHRUT_CODES.map((code) => (
               <option key={code} value={code}>
-                {tBadges(`${KASHRUT_CODE_TO_KEY[code]}.label`)}
+                {tBadges(`${CODE_TO_KEY[code]}.label`)}
               </option>
             ))}
           </select>
@@ -1539,6 +1538,8 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           <span className="text-sm font-medium block">{t("upload_label")}</span>
           <div className="flex items-center gap-3">
             {certUrl && (
+              /* raw img: certificate upload preview, same mixed provenance
+                 as the photo above (upload.py:115). */
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={certUrl}
@@ -1783,6 +1784,32 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     }
   };
 
+  // MEH-1821: makes the per-city override's three-value semantics visible.
+  // Mirrors the server contract (DeliveryAreaCreate._validate_area_delivery_fee):
+  // "" / null = inherits the business-level default · 0 = free for this city ·
+  // positive = the city's own rate. Deliberately NOT a truthiness test — `!raw`
+  // would collapse 0 into the inherit branch and silently redescribe a free
+  // city as "inherits 35 ₪". Returns null when there is nothing to declare:
+  // an unstated city while the business default is itself unstated inherits
+  // nothing, so no hint is rendered at all.
+  const areaFeeHint = (city) => {
+    const raw = form.fees[city];
+    const stated = raw !== "" && raw !== null && raw !== undefined;
+    if (!stated) {
+      const base = form.fee;
+      if (base === "" || base === null || base === undefined) return null;
+      // A business-level 0 is free delivery, and the row below states its own
+      // 0 as "משלוח חינם" — rendering the inherited one as "יורש 0 ₪" would
+      // show the same value two different ways in the same list. The 0 case
+      // is reachable on purpose: the fee input is min="0" and fee_hint tells
+      // the owner to write 0 when delivery is free.
+      return Number(base) === 0
+        ? t("area_fee_inherits_free")
+        : t("area_fee_inherits", { fee: base });
+    }
+    return Number(raw) === 0 ? t("area_fee_free") : null;
+  };
+
   return (
     <div>
       <p className="text-xs text-fg-muted mb-1">{t("subtitle")}</p>
@@ -1828,6 +1855,86 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
               />
               {t("delivery_nationwide")}
             </label>
+            {/* MEH-1577: structured delivery cost. Both optional — leaving them
+                empty keeps the public page exactly as it is today. Each field
+                carries a "where it appears" line + an example placeholder per
+                the dashboard field standard (docs/audits/dashboard-field-
+                guidance-audit.md, MEH-1539). min=0 on the fee (0 = free),
+                min=1 on the threshold, and max=MAX_DELIVERY_MONEY on both
+                mirror the server validators, so the browser catches the same
+                values the API would 422 on — the ceiling round-trips instead
+                of only surfacing after a submit.
+                MEH-1821: this block sits ABOVE the area list, not below it.
+                It is the default every `delivery_areas` row inherits, and a
+                default stated after its own exceptions reads as a repetition
+                of them — which is exactly how it was read in the field. Order
+                follows Shopify's profile → zone → rate hierarchy: the general
+                rate is set first, zones override it underneath. Moving this
+                block is presentational only; `handleSave` below is untouched
+                and the PUT /producers/me payload is byte-identical. */}
+            <div className="space-y-3 pt-1" data-testid="delivery-default-block">
+              {/* MEH-1821: the copy is mode-dependent because the block is
+                  not. It renders whenever delivery is on, but the per-area
+                  list it points at exists only in the non-nationwide branch
+                  below — nationwide clears `cities`, so there is no row to
+                  override and "ברירת מחדל" would name exceptions that cannot
+                  exist. Nationwide gets its own pair: one country-wide fee,
+                  nothing beneath it. */}
+              <p className="text-sm font-medium">
+                {form.nationwide
+                  ? t("default_block_title_nationwide")
+                  : t("default_block_title")}
+              </p>
+              <p className="text-xs text-fg-muted">
+                {form.nationwide
+                  ? t("default_block_hint_nationwide")
+                  : t("default_block_hint")}
+              </p>
+              <div>
+                <label
+                  htmlFor="delivery-fee"
+                  className="block text-sm text-muted mb-1"
+                >
+                  {t("fee_label")}
+                </label>
+                <p className="text-xs text-fg-muted mb-1">{t("fee_hint")}</p>
+                <input
+                  id="delivery-fee"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max={MAX_DELIVERY_MONEY}
+                  step="1"
+                  value={form.fee}
+                  onChange={(e) => set({ fee: e.target.value })}
+                  placeholder={t("fee_placeholder")}
+                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="free-delivery-above"
+                  className="block text-sm text-muted mb-1"
+                >
+                  {t("free_above_label")}
+                </label>
+                <p className="text-xs text-fg-muted mb-1">
+                  {t("free_above_hint")}
+                </p>
+                <input
+                  id="free-delivery-above"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={MAX_DELIVERY_MONEY}
+                  step="1"
+                  value={form.freeAbove}
+                  onChange={(e) => set({ freeAbove: e.target.value })}
+                  placeholder={t("free_above_placeholder")}
+                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
             {!form.nationwide && (
               <div>
                 <span className="block text-sm text-muted mb-1">
@@ -1907,6 +2014,18 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                               </option>
                             ))}
                           </select>
+                          {/* MEH-1821: declares what an unstated row inherits.
+                              `w-full` makes it wrap onto its own line inside
+                              the flex row rather than competing for width with
+                              the inputs. */}
+                          {areaFeeHint(c) && (
+                            <p
+                              className="w-full text-xs text-fg-muted"
+                              data-testid={`delivery-fee-hint-${c}`}
+                            >
+                              {areaFeeHint(c)}
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -1930,60 +2049,236 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 />
               </div>
             )}
-            {/* MEH-1577: structured delivery cost. Both optional — leaving them
-                empty keeps the public page exactly as it is today. Each field
-                carries a "where it appears" line + an example placeholder per
-                the dashboard field standard (docs/audits/dashboard-field-
-                guidance-audit.md, MEH-1539). min=0 on the fee (0 = free),
-                min=1 on the threshold, and max=MAX_DELIVERY_MONEY on both
-                mirror the server validators, so the browser catches the same
-                values the API would 422 on — the ceiling round-trips instead
-                of only surfacing after a submit. */}
-            <div className="space-y-3 pt-1">
-              <div>
-                <label
-                  htmlFor="delivery-fee"
-                  className="block text-sm text-muted mb-1"
-                >
-                  {t("fee_label")}
-                </label>
-                <p className="text-xs text-fg-muted mb-1">{t("fee_hint")}</p>
+          </div>
+        )}
+      </div>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty || blocked}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1823 chunk 3 — OffersCard: the owner's single typed offer.
+// Four types, an optional threshold, an optional free-text line, and a
+// MANDATORY end date. Sends `active_offer` on the same PUT /producers/me as
+// every other card here (producer_me._sync_active_offer replaces the active
+// row rather than updating it, so the unique partial index holds).
+//
+// Three write states, and they are NOT the same request:
+//   type == ""      -> {active_offer: null}   deactivate
+//   type set        -> {active_offer: {...}}  replace
+//   card untouched  -> the key is never sent  leave alone
+// The third is why every other card can be saved without wiping the offer.
+// ============================================================
+
+// Which types show the threshold pair. Currently all four — the threshold is
+// optional for EVERY type and deliberately not gated by type (Sapir, 02/08:
+// "10% off pickup over ₪100" and "first order over ₪150" are real offers).
+// Kept as a named constant rather than inlined `true` so the decision is
+// visible at the point a future reader would try to narrow it.
+const OFFER_TYPES = ["free_delivery_above", "gift_above", "first_order", "pickup_discount"];
+const THRESHOLD_UNITS = ["ils", "units", "liters", "kg"];
+const MAX_OFFER_HEADLINE = 60;
+
+// Exported for isolation tests (OfferBadge.test.jsx renders it directly).
+export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("producer.offer");
+  const existing = profile?.active_offer ?? null;
+  const initial = {
+    // "" = no active offer. Held as strings for the same reason DeliveryCard
+    // does it: an <input>/<select> value must be one.
+    type: existing?.offer_type ?? "",
+    threshold: existing?.threshold_value ?? "",
+    unit: existing?.threshold_unit ?? "",
+    headline: existing?.headline ?? "",
+    expires: existing?.expires_at ?? "",
+  };
+  const [baseline, setBaseline] = useState(initial);
+  const [form, setForm] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const set = (patch) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setSaved(false);
+  };
+
+  const dirty =
+    form.type !== baseline.type ||
+    String(form.threshold) !== String(baseline.threshold) ||
+    form.unit !== baseline.unit ||
+    form.headline !== baseline.headline ||
+    form.expires !== baseline.expires;
+
+  // The cleanup is not optional: every other card here returns
+  // reportDirty(key, false), and without it the card stays "dirty" after
+  // unmount, so the editor's unsaved-changes warning fires forever on a
+  // card the owner already left.
+  useEffect(() => {
+    reportDirty("offer", dirty);
+    return () => reportDirty("offer", false);
+  }, [dirty, reportDirty]);
+
+  // Client-side mirrors of the two server rules most likely to be hit, so the
+  // owner sees them before a round-trip. The server remains the authority —
+  // these only shorten the loop, they do not replace the 422.
+  const hasType = form.type !== "";
+  const thresholdStated = String(form.threshold).trim() !== "";
+  const unitStated = form.unit !== "";
+  const pairBroken = hasType && thresholdStated !== unitStated;
+  const missingExpiry = hasType && !form.expires;
+  const blocked = pairBroken || missingExpiry;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setErrorMsg(null);
+    try {
+      const payload = hasType
+        ? {
+            offer_type: form.type,
+            // toNullableInt semantics: "" -> null, never 0. A 0 here would be
+            // rejected by the server anyway (threshold must be > 0), but
+            // sending null is the honest encoding of "not stated".
+            threshold_value: thresholdStated ? Number(form.threshold) : null,
+            threshold_unit: thresholdStated ? form.unit : null,
+            headline: form.headline.trim() || null,
+            expires_at: form.expires,
+          }
+        : null;
+      await api.put("/producers/me", { active_offer: payload });
+      // No `id` in the optimistic patch. The save REPLACES the row, so the old
+      // id is wrong and the new one is server-assigned and unknown here —
+      // an earlier version wrote `id: existing?.id ?? null`, which asserted a
+      // null id for a business creating its first offer. Omitting the key says
+      // "unknown", which is true; `null` says "there isn't one", which isn't.
+      // Nothing reads it today; the real id arrives with the next profile load.
+      onSave({ active_offer: payload });
+      setBaseline(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-fg-muted mb-1">{t("card_subtitle")}</p>
+      <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
+
+      <div className="space-y-3">
+        <div>
+          <label htmlFor="offer-type" className="block text-sm text-muted mb-1">
+            {t("type_label")}
+          </label>
+          <select
+            id="offer-type"
+            value={form.type}
+            data-testid="offer-type-select"
+            onChange={(e) => set({ type: e.target.value })}
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-sm bg-surface"
+          >
+            <option value="">{t("type_none")}</option>
+            {OFFER_TYPES.map((ot) => (
+              <option key={ot} value={ot}>{t(`types.${ot}`)}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Everything below is meaningless without a type, so the whole block
+            is gated — the "no offer" state is a genuinely empty card, not a
+            form full of disabled inputs. */}
+        {hasType && (
+          <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+            <div>
+              <span className="block text-sm text-muted mb-0.5">{t("threshold_label")}</span>
+              <p className="text-xs text-fg-muted mb-2">{t("threshold_hint")}</p>
+              <div className="flex flex-wrap items-center gap-2">
                 <input
-                  id="delivery-fee"
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  max={MAX_DELIVERY_MONEY}
-                  step="1"
-                  value={form.fee}
-                  onChange={(e) => set({ fee: e.target.value })}
-                  placeholder={t("fee_placeholder")}
-                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="free-delivery-above"
-                  className="block text-sm text-muted mb-1"
-                >
-                  {t("free_above_label")}
-                </label>
-                <p className="text-xs text-fg-muted mb-1">
-                  {t("free_above_hint")}
-                </p>
-                <input
-                  id="free-delivery-above"
                   type="number"
                   inputMode="numeric"
                   min="1"
-                  max={MAX_DELIVERY_MONEY}
                   step="1"
-                  value={form.freeAbove}
-                  onChange={(e) => set({ freeAbove: e.target.value })}
-                  placeholder={t("free_above_placeholder")}
-                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  value={form.threshold}
+                  aria-label={t("threshold_label")}
+                  data-testid="offer-threshold-input"
+                  onChange={(e) => set({ threshold: e.target.value })}
+                  placeholder={t("threshold_placeholder")}
+                  className="w-24 border border-border rounded-[10px] px-3 py-2 text-sm"
                 />
+                <select
+                  value={form.unit}
+                  aria-label={t("unit_label")}
+                  data-testid="offer-unit-select"
+                  onChange={(e) => set({ unit: e.target.value })}
+                  className="border border-border rounded-[10px] px-3 py-2 text-sm bg-surface"
+                >
+                  <option value="">{t("unit_label")}</option>
+                  {THRESHOLD_UNITS.map((u) => (
+                    <option key={u} value={u}>{t(`units.${u}`)}</option>
+                  ))}
+                </select>
               </div>
+              {pairBroken && (
+                <p className="text-xs text-red-600 mt-1" data-testid="offer-pair-error">
+                  {t("threshold_pair_required")}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="offer-headline" className="block text-sm text-muted mb-1">
+                {t("headline_label")}
+              </label>
+              <p className="text-xs text-fg-muted mb-1">{t("headline_hint")}</p>
+              <input
+                id="offer-headline"
+                type="text"
+                maxLength={MAX_OFFER_HEADLINE}
+                value={form.headline}
+                onChange={(e) => set({ headline: e.target.value })}
+                placeholder={t("headline_placeholder")}
+                className="w-full border border-border rounded-[10px] px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="offer-expires" className="block text-sm text-muted mb-1">
+                {t("expires_label")}
+              </label>
+              <p className="text-xs text-fg-muted mb-1">{t("expires_hint")}</p>
+              <input
+                id="offer-expires"
+                type="date"
+                value={form.expires}
+                data-testid="offer-expires-input"
+                onChange={(e) => set({ expires: e.target.value })}
+                className="border border-border rounded-[10px] px-3 py-2 text-sm"
+              />
+              {missingExpiry && (
+                <p className="text-xs text-red-600 mt-1" data-testid="offer-expiry-error">
+                  {t("expires_required")}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -1999,6 +2294,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       <button
         onClick={handleSave}
         disabled={saving || !dirty || blocked}
+        data-testid="offer-save"
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         <span aria-live="polite" aria-atomic="true">

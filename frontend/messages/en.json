@@ -714,7 +714,10 @@
       "aria_verified": "Verified business. {tooltip}",
       "aria_verified_plain": "Verified business",
       "verified_popover_title": "Verified business",
-      "verified_popover_body": "Every business on Mehamakor is manually approved and operates under license.",
+      "verified_popover_body_license": "Manually approved after checking a valid license.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_exemption": "Manually approved after checking license-exemption documents.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_cosmetics": "Manually approved after checking cosmetics-sector documents.{hasDate, select, yes { Checked on {date}.} other {}}",
+      "verified_popover_body_generic": "Manually approved.{hasDate, select, yes { Checked on {date}.} other {}}",
       "verified_popover_link": "How do we verify?"
     },
     "detail": {
@@ -846,7 +849,18 @@
         "vacation_msg": "Send a message — they will respond soon"
       },
       "order_window": {
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen"
+        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
+        "schedule_heading": "When orders are accepted",
+        "schedule_subtitle": "The days and hours this business accepts orders",
+        "days": {
+          "sun": "Sunday",
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday"
+        }
       }
     },
     "card": {
@@ -872,6 +886,58 @@
         "overflow_heading": "More about this business"
       },
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
+    },
+    "offer": {
+      "types": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text": {
+        "free_delivery_above": "Free delivery",
+        "gift_above": "Gift on every order",
+        "first_order": "First-order benefit",
+        "pickup_discount": "Self-pickup discount"
+      },
+      "text_with": {
+        "free_delivery_above": "Free delivery on orders over {amount}",
+        "gift_above": "Gift on orders over {amount}",
+        "first_order": "First-order benefit on orders over {amount}",
+        "pickup_discount": "Self-pickup discount on orders over {amount}"
+      },
+      "units": {
+        "ils": "₪",
+        "units": "units",
+        "liters": "L",
+        "kg": "kg"
+      },
+      "unit_amount": {
+        "ils": "{count} ₪",
+        "units": "{count, plural, one {# unit} other {# units}}",
+        "liters": "{count} L",
+        "kg": "{count} kg"
+      },
+      "card_title": "Offer",
+      "card_subtitle": "One active offer at a time, with an end date.",
+      "scope_helper": "Your offer appears on your page and on your card in listings. You can remove it any time, and it disappears on its own at the end date.",
+      "type_label": "Offer type",
+      "type_none": "No active offer",
+      "threshold_label": "Over what amount or quantity? (optional)",
+      "threshold_hint": "Shown to customers as part of the offer sentence. Leave empty for an unconditional offer.",
+      "threshold_placeholder": "10",
+      "unit_label": "Unit",
+      "headline_label": "Your own line (optional)",
+      "headline_hint": "Shown under the offer on your page. Up to 60 characters, no emoji.",
+      "headline_placeholder": "The gift: a small jar of honey",
+      "expires_label": "Valid until",
+      "expires_hint": "Required. After this date the offer disappears from the site on its own.",
+      "expires_required": "Please choose an end date for the offer",
+      "threshold_pair_required": "The amount or quantity and its unit are set together — both or neither",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "save_cta": "Save",
+      "save_error": "Save failed. Please try again."
     }
   },
   "recipes": {
@@ -1876,16 +1942,6 @@
         "submitting": "Sending...",
         "submit": "Reject"
       },
-      "badges": {
-        "rabanut": "Rabbinate kosher",
-        "badatz": "Badatz",
-        "chalak": "Chalak",
-        "mehadrin": "Mehadrin",
-        "organic_kosher": "Organic kosher",
-        "shmitta": "Shmita",
-        "kilayim": "Without kilayim",
-        "artisan_dairy": "Farm dairy products"
-      },
       "reminders": {
         "title": "Certificate expiry reminders",
         "subtitle": "Businesses whose kashrut certificate expires within 30 days. Always previewed before sending.",
@@ -2677,7 +2733,7 @@
         "tooltip": "Mehadrin kosher supervised by the Beit Din Tzedek"
       },
       "chalak": {
-        "label": "Chalak",
+        "label": "Halak (Glatt) meat",
         "tooltip": "Chalak beef per Sephardic tradition"
       },
       "mehadrin": {
@@ -2994,6 +3050,10 @@
     "address_search": {
       "placeholder": "Search address...",
       "no_results_hint": "No suggestions found for this address. You can type it in manually — it will be saved as usual."
+    },
+    "en_notice": {
+      "body": "Business listings are in Hebrew — searching in English returns no results.",
+      "cta": "Switch to Hebrew"
     }
   },
   "favorites": {
@@ -3937,10 +3997,9 @@
         "tooltip_line_today": "Available today = fresh inventory now.",
         "tooltip_line_full": "Busy this week = appears but marked.",
         "tooltip_line_vacation": "On a break = hidden until a date you choose.",
-        "heading": "Availability",
+        "heading": "Current status",
         "info_label": "What's the difference between the states?",
-        "intro": "Choose the status to display to customers on the card and the business page.",
-        "group_aria": "Availability",
+        "intro": "A temporary update that overrides the schedule — like a note on the door.",
         "options": {
           "accepting_orders": "Open to orders",
           "available_today": "Available today",
@@ -4218,6 +4277,11 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
       },
+      "grassFed": {
+        "heading": "Pasture raised",
+        "label": "Grass-fed",
+        "scope_helper": "Adds the grass-fed chip to your business on the map page. Shown as your own declaration."
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",
@@ -4257,6 +4321,13 @@
         "area_fee_hint": "Optional — if left empty, we show the business-wide delivery fee",
         "area_fee_placeholder": "20",
         "area_fee_aria": "Delivery fee for {city}",
+        "area_fee_inherits": "Inherits {fee} ₪",
+        "area_fee_inherits_free": "Inherits: free delivery",
+        "default_block_title_nationwide": "Nationwide delivery fee",
+        "default_block_hint_nationwide": "This fee applies to all your deliveries.",
+        "area_fee_free": "Free delivery",
+        "default_block_title": "Default for all areas",
+        "default_block_hint": "This fee applies to every delivery area. You can override it per area in the list below.",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4264,7 +4335,8 @@
       },
       "hours": {
         "heading": "Opening hours",
-        "subtitle": "Your opening hours, shown on your business page.",
+        "subtitle": "When the business is physically open. Shown on the map and the business page.",
+        "hours_empty_hint": "Hours set here appear on the business page and are sent to search engines.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
         "revert_cta": "Discard changes",
@@ -4280,17 +4352,23 @@
         "preset": "Sun–Thu 9:00–18:00, Fri until 14:00",
         "clear_cta": "Clear hours",
         "unparseable": "The existing format wasn't recognised — please re-enter the hours",
-        "invalid_range": "Closing time must be after opening time"
+        "invalid_range": "Closing time must be after opening time",
+        "invalid_overlap": "Ranges must be in order and must not overlap",
+        "add_range": "Add range",
+        "remove_range": "Remove range"
       },
       "order_window": {
-        "heading": "Order window",
-        "subtitle": "Until what time each day you accept orders. Separate from opening hours.",
-        "empty_state": "No order window set — your business page won't show order hours.",
+        "heading": "When you take orders",
+        "subtitle": "Your fixed weekly schedule. A day left unmarked is closed for orders that day.",
+        "empty_state": "You haven't set when you take orders yet. Pick days and hours to show them on your page.",
         "toggle_label": "accepting orders this day",
         "toggle_closed": "Not accepting orders",
         "from_label": "opening time",
         "to_label": "closing time",
         "invalid_range": "Closing time must be after opening time",
+        "invalid_overlap": "Ranges must be in order and must not overlap",
+        "add_range": "Add range",
+        "remove_range": "Remove range",
         "save_cta": "Save",
         "saving": "Saving…",
         "save_success": "Order window saved",
@@ -4880,8 +4958,8 @@
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
-    "availability": "A temporary state you set by hand — a holiday or a pause, for example. Shown on your business page.",
-    "order_window": "The fixed weekly schedule in which you accept orders — Sunday–Wednesday 9:00–14:00, for example. Shown on your business page."
+    "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
+    "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip."
   },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",

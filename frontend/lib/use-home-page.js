@@ -428,12 +428,35 @@ export function useHomePage() {
   // `?delivery=1` short name is home's OWN serializer (updateURL below) and is
   // deliberately untouched here: home's reading of attribute params is out of
   // scope for this ticket (MEH-1083).
+  // MEH-1826: the hop also carries the ACTIVE LOCATION CONTEXT. Before this,
+  // "עסקים באזור ירושלים · יום שישי" on home became a bare ?has_delivery=1 on
+  // arrival — Baymard's scope-jumping anti-pattern, where crossing a surface
+  // silently widens the result set and reads as "I left the place I was in".
+  //
+  // The param NAMES here are /producers' names, not home's, and the two do NOT
+  // agree — this is the trap the ticket flagged as "verify, do not assume":
+  //   home's own serializer (updateURL below)  writes  ?city= + ?day=
+  //   ProducersClient hydrates (post-MEH-1825)  reads  ?city= + ?delivery_day=
+  // Emitting home's `day` here would be silently dropped on arrival: the value
+  // is well-formed, no error fires anywhere, and the day filter simply is not
+  // applied. Verified against the merged MEH-1825 code, ProducersClient.jsx:89.
+  //
+  // The day is nested INSIDE the city branch on purpose. It mirrors the
+  // precondition /producers enforces on hydration (a day with no city is
+  // dropped there), so a day-without-city URL is never even constructed rather
+  // than being constructed and then discarded on the far side.
   const navigateToChip = (key) => {
     // MEH-1282: still a filter action — clear the geo-empty notice before leaving,
     // so a back-navigation doesn't land on a stale near-me notice.
     setGeoEmptyNotice(false);
     trackEvent("home_chip_navigate", { chip: key });
-    localeRouter.push(`/producers?${key}=1`);
+    const params = new URLSearchParams();
+    params.set(key, "1");
+    if (filters.delivery_city) {
+      params.set("city", filters.delivery_city);
+      if (filters.delivery_day) params.set("delivery_day", filters.delivery_day);
+    }
+    localeRouter.push(`/producers?${params.toString()}`);
   };
 
   // MEH-1269: geographic listing fetch with a one-shot empty-guard. Runs the

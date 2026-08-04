@@ -1,0 +1,19 @@
+PASS 375/delivery-checkbox-present: {"actual":1,"expected":1}
+PASS 375/precondition-delivery-on: {"actual":true,"expected":true}
+PASS 375/precondition-nationwide-on: {"actual":true,"expected":true}
+PASS 375/nationwide-control-unmounted: {"actual":0,"expected":0}
+PASS 375/save-was-submitted: {"actual":true,"expected":true}
+PASS 375/payload-delivery-off: {"actual":false,"expected":false}
+PASS 375/payload-nationwide-cleared: {"actual":false,"expected":false}
+PASS 375/payload-areas-cleared: {"actual":[],"expected":[]}
+PASS 375/payload-excluded-cleared: {"actual":[],"expected":[]}
+PASS 1440/delivery-checkbox-present: {"actual":1,"expected":1}
+PASS 1440/precondition-delivery-on: {"actual":true,"expected":true}
+PASS 1440/precondition-nationwide-on: {"actual":true,"expected":true}
+PASS 1440/nationwide-control-unmounted: {"actual":0,"expected":0}
+PASS 1440/save-was-submitted: {"actual":true,"expected":true}
+PASS 1440/payload-delivery-off: {"actual":false,"expected":false}
+PASS 1440/payload-nationwide-cleared: {"actual":false,"expected":false}
+PASS 1440/payload-areas-cleared: {"actual":[],"expected":[]}
+PASS 1440/payload-excluded-cleared: {"actual":[],"expected":[]}
+FAILURES: 0

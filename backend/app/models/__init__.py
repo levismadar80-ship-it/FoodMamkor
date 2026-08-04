@@ -21,6 +21,7 @@ from app.models.models import (
     ProducerCategory,
     ProducerFollower,
     ProducerLocation,
+    ProducerOffer,
     ProducerPageView,
     ProducerRecipe,
     ProducerReview,
@@ -70,4 +71,6 @@ __all__ = [
     "AlertLog",
     # MEH-1395 (MEH-1388 chunk 1) — physical presence points (Expand-phase)
     "ProducerLocation",
+    # MEH-1823 (chunk 1) — one typed, expiring offer per business
+    "ProducerOffer",
 ]

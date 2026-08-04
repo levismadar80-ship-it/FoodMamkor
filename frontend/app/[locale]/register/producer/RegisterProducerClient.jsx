@@ -582,8 +582,16 @@ function RegisterProducerPageBody() {
       // the refreshUser() await below — moving it after reintroduces the
       // window where the gate outranks the success screen.
       setSubmitted(true);
-      localStorage.removeItem(DRAFT_KEY);
       if (isUpgradeResult) {
+        // MEH-1815: the draft is dropped ONLY here, where a token proves the
+        // server actually persisted the business. The non-upgrade ack is
+        // anti-enumeration output (MEH-328): identical bytes whether the
+        // email was free or already taken, so a 200 on that path does NOT
+        // mean the Producer was written — on a collision the backend
+        // discards it entirely. Clearing on every 200 is what silently ate
+        // a full wizard fill. The draft now waits in localStorage and the
+        // existing banner offers it back; "לא" still drops it (dismissDraft).
+        localStorage.removeItem(DRAFT_KEY);
         // UPGRADE PATH (UNCHANGED post-MEH-328): store token, refresh
         // auth context, surface whatsapp_sent on step 3.
         localStorage.setItem("token", res.data.access_token);

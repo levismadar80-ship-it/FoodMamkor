@@ -1,0 +1,17 @@
+PASS panel-row-count-375: {"actual":5,"expected":5}
+PASS every-row-label-desc-pair-correct-375: {"actual":[],"expected":[]}
+PASS no-row-missing-its-description-375: {"actual":0,"expected":0}
+PASS kashrut-row-label-375: {"actual":"בשר חלק (גלאט)","expected":"בשר חלק (גלאט)"}
+PASS kashrut-row-not-generic-fallback-375: {"actual":false,"expected":false}
+PASS panel-within-viewport-x-375: {"actual":true,"expected":true}
+PASS panel-within-viewport-y-375: {"actual":true,"expected":true}
+  geometry-375: rect={"top":504,"bottom":812,"left":0,"right":375} viewport=375x812
+PASS panel-row-count-1440: {"actual":5,"expected":5}
+PASS every-row-label-desc-pair-correct-1440: {"actual":[],"expected":[]}
+PASS no-row-missing-its-description-1440: {"actual":0,"expected":0}
+PASS kashrut-row-label-1440: {"actual":"בשר חלק (גלאט)","expected":"בשר חלק (גלאט)"}
+PASS kashrut-row-not-generic-fallback-1440: {"actual":false,"expected":false}
+PASS panel-within-viewport-x-1440: {"actual":true,"expected":true}
+PASS panel-within-viewport-y-1440: {"actual":true,"expected":true}
+  geometry-1440: rect={"top":192.125,"bottom":452.375,"left":715.734375,"right":1229.640625} viewport=1440x950
+FAILURES: 0

@@ -542,6 +542,8 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         className={`w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-ring ${hasAvatar ? "" : "bg-primary"}`}
       >
         {hasAvatar ? (
+          // raw img: OAuth provider avatar — host not in remotePatterns
+          // (frozen this ticket). Same class as BottomNav/AccountSheet.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
         ) : (

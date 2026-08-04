@@ -350,6 +350,9 @@ export default function BottomNav() {
                 // old raw-hex green → bg-primary token); image when one is set.
                 <span className="relative z-10 w-6 h-6 rounded-full overflow-hidden inline-flex items-center justify-center bg-primary">
                   {hasAvatar ? (
+                    // raw img: OAuth provider avatar (auth.py:814 stores Google's
+                    // `picture`); its host is not in next.config.js
+                    // images.remotePatterns, frozen by this ticket.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (

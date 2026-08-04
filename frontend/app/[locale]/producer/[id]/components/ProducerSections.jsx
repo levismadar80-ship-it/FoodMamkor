@@ -12,6 +12,7 @@ import ImageWithFallback from "@/components/ImageWithFallback";
 import { formatPrice, formatPriceRange } from "@/lib/utils";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
+import OfferBadge from "@/components/OfferBadge";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -21,6 +22,9 @@ import OpeningHours from "@/components/OpeningHours";
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 // MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
 import OwnerCard from "./OwnerCard";
+// MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
+// OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
+import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
@@ -407,6 +411,16 @@ export default function ProducerSections({
           (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
           order CTA stays tone="tertiary" so it never competes with the contact
           card's single primary CTA. */}
+      {/* MEH-1823: the active offer sits ABOVE the delivery block, and outside
+          its gate on purpose — an offer is not a delivery fact, and a business
+          with an offer but no delivery (pickup_discount, first_order) would
+          otherwise never show it. Renders nothing when there is no offer. */}
+      {producer.active_offer && (
+        <div className="mt-8" data-testid="offer-badge-section">
+          <OfferBadge offer={producer.active_offer} variant="badge" />
+        </div>
+      )}
+
       {(producer.offers_delivery ||
         producer.delivery_areas?.length > 0 ||
         producer.pickup_points) && (
@@ -483,6 +497,19 @@ export default function ProducerSections({
           </div>
         </FadeInSection>
       )}
+
+      {/* MEH-1875: the weekly order schedule, immediately BEFORE the location
+          section that holds the store-hours card — the two "when" blocks read
+          together, and the page IA keeps location as the last content section.
+          It is its OWN section rather than a card inside "הגעה ומיקום" for two
+          reasons: an order window is not a location fact (a delivery-only
+          business with no address would otherwise never show its schedule,
+          because that section is gated on location||opening_hours), and a
+          visitor scanning for "when can I order" does not look under a heading
+          that says "arrival and location". Schedule only — the open/closed
+          verdict stays in ProducerHeader alone (MEH-1305 A). Self-gating:
+          renders nothing at all when order_window is null. */}
+      <OrderWindowScheduleBlock orderWindow={producer.order_window} />
 
       {/* MEH-1146 chunk B: location is the LAST content section. MEH-1334
           chunk 3: merged into ONE "הגעה ומיקום" section (mockup Z3) — heading
