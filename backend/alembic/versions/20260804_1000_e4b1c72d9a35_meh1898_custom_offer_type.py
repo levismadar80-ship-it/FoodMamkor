@@ -30,8 +30,9 @@ step were ever skipped, buying nothing measurable on a table this small.
 
 The condition text is kept BYTE-IDENTICAL to `ProducerOffer.__table_args__` in
 backend/app/models/models.py, including the string-literal line break. Both
-places declare it — the MEH-272 precedent and the same choice revision
-b6e1d94a3f27 made when it created the table — because `alembic check` does NOT
+places declare it — the defence-in-depth CHECK precedent, and the same choice
+revision b6e1d94a3f27 made when it created the table — because `alembic check`
+does NOT
 diff CHECK conditions. A drift between the two would therefore be invisible to
 CI: a fresh `create_all` test DB would accept `custom` while a migrated
 staging DB rejected it, and only a production 500 would say so.
@@ -60,8 +61,11 @@ from alembic import op
 revision: str = "e4b1c72d9a35"
 # Chain head derived by AST-parsing the module-level `revision` /
 # `down_revision` assignments across backend/alembic/versions/ and taking the
-# revision nothing points back to — d8c3f1a75e29 (MEH-1849
-# nationwide_requires_delivery, 20260803_1200). AST and not a regex, for the
+# revision nothing points back to — d8c3f1a75e29
+# (20260803_1200_d8c3f1a75e29_meh1849_nationwide_requires_delivery.py). Cited
+# by filename rather than by bare Linear identifier: this docstring is pasted
+# verbatim into the PR body, where an identifier auto-links and flips an
+# already-Done issue back to In Progress (rule 29). AST and not a regex, for the
 # reason b6e1d94a3f27 records: several revisions quote `down_revision = ...`
 # inside their DOCSTRINGS, and a text regex counts those as real edges and
 # mis-reports the graph as having two heads. SINGLE head, so this extends the
