@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, render, screen, fireEvent } from "@testing-library/react";
 import { useHomePage } from "@/lib/use-home-page";
-import { ActiveFilterChip, DeliveryDayRow } from "@/app/[locale]/home/ActiveFilterChip";
+import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
+import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import api from "@/lib/api";
 
 // MEH-1645 — delivery-day filter on the home surface.

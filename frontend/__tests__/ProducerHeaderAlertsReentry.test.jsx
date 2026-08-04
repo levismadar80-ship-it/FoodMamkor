@@ -29,7 +29,6 @@ vi.mock("@/lib/api", () => ({
   default: { get: () => Promise.resolve({ data: { reviews: [] } }) },
 }));
 
-vi.mock("@/components/AvailabilityBadge", () => ({ default: () => <div /> }));
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div /> }));
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div /> }));

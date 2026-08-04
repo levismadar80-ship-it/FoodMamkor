@@ -25,6 +25,11 @@ from sqlalchemy.orm import backref, relationship
 
 from app.database import Base
 
+# MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
+# same tz basis as the vacation_until validator. clock.py imports only
+# app.config, so this adds no cycle.
+from app.utils.clock import israel_today
+
 
 class City(Base):
     """MEH-213: canonical Israeli city list seeded from data.gov.il.
@@ -116,6 +121,12 @@ class Producer(Base):
     top_product_name = Column(
         String(200), nullable=True
     )  # featured product for cards/map
+    # LEGACY(2026-09-01, MEH-1855)
+    # MEH-1857: the alias below carried no date and no ticket, so nothing could
+    # ever make it expire. Ownership is also INVERTED today — the public page
+    # reads this alias (ProducerSections.jsx) while the owner writes the
+    # canonical price_range, so a price she fills in renders nowhere. MEH-1855
+    # collapses the pair; the marker makes the deadline enforceable.
     starting_price_label = Column(
         String(50), nullable=True
     )  # legacy alias for price_range
@@ -218,14 +229,22 @@ class Producer(Base):
     opening_hours = Column(String, nullable=True)
     # MEH-1543: optional weekly ORDER-acceptance window — distinct from
     # opening_hours (store hours) and from ProducerLocation.opening_hours
-    # (pickup-point hours, MEH-1509). Format:
-    #   {"sunday": {"open": "09:00", "close": "14:00"}, ...}
+    # (pickup-point hours, MEH-1509). Format (MEH-1869 — a LIST per day):
+    #   {"sunday": [{"open": "09:00", "close": "13:00"},
+    #               {"open": "16:00", "close": "20:00"}], ...}
     # keys a subset of sunday..saturday; a day absent = orders closed that day.
+    # Up to 3 ranges per day, ascending and non-overlapping (a lunch break, or
+    # Friday morning + מוצ"ש). The pre-MEH-1869 single-dict form
+    # ({"sunday": {"open", "close"}}) is still ACCEPTED on write and normalised
+    # to a one-element list, and every reader normalises both — so rows written
+    # before the cutover keep working untouched. This was a JSONB VALUE-shape
+    # change only: no column change, hence NO Alembic revision for MEH-1869.
     # NULL = feature unused → nothing rendered. Backend only stores/validates/
     # returns; the "open now" derivation is client-side (MEH-1546). JSONB (not
     # JSON) so a future EXISTS/containment query stays cheap. Owner-writable via
     # producer_me PUT; validated in schemas.ProducerUpdate (day keys, HH:MM 24h,
-    # close>open → 422). Expand-only per ADR-007. Paired migration: f4a1e9c3b7d2.
+    # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
+    # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
     # MEH-213: location mode. Two independent booleans (not an enum) because
     # a producer can have BOTH a physical store AND offer delivery.
@@ -350,6 +369,47 @@ class Producer(Base):
     locations = relationship(
         "ProducerLocation", back_populates="producer", cascade="all, delete-orphan"
     )
+    # MEH-1823 (chunk 1): typed, expiring offers. At most one row is active at
+    # a time (unique partial index on producer_offers), but the relationship is
+    # a collection because expired/deactivated rows stay for history. Default
+    # lazy="select" and delete-orphan mirror delivery_areas above.
+    offers = relationship(
+        "ProducerOffer", back_populates="producer", cascade="all, delete-orphan"
+    )
+
+    @property
+    def active_offer(self):
+        """MEH-1823 chunk 2: the one offer that is live RIGHT NOW, or None.
+
+        This is what `ProducerListOut.active_offer` serializes, and it is the
+        single place the expiry rule is applied — so an expired offer cannot
+        leave the API through any read path, rather than each consumer being
+        trusted to re-check the date.
+
+        `israel_today()` and not `date.today()`: the same tz reasoning as
+        _validate_vacation_until (schemas.py). `>=` because an offer expiring
+        today is still live today — it stops being live tomorrow.
+
+        Reads the loaded `offers` collection instead of issuing a query, so the
+        LIST paths that `selectinload(Producer.offers)` pay no N+1. The unique
+        partial index guarantees at most one row satisfies `is_active`, so the
+        loop returns at most one. It does load inactive history rows alongside;
+        acceptable while an owner has one offer at a time, and the place to
+        revisit if that ever stops being true.
+        """
+        today = israel_today()
+        for offer in self.offers:
+            # BOTH ends of the window, not just the far one. Omitting the
+            # starts_at half served a scheduled offer as live from the moment it
+            # was created — measured: starts_at 2026-09-01 returned on
+            # 2026-08-02. The dashboard does not expose starts_at yet, so it was
+            # unreachable through the UI, but the API accepts it and the
+            # revision docstring already promised "a future date is a scheduled
+            # offer". The code contradicted its own documentation.
+            started = offer.starts_at is None or offer.starts_at <= today
+            if offer.is_active and started and offer.expires_at >= today:
+                return offer
+        return None
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
     __table_args__ = (
@@ -391,6 +451,20 @@ class Producer(Base):
         CheckConstraint(
             "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
             name="delivery_nationwide_xor_cities",
+        ),
+        # MEH-1849: nationwide scope without the delivery switch is a
+        # contradiction — the strongest delivery configuration on a business
+        # that declares it does not deliver. Mirrors CHECK
+        # producer_nationwide_requires_delivery, added in d8c3f1a75e29.
+        # The write-path half of MEH-1848, which made producer_listing.py's
+        # two delivery predicates consult offers_delivery: that stops the row
+        # being SHOWN, this stops it EXISTING (seeds, imports, psql).
+        # NOTE: a CHECK cannot span tables, so the sibling contradiction
+        # "delivery_areas rows + offers_delivery=false" is enforced ONLY in
+        # the query layer.
+        CheckConstraint(
+            "NOT (delivery_nationwide AND NOT offers_delivery)",
+            name="producer_nationwide_requires_delivery",
         ),
         # MEH-1255: an exclusion list without nationwide mode is contradictory.
         # Column is NOT NULL so the equality form is NULL-free (no
@@ -564,6 +638,13 @@ class Product(Base):
     )
     name = Column(String(200), nullable=False)
     description = Column(Text)
+    # LEGACY(2026-09-01, MEH-1857)
+    # MEH-1857: the "MEH-295 follow-up" this line points at DOES NOT EXIST in
+    # Linear (checked 02/08) — the classic shape this guard exists to catch, a
+    # promise addressed to a ticket nobody opened. The marker references THIS
+    # ticket until a real removal ticket is created; whoever opens it should
+    # swap the id here. Separate instance from producers.starting_price_label
+    # above (MEH-1855) — same class, different column.
     price_range = Column(String(50))  # legacy: removal tracked in MEH-295 follow-up
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
@@ -720,6 +801,132 @@ class ProducerLocation(Base):
         CheckConstraint(
             "location_precision IN ('exact', 'approximate')",
             name="producer_location_precision",
+        ),
+    )
+
+
+class ProducerOffer(Base):
+    """MEH-1823 chunk 1: ONE owner-declared, typed, expiring offer per business.
+
+    An offer is a bounded, dated object with its own lifecycle — it expires and
+    it is replaced — so it is a table, not columns on `producers`. The four
+    types are a closed vocabulary:
+
+      free_delivery_above  — free delivery over a threshold
+      gift_above           — a gift with a purchase over a threshold
+      first_order          — a first-order benefit
+      pickup_discount      — a discount on self-pickup
+
+    `threshold_value` + `threshold_unit` exist because the evidence that opened
+    the ticket had nowhere to live: a litres/units/kg threshold cannot be stored
+    in `producers.free_delivery_above`, which is INTEGER shekels (models.py:262).
+    The pair is both-or-neither — a number with no unit is unrenderable, a unit
+    with no number is meaningless.
+
+    `expires_at` is NOT NULL, and that is the property protecting the business
+    rather than the reader: an always-on offer converges on discounting buyers
+    who would have paid full price. An offer that cannot expire is a permanent
+    discount nobody decided to give.
+
+    **The threshold is optional for EVERY type, and is deliberately NOT gated by
+    offer_type — at this layer or any other.** An automated reviewer proposed a
+    cross-constraint forcing a threshold on free_delivery_above / gift_above and
+    forbidding it on the other two. It was rejected on 02/08 (Sapir) because the
+    forbidden combinations are real offers: "10% off pickup over ₪100" and
+    "first order over ₪150". Which types may carry a threshold is a product
+    question, not a data invariant, so there is no CHECK here and no
+    type-conditional branch in ProducerOfferCreate either. Do not add one
+    without a decision that overturns this note — five CHECKs is the agreed set.
+
+    All five CHECKs and the unique partial index are declared BOTH here (so a
+    fresh `create_all` test DB has them) AND in the paired Alembic revision —
+    the MEH-272 precedent (models.py:380-401) and the same choice
+    ProducerLocation made above. Alembic autogenerate does not diff CHECK
+    conditions, so there is no canonical-form worry for those; the INDEX
+    predicate does round-trip through `alembic check`, so its text is kept
+    byte-identical to the revision's `postgresql_where`.
+
+    # DO NOT add a column here without the paired Alembic revision — Alembic is
+    #        the sole schema authority since MEH-267 (revision b6e1d94a3f27).
+
+    Does NOT: serialize, validate, or expose anything. Pydantic schemas, the
+    owner write path and the public read path are chunk 2 — see
+    producer_me.py's delivery_areas pattern for the shape they will take.
+
+    History: MEH-1823 (creation, chunk 1/3).
+    """
+
+    __tablename__ = "producer_offers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    offer_type = Column(Text, nullable=False)
+    # NULL together with threshold_unit = "no threshold"; > 0 when stated.
+    threshold_value = Column(Integer, nullable=True)
+    threshold_unit = Column(Text, nullable=True)
+    headline = Column(Text, nullable=True)
+    # NULL = active now. A future date is a scheduled offer; nothing reads it
+    # in chunks 2-3.
+    starts_at = Column(Date, nullable=True)
+    expires_at = Column(Date, nullable=False)
+    is_active = Column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
+    created_at = Column(
+        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        server_default=text("now()"),
+    )
+
+    producer = relationship("Producer", back_populates="offers")
+
+    __table_args__ = (
+        CheckConstraint(
+            "offer_type IN ('free_delivery_above', 'gift_above', "
+            "'first_order', 'pickup_discount')",
+            name="producer_offer_type",
+        ),
+        CheckConstraint(
+            "threshold_unit IN ('ils', 'units', 'liters', 'kg')",
+            name="producer_offer_threshold_unit",
+        ),
+        # Equality form, not two OR'd implications: it is total, so neither
+        # direction can be added later and forgotten, and IS NULL always
+        # yields true/false (no three-valued-logic edge).
+        CheckConstraint(
+            "(threshold_value IS NULL) = (threshold_unit IS NULL)",
+            name="producer_offer_threshold_pair",
+        ),
+        # A stated threshold is positive. "Over 0" is not a threshold — it is
+        # unconditional, which NULL already spells; rejecting 0 removes a
+        # duplicate spelling rather than a meaning.
+        CheckConstraint(
+            "threshold_value IS NULL OR threshold_value > 0",
+            name="producer_offer_threshold_positive",
+        ),
+        # A dated window runs forwards. Strict `>`: a same-day window would
+        # expire on the day it opens.
+        CheckConstraint(
+            "starts_at IS NULL OR expires_at > starts_at",
+            name="producer_offer_date_order",
+        ),
+        # At most ONE active offer per business — and the lookup index for that
+        # active row, which is the same index. A non-unique twin would carry
+        # identical columns and predicate: double the write cost, no read gain.
+        Index(
+            "uq_producer_offers_active_per_producer",
+            "producer_id",
+            unique=True,
+            postgresql_where=text("is_active"),
         ),
     )
 

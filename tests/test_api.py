@@ -117,8 +117,8 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -347,8 +347,8 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -360,6 +360,11 @@ class TestAuth:
         assert captured.get("to") == "producer_pw@test.com"
         assert captured.get("name") == "Dana"
         assert captured.get("provider") == "password"
+        # MEH-1815: the producer branch must request the producer copy. The
+        # consumer variant says only "you already have an account" and never
+        # mentions that the entire business payload was discarded, which is
+        # the silent data loss this ticket exists to close.
+        assert captured.get("flow") == "producer"
 
     def test_register_producer_existing_google_dispatches_dup_email(
         self, client, db, monkeypatch
@@ -379,8 +384,8 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -391,6 +396,7 @@ class TestAuth:
         assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
         assert captured.get("provider") == "google"
         assert captured.get("name") == "Galya"
+        assert captured.get("flow") == "producer"  # MEH-1815
 
     def test_register_producer_no_longer_returns_token_on_signup(self, client):
         """MEH-328 Chunk B: non-upgrade signup body has no token / no
@@ -722,8 +728,8 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -757,8 +763,8 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider: captured.update(
-                to=to, name=name, provider=provider
+            lambda to, name, provider, flow="consumer": captured.update(
+                to=to, name=name, provider=provider, flow=flow
             ),
         )
         resp = client.post(
@@ -769,6 +775,7 @@ class TestRegistrationCoverageGaps:
         assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
         assert captured.get("provider") == "apple"
         assert captured.get("name") == "Avigail"
+        assert captured.get("flow") == "producer"  # MEH-1815
 
     # --- gap 6: the provider=None defensive arm --------------------------
 
@@ -2332,19 +2339,40 @@ class TestReservedSlugs:
         assert resp.status_code == 400
         assert "שמור" in resp.json()["detail"]
 
-    def test_producer_me_update_with_reserved_slug_returns_400(self, client, db):
-        """A producer user cannot set their own slug to a reserved word."""
+    def test_producer_me_update_cannot_set_slug_at_all(self, client, db):
+        """MEH-1856: a producer user cannot set her own slug — reserved or not.
+
+        This REPLACES test_producer_me_update_with_reserved_slug_returns_400,
+        which asserted a 400 for the reserved word specifically. That 400 came
+        from a validate-and-deduplicate step that ran BEFORE the writable-field
+        whitelist; with `slug` out of the whitelist the step was removed, since
+        keeping it would have left the endpoint rejecting a value it no longer
+        writes (`slug: "about"` → 400, `slug: "anything"` → 200-and-ignored).
+
+        The guarantee is now stronger, so this asserts the stronger thing: the
+        request succeeds and the slug is UNCHANGED. A 400 only ever proved the
+        reserved word was refused; an unchanged column proves nothing was
+        written on either path. Admin/import keep their own reserved-slug
+        checks — covered by the sibling tests in this class.
+        """
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
         db.commit()
-        resp = client.put(
-            "/producers/me",
-            json={"slug": "admin"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 400
-        assert "שמור" in resp.json()["detail"]
+        original_slug = producer.slug
+
+        for attempted in ("admin", "a-perfectly-fine-slug"):
+            resp = client.put(
+                "/producers/me",
+                json={"slug": attempted},
+                headers=auth_header(user),
+            )
+            assert resp.status_code == 200, resp.text
+            db.refresh(producer)
+            assert producer.slug == original_slug, (
+                f"slug changed to {producer.slug!r} after PUT with {attempted!r} — "
+                "the owner write path for slug must be closed"
+            )
 
     def test_non_reserved_slug_is_accepted(self, client, db):
         admin = make_user(db, role="admin")

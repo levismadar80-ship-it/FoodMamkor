@@ -12,14 +12,21 @@
  * + desktop-project-only guard. Login happens IN the browser via the
  * same-origin /api proxy (mirrors lib/auth-context.js), so the
  * fingerprint + refresh cookies land in the browser jar exactly like a
- * real session (MEH-327 binding makes a bearer-only injection 401).
+ * real session. The MEH-327 binding note that lived here now lives in
+ * e2e/auth-fixture.ts, because it governs flows/19 and 22 as well and its
+ * absence from those two is what made a token-only reuse look correct.
  */
 import { test, expect } from "@playwright/test";
+import { fixtureExists, fixturePath } from "../auth-fixture";
 
 const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD;
 
 test.describe("Admin recipes moderation queue (MEH-997)", () => {
+  // Loads the cookie jar as well as localStorage — see e2e/auth-fixture.ts for
+  // why the cookie is not optional (_check_fingerprint, auth.py:211-230).
+  test.use({ storageState: fixturePath("smoke-admin") });
+
   test.skip(
     !ADMIN_EMAIL || !ADMIN_PASSWORD,
     "SMOKE_ADMIN_EMAIL / SMOKE_ADMIN_PASSWORD not set — admin smoke skipped",
@@ -33,23 +40,14 @@ test.describe("Admin recipes moderation queue (MEH-997)", () => {
       "Admin sidebar assertions are desktop-project-only (mirrors spec 19)",
     );
 
-    // Browser-side login — sets the HttpOnly fingerprint/refresh cookies
-    // and the localStorage token the same way the real /login page does.
-    await page.goto("/login");
-    await page.evaluate(
-      async ({ email, password }) => {
-        const r = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-          credentials: "include",
-        });
-        if (!r.ok) throw new Error(`login failed: ${r.status}`);
-        const data = await r.json();
-        localStorage.setItem("token", data.access_token);
-      },
-      { email: ADMIN_EMAIL as string, password: ADMIN_PASSWORD as string },
-    );
+    // MEH-1858: was a third separate login as the SAME SMOKE_ADMIN account.
+    // The storageState below carries both the token and the __Secure-Fgp cookie
+    // it is bound to, which is what the removed block was hand-rolling.
+    // MEH-999: vars set but fixture absent = provisioning breakage, fail loud.
+    expect(
+      fixtureExists("smoke-admin"),
+      "SMOKE_ADMIN_* are set but e2e/.auth/smoke-admin.json is missing — global-setup did not provision it",
+    ).toBeTruthy();
 
     await page.goto("/admin/recipes");
 

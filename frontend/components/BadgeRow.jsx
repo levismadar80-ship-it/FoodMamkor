@@ -140,6 +140,36 @@ function formatTierDate(isoDate) {
   return `\u2066${d}.${m}.${y}\u2069`;
 }
 
+/**
+ * MEH-1843 — the hero/masthead popover body, derived from what was actually
+ * checked instead of one absolute sentence for everyone.
+ *
+ * The retired copy ("...עובר אישור ידני ופועל ברישיון") was false for two of the
+ * three doc types: an `exemption` business operates lawfully with NO licence
+ * (honey, raw produce), and `cosmetics` fell through to the same claim. That put
+ * the popover in direct conflict with /terms §5, which already disclaims any
+ * guarantee about licences.
+ *
+ * Exported because ImageGallery's masthead seal renders this same popover on the
+ * same producer page — one owner, so the two cannot drift. (A shared home in
+ * lib/ would read better; the shared-extraction axis is MEH-800's, so this stays
+ * a named export here rather than opening a new file under this ticket.)
+ *
+ * `hasDate` drives an ICU select rather than concatenation, so a missing
+ * verified_at drops the whole " נבדק ב-…" clause instead of leaving a dangling
+ * preposition or an empty placeholder.
+ */
+export function getVerifiedPopoverBody(producer, t) {
+  const date = formatTierDate(producer?.verified_at);
+  const key =
+    {
+      license: "verified_popover_body_license",
+      exemption: "verified_popover_body_exemption",
+      cosmetics: "verified_popover_body_cosmetics",
+    }[producer?.verification_doc_type] ?? "verified_popover_body_generic";
+  return t(key, { hasDate: date ? "yes" : "no", date: date ?? "" });
+}
+
 /** Locked tooltip per doc type — null = render chip without a popover. */
 function getVerifiedTooltip(producer, t) {
   const date = formatTierDate(producer?.verified_at);
@@ -197,13 +227,23 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
   // MEH-1334: the hero seal gets the richer verification popover — the manual
   // approval + licensing story (DNA-LOCK differentiator) was invisible behind
   // a date-only tooltip. Content = the LOCKED v3 copy exactly: title + body +
-  // link to /about#verification (MEH-1336 shipped the section — live target).
-  // The pre-existing MEH-762 doc-date line is intentionally dropped
-  // here — the locked copy is dateless (chunk-2 CLARIFY c). The verified SEAL
-  // itself only renders for verification_tier === "verified" (badges.js:140),
-  // so this popover can never make a false trust claim on a non-verified
-  // producer (CLARIFY a/b). Cards keep the compact date tooltip (surface
-  // unchanged) via the non-hero branch below.
+  // link out. MEH-1840: the link target moved /about#verification → /about/process
+  // — the acceptance-process page is the canonical "how we vet" surface, while the
+  // /about section is a summary. The #verification anchor stays live on /about
+  // (AboutClient.jsx) so existing deep-links keep resolving. Same retarget applied
+  // to the duplicate popover in ImageGallery.jsx (masthead seal) — the two must
+  // not diverge, they render identically on the same producer page.
+  // MEH-1334 chunk-2 (CLARIFY c) deliberately made this popover DATELESS and
+  // one-size-fits-all. MEH-1843 reverses both halves of that: the body is now
+  // per-doc-type and carries the check date again. Not a regression of that
+  // decision — a supersession of it, on newer grounds (copy-honesty guard +
+  // the /terms §5 conflict, since the flat "פועל ברישיון" claim was untrue for
+  // exemption and cosmetics businesses). The industry pattern it now follows —
+  // declared scope + a date + no promise — is Thumbtack/Airbnb/Yelp's.
+  // Unchanged from MEH-1334: the verified SEAL only renders for
+  // verification_tier === "verified" (badges.js:140), so this popover can never
+  // make a trust claim on a non-verified producer (CLARIFY a/b). Cards keep
+  // their own compact date tooltip via the non-hero branch below.
   if (surface === "hero") {
     return (
       <span role="listitem" className="inline-block">
@@ -219,9 +259,11 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
             <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
             {t("verified_popover_title")}
           </span>
-          <span className="block text-[13px] leading-relaxed">{t("verified_popover_body")}</span>
+          <span className="block text-[13px] leading-relaxed">
+            {getVerifiedPopoverBody(producer, t)}
+          </span>
           <LocaleLink
-            href="/about#verification"
+            href="/about/process"
             className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
           >
             {t("verified_popover_link")}
@@ -262,8 +304,10 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // (recommended → /about#editors-pick) turns its popover body into a link — the
   // locked tooltip copy becomes the clickable explainer to the criteria + the
   // ADR-030 "can't be bought" promise. Mirrors the verified seal's hero-only
-  // popover → /about#verification (MEH-1336); no new copy. Card surfaces keep the
-  // compact plain-text tooltip (and never mount a locale link).
+  // link-out popover above (which MEH-1840 retargeted to /about/process); no new
+  // copy. `recommended` still points at the /about#editors-pick anchor — that
+  // section has no standalone page, so the retarget did NOT apply to it.
+  // Card surfaces keep the compact plain-text tooltip (never mount a locale link).
   const linkOut = badge.aboutHref && surface === "hero";
   const popoverBody = linkOut ? (
     <LocaleLink

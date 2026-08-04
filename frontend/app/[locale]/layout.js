@@ -1,4 +1,5 @@
 import "../globals.css";
+import { Frank_Ruhl_Libre, DM_Sans, Cormorant_Garamond, Heebo } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
@@ -25,6 +26,72 @@ import {
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
+
+// MEH-1831: all FOUR Google-hosted families are self-hosted by next/font
+// instead of fetched from fonts.googleapis.com at runtime. Two things follow
+// from that and neither is cosmetic: there is no external request in front of
+// first text paint, and next/font emits a size-adjusted local fallback face per
+// family, so the swap from fallback to webfont no longer reflows text
+// (font CLS → 0).
+// Each family is exposed as a CSS variable on <html>; the consumers are
+// tailwind.config.js (fontFamily, which keeps the literal names behind the
+// variable as its fallback chain) and the three base rules in globals.css.
+// DO NOT add @font-face blocks for these families — next/font owns their
+// hosting, and a hand-written face would resolve to a different file.
+const frankRuhlLibre = Frank_Ruhl_Libre({
+  subsets: ["hebrew", "latin"],
+  weight: ["400", "700", "900"],
+  display: "swap",
+  variable: "--font-headline",
+});
+
+// `adjustFontFallback: false` is load-bearing, not a tuning preference.
+// next/font's generated "DM Sans Fallback" face is `src: local(Arial)` with NO
+// unicode-range, and Arial covers Hebrew — so with it enabled it sits between
+// DM Sans and Heebo in every body stack and captures every Hebrew glyph on the
+// site. Measured via CDP CSS.getPlatformFontsForNode: Hebrew body text
+// resolved to "Liberation Sans" (the Linux Arial metric clone) instead of
+// Heebo. DM Sans is latin-subset only here, so its swap can only ever affect
+// latin runs, and the CLS this option would buy is worth less than the Hebrew
+// typeface it silently replaces. Heebo below keeps ITS adjusted fallback —
+// that is the face Hebrew body text actually swaps from, so it is where the
+// zero-CLS win belongs on a Hebrew-first site.
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-body",
+  adjustFontFallback: false,
+});
+
+// MEH-1831: Heebo is the FOURTH Google-hosted family, and the ticket did not
+// know about it — it was loaded by `@import url(fonts.googleapis.com/...)` on
+// line 1 of globals.css, which the ticket's own removal assertion
+// (`grep --include="*.js*"`) cannot match. It is not decorative: DM Sans ships
+// latin glyphs only, so Heebo is the face that renders Hebrew body text
+// site-wide. Self-hosting it here removes the last render-blocking font
+// request without changing which typeface any glyph lands on.
+const heebo = Heebo({
+  subsets: ["hebrew", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-hebrew",
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-latin",
+});
+
+const FONT_VARIABLES = [
+  frankRuhlLibre.variable,
+  dmSans.variable,
+  cormorantGaramond.variable,
+  heebo.variable,
+].join(" ");
 
 const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
 const SITE_DESCRIPTION =
@@ -189,21 +256,32 @@ export default async function LocaleLayout({ children, params }) {
   const dir = locale === "he" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir}>
+    <html lang={locale} dir={dir} className={FONT_VARIABLES}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* MEH-1831: the fonts.googleapis/gstatic preconnects and the Google
+            Fonts stylesheet that used to sit here are gone — next/font serves
+            every family from our own origin, so there is nothing left to
+            preconnect to. */}
+        {/* MEH-1834: res.cloudinary.com serves every producer photo, including
+            the LCP image on the home grid and producer pages — it had no
+            preconnect while unsplash and the three OSM shards did. */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
         <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
       </head>
-      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-20 md:pb-0">
+      {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
+          NOTHING else, so the cookie banner — which floats in its own band
+          starting ABOVE that one (CookieBanner.jsx:68, bottom = safe-area+80px)
+          — covered whatever in-flow content sat at the end of the scroll. On
+          /register/producer step 2 that was the «הבא» button: a WCAG 2.2 AA
+          failure (SC 2.4.11, W3C failure F110), not a cosmetic one.
+          `--bottom-inset` (globals.css, under `html`) now owns that sum. It
+          still evaluates to exactly 5rem when the banner is absent, which is
+          what the old class said — so this is a superset, not a re-spacing. */}
+      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
