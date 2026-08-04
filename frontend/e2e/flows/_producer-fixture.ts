@@ -198,7 +198,12 @@ export async function assertDetailRendered(
     // character passes the middleware's isSlugShaped() and still fails the DB
     // comparison, and by eye the two spellings are identical.
     slugBytes = [...producer.slug]
-      .map((c) => (/[a-z0-9-]/.test(c) ? c : `U+${c.codePointAt(0)!.toString(16).toUpperCase()}`))
+      // `?? 0` rather than `!`: the assertion is erased at runtime, so if the
+      // read ever did return undefined this line would throw a TypeError —
+      // inside the failure branch, replacing the diagnostic with a crash that
+      // names the wrong cause. That is the exact outcome this report exists to
+      // prevent, so the diagnostic degrades to "U+0" instead of dying.
+      .map((c) => (/[a-z0-9-]/.test(c) ? c : `U+${(c.codePointAt(0) ?? 0).toString(16).toUpperCase()}`))
       .join("");
   }
 
