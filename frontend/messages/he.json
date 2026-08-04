@@ -2029,7 +2029,9 @@
       "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
       "default_user": "משתמשת",
       "default_producer": "העסק",
-      "deleted_toast": "הביקורת נמחקה"
+      "deleted_toast": "הביקורת נמחקה",
+      "expand": "עוד",
+      "collapse": "פחות"
     },
     "settings": {
       "title": "הגדרות",
