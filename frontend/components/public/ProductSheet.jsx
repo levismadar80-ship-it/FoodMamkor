@@ -168,7 +168,18 @@ export default function ProductSheet({ product, producer, onClose }) {
           className="flex-1 overflow-y-auto"
           data-testid="product-sheet-scroll"
         >
-          <div className="relative aspect-square w-full overflow-hidden rounded-t-2xl bg-background">
+          {/* A real photo earns the full square. The no-photo state does NOT:
+              at 80px in the grid a typographic square reads as a thumbnail, but
+              at sheet width it becomes a near-empty 375px block that pushes the
+              description — the whole reason this sheet exists — and the price
+              below the fold. Measured at 375 and 1440 before this fork existed
+              (qa-artifacts/MEH-1901/*-noimage-before.png): the placeholder took
+              ~60% of the panel. It collapses to a short band instead. */}
+          <div
+            className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
+              img ? "aspect-square" : "h-28"
+            }`}
+          >
             {img ? (
               <Image
                 src={img}
@@ -187,7 +198,7 @@ export default function ProductSheet({ product, producer, onClose }) {
                 role="img"
               >
                 <span
-                  className="font-headline-md text-6xl text-primary/40"
+                  className="font-headline-md text-4xl text-primary/40"
                   aria-hidden="true"
                 >
                   {product.name?.trim()?.[0] || "•"}
