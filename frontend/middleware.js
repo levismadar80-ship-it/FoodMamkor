@@ -35,7 +35,31 @@ const STATIC_ROUTES = new Set(staticRoutes.routes);
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const intlMiddleware = createMiddleware(routing);
 
-async function producerExists(url) {
+// MEH-1899: the ONLY status that means "this business does not exist".
+const HTTP_NOT_FOUND = 404;
+
+/**
+ * Report an existence-check that could not be answered. Structured so it can be
+ * grepped out of Vercel runtime logs, single-line so it survives log shipping.
+ *
+ * console, not Sentry, and that is a deliberate stop rather than a fallback:
+ * `sentry.edge.config.js` DOES init the SDK for this runtime ("middleware, edge
+ * routes"), so an event here is feasible — but nothing in this repo has ever
+ * demonstrated one arriving from middleware, and it cannot be demonstrated from
+ * a sandbox with no edge deploy. Claiming Sentry coverage we have not observed
+ * would be the same unverified-diagnosis move this ticket exists to correct.
+ * Wiring + verifying the Sentry path belongs to MEH-1521, which owns the
+ * fail-open observability decision.
+ */
+function reportUnresolved(slug, detail) {
+  console.warn(
+    `[middleware] producer existence check unresolved — failing OPEN. ` +
+      `slug=${slug} ${detail}. A hard 404 here would tell crawlers a live ` +
+      `business is gone on its canonical URL (MEH-1899).`,
+  );
+}
+
+async function producerExists(url, slug) {
   try {
     // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
     // only in the Node page / Server-Component runtime — NOT in Edge Middleware,
@@ -45,10 +69,28 @@ async function producerExists(url) {
     // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
     // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
     const res = await fetch(url, { next: { revalidate: 60 } });
-    return res.ok;
-  } catch {
+    if (res.ok) return true;
+
+    // MEH-1899: `return res.ok` used to live here, which collapsed THREE states
+    // into one. Only a real 404 is "this business does not exist"
+    // (producers.py:274 raises it for a genuine miss). Everything else is the
+    // backend answering badly:
+    //   429 — the slowapi limiter (producers.py:256, "120/minute") under a
+    //         burst. Measured: E2E turned this into an intermittent hard 404 on
+    //         a live business, 4 of 7 runs (PR #2592).
+    //   5xx — a real fault. Measured HTTP 500 from this endpoint on run
+    //         30887201635 while /producers stayed 200.
+    // Mapping either to a 404 tells Google the business is GONE on the URL it
+    // actually crawls (lib/seo.js:120 makes the slug canonical), where a 5xx
+    // would have said "come back later". So fail OPEN — the same decision the
+    // catch below already makes for an unreachable backend — and report it.
+    if (res.status === HTTP_NOT_FOUND) return false;
+    reportUnresolved(slug, `backend responded ${res.status}`);
+    return true;
+  } catch (error) {
     // Backend unreachable → fail OPEN (let the page handle it) rather than
     // false-404 a possibly-valid page on a transient blip.
+    reportUnresolved(slug, `fetch threw ${error?.name || "Error"}: ${error?.message || error}`);
     return true;
   }
 }
@@ -64,10 +106,15 @@ export default async function middleware(request) {
   const segs = locale ? parts.slice(1) : parts;
 
   let existsUrl = null;
+  // MEH-1899: hoisted out of the block below so an unresolved check can name
+  // which slug it was about. A log line that says only "a check failed" cannot
+  // be acted on.
+  let checkedSlug = null;
   if (segs.length === 1) {
     const slug = segs[0];
     if (!STATIC_ROUTES.has(slug.toLowerCase()) && isSlugShaped(slug)) {
       existsUrl = `${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`;
+      checkedSlug = slug;
     }
   }
   // MEH-1632: /producer/{id} is deliberately NOT existence-checked here.
@@ -95,7 +142,7 @@ export default async function middleware(request) {
   // above is untouched, so the canonical, indexable, crawler-facing shape
   // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
 
-  if (existsUrl && !(await producerExists(existsUrl))) {
+  if (existsUrl && !(await producerExists(existsUrl, checkedSlug))) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
     const nf = request.nextUrl.clone();
     nf.pathname = "/__mm_not_found__";
