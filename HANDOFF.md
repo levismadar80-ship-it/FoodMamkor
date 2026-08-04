@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-04 — MEH-1900: כלל שתיאר מנגנון הפוך, ושאלה פתוחה שנשארה פתוחה בכוונה
+
+**PR:** MEH-1900 (docs-בלבד — כולל CHANGELOG/HANDOFF, מותר לפי כלל 31: ה-guard נופל רק כשה-diff נוגע גם בקובץ **מחוץ** ל-`docs/**` · `.claude/**` · `HANDOFF.md`; ריצה docs-בלבד עוברת. נקרא מ-`scripts/checks/changelog-branch-guard.sh:31-40`, לא מהזיכרון).
+
+**ענף:** `feature/meh-1900-rule-file-corrections` מ-`origin/staging` טרי, divergence 0.
+
+**מה נסגר:** `.claude/rules/deployment.md` — שורת הטבלה `:18` והבלוק שמתחתיה תיארו preview של ענף feature כברירת מחדל. הוא **opt-in**: `frontend/vercel.json` בונה רק ל-`staging`/`main`, וכל ענף אחר רק עם `[preview]` בהודעת ה-commit.
+
+### מה שצריך לדעת לפני שממשיכים
+
+1. **זה הקובץ השלישי ב-24 שעות שתיאר מנגנון עובד באופן שגוי** (אחרי `workflow.md` ו-`backend.md`, שניהם תוקנו ב-MEH-1861). המשותף לשלושתם: טענה על התנהגות של כלי חיצוני, שנכתבה פעם אחת ואף פעם לא נגזרה מחדש. **חותמת as-of היא החצי הזול של הפתרון; טסט הוא החצי הטוב.**
+
+2. **התבנית שכדאי להעדיף, ונרשמה בגוף ה-PR:** `frontend.md:152` נושא טענה מוחלטת על leaflet ואינו זקוק לחותמת — `leaflet-inline-writers.test.js` גוזר אותה מ-`node_modules` בכל ריצה. **טענה שטסט מאמת מתארך את עצמה.** תחמי ידנית רק במקום שטסט אינו זמין (Railway, מכסות Vercel).
+
+3. **השאלה הפתוחה שלא הוכרעה, ולא נכתבה כתשובה:** האם deployment במצב `Ignored` נספר במכסת `api-deployments-free-per-day`. שתי הסברים מתאימים לתצפית שיש, ואף מדידה לא מפרידה. ההכרעה דורשת **גישה לדשבורד Vercel** ואינה אפשרית מהריפו — כלומר משהו לספיר, לא לסשן CC. שיטת ההכרעה כתובה בכלל עצמו.
+
+4. **מטרה (א) של הכרטיס בוטלה לפני העריכה, לא אחריה.** הכרטיס ביקש לתקן טענה ב-`workflow.md`; היא כבר תוקנה ע"י MEH-1861 עם חותמת מתוארכת. `file-preservation.md` §6 — «לפני שמתקנים מסמך, מוכיחים שהמסמך שגוי». לא נעשתה עריכה שם.
+
+5. **Phase 0 מיפה טענות מוחלטות ביתר קבצי הכללים ולא תיקן אותן** (לפי הוראת הכרטיס). הרשימה בגוף ה-PR. הקיצור: הטענות של `backend.md` כבר חתומות, של `frontend.md`/`rtl.md` מגובות בטסטים, ושתיים נשארות בלי חותמת ובלי טסט — `skills.md:413` ו-`security.md:48`. לא נפתח כרטיס.
+
+---
+
 ## 2026-08-04 — batch שעות/אטריביוציה/tz: כרטיס אחד בוטל אחרי Phase 0, ושני שערים שקראתי לא נכון
 
 **PRs:** #2580 (מוזג, `85672650`) · #2591 (פתוח) · #2593 (פתוח) · **ה-PR הזה** (backfill, כלל 31).

@@ -14,8 +14,14 @@
  *     calm-while-typing UX is preserved)
  *
  * Mounts ProfileTab directly under the real NextIntlClientProvider + he.json
- * (REUSES: EditTabProductsSection.test.jsx harness pattern) — the full-page
- * SettingsPage suite is currently skipped.
+ * (REUSES: EditTabProductsSection.test.jsx harness pattern).
+ *
+ * MEH-1700: this used to end "— the full-page SettingsPage suite is currently
+ * skipped", which was the stated reason this file mounts a sub-tree instead.
+ * That suite is un-skipped and green as of 2026-08-04, so the clause is gone.
+ * This file still earns its place on its own terms: it drives real he.json
+ * copy, so it asserts the rendered Hebrew, where SettingsPage.test.jsx uses a
+ * key-identity translator mock and asserts structure.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
