@@ -2095,7 +2095,12 @@ class ProducerListOut(BaseModel):
         # both surfaces stay consistent during the 7-day overlap.
         if (
             self.vacation_until is not None
-            and self.vacation_until < date.today()
+            # MEH-1883: Israel calendar day, not the server's UTC one.
+            # `vacation_until` is a Date the owner picked in Israel terms, so
+            # between 00:00 and ~03:00 Israel the UTC clock still reads
+            # yesterday and the business stayed hidden from the listings
+            # (default-hide on on_vacation) for those extra hours every night.
+            and self.vacation_until < israel_today()
             and (
                 self.availability_status == "vacation"
                 or self.availability_state == "on_vacation"
