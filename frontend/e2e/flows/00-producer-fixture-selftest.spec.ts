@@ -47,7 +47,10 @@ test.describe("_producer-fixture self-test", () => {
       r.fulfill({ status: 404, contentType: "text/html", body: ERROR_DOC }),
     );
     await page.goto(`${UNUSED_ORIGIN}/bad-slug`);
-    await page.waitForTimeout(300); // let the injected uncaught error land
+    // Wait for the injected uncaught error to actually land, rather than
+    // sleeping a guessed interval — the assertion below depends on it being
+    // captured, so the wait must be on the thing itself.
+    await expect.poll(() => pageErrors.some((e) => e.includes("BoomFromComponent"))).toBe(true);
 
     let message = "";
     try {
@@ -74,5 +77,42 @@ test.describe("_producer-fixture self-test", () => {
     ]) {
       expect(message, `the report must carry "${field}"`).toContain(field);
     }
+  });
+
+  // (c) A fault that is NOT "the boundary is present" must propagate unchanged.
+  //
+  // The classifier reaches its report by catching a failed expect(), and every
+  // Playwright fault on that call arrives the same way — a navigation timeout,
+  // a crashed page, a closed context. Catching those too would publish a
+  // confident wrong cause ("the detail route did not render") and destroy the
+  // real message, which is strictly worse than no diagnosis. Closing the page
+  // is the cheapest deterministic way to produce a non-matcher fault.
+  test("a non-assertion fault propagates instead of being reported as a routing failure", async ({
+    page,
+  }) => {
+    const pageErrors = watchPageErrors(page);
+    await page.route("**/ok-slug", (r) => r.fulfill({ contentType: "text/html", body: OK_DOC }));
+    await page.goto(`${UNUSED_ORIGIN}/ok-slug`);
+    await page.close();
+
+    let message = "";
+    try {
+      await assertDetailRendered(
+        page,
+        { id: "p3", slug: "ok-slug", name: "Closed" },
+        "/ok-slug",
+        pageErrors,
+        200,
+      );
+    } catch (e) {
+      message = String((e as Error).message);
+    }
+
+    expect(message, "closing the page must still surface a fault").not.toBe("");
+    expect(
+      message,
+      "a closed page is not a routing failure — the classifier must not claim it is",
+    ).not.toContain("The detail route did not render");
+    expect(message.toLowerCase()).toContain("closed");
   });
 });

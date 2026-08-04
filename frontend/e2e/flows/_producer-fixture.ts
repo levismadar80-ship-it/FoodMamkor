@@ -144,8 +144,22 @@ export async function assertDetailRendered(
     // count() here would read a still-navigating page as healthy.
     await expect(page.locator("#__next_error__")).toHaveCount(0);
     return;
-  } catch {
-    // fall through to build the report
+  } catch (e) {
+    // Playwright throws from that same call for faults that are NOT "the
+    // boundary is present" — navigation timeout mid-assert, page crash, context
+    // closed — and every one of them arrives wrapped as a matcher failure, so
+    // inspecting the error object cannot tell them apart (measured: the
+    // closed-page case in 00-producer-fixture-selftest carries `matcherResult`
+    // exactly like a genuine count mismatch).
+    //
+    // So confirm against the page instead. This read is safe here in a way it
+    // would NOT be on the pass path: the 20s retry has already elapsed, so a
+    // zero now means the assertion failed for some other reason — rethrow the
+    // original. And on a dead page the read itself throws the real fault, which
+    // propagates untouched. Reporting "the detail route did not render" about a
+    // page whose actual problem was something else is worse than no diagnosis:
+    // a confident wrong cause is what the next reader acts on.
+    if ((await page.locator("#__next_error__").count()) === 0) throw e;
   }
 
   const bodyText = (await page.locator("body").innerText().catch(() => ""))
