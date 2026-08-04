@@ -104,6 +104,16 @@ After every PR — send the Vercel preview URL:
 > against the number of pushes over one day. That needs dashboard access and is
 > **not resolvable from the repo**, so no CC session can settle it.
 >
+> **One thing the question IS now settled on (measured on PR #2603, 2026-08-04):
+> the quota gate runs BEFORE the ignore step.** That PR carries no `[preview]`
+> token, so it should have reported `Ignored` — and instead Vercel returned the
+> `api-deployments-free-per-day` error outright. A deployment that reaches the
+> `ignoreCommand` at all has therefore already been admitted past the quota
+> check. **This still does not answer the question above:** being *checked
+> against* a counter and *incrementing* it are different, and only the dashboard
+> comparison separates them. Recorded because it narrows the search, not because
+> it closes it.
+>
 > When there is no preview, say so in the PR and name which of the two states it
 > was — do not silently drop rule 9, and do not report a stale or ignored URL as
 > if it rendered the diff. The rate-limit half is an as-of observation on a quota
