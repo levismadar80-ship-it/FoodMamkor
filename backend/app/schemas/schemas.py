@@ -1959,6 +1959,13 @@ class ProducerListOut(BaseModel):
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
+    # MEH-1880: the declared weekly order window. Expand-only (ADR-007) and no
+    # migration — the column has existed since f4a1e9c3b7d2; only the LIST
+    # serializer was missing it, which is why no list surface (home grid,
+    # /producers, /map cards, favorites) could derive "open for orders now"
+    # while the producer PAGE already could. Defaults to None, so every
+    # existing response is byte-identical for a producer that has no window.
+    order_window: dict | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -2088,7 +2095,12 @@ class ProducerListOut(BaseModel):
         # both surfaces stay consistent during the 7-day overlap.
         if (
             self.vacation_until is not None
-            and self.vacation_until < date.today()
+            # MEH-1883: Israel calendar day, not the server's UTC one.
+            # `vacation_until` is a Date the owner picked in Israel terms, so
+            # between 00:00 and ~03:00 Israel the UTC clock still reads
+            # yesterday and the business stayed hidden from the listings
+            # (default-hide on on_vacation) for those extra hours every night.
+            and self.vacation_until < israel_today()
             and (
                 self.availability_status == "vacation"
                 or self.availability_state == "on_vacation"
