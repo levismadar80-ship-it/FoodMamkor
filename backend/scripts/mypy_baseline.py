@@ -144,7 +144,11 @@ def _provenance(counts: collections.Counter[tuple[str, str]]) -> str:
         import mypy.version
 
         version = mypy.version.__version__
-    except Exception:  # pragma: no cover — never worth failing a write over
+    except Exception:
+        # Never worth failing a baseline write over a missing version string.
+        # (This carried a `# pragma: no cover` marker, which was decorative:
+        # nothing configures coverage over backend/scripts/, so it instructed
+        # a tool that never reads this file.)
         version = "unknown"
     total = sum(counts.values())
     files = len({f for f, _ in counts})
@@ -299,7 +303,13 @@ def diff(
 
 
 def check(update: bool, allow_increase: bool) -> int:
-    current, _ = run_mypy()
+    current, stderr = run_mypy()
+    if stderr.strip():
+        # returncode >= 2 already prints stderr and exits; this covers the
+        # normal-exit paths, where mypy can still emit config notices and
+        # deprecation warnings. Dropping them in CI means the only place they
+        # would have surfaced is the log of a job nobody opens when it is green.
+        print(f"mypy stderr (non-fatal):\n{stderr.strip()}", file=sys.stderr)
     bootstrapping = update and not BASELINE_PATH.exists()
     baseline = read_baseline(BASELINE_PATH, missing_ok=bootstrapping)
     regressions, improvements = diff(baseline, current)
