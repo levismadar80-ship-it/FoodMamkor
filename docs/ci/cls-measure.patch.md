@@ -1,8 +1,22 @@
 # 🔧 Staged patch — `workflow_dispatch` CLS measurement job (MEH-1853)
 
-**Status:** authored by CC, **not applied**. `.github/workflows/**` is CC-deny
-(MEH-671), so Sapir applies this. The harness it invokes
-(`frontend/e2e/qa-meh1853-cls.mjs`) **is** in the repo and needs no further work.
+> ## ✅ APPLIED — 2026-08-05. This document is now a record, not a request.
+>
+> Sapir applied the YAML below as `.github/workflows/cls-measure.yml` via **PR #2618**.
+> `actions/workflows` lists it; it is dispatchable.
+>
+> **One correction that matters more than the status line.** The sentence below
+> said the harness *"**is** in the repo and needs no further work."* **It was not.**
+> `frontend/e2e/qa-meh1853-cls.mjs` ships in **this** PR (#2585) and was still
+> unmerged when the workflow landed — so for a window, `cls-measure.yml` existed on
+> `staging` and would have failed on a missing file at the `node e2e/…` step. Caught
+> before any dispatch; the harness lands with this PR. The claim was written when
+> the split was planned and was never re-checked against `origin/staging` — an
+> as-of that nobody subtracted.
+>
+> Kept rather than deleted because the reasoning below (why CI and not a local run,
+> the two rejected alternatives, why this must never be a required check) is the
+> record of a decision, and the YAML here is the version that was applied.
 
 ---
 
