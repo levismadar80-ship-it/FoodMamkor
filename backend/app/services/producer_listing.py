@@ -23,7 +23,8 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, cast, func, or_
+from sqlalchemy.dialects.postgresql import JSONPATH
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import (
@@ -40,6 +41,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_min_km,
 )
+from app.utils.clock import israel_now
 from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -128,6 +130,9 @@ def _build_base_queries(
                 selectinload(Producer.delivery_areas),
                 # MEH-1402 — serialize locations[] on ProducerListOut w/o N+1.
                 selectinload(Producer.locations),
+                # MEH-1823: active_offer reads this collection — eager-load it here
+                # or the property fires one query per producer on every list page.
+                selectinload(Producer.offers),
             )
             .filter(Producer.status == "approved")
         )
@@ -183,6 +188,9 @@ def _build_base_queries(
             selectinload(Producer.delivery_areas),
             # MEH-1402 — locations[] on ProducerListOut (LIST/DETAIL shape parity).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.status == "approved")
         .order_by(*order)
@@ -312,6 +320,67 @@ def _kosher_condition(kosher: bool):
     )
 
 
+# MEH-1881: the Israel weekday names `order_window` is keyed by. Index-aligned
+# with schemas._ORDER_WINDOW_DAYS and with lib/orderWindow.js ORDER_DAY_KEYS, so
+# index 0 means Sunday on every axis in the codebase.
+_ORDER_DAY_KEYS = (
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+)
+
+# MEH-1881: "is this business inside a declared ordering range right now?".
+#
+# `[*]` is what makes this work against BOTH stored shapes. `order_window[day]`
+# is a LIST of ranges since MEH-1869, but rows written before that cutover still
+# hold a single dict, and `_order_window_validator` only normalises on WRITE —
+# so a row never re-saved is still the old shape. In jsonpath's default LAX mode
+# `[*]` auto-wraps a non-array, so one expression covers both. That is measured,
+# not assumed: against `{"sunday":{"open":"09:00","close":"13:00"}}` this returns
+# true at 10:00 and false at 13:00, identically to the list form.
+#
+# Boundaries are `open <= now < close`: a business is open AT its opening minute
+# and closed AT its closing minute. Zero-padded "HH:MM" compares correctly as
+# plain text, which is why the value is passed as a string and not parsed.
+#
+# The time and day are passed as jsonpath VARIABLES, never interpolated into the
+# expression — the expression itself is a constant.
+_OPEN_NOW_JSONPATH = "$.%s[*] ? (@.open <= $now && @.close > $now)"
+
+
+def _open_for_orders_now_condition(open_now: bool):
+    """MEH-1881: match on the DECLARED ordering window, not on opening_hours.
+
+    The two are different facts (`opening_hours` is when the shop is staffed;
+    `order_window` is when the owner said she takes orders) and this product's
+    conversion event is a WhatsApp message, not a visit.
+
+    A producer with `order_window IS NULL` has declared nothing, so it can be
+    neither open nor closed by this filter. `jsonb_path_exists(NULL, ...)` is
+    NULL rather than false, so both branches use `IS TRUE` / `IS NOT TRUE`
+    instead of `== True` / `!= True` — with a bare boolean comparison the NULL
+    rows would silently vanish from BOTH sides of the filter.
+    """
+    # `israel_now` is the codebase's canonical Asia/Jerusalem primitive, and
+    # going through it rather than building a datetime here is what makes the
+    # filter testable: a test freezes it with
+    # `monkeypatch.setattr(producer_listing, "israel_now", ...)`, the same
+    # idiom test_availability_validation.py uses for `israel_today`.
+    now = israel_now()
+    # weekday() is Monday=0; order_window is keyed Sunday-first.
+    day_key = _ORDER_DAY_KEYS[(now.weekday() + 1) % 7]
+    matches = func.jsonb_path_exists(
+        Producer.order_window,
+        cast(_OPEN_NOW_JSONPATH % day_key, JSONPATH),
+        func.jsonb_build_object("now", now.strftime("%H:%M")),
+    )
+    return matches.is_(True) if open_now else matches.isnot(True)
+
+
 def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, PLR0915  # 15 boolean filter pairs by design (MEH-1438 added the vegetarian OR-branch) — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (vegetarian / kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
@@ -368,6 +437,16 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         kosher_cond = _kosher_condition(kosher)
         q = q.filter(kosher_cond)
         count_q = count_q.filter(kosher_cond)
+
+    # MEH-1881: opt-in "open for orders now". Absent → not referenced at all, so
+    # the default listing is byte-identical. # REUSES: the kosher block above —
+    # presence/absence pattern, filter BOTH q and count_q (a filter applied to
+    # only one makes the page and its x-total-count disagree).
+    open_for_orders_now = filters.get("open_for_orders_now")
+    if open_for_orders_now is not None:
+        open_now_cond = _open_for_orders_now_condition(open_for_orders_now)
+        q = q.filter(open_now_cond)
+        count_q = count_q.filter(open_now_cond)
 
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —

@@ -769,7 +769,17 @@
         },
         "products": {
           "heading": "מוצרים",
-          "signature_label": "המוצר המוביל"
+          "signature_label": "המוצר המוביל",
+          "diet": {
+            "gluten_free": "ללא גלוטן",
+            "vegan": "טבעוני",
+            "vegetarian": "צמחוני",
+            "lactose_free": "ללא לקטוז"
+          },
+          "sheet_open_aria": "פרטים על {name}",
+          "sheet_close_aria": "סגירת פרטי המוצר",
+          "sheet_cta": "שאלי על המוצר בוואטסאפ",
+          "sheet_wa_prefill": "היי, ראיתי את ״{name}״ בעמוד שלכם במהמקור ואשמח לשמוע פרטים"
         },
         "recipes": {
           "cta": "המתכונים שלנו"
@@ -844,7 +854,17 @@
         "vacation_msg": "שליחת הודעה"
       },
       "order_window": {
-        "cta_note": "אפשר לשלוח הודעה גם עכשיו — היא תמתין לבית העסק עד שההזמנות ייפתחו"
+        "schedule_heading": "מתי מקבלים הזמנות",
+        "schedule_subtitle": "הימים והשעות שבהם בית העסק מקבל הזמנות",
+        "days": {
+          "sun": "ראשון",
+          "mon": "שני",
+          "tue": "שלישי",
+          "wed": "רביעי",
+          "thu": "חמישי",
+          "fri": "שישי",
+          "sat": "שבת"
+        }
       }
     },
     "card": {
@@ -870,6 +890,61 @@
         "overflow_heading": "עוד על העסק הזה"
       },
       "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
+    },
+    "offer": {
+      "types": {
+        "free_delivery_above": "משלוח חינם",
+        "gift_above": "מתנה",
+        "first_order": "הטבה להזמנה ראשונה",
+        "pickup_discount": "הנחה באיסוף עצמי",
+        "custom": "הטבה בניסוח חופשי"
+      },
+      "text": {
+        "free_delivery_above": "משלוח חינם",
+        "gift_above": "מתנה בכל הזמנה",
+        "first_order": "הטבה בהזמנה ראשונה",
+        "pickup_discount": "הנחה באיסוף עצמי"
+      },
+      "text_with": {
+        "free_delivery_above": "משלוח חינם בהזמנה מעל {amount}",
+        "gift_above": "מתנה בהזמנה מעל {amount}",
+        "first_order": "הטבה בהזמנה ראשונה מעל {amount}",
+        "pickup_discount": "הנחה באיסוף עצמי בהזמנה מעל {amount}"
+      },
+      "units": {
+        "ils": "₪",
+        "units": "יחידות",
+        "liters": "ליטר",
+        "kg": "ק\"ג"
+      },
+      "unit_amount": {
+        "ils": "{count} ₪",
+        "units": "{count, plural, one {# יחידה} two {# יחידות} other {# יחידות}}",
+        "liters": "{count} ליטר",
+        "kg": "{count} ק\"ג"
+      },
+      "card_title": "הטבה",
+      "card_subtitle": "הטבה אחת פעילה בכל פעם, עם תאריך סיום.",
+      "scope_helper": "ההטבה תוצג ללקוחות בעמוד שלך ובכרטיס שלך ברשימות. אפשר להסיר אותה בכל רגע, והיא נעלמת מעצמה בתאריך הסיום.",
+      "type_label": "סוג ההטבה",
+      "type_none": "אין הטבה פעילה",
+      "threshold_label": "מעל איזה סכום או כמות? (לא חובה)",
+      "threshold_hint": "מוצג ללקוחות כחלק ממשפט ההטבה. אפשר להשאיר ריק אם ההטבה ללא תנאי.",
+      "threshold_placeholder": "10",
+      "unit_label": "יחידת מידה",
+      "headline_label": "משפט משלך (לא חובה)",
+      "headline_hint": "מוצג מתחת להטבה בעמוד שלך. עד 60 תווים, בלי אימוג'י.",
+      "headline_placeholder": "המתנה: צנצנת דבש קטנה",
+      "custom_hint": "נסחי את ההטבה במילים שלך — עד 60 תווים",
+      "custom_headline_required": "להטבה בניסוח חופשי חייבת להיות כותרת",
+      "expires_label": "בתוקף עד",
+      "expires_hint": "חובה. אחרי התאריך הזה ההטבה נעלמת מהאתר בלי שתצטרכי לגעת בה.",
+      "expires_required": "צריך לבחור תאריך סיום להטבה",
+      "threshold_pair_required": "הסכום או הכמות ויחידת המידה נקבעים יחד — או שניהם או אף אחד",
+      "saving": "בשמירה…",
+      "saved": "נשמר",
+      "save_cta": "שמירה",
+      "save_error": "השמירה נכשלה. נסו שוב."
     }
   },
   "recipes": {
@@ -1862,7 +1937,7 @@
       "rejected_toast": "בקשה נדחתה",
       "columns": {
         "producer": "בית עסק",
-        "badge": "Badge",
+        "badge": "תג כשרות",
         "cert": "תעודה",
         "date": "תאריך בקשה",
         "notes": "הערות",
@@ -1953,7 +2028,9 @@
       "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
       "default_user": "משתמשת",
       "default_producer": "העסק",
-      "deleted_toast": "הביקורת נמחקה"
+      "deleted_toast": "הביקורת נמחקה",
+      "expand": "עוד",
+      "collapse": "פחות"
     },
     "settings": {
       "title": "הגדרות",
@@ -4072,7 +4149,8 @@
           "image": "תמונה ראשית",
           "location": "קטגוריות ומיקום",
           "products": "מוצר ראשון בקטלוג",
-          "contact": "פרטי קשר"
+          "contact": "פרטי קשר",
+          "hours": "שעות פתיחה"
         },
         "fields": {
           "city": "עיר",
@@ -4231,6 +4309,11 @@
         "saved": "נשמר",
         "save_error": "השמירה נכשלה. נסו שוב."
       },
+      "grassFed": {
+        "heading": "גידול במרעה",
+        "label": "גראס פד",
+        "scope_helper": "מסמן את בית העסק בצ'יפ «גראס פד» בעמוד המפה. מוצג כהצהרה שלך, בלי אימות מצדנו."
+      },
       "dietaryScope": {
         "heading": "תזונה",
         "helper": "אנחנו מצליבות את התשובות מול הקטלוג לפני פרסום.",
@@ -4285,6 +4368,7 @@
       "hours": {
         "heading": "שעות פתיחה",
         "subtitle": "מתי העסק פתוח פיזית. מופיע במפה ובעמוד העסק.",
+        "hours_empty_hint": "שעות שמוגדרות כאן מוצגות בעמוד העסק ונשלחות למנועי החיפוש.",
         "field_label": "שעות פתיחה",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
         "revert_cta": "ביטול שינויים",
@@ -4300,7 +4384,10 @@
         "preset": "א׳–ה׳ 9:00–18:00, ו׳ עד 14:00",
         "clear_cta": "ניקוי השעות",
         "unparseable": "הפורמט הקיים לא זוהה — הזינו את השעות מחדש",
-        "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה"
+        "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה",
+        "invalid_overlap": "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם",
+        "add_range": "טווח נוסף",
+        "remove_range": "הסרת הטווח"
       },
       "order_window": {
         "heading": "מתי מקבלים הזמנות",
@@ -4311,6 +4398,9 @@
         "from_label": "פתיחה",
         "to_label": "סגירה",
         "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה",
+        "invalid_overlap": "הטווחים חייבים להיות לפי הסדר ובלי חפיפה ביניהם",
+        "add_range": "טווח נוסף",
+        "remove_range": "הסרת הטווח",
         "save_cta": "שמירה",
         "saving": "בשמירה…",
         "save_success": "חלון ההזמנות נשמר",

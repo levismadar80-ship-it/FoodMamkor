@@ -50,6 +50,17 @@ vi.mock("@/lib/producer-filters", () => ({
   buildChipParams: () => ({}),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
+  // MEH-1881: ProducersClient now imports this threshold, and a partial
+  // vi.mock throws on any export it omits — so the stub has to carry it
+  // even though nothing here exercises the gate. A number keeps the gate
+  // arithmetic well-defined; `undefined` would make `n >= undefined`
+  // false forever and silently hide the chip in every one of these specs.
+  OPEN_NOW_CHIP_MIN: 5,
+  // MEH-1881: /producers renders a superset of the shared chip row; these
+  // are the names ProducersClient imports. Empty/`{}` keeps these specs
+  // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
+  PRODUCERS_CHIPS_CONFIG: [],
+  PRODUCERS_CHIPS_DEFAULT: {},
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),
@@ -61,12 +72,17 @@ const apiGet = vi.fn(() => Promise.resolve({ data: [], headers: { "x-total-count
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => apiGet(...a) } }));
 
 // One SSR item + total 1 so the results counter (and thus the sort select) render.
+// MEH-1864: the sort control is gated on the catalog having enough reviewed
+// businesses; every case in THIS file describes the above-threshold behaviour,
+// so the flag is on. The gated (below-threshold) behaviour lives in
+// RatingDataGate.test.jsx.
 const PROPS = {
   initialItems: [{ id: "1", categories: [] }],
   initialTotal: 1,
   initialPage: 1,
   totalPages: 1,
   perPage: 24,
+  ratingSortEnabled: true,
 };
 
 const sortCalls = () =>

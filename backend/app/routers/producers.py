@@ -100,6 +100,13 @@ def list_producers(
     # MEH-1259: the public ?organic query param is removed — self-declared
     # organic is no longer a filter (חוק תוצרת אורגנית 2005). See producer_listing.py.
     kosher: bool | None = None,
+    # MEH-1881: opt-in "accepting orders right NOW" filter, evaluated against the
+    # declared `order_window` in Asia/Jerusalem. Deliberately NOT `opening_hours`
+    # — that is when the shop is staffed; this is when the owner said she takes
+    # orders, and the conversion event here is a WhatsApp message, not a visit.
+    # Absent → the listing is untouched, so no business is ever hidden by a
+    # filter nobody asked for.
+    open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
     is_available_today: bool | None = None,
@@ -158,6 +165,7 @@ def list_producers(
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
+        open_for_orders_now=open_for_orders_now,  # MEH-1881
         city=city,
         is_available_today=is_available_today,
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
@@ -256,6 +264,9 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
             # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
             # so it doesn't widen the 3-way collection joinedload cartesian).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
@@ -298,6 +309,9 @@ def get_producer(
             # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
             # so it doesn't widen the 3-way collection joinedload cartesian).
             selectinload(Producer.locations),
+            # MEH-1823: active_offer reads this collection — eager-load it here
+            # or the property fires one query per producer on every list page.
+            selectinload(Producer.offers),
         )
         .filter(Producer.id == producer_id)
         .first()

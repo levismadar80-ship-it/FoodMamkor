@@ -14,7 +14,6 @@ differ from home_products in that they ALWAYS require admin approval
 after the Claude verdict — the admin_experiences router handles that side.
 """
 
-from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -35,6 +34,7 @@ from app.schemas.schemas import (
 )
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import notify_admin_new_submission
+from app.utils.clock import israel_today
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
 
@@ -167,7 +167,10 @@ def list_experiences(
     approved business (MEH-1749). Past experiences drop out of the public
     feed automatically."""
     q = _publicly_visible_query(db).filter(
-        Experience.event_date >= date.today(),
+        # MEH-1883: Israel calendar day — same reasoning as events.py. A UTC
+        # "today" drops an experience from the public feed at 21:00 the
+        # evening before it happens.
+        Experience.event_date >= israel_today(),
         # MEH-1419: a host-cancelled experience drops from the public feed
         # (mirrors events.py:73). It stays visible on GET /experiences/mine.
         Experience.is_active.is_(True),
