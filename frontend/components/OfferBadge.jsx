@@ -26,13 +26,28 @@ import { useTranslations } from "next-intl";
 
 // The typed vocabulary, mirrored from schemas.py OFFER_TYPES / THRESHOLD_UNITS.
 // An unknown value renders nothing rather than a raw key — a backend that grows
-// a fifth type must not leak "offer.text.new_type" onto a consumer surface.
+// a sixth type must not leak "offer.text.new_type" onto a consumer surface.
 const OFFER_TYPES = new Set([
   "free_delivery_above",
   "gift_above",
   "first_order",
   "pickup_discount",
+  "custom",
 ]);
+
+// MEH-1898. `custom` is the fifth type and the only one the platform has no
+// sentence for: the other four resolve to `offer.text.*` / `offer.text_with.*`,
+// which this file owns and can guarantee. For `custom` the owner wrote the
+// words herself, so her `headline` IS the offer text — promoted from the
+// secondary line it occupies under every other type, not shown twice.
+//
+// It is therefore deliberately ABSENT from the i18n bundles: there is no
+// `offer.text.custom` and there must not be one. A placeholder string there
+// would be the failure this whole file guards against — a headline-less custom
+// offer would render platform copy the owner never wrote, over a Gift icon,
+// asserting a benefit nobody promised. With no key, the empty case has only one
+// possible outcome, which is the correct one: render nothing.
+const CUSTOM = "custom";
 const UNITS = new Set(["ils", "units", "liters", "kg"]);
 
 // Split marker for the {amount} placeholder. The translated sentence puts the
@@ -109,15 +124,43 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
     return null;
   }
 
+  // MEH-1898 — the `custom` branch, and the empty case it exists to catch.
+  //
+  // `.trim()`, because a headline of "   " is not words. The backend accepts it
+  // as a non-empty string (schemas.py `_validate_headline` strips and returns
+  // None for an empty result, but a caller bypassing that layer — a seed, an
+  // import, a psql session — is exactly what the DB CHECKs exist for and the
+  // CHECKs say nothing about headlines). Rendering whitespace would produce a
+  // Gift icon next to a blank line, which reads as a broken offer rather than
+  // as no offer.
+  //
+  // The backend accepts a headline-less `custom` row on purpose (uniform
+  // validation — see ProducerOfferCreate's docstring), so this is not a
+  // can't-happen guard: it is the surface that makes that permissiveness safe.
+  // The dashboard requires the headline client-side, so an owner cannot reach
+  // this state through the UI; a row that reaches it any other way disappears
+  // instead of misrepresenting the business.
+  const isCustom = offer.offer_type === CUSTOM;
+  const customText = isCustom ? (offer.headline ?? "").trim() : "";
+  if (isCustom && !customText) return null;
+
   // `!= null` and not truthiness: threshold_value is a positive integer or
   // null, and a truthiness test would be one refactor away from swallowing a
   // legitimate value. The pair is both-or-neither by DB CHECK, so testing one
   // of the two is enough — but the unit is validated before use anyway.
+  //
+  // Not consulted for `custom`: the backend permits a threshold on every type
+  // (Sapir, 02/08) and the dashboard hides the fields rather than clearing a
+  // stored one, so a `custom` row CAN carry a threshold. There is no sentence
+  // to interpolate it into, so it is not rendered — the owner's words are the
+  // whole text, exactly as she wrote them.
   const hasThreshold =
-    offer.threshold_value != null && UNITS.has(offer.threshold_unit);
+    !isCustom && offer.threshold_value != null && UNITS.has(offer.threshold_unit);
 
   let content;
-  if (hasThreshold) {
+  if (isCustom) {
+    content = customText;
+  } else if (hasThreshold) {
     // The whole "number + unit" is ONE message, not a JS-side concatenation, so
     // the count can select a form: threshold_value is a positive integer, so 1
     // is reachable and «1 יחידות» must not be renderable. `units.*` stays the
@@ -161,8 +204,13 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
         <span className="font-semibold">{content}</span>
         {/* The owner's free-text line, when she wrote one. Secondary to the
             typed sentence above it, never a replacement for it — the typed
-            string is the part the platform can guarantee. */}
-        {offer.headline ? (
+            string is the part the platform can guarantee.
+
+            MEH-1898: skipped for `custom`, which has no typed sentence, so the
+            headline was already promoted INTO `content` above. Without the
+            `!isCustom` guard the same string renders twice — once bold, once
+            muted underneath it. */}
+        {!isCustom && offer.headline ? (
           <span className="block text-fg-muted text-xs mt-0.5" data-testid="offer-headline">
             {offer.headline}
           </span>
