@@ -12,7 +12,6 @@ import {
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
-import { OrderWindowCtaNote } from "./OrderWindowStrip";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -239,17 +238,18 @@ export default function ContactCard({ producer, isVacation }) {
           }}
         />
 
-        {/* MEH-1649: the closed-window context line lives HERE — inside the
-            card, directly under the button it explains. It previously mounted
-            outside the card in both viewports (ContactSidebar above the card
-            on desktop, ProducerDetail above it on mobile), which read as text
-            floating on the cream background, detached from its CTA. Placing it
-            in ContactCard covers both viewports at once, since this component
-            is the one rendered in each. The MEH-1546 sticky constraint is
-            untouched: it was about wrapping the <aside>, and this is strictly
-            inside the card. Self-gating is unchanged — renders nothing unless
-            the window is closed, so open/null-window cards are byte-identical. */}
-        <OrderWindowCtaNote orderWindow={producer.order_window} />
+        {/* MEH-1652: the closed-window context line that used to sit here is
+            GONE, not reworded. It said the message "תמתין לבית העסק" — a claim
+            about what the business would do, which BRAND.md §7 forbids and
+            ADR-031 explains we can never observe (the CTA is a `wa.me` deep
+            link; the message never touches our servers). MEH-1546 → MEH-1600 →
+            MEH-1649 each rewrote this one line and each stayed untrue, because
+            the problem was never the wording. §7's answer for "nothing honest
+            to say" is silence, so the button now stands on its own. The order
+            window itself is still said — as a SCHEDULE, in
+            OrderWindowScheduleBlock (MEH-1875), and as a status in
+            ProducerHeader. Do NOT re-add a note here without a claim the site
+            can actually verify. */}
 
         {/* Ready-made questions as quiet text links under the CTA. */}
         <WhatsAppQuestionChips producer={producer} />
