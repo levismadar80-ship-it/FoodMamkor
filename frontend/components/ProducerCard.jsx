@@ -11,6 +11,14 @@ import TrustBadge from "./TrustBadge";
 import OfferBadge from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
+import { getOrderWindowStatus } from "@/lib/orderWindow";
+// MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
+// the canonical Israel-local "HH:MM" formatter and the card interpolates it
+// into the very same `orders_open` string the page renders — a second copy here
+// would be two owners for one format, and they would drift on the first change.
+// The alternative (relocating it to lib/) touches a file outside this ticket's
+// scope. Nothing is mutated there; this is a read-only reuse of a pure helper.
+import { israelTime } from "@/app/[locale]/producer/[id]/lib/order-status";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { allBadges, badgeCount } from "@/lib/badges";
@@ -211,6 +219,40 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       : rawDescription;
 
   const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
+
+  // MEH-1880 — derived "open for orders" line.
+  //
+  // Time-derived, so it must not run during SSR: the server and the client
+  // would disagree and React would flag a hydration mismatch. Until mounted,
+  // `orderStatus` stays null and NOTHING renders — the same guard idiom
+  // ProducerHeader.jsx:118-120 uses for the identical value.
+  const [orderWindowMounted, setOrderWindowMounted] = useState(false);
+  useEffect(() => setOrderWindowMounted(true), []);
+  const orderStatus = orderWindowMounted
+    ? getOrderWindowStatus(producer.order_window)
+    : null;
+
+  // Only the OPEN half is shown. `closing_soon` is folded in deliberately —
+  // order-status.js:62 records that it is not a separate visual state, and the
+  // "עד {time}" suffix already carries the cutoff honestly (no urgency styling,
+  // no countdown). Closed and no-window render nothing at all: a card must not
+  // shout "סגור" (MEH-1652 copy-honesty — describe declared mechanics, never
+  // promise on the business's behalf), and the async CTA stays either way.
+  //
+  // Vacation wins, matching the page's existing precedence. `dotStatus` is
+  // reused rather than re-reading availability_state so there is one owner for
+  // "is this producer on vacation" on this card.
+  //
+  // `nextChange` is checked, not assumed. On the open branch it is always a
+  // Date today — but MEH-1546's review caught the mirror of this on the CLOSED
+  // branch, where a window whose every day violated `close > open` yielded
+  // `nextChange: null` and the label rendered the epoch ("עד 02:00"). Rather
+  // than re-derive that the open branch is safe on every future edit to
+  // getOrderWindowStatus, the render is gated on the value it actually needs.
+  const showOrderWindowLine =
+    dotStatus !== "on_vacation" &&
+    (orderStatus?.state === "open" || orderStatus?.state === "closing_soon") &&
+    orderStatus.nextChange != null;
 
   const handleRootClick = (e) => {
     if (e.target.closest("a, button")) return;
@@ -478,6 +520,35 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             )}
           </span>
         </p>
+
+        {/* MEH-1880: rendered ONLY when the declared window is open right now.
+            Closed, absent, or pre-mount → this whole node is absent, so a card
+            without an open window is byte-identical to before this ticket (no
+            reserved space, no layout shift). Copy is reused verbatim from the
+            producer page's status branch — zero new keys in either locale. */}
+        {showOrderWindowLine && (
+          // `text-primary` is not a free choice: it is the tone the producer
+          // page's own `open` branch resolves to (order-status.js:99), so the
+          // card says the same thing in the same colour. No new colour token.
+          //
+          // NOT `truncate`, and that is a measured decision. At 375px the card
+          // body is 132px wide and this string needs 138 — a 6px overflow, the
+          // only width where it does not fit (414/768/1440 all clear). In RTL
+          // the ellipsis lands at the visual left, which is exactly where the
+          // cutoff time sits, so truncating drops the ONE datum the line
+          // carries and leaves a line that says "open · until…". Wrapping
+          // keeps the time. It costs a second line at 375px on open cards
+          // only; the closed/null/vacation states render no node at all, so
+          // the AC's "no layout shift" case is untouched.
+          <p
+            className="text-[13px] text-primary"
+            data-testid="card-order-window"
+          >
+            {t("producer.detail.header.status.orders_open", {
+              time: israelTime(orderStatus.nextChange),
+            })}
+          </p>
+        )}
 
         {descriptionText && (
           // MEH-1028 (CARD-27): one-line description hidden on mobile (<640px),

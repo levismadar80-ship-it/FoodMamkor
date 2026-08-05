@@ -891,3 +891,51 @@ was the only consumer of all three (grep-verified), so nothing else needed touch
 - **Still open:** this wording joins the agenda for the pending lawyer review of the
   terms/privacy documents before it is treated as finally settled legal copy. Approval here is
   a product/copy approval, not a legal sign-off.
+
+---
+
+## Section 13 — `/en` search-locale notice (MEH-1812)
+
+Approved verbatim by Sapir on 2026-08-02. Recorded here **before** the component is
+built — the card's DoD makes this Phase 1 and the banner Phase 2, so the brand book
+precedes the code rather than documenting it after the fact.
+
+### Notice — `/en` search surfaces
+
+| Field | Value |
+|---|---|
+| **Current** | `Business listings are in Hebrew — searching in English returns no results.` |
+| **i18n key** | `en.json` only — key assigned in Phase 2 |
+| **Status** | 🕐 Pending — watch MEH-1812 Phase 2 |
+| **Why** | States the gap instead of working around it. Renders **before** the visitor types, so it is a warning rather than a zero-result post-mortem. |
+
+### CTA — switch back to Hebrew
+
+| Field | Value |
+|---|---|
+| **Current** | `Switch to Hebrew` |
+| **i18n key** | `en.json` only — key assigned in Phase 2 |
+| **Status** | 🕐 Pending — watch MEH-1812 Phase 2 |
+| **Why** | One-click exit. Links to the `/he` equivalent of the **current** path, not the homepage — a visitor on a deep `/en` page lands on its `/he` twin. |
+
+### Notes on the decision
+
+- **The problem is measured, not assumed.** Every English query returned `0` across
+  `/search`, `/producers?q=`, and city autocomplete, while the Hebrew controls returned
+  results against the same endpoints. That control is what proves the endpoint is alive
+  and the database populated — the zeros are a locale gap, not a broken search.
+- **Transliteration was rejected for lack of raw material, not for effort.** Zero of 12
+  business names, zero of 11 cities, and zero of 18 categories carry a single Latin
+  character, and the repo ships no transliteration engine or Postgres extension to do it
+  with. Even a perfect match would have rendered the Hebrew DB string under English
+  section headings.
+- **A rejected alternative worth keeping**, because its flaw is the instructive part:
+  *"Search works in Hebrew"* is ambiguous. It can be read as "you may type Hebrew here"
+  (true) or as "search works — just not for you". The locked wording names the gap, which
+  is what turns a trap into a statement.
+- **Consistent with `Hebrew First`** (brand value 7): the finding is not that the value is
+  wrong but that `/en` already departs from it — a toggle exists with a search behind it
+  that does not work. The notice makes that visible.
+- **Not the complete fix, and recorded as such.** USWDS's guidance is that a full language
+  selector over partially-translated content is the wrong component to begin with. This
+  banner is the pragmatic correction; revisiting the selector itself is post-launch.

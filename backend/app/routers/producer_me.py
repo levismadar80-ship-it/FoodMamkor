@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
@@ -18,7 +18,7 @@ from app.services.availability_validation import (
 )
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import OtpCodeV1
-from app.utils.clock import israel_today
+from app.utils.clock import ISRAEL_TZ, israel_today
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -55,7 +55,10 @@ from app.schemas.schemas import (
     ProductUpdate,
 )
 from app.services.auth_notifications import notify_admin_producer_review_ready
-from app.services.delivery_validation import ensure_exclusion_requires_nationwide
+from app.services.delivery_validation import (
+    ensure_exclusion_requires_nationwide,
+    ensure_nationwide_requires_delivery,
+)
 from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
@@ -431,6 +434,9 @@ def update_my_producer(
     _enforce_owner_license_gate(db, producer, payload, category_ids)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
+    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
+    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
+    ensure_nationwide_requires_delivery(producer, payload)
 
     # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
     # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would
@@ -841,18 +847,44 @@ def producer_analytics(
     )
 
     # Views by day for the last 30 days, zero-filled.
-    today = date.today()
-    thirty_days_ago = datetime.combine(today - timedelta(days=29), datetime.min.time())
+    # MEH-1894: the whole window runs on the Israel calendar day. Three parts
+    # move together, and they have to — fixing only one is what produces an
+    # off-by-a-few-hours bucket.
+    #   1. the anchor: israel_today(), not the server's UTC date.
+    #   2. the bucket: created_at is a NAIVE UTC column (models.py:1461), so
+    #      it is first labelled UTC and then converted to Israel local before
+    #      func.date() cuts the day. Without this the day boundary falls at
+    #      midnight UTC = 02:00/03:00 Israel, so a 00:30 view counts as
+    #      yesterday. The double cast is required precisely BECAUSE the column
+    #      is naive; a tz-aware column would need only the inner one.
+    #   3. the cutoff: Israel midnight of the oldest day, expressed back in
+    #      naive UTC to match the column. Leaving the old naive
+    #      datetime.combine() here would silently drop the first 2-3 hours of
+    #      the oldest bucket, since that bucket starts at 21:00/22:00 UTC the
+    #      previous day.
+    today = israel_today()
+    window_start = (
+        datetime.combine(
+            today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ
+        )
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    israel_day = func.date(
+        func.timezone(
+            "Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at)
+        )
+    )
     daily_rows = (
         db.query(
-            func.date(ProducerPageView.created_at).label("day"),
+            israel_day.label("day"),
             func.count(ProducerPageView.id).label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
-            ProducerPageView.created_at >= thirty_days_ago,
+            ProducerPageView.created_at >= window_start,
         )
-        .group_by(func.date(ProducerPageView.created_at))
+        .group_by(israel_day)
         .all()
     )
     by_day = {str(row.day): int(row.count) for row in daily_rows}
