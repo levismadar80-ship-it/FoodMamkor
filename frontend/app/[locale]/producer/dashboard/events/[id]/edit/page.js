@@ -7,13 +7,15 @@
  * renders <EventForm mode="edit">. On save, returns to the manage list.
  */
 
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import EventForm from "@/components/EventForm";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 const LIST_HREF = "/producer/dashboard/events";
 
@@ -43,9 +45,8 @@ export default function EditEventPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
-      <Link href={LIST_HREF} className="text-sm text-primary hover:underline">
-        {t("back")}
-      </Link>
+      {/* MEH-999: entered from the events list, so back goes there. */}
+      <BackLink href={LIST_HREF} label={t("back")} />
       <h1 className="font-headline-lg text-3xl font-bold text-text mt-1 mb-6">
         {t("edit_heading")}
       </h1>

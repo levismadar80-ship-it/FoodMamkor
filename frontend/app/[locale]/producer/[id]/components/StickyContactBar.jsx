@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
+import { withReferralParams } from "@/lib/utils";
 
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
@@ -54,6 +55,12 @@ export default function StickyContactBar({
   const t = useTranslations();
   // MEH-1411: per-method icon for the sticky CTA (matches the inline button).
   const CtaIcon = METHOD_ICON[getPrimaryMethod(producer)] || WhatsappLogo;
+  // MEH-1525: mirror PrimaryContactButton — a business-website sticky CTA
+  // carries referral UTM and drops `noreferrer` (keeps `noopener`). Website
+  // method only; every other method's href + rel stay exactly as before.
+  const isWebsite = getPrimaryMethod(producer) === "website";
+  const rawHref = getPrimaryContactHref(producer);
+  const href = isWebsite ? withReferralParams(rawHref) : rawHref;
   return (
     <div
       // MEH-76 chunk 3: border hex literal -> border-border token class; the
@@ -101,12 +108,12 @@ export default function StickyContactBar({
           </div>
         ) : null}
         {/* Primary CTA */}
-        {getPrimaryContactHref(producer) && (
+        {href && (
           <a
-            href={getPrimaryContactHref(producer)}
+            href={href}
             data-testid="sticky-primary-cta"
             {...(isPrimaryExternal(producer)
-              ? { target: "_blank", rel: "noopener noreferrer" }
+              ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
               : {})}
             // MEH-1426: TODO resolved — the sticky bar now matches the ContactCard
             // CTA. A WhatsApp primary click both attributes (pingWhatsAppBeacon) and

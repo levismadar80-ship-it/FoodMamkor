@@ -1,12 +1,14 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import structlog
 from fastapi import FastAPI
 
 from app.config import settings
+from app.sentry import capture_background_exception
 
 log = structlog.get_logger("mehamakor.startup")
 
@@ -162,30 +164,101 @@ async def _init_db_background(app: FastAPI) -> None:
         await asyncio.to_thread(_run_db_init_sync)
         log.info("background DB init complete — all tables/migrations/seed ready")
         app.state.db_init_status = "ready"
-    except Exception:
+    except Exception as exc:
+        # MEH-1533: capture BEFORE the structlog call — a capture that FOLLOWS a
+        # logging call in the same except block can be dropped by Sentry event
+        # deduplication (getsentry/sentry-python#1468).
+        capture_background_exception(exc, task="db_init")
         log.error(
             "background DB init failed — /producers et al will 500 until fixed",
             exc_info=True,
         )
         app.state.db_init_status = "failed"
 
+    # MEH-1596: cache the alembic revision ONCE, here, so GET /health can
+    # publish it without a per-request DB round-trip. Reuses the reader that
+    # /health/readiness already owns (app/routers/health.py) rather than adding
+    # a second query path for the same fact.
+    #
+    # Runs after the try/except and outside it on purpose:
+    #   - after  — this is the background task, already off the boot path via
+    #              create_task + to_thread, so it adds no boot latency and
+    #              cannot delay or fail the Railway healthcheck.
+    #   - outside — a seed() crash sets db_init="failed" but the DB may still
+    #              hold a perfectly valid revision; reporting it is strictly
+    #              more useful when diagnosing exactly that failure.
+    # Fully guarded: _read_alembic_head already swallows its own errors, and
+    # this second net covers an import or thread failure. There is no retry —
+    # one read, cached, per the MEH-1596 no-per-request-query constraint.
+    try:
+        from app.routers.health import _read_alembic_head
+
+        app.state.alembic_head = (
+            await asyncio.to_thread(_read_alembic_head) or "unknown"
+        )
+    except Exception:
+        log.warning("alembic head unreadable at startup — /health reports 'unknown'")
+        app.state.alembic_head = "unknown"
+
 
 def _run_followup_job() -> None:
     """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
     (the BackgroundScheduler worker thread does not share the request-scoped
-    Session), invokes the per-step sender, and logs the per-step counts.
-    Any exception is swallowed so the scheduler thread itself never dies —
-    onboarding_followup.send_due_followups already fail-isolates per producer.
+    Session), invokes each sender, and logs its counts. Any exception is
+    swallowed so the scheduler thread itself never dies — both senders
+    already fail-isolate per producer.
+
+    MEH-1824: the two passes get INDEPENDENT try/except blocks. They shared
+    one until this change, which cost two things: a session-level failure in
+    send_due_followups (raised outside its own per-producer loop) skipped the
+    pending nudge entirely for that day, and a failure in the nudge pass was
+    reported to Sentry under `task="onboarding_followups"` — the wrong stream
+    to be reading when debugging it. Neither sender is a precondition for the
+    other, so neither should be able to suppress or mislabel the other.
     """
     from app.database import SessionLocal
     from app.services.onboarding_followup import send_due_followups
+    from app.services.pending_nudge import send_pending_nudges
 
     db = SessionLocal()
     try:
-        counts = send_due_followups(db)
-        log.info("[FOLLOWUP] daily run complete counts=%s", counts)
-    except Exception:
-        log.error("[FOLLOWUP] daily run crashed", exc_info=True)
+        try:
+            counts = send_due_followups(db)
+            log.info("[FOLLOWUP] daily run complete counts=%s", counts)
+        except Exception as exc:
+            # MEH-1824: roll back BEFORE anything else. A DB-level failure
+            # (OperationalError/ProgrammingError on the candidate query) leaves
+            # the Session in a needs-rollback state, and the very next query on
+            # it raises PendingRollbackError/InternalError instead of running.
+            # Without this the isolation above would hold only for Python-level
+            # errors and collapse for exactly the class most likely to occur —
+            # the nudge pass would still be skipped, just with a nudge-shaped
+            # error message. Measured, not assumed: poisoned session → pass 2
+            # raises InternalError; after rollback → pass 2 succeeds.
+            # Invariant for this function: every except leaves the session
+            # usable for whatever runs next.
+            db.rollback()
+            # MEH-1533: same capture-before-log ordering as _init_db_background.
+            # Daily cadence — cannot flood the Sentry quota.
+            capture_background_exception(exc, task="onboarding_followups")
+            log.error("[FOLLOWUP] daily run crashed", exc_info=True)
+
+        # MEH-1818: the day-1 pending nudge shares this daily tick rather than
+        # registering its own job — same single-replica assumption, same 10:00
+        # UTC cadence. MEH-1824: reached even when the block above raised.
+        try:
+            nudges = send_pending_nudges(db)
+            log.info("[PENDING-NUDGE] daily run complete counts=%s", nudges)
+        except Exception as exc:
+            # Same rollback for the same reason. Nothing runs after this today,
+            # so `finally: db.close()` would cover it — but the invariant is
+            # per-block, not "all but the last", so that appending a third pass
+            # here cannot silently reintroduce the bug this ticket fixed.
+            db.rollback()
+            # Its own Sentry task tag: `background_task:pending_nudge` is a
+            # separate filterable stream from the follow-up sequence.
+            capture_background_exception(exc, task="pending_nudge")
+            log.error("[PENDING-NUDGE] daily run crashed", exc_info=True)
     finally:
         db.close()
 
@@ -206,7 +279,14 @@ def _run_watchdog_job() -> None:
         counters = run_watchdog(db)
         if counters.get("scanned", 0):
             log.info("[WATCHDOG] tick complete counters=%s", counters)
-    except Exception:
+    except Exception as exc:
+        # MEH-1533: captured despite the 5-min cadence — run_watchdog() is
+        # fail-isolated per message and never raises (see its docstring), so
+        # reaching this handler is genuinely exceptional, and the job is only
+        # registered when WATCHDOG_ENABLED is true (default False, PR2c gate).
+        # Worst case is one Sentry ISSUE with repeated events, not a new issue
+        # per tick — judged not a quota-flood risk.
+        capture_background_exception(exc, task="auto_reply_watchdog")
         log.error("[WATCHDOG] tick crashed", exc_info=True)
     finally:
         db.close()
@@ -267,6 +347,19 @@ async def lifespan(app: FastAPI):
     if _email_config_error:
         log.error("EMAIL CONFIG FATAL: %s", _email_config_error)
         raise RuntimeError(_email_config_error)
+
+    # MEH-1596: boot facts published by GET /health, stored on app.state
+    # alongside db_init_status (the same mechanism, the same place — no second
+    # state holder). Both are set SYNCHRONOUSLY here so the keys exist from the
+    # first request onward; alembic_head is then overwritten once by
+    # _init_db_background. If that task fails, is cancelled, or never runs,
+    # "unknown" is what /health reports — never a missing key and never a raise.
+    #
+    # UTC, deliberately: app/utils/clock.py is Asia/Jerusalem for availability
+    # and vacation logic; a deploy timestamp is infrastructure, read by whoever
+    # is looking at logs, so it stays UTC per the MEH-1596 spec.
+    app.state.booted_at = datetime.now(timezone.utc).isoformat()
+    app.state.alembic_head = "unknown"
 
     app.state.db_init_status = "initializing"
     app.state.db_init_task = asyncio.create_task(_init_db_background(app))

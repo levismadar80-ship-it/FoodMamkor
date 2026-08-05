@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 
+// MEH-1812: HomeHero now mounts EnSearchNotice, which calls useLocale() and
+// pulls in LanguageToggle -> @/i18n/navigation. This spec covers HomeHero's own
+// behaviour, so the notice is stubbed out rather than dragging the i18n
+// navigation stack into it. Its own contract is asserted in
+// __tests__/EnSearchNotice.test.jsx, including the /he absence case.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
+
+
 // MEH-1476 — "הפתיעו אותי" surprise-me button relocated from the hero to the
 // producers-grid end (was MEH-1288/MEH-1369, a text link beside "how it works").
 // It now sits near "load more" as a secondary outline pill:
@@ -35,6 +43,10 @@ vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
 vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
+// MEH-1774: this suite pulls use-home-page transitively (HomeProducersGrid
+// imports LOAD_MORE_CAP from it), and that module now imports the locale-aware
+// router. Stub it so next-intl's ESM createNavigation never loads under vitest.
+vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
 const heroProps = {
   fridayMode: false,
@@ -59,7 +71,7 @@ const gridProps = {
   onboardAdvance: () => {},
   onboardDismiss: () => {},
   onAdvanceFromStep0: () => {},
-  onToggleChip: () => {},
+  onChipNavigate: () => {},
   onClearCategory: () => {},
   onClearLocation: () => {},
   onLoadMore: () => {},
@@ -71,11 +83,14 @@ const gridProps = {
 };
 
 describe("HomeHero (MEH-1476 — surprise-me removed)", () => {
-  it("no longer renders the surprise-me button; keeps near-me + how-it-works", () => {
+  // MEH-1690: "how it works" left the hero zone entirely (it lives only in the
+  // HomeStaticBlocks section it used to scroll to), so this no longer asserts
+  // its presence. near-me is still the thing MEH-1476 was protecting.
+  it("no longer renders the surprise-me button; keeps near-me", () => {
     render(<HomeHero {...heroProps} />);
     expect(screen.queryByText("home.hero.surprise_me")).not.toBeInTheDocument();
     expect(screen.getByText("home.hero.near_me")).toBeInTheDocument();
-    expect(screen.getByText("home.hero.how_it_works")).toBeInTheDocument();
+    expect(screen.queryByText("home.hero.how_it_works")).not.toBeInTheDocument();
   });
 });
 

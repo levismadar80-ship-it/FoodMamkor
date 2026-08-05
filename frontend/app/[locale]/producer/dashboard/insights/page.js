@@ -23,13 +23,15 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import { useRouter, Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
-import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+// MEH-1520: formatCompact moved to lib/ — App Router forbids non-reserved
+// exports from page.js ("formatCompact is not a valid Page export field").
+import { formatCompact } from "@/lib/format";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function ProducerDashboardInsightsPage() {
@@ -136,15 +138,21 @@ function DeepAnalyticsSection({ analytics, profile }) {
           windows={search_appearances}
           tooltip={t("windowed.search_appearances_tooltip")}
         />
+        {/* MEH-1557: the two click tiles carry the scope risk — contact_clicks
+            excludes WhatsApp (ContactClick.method = phone|instagram|website|
+            email), and a click is not a sent message. Same tooltip slot the
+            profile/search tiles already use; no new component. */}
         <WindowedMetricCard
           label={t("windowed.whatsapp_clicks")}
           icon={ChatCircle}
           windows={whatsapp_clicks}
+          tooltip={t("windowed.whatsapp_clicks_tooltip")}
         />
         <WindowedMetricCard
           label={t("windowed.contact_clicks")}
           icon={Phone}
           windows={contact_clicks}
+          tooltip={t("windowed.contact_clicks_tooltip")}
         />
       </div>
 
@@ -200,20 +208,6 @@ function DeepAnalyticsSection({ analytics, profile }) {
       </div>
     </div>
   );
-}
-
-// MEH-1433: 4-digit windowed values (e.g. 2540/2540/2540) overflowed the card
-// at fixed 4xl/2xl/xl sizes — in RTL the leading digit clipped on the start
-// side. Compact notation caps every magnitude at a bounded width ("2.5K"),
-// paired with min-w-0 on the flex row + tabular-nums so the trio always fits.
-// he-IL renders the "K" suffix with a trailing RLM (U+200F) — a known,
-// acceptable ICU behavior (the mark keeps the Latin suffix ordered correctly
-// in RTL). Unit-pinned in __tests__/formatCompact.test.js (MEH-1433 follow-up).
-export function formatCompact(n, locale) {
-  return new Intl.NumberFormat(locale, {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(n ?? 0);
 }
 
 function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {

@@ -13,9 +13,8 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -25,6 +24,8 @@ import { Bread } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 import RecipeForm from "@/components/RecipeForm";
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -67,22 +68,23 @@ export default function ProducerRecipesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
+      {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
+          when the button unmounts. */}
+      <div className="flex items-center justify-between mb-6 min-h-[44px]">
         <div>
-          <Link
-            href="/producer/dashboard"
-            className="text-sm text-primary hover:underline"
-          >
-            {t("back")}
-          </Link>
+          {/* MEH-999: entered from the Tools tab (tools/page.js:101), so back
+              goes to Tools — not the overview. */}
+          <BackLink href="/producer/dashboard/tools" label={t("back")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
         {/* MEH-1097 F14: hide the top toggle in the empty state — the EmptyState
             CTA is the single "publish" button there. It returns once recipes
-            exist, or while the create form is open (rendering as "close"). */}
-        {!(items?.length === 0 && !showForm) && (
+            exist, or while the create form is open (rendering as "close").
+            MEH-1655: also hidden while loading (items === null) — it used to
+            render then jump to the EmptyState CTA on an empty result. */}
+        {items !== null && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
             className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"

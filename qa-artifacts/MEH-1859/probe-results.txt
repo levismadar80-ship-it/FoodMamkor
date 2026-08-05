@@ -1,0 +1,29 @@
+MEH-1859 chunk B — admin kashrut BADGE COLUMN HEADER
+Harness: frontend/e2e/qa-meh1859-admin-badge-column.mjs  (manual, not in the e2e suite)
+Target: local `next start` :3300, viewport 1440x950, locale=he
+
+=== RUN 1 — FAILING BY CONSTRUCTION (he.json reverted to origin/staging, full rebuild) ===
+PASS all-six-headers-rendered: {"actual":6,"expected":6}
+PASS badge-header-matches-he-json: {"actual":"Badge","expected":"Badge"}
+PASS every-header-matches-he-json: {"actual":["בית עסק","Badge","תעודה","תאריך בקשה","הערות","פעולות"],"expected":["בית עסק","Badge","תעודה","תאריך בקשה","הערות","פעולות"]}
+FAIL badge-header-has-no-latin-letters: {"actual":true,"expected":false}
+PASS badge-header-is-not-a-raw-key: {"actual":false,"expected":false}
+FAILURES: 1
+
+=== RUN 2 — AFTER THE FIX (rebuild, fresh server) ===
+PASS all-six-headers-rendered: {"actual":6,"expected":6}
+PASS badge-header-matches-he-json: {"actual":"תג כשרות","expected":"תג כשרות"}
+PASS every-header-matches-he-json: {"actual":["בית עסק","תג כשרות","תעודה","תאריך בקשה","הערות","פעולות"],"expected":["בית עסק","תג כשרות","תעודה","תאריך בקשה","הערות","פעולות"]}
+PASS badge-header-has-no-latin-letters: {"actual":false,"expected":false}
+PASS badge-header-is-not-a-raw-key: {"actual":false,"expected":false}
+FAILURES: 0
+
+=== WHAT THE TWO RUNS PROVE ===
+badge-header-matches-he-json PASSED IN BOTH. It compares the rendered header to
+he.json, and on the pre-fix tree that is "Badge" vs "Badge" — it cannot tell the
+two trees apart, so it is not evidence for this change.
+badge-header-has-no-latin-letters is the assertion that discriminates: FAIL on run 1,
+PASS on run 2.
+all-six-headers-rendered PASSED IN BOTH, so run 1's FAIL is a real red and not an
+empty page: a redirect to /login renders zero <th> and every text assertion would
+then pass vacuously against undefined.

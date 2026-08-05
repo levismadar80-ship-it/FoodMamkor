@@ -52,11 +52,13 @@ describe("Edit-tab OwnerStoryCard (isolation)", () => {
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         owner_bio: "גדלתי בין העיזים במשק המשפחתי.",
         contact_name: null,
+        established_year: null,
       }),
     );
     expect(onSave).toHaveBeenCalledWith({
       owner_bio: "גדלתי בין העיזים במשק המשפחתי.",
       contact_name: null,
+      established_year: null,
     });
   });
 
@@ -68,6 +70,7 @@ describe("Edit-tab OwnerStoryCard (isolation)", () => {
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         owner_bio: null,
         contact_name: null,
+        established_year: null,
       }),
     );
   });
@@ -82,12 +85,45 @@ describe("Edit-tab OwnerStoryCard (isolation)", () => {
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         owner_bio: "ביו קיים",
         contact_name: "נועה כהן",
+        established_year: null,
       }),
     );
     expect(onSave).toHaveBeenCalledWith({
       owner_bio: "ביו קיים",
       contact_name: "נועה כהן",
+      established_year: null,
     });
+  });
+
+  // MEH-1541: the founding year rides the same PUT and coerces to an integer.
+  it("MEH-1541: saves established_year as an integer via the same PUT", async () => {
+    const { onSave } = renderCard({ owner_bio: "ביו קיים" });
+    fireEvent.change(screen.getByTestId("owner-established-year-input"), {
+      target: { value: "1940" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: O.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        owner_bio: "ביו קיים",
+        contact_name: null,
+        established_year: 1940,
+      }),
+    );
+    expect(onSave).toHaveBeenCalledWith({
+      owner_bio: "ביו קיים",
+      contact_name: null,
+      established_year: 1940,
+    });
+  });
+
+  // MEH-1541: a year change alone makes the card dirty (enables Save).
+  it("MEH-1541: established_year change alone makes the card dirty", () => {
+    renderCard({ established_year: 1940 });
+    expect(screen.getByRole("button", { name: O.save_cta })).toBeDisabled();
+    fireEvent.change(screen.getByTestId("owner-established-year-input"), {
+      target: { value: "1965" },
+    });
+    expect(screen.getByRole("button", { name: O.save_cta })).toBeEnabled();
   });
 
   it("MEH-1385 addendum: contact_name change alone makes the card dirty", () => {

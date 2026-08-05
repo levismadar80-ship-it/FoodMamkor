@@ -15,6 +15,7 @@ import {
   getPrimaryMethod,
   isPrimaryExternal,
 } from "@/lib/contact-method";
+import { withReferralParams } from "@/lib/utils";
 
 /**
  * Primary CTA button on ProducerDetail — color + icon + Hebrew label
@@ -66,10 +67,17 @@ const VARIANTS = {
 };
 
 export default function PrimaryContactButton({ producer, onClick }) {
-  const href = getPrimaryContactHref(producer);
-  if (!href) return null;
-
   const method = getPrimaryMethod(producer);
+  const rawHref = getPrimaryContactHref(producer);
+  if (!rawHref) return null;
+
+  // MEH-1525: a business-website CTA carries referral UTM and drops
+  // `noreferrer` (keeps `noopener`) so the owner's analytics attributes the
+  // click to mehamakor. Website method only — social / external_order links
+  // and their `rel` are untouched.
+  const isWebsite = method === "website";
+  const href = isWebsite ? withReferralParams(rawHref) : rawHref;
+
   const variant = VARIANTS[method] || VARIANTS.whatsapp;
   const Icon = variant.Icon;
   const label = getPrimaryContactLabel(producer);
@@ -80,7 +88,7 @@ export default function PrimaryContactButton({ producer, onClick }) {
       href={href}
       onClick={onClick}
       {...(external
-        ? { target: "_blank", rel: "noopener noreferrer" }
+        ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
         : {})}
       data-testid="primary-contact-button"
       data-method={method}

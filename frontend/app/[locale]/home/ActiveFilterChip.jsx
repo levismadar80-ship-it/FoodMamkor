@@ -10,8 +10,9 @@ import { useTranslations } from "next-intl";
  *
  * Renders at most one chip (geo and city are mutually exclusive location
  * modes in useHomePage):
- *   - geoActive           → "עסקים ליד המיקום שלך ✕"
- *   - cityActive (string) → "עסקים באזור {city} ✕"
+ *   - geoActive                 → "עסקים ליד המיקום שלך ✕"
+ *   - cityActive (string)       → "עסקים באזור {city} ✕"
+ *   - cityActive + dayActive    → "משלוח ל{city} · יום {day} ✕" (MEH-1645)
  * Clicking the chip fires onClear, which drops the active location filter and
  * reloads the grid. Self-hides when neither filter is active.
  *
@@ -19,14 +20,18 @@ import { useTranslations } from "next-intl";
  * text-primary), Phosphor icons, RTL logical props (ps-/pe-).
  *
  * Does NOT: own filter state or fetching (useHomePage) — purely presentational.
+ * The day picker that renders beside it is DeliveryDayRow, which MEH-1825
+ * moved to components/DeliveryDayRow.jsx so /producers mounts the same one.
  */
-export function ActiveFilterChip({ geoActive, cityActive, onClear }) {
+export function ActiveFilterChip({ geoActive, cityActive, dayActive, onClear }) {
   const t = useTranslations();
   if (!geoActive && !cityActive) return null;
 
   const label = geoActive
     ? t("home.producers.geo_chip")
-    : t("home.producers.city_chip", { city: cityActive });
+    : dayActive
+      ? t("home.producers.city_day_chip", { city: cityActive, day: dayActive })
+      : t("home.producers.city_chip", { city: cityActive });
 
   return (
     <div className="mb-6" aria-live="polite">

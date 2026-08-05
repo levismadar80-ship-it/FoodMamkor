@@ -10,7 +10,9 @@
  *           components/ui/EmptyState.jsx, lib/errors.js (detailToMessage).
  * History:  MEH-776 (UIS-026 delete guard); MEH-999 follow-up (extracted from
  *           settings/page.jsx and mounted in the edit tab — was defined but
- *           never rendered).
+ *           never rendered); MEH-1809 (unified submit validation: all field
+ *           errors computed together, rendered inline via ui/Input, focus to
+ *           the first invalid field — replaced the one-at-a-time setError chain).
  */
 "use client";
 
@@ -29,6 +31,43 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
+import Input from "@/components/ui/Input";
+
+// MEH-1809: unified submit-validation — every required/range check runs
+// together (not one-at-a-time via a setError chain) and lands on its field.
+const PRODUCT_FIELD_ORDER = ["name", "price_min", "price_max"];
+const PRODUCT_FIELD_ID_SUFFIX = { name: "name", price_min: "price-min", price_max: "price-max" };
+
+function validateProductForm(f, tErr) {
+  const errors = {};
+  if (!f.name.trim()) errors.name = tErr("name_required");
+  if (f.price_min === "") {
+    errors.price_min = tErr("price_required");
+  } else {
+    const minNum = Number(f.price_min);
+    if (minNum < 1) errors.price_min = tErr("price_min_too_low");
+    else if (minNum > 10000) errors.price_min = tErr("price_too_high");
+  }
+  if (f.price_max !== "") {
+    const maxNum = Number(f.price_max);
+    if (maxNum > 10000) errors.price_max = tErr("price_too_high");
+    else if (f.price_min !== "" && maxNum < Number(f.price_min)) errors.price_max = tErr("price_max_below_min");
+  }
+  return errors;
+}
+
+// Scroll + focus the first invalid field in form order (GOV.UK pattern).
+function focusFirstInvalidProductField(errors, idPrefix) {
+  const first = PRODUCT_FIELD_ORDER.find((field) => errors[field]);
+  if (!first) return;
+  const el = document.getElementById(`${idPrefix}-${PRODUCT_FIELD_ID_SUFFIX[first]}`);
+  el?.focus();
+  el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+}
+
+function clearFieldError(setErrors, field) {
+  setErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
+}
 
 // MEH-1116: `embedded` drops the card chrome + heading (the edit-tab accordion
 // header owns them); `onCountChange` reports the live product count up for the
@@ -46,8 +85,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [editFormErrors, setEditFormErrors] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.
@@ -108,13 +149,15 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError(tErr("name_required")); return; }
-    if (form.price_min === "") { setError(tErr("price_required")); return; }
+    const errors = validateProductForm(form, tErr);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      focusFirstInvalidProductField(errors, "new-product");
+      return;
+    }
+    setFormErrors({});
     const minNum = Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
-    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
-    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
     setSaving(true);
     setError("");
     try {
@@ -155,11 +198,13 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       is_lactose_free: !!product.is_lactose_free,
     });
     setError("");
+    setEditFormErrors({});
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setError("");
+    setEditFormErrors({});
   };
 
   const handleEditImageUpload = async (e) => {
@@ -209,13 +254,18 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 
   const handleEdit = async (productId, e) => {
     e.preventDefault();
-    if (!editForm.name?.trim()) { setError(tErr("name_required")); return; }
-    if (editForm.price_min === "") { setError(tErr("price_required")); return; }
+    const errors = validateProductForm(
+      { name: editForm.name || "", price_min: editForm.price_min ?? "", price_max: editForm.price_max ?? "" },
+      tErr,
+    );
+    if (Object.keys(errors).length > 0) {
+      setEditFormErrors(errors);
+      focusFirstInvalidProductField(errors, `edit-product-${productId}`);
+      return;
+    }
+    setEditFormErrors({});
     const minNum = Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
-    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
-    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
     setSavingEdit(true);
     setError("");
     try {
@@ -281,7 +331,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             first add). Empty state → the EmptyState CTA is the single button. */}
         {!adding && products?.length > 0 && (
           <button
-            onClick={() => { setAdding(true); setError(""); }}
+            onClick={() => { setAdding(true); setError(""); setFormErrors({}); }}
             className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
           >
             <Plus size={14} aria-hidden="true" />
@@ -289,6 +339,11 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           </button>
         )}
       </div>
+
+      {/* MEH-1597: card-level "where it appears" line. The MEH-1539 standard
+          allows one per card when it covers every field, which it does here —
+          name, description and price all surface in the same public list. */}
+      <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
 
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
@@ -316,7 +371,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           title={t("empty.title")}
           description={t("empty.description")}
           ctaLabel={t("empty.cta")}
-          ctaOnClick={() => { setAdding(true); setError(""); }}
+          ctaOnClick={() => { setAdding(true); setError(""); setFormErrors({}); }}
           example={
             // MEH-1172: no floating decorative icon — the example card IS the
             // visual (Carbon empty-state pattern). Full opacity, slightly wider.
@@ -342,6 +397,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             <form
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
+              noValidate
               className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50"
             >
               <div className="flex items-center justify-between">
@@ -358,22 +414,24 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               {/* MEH-1273 group (a) — details: name + description (tight spacing within, wider between groups). */}
               <div className="space-y-3">
                 <div>
-                  <label htmlFor={`edit-product-${product.id}-name`} className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-                  <input
+                  <Input
                     id={`edit-product-${product.id}-name`}
+                    label={tForm("name_label")}
                     required
                     value={editForm.name || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+                    onChange={(e) => {
+                      setEditForm((f) => ({ ...f, name: e.target.value }));
+                      clearFieldError(setEditFormErrors, "name");
+                    }}
+                    error={editFormErrors.name}
                   />
                 </div>
                 <div>
-                  <label htmlFor={`edit-product-${product.id}-description`} className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-                  <input
+                  <Input
                     id={`edit-product-${product.id}-description`}
+                    label={tForm("description_label")}
                     value={editForm.description || ""}
                     onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -385,14 +443,24 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   label={tForm("price_min_label")}
                   required
                   value={editForm.price_min || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, price_min: e.target.value }))}
+                  placeholder={tForm("price_min_placeholder")}
+                  onChange={(e) => {
+                    setEditForm((f) => ({ ...f, price_min: e.target.value }));
+                    clearFieldError(setEditFormErrors, "price_min");
+                  }}
+                  error={editFormErrors.price_min}
                 />
                 <PriceField
                   id={`edit-product-${product.id}-price-max`}
                   label={tForm("price_max_label")}
                   optionalSuffix={tForm("price_max_optional_suffix")}
                   value={editForm.price_max || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
+                  placeholder={tForm("price_max_placeholder")}
+                  onChange={(e) => {
+                    setEditForm((f) => ({ ...f, price_max: e.target.value }));
+                    clearFieldError(setEditFormErrors, "price_max");
+                  }}
+                  error={editFormErrors.price_max}
                 />
               </div>
 
@@ -482,34 +550,36 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
+        <form onSubmit={handleAdd} noValidate className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-text">{t("add_heading")}</p>
-            <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
+            <button type="button" onClick={() => { setAdding(false); setError(""); setFormErrors({}); }} aria-label={t("cancel_aria")}>
               <X size={16} className="text-fg-muted" aria-hidden="true" />
             </button>
           </div>
           {/* MEH-1273 group (a) — details: name + description. */}
           <div className="space-y-3">
             <div>
-              <label htmlFor="new-product-name" className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-              <input
+              <Input
                 id="new-product-name"
+                label={tForm("name_label")}
                 required
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }));
+                  clearFieldError(setFormErrors, "name");
+                }}
                 placeholder={tForm("name_placeholder")}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+                error={formErrors.name}
               />
             </div>
             <div>
-              <label htmlFor="new-product-description" className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-              <input
+              <Input
                 id="new-product-description"
+                label={tForm("description_label")}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder={tForm("description_placeholder")}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -522,14 +592,24 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 label={tForm("price_min_label")}
                 required
                 value={form.price_min}
-                onChange={(e) => setForm((f) => ({ ...f, price_min: e.target.value }))}
+                placeholder={tForm("price_min_placeholder")}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, price_min: e.target.value }));
+                  clearFieldError(setFormErrors, "price_min");
+                }}
+                error={formErrors.price_min}
               />
               <PriceField
                 id="new-product-price-max"
                 label={tForm("price_max_label")}
                 optionalSuffix={tForm("price_max_optional_suffix")}
                 value={form.price_max}
-                onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
+                placeholder={tForm("price_max_placeholder")}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, price_max: e.target.value }));
+                  clearFieldError(setFormErrors, "price_max");
+                }}
+                error={formErrors.price_max}
               />
             </div>
             {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
@@ -621,37 +701,38 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 // duplication, not a shared component). Save/upload logic stays in the parent;
 // these own layout only.
 
-// Price field with the ₪ adornment rendered INSIDE the input.
-// REUSES: app/[locale]/producer/dashboard/group-buys/page.js:126-137 (Input
-// startAdornment="₪") + components/ui/Input.jsx:105-110 (absolute start-3 span).
-// Logical props only (start-3 / ps-8) — RTL-safe.
-function PriceField({ id, label, optionalSuffix, value, onChange, required = false }) {
+// Price field with the ₪ adornment rendered INSIDE the input, via the
+// canonical Input startAdornment (MEH-1809 — was a hand-rolled duplicate of
+// this same primitive; now reuses it directly, error prop included).
+// MEH-1597: `placeholder` added so the two price inputs can carry an example
+// like every other field in the card. Plain number, no ₪ — the currency glyph
+// is already rendered inside the input below, and products are numeric since
+// MEH-295.
+function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, required = false, error }) {
   return (
-    <div>
-      <label htmlFor={id} className="text-xs text-fg-muted mb-1 block">
-        {label}
-        {optionalSuffix ? <span className="text-fg-muted"> {optionalSuffix}</span> : null}
-      </label>
-      <div className="relative">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted"
-        >
-          ₪
-        </span>
-        <input
-          id={id}
-          required={required}
-          type="number"
-          min={1}
-          max={10000}
-          step={0.5}
-          value={value}
-          onChange={onChange}
-          className="w-full border border-border rounded-[8px] ps-8 pe-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-        />
-      </div>
-    </div>
+    <Input
+      id={id}
+      label={
+        optionalSuffix ? (
+          <>
+            {label}
+            <span className="text-fg-muted"> {optionalSuffix}</span>
+          </>
+        ) : (
+          label
+        )
+      }
+      required={required}
+      type="number"
+      min={1}
+      max={10000}
+      step={0.5}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      startAdornment="₪"
+      error={error}
+    />
   );
 }
 

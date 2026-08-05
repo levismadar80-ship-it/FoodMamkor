@@ -6,7 +6,7 @@ Lives in a separate file from admin.py to keep things readable.
 MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -14,6 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
+from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.models import (
     AdminSetting,
@@ -42,11 +43,28 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import server_health
 from app.services.vacation_state import read_vacation_state
+from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
 SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
+
+# MEH-1571: shared Hebrew copy for the two update_category guards. Named
+# constants rather than inline strings at the raise site — REUSES:
+# backend/app/services/license_validation.py:27 (LICENSE_REQUIRED_ERROR_HE),
+# the same pattern for the same regulatory surface. Mirrored in
+# frontend/messages/{he,en}.json under admin.content.categories.
+#
+# DO NOT soften the rename message into "try a different name" — it must say
+# WHY the rename is refused (a licensing requirement) and WHERE it belongs
+# (a migration), or the admin retries in the UI and files a bug instead.
+CATEGORY_LICENSE_RENAME_ERROR_HE = (
+    "לקטגוריה הזאת יש דרישת רישיון של משרד הבריאות שמזוהה לפי השם. "
+    "שינוי השם מבטל את הדרישה עבור בתי העסק בקטגוריה, ולכן הוא נעשה במיגרציה "
+    "ולא במסך הניהול. אפשר לעדכן את האימוג'י."
+)
+CATEGORY_NAME_TAKEN_ERROR_HE = "קטגוריה בשם זה כבר קיימת"
 
 
 # ============================================================
@@ -211,9 +229,47 @@ def update_category(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Rename / re-emoji a category. Two guards, both on the rename path only.
+
+    MEH-1571: `LICENSE_REQUIRED_CATEGORIES` (app/constants.py) pins a משרד
+    הבריאות licensing requirement to the category NAME, and
+    `license_validation.categories_require_license` resolves ids -> names ->
+    intersection at request time. Renaming a licensed row here therefore
+    dropped it out of the regulatory set silently — no error, no log, and the
+    next producer in that category was no longer asked for a license number.
+    The rename is refused; re-keying the taxonomy belongs in a reviewed,
+    reversible Alembic revision (the MEH-927 pattern), which writes raw SQL and
+    does not pass through this endpoint.
+
+    The second guard is the `categories_name_key` collision: this handler wrote
+    the new name with no pre-check, so renaming onto a name another row already
+    holds surfaced as an unhandled IntegrityError -> 500. `create_category`
+    above has always pre-checked; this mirrors it.
+    """
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
+
+    # Emoji-only edits skip both guards — nothing about the licensing lookup or
+    # the UNIQUE constraint depends on the emoji.
+    if data.name != cat.name:
+        # Guard on the row's CURRENT name: that is the value the regulatory
+        # lookup matches on today. Checking the INCOMING name instead would
+        # invert the guard and let the bypass through.
+        if cat.name in LICENSE_REQUIRED_CATEGORIES:
+            raise HTTPException(
+                status_code=422, detail=CATEGORY_LICENSE_RENAME_ERROR_HE
+            )
+        # REUSES: backend/app/routers/admin_extra.py:198 — create_category's
+        # duplicate-name SELECT. Same shape, scoped to OTHER rows so re-saving
+        # a row under its own name is not a false collision.
+        if (
+            db.query(Category)
+            .filter(Category.name == data.name, Category.id != cat.id)
+            .first()
+        ):
+            raise HTTPException(status_code=422, detail=CATEGORY_NAME_TAKEN_ERROR_HE)
+
     cat.name = data.name
     cat.emoji = data.emoji
     db.commit()
@@ -386,10 +442,17 @@ def get_analytics(
 # ============================================================
 
 DEFAULT_SETTINGS = {
-    "admin_email": "",
-    "admin_whatsapp": "",
-    "freemium_premium_price": "0",
-    "freemium_free_image_limit": "3",
+    # MEH-1566: `admin_email` + `admin_whatsapp` were removed here — write-only
+    # keys with zero readers. Every admin-notification recipient is read from
+    # the env-backed settings object (`settings.admin_email` /
+    # `settings.admin_whatsapp_to`, backend/app/config.py:85,64), never from
+    # this table. Existing rows are left in place and inert, same as below.
+    # MEH-1555: `freemium_premium_price` + `freemium_free_image_limit` were
+    # removed here — write-only keys with zero readers anywhere in backend or
+    # frontend (the /upload/image cap is the hardcoded `>= 3` in
+    # routers/upload.py:101, which never consulted the setting). Existing
+    # `admin_settings` rows are intentionally left in place: PUT /admin/settings
+    # ignores unknown keys, so the orphan rows are inert and no migration runs.
     # MEH-247 — admin-facing holiday + Friday override toggles. Both are
     # persisted server-side so admin A's toggle is visible to admin B on
     # next /admin/settings load. Consumer-side reads happen via the
@@ -701,15 +764,31 @@ def get_dashboard(
     # main.py on every authenticated request. Pre-existing users who
     # haven't made a request since the column was added won't count
     # until they touch the API.
-    today = date.today()
-    dau_cutoff = datetime.combine(today - timedelta(days=29), datetime.min.time())
+    # MEH-1894: same three-part Israel-day alignment as the producer-side
+    # series (producer_me.py). last_active_at is a NAIVE UTC column
+    # (models.py:504), so the bucket is labelled UTC and then converted to
+    # Israel local before func.date() cuts the day — otherwise the boundary
+    # sits at midnight UTC (02:00/03:00 Israel) and a 00:30 session counts as
+    # yesterday. The cutoff is Israel midnight expressed back in naive UTC, so
+    # the oldest bucket keeps its first 2-3 hours.
+    today = israel_today()
+    dau_cutoff = (
+        datetime.combine(
+            today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ
+        )
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    israel_day = func.date(
+        func.timezone("Asia/Jerusalem", func.timezone("UTC", User.last_active_at))
+    )
     dau_rows = (
         db.query(
-            func.date(User.last_active_at).label("day"),
+            israel_day.label("day"),
             func.count(func.distinct(User.id)).label("count"),
         )
         .filter(User.last_active_at.isnot(None), User.last_active_at >= dau_cutoff)
-        .group_by(func.date(User.last_active_at))
+        .group_by(israel_day)
         .all()
     )
     by_day = {str(r.day): int(r.count) for r in dau_rows}

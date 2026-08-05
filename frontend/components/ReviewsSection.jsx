@@ -34,7 +34,14 @@ function formatName(fullName, fallback) {
 function StarRow({ value, size = 16, ariaLabel }) {
   const numeric = Number(value) || 0;
   return (
-    <div className="flex gap-0.5" dir="ltr" aria-label={ariaLabel}>
+    // MEH-1556: role="img" makes the aria-label legal here. Without a role,
+    // aria-label on a plain div is prohibited ARIA (axe aria-prohibited-attr,
+    // serious) and assistive tech drops the label silently — leaving the row
+    // unlabelled, since every star span below is aria-hidden. role="img" also
+    // matches the intent: the five stars are one indivisible graphic reading
+    // "4.8 כוכבים". Both call sites (:383, :528) always pass the i18n
+    // star_aria label, so the name can never be empty (role-img-alt is safe).
+    <div className="flex gap-0.5" dir="ltr" role="img" aria-label={ariaLabel}>
       {[1, 2, 3, 4, 5].map((n) => {
         const fill = Math.max(0, Math.min(1, numeric - (n - 1)));
         return (

@@ -1,8 +1,7 @@
 "use client";
 
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -10,6 +9,8 @@ import { showToast } from "@/lib/toast";
 import { LinkSimple, Plant } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 import { SITE_URL } from "@/lib/env";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 export default function FollowersPage() {
   const router = useRouter();
@@ -69,9 +70,10 @@ export default function FollowersPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            {t("back_link")}
-          </Link>
+          {/* MEH-999: NOT a Tools-grid page — its only in-app entry is the
+              public producer page (ReviewsSection.jsx:495), so the dashboard
+              overview stays the back target. */}
+          <BackLink href="/producer/dashboard" label={t("back_link")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>

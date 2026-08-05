@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import and_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
@@ -17,7 +18,7 @@ from app.services.availability_validation import (
 )
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import OtpCodeV1
-from app.utils.clock import israel_today
+from app.utils.clock import ISRAEL_TZ, israel_today
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -26,6 +27,7 @@ from app.models import (
     Producer,
     Product,
     ProducerLocation,
+    ProducerOffer,
     ProducerPageView,
     ProducerWhatsAppClick,
     User,
@@ -53,13 +55,15 @@ from app.schemas.schemas import (
     ProductUpdate,
 )
 from app.services.auth_notifications import notify_admin_producer_review_ready
-from app.services.delivery_validation import ensure_exclusion_requires_nationwide
+from app.services.delivery_validation import (
+    ensure_exclusion_requires_nationwide,
+    ensure_nationwide_requires_delivery,
+)
 from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
 )
 from app.services.trust_tier import VALID_BADGE_CODES
-from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
 log = logging.getLogger(__name__)
 
@@ -93,31 +97,139 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
             db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
-def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
-    """MEH-447: extracted from update_my_producer to keep that handler under
-    C901's complexity threshold. Validates against RESERVED_SLUGS and finds
-    a non-colliding suffix (`-2`, `-3`, ...) against other producers."""
-    raw = _slugify_me(raw_slug)
-    if raw in RESERVED_SLUGS:
-        raise HTTPException(
-            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
-        )
-    candidate = raw
-    counter = 2
-    while True:
-        if candidate not in RESERVED_SLUGS:
-            existing = (
-                db.query(Producer)
-                .filter(
-                    Producer.slug == candidate,
-                    Producer.id != producer_id,
-                )
-                .first()
+def _sync_delivery_areas(
+    db: Session,
+    producer: Producer,
+    delivery_rows: list[dict] | None,
+    delivery_cities: list[str] | None,
+) -> list[str]:
+    """MEH-1644: route the two delivery-area write shapes (structured rows
+    take precedence over the flat city list) and return the newly-added
+    cities for the MEH-54/MEH-1360 delivery_area alert — identical semantics
+    on both paths."""
+    if delivery_rows is None and delivery_cities is None:
+        return []
+    existing_cities = (
+        {da.city for da in producer.delivery_areas}
+        if producer.delivery_areas
+        else set()
+    )
+    if delivery_rows is not None:
+        _apply_delivery_rows(db, producer, delivery_rows)
+        sent_cities = [(r.get("city") or "").strip() for r in delivery_rows]
+    else:
+        _apply_delivery_cities(db, producer, delivery_cities)
+        sent_cities = delivery_cities
+    return [c for c in sent_cities if c and c not in existing_cities]
+
+
+def _apply_delivery_rows(db: Session, producer: Producer, rows: list[dict]):
+    """MEH-1644: replace all delivery areas with structured rows
+    (city · min_order · delivery_day · delivery_fee). Same delete+insert
+    semantics as _apply_delivery_cities; delivery_day arrives
+    whitelist-validated by DeliveryAreaCreate (DeliveryDayField — 422 outside
+    the canonical vocabulary, None = "בתיאום מראש").
+
+    MEH-1772: delivery_fee is the per-area override of producers.delivery_fee.
+    `row.get("delivery_fee")` returns None both when the key is absent and when
+    it is explicitly null, and both mean the same thing here — inherit — so the
+    two cases do not need distinguishing. A 0 survives untouched (it is
+    "משלוח חינם", not absence), which is why this reads the value rather than
+    testing it for truthiness."""
+    db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
+    for row in rows:
+        city = (row.get("city") or "").strip()
+        if not city:
+            continue
+        db.add(
+            DeliveryArea(
+                producer_id=producer.id,
+                city=city,
+                min_order=row.get("min_order"),
+                delivery_day=row.get("delivery_day"),
+                delivery_fee=row.get("delivery_fee"),
             )
-            if not existing:
-                return candidate
-        candidate = f"{raw}-{counter}"
-        counter += 1
+        )
+
+
+def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
+    """MEH-1823 chunk 2: write the owner's single offer.
+
+    Called ONLY when the key was explicitly present in the body — the caller
+    checks `model_fields_set`, because `exclude_unset` alone cannot distinguish
+    "omitted" (leave the offer alone) from "explicit null" (deactivate it), and
+    conflating those would silently wipe an offer on every unrelated PUT from
+    the dashboard.
+
+    Replace, never update: any currently-active row is flipped inactive and a
+    new row is inserted. That keeps the unique partial index
+    (`uq_producer_offers_active_per_producer`) satisfied without an UPSERT, and
+    leaves the superseded offer in place as history rather than destroying it.
+
+    # REUSES: backend/app/routers/producer_me.py:122 — _apply_delivery_rows
+    #         (same owner-writes-child-rows shape, same delete-then-insert
+    #         ordering inside the request's transaction).
+    """
+    active = (
+        db.query(ProducerOffer)
+        .filter(
+            ProducerOffer.producer_id == producer.id,
+            ProducerOffer.is_active.is_(True),
+        )
+        .all()
+    )
+    for row in active:
+        row.is_active = False
+    # Flush the deactivation before inserting, or the new row collides with the
+    # old one on the unique partial index inside the same transaction.
+    db.flush()
+    if offer is None:
+        return
+    db.add(
+        ProducerOffer(
+            producer_id=producer.id,
+            offer_type=offer["offer_type"],
+            threshold_value=offer.get("threshold_value"),
+            threshold_unit=offer.get("threshold_unit"),
+            headline=offer.get("headline"),
+            starts_at=offer.get("starts_at"),
+            expires_at=offer["expires_at"],
+            # Hardcoded, never read from the payload. `is_active` is not a
+            # ProducerOfferCreate field (see its docstring): a caller-supplied
+            # False here would deactivate the current offer and then insert a
+            # row that was never active — a fourth state whose visible effect
+            # is identical to `null`, and which accumulates dead rows because
+            # uq_producer_offers_active_per_producer is partial (WHERE is_active)
+            # and so does not constrain them. Reaching this line means the
+            # caller sent an offer object, and an offer object means active.
+            is_active=True,
+        )
+    )
+    # MEH-1823: flush HERE so a collision on uq_producer_offers_active_per_producer
+    # surfaces as a 409 instead of a 500 from an uncaught IntegrityError at commit.
+    #
+    # The race is real and was REPRODUCED, not theorised: two concurrent PUTs for
+    # the same producer both SELECT the active rows before either writes, so the
+    # second INSERT lands on a row the first committed after that SELECT. A
+    # double-clicked save is enough.
+    #
+    # `.with_for_update()` on the SELECT above does NOT close it. When the
+    # business has no offer yet there is no row to lock, so both requests lock
+    # nothing and both insert — verified: the collision reproduces with and
+    # without the lock in the no-existing-row case. The unique index is the only
+    # thing that can arbitrate, so the fix is to let it, and translate its verdict.
+    #
+    # The invariant was never at risk — the index already guaranteed at most one
+    # active offer. What changes here is the symptom: a clean 409 the dashboard
+    # can act on, rather than a 500.
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="ההטבה עודכנה במקביל מחלון אחר. רעננו את הדף ונסו שוב.",
+        ) from exc
 
 
 def _enforce_owner_license_gate(db, producer, payload, category_ids):
@@ -204,12 +316,10 @@ def update_my_producer(
     was_approvable = _pending_and_approvable(db, producer)
 
     _PRODUCER_WRITABLE_FIELDS = {
-        "name",
         "contact_name",
         "description",
         "short_description",
         "city",
-        "address",  # MEH-829: owner can edit her own street address (private)
         "lat",
         "lng",
         "phone",
@@ -220,9 +330,7 @@ def update_my_producer(
         "contact_email",
         "facebook",
         "external_order_form",
-        "slug",
         "top_product_name",
-        "starting_price_label",
         "price_range",
         # MEH-1335: owner story fields (public OwnerCard data path). Validated
         # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
@@ -235,9 +343,44 @@ def update_my_producer(
         "vegan_scope",
         "vegetarian_scope",
         "gluten_free_facility",
-        "lactose_free_facility",
         "has_delivery",
-        "pickup_points",
+        # MEH-1856 (dispositions from MEH-1851): `address`, `slug`,
+        # `lactose_free_facility` and `pickup_points` were REMOVED from this set.
+        # Each was writable here with no editor anywhere in the owner dashboard —
+        # the API accepted a value no owner UI could produce. The columns stay,
+        # and the admin (`admin.py`) + import (`producer_import.py`) write paths
+        # are unchanged; only the owner PUT path is closed. Do not re-add one
+        # without shipping its editor in the same PR:
+        #   address              → superseded by ProducerLocation.address, which
+        #                          the owner DOES edit (LocationsEditor.jsx)
+        #   slug                 → owner edit silently breaks every shared /p/<slug>
+        #                          link; needs a redirect story first
+        #   lactose_free_facility→ its question was cut (DietaryScopeCard.jsx
+        #                          "Does NOT: … touch lactose"); no reader exists
+        #   pickup_points        → duplicates ProducerLocation.kind='pickup'
+        # MEH-1851 (Sapir's 03/08 ruling, rows 1 · 19 · 39): three more owner
+        # write paths closed for the same reason — the API accepted a value no
+        # owner UI produces. Columns stay; admin (`admin.py`) and import
+        # (`producer_import.py`) are untouched. Note MEH-1856's body deferred
+        # these three as "EXPOSE, future ticket"; the 03/08 ruling supersedes
+        # that and made all three REMOVE-WRITE. Do not re-add one without
+        # shipping its editor in the same PR:
+        #   name                 → a DNA-LOCK hole, not a missing feature: the
+        #                          setattr loop below writes it with NO re-review,
+        #                          so an APPROVED business could rename itself
+        #                          into something else entirely through the raw
+        #                          API. An editor with re-moderation is MEH-1872.
+        #   starting_price_label → the owner edits `price_range` (PricingCard);
+        #                          this second, older price string has no editor
+        #                          and is what ProducerSections.jsx:206 actually
+        #                          renders. MEH-1855 owns mirroring price_range
+        #                          into it — deliberately NOT done here, so the
+        #                          two PRs cannot collide in either merge order.
+        #   is_available_today   → written by POST /producers/me/availability-state
+        #                          (and the legacy /availability toggle), BOTH of
+        #                          which mirror `availability_state`. This path
+        #                          did not, so a raw PUT desynced the pair. The
+        #                          column's removal is MEH-1854, not this.
         # MEH-1242 PR5: owner permission-surface extension — location mode +
         # opening hours (previously admin-only). delivery_area_cities is still
         # popped + processed separately below. The (has_physical_location OR
@@ -251,24 +394,57 @@ def update_my_producer(
         # _ensure_exclusion_requires_nationwide + the DB CHECK.
         "delivery_excluded_cities",
         "opening_hours",
+        # MEH-1543: owner-editable weekly order-acceptance window. Validated in
+        # ProducerUpdate (day keys, HH:MM 24h, close>open). Explicit null in the
+        # body clears it (present-but-None flows through model_dump(exclude_unset)
+        # and setattr sets the column to NULL).
+        "order_window",
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
-        "is_available_today",
         "images",
         "custom_questions",
+        # MEH-1541: owner sets her own founding year. Range-validated
+        # (1800..current year) in ProducerUpdate (schemas.py); this opens
+        # the write path.
+        "established_year",
+        # MEH-1577: owner states delivery cost + free-delivery threshold.
+        # Validated in ProducerUpdate (both >= 0; free_delivery_above > 0;
+        # delivery_fee 0 accepted = "משלוח חינם") — this only opens the write
+        # path. Explicit null in the body clears either one (present-but-None
+        # flows through model_dump(exclude_unset) and setattr writes NULL),
+        # matching order_window above.
+        "delivery_fee",
+        "free_delivery_above",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
+    # MEH-1644: structured rows (city · min_order · delivery_day) from the
+    # dashboard DeliveryCard. Takes precedence over the flat city list when
+    # both are sent; absent (exclude_unset) → the flat path behaves as before.
+    delivery_rows = payload.pop("delivery_areas", None)
+    # MEH-1823 chunk 2: three-valued. `in payload` (post-exclude_unset) is the
+    # ONLY way to tell "omitted" from "explicit null" — popping the value alone
+    # collapses them, and that difference is whether an unrelated dashboard save
+    # leaves the offer alone or deletes it.
+    offer_sent = "active_offer" in payload
+    offer_payload = payload.pop("active_offer", None)
 
     _enforce_owner_license_gate(db, producer, payload, category_ids)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
+    # MEH-1879: same shape — nationwide delivery requires the delivery flag,
+    # or the DB CHECK (MEH-1849) turns a partial update into a 500.
+    ensure_nationwide_requires_delivery(producer, payload)
 
-    # Validate and deduplicate slug if explicitly provided.
-    if "slug" in payload and payload["slug"]:
-        payload["slug"] = _resolve_unique_slug(db, payload["slug"], producer.id)
+    # MEH-1856: the slug validate-and-deduplicate step that stood here is gone
+    # along with `slug` itself (see _PRODUCER_WRITABLE_FIELDS). Leaving it would
+    # have been worse than dead code: `_resolve_unique_slug` raises 400 on a
+    # RESERVED_SLUGS value, so this endpoint would have kept REJECTING a slug it
+    # no longer writes — `slug: "about"` → 400 while `slug: "anything"` → 200
+    # and silently ignored. Slug uniqueness for the paths that do write it lives
+    # in admin.py (:81, :148, :258) and producer_import.py (:59), untouched.
 
     # MEH-375: snapshot the gallery BEFORE mutation so we can diff old vs
     # new and clean up dropped URLs AFTER db.commit succeeds. Destroying
@@ -280,16 +456,13 @@ def update_my_producer(
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
 
-    # Handle delivery area cities (replaces existing areas like admin endpoint)
-    new_cities: list[str] = []
-    if delivery_cities is not None:
-        existing_cities = (
-            {da.city for da in producer.delivery_areas}
-            if producer.delivery_areas
-            else set()
-        )
-        _apply_delivery_cities(db, producer, delivery_cities)
-        new_cities = [c for c in delivery_cities if c and c not in existing_cities]
+    # Handle delivery areas (replaces existing rows like the admin endpoint).
+    # MEH-1644: structured rows take precedence over the flat city list.
+    new_cities = _sync_delivery_areas(db, producer, delivery_rows, delivery_cities)
+
+    # MEH-1823 chunk 2: the owner's single offer (replace-or-deactivate).
+    if offer_sent:
+        _sync_active_offer(db, producer, offer_payload)
 
     # Handle category updates
     if category_ids is not None:
@@ -346,9 +519,14 @@ def update_my_producer(
     return producer
 
 
+# LEGACY(2026-09-01, MEH-1854)
 # MEH-291 — dual-write helpers used during the 7-day overlap.
 # Phase 4 (separate PR) drops the legacy is_available_today + availability_status
 # columns and removes these helpers along with the legacy endpoints below.
+# MEH-1857: that "7-day overlap" opened in May 2026 and the contract step never
+# ran — ~14 months, which is why the expiry marker above now exists. MEH-1854
+# owns the removal; scripts/legacy-expiry-check.sh fails once the date passes,
+# so the next person either finishes it or extends the date in a reviewed PR.
 
 
 def _state_to_legacy(state: str) -> tuple[bool, str]:
@@ -669,18 +847,44 @@ def producer_analytics(
     )
 
     # Views by day for the last 30 days, zero-filled.
-    today = date.today()
-    thirty_days_ago = datetime.combine(today - timedelta(days=29), datetime.min.time())
+    # MEH-1894: the whole window runs on the Israel calendar day. Three parts
+    # move together, and they have to — fixing only one is what produces an
+    # off-by-a-few-hours bucket.
+    #   1. the anchor: israel_today(), not the server's UTC date.
+    #   2. the bucket: created_at is a NAIVE UTC column (models.py:1461), so
+    #      it is first labelled UTC and then converted to Israel local before
+    #      func.date() cuts the day. Without this the day boundary falls at
+    #      midnight UTC = 02:00/03:00 Israel, so a 00:30 view counts as
+    #      yesterday. The double cast is required precisely BECAUSE the column
+    #      is naive; a tz-aware column would need only the inner one.
+    #   3. the cutoff: Israel midnight of the oldest day, expressed back in
+    #      naive UTC to match the column. Leaving the old naive
+    #      datetime.combine() here would silently drop the first 2-3 hours of
+    #      the oldest bucket, since that bucket starts at 21:00/22:00 UTC the
+    #      previous day.
+    today = israel_today()
+    window_start = (
+        datetime.combine(
+            today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ
+        )
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    israel_day = func.date(
+        func.timezone(
+            "Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at)
+        )
+    )
     daily_rows = (
         db.query(
-            func.date(ProducerPageView.created_at).label("day"),
+            israel_day.label("day"),
             func.count(ProducerPageView.id).label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
-            ProducerPageView.created_at >= thirty_days_ago,
+            ProducerPageView.created_at >= window_start,
         )
-        .group_by(func.date(ProducerPageView.created_at))
+        .group_by(israel_day)
         .all()
     )
     by_day = {str(row.day): int(row.count) for row in daily_rows}
@@ -874,6 +1078,7 @@ def send_phone_otp(
 def confirm_phone_otp(
     request: Request,
     body: OtpConfirmIn,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -898,6 +1103,14 @@ def confirm_phone_otp(
 
     token.used = True
     producer.phone_verified = True
+    # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
+    # PUT /producers/me does at :259 — this is the SECOND mutation site able to
+    # complete the review-ready transition, and MEH-1351 only covered the first.
+    # A business that uploaded its image while still pending_whatsapp crosses
+    # the threshold here, so a ping owned by one site alone gets swallowed.
+    # The snapshot is also what keeps the already-pending path silent: such a
+    # producer is approvable before the call, so the false→true edge is absent.
+    was_approvable = _pending_and_approvable(db, producer)
     # MEH-745: self-registered producers wait in pending_whatsapp until the
     # business phone is verified; a successful OTP confirm is the gate that
     # releases them into the normal admin-review queue (pending). Only advance
@@ -905,6 +1118,10 @@ def confirm_phone_otp(
     if producer.status == "pending_whatsapp":
         producer.status = "pending"
     db.commit()
+    # REUSES: backend/app/routers/producer_me.py:413 — same helper, same
+    # post-commit position, so an admin is never pinged about a transition that
+    # failed to persist.
+    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     return {"detail": "הטלפון אומת בהצלחה"}
 
 
@@ -1075,9 +1292,10 @@ def create_my_product(
     db.commit()
     db.refresh(product)
 
-    # MEH-XXX: notify favoriting users who opted in for new-product alerts.
-    # Wires the previously-orphaned "new_product" alert_type
-    # (see _ALERT_COL in routers/alerts.py).
+    # PR #404 (3b7e3ea5, "audit Gap A"): notify favoriting users who opted in
+    # for new-product alerts. Wires the previously-orphaned "new_product"
+    # alert_type (see _ALERT_COL in routers/alerts.py). No Linear ticket was
+    # ever assigned — the original marker was a literal, unresolvable MEH-XXX.
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     producer_name = producer.name if producer else "בית העסק"
     from app.routers.alerts import AlertContent, fire_alerts

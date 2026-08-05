@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Heart, Leaf, ArrowDown } from "@phosphor-icons/react";
+import { Bell, Heart, HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { FavoriteWithProducerSchema } from "@/lib/api-schemas";
 import ProducerCard from "@/components/ProducerCard";
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
-import { useFirstVisit } from "@/lib/useFirstVisit";
 
 function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
   const t = useTranslations("favorites");
@@ -104,7 +104,6 @@ export default function FavoritesClient() {
   // effect (it's in the deps) so "נסו שוב" refetches without a full reload —
   // mirrors SectionFetchError's onRetry contract (dashboard/page.js:88).
   const [attempt, setAttempt] = useState(0);
-  const isFirstVisit = useFirstVisit("favorites_tour");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -115,7 +114,33 @@ export default function FavoritesClient() {
       api
         .get("/users/me/favorites")
         .then((r) => {
-          setFavorites(r.data);
+          // MEH-1713: Rule-19 gap — this response went straight to render
+          // with no Zod parse at all, so a structurally broken payload
+          // reached ProducerCard instead of the error state below.
+          //
+          // PER-ROW filtering, deliberately NOT a whole-array parse. The two
+          // surfaces differ in what a failure costs: the map feed parses
+          // all-or-nothing (useProducersFeed.js:41) because a half-drawn map
+          // is worse than an empty one, but /favorites is a list the user
+          // curated by hand — dropping every saved business because one row
+          // is malformed reads as "your favorites are gone", the exact
+          // silent-blank class MEH-977/MEH-1479 built the error state for.
+          // One bad row costs one card; the rest still render.
+          const rows = Array.isArray(r.data) ? r.data : null;
+          if (!rows) {
+            // Not an array at all = structural failure of the whole
+            // response. Nothing to salvage per-row, so route to the error
+            // state rather than render an empty "no favorites yet" page,
+            // which would be indistinguishable from a real empty list.
+            setLoadError(true);
+            return;
+          }
+          setFavorites(
+            rows
+              .map((row) => FavoriteWithProducerSchema.safeParse(row))
+              .filter((res) => res.success)
+              .map((res) => res.data),
+          );
           setLoadError(false);
         })
         .catch(() => setLoadError(true))
@@ -163,20 +188,20 @@ export default function FavoritesClient() {
       ) : favorites.length === 0 ? (
         <div className="text-center py-20">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
-            <Leaf size={40} weight="fill" className="text-primary" aria-hidden="true" />
+            {/* MEH-1628: HeartStraight, not the generic Leaf — the glyph must
+                echo the control empty_subtitle tells the user to press
+                (MEH-685 precedent: the favorites toast picked the same icon). */}
+            <HeartStraight size={40} weight="regular" className="text-primary" aria-hidden="true" />
           </div>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
             {t("empty_title")}
           </h2>
+          {/* MEH-1628: exactly ONE helper paragraph. The isFirstVisit tip block
+              that used to sit below said the same thing as empty_subtitle —
+              two helper paragraphs on one screen. Deleted, key removed. */}
           <p className="text-fg-muted mb-6 max-w-md mx-auto">
             {t("empty_subtitle")}
           </p>
-          {isFirstVisit && (
-            <div className="inline-flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-3 mb-6 text-sm text-primary">
-              <ArrowDown size={20} weight="bold" className="text-primary" aria-hidden="true" />
-              <span>{t("first_visit_tip")}</span>
-            </div>
-          )}
           <div>
             <button
               onClick={() => router.push("/")}
@@ -188,9 +213,19 @@ export default function FavoritesClient() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-fg-muted mb-4 flex items-center gap-1.5" dir="rtl">
-            <Bell size={13} aria-hidden="true" />
-            {t("list_alerts_hint")}
+          {/* MEH-1628: the bell is the sentence's grammatical object, so it is
+              interpolated INTO the string via t.rich — not a sibling glyph and
+              never an emoji character (Emoji LOCK v2). The sibling <Bell> that
+              used to sit before the text is gone: exactly one bell renders.
+              REUSES: frontend/app/[locale]/admin/help/page.jsx:86 (t.rich).
+              Block (not flex) so the sentence wraps around the icon at 375px —
+              flex would make the two text runs unbreakable siblings. */}
+          <p className="text-xs text-fg-muted mb-4" dir="rtl">
+            {t.rich("list_alerts_hint", {
+              icon: () => (
+                <Bell size={13} aria-hidden="true" className="inline align-text-bottom" />
+              ),
+            })}
           </p>
           {/* MEH-1203: grid parity with /producers (ProducersClient.jsx:489) —
               2 cols mobile · 3 at lg · 4 at xl, same gap-3/md:gap-6. The old
