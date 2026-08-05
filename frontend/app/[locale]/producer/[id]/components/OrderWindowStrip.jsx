@@ -2,13 +2,13 @@
 
 /**
  * Module:   OrderWindowStrip
- * Purpose:  The order-window context line that sits directly UNDER the primary
- *           CTA, inside ContactCard, while orders are closed.
+ * Purpose:  The headed, contained Info block that lists WHEN this business
+ *           accepts orders — days and hours, read from `order_window`.
  * Does NOT: render any status colour or any open/closed verdict — the page's
  *           single status lives in ProducerHeader.jsx and only there
- *           (MEH-1334 / MEH-1546). It also never touches the CTA itself: the
- *           note is a sibling, the button's styling and behaviour are
- *           untouched and it is NEVER disabled.
+ *           (MEH-1334 / MEH-1546). It also never says anything about what the
+ *           business will DO with a message: that claim is unobservable to us
+ *           and is forbidden by BRAND.md §7 / ADR-031 (see MEH-1652 below).
  * Related:  frontend/lib/orderWindow.js (getOrderWindowStatus +
  *           getOrderWindowRanges — read-only here),
  *           components/ProducerHeader.jsx (the status branch this complements),
@@ -29,45 +29,26 @@
  *           unheaded floating line that ALSO restated the current status. This
  *           one is schedule-only (no verdict, no status colour), so the page
  *           still says the status exactly once, in ProducerHeader.
+ *           MEH-1652 — OrderWindowCtaNote was DELETED, along with its
+ *           `producer.detail.order_window.cta_note` key in both bundles. It was
+ *           the last renderer of "היא תמתין לבית העסק עד שההזמנות ייפתחו", the
+ *           exact string BRAND.md §7 ("דיבור בשם בית העסק") forbids: its
+ *           subject is the business and its verb is in the future, and the
+ *           outbound channel is a `wa.me` deep link we never observe (ADR-031),
+ *           so the claim was unfalsifiable by construction. Three rewordings
+ *           had already failed on this one line (MEH-1546 → MEH-1600 →
+ *           MEH-1649) because the defect was structural, not lexical. §7's
+ *           sanctioned resolution for "nothing honest to say" is SILENCE —
+ *           "הכפתור עומד בפני עצמו" — so the note is gone rather than reworded
+ *           a fourth time. The schedule this block renders is the honest half
+ *           of what that line was reaching for, and it survives untouched.
  */
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 import { CalendarCheck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
-import { getOrderWindowRanges, getOrderWindowStatus } from "@/lib/orderWindow";
-
-/**
- * The one context line under the primary CTA while orders are closed: it tells
- * the visitor the message will WAIT for the business until orders reopen.
- * Wolt's pre-order pattern adapted to an asynchronous channel — never block
- * the send, just set the expectation.
- *
- * MEH-1649: it describes what the message does, not what the business will do.
- * The earlier "היא תיענה" promised a reply on the business's behalf, which the
- * platform cannot guarantee (same principle as the dashboard copy-honesty
- * fixes). Mounted by ContactCard, once, directly below the CTA — NOT by
- * ContactSidebar or ProducerDetail, where it used to float outside the card.
- *
- * Time-derived, so it is mounted-guarded exactly like the header status:
- * renders nothing on the server pass, which also keeps a null-window producer
- * byte-identical (zero layout shift).
- */
-export function OrderWindowCtaNote({ orderWindow }) {
-  const t = useTranslations();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) return null;
-  const status = getOrderWindowStatus(orderWindow);
-  if (status?.state !== "closed") return null;
-
-  return (
-    <p className="mt-2 text-xs text-muted" data-testid="order-window-cta-note">
-      {t("producer.detail.order_window.cta_note")}
-    </p>
-  );
-}
+import { getOrderWindowRanges } from "@/lib/orderWindow";
 
 // MEH-1875: index-aligned with lib/orderWindow.js ORDER_DAY_KEYS, so index 0 is
 // Sunday on every axis. REUSES: components/DeliveryBlock.jsx:13 (same
