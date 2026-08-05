@@ -128,6 +128,15 @@ const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
  * above). This touch re-fires vrt-update to regenerate the trio on the runner
  * (the earlier delete-trigger run regenerated them but its commit step was
  * skipped when the unrelated /producer/[id] nav flake failed the suite).
+ * MEH-1441 (2026-07-22): the category-icon work (PR #2026 unified glyph set →
+ * PR #2021 toggle-chip icons → PR #2046 category-chip icons) added 16px leading
+ * glyphs to the /map + home chip rows and the register step-2 selector. This
+ * touch re-fired vrt-update after those merged to refresh the affected
+ * baselines; the runner rendered against staging and reported "Baselines
+ * unchanged — nothing to commit" (run #132) — a concurrent vrt-update from the
+ * MEH-1388/1446 batch had already regenerated them post-merge, so the parity
+ * baselines already reflect the glyphs and the suite is green as-is. Logged
+ * here per the convention above; no snapshot bytes changed.
  */
 
 const STYLE_PATH = path.join(__dirname, "parity.css");

@@ -1056,7 +1056,19 @@ class ProducerLocationOwnerOut(BaseModel):
 # (models.py `ProducerOffer.__table_args__`, revision b6e1d94a3f27). Kept as
 # module constants so the router, the tests and the 422 message all read the
 # same list — a second hand-written copy is how MEH-272 happened.
-OFFER_TYPES = ("free_delivery_above", "gift_above", "first_order", "pickup_discount")
+# MEH-1898 added the fifth member, `custom`. It is a plain member of the same
+# tuple and gets NO special handling anywhere in this file: the 422 message
+# below interpolates the tuple, so it names the new type for free, and every
+# other validator stays type-blind. `custom` carries no typed sentence, so its
+# text is the owner's `headline` — a rendering fact, enforced on the consumer
+# surface (OfferBadge.jsx), never a conditional branch here.
+OFFER_TYPES = (
+    "free_delivery_above",
+    "gift_above",
+    "first_order",
+    "pickup_discount",
+    "custom",
+)
 THRESHOLD_UNITS = ("ils", "units", "liters", "kg")
 MAX_OFFER_HEADLINE = 60
 
@@ -1092,6 +1104,24 @@ class ProducerOfferCreate(BaseModel):
     order over ₪150" are both real offers, so which types may carry a threshold
     is a product question, not a validation one. Do not add a type-conditional
     branch here — see the note on ProducerOffer in models.py.
+
+    **MEH-1898 extends that same rule to `custom`, and the tempting exception
+    is the headline.** `custom` has no typed sentence, so on the consumer
+    surface its `headline` IS the offer text — which reads like an argument for
+    `if offer_type == "custom" and not headline: raise`. There is no such
+    branch, and adding one would be the first type-conditional rule in this
+    model. Two reasons it stays out. (1) It buys nothing a caller can rely on:
+    the headline is `str | None` for every other type, the dashboard already
+    requires it client-side before the request is ever sent, and OfferBadge
+    renders nothing for a headline-less `custom` — so the empty case is already
+    handled where it is visible, by showing no offer rather than an empty one.
+    (2) It costs the uniformity that makes this model auditable: one
+    type-conditional branch is the precedent for the cross-constraint Sapir
+    rejected on 02/08, arriving through a side door.
+
+    So `{"offer_type": "custom", "headline": null}` is a **200**, deliberately,
+    and `tests/test_producer_offers.py` asserts exactly that. A future reader
+    who reads it as a bug should read this paragraph first.
 
     **`is_active` is deliberately NOT a field here.** It used to be, defaulting
     to True, and `_sync_active_offer` passed it through — so a caller could send
