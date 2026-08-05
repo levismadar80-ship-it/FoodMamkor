@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Crosshair } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
+import EnSearchNotice from "@/components/EnSearchNotice";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
 // MEH-788: Cloudinary produce photo (4032×3024 4:3 original). Smart-cropped to
@@ -268,6 +269,11 @@ export function HomeHero({
             className="w-full"
           />
         </motion.div>
+
+        {/* MEH-1812: /en visitors are told BEFORE typing that listings are
+            Hebrew-only. Renders nothing on /he. `text-green-50` is the on-scrim
+            tone the chips row below uses — plain muted fails AA over the photo. */}
+        <EnSearchNotice className="mt-3 px-4 text-green-50" />
 
         {/* Chips row — MEH-1070: centered at every breakpoint, superseding
             HOME-06 alignment per Sapir 09/07. MEH-1476: surprise-me left the

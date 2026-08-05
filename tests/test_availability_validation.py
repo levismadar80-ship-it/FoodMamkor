@@ -1,19 +1,26 @@
 """Availability write-path validation + Israel-tz handling — AUD-039/040.
 
-Two layers:
+Three layers:
   * pure unit (no DB) — the clock primitive, the transition matrix, and
     the vacation return-date guard, incl. the Fri-23:30-Israel boundary;
   * API (Postgres, CI-gated) — past `vacation_until` rejected on both the
-    new and legacy write endpoints.
+    new and legacy write endpoints;
+  * MEH-1883 — the READ-path auto-clear boundary, at the hour where the two
+    clocks disagree.
 
-Does NOT modify the merged mutation suite (test_expansion_availability.py)
-— the read-path auto-clear boundary it pins (`< date.today()`) is left
-untouched (see docs/discovery/2026-06-availability-phase0.md).
+MEH-1883 note: this docstring used to end "the read-path auto-clear boundary
+it pins (`< date.today()`) is left untouched". That is no longer true and the
+sentence is replaced rather than kept — the write path had been on
+`israel_today()` since AUD-039/040 while the read path stayed on the server
+clock, so the two halves of the same feature disagreed for the three hours
+after Israeli midnight. The read path now uses `israel_today()` too, and the
+boundary test at the bottom of this file is what pins it.
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -167,3 +174,86 @@ def test_api_legacy_status_rejects_past_vacation(client, db):
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
+
+
+# ---------- MEH-1883: the read-path auto-clear, at the disagreeing hour ----------
+#
+# The whole defect lives in a three-hour window and is invisible outside it, so a
+# test that just freezes one clock proves nothing: with a single mock the old
+# `date.today()` and the new `israel_today()` return the same day and the
+# assertion passes against both implementations. That is the "green with two
+# possible causes" shape.
+#
+# So both clocks are frozen, one day apart, exactly as they stand at 00:30 in
+# Israel (21:30 UTC the previous day):
+#
+#     israel_today() -> 2026-06-05   (Israel has rolled over)
+#     date.today()   -> 2026-06-04   (the server has not)
+#
+# and `vacation_until` is set to 2026-06-04 — a vacation that ended YESTERDAY in
+# Israel. Under `israel_today()` the strict `<` fires and the business reopens.
+# Under `date.today()` it is `06-04 < 06-04`, false, and the business stays
+# hidden from the listings (which default-hide `on_vacation`) until the server
+# clock catches up around 03:00 Israel. Reverting schemas.py to `date.today()`
+# turns this test red; that is what makes it a test of the change and not of the
+# feature in general.
+
+
+class _ServerClockOneDayBehind(date):
+    """A `date` whose `.today()` still reads yesterday — the UTC server at 00:30 Israel.
+
+    Subclasses `date` rather than replacing it so every other use of the name
+    inside the schemas module (constructor calls, isinstance checks, Pydantic's
+    own coercion) keeps working while only `.today()` is redirected.
+    """
+
+    @classmethod
+    def today(cls):
+        return date(2026, 6, 4)
+
+
+def test_read_path_auto_clear_uses_israel_day(monkeypatch):
+    from app.schemas import schemas as sch
+
+    monkeypatch.setattr(sch, "israel_today", lambda: date(2026, 6, 5))
+    monkeypatch.setattr(sch, "date", _ServerClockOneDayBehind)
+
+    out = sch.ProducerListOut.model_validate(
+        {
+            "id": uuid4(),
+            "name": "חוות סוף החופשה",
+            "vacation_until": date(2026, 6, 4),
+            "availability_state": "on_vacation",
+            "availability_status": "vacation",
+        }
+    )
+
+    assert out.vacation_until is None
+    assert out.availability_state == "accepting_orders"
+    assert out.availability_status == "available"
+
+
+def test_read_path_keeps_a_vacation_that_ends_today(monkeypatch):
+    """The boundary itself: `vacation_until == today` is still ON vacation.
+
+    The comparison is strict `<`, and this pins that it stays strict — an
+    off-by-one here would reopen every business on the morning of its last
+    vacation day, which is the mirror of the bug the sweep fixes.
+    """
+    from app.schemas import schemas as sch
+
+    monkeypatch.setattr(sch, "israel_today", lambda: date(2026, 6, 5))
+    monkeypatch.setattr(sch, "date", _ServerClockOneDayBehind)
+
+    out = sch.ProducerListOut.model_validate(
+        {
+            "id": uuid4(),
+            "name": "חוות סוף החופשה",
+            "vacation_until": date(2026, 6, 5),
+            "availability_state": "on_vacation",
+            "availability_status": "vacation",
+        }
+    )
+
+    assert out.vacation_until == date(2026, 6, 5)
+    assert out.availability_state == "on_vacation"

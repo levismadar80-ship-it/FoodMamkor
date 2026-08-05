@@ -188,6 +188,18 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
     <div>
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
+      {/* MEH-1884: empty-state incentive. Gated on the SAVED seed, not the
+          in-progress model, so it names the mechanic while there is still
+          nothing to lose and disappears once hours are saved. Mechanics only —
+          it states where the value goes (business page + the JSON-LD
+          openingHoursSpecification, lib/seo.js:288-291) and promises no
+          ranking effect. Mirrors the order_window sibling's empty_state. */}
+      {seed.trim() === "" && (
+        <p className="text-xs text-fg-muted mb-4" data-testid="hours-empty-hint">
+          {t("hours_empty_hint")}
+        </p>
+      )}
+
       {unparseable && (
         <p
           className="mb-4 flex items-start gap-1.5 text-xs text-amber-600"
