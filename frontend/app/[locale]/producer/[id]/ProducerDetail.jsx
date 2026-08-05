@@ -162,28 +162,56 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">
-          {[
-            { key: "about", label: t("producer.detail.tabs.about"), Icon: Info },
-            { key: "products", label: t("producer.detail.tabs.products"), Icon: Package },
-            { key: "delivery", label: t("producer.detail.tabs.delivery"), Icon: Truck },
-            // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
-            // star implies a rating system the reviews section doesn't provide.
-            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => scrollToSection(tab.key)}
-              className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
-                activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-fg-muted"
-              }`}
-            >
-              <tab.Icon size={18} weight={activeTab === tab.key ? "fill" : "regular"} />
-              {tab.label}
-            </button>
-          ))}
+          {/* MEH-1390: a tab whose section never renders is a dead click, so
+              each tab mirrors its section's render condition from
+              ProducerSections.jsx (about :141 — description; products :159 —
+              products/signature; delivery :410-412 — any delivery/pickup
+              signal). Keep the pairs in sync when a section condition changes.
+              The reviews wrapper always renders (it is the IO observation
+              point), so that tab is unconditional — the list is never empty.
+              activeTab seeds to "about" (useTabScroll.js:13) and changes only
+              on tap, so when the about tab is filtered out the seed points at
+              a tab that doesn't exist and nothing would highlight until the
+              first tap. Derived render-side (no state, no effect): fall back
+              to the first visible tab. */}
+          {(() => {
+            const visibleTabs = [
+              { key: "about", label: t("producer.detail.tabs.about"), Icon: Info, show: !!producer.description },
+              {
+                key: "products",
+                label: t("producer.detail.tabs.products"),
+                Icon: Package,
+                show: !!(producer.products?.length > 0 || producer.top_product_name || producer.starting_price_label),
+              },
+              {
+                key: "delivery",
+                label: t("producer.detail.tabs.delivery"),
+                Icon: Truck,
+                show: !!(producer.offers_delivery || producer.delivery_areas?.length > 0 || producer.pickup_points),
+              },
+              // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
+              // star implies a rating system the reviews section doesn't provide.
+              { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText, show: true },
+            ].filter((tab) => tab.show);
+            const effectiveActiveTab = visibleTabs.some((tab) => tab.key === activeTab)
+              ? activeTab
+              : visibleTabs[0].key;
+            return visibleTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => scrollToSection(tab.key)}
+                className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
+                  effectiveActiveTab === tab.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-fg-muted"
+                }`}
+              >
+                <tab.Icon size={18} weight={effectiveActiveTab === tab.key ? "fill" : "regular"} />
+                {tab.label}
+              </button>
+            ));
+          })()}
         </div>
       </nav>
 
