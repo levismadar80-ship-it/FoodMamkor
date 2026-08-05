@@ -30,22 +30,45 @@ import { BADGE_CONFIG } from "@/lib/badges";
  * History:  MEH-1075 (creation); MEH-1418 (per-toggle Phosphor icon + muted
  *           explainer line); MEH-1423 (chip+paragraph → full-width row+Switch;
  *           subtext narrowed from all 7 toggles to the 3 unfamiliar terms —
- *           kosher · verified · grass_fed — so the sheet fits one 375px screen).
+ *           kosher · verified · grass_fed — so the sheet fits one 375px screen);
+ *           MEH-1478 (diet group → 2-col pill grid; service group reordered
+ *           רישוי מאומת → משלוח — layout only, TOGGLE_CHIPS untouched);
+ *           MEH-1481 (desktop-only density: rows+pills min-h 36px, 13px labels,
+ *           tighter gaps + capped scroll body + sticky footer — all lg:-gated,
+ *           mobile byte-identical); MEH-1507 (Label Scope Contract: diet group
+ *           reverts from the MEH-1478 pill grid to full-width rows so every diet
+ *           term shows its scope-explicit subtext; subtext source moved from the
+ *           SUBTEXT_KEYS/BADGE_CONFIG narrowing to per-chip contract metadata).
  */
 
 // Sheet section order per spec: תזונה · מקור ואיכות · שירות ואמון.
 const GROUP_ORDER = ["diet", "quality", "service"];
 
-// MEH-1423: keep the muted explainer for ONLY the 3 trust-loaded / loanword
-// terms (kosher · verified · grass_fed). The other 4 toggles (vegan ·
-// gluten_free · lactose_free · has_delivery) are everyday vocabulary where a
-// dictionary line is noise (Baymard "Always Explain Industry-Specific Filters",
-// research 21/07). Copy is UNCHANGED — still the BADGE_CONFIG tooltips MEH-1418
-// wired (SoT, no new strings, ADR-022 / MEH-1087 locks); this only narrows
-// WHICH rows render it. All 3 keys own a BADGE_CONFIG entry, so no key remap.
-const SUBTEXT_KEYS = new Set(["kosher", "verified", "grass_fed"]);
-function chipSubtext(key) {
-  return SUBTEXT_KEYS.has(key) ? BADGE_CONFIG[key]?.tooltip ?? null : null;
+// MEH-1507 — Label Scope Contract: each chip carries its own scope-explicit
+// `subtext` (attribute-labels.js, and the /map-local grass_fed object). The diet
+// rows now render the LOCKED "עסקים עם מוצרים … בקטלוג" copy that names the
+// any-product scope MEH-293 introduced; grass_fed reads "לפי הצהרת בית העסק". The
+// trust rows (kosher · verified) have no contract subtext of their own, so they
+// fall back to the BADGE_CONFIG tooltip MEH-1418 wired (has_delivery has neither
+// → no subtext, unchanged). This REVERSES the MEH-1423/1478 narrowing to 3 rows:
+// every diet term now explains its scope in-component (Baymard).
+function chipSubtext(chip) {
+  return chip.subtext ?? BADGE_CONFIG[chip.key]?.tooltip ?? null;
+}
+
+// MEH-1478: within-group render order. Default = TOGGLE_CHIPS array order; the
+// service group leads with "רישוי מאומת" (verified) and trails with "משלוח"
+// (has_delivery) per spec — a FilterSheet-LOCAL presentation reorder that leaves
+// lib/map-chips.js TOGGLE_CHIPS untouched (scope lock: the array order there
+// still drives /producers + every other consumer).
+const GROUP_CHIP_ORDER = {
+  service: ["verified", "has_delivery"],
+};
+function chipsForGroup(group) {
+  const chips = TOGGLE_CHIPS.filter((chip) => chip.group === group);
+  const order = GROUP_CHIP_ORDER[group];
+  if (!order) return chips;
+  return [...chips].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 }
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
@@ -153,7 +176,7 @@ export default function FilterSheet({
         aria-modal="true"
         aria-labelledby="filter-sheet-title"
         dir="rtl"
-        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[70vh]"
+        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))]"
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -171,35 +194,40 @@ export default function FilterSheet({
 
         {GROUP_ORDER.map((group) => (
           <div key={group}>
-            <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1">
+            {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
+                (mobile mt-4/mb-1 byte-identical). */}
+            <h3 className="text-sm font-medium text-fg-muted mt-4 mb-1 lg:mt-3 lg:mb-0.5">
               {t(`filters.sheet.group_${group}`)}
             </h3>
-            {/* MEH-1423: each toggle is a full-width ROW — leading icon + label
-                at the inline-start, a Switch at the inline-end — with a hairline
-                divider between rows (divide-y). The whole row is ONE
-                role="switch" button (min-h 44px tap target), so the entire row
-                is the hit area; the visual track/knob is aria-hidden and the
-                label stays the accessible name. Subtext (3 rows only) sits BELOW
-                the button, outside its accessible name. Replaces the MEH-1418
-                chip+paragraph stack that pushed the sheet to ~2.5 screens. */}
+            {/* MEH-1507: ALL groups (incl. diet) render as full-width ROWS —
+                leading icon + label at the inline-start, a Switch at the
+                inline-end, hairline divider between rows (divide-y), and a
+                scope-explicit subtext BELOW the button (outside its accessible
+                name). The MEH-1478 2-col diet pill GRID is retired: its rationale
+                was "everyday terms, no subtext", but the Label Scope Contract now
+                gives every diet term a subtext, so the row form (which carries a
+                subtext line) is the fit. Each row is ONE role="switch" button
+                (min-h 44px tap target); multi-select is unchanged. MEH-1478
+                service reorder (רישוי מאומת → משלוח) still applies via
+                chipsForGroup. MEH-1481 desktop density preserved.
+                REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 — label+icon
+                at start, role="switch" pill at end, knob start-1(off)→end-1(on)
+                via logical insets (RTL-safe). */}
             <div className="divide-y divide-border">
-              {TOGGLE_CHIPS.filter((chip) => chip.group === group).map((chip) => {
+              {chipsForGroup(group).map((chip) => {
                 const active = !!chipState[chip.key];
                 const icon = chipIcon(chip.key);
-                const subtext = chipSubtext(chip.key);
+                const subtext = chipSubtext(chip);
                 return (
-                  <div key={chip.key} className="py-1">
-                    {/* REUSES: frontend/components/AlertPrefsPanel.jsx:165-186 —
-                        label+icon at start, role="switch" pill at end, knob
-                        start-1(off)→end-1(on) via logical insets (RTL-safe). */}
+                  <div key={chip.key} className="py-1 lg:py-0.5">
                     <button
                       type="button"
                       role="switch"
                       aria-checked={active}
                       onClick={() => onToggleChip(chip.key)}
-                      className="flex w-full items-center justify-between gap-3 min-h-[44px] py-1.5 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
-                      <span className="flex items-center gap-2 text-sm font-medium text-text">
+                      <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
                         {icon && <span aria-hidden="true">{icon}</span>}
                         {chip.label}
                       </span>
@@ -228,19 +256,24 @@ export default function FilterSheet({
 
         {/* Apply = close (state is shared + already applied live); count is the
             live client-side visibleProducers.length passed by the caller.
-            Zero state keeps apply enabled — the clear link sits beside it. */}
-        <div className="mt-6 flex items-center gap-3">
+            Zero state keeps apply enabled — the clear link sits beside it.
+            MEH-1481: on lg+ the footer is STICKY to the bottom of this
+            overflow-y-auto panel so apply + ניקוי הכל stay visible when the
+            (capped) body scrolls — an opaque bg + top hairline hide the content
+            scrolling under it. No structural change: the panel div is already
+            the scroll container. Mobile footer (mt-6, non-sticky) unchanged. */}
+        <div className="mt-6 flex items-center gap-3 lg:sticky lg:bottom-0 lg:mt-4 lg:-mx-4 lg:px-4 lg:pt-3 lg:pb-1 lg:bg-background lg:border-t lg:border-border">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 min-h-[44px] rounded-md bg-primary text-white text-sm font-medium px-4 py-2.5 hover:opacity-90 transition"
+            className="flex-1 min-h-[44px] lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-[13px] font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
           >
             {t("filters.sheet.apply", { count: resultCount })}
           </button>
           <button
             type="button"
             onClick={onClearAll}
-            className="min-h-[44px] text-primary text-sm font-medium hover:opacity-80 transition"
+            className="min-h-[44px] lg:min-h-[36px] text-primary text-sm lg:text-[13px] font-medium hover:opacity-80 transition"
           >
             {t("filters.sheet.clear")}
           </button>

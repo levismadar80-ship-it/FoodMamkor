@@ -16,10 +16,27 @@ new router:
   then `body`, then `user = Depends(<auth-dep>)`, then `db: Session = Depends(get_db)`
 
 ## Conventions specific to this dir
-- **Auth deps** (`backend/app/auth.py`): `get_current_user:200`,
-  `get_current_user_optional:241`, `require_admin:257`,
-  `require_verified_email:273`. Order matters — see Workflow regression
-  rule 6.
+- **Auth deps** (`backend/app/auth.py`): `get_current_user:222`,
+  `get_current_user_optional:271`, `get_current_user_lenient:311`,
+  `require_admin:344`, `require_verified_email:374`. Order matters — see
+  Workflow regression rule 6.
+- **Optional auth is a THREE-state contract (MEH-1627).** Picking the wrong
+  dep is silent, so pick deliberately:
+
+  | Dep | No Bearer | Valid | **Invalid / expired** |
+  |---|---|---|---|
+  | `get_current_user_optional` | `None` | `User` | **401** (client refreshes + retries) |
+  | `get_current_user_lenient` | `None` | `User` | `None` (403 still raised for blocked) |
+
+  **Default to `_optional`.** `_lenient` exists for exactly one situation:
+  the caller physically cannot retry — fire-and-forget telemetry sent via
+  `navigator.sendBeacon` / `fetch(keepalive:true)` as the tab unloads, which
+  has no response handler, so a 401 loses the event outright. Only the two
+  click-tracking endpoints in `producers.py` qualify. Reaching for `_lenient`
+  to quiet a 401 anywhere else re-creates the MEH-1627 bug: an expired token
+  silently downgrades a logged-in user to anonymous, and the handler then
+  takes its anonymous branch — which is how a producer upgrade turned into an
+  unrecoverable 422.
 - **Rate limiting**: always via `from app.rate_limit import limiter`;
   per-route limits, never inline (`.claude/rules/security.md`).
 - **Schemas**: pure-Pydantic models in `backend/app/schemas/schemas.py`

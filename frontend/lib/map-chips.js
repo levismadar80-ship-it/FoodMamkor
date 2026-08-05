@@ -4,8 +4,8 @@
  *   (MEH-1259: the "אורגני" quality toggle was removed — see TOGGLE_CHIPS.)
  *
  * Layout:
- *   - ONE of {כל, בשר, ירקות, חלב, לחם} is active at a time (radio-group
- *     semantics). "כל" is the reset sentinel.
+ *   - MEH-1465: category chips are MULTI-select (OR union) — any subset of
+ *     {בשר, ירקות, חלב, לחם} can be active at once. "כל" is the reset sentinel.
  *   - delivery is an independent toggle (on top of the above).
  *
  * Category chips map to real DB category IDs at runtime via the
@@ -68,46 +68,70 @@ export const CATEGORY_CHIPS = [
 // never the free-text Producer.kosher. A FREE-TEXT kosher chip stays forbidden
 // (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — MEH-1418 sourced it
 // from the shared ATTRIBUTE_LABELS.kosher so /producers + /map read identically.
+// MEH-1507: grass_fed is /map-only, so its scope×evidence object stays LOCAL
+// (never entered the shared ATTRIBUTE_LABELS). It is a producer-level boolean
+// column (models.py:111 `grass_fed`), owner-declared → business scope,
+// self-declared evidence. Subtext LOCKED per MEH-1507 §hebrew_copy. Shape
+// matches an ATTRIBUTE_LABELS entry so the contract guard treats it uniformly.
+const GRASS_FED_LABEL = {
+  label: "גראס פד",
+  scope: "business",
+  evidence: "self-declared",
+  subtext: "לפי הצהרת בית העסק",
+};
+
+// MEH-1507: each entry spreads its {label, scope, evidence, subtext} object so
+// `chip.label` stays a plain string (chip row unchanged) while every entry
+// carries the scope+evidence the contract guard (LabelScopeContract.test.js)
+// requires. `group` stays a TOGGLE_CHIPS-local field.
 export const TOGGLE_CHIPS = [
-  { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
-  { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
+  { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery,  group: "service" },
+  { key: "verified",      ...ATTRIBUTE_LABELS.verified,      group: "service" },
   // MEH-1259: organic chip removed — self-declared organic is no longer a
   // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
-  { key: "kosher",        label: ATTRIBUTE_LABELS.kosher,        group: "quality" },
-  { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
-  { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
-  { key: "vegetarian",    label: ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
-  { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
-  { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
+  { key: "kosher",        ...ATTRIBUTE_LABELS.kosher,        group: "quality" },
+  { key: "grass_fed",     ...GRASS_FED_LABEL,                group: "quality" },
+  { key: "vegan",         ...ATTRIBUTE_LABELS.vegan,         group: "diet" },
+  { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian,    group: "diet" },  // MEH-1438
+  { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
+  { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
 ];
 
-// MEH-1075: the two toggles that stay inline on the /map quick-chip row.
-// Everything else is reachable only through FilterSheet — the badge on the
-// "סינון" button counts those sheet-only actives.
-export const QUICK_CHIP_KEYS = ["verified", "has_delivery"];
-
-/**
- * Count active toggles that are NOT exposed as quick chips — the number
- * shown on the "סינון" button badge (hidden at 0).
- */
-export function countActiveSheetOnlyFilters(state) {
-  return TOGGLE_CHIPS.filter(
-    (c) => !QUICK_CHIP_KEYS.includes(c.key) && !!state?.[c.key],
-  ).length;
-}
+// MEH-1468: QUICK_CHIP_KEYS + countActiveSheetOnlyFilters were removed here.
+// The inline quick-chip toggle row was retired in MEH-1368 (every attribute
+// filter lives in FilterSheet; the "סינון" button shows an inline "· N" count
+// from useMapFilters.activeAttributeCount) — both symbols had zero production
+// consumers left. The MEH-1461 "quick row capped at 2" LOCK is retired with them.
 
 /**
  * Resolve a category chip's `matches` array against the loaded DB
- * categories (`[{id, name, emoji}, ...]`) to an ID. Returns null when
- * no match is found — caller should hide the chip.
+ * categories (`[{id, name, emoji}, ...]`) to EVERY matching ID.
+ *
+ * MEH-1465: an aggregate chip ("בשר ודגים") covers several DB category rows
+ * (בשר ועוף · דגים · …). The public ?category filter is OR over the whole
+ * list, so the chip must contribute ALL of them — sending only the first
+ * matched id (the pre-1465 behaviour) hid producers filed under the chip's
+ * other names. Returns [] when nothing matches.
  */
-export function resolveCategoryId(chip, dbCategories) {
-  if (!chip?.matches) return null;
+export function resolveCategoryIds(chip, dbCategories) {
+  if (!chip?.matches) return [];
+  const ids = [];
   for (const candidate of chip.matches) {
     const hit = dbCategories.find((c) => c.name === candidate);
-    if (hit) return hit.id;
+    if (hit) ids.push(hit.id);
   }
-  return null;
+  return ids;
+}
+
+/**
+ * First matched category ID, or null when none match. Retained for the
+ * "does this chip match anything in the DB?" visibility check
+ * (useMapFilters.js — a chip with no match is hidden). Filter params go
+ * through resolveCategoryIds instead (all ids, MEH-1465).
+ */
+export function resolveCategoryId(chip, dbCategories) {
+  const ids = resolveCategoryIds(chip, dbCategories);
+  return ids.length > 0 ? ids[0] : null;
 }
 
 /**
@@ -116,10 +140,18 @@ export function resolveCategoryId(chip, dbCategories) {
  */
 export function chipStateToParams(state, dbCategories) {
   const params = {};
-  if (state.categoryKey && state.categoryKey !== "all") {
-    const chip = CATEGORY_CHIPS.find((c) => c.key === state.categoryKey);
-    const id = resolveCategoryId(chip, dbCategories);
-    if (id != null) params.category = id;
+  // MEH-1465: multi-select OR — union the resolved ids of EVERY selected chip.
+  // Dedup via a Set because aggregate chips can resolve to overlapping DB ids.
+  // Always a list so the backend `category: list[int]` contract is uniform; the
+  // api-client paramsSerializer (indexes:null) renders it as ?category=1&category=2.
+  const keys = state.categoryKeys ?? [];
+  if (keys.length > 0) {
+    const ids = new Set();
+    for (const key of keys) {
+      const chip = CATEGORY_CHIPS.find((c) => c.key === key);
+      for (const id of resolveCategoryIds(chip, dbCategories)) ids.add(id);
+    }
+    if (ids.size > 0) params.category = [...ids];
   }
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   if (state.has_delivery) params.has_delivery = true;

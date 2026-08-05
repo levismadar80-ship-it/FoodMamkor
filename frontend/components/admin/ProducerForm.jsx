@@ -10,6 +10,7 @@ import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -25,6 +26,11 @@ const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
 // (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
 const MAX_CATEGORIES = 3;
+
+// MEH-1506: candidates under this review count are shown with a note that the
+// public rating line won't render for them (mirrors backend MIN_REVIEWS=20).
+// Still selectable — the admin decides.
+const GOOGLE_MIN_REVIEWS = 20;
 
 // MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
 const KOSHER_LABEL_KEYS = {
@@ -131,16 +137,26 @@ const EMPTY = {
   lat: "",
   lng: "",
   slug: "",
+  // MEH-1490: admin-only Google Maps Place ID mapping (live-fetch trust line).
+  google_place_id: "",
   description: "",
   short_description: "",
   top_product_name: "",
   price_range: "",
+  // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
+  established_year: "",
   category_ids: [],
   has_delivery: false,
   pickup_points: false,
   kosher: "",
   grass_fed: false,
   organic_certified: false,
+  // MEH-1508 ch2: business-level dietary scope (admin cross-check selects).
+  // `...initial` overrides these from ProducerAdminOut on edit; defaults here
+  // cover the admin-create path.
+  vegan_scope: "unknown",
+  vegetarian_scope: "unknown",
+  gluten_free_facility: "unknown",
   // MEH-293: dietary flags (gluten_free / vegan / lactose_free) moved to per-product.
   // MEH-766 ch3: is_verified removed — verification is the doc-grant flow, not a form toggle.
   // MEH-18
@@ -189,6 +205,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
   // address search — no new i18n keys (see dashboard.producer.location).
   const tLoc = useTranslations("dashboard.producer.location");
+  // MEH-1508 ch2: the admin cross-check selects reuse the owner form's locked
+  // dietary-scope copy (§6.5) — one SoT, no admin-specific strings.
+  const tDiet = useTranslations("dashboard.producer.dietaryScope");
   const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
@@ -196,6 +215,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   const [categories, setCategories] = useState([]);
   // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
   const [addressText, setAddressText] = useState("");
+  // MEH-1506: admin-only Google Place lookup — search by the producer's own
+  // name+city, admin PICKS a candidate to fill google_place_id. NO auto-select:
+  // even a single candidate is a click. Nothing here is persisted except the
+  // chosen place_id (ToS §3.2.3(b) — count is display-only).
+  const [placeCandidates, setPlaceCandidates] = useState(null);
+  const [placeSearching, setPlaceSearching] = useState(false);
+  const [placeSearchState, setPlaceSearchState] = useState(null); // null | "empty" | "error"
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -209,6 +235,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         lat: initial.lat ?? "",
         lng: initial.lng ?? "",
         slug: initial.slug ?? "",
+        // MEH-1490: pre-fill the mapping so an unrelated admin save can't wipe it.
+        google_place_id: initial.google_place_id ?? "",
         category_ids: initial.categories?.map((c) => c.id) ?? [],
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
@@ -226,6 +254,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
+        // MEH-1541: null → "" so the number input stays controlled + empty.
+        established_year: initial.established_year ?? "",
         admin_notes: initial.admin_notes ?? "",
         opening_hours: initial.opening_hours ?? "",
         // MEH-213 — location mode
@@ -263,6 +293,36 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       lng: picked.lng ?? f.lng,
       city: picked.city || f.city,
     }));
+  };
+
+  // MEH-1506: run Places Text Search for this producer (name+city, server-side)
+  // and show up to 3 candidates. 204 / empty → "no results"; reject → "error".
+  // Only available in edit mode — the endpoint reads name+city from the DB row.
+  const handleGooglePlaceSearch = async () => {
+    if (!producerId || placeSearching) return;
+    setPlaceSearching(true);
+    setPlaceCandidates(null);
+    setPlaceSearchState(null);
+    try {
+      const r = await api.get(`/admin/producers/${producerId}/google-place-candidates`);
+      const candidates = r.data?.candidates;
+      if (r.status === 204 || !candidates?.length) {
+        setPlaceSearchState("empty");
+      } else {
+        setPlaceCandidates(candidates);
+      }
+    } catch {
+      setPlaceSearchState("error");
+    } finally {
+      setPlaceSearching(false);
+    }
+  };
+
+  // MEH-1506: admin clicks a candidate → fill google_place_id, clear the list.
+  const pickPlaceCandidate = (placeId) => {
+    update("google_place_id", placeId);
+    setPlaceCandidates(null);
+    setPlaceSearchState(null);
   };
 
   const toggleCategory = (id) => {
@@ -331,16 +391,29 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       lat: form.lat === "" ? null : parseFloat(form.lat),
       lng: form.lng === "" ? null : parseFloat(form.lng),
       slug: form.slug,
+      // MEH-1490: admin-only Google Place ID mapping. Blank → null (clears the
+      // mapping). The value round-trips (pre-filled from ProducerDetailOut) so
+      // an unrelated save never wipes an existing mapping.
+      google_place_id: form.google_place_id?.trim() || null,
       description: form.description,
       short_description: form.short_description,
       top_product_name: form.top_product_name,
       price_range: form.price_range,
+      // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
+      established_year:
+        String(form.established_year).trim() === ""
+          ? null
+          : Number(form.established_year),
       category_ids: form.category_ids,
       has_delivery: form.has_delivery,
       pickup_points: form.pickup_points,
       kosher: form.kosher,
       grass_fed: form.grass_fed,
       organic_certified: form.organic_certified,
+      // MEH-1508 ch2: admin sets/cross-checks the declared dietary scope.
+      vegan_scope: form.vegan_scope,
+      vegetarian_scope: form.vegetarian_scope,
+      gluten_free_facility: form.gluten_free_facility,
       is_recommended: form.is_recommended,
       producer_license_number: form.producer_license_number,
       admin_notes: form.admin_notes,
@@ -407,6 +480,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("contact_name", e.target.value)}
           />
           <Input
+            type="tel"
             label={t("producers.form.fields.phone")}
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}
@@ -480,6 +554,82 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("slug", e.target.value)}
             placeholder={t("producers.form.fields.slug_placeholder")}
           />
+          {/* MEH-1490: admin-only Google Place ID mapping. The public trust
+              line shows only when this is set AND the live Google profile has
+              ≥20 reviews. place_id only — never a Maps URL (validated server-side).
+              MEH-1506: "חפשי בגוגל" runs Places Text Search (name+city) and the
+              admin PICKS a candidate to fill this field — no auto-select. */}
+          <div className="md:col-span-2 space-y-2">
+            <Input
+              label={t("producers.form.fields.google_place_id")}
+              value={form.google_place_id}
+              onChange={(e) => update("google_place_id", e.target.value)}
+              placeholder={t("producers.form.fields.google_place_id_placeholder")}
+              helperText={t("producers.form.fields.google_place_id_hint")}
+            />
+            {producerId && (
+              <div>
+                <button
+                  type="button"
+                  onClick={handleGooglePlaceSearch}
+                  disabled={placeSearching}
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {placeSearching
+                    ? t("producers.form.fields.google_place_searching")
+                    : t("producers.form.fields.google_place_search")}
+                </button>
+                <p className="mt-1 text-xs text-muted">
+                  {t("producers.form.fields.google_place_search_hint")}
+                </p>
+                {placeSearchState === "empty" && (
+                  <p className="mt-2 text-sm text-muted" role="status">
+                    {t("producers.form.fields.google_place_no_results")}
+                  </p>
+                )}
+                {placeSearchState === "error" && (
+                  <p className="mt-2 text-sm text-error" role="alert">
+                    {t("producers.form.fields.google_place_error")}
+                  </p>
+                )}
+                {placeCandidates?.length > 0 && (
+                  <ul className="mt-2 space-y-1.5">
+                    {placeCandidates.map((c) => {
+                      const lowReviews = c.user_rating_count < GOOGLE_MIN_REVIEWS;
+                      return (
+                        <li key={c.place_id}>
+                          <button
+                            type="button"
+                            onClick={() => pickPlaceCandidate(c.place_id)}
+                            className="w-full rounded-lg border border-border p-2.5 text-start text-sm hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            <span className="block font-medium text-text">
+                              {c.display_name}
+                            </span>
+                            {c.formatted_address && (
+                              <span className="block text-xs text-muted">
+                                {c.formatted_address}
+                              </span>
+                            )}
+                            <span className="block text-xs text-muted">
+                              {t("producers.form.fields.google_place_reviews", {
+                                count: c.user_rating_count,
+                              })}
+                            </span>
+                            {lowReviews && (
+                              <span className="mt-0.5 block text-xs text-error">
+                                {t("producers.form.fields.google_place_low_reviews")}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
           {/* MEH-1242 PR2: raw lat/lng inputs replaced by AddressSearch
               (Nominatim geocode) — onSelect fills lat/lng/city. Raw coords
               stay editable behind the collapsed manual-edit disclosure below
@@ -613,6 +763,43 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               ))}
             </select>
           </Field>
+          {/* MEH-1508 ch2: business-level dietary scope — admin sees + cross-checks
+              the owner's declaration during manual approval. YES/NO → all/some for
+              vegan/vegetarian; 3-way facility state for gluten. Lactose omitted
+              (§6.3). Copy is the owner form's locked §6.5 strings (tDiet). */}
+          <Field label={tDiet("q_vegan")}>
+            <select
+              value={form.vegan_scope}
+              onChange={(e) => update("vegan_scope", e.target.value)}
+              className={inputClass}
+            >
+              <option value="all">{tDiet("opt_yes")}</option>
+              <option value="some">{tDiet("opt_no")}</option>
+              <option value="unknown">{tDiet("opt_unknown")}</option>
+            </select>
+          </Field>
+          <Field label={tDiet("q_vegetarian")}>
+            <select
+              value={form.vegetarian_scope}
+              onChange={(e) => update("vegetarian_scope", e.target.value)}
+              className={inputClass}
+            >
+              <option value="all">{tDiet("opt_yes")}</option>
+              <option value="some">{tDiet("opt_no")}</option>
+              <option value="unknown">{tDiet("opt_unknown")}</option>
+            </select>
+          </Field>
+          <Field label={tDiet("q_gluten")}>
+            <select
+              value={form.gluten_free_facility}
+              onChange={(e) => update("gluten_free_facility", e.target.value)}
+              className={inputClass}
+            >
+              <option value="dedicated">{tDiet("gluten_dedicated")}</option>
+              <option value="shared">{tDiet("gluten_shared")}</option>
+              <option value="unknown">{tDiet("opt_unknown")}</option>
+            </select>
+          </Field>
         </div>
 
         {/* MEH-530: producer-license field — required when any selected
@@ -641,7 +828,27 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             <input
               type="checkbox"
               checked={form.offers_delivery}
-              onChange={(e) => update("offers_delivery", e.target.checked)}
+              onChange={(e) => {
+                const on = e.target.checked;
+                update("offers_delivery", on);
+                // MEH-1879: the delivery block below is CONDITIONALLY RENDERED
+                // (`form.offers_delivery &&`), and unmounting it leaves its
+                // state untouched — so unticking here used to submit
+                // delivery_nationwide=true alongside offers_delivery=false,
+                // which CHECK producer_nationwide_requires_delivery (MEH-1849)
+                // rejects as a 500 on the manual-approval path.
+                // All THREE fields the block owns are cleared, mirroring the
+                // owner dashboard's normalisation (edit/cards.jsx). delivery_
+                // cities is included deliberately: it submits as
+                // delivery_area_cities ungated, so leaving it would write
+                // delivery_areas rows onto a business declaring no delivery —
+                // the cross-table contradiction no CHECK can express.
+                if (!on) {
+                  update("delivery_nationwide", false);
+                  update("delivery_cities", []);
+                  update("delivery_excluded_cities", []);
+                }
+              }}
               className="w-4 h-4 accent-primary"
             />
             {t("producers.form.fields.offers_delivery")}
@@ -749,6 +956,20 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("price_range", e.target.value)}
             placeholder={t("producers.form.fields.price_range_placeholder")}
           />
+          {/* MEH-1541: founding year (optional) — numeric, dir="ltr".
+              MEH-1581: bounds derive from the shared helper (Israel-tz year),
+              parity with the server validator (1800..israel_today().year). */}
+          <Input
+            type="number"
+            label={t("producers.form.fields.established_year")}
+            value={form.established_year}
+            onChange={(e) => update("established_year", e.target.value)}
+            min={MIN_ESTABLISHED_YEAR}
+            max={currentIsraelYear()}
+            dir="ltr"
+            inputMode="numeric"
+            placeholder={t("producers.form.fields.established_year_placeholder")}
+          />
         </div>
       </Section>
 
@@ -766,6 +987,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
               <div key={url} className="relative group">
+                {/* raw img: admin-entered image URLs may be ANY host (the
+                    MEH-1222 "https://bread.jpg" case). next/image throws on
+                    a src outside remotePatterns / non-absolute instead of
+                    firing onError. Measured under MEH-1833, see PR. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={optimizeCloudinary(url)}

@@ -25,7 +25,10 @@ name: E2E Tests
 # + trace upload. MEH-728's preview warm-up is replaced by a localhost
 # readiness poll (same purpose: cold start must not trip the flake gate).
 #
-# Required secrets: none. VERCEL_AUTOMATION_BYPASS_SECRET is no longer used —
+# Required secrets: DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD /
+# DEMO_ADMIN_PASSWORD — MEH-999, they unlock the authenticated specs; without
+# them global-setup skips provisioning and those specs skip with a reason.
+# VERCEL_AUTOMATION_BYPASS_SECRET is still unused —
 # playwright.config.ts still sends the (empty) bypass header, which localhost
 # ignores; TEST_URL manual runs against previews keep working with the secret
 # exported locally.
@@ -35,6 +38,14 @@ on:
     branches: [staging]
   push:
     branches: [staging]
+  # MEH-1712 — manual run, for the MEH-1712 diagnostics artifact (the step
+  # added in PR #2376). It changes nothing automatic: no PR and no push
+  # triggers it, so it gates nothing and costs nothing until someone clicks
+  # Run workflow. The problem it solves is that a workflow-file-only diff is
+  # invisible to the paths filter below, so merging a capture step to staging
+  # produced no run that would execute it — the data waited on an unrelated
+  # future `frontend/**` push.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -43,7 +54,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: e2e-${{ github.head_ref || github.ref }}
+  group: e2e-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -79,15 +90,25 @@ jobs:
     # Cost sweep (May 2026): skip Dependabot PRs — they get lint/build only.
     # (Was `!startsWith(deployment.ref, 'dependabot/')`; with pull_request
     # events the actor is dependabot[bot] directly.)
+    #
+    # MEH-1712 — the workflow_dispatch escape is REQUIRED, not decorative. This
+    # condition is evaluated for every event, so a manual run would otherwise be
+    # decided by dorny/paths-filter's fallback for non-PR/push events (it diffs
+    # against the default branch, which IS `staging` here) — i.e. a dispatch on
+    # staging would inherit whatever the last commit happened to touch and skip
+    # on a docs push. A manual run is an explicit request; honour it verbatim.
+    # This does NOT widen the filter: no PR and no push reaches this branch of
+    # the OR, so which automatic runs execute E2E is byte-for-byte unchanged.
     if: |
-      needs.filter.outputs.frontend == 'true' &&
+      (needs.filter.outputs.frontend == 'true' ||
+       github.event_name == 'workflow_dispatch') &&
       github.actor != 'dependabot[bot]'
 
     steps:
       - uses: actions/checkout@v7
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: "npm"
@@ -119,6 +140,15 @@ jobs:
           # docs/DEPLOYMENT.md → env table). NEXT_PUBLIC_* is inlined at
           # build time; rewrites() reads it again at server boot.
           NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          # MEH-1778: without this the GSI script is never appended
+          # (use-google-sign-in.js:26 returns early on an absent client id), so
+          # every "no GSI console warning" assertion in
+          # e2e/flows/09-login-console-clean.spec.ts passed on an empty universe
+          # — green because nothing ran, not because the code was correct.
+          # NOT a secret: an OAuth client id is public by design (it ships in
+          # the browser bundle) and this exact value is already committed at
+          # docs/DEPLOYMENT.md:1350. Plain env, deliberately not `secrets.*`.
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
       # MEH-1044 — replaces MEH-728's "Warm up Vercel preview". Same purpose
       # (a cold server must not trip --fail-on-flaky-tests), local target:
@@ -147,6 +177,42 @@ jobs:
           tail -50 /tmp/next-start.log
           exit 1
 
+      # MEH-1712 — CAPTURE ONLY. Dials Railway FROM THE RUNNER, which is the one
+      # path nobody has measured: the CC sandbox is blocked from *.up.railway.app
+      # (MEH-360), and staging.mehamakor.online reaches the same backend only via
+      # the Vercel edge, so neither reproduces the runner's own client/DNS/TLS.
+      #
+      # Two probes, not one, because the open question is an ASYMMETRY: the
+      # browser's /api/* rewrite returns 200 in the same run where the SSR
+      # by-slug fetch ends in notFound(). Probing only the failing call would
+      # show a number with nothing to compare it against.
+      #
+      # Reading it: a non-200 on by-slug names the bug outright. So does a
+      # time_total > 8s — that is serverFetch's DEFAULT_TIMEOUT_MS
+      # (frontend/lib/server-fetch.js:26), and an fetch that exceeds it throws,
+      # lands in the catch at app/[locale]/[slug]/page.js:20, and returns null →
+      # notFound(). Both probes 200 and fast ⇒ the backend is exonerated and the
+      # cause is inside the Next server process.
+      #
+      # `continue-on-error` + `if: always()` are deliberate: this step diagnoses,
+      # it must never become a new gate or change the suite's verdict.
+      - name: Backend reachability probe (capture-only, MEH-1712)
+        if: always()
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+        run: |
+          probe() {
+            printf '%-12s ' "$1"
+            curl -sS -o /dev/null -m 30 -w 'HTTP %{http_code}  total=%{time_total}s  connect=%{time_connect}s\n' "$2" \
+              || echo "REQUEST FAILED (curl exit $?)"
+          }
+          {
+            echo "target: $NEXT_PUBLIC_API_URL"
+            probe "by-slug" "$NEXT_PUBLIC_API_URL/producers/by-slug/ruach-hasadeh"
+            probe "collection" "$NEXT_PUBLIC_API_URL/producers?limit=1"
+          } 2>&1 | tee /tmp/backend-probe.log
+
       - name: Run E2E tests
         id: e2e-run
         # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
@@ -157,6 +223,50 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           CI: "true"
+          # MEH-999: unlock the authenticated specs. global-setup.ts provisions
+          # e2e/.auth/{producer,consumer,admin}.json by logging in through the
+          # /api proxy to the Railway staging backend, where these accounts are
+          # seeded (backend/scripts/seed_demo_business.py). Without them the
+          # authed specs skip — see docs/ci/e2e-auth-fixtures.patch.md.
+          DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+          DEMO_CONSUMER_PASSWORD: ${{ secrets.DEMO_CONSUMER_PASSWORD }}
+          DEMO_ADMIN_PASSWORD: ${{ secrets.DEMO_ADMIN_PASSWORD }}
+
+      # MEH-1604: the invariant is "how many tests RAN", not the exit code.
+      # A failing global-setup kills the whole run before a single spec loads,
+      # and that reports as an ordinary failure — indistinguishable from "one
+      # test failed". Zero coverage is the worst outcome and must make the
+      # loudest noise, not the same red.
+      # if: always() — precisely when the previous step failed we need to know
+      # whether anything ran. cancelled is excluded: a superseded run (rule 21)
+      # is not a real coverage gap.
+      - name: E2E coverage floor
+        if: >-
+          always() && steps.e2e-run.outcome != 'cancelled' &&
+          steps.e2e-run.outcome != 'skipped'
+        working-directory: frontend
+        run: |
+          REPORT=playwright-report/results.json
+          if [ ! -f "$REPORT" ]; then
+            echo "::error::ZERO COVERAGE — no JSON report at $REPORT. The json reporter is missing from playwright.config.ts (MEH-1604 step 0), or the run died before writing it."
+            exit 1
+          fi
+          EXPECTED=$(jq '[.suites[]?.specs[]?, (.suites[]?.suites[]?.specs[]?)] | length' "$REPORT")
+          STATS_EXPECTED=$(jq '.stats.expected // 0' "$REPORT")
+          STATS_UNEXPECTED=$(jq '.stats.unexpected // 0' "$REPORT")
+          STATS_FLAKY=$(jq '.stats.flaky // 0' "$REPORT")
+          STATS_SKIPPED=$(jq '.stats.skipped // 0' "$REPORT")
+          EXECUTED=$((STATS_EXPECTED + STATS_UNEXPECTED + STATS_FLAKY))
+          echo "executed=$EXECUTED (expected=$STATS_EXPECTED unexpected=$STATS_UNEXPECTED flaky=$STATS_FLAKY skipped=$STATS_SKIPPED specs=$EXPECTED)"
+          echo "executed=$EXECUTED" >> "$GITHUB_OUTPUT"
+          echo "skipped=$STATS_SKIPPED" >> "$GITHUB_OUTPUT"
+          if [ "$EXECUTED" -eq 0 ]; then
+            echo "::error::ZERO COVERAGE — global-setup aborted, 0 tests executed"
+            echo "The suite reported no executed tests. This is NOT 'some tests failed' —"
+            echo "nothing ran. Check global-setup.ts (auth fixture provisioning) first."
+            exit 1
+          fi
+        id: coverage-floor
 
       # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
       # PR (marker-matched, edited in place — no comment spam on re-push).
@@ -167,7 +277,7 @@ jobs:
       # false-failure class, observed live on PR #1568 within an hour of the
       # step landing). The fresh run upserts the real verdict.
       - name: Post QA report comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         if: >-
           always() && github.event_name == 'pull_request' &&
           steps.e2e-run.outcome != 'cancelled'
@@ -175,16 +285,25 @@ jobs:
           script: |
             const marker = "<!-- e2e-qa-report -->";
             const outcome = "${{ steps.e2e-run.outcome }}";
+            const executed = "${{ steps.coverage-floor.outputs.executed }}" || "unknown";
+            const skipped = "${{ steps.coverage-floor.outputs.skipped }}" || "0";
             const passed = outcome === "success";
+            const zeroCoverage = executed === "0";
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const headline = zeroCoverage
+              ? "Playwright QA — ZERO COVERAGE"
+              : `Playwright QA — ${passed ? "PASS" : "FAIL"}`;
             const body = [
               marker,
-              `## Playwright QA — ${passed ? "PASS" : "FAIL"}`,
+              `## ${headline}`,
               "",
-              `Suite ran against a local \`next start\` on the runner ([run](${runUrl})), commit ${context.payload.pull_request.head.sha.slice(0, 7)}.`,
-              passed
-                ? "All E2E specs green (flake gate --fail-on-flaky-tests included)."
-                : "At least one spec failed — the playwright-report artifact on the run has traces and screenshots.",
+              `**${executed} tests executed**, ${skipped} skipped ([run](${runUrl})), commit ${context.payload.pull_request.head.sha.slice(0, 7)}.`,
+              "",
+              zeroCoverage
+                ? "**Nothing ran.** global-setup aborted before any spec loaded — this PR has no E2E signal at all. Do not read the other checks as coverage."
+                : passed
+                  ? "All E2E specs green (flake gate --fail-on-flaky-tests included)."
+                  : "At least one spec failed — the playwright-report artifact on the run has traces and screenshots.",
             ].join("\n");
             const { data: comments } = await github.rest.issues.listComments({
               ...context.repo,
@@ -218,3 +337,104 @@ jobs:
             frontend/playwright-report/
             frontend/test-results/**/trace.zip
           retention-days: 7
+
+      # MEH-1712 — the same content, in the one place a CC session can actually
+      # read it. An artifact download redirects to Azure blob storage
+      # (productionresultssa18.blob.core.windows.net); the GitHub API hands back
+      # a valid pre-signed URL and the fetch then dies with
+      # `curl: (56) CONNECT tunnel failed, response 403` because that host is
+      # outside the sandbox egress allowlist. No GitHub App permission changes
+      # that — it is the same class as the *.up.railway.app block, and it is
+      # permanent. The probe numbers were diagnosable today for exactly one
+      # reason: they went to the job log, not only to an artifact.
+      #
+      # So this is not a duplicate of the upload below. The upload keeps the
+      # whole file for a human; this step is what removes the human from the
+      # loop. Rule: a diagnostic value that exists only inside an artifact is,
+      # from a CC session, a value that does not exist.
+      #
+      # The empty case prints an explicit line rather than nothing. "No output"
+      # is indistinguishable from "step didn't run" — reporting absence as
+      # silence is the precise failure this ticket spent a day on.
+      - name: Print next-start log (capture-only, MEH-1712)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "=== /tmp/next-start.log — last 200 lines ==="
+          if [ -s /tmp/next-start.log ]; then
+            tail -200 /tmp/next-start.log
+          else
+            echo "(EMPTY OR MISSING) $(ls -l /tmp/next-start.log 2>&1)"
+          fi
+          echo "=== end /tmp/next-start.log ==="
+
+      # MEH-1712 — the server's own stdout. `next start` has written to
+      # /tmp/next-start.log since MEH-1044 (step "Start Next.js server"), but
+      # nothing ever uploaded it, so every serverFetch failure it recorded was
+      # discarded at job teardown. That is why a half-day of triage could refute
+      # three hypotheses without once seeing the actual error: the file existed
+      # the whole time and was never kept.
+      #
+      # `if: always()` (not `failure()`, unlike the report above) — a PASSING run
+      # is the control. Without it there is nothing to diff a failing log against.
+      # `if-no-files-found: warn` so an empty capture is visible rather than a
+      # silent success, which is the failure mode this whole ticket is about.
+      - name: Upload E2E diagnostics (MEH-1712)
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-diagnostics
+          path: |
+            /tmp/next-start.log
+            /tmp/backend-probe.log
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ─────────────────────────────────────────────────────────────────
+  # E2E GATE (MEH-1201) — required-check aggregator for the E2E suite.
+  # Mirrors ci-gate (pr-checks.yml) / deploy-gate (deploy.yml):
+  # `if: always()` + `needs`, so the gate reports its own status regardless of
+  # whether the E2E job ran, skipped, or failed. On a docs-only PR the `e2e`
+  # job skips via paths-filter (needs.filter.outputs.frontend == 'false') and a
+  # skipped need evaluates as pass here — so docs-only merges clean.
+  #
+  # MEH-892: a *skipped* job listed DIRECTLY in the protect-staging ruleset
+  # reads as "Expected" and BLOCKS merge (real 405 on a docs-only PR). That is
+  # why the E2E job must NOT be added to the ruleset — THIS aggregator is the
+  # required context instead.
+  # ─────────────────────────────────────────────────────────────────
+  e2e-gate:
+    name: E2E gate 
+    if: always()
+    needs: [filter, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Aggregate E2E required-check result
+        env:
+          R_FILTER: ${{ needs.filter.result }}
+          R_E2E: ${{ needs.e2e.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          ok() { case "$1" in success|skipped) return 0 ;; *) return 1 ;; esac; }
+          check() { if ok "$2"; then echo "  OK  $1: $2"; else echo "  FAIL $1: $2"; fail=1; fi; }
+
+          # Guard the paths-filter result first — mirrors ci-gate's R_CHANGES
+          # guard. If the filter itself broke we can't trust the e2e skip
+          # decision, so block.
+          if ! ok "$R_FILTER"; then
+            echo "::error::Paths-filter job did not succeed (result=$R_FILTER) — cannot determine E2E scope."
+            exit 1
+          fi
+
+          # success = mobile Pixel 5 + VRT specs green.
+          # skipped  = docs-only PR (paths-filter) or dependabot — pass.
+          # failure/cancelled = block.
+          check "Playwright E2E (Vercel preview)" "$R_E2E"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::E2E gate failed — Playwright E2E (mobile Pixel 5 + VRT) did not pass."
+            exit 1
+          fi
+          echo "E2E gate passed."

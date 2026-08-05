@@ -136,6 +136,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
+   | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
    | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
    | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain (`mehamakor.online`) is verified (SPF+DKIM). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
@@ -416,7 +417,11 @@ starts **empty**; the official ~1,270 data.gov.il localities are loaded by a
 one-time, idempotent seed (`ON CONFLICT DO NOTHING` — safe to re-run):
 
 - **From the admin panel / API:** `POST /admin/seed-cities` (admin JWT).
-- **From a shell with `DATABASE_URL`:** `cd backend && python scripts/seed_cities.py`.
+- **From a local checkout** (repo root, `DATABASE_URL` set):
+  `cd backend && python scripts/seed_cities.py`.
+- **From the Railway Console** (`cwd=/app`, which already *is* `backend/` —
+  `Dockerfile:40`): `python scripts/seed_cities.py` — **no** `cd backend`, there
+  is no `/app/backend/`.
 
 Run it once on **staging** and once on **production**. Until an env is
 seeded, `GET /cities` falls back to the ~100-entry static list
@@ -498,7 +503,10 @@ python scripts/check_api_contract.py --probe "$BACKEND"
 - [ ] **Prod is clean of demo/test data** — run the read-only scan against
   production and confirm it exits 0:
   ```
+  # local checkout, repo root (Railway CLI injects the env)
   railway run python backend/scripts/check_no_demo_data.py
+  # Railway Console instead? /app already IS backend/ (Dockerfile:40) — drop the prefix:
+  #   python scripts/check_no_demo_data.py
   ```
   Exit 1 means a demo/test entity leaked to prod — review each flagged row
   (the script never deletes) and clean it before promoting. Policy + the
@@ -843,24 +851,32 @@ deploys, which is exactly the opposite of what we want.
 The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
 runs Playwright tests against each PR's Vercel preview URL.
 
-### Staging QA auth fixtures (MEH-1241)
+### Staging QA auth fixtures (MEH-1241 · MEH-1528)
 
-Playwright can drive a logged-in **producer** and **consumer** session against
-staging, so UI behind login (e.g. the account menu) is QA'd automatically
-instead of manually. Three moving parts:
+Playwright can drive a logged-in **producer**, **consumer**, and **admin**
+session against staging, so UI behind login (e.g. the account menu, the admin
+panel) is QA'd automatically instead of manually. Three moving parts:
 
 1. **Seed accounts (staging DB).** `backend/scripts/seed_demo_business.py`
-   owns two known-password QA users — `demo-owner@example.com` (role
-   `producer`, linked to the `/ruach-hasadeh` demo) and
-   `demo-consumer@example.com` (role `consumer`). Their passwords come from the
-   env vars **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** (set on the
-   Railway staging backend + GitHub Actions secrets, same values). To (re)apply
-   them **non-destructively** — no producer/review/product rows touched, unlike
-   `--refresh` — run by Sapir against staging only. **Two routes, pick one:**
+   owns three known-password QA users — `demo-owner@example.com` (role
+   `producer`, linked to the `/ruach-hasadeh` demo), `demo-consumer@example.com`
+   (role `consumer`), and `demo-admin@example.com` (role `admin`, **no**
+   producer linkage — MEH-1528). Their passwords come from the env vars
+   **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** /
+   **`DEMO_ADMIN_PASSWORD`** (set on the Railway staging backend + GitHub Actions
+   secrets, same values). To (re)apply them **non-destructively** — no
+   producer/review/product rows touched, unlike `--refresh` — run by Sapir
+   against staging only. **Two routes, pick one:**
 
-   **A. Railway Console (in-container, `cwd=/app`)** — the Docker build context
-   is `backend/`, so its contents copy straight to `/app`; there is **no**
-   `/app/backend/`, and the `railway` CLI does not exist inside the container:
+   > **Path rule — the `backend/` prefix belongs to exactly one of these two.**
+   > `Dockerfile:40` is `COPY backend/ .` into `WORKDIR /app` (`Dockerfile:14`),
+   > so **inside the container `/app` *is* `backend/`** — there is no
+   > `/app/backend/`. In the console drop the prefix; from a local checkout keep
+   > it. Pasting route B into the console gives
+   > `python: can't open file '/app/backend/scripts/…': No such file or directory`.
+
+   **A. Railway Console (in-container, `cwd=/app`)** — no `backend/` prefix, and
+   the `railway` CLI does not exist inside the container:
 
    ```bash
    # Railway → service → Console (already at /app)
@@ -875,36 +891,92 @@ instead of manually. Three moving parts:
 
    Both hit the staging DB (route B via the CLI's env injection; route A is
    already inside the staging service). The script's `_assert_not_production()`
-   refuses any non-staging host. Idempotent; aborts loudly if either
-   `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` is unset. Expected output:
+   refuses any non-staging host. Idempotent; aborts loudly if **any** of
+   `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` / `DEMO_ADMIN_PASSWORD` is
+   unset. Expected output:
    `Synced QA users: demo-owner@example.com (password reset),
-   demo-consumer@example.com (created). …`
+   demo-consumer@example.com (created), demo-admin@example.com (created). …`
 
 2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
    each role in via `POST /api/auth/login` and writes
-   `frontend/e2e/.auth/{producer,consumer}.json` (the JWT lands in
-   `localStorage["token"]`, where the SPA reads it). These files embed a **live
-   JWT** and are **gitignored** (`frontend/.gitignore` → `e2e/.auth/`) — never
-   committed. globalSetup **no-ops on a localhost baseURL** (the accounts exist
-   on staging only) and **throws** on a remote target with a missing password
-   env or a failed login.
+   `frontend/e2e/.auth/{producer,consumer,admin}.json` — **one file per role,
+   never shared** (the JWT lands in `localStorage["token"]`, where the SPA reads
+   it). These files embed a **live JWT** and are **gitignored**
+   (`frontend/.gitignore` → `e2e/.auth/`) — never committed. globalSetup
+   **no-ops on a localhost baseURL _only when no `DEMO_*_PASSWORD` is set_** (the
+   default unauthenticated suite); with the passwords set against a **seeded
+   local full stack** it provisions all three roles locally too (MEH-1528, the
+   end-to-end verification path). On a **remote** target it **throws** on a
+   missing password env, a missing Vercel bypass secret, or a failed login.
+
+   > **File-name note (MEH-1528):** the state files live at `e2e/.auth/`, not a
+   > separate `playwright/.auth/`, and the owner file is `producer.json` (its app
+   > `role` is `producer`; the account is `demo-owner@example.com`). The existing
+   > MEH-1241 setup already owns this location/naming and is gitignored + wired
+   > into `playwright.config.ts`; MEH-1528 extends it (adds `admin.json`) rather
+   > than forking a parallel directory.
 
 3. **A spec opts into a role** — no per-spec login code:
 
    ```ts
    import { test } from "@playwright/test";
-   test.use({ storageState: "e2e/.auth/producer.json" }); // or consumer.json
+   test.use({ storageState: "e2e/.auth/admin.json" }); // or producer.json / consumer.json
    ```
+
+   The proof spec `frontend/e2e/flows/25-role-reachability.spec.ts` uses all
+   three: it asserts **admin reaches `/admin`**, the **owner is bounced to
+   `/login` from `/admin` yet reaches `/producer/dashboard`**, and the
+   **consumer is bounced from both** — proving the roles are distinct identities,
+   not three copies of one login.
 
 **Where these run:** only against a real staging/preview target —
 
 ```bash
 cd frontend
 TEST_URL=https://staging.mehamakor.online \
-DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… \
+DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… DEMO_ADMIN_PASSWORD=… \
 VERCEL_AUTOMATION_BYPASS_SECRET=… \
-npx playwright test e2e/flows/21-account-menu-auth.spec.ts
+npx playwright test e2e/flows/25-role-reachability.spec.ts
 ```
+
+> **⚠️ Sapir action (MEH-1528):** `DEMO_ADMIN_PASSWORD` is a **new** secret. It
+> must be set (a) on the Railway **staging** backend service and (b) as a GitHub
+> Actions secret **and wired into the E2E job env** in `.github/workflows/e2e.yml`
+> (CC-deny, MEH-671), alongside the existing `DEMO_OWNER_PASSWORD` /
+> `DEMO_CONSUMER_PASSWORD`. Until it is wired, `global-setup` throws on the
+> staging/preview E2E run (the admin login has no password) — the non-required
+> E2E gate goes red, no required gate is affected.
+
+#### Role → env var → state file (MEH-1528)
+
+| Role | Seed account | Password env var | storageState file |
+|---|---|---|---|
+| producer (owner) | `demo-owner@example.com` | `DEMO_OWNER_PASSWORD` | `e2e/.auth/producer.json` |
+| consumer | `demo-consumer@example.com` | `DEMO_CONSUMER_PASSWORD` | `e2e/.auth/consumer.json` |
+| admin | `demo-admin@example.com` | `DEMO_ADMIN_PASSWORD` | `e2e/.auth/admin.json` |
+
+All three are **staging-only** (dev/local seeding is fine; the seed's
+`_assert_not_production()` refuses production, and ADR-029's
+`check_no_demo_data.py` flags any `@example.com` / `DEMO`-marked row that leaks
+to prod). Passwords are read from env at setup time only — never written to a
+file, commit, log, or test output.
+
+#### Dietary-scope demo producers (MEH-1528, Component B)
+
+The same seed inserts three **approved, public** demo producers so the dietary
+QA checks have data with **no login at all** (they populate the MEH-1508 scope
+columns; `_assert_not_production()` + the `DEMO` admin-note keep them
+staging-only). Idempotent per-slug; obviously demo (`דמו QA — …`):
+
+| Slug | `gluten_free_facility` | `vegan_scope` | `vegetarian_scope` |
+|---|---|---|---|
+| `demo-diet-dedicated` | `dedicated` | `all` | `all` |
+| `demo-diet-shared` | `shared` | `some` | `some` |
+| `demo-diet-unknown` | `unknown` | `all` | `some` |
+
+→ the public gluten row is testable across **all three** facility states, and
+the chunk-3 "100%" vegan/vegetarian chips have both an `all` and a `some`
+producer to gate on.
 
 **`VERCEL_AUTOMATION_BYPASS_SECRET` is required for any `TEST_URL` staging/preview
 run.** `staging.mehamakor.online` sits behind **Vercel Deployment Protection** —

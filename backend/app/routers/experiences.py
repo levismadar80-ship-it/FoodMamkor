@@ -14,7 +14,6 @@ differ from home_products in that they ALWAYS require admin approval
 after the Claude verdict — the admin_experiences router handles that side.
 """
 
-from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -23,7 +22,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, get_current_user_optional, require_verified_email
 from app.database import get_db
-from app.models import Experience, User
+from app.models import Experience, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     ExperienceCreate,
@@ -35,6 +34,7 @@ from app.schemas.schemas import (
 )
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import notify_admin_new_submission
+from app.utils.clock import israel_today
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
 
@@ -109,6 +109,51 @@ def validate_endpoint(
     return ExperienceValidateResult(**result)
 
 
+# ---------- Public visibility gate (MEH-1749) ----------
+
+
+def _publicly_visible_query(db: Session):
+    """The ONE definition of "this experience is public". Both public read
+    paths build on it — the listing below and the detail route's stranger
+    branch.
+
+    Two conditions, and the second is what MEH-1749 added:
+
+    1. ``Experience.status == "approved"`` — admin moderation passed.
+    2. **The host's business is approved.** LOCK (בעלי עסק מורשים בלבד):
+       content reaches the public only from an approved business. Experiences
+       were the only surface without this — events (``events.py:167``),
+       recipes (``producer_recipes.py:335-345``) and group buys
+       (``group_buys.py:252``) were already gated.
+
+    The walk is two hops because an Experience is keyed on a **User**, not a
+    Producer: ``Experience.host_user_id`` (``models.py:1051``) →
+    ``User.producer`` (``models.py:451``) → ``Producer.status``. Both joins are
+    INNER, so a host with no business at all (``producer_id IS NULL``) is
+    excluded by the join itself rather than by a second condition.
+
+    DO NOT re-express this predicate inline in a route — MEH-1740 is the
+    precedent: the click route grew its own copy of the BOLA gate, the copy
+    drifted, and the surface leaked. One definition, two callers.
+
+    Deliberately NOT included here, because both are route-specific and
+    predate this gate:
+      * ``event_date >= today`` — the listing hides past experiences; the
+        detail route still serves them by direct link.
+      * ``is_active`` — MEH-1419 drops host-cancelled ones from the feed only.
+    """
+    return (
+        db.query(Experience)
+        .options(joinedload(Experience.host))
+        .join(User, Experience.host_user_id == User.id)
+        .join(Producer, User.producer_id == Producer.id)
+        .filter(
+            Experience.status == "approved",
+            Producer.status == "approved",
+        )
+    )
+
+
 # ---------- Public listing ----------
 
 
@@ -118,18 +163,17 @@ def list_experiences(
     city: str | None = None,
     db: Session = Depends(get_db),
 ):
-    """Only approved + upcoming (event_date >= today). Past experiences
-    drop out of the public feed automatically."""
-    q = (
-        db.query(Experience)
-        .options(joinedload(Experience.host))
-        .filter(
-            Experience.status == "approved",
-            Experience.event_date >= date.today(),
-            # MEH-1419: a host-cancelled experience drops from the public feed
-            # (mirrors events.py:73). It stays visible on GET /experiences/mine.
-            Experience.is_active.is_(True),
-        )
+    """Only approved + upcoming (event_date >= today), and only from an
+    approved business (MEH-1749). Past experiences drop out of the public
+    feed automatically."""
+    q = _publicly_visible_query(db).filter(
+        # MEH-1883: Israel calendar day — same reasoning as events.py. A UTC
+        # "today" drops an experience from the public feed at 21:00 the
+        # evening before it happens.
+        Experience.event_date >= israel_today(),
+        # MEH-1419: a host-cancelled experience drops from the public feed
+        # (mirrors events.py:73). It stays visible on GET /experiences/mine.
+        Experience.is_active.is_(True),
     )
     if category:
         q = q.filter(Experience.category == category)
@@ -181,8 +225,22 @@ def get_experience(
 
     # Non-approved experiences are invisible to strangers — use 404, not
     # 403, so we don't leak existence of pending submissions.
-    if ex.status != "approved" and not (is_owner or is_admin):
-        raise HTTPException(status_code=404, detail="Experience not found")
+    #
+    # MEH-1749: the same 404 now also covers "the host's business is not
+    # approved". The check reuses _publicly_visible_query rather than
+    # re-testing ex.host.producer inline, so there is exactly one definition
+    # of public visibility (see that helper on why — MEH-1740).
+    #
+    # This closes the SEO/metadata path too, without a frontend change:
+    # experiences/[id]/page.js:14 server-fetches THIS endpoint inside
+    # generateMetadata with no auth, and already falls back on a non-ok
+    # response — so gating here keeps a pending business's title out of <head>.
+    if not (is_owner or is_admin):
+        visible = (
+            _publicly_visible_query(db).filter(Experience.id == experience_id).first()
+        )
+        if visible is None:
+            raise HTTPException(status_code=404, detail="Experience not found")
 
     payload = _serialize_detail(ex)
 

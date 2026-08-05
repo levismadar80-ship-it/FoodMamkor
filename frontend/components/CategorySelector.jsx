@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { CATEGORY_ICONS } from "@/lib/category-registry";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
@@ -30,8 +30,8 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 // in both locales for now — DB category names are Hebrew-only). The other 12
 // categories surface via search with a Leaf fallback, name-only.
 // MEH-927: "בשר ודגים" split into "בשר" (kept here on the meat glyph) + "דגים".
-// "דגים" is intentionally NOT in POPULAR — it uses the Leaf fallback like the
-// other rest-categories until MEH-683 gives it a dedicated fish glyph.
+// "דגים" is intentionally NOT in POPULAR — it resolves its own FishSimple glyph
+// via CATEGORY_ICONS like every other non-popular card (MEH-683; see :203-206).
 const POPULAR = [
   { name: "חלב וגבינות", glyph: "dairy" },
   { name: "לחמים ואפייה", glyph: "bread" },

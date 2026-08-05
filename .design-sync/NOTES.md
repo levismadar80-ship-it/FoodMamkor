@@ -80,15 +80,30 @@ of `_ds_bundle.css` (valid) and reach designs via `styles.css`'s `@import` closu
 - ~11 `useAuth must be used within AuthProvider` → caught, floor card renders. Expected.
 - Data-shape TypeErrors on app components needing real props (ProducerCard, RecipeCard,
   RecipeDetail, ExperienceCard, etc.) → floor cards. Expected (out of core scope).
-- `admin/ProducerForm` → AxiosError 404 on mount → floor card. Expected.
+- `admin/ProducerForm` → `[RENDER_ERRORS]` AxiosError 404 on mount. NOT a floor card — the
+  full form renders (121KB PNG, all real fields); the `bad` flag is only the mount-time 404.
+  Expected/benign.
+- `StarSelector` (authored) → `[RENDER_THIN]` false-positive. Stars are SVG icons with no
+  text nodes, so the "no text" heuristic trips. Renders correctly (3 cells: PartialFour /
+  FullFive / Empty, brand-gold). Graded good — do NOT rework.
+- `LanguageToggle` (unauthored) → `[RENDER_THIN]`. Renders the real component — a globe icon
+  button (he/en switch) — no text node. Benign; authorable later for a richer card.
+- `admin/AdminRowMenu` (unauthored) → `[RENDER_BLANK]`/thin, PNG ~4.5KB. Interaction-only
+  admin overflow (three-dots) menu: content only appears on click, so the static render is
+  blank. `bad:true` but unchanged since last sync (verified-by-upload, outside campaign
+  scope). Author `previews/AdminRowMenu.tsx` or add `cfg.overrides.AdminRowMenu.skip` on a
+  future sync if a non-blank card is wanted.
 
 ## Authored-preview learnings (core ~25 set)
 
-Folded from the batch waves. The 25 authored components: Button, Card, Heading,
+Folded from the batch waves. The 25 authored components at the time of that batch:
+Button, Card, Heading,
 Badge, Input, Link, EmptyState, Tooltip, Popover, InfoTooltip, StarRating,
-StarSelector, TrustBadge, CategoryTag, AvailabilityBadge, RecipeStatusBadge,
+StarSelector, TrustBadge, CategoryTag, RecipeStatusBadge,
 KashrutBadgeStrip, BadgeRow, ButtonSpinner, Breadcrumb, Pagination, ChipScrollRow,
-SkeletonCard, SkeletonLine, SkeletonProducerGrid.
+SkeletonCard, SkeletonLine, SkeletonProducerGrid — **24 today**:
+`AvailabilityBadge` was removed under MEH-1860 (2026-08-03) as a component with no
+production callers, along with its preview and its `componentSrcMap` entry.
 
 - **Preview idiom that works:** import components from `"mehamakor-frontend"`; named
   exports = cells; inline styles for layout glue (NOT Tailwind className — the preview
@@ -101,9 +116,10 @@ SkeletonCard, SkeletonLine, SkeletonProducerGrid.
 - **Interaction-only overlays:** Tooltip, Popover, InfoTooltip open their bubble/panel via
   uncontrolled hover/click state — the open state can't render in a static screenshot. Their
   previews show the styled trigger only (graded good; do NOT hand-fake the open state).
-- **next-intl namespaces are healthy** for all authored components. Non-obvious: AvailabilityBadge
-  reads `group_buys.availability` (not `producer.availability`).
-- **AvailabilityBadge** `variant="card"` returns `null` for "open" states — previews use visible states.
+- **next-intl namespaces are healthy** for all authored components. (The non-obvious
+  example recorded here was `AvailabilityBadge` reading `group_buys.availability` rather
+  than `producer.availability`; that component was removed under MEH-1860, 2026-08-03, so
+  the example is historical — the namespace-check habit it illustrates is not.)
 - **Avoid relative-time story cells:** KashrutBadgeStrip's near-expiry warning chip depends on
   `new Date()` math vs the headless clock and won't render deterministically — used a
   clock-independent cell instead.
@@ -111,6 +127,19 @@ SkeletonCard, SkeletonLine, SkeletonProducerGrid.
 
 ## Re-sync risks (watch-list)
 
+- **⚠️ `config.componentSrcMap` MUST be re-synced from `.cache/srcmap.json` after gen-barrel,
+  BEFORE the converter.** `gen-barrel.mjs` writes the fresh map to `.design-sync/.cache/srcmap.json`
+  but does NOT touch `config.json`; the converter reads `cfg.componentSrcMap` (the committed,
+  possibly-stale copy). If the app added/removed/renamed components since the last sync and this
+  step is skipped, the build uses the old map → `[BUNDLE_EXPORT]` on components deleted from the
+  app (e.g. `FollowButton`, 2026-07-22) AND phantom "N removed" in the diff for the new components
+  the stale map lacks (would wrongly delete them from the live project). Fix command (repo root,
+  after gen-barrel):
+  ```
+  node -e 'const fs=require("fs");const p="./.design-sync/config.json";const c=JSON.parse(fs.readFileSync(p));c.componentSrcMap=JSON.parse(fs.readFileSync("./.design-sync/.cache/srcmap.json"));fs.writeFileSync(p,JSON.stringify(c,null,2)+"\n")'
+  ```
+  (There are no manual pins/`null`-exclusions in this repo's map, so a full overwrite is safe;
+  if pins are added later, merge instead of overwrite.) Consider folding this into gen-barrel.mjs.
 - **Generated artifacts are gitignored** (`frontend/.ds-dist/`, `.ds-barrel.mjs`,
   `.ds-sync-css/ds.css`); a fresh clone must re-run gen-barrel + tailwind compile +
   prebuild before the converter. The hand-authored build inputs ARE committed:

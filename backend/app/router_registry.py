@@ -16,6 +16,7 @@ from app.routers import (
     events,
     experiences,
     favorites,
+    google_rating,
     group_buys,
     health,
     holiday_mode,
@@ -57,6 +58,34 @@ def register_routers(app: FastAPI) -> None:
     # (no Alembic); this is a reversible unmount. To restore the live API,
     # BOTH steps are needed: re-add `home_products` to the import tuple above
     # AND uncomment the include line below.
+    #
+    # ⚠️ DO NOT remount without first fixing TWO known security defects in
+    # this router. They are dormant only because nothing routes here; the
+    # moment the include below is uncommented they become live, and both are
+    # exploitable by any authenticated user. Found by audit P1 (MEH-1724),
+    # `docs/audits/2026-07-full/p1-security-backend.md`.
+    #
+    #   1. Rating authorization boundary (F-1, OWASP A04 / CWE-840).
+    #      `home_products.py` mints a fresh rating token on EVERY click, and
+    #      uniqueness is `UniqueConstraint("click_id")` — per click, not per
+    #      rater — so the `>= 3 negative ratings -> is_hidden` rule counts
+    #      clicks, not people. One account can hide another user's listing.
+    #      Fix: unique `(user_id, home_product_id)` + upsert on repeat rating,
+    #      and auto-hide on `COUNT(DISTINCT user_id)`. Needs an Alembic
+    #      revision, and existing duplicate rows must be resolved first.
+    #      Ticket: MEH-1739 (Canceled — not-applicable while unmounted).
+    #
+    #   2. BOLA gate missing on the click route (F-2, OWASP A01 / CWE-639).
+    #      `GET /home-products/{id}` gates hidden/deactivated listings behind
+    #      an owner/admin check (MEH-386). `POST /home-products/{id}/
+    #      whatsapp-click` does NOT, and returns the seller's phone number.
+    #      Fix: apply the same gate before returning `whatsapp_url`.
+    #      Ticket: MEH-1740 (Canceled — not-applicable while unmounted).
+    #
+    # Both tickets were Canceled BECAUSE the surface is unreachable, not
+    # because the defects were fixed — nothing has been fixed. This comment
+    # is the durable record; the tickets are not. Rationale + evidence:
+    # MEH-1743.
     # app.include_router(home_products.router)
     app.include_router(reports.router)
     # MEH-1443: email-only "report wrong info" (distinct from the DB-backed
@@ -71,6 +100,10 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
     app.include_router(reviews.router)
+    # MEH-1490: live-fetch Google-rating trust line (read-only proxy; no
+    # persistence). Registered near reviews — it's the external counterpart to
+    # the native review block, but a separate router (ToS visual separation).
+    app.include_router(google_rating.router)
     app.include_router(search.router)
     app.include_router(users_me.router)
     app.include_router(admin_outreach.router)

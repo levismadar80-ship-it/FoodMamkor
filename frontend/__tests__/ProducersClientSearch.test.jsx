@@ -12,7 +12,11 @@ let params = {}; // drives useSearchParams().get(key)
 
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  useSearchParams: () => ({
+    get: (k) => (k in params ? params[k] : null),
+    // MEH-1465: categoryFilter inits via getAll (repeated ?category=).
+    getAll: (k) => (k in params ? [params[k]] : []),
+  }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
@@ -23,6 +27,7 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  CaretDown: (p) => <span {...p} />, // MEH-1483: sort-select caret
   // MEH-1418: chip leading icons (via lib/chip-icons.js).
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
@@ -65,6 +70,17 @@ vi.mock("@/lib/producer-filters", () => ({
   buildChipParams: () => ({}),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
+  // MEH-1881: ProducersClient now imports this threshold, and a partial
+  // vi.mock throws on any export it omits — so the stub has to carry it
+  // even though nothing here exercises the gate. A number keeps the gate
+  // arithmetic well-defined; `undefined` would make `n >= undefined`
+  // false forever and silently hide the chip in every one of these specs.
+  OPEN_NOW_CHIP_MIN: 5,
+  // MEH-1881: /producers renders a superset of the shared chip row; these
+  // are the names ProducersClient imports. Empty/`{}` keeps these specs
+  // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
+  PRODUCERS_CHIPS_CONFIG: [],
+  PRODUCERS_CHIPS_DEFAULT: {},
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),

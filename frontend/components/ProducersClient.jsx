@@ -3,17 +3,29 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, MapPin, Plant, Leaf } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Plant, Leaf, CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
-import { CATEGORY_STYLES } from "@/lib/map-categories";
+import { CATEGORY_ICONS, CATEGORY_STYLES } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
+// MEH-1825: day axis on the canonical listing surface — same component home
+// mounts, and the same whitelist the backend validates delivery_day against.
+import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
-import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
+import {
+  buildChipParams,
+  OPEN_NOW_CHIP_MIN,
+  // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
+  // CHIPS_DEFAULT are SHARED with the home grid (HomeProducersGrid.jsx:70), so
+  // importing those here and appending to them leaks the open-now chip onto a
+  // surface this ticket does not touch.
+  PRODUCERS_CHIPS_CONFIG as CHIPS_CONFIG,
+  PRODUCERS_CHIPS_DEFAULT as CHIPS_DEFAULT,
+} from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
 import { trackEvent } from "@/lib/analytics";
@@ -23,6 +35,26 @@ import { CategoriesResponseSchema } from "@/lib/api-schemas";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
+
+// MEH-1483: the backend-driven sort axis (?sort=). "newest" is the default —
+// omitted from the request so the default listing stays byte-identical to
+// today's created_at-DESC order; "rating" maps to the backend's avg_rating
+// nulls-last ordering. Two options only (over-engineering guard).
+const SORT_DEFAULT = "newest";
+const SORT_VALUES = ["newest", "rating"];
+// MEH-1864: "rating" is only a legal axis once the catalog actually has
+// reviewed businesses (RATING_SORT_THRESHOLD, lib/rating-gate.js). Below the
+// threshold the option is not rendered, and a hand-typed ?sort=rating degrades
+// to the default here — the backend still answers that URL with 200, the
+// frontend just doesn't present an ordering with no data behind it.
+function sortValuesFor(ratingSortEnabled) {
+  return ratingSortEnabled ? SORT_VALUES : [SORT_DEFAULT];
+}
+function initSortFromParams(searchParams, ratingSortEnabled) {
+  const s = searchParams.get("sort");
+  // unknown (or gated-off) → default
+  return sortValuesFor(ratingSortEnabled).includes(s) ? s : SORT_DEFAULT;
+}
 
 // Display axis = i18n key for the translated label.
 // Data axis = `q` value sent to /producers — must stay Hebrew because the
@@ -51,6 +83,9 @@ export default function ProducersClient({
   initialPage,
   totalPages,
   perPage,
+  // MEH-1864: server-computed rating-data gate. Defaults to false so any caller
+  // that has not measured the catalog gets the conservative (hidden) state.
+  ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
   const searchParams = useSearchParams();
@@ -61,10 +96,42 @@ export default function ProducersClient({
 
   const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
+  // MEH-1825: delivery-day axis. Two guards on hydration, both from the
+  // acceptance criteria: an unknown ?delivery_day= value is dropped against
+  // the DELIVERY_DAYS whitelist (so a hand-edited URL never reaches the API
+  // and 422s), and a day WITHOUT a city is dropped because the backend
+  // semantics are same-row EXISTS over (delivery_city, delivery_day) — a day
+  // alone filters nothing meaningful. `dayFilterRef` mirrors the state for
+  // the same reason `sortOrderRef` does: syncUrl/fetchFiltered are
+  // useCallback([]) and must read the current value without being recreated
+  // or growing a parameter at every existing call site. Set synchronously in
+  // the handlers below, before any callback that reads it fires.
+  const [dayFilter, setDayFilter] = useState(() => {
+    const day = searchParams.get("delivery_day");
+    if (!day || !DELIVERY_DAYS.includes(day)) return null;
+    return searchParams.get("city") ? day : null;
+  });
+  const dayFilterRef = useRef(dayFilter);
+  useEffect(() => { dayFilterRef.current = dayFilter; }, [dayFilter]);
   const [filteredItems, setFilteredItems] = useState(null);
+  // MEH-1483: sort axis. `sortOrderRef` mirrors it so the stable-identity
+  // callbacks (syncUrl / fetchFiltered / loadNextPage, all useCallback([])) can
+  // read the current value without being recreated on every sort change; the
+  // ref is set synchronously in handleSortChange (before any callback fires).
+  const [sortOrder, setSortOrder] = useState(() =>
+    initSortFromParams(searchParams, ratingSortEnabled),
+  );
+  const sortOrderRef = useRef(sortOrder);
+  useEffect(() => { sortOrderRef.current = sortOrder; }, [sortOrder]);
+  // Unfiltered-mode base list: the SSR page by default; replaced with a freshly
+  // fetched sorted page 1 when a non-default sort is active (the [sortOrder]
+  // effect below). Infinite-scroll pages accumulate in appendItems on top.
+  const [baseItems, setBaseItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const { setCity: setUserCity } = useUserCity();
+  // MEH-1503: read the saved city too (not just the setter) — the "בעיר שלי"
+  // chip consults it (post-MEH-1485 it's seeded from the profile on login).
+  const { city: savedUserCity, setCity: setUserCity } = useUserCity();
   const mountFetched = useRef(false);
 
   // Infinite scroll state (unfiltered mode only)
@@ -79,11 +146,13 @@ export default function ProducersClient({
 
   const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
 
-  // MEH-1081 (MEH-1077 DISC-04): canonical category axis — radio chip row
-  // backed by ?category=<id>, the same param + type the homepage grid already
-  // sends (backend: producers.py `category: int` → ProducerCategory join).
+  // MEH-1081 (MEH-1077 DISC-04): canonical category axis — chip row backed by
+  // ?category=<id>. MEH-1465: multi-select — categoryFilter is now an ARRAY of
+  // selected category-id strings, serialized as repeated ?category=<id> (the
+  // backend + api paramsSerializer `{ indexes: null }` OR over the list). A
+  // legacy single ?category=X deep-link hydrates identically (getAll → ["X"]).
   const [categoryFilter, setCategoryFilter] = useState(
-    () => searchParams.get("category") || null,
+    () => searchParams.getAll("category"),
   );
   const [categories, setCategories] = useState([]);
 
@@ -103,10 +172,10 @@ export default function ProducersClient({
   }, [searchQ]);
 
   const hasActiveChips =
-    Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || !!categoryFilter;
+    Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || categoryFilter.length > 0;
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
-    : [...initialItems, ...appendItems];
+    : [...baseItems, ...appendItems];
   const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
 
   const syncUrl = useCallback(
@@ -119,12 +188,23 @@ export default function ProducersClient({
     // for both verbs, so the MEH-1081/1083 serializer is untouched.
     (chipState, city, q, category, method = "replace") => {
       const params = new URLSearchParams();
-      if (category) params.set("category", category);
+      // MEH-1465: category is an array → repeated ?category=<id> (OR union),
+      // matching the api paramsSerializer. The `?? []` guards the legacy
+      // call-sites (city-× / search-×) that omit the arg (→ no category params).
+      for (const id of category ?? []) params.append("category", id);
       for (const chip of CHIPS_CONFIG) {
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
       if (city) params.set("city", city);
+      // MEH-1825: the day rides the URL only alongside a city — the same
+      // precondition the ghost row states, enforced here so a shared link can
+      // never carry a day that the page would then ignore on load.
+      if (city && dayFilterRef.current) params.set("delivery_day", dayFilterRef.current);
       if (q) params.set("q", q);
+      // MEH-1483: mirror the active sort to ?sort= (omitted at the default so
+      // the plain /producers URL is unchanged). Read from the ref so this
+      // callback stays referentially stable.
+      if (sortOrderRef.current !== SORT_DEFAULT) params.set("sort", sortOrderRef.current);
       const qs = params.toString();
       // MEH-1294: mirror to the URL via the shallow History API, NOT router.push/
       // replace. A Next navigation here is an RSC round-trip (Phase 0: 2 route
@@ -149,12 +229,20 @@ export default function ProducersClient({
   const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
+    // MEH-1825: same precondition as syncUrl — delivery_day is only sent with
+    // a delivery_city (MEH-1645 same-row EXISTS semantics).
+    if (city && dayFilterRef.current) params.delivery_day = dayFilterRef.current;
     if (q) params.q = q;
-    if (category) params.category = category;
+    // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
+    if (category?.length) params.category = category;
     if (Object.keys(params).length === 0) {
       setFilteredItems(null);
       return;
     }
+    // MEH-1483: sort added AFTER the no-filters check so a bare sort never
+    // keeps the page in filtered mode — clearing the last filter still returns
+    // to the unfiltered (infinite-scroll) list, whose sort the effect drives.
+    if (sortOrderRef.current !== SORT_DEFAULT) params.sort = sortOrderRef.current;
     setLoading(true);
     api
       .get("/producers", { params: { ...params, limit: FILTER_LIMIT, offset: 0 } })
@@ -172,7 +260,13 @@ export default function ProducersClient({
     setLoadingMore(true);
     api
       .get("/producers", {
-        params: { limit: PAGE_SIZE, offset: (nextPage - 1) * PAGE_SIZE },
+        params: {
+          limit: PAGE_SIZE,
+          offset: (nextPage - 1) * PAGE_SIZE,
+          // MEH-1483: carry the active sort into every infinite-scroll page so
+          // the order holds across pages (omitted at the default).
+          ...(sortOrderRef.current !== SORT_DEFAULT && { sort: sortOrderRef.current }),
+        },
       })
       .then((r) => {
         const items = Array.isArray(r.data) ? r.data : [];
@@ -204,9 +298,50 @@ export default function ProducersClient({
     if (mountFetched.current) return;
     mountFetched.current = true;
     const anyActive =
-      Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || !!categoryFilter;
+      Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || categoryFilter.length > 0;
     if (anyActive) fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-1483: keep the unfiltered base list in sync with the sort axis. Keyed on
+  // sortOrder ONLY (not on the filters) so toggling a filter never resets the
+  // infinite-scroll position — this fires on mount (only for a non-default
+  // deep-link) and on every real sort change. It refetches page 1 even while
+  // filters are active, so the base is already correct the moment the last
+  // filter is cleared. `prevSortRef` skips the default-sort mount no-op so the
+  // first paint stays byte-identical to the SSR order.
+  const prevSortRef = useRef(sortOrder);
+  useEffect(() => {
+    const changed = prevSortRef.current !== sortOrder;
+    prevSortRef.current = sortOrder;
+    if (!changed && sortOrder === SORT_DEFAULT) return; // mount, default → no-op
+    setAppendItems([]);
+    if (sortOrder === SORT_DEFAULT) {
+      // Revert to the exact SSR order + pagination.
+      setBaseItems(initialItems);
+      setNextPage(initialPage + 1);
+      setHasMore(initialPage < totalPages);
+      return;
+    }
+    // No global `loading` flip here — keep the current grid + the sort select
+    // visible and swap baseItems in when the sorted page 1 arrives (avoids a
+    // skeleton flash + hiding the control the user just used).
+    let cancelled = false;
+    api
+      .get("/producers", { params: { sort: sortOrder, limit: PAGE_SIZE, offset: 0 } })
+      .then((r) => {
+        if (cancelled) return;
+        const items = Array.isArray(r.data) ? r.data : [];
+        setBaseItems(items);
+        const freshTotal = Number(r.headers["x-total-count"]);
+        if (!Number.isNaN(freshTotal) && freshTotal >= 0) setLiveTotal(freshTotal);
+        setHasMore(items.length === PAGE_SIZE);
+        setNextPage(2);
+      })
+      .catch(() => {
+        if (!cancelled) { setBaseItems([]); setHasMore(false); }
+      });
+    return () => { cancelled = true; };
+  }, [sortOrder, initialItems, initialPage, totalPages]);
 
   // MEH-1081: load the DB categories for the radio row. Rule-19: shape
   // validated; on parse/network failure the row self-hides (categories=[]).
@@ -242,25 +377,58 @@ export default function ProducersClient({
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
-  // MEH-1081: radio select — "all" is ChipScrollRow's reset sentinel
-  // (same bridge as /events, EventsClient.jsx chips comment).
+  // MEH-1465: multi-select OR. "הכל" ("all") is ChipScrollRow's reset sentinel →
+  // clears the whole set; re-tapping a selected category removes it; any other
+  // category is added to the union.
   const handleCategorySelect = (key) => {
-    const next = key === "all" ? null : key;
+    let next;
+    if (key === "all") next = [];
+    else if (categoryFilter.includes(key)) next = categoryFilter.filter((k) => k !== key);
+    else next = [...categoryFilter, key];
     setCategoryFilter(next);
-    // MEH-1084: selecting a real category pushes a history entry so Back
-    // cancels it and returns to the prior view; "all"/clear returns to the
-    // baseline via replace (a push there would need a double-Back to escape).
-    syncUrl(chips, cityFilter, searchQ, next, next ? "push" : "replace");
+    // MEH-1084: ADDING a category is a new view → push (Back removes it);
+    // removing one or clearing to baseline is refinement → replace (a push there
+    // would need a double-Back to escape).
+    const method = next.length > categoryFilter.length ? "push" : "replace";
+    syncUrl(chips, cityFilter, searchQ, next, method);
     fetchFiltered(chips, cityFilter, searchQ, next);
     trackEvent("producers_category_filter", { category: next });
+  };
+
+  // MEH-1483: sort select. Set the ref synchronously (before syncUrl/fetch read
+  // it), flip state (fires the [sortOrder] effect → re-establishes the
+  // unfiltered base), and refetch the filtered list in place when filters are
+  // active so the visible results re-order immediately.
+  const handleSortChange = (e) => {
+    const next = sortValuesFor(ratingSortEnabled).includes(e.target.value)
+      ? e.target.value
+      : SORT_DEFAULT;
+    if (next === sortOrder) return;
+    sortOrderRef.current = next;
+    setSortOrder(next);
+    syncUrl(chips, cityFilter, searchQ, categoryFilter);
+    if (hasActiveChips) fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    trackEvent("producers_sort_change", { sort: next });
   };
 
   const handleChipClick = (key) => {
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
+        // MEH-1825: the day cannot outlive its city — drop it in the same
+        // action, or re-picking a city later would silently restore a filter
+        // the user never re-selected.
+        dayFilterRef.current = null;
+        setDayFilter(null);
         syncUrl(chips, null, searchQ, categoryFilter);
         fetchFiltered(chips, null, searchQ, categoryFilter);
+      } else if (savedUserCity) {
+        // MEH-1503: a saved city (localStorage user_city — seeded from the
+        // profile on login by MEH-1485) filters instantly, no modal. Reuse
+        // handleCitySelected so the apply path is identical to a modal pick
+        // (setCityFilter + setUserCity → MEH-1485 write-back + syncUrl +
+        // fetchFiltered + trackEvent).
+        handleCitySelected(savedUserCity);
       } else {
         setLocationModalOpen(true);
       }
@@ -278,6 +446,23 @@ export default function ProducersClient({
     trackEvent("producers_city_filter", { city });
   };
 
+  // MEH-1825: mirrors useHomePage.handleDaySelected. Without a city the row
+  // is a ghost and the tap is a discovery affordance, not a filter — it opens
+  // the LocationModal this page already mounts, which is exactly what the
+  // hint tells the user to do. With a city, tapping the active day clears it.
+  const handleDaySelected = (day) => {
+    if (!cityFilter) {
+      setLocationModalOpen(true);
+      return;
+    }
+    const next = dayFilter === day ? null : day;
+    dayFilterRef.current = next;
+    setDayFilter(next);
+    syncUrl(chips, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
+    trackEvent("producers_day_filter", { day: next || "" });
+  };
+
   // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
@@ -291,17 +476,19 @@ export default function ProducersClient({
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
+    // MEH-1825: day is part of "everything".
+    dayFilterRef.current = null;
+    setDayFilter(null);
     setSearchQ("");
-    setCategoryFilter(null);
+    setCategoryFilter([]);
     setFilteredItems(null);
-    syncUrl(CHIPS_DEFAULT, null, "", null);
+    syncUrl(CHIPS_DEFAULT, null, "", []);
     trackEvent("producers_clear_all");
   };
 
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
   // MEH-1418: Phosphor leading icons on the attribute chips; the city chip has
   // no icon entry, so it passes through text-only (byte-identical).
-  const allChips = withChipIcons([...CHIPS_CONFIG, cityChip]);
   const activeKeys = { ...chips, city: !!cityFilter };
   // MEH-1088 Part A: hide dead-end category chips — a category with 0 approved
   // producers is not rendered (fewer chips > disabled chips at this catalog
@@ -312,15 +499,40 @@ export default function ProducersClient({
   // is filtered until then. "הכל" always shows; a category active via the URL
   // stays visible even at 0 so its active-tag + clear flow keep working.
   const loadedCategoryIds = new Set();
-  for (const p of [...initialItems, ...appendItems]) {
+  // MEH-1881: order-window coverage, counted in the same pass and from the same
+  // source as the category set above — the UNFILTERED loaded catalog. Counting
+  // it from the filtered result would be circular: switch the chip on and
+  // coverage instantly reads 100%, so the gate could never close again.
+  let openWindowCount = 0;
+  // MEH-1483: derive from the same source as displayItems (baseItems is the SSR
+  // page, or the sorted page 1 when a non-default sort is active) so the
+  // MEH-1088 dead-end-category hiding stays consistent with what's rendered.
+  for (const p of [...baseItems, ...appendItems]) {
     for (const c of p?.categories ?? []) loadedCategoryIds.add(String(c.id));
+    if (p?.order_window) openWindowCount += 1;
   }
+
+  // MEH-1881: below the coverage threshold the open-now chip is ABSENT, not
+  // disabled — zero trace in the DOM, so nothing hints at a filter that would
+  // return an empty list today.
+  //
+  // The `|| chips.open_for_orders_now` is not a convenience: an active filter
+  // must keep its chip even under the gate, or a deep-linked
+  // ?open_for_orders_now=1 strands the visitor with a filter she can see the
+  // effect of and cannot switch off. Same carve-out MEH-1088 makes two blocks
+  // below for a URL-active category at zero results.
+  const showOpenNowChip =
+    openWindowCount >= OPEN_NOW_CHIP_MIN || chips.open_for_orders_now;
+  const visibleChipDefs = showOpenNowChip
+    ? CHIPS_CONFIG
+    : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now");
+  const allChips = withChipIcons([...visibleChipDefs, cityChip]);
   const catalogFullyLoaded = !hasMore;
   const visibleCategories = categories.filter(
     (c) =>
       !catalogFullyLoaded ||
       loadedCategoryIds.has(String(c.id)) ||
-      String(c.id) === categoryFilter,
+      categoryFilter.includes(String(c.id)),
   );
   // MEH-1081: radio row data — "all" sentinel first, then the DB categories.
   // MEH-1441: each DB category gets a 16px leading glyph from CATEGORY_ICONS
@@ -346,19 +558,20 @@ export default function ProducersClient({
       };
     }),
   ];
-  const activeCategory = categories.find((c) => String(c.id) === categoryFilter);
-
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
-    !hasActiveChips && initialItems.length === 0 && liveTotal > 0;
+    !hasActiveChips && baseItems.length === 0 && liveTotal > 0;
   const showCatalogEmpty = !hasActiveChips && liveTotal === 0;
   const showGrid = !loading && !showFilterEmpty && !showPageOverflow && !showCatalogEmpty;
 
   const counterText = (() => {
     if (!showGrid) return null;
     if (hasActiveChips) return t("discovery.found_count", { count: filteredItems?.length ?? 0 });
-    const loaded = initialItems.length + appendItems.length;
+    // MEH-1483: baseItems (SSR page, or sorted page 1 when a non-default sort
+    // is active) is the effective unfiltered base — matches displayItems. In
+    // the default flow baseItems === initialItems (byte-identical).
+    const loaded = baseItems.length + appendItems.length;
     // MEH-159: use liveTotal (refreshed on scroll + tab focus) so the counter
     // stays correct after admin deletes producers mid-session.
     return loaded >= liveTotal
@@ -424,28 +637,35 @@ export default function ProducersClient({
           selection) vs the toggle row below (attribute filtering). */}
       {categories.length > 0 && (
         <div className="mb-3">
-          <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.category_label")}</p>
+          <p className="text-xs text-fg-muted mb-1">{t("filters.category_label")}</p>
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
-            activeKey={categoryFilter ?? "all"}
+            activeKeys={new Set(categoryFilter)}
             onChipClick={handleCategorySelect}
-            fadeBg="#F5F0E8"
           />
         </div>
       )}
 
       {/* Toggle/attribute chip row — MEH-1186 micro-label "סינון". */}
       <div className="mb-3">
-        <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.filter_label")}</p>
+        <p className="text-xs text-fg-muted mb-1">{t("filters.filter_label")}</p>
         <ChipScrollRow
           variant="toggle"
           chips={allChips}
           activeKeys={activeKeys}
           onChipClick={handleChipClick}
-          fadeBg="#F5F0E8"
         />
       </div>
+
+      {/* MEH-1825: day refinement on the canonical listing surface. Same
+          component home mounts; without a city it self-renders the muted
+          ghost row + hint and a tap opens the LocationModal below. */}
+      <DeliveryDayRow
+        cityActive={cityFilter}
+        dayActive={dayFilter}
+        onSelectDay={handleDaySelected}
+      />
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (category ×, toggle ×, city ×, search ×) and
@@ -458,18 +678,11 @@ export default function ProducersClient({
           {counterText && hasActiveChips && (
             <span aria-hidden="true" className="text-border">·</span>
           )}
-          {/* MEH-1081: removable category chip — mirrors the city/search chips. */}
-          {activeCategory && (
-            <button
-              type="button"
-              data-testid="active-category-chip"
-              onClick={() => handleCategorySelect("all")}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
-            >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
-              {activeCategory.name}
-            </button>
-          )}
+          {/* MEH-1465 / MEH-1181-A tag-strip rule: a category SELECTION is never
+              mirrored as a removable tag on /producers — its exit affordance is
+              the "הכל" chip or re-tapping the coloured category chip. Only
+              attribute/city/search chips remain removable here; "נקו הכל" still
+              clears both dimensions. */}
           {activeChipDefs.map((chip) => (
             <button
               key={chip.key}
@@ -485,9 +698,11 @@ export default function ProducersClient({
             <button
               type="button"
               onClick={() => {
+                // MEH-1470: thread categoryFilter through so removing the city
+                // chip doesn't silently drop the active category selection.
                 setCityFilter(null);
-                syncUrl(chips, null, searchQ);
-                fetchFiltered(chips, null, searchQ);
+                syncUrl(chips, null, searchQ, categoryFilter);
+                fetchFiltered(chips, null, searchQ, categoryFilter);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
@@ -500,9 +715,11 @@ export default function ProducersClient({
               type="button"
               data-testid="active-search-chip"
               onClick={() => {
+                // MEH-1470: thread categoryFilter through so removing the search
+                // chip doesn't silently drop the active category selection.
                 setSearchQ("");
-                syncUrl(chips, cityFilter, "");
-                fetchFiltered(chips, cityFilter, "");
+                syncUrl(chips, cityFilter, "", categoryFilter);
+                fetchFiltered(chips, cityFilter, "", categoryFilter);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
@@ -518,6 +735,37 @@ export default function ProducersClient({
             >
               {t("filters.clear_all")}
             </button>
+          )}
+          {/* MEH-1483: backend-driven sort — pushed to the inline-end. Changing
+              it re-syncs ?sort=, resets pagination, and refetches (both the
+              filtered fetch and infinite-scroll pages). Mirrors the /map sort
+              control shape (MapClient.jsx).
+              MEH-1864: this axis has exactly two values, so gating "rating" off
+              would leave a select whose only option is the value already
+              applied — a dead affordance. The whole control goes with it; it
+              returns intact the moment the catalog crosses the threshold.
+              (/map keeps its control below the threshold: it still has
+              nearest + newest to switch between.) */}
+          {ratingSortEnabled && (
+          <div className="relative inline-flex items-center shrink-0 ms-auto">
+            <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
+            <select
+              value={sortOrder}
+              onChange={handleSortChange}
+              aria-label={t("sort.aria_label")}
+              data-testid="producers-sort"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+            >
+              <option value="newest">{t("sort.newest")}</option>
+              <option value="rating">{t("sort.top_rated")}</option>
+            </select>
+            <CaretDown
+              size={14}
+              weight="bold"
+              aria-hidden="true"
+              className="pointer-events-none absolute end-1 text-primary"
+            />
+          </div>
           )}
         </div>
       )}

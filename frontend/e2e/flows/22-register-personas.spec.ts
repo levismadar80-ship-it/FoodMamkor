@@ -1,4 +1,5 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { authedContext, fixtureExists } from "../auth-fixture";
 
 /**
  * Spec:     22-register-personas
@@ -17,7 +18,8 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
  *           pattern. P2/P5 are frontend-only (P2 stubs GSI + the OAuth route;
  *           P5 asserts localStorage draft state) so they need no backend.
  * Does NOT: edit spec 18 (mocked wizard) or spec 19 (publish→approve). The
- *           `adminLogin` helper is DUPLICATED locally here (a tiny copy) rather
+ *           `adminLogin` helper WAS duplicated locally here; MEH-1858 replaced
+ *           both copies with one shared authedContext() helper, rather
  *           than shared, to avoid touching either sibling spec.
  * History:  MEH-1274 (creation).
  *
@@ -47,8 +49,6 @@ const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || "";
 const uniqueEmail = (persona: number) =>
   `qa+persona${persona}-${Date.now()}@example.com`;
 
-const authHeader = (token: string) => ({ Authorization: `Bearer ${token}` });
-
 interface QueueProducer {
   id: string;
   name: string;
@@ -66,18 +66,7 @@ interface Category {
   name: string;
 }
 
-// DUPLICATED locally (see header "Does NOT") — mirrors flows/19:76-85 so spec 19
-// stays untouched.
-async function adminLogin(request: APIRequestContext): Promise<string> {
-  const res = await request.post("/api/auth/login", {
-    data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
-  });
-  expect(
-    res.ok(),
-    `admin login failed (${res.status()}) — check SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD`,
-  ).toBeTruthy();
-  return (await res.json()).access_token as string;
-}
+
 
 // ===========================================================================
 // P1 — full wizard → approve → public → login → dashboard checklist (REAL)
@@ -95,6 +84,11 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       !ADMIN_EMAIL || !ADMIN_PASSWORD,
       "SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD not configured — admin-driven approval unavailable",
     );
+    // MEH-1858 / MEH-999: vars set but fixture absent = provisioning breakage.
+    expect(
+      fixtureExists("smoke-admin"),
+      "SMOKE_ADMIN_* are set but e2e/.auth/smoke-admin.json is missing — global-setup did not provision it",
+    ).toBeTruthy();
     // Single-project: this creates a REAL staging producer and burns the shared
     // /auth/register limiter quota (frontend/e2e/CLAUDE.md). Mirror flows/19.
     test.skip(
@@ -108,11 +102,12 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
     const password = `Meh1274Qa!${Date.now()}`; // ≥12, unique → clears HIBP/deny-list
 
     let producerId = "";
-    let adminToken = "";
+    // MEH-1858: an authenticated CONTEXT, not a bare token — _check_fingerprint
+    // (auth.py:211-230) needs the __Secure-Fgp cookie storageState carries.
+    const adminCtx = await authedContext("smoke-admin");
 
     try {
-      // ── 0) Admin JWT + a real category id from the live catalogue ──
-      adminToken = await adminLogin(request);
+      // ── 0) A real category id from the live catalogue ──
       const catsRes = await request.get("/api/categories");
       expect(catsRes.ok(), `GET /categories failed (${catsRes.status()})`).toBeTruthy();
       const cats = (await catsRes.json()) as Category[];
@@ -154,6 +149,9 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       // STORY — tagline + all declarations (ToS + binding), then submit
       await expect(page.getByTestId("register-frame-story")).toBeVisible();
       await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
+      // MEH-1471: required attribution dropdown — pick a key or the submit gate
+      // blocks (referral_source_required) and CONFIRM never renders.
+      await page.getByTestId("register-referral-source").selectOption("instagram");
       for (const cb of await page
         .getByTestId("register-frame-story")
         .getByRole("checkbox")
@@ -169,9 +167,7 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
 
       // ── 2) Lands in the admin queue as pending ──
       const queue = (await (
-        await request.get("/api/admin/producers?status=pending", {
-          headers: authHeader(adminToken),
-        })
+        await adminCtx.get("/api/admin/producers?status=pending")
       ).json()) as QueueProducer[];
       const mine = queue.find((p) => p.name === producerName);
       expect(mine, "wizard-registered producer not found in the pending queue").toBeTruthy();
@@ -179,8 +175,7 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       expect(["pending", "pending_whatsapp"]).toContain(mine!.status);
 
       // ── 3) Admin attaches the MEH-799 image + location, then approves ──
-      const putRes = await request.put(`/api/admin/producers/${producerId}`, {
-        headers: authHeader(adminToken),
+      const putRes = await adminCtx.put(`/api/admin/producers/${producerId}`, {
         data: {
           images: ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
           has_physical_location: true,
@@ -189,9 +184,8 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
         },
       });
       expect(putRes.ok(), `admin update failed (${putRes.status()}): ${await putRes.text()}`).toBeTruthy();
-      const approveRes = await request.post(
+      const approveRes = await adminCtx.post(
         `/api/admin/producers/${producerId}/approve`,
-        { headers: authHeader(adminToken) },
       );
       expect(approveRes.ok(), `approve failed (${approveRes.status()}): ${await approveRes.text()}`).toBeTruthy();
 
@@ -211,6 +205,8 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       //       approved checklist state. Login sets the fingerprint cookie in the
       //       browser context (HTTPS on staging) + we mirror the token into
       //       localStorage["token"] the way auth-context hydrates from. ──
+      // NOT consolidated, deliberately: this persona did not exist until a few
+      // lines ago, so no fixture could carry its token (MEH-1858).
       const loginRes = await page.request.post("/api/auth/login", {
         data: { email, password },
       });
@@ -227,15 +223,12 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
       // …and the one-tap public link is present (slug assigned on approval).
       await expect(page.getByTestId("view-public-link")).toBeVisible();
     } finally {
-      if (producerId && adminToken) {
-        await request
-          .delete(`/api/admin/producers/${producerId}`, {
-            headers: authHeader(adminToken),
-          })
-          .catch(() => {
-            /* fail-open: orphan is tagged E2E-MEH1274-* and admin-sweepable */
-          });
+      if (producerId) {
+        await adminCtx.delete(`/api/admin/producers/${producerId}`).catch(() => {
+          /* fail-open: orphan is tagged E2E-MEH1274-* and admin-sweepable */
+        });
       }
+      await adminCtx.dispose();
     }
   });
 });

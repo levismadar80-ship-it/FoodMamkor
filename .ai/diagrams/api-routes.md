@@ -31,6 +31,7 @@ graph LR
     App --> Admin[admin.router<br/>/admin/producers/*]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
+    App --> Health[health.router<br/>/health, /health/liveness, /health/readiness]
 ```
 
 <!-- MEH-587: recipes.router removed (chunk 0/4) ahead of producer-recipes feature. -->
@@ -40,7 +41,7 @@ graph LR
 
 ```mermaid
 graph TD
-    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified]
+    Home[Homepage + Map + Category pills] --> GProducers[GET /producers<br/>🌐 query: lat/lng/radius_km + require_physical<br/>category, delivery_city, q, verified<br/>sort=newest default | rating MEH-1483]
     GProducers --> LProducers[Haversine distance,<br/>status=approved only]
 
     Home --> GCategories[GET /categories<br/>🌐 list all]
@@ -50,6 +51,7 @@ graph TD
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
+    GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks]
 
@@ -164,4 +166,18 @@ graph LR
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]
 
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
+```
+
+## 7. Health probes (no page — platform + operators)
+
+Undocumented here since MEH-483 shipped them; added in MEH-1598 with the
+MEH-1596 version block. Full response shapes: `docs/DATA.md` → "Health".
+
+```mermaid
+graph LR
+    Platform[Railway healthcheck<br/>+ operators/curl] --> Liveness[GET/HEAD /health/liveness<br/>🌐 status:alive<br/>always 200 while the worker is up<br/>no DB call]
+
+    Platform --> Readiness[GET/HEAD /health/readiness<br/>🌐 200 ready · 503 not_ready<br/>reason: db_unreachable / db_init_failed / db_init_pending<br/>503 = boot init failed or pending, NOT service down<br/>migrations: unknown when alembic_version absent<br/>MEH-1530 Chunk 2 points the healthcheck here]
+
+    Platform --> HealthAlias[GET/HEAD /health<br/>🌐 ALWAYS 200 — never signals failure by status<br/>status, db_init, version<br/>version = EXACTLY 4 fields MEH-1596:<br/>git_sha · git_branch · alembic_head · booted_at<br/>any may be 'unknown' — a known state, not a bug]
 ```

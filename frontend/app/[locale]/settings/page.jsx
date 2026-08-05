@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { useUserCity } from "@/lib/use-user-city";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
@@ -32,6 +33,34 @@ function SettingsLoadingFallback() {
   );
 }
 
+/**
+ * MEH-1638: what renders while useAuth() is still resolving /auth/me.
+ * Same class of fix as producer/dashboard/layout.js (PR #2300) but this page
+ * sits OUTSIDE the dashboard layout, so it needs its own placeholder.
+ * Shape-only, no text — mirrors the final geometry (heading mb-6 → pill tab
+ * bar mb-8 → content card) so the real page swaps in without a shift.
+ */
+function SettingsSkeleton({ label }) {
+  return (
+    <div
+      data-testid="settings-skeleton"
+      role="status"
+      aria-busy="true"
+      className="max-w-3xl mx-auto px-4 py-10"
+    >
+      <span className="sr-only">{label}</span>
+      {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
+      <div className="h-9 w-48 bg-border rounded-[12px] animate-pulse mb-6" />
+      {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
+      <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
+      <div className="space-y-4">
+        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
     <Suspense fallback={<SettingsLoadingFallback />}>
@@ -42,6 +71,7 @@ export default function SettingsPage() {
 
 function SettingsPageBody() {
   const tCommon = useTranslations("settings.common");
+  const tA11y = useTranslations("a11y");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -58,7 +88,13 @@ function SettingsPageBody() {
     if (!authLoading && !user) router.push("/login");
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return null;
+  // MEH-1638: authLoading and unauthenticated were one null-returning branch.
+  //   - authLoading → the answer is not back yet; show the page's shape.
+  //   - !user → the effect above is already redirecting to /login; returning
+  //     null is deliberate and UNCHANGED (rendering here would flash behind
+  //     the redirect). Same split as producer/dashboard/layout.js:125-132.
+  if (authLoading) return <SettingsSkeleton label={tA11y("loading")} />;
+  if (!user) return null;
 
   const selectTab = (next) => {
     setTab(next);
@@ -138,11 +174,20 @@ function TabButton({ active, onClick, icon, children }) {
 // פרופיל
 // ---------------------------------------------------------------------------
 
-// Exported for isolation tests (SettingsPhoneDisabledReason.test.jsx) — the
-// full-page mount is skipped in vitest (stale mock drift, see
-// SettingsPage.test.jsx), so the phone-validation UX is asserted directly.
+// Exported for isolation tests (SettingsPhoneDisabledReason.test.jsx), which
+// assert the phone-validation UX directly.
+// MEH-1700: this comment used to add "the full-page mount is skipped in vitest
+// (stale mock drift, see SettingsPage.test.jsx)". That stopped being true on
+// 2026-08-04 — SettingsPage.test.jsx is un-skipped and green — and a comment
+// asserting a skip that no longer exists is how the next reader concludes this
+// page has no full-mount coverage. The export stays: isolation tests are still
+// the right shape for per-field UX.
 export function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
+  // MEH-1485: mirror a saved profile city into localStorage user_city so the
+  // consumer filters (home/map/FridayDeliveryStrip) update in the same
+  // session — reuses the mehamakor:city-changed event via setCity.
+  const { setCity: setUserCity } = useUserCity();
   const tCommon = useTranslations("settings.common");
   const t = useTranslations("settings.profile");
   const [name, setName] = useState(user.name || "");
@@ -188,6 +233,12 @@ export function ProfileTab() {
       if (city.trim() !== (user.city || "")) patch.city = city.trim();
       if (phone.trim() !== (user.phone || "")) patch.phone = phone.trim();
       await updateProfile(patch);
+      // MEH-1485: when the city changed, push it to localStorage so the
+      // filters reflect it this session (setCity dispatches the shared
+      // city-changed event; the auth-context write-back skips it as a no-op).
+      if (Object.prototype.hasOwnProperty.call(patch, "city")) {
+        setUserCity(patch.city || null);
+      }
       setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
@@ -243,6 +294,8 @@ export function ProfileTab() {
           aria-label={t("avatar_aria")}
         >
           {user.avatar_url ? (
+            // raw img: OAuth provider avatar — host not in remotePatterns
+            // (frozen this ticket).
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
           ) : (
@@ -336,7 +389,9 @@ export function ProfileTab() {
           // progress — surface the invalid-phone reason immediately instead of
           // leaving the Save button dead with no message until blur.
           onPaste={() => setPhoneTouched(true)}
-          placeholder="050-1234567"
+          // MEH-1617: value moved to settings.profile.field_phone_placeholder,
+          // alongside its field_phone_label / _hint / _error siblings.
+          placeholder={t("field_phone_placeholder")}
           dir="ltr"
         />
 

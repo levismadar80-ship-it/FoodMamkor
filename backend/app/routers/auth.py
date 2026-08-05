@@ -245,7 +245,7 @@ def logout(request: Request, response: Response):
 # legitimate owner finds out via send_duplicate_attempt_email. No
 # access_token — caller must verify via email then POST /auth/login.
 _REGISTER_ACK_DETAIL = (
-    "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."
+    "אם האימייל פנוי, שלחנו אליו הודעת אימות. כדאי לבדוק את תיבת הדואר."
 )
 
 
@@ -363,9 +363,33 @@ async def register(
 # decorator-level response_model is single-shape and would strip fields
 # from one of the two — we let Pydantic serialise each return as-is.
 @router.post("/register/producer")
-# MEH-624: dual-key throttling. Per-IP cap (3/hour) + per-email cap
-# stops a botnet rotating IPs from spamming the OWASP duplicate-attempt
-# email at one victim.
+# MEH-624: dual-key throttling. Per-IP cap + per-email cap stops a botnet
+# rotating IPs from spamming the OWASP duplicate-attempt email at one victim.
+#
+# MEH-1635: the per-IP half moved 3/hour -> 10/hour. It was never the
+# anti-spam primitive — the per-email cap below is, and it is UNCHANGED.
+# Keying registration abuse on IP punishes the wrong people, and three
+# separate effects stack against a single legitimate producer:
+#
+#   1. Shared IPs. CGNAT (most Israeli mobile carriers), office NAT, and
+#      a co-working space all present one IP. Three women registering
+#      their businesses from the same cafe wifi exhausted the hour.
+#   2. Refresh-retry double-count (MEH-1627). slowapi's middleware runs
+#      BEFORE dependencies, so a request rejected at the auth layer has
+#      already burned its unit: an expired token costs 2 units for one
+#      submit (401 -> refresh -> replay), halving the real allowance.
+#   3. Resubmit after a 422 (MEH-1623 producer_name validation). Every
+#      corrected resubmit is another unit, and a 422 is exactly the case
+#      where a user retries immediately.
+#
+# 3/hour could therefore be spent without a single successful
+# registration. 10/hour keeps a per-IP ceiling on automated floods while
+# leaving room for the shared-IP + retry case.
+#
+# DO NOT copy this widening to the other 3/hour limits: auth.py:1270
+# (resend-verify, sends email) and auth.py:1289 (DELETE /me, irreversible)
+# are authenticated and deliberately stay tight — they are not shared-IP
+# bound and were not in MEH-1635's scope.
 #
 # Upgrade path trade-off (acknowledged, not blocking): authenticated
 # producer upgrades send email=None in the payload, so they all share
@@ -375,7 +399,7 @@ async def register(
 # validation REQUIRES email and the per-email key is meaningful.
 # JWT-gate makes the empty bucket uninteresting to attackers.
 # REUSES: backend/app/routers/auth.py:972-973 — same dual-key shape.
-@limiter.limit("3/hour")  # SECURITY FIX #2
+@limiter.limit("10/hour")  # SECURITY FIX #2; widened by MEH-1635
 @limiter.limit("5/15 minutes", key_func=email_from_body)
 async def register_producer(
     request: Request,
@@ -497,6 +521,11 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-1471: self-reported attribution captured at the final
+            # registration step. Schema-validated (allowed-key set / bleach);
+            # persisted verbatim. NULL when the field is absent (upgrade path).
+            referral_source=data.referral_source,
+            referral_source_other=data.referral_source_other,
             # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
@@ -545,8 +574,12 @@ async def register_producer(
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)
-        # No verify/welcome email — the user already has a verified consumer
-        # account; she's just adding producer capability.
+        # MEH-1553: no verify/welcome email on the upgrade path. Verification
+        # is NOT enforced here — a logged-in but *unverified* consumer can still
+        # add producer capability (the guard above only requires a valid JWT).
+        # That unverified state is covered downstream by the verify banner
+        # (VerifyBanner.jsx) and the require_verified_producer dep (auth.py),
+        # not by this handler.
 
         whatsapp_expected = bool(
             p_phone
@@ -603,6 +636,11 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-1471: self-reported attribution captured at the final
+            # registration step. Schema-validated (allowed-key set / bleach);
+            # persisted verbatim. NULL when the field is absent (upgrade path).
+            referral_source=data.referral_source,
+            referral_source_other=data.referral_source_other,
             # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
@@ -687,11 +725,14 @@ async def register_producer(
             )
             provider = None
         if provider is not None:
+            # MEH-1815: producer variant — this branch discarded the whole
+            # business payload, so the out-of-band email has to say so.
             background_tasks.add_task(
                 _send_duplicate_attempt_email,
                 existing_user.email,
                 existing_user.name,
                 provider,
+                "producer",
             )
 
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
@@ -731,7 +772,7 @@ def google_auth(
     if not settings.google_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
         )
     user_info = _verify_google_token(data.id_token)
     if not user_info:
@@ -839,7 +880,7 @@ def register_producer_oauth(
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+                detail="התחברות עם Google לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
             )
         user_info = _verify_google_token(data.id_token)
         sub_field = "google_id"
@@ -847,7 +888,7 @@ def register_producer_oauth(
         if not settings.apple_client_id:
             raise HTTPException(
                 status_code=503,
-                detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+                detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
             )
         user_info = _verify_apple_token(data.id_token)
         sub_field = "apple_id"
@@ -890,6 +931,13 @@ def register_producer_oauth(
                 "role": "consumer",
                 "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
+                # MEH-1553: the OAuth provider already verified the email, so
+                # stamp email_verified=True — one-to-one with the /auth/google
+                # and /auth/apple new-user siblings. Without it the new user
+                # falls back to the column default (False), sees the verify
+                # banner, and is blocked by require_verified_producer (MEH-170
+                # gap; MEH-1164 turned that into a money-path blocker).
+                "email_verified": True,
             }
             if provider == "google":
                 kwargs["avatar_url"] = _upload_google_avatar_or_none(
@@ -1056,7 +1104,7 @@ def apple_auth(
     if not settings.apple_client_id:
         raise HTTPException(
             status_code=503,
-            detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            detail="התחברות עם Apple לא פעילה כרגע. אפשר להתחבר עם אימייל וסיסמה.",
         )
     user_info = _verify_apple_token(data.id_token)
     if not user_info:

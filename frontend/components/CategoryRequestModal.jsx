@@ -59,7 +59,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
       className="fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-right" dir="rtl">
+      <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start">
         <h2 id="cat-req-title" className="font-headline-md text-lg font-bold text-text mb-4">
           {t("title")}
         </h2>
@@ -73,8 +73,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("name_placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-right"
-              dir="rtl"
+              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start"
             />
             <p className="text-xs text-fg-muted mt-1">{t("name_example")}</p>
           </div>
@@ -86,8 +85,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               value={examples}
               onChange={(e) => setExamples(e.target.value)}
               placeholder={t("examples_placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-right resize-none"
-              dir="rtl"
+              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start resize-none"
             />
             <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
           </div>

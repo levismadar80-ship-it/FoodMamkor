@@ -11,9 +11,9 @@ import {
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-import ReportInfoModal from "@/components/ReportInfoModal";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
+import { withReferralParams } from "@/lib/utils";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
 
@@ -87,7 +87,11 @@ function armMailtoFallback(email, t) {
  * Related:  ContactSidebar.jsx (desktop wrapper), StickyContactBar.jsx.
  * History:  MEH-1146 chunk A (creation — action-hierarchy rebuild,
  *           consolidates the old ContactSidebar + ActionRow CTAs);
- *           MEH-1334 chunk 1 (status line + follow/share row removed).
+ *           MEH-1334 chunk 1 (status line + follow/share row removed);
+ *           MEH-1551 (degenerate states — sole channel renders a labeled row,
+ *           phone reveal swaps in place instead of appending a sibling);
+ *           MEH-1583 (reveal adopts the geometry of the element it replaces —
+ *           one row anatomy across every cell of the count x state matrix).
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
@@ -104,7 +108,9 @@ const CHANNELS = [
       return handle ? `https://instagram.com/${handle}` : null;
     },
   },
-  { key: "website", Icon: Globe, href: (p) => httpUrl(p.website) },
+  // MEH-1525: the business-website tile carries referral UTM (rel drops
+  // noreferrer at the render site below). Social / order tiles are untouched.
+  { key: "website", Icon: Globe, href: (p) => withReferralParams(httpUrl(p.website)) },
   {
     key: "email",
     Icon: EnvelopeSimple,
@@ -127,6 +133,25 @@ function httpUrl(raw) {
   return v.startsWith("http") ? v : `https://${v}`;
 }
 
+// MEH-1551: the circle and the single-channel row are two renderings of the
+// same link, so the target/rel policy lives in one place. Output for the
+// circle is unchanged — phone stays a bare tel:, website keeps noopener only
+// (MEH-1525 referral), everything else noopener noreferrer.
+const linkAttrs = (key) =>
+  key === "phone"
+    ? {}
+    : { target: "_blank", rel: key === "website" ? "noopener" : "noopener noreferrer" };
+
+// MEH-1583: the ONE row anatomy. Both full-width affordances — the labeled
+// sole-channel row and the revealed number row — spread this constant, which
+// is what makes "(1 x closed)" and "(1 x open)" provably the same box (zero
+// layout jump on reveal). MEH-1551 fixed the reveal's POSITION but left it
+// wearing pill anatomy (inline-flex + rounded-full + no w-full), so a card
+// could show two geometric languages at once. Only the trailing state classes
+// (hover/text colour) differ per affordance.
+const ROW_ANATOMY =
+  "flex w-full items-center gap-2 min-h-[44px] px-3 rounded-[10px] border border-border bg-white text-sm";
+
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
@@ -137,16 +162,60 @@ export default function ContactCard({ producer, isVacation }) {
   // render-time guess is needed.
   const [phoneRevealed, setPhoneRevealed] = useState(false);
 
-  // MEH-1443: "report wrong info" modal — additive; the contact block above
-  // is untouched.
-  const [reportOpen, setReportOpen] = useState(false);
-
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
-  const channels = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
+  const available = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
 
+  // MEH-1583: once the number is on screen the phone LEAVES the channel map
+  // entirely and the number takes its own full-width row as the last child of
+  // the same container. Previously the phone entry stayed in the map and the
+  // pill rendered in its slot, so a revealed card mixed a wide pill with 44px
+  // circles on one line (Sapir 26/07, phone + instagram).
+  const revealed = phoneRevealed && Boolean(producer.phone);
+  const channels = revealed ? available.filter((c) => c.key !== "phone") : available;
+
+  // MEH-1551: exactly one surviving channel used to render a lone unlabeled
+  // 44px circle floating on its own — a degenerate state MEH-1334's icon-row
+  // design never specified (it assumed a row of 3-6). One channel = one quiet
+  // labeled row instead.
+  // MEH-1583: computed AFTER the reveal filter on purpose — revealing the
+  // phone on a 2-channel card leaves one survivor, and leaving THAT as a bare
+  // circle would re-create the very orphan MEH-1551 closed.
+  const single = channels.length === 1;
+
+  // The row also has to render when the reveal emptied `channels` (the
+  // sole-channel card): the number row is then its only child.
+  const showChannelRow = channels.length > 0 || revealed;
+
+  // Shared by both affordances (circle + single row) so the tracking and the
+  // desktop phone-reveal behave identically whichever one is rendered.
+  const onChannelClick = (e, { key, track }) => {
+    // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
+    // — swallow the tel: navigation and show the pill.
+    if (
+      key === "phone" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches
+    ) {
+      e.preventDefault();
+      setPhoneRevealed(true);
+    }
+    if (track === false) return;
+    // Fires exactly once per click (fallback must not double-track).
+    trackContactClick(producer.id, key);
+    // MEH-1221: email-only silent-mailto fallback.
+    if (key === "email") {
+      armMailtoFallback(producer.contact_email?.trim(), t);
+    }
+  };
+
+  // MEH-1649: data-testid="contact-card" is a stable locator for the card
+  // boundary. The QA harness asserts the closed-window note is a DOM
+  // DESCENDANT of this container, not merely "not floating" — a note flung
+  // anywhere else would satisfy the negative check alone (MEH-1592). Class
+  // selectors are brittle; docs/E2E-LOCATORS.md mandates data-testid.
   return (
-    <div className="bg-white rounded-lg p-6 border border-border">
+    <div className="bg-white rounded-lg p-6 border border-border" data-testid="contact-card">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
         {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
             line (3 states, one status home per page — revision-2 #2). */}
@@ -169,85 +238,101 @@ export default function ContactCard({ producer, isVacation }) {
           }}
         />
 
+        {/* MEH-1652: the closed-window context line that used to sit here is
+            GONE, not reworded. It said the message "תמתין לבית העסק" — a claim
+            about what the business would do, which BRAND.md §7 forbids and
+            ADR-031 explains we can never observe (the CTA is a `wa.me` deep
+            link; the message never touches our servers). MEH-1546 → MEH-1600 →
+            MEH-1649 each rewrote this one line and each stayed untrue, because
+            the problem was never the wording. §7's answer for "nothing honest
+            to say" is silence, so the button now stands on its own. The order
+            window itself is still said — as a SCHEDULE, in
+            OrderWindowScheduleBlock (MEH-1875), and as a status in
+            ProducerHeader. Do NOT re-add a note here without a claim the site
+            can actually verify. */}
+
         {/* Ready-made questions as quiet text links under the CTA. */}
         <WhatsAppQuestionChips producer={producer} />
 
         {/* Quiet secondary-channel icon row — MEH-1334 chunk 2: circular
             hairline-bordered 44px targets on white, primary-dark glyph (the
             approved mockup's .iconrow anatomy). */}
-        {channels.length > 0 && (
+        {showChannelRow && (
           <div className="flex flex-wrap items-center gap-2 mt-3 mb-1" role="list">
-            {channels.map(({ key, Icon, href, track }) => (
-              <a
-                key={key}
-                href={href(producer)}
-                {...(key === "phone"
-                  ? {}
-                  : { target: "_blank", rel: "noopener noreferrer" })}
-                role="listitem"
-                aria-label={t(`producer.detail.contact_card.aria.${key}`)}
-                title={t(`producer.detail.contact_card.aria.${key}`)}
-                onClick={(e) => {
-                  // MEH-1334: on desktop a phone tap reveals the number inline
-                  // (no dialer) — swallow the tel: navigation and show the pill.
-                  if (
-                    key === "phone" &&
-                    typeof window !== "undefined" &&
-                    window.matchMedia("(min-width: 1024px)").matches
-                  ) {
-                    e.preventDefault();
-                    setPhoneRevealed(true);
-                  }
-                  if (track === false) return;
-                  // Fires exactly once per click (fallback must not double-track).
-                  trackContactClick(producer.id, key);
-                  // MEH-1221: email-only silent-mailto fallback.
-                  if (key === "email") {
-                    armMailtoFallback(producer.contact_email?.trim(), t);
-                  }
-                }}
-                className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white text-primary-dark hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <Icon size={18} aria-hidden="true" />
-              </a>
-            ))}
-          </div>
-        )}
+            {channels.map((channel) => {
+              const { key, Icon, href } = channel;
 
-        {/* Desktop-revealed phone number pill (MEH-1334). Number is dir="ltr"
-            + .numeric so RTL can't reorder the digits; still a tel: link so a
-            desktop softphone / click-to-call extension can act on it. */}
-        {phoneRevealed && producer.phone && (
-          <a
-            href={`tel:${producer.phone}`}
-            dir="ltr"
-            data-testid="revealed-phone"
-            className="numeric inline-flex items-center gap-2 mt-2 px-3 min-h-[44px] rounded-full border border-border bg-white text-sm text-text focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <Phone size={16} className="text-primary-dark" aria-hidden="true" />
-            {producer.phone}
-          </a>
+              // MEH-1551: sole channel → a labeled quiet row (the visible label
+              // IS the accessible name here, so no aria-label overriding it).
+              if (single) {
+                return (
+                  <a
+                    key={key}
+                    href={href(producer)}
+                    {...linkAttrs(key)}
+                    role="listitem"
+                    data-testid="contact-single-row"
+                    onClick={(e) => onChannelClick(e, channel)}
+                    className={`${ROW_ANATOMY} text-primary-dark hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    {t(`producer.detail.contact_card.single.${key}`)}
+                  </a>
+                );
+              }
+
+              return (
+                <a
+                  key={key}
+                  href={href(producer)}
+                  {...linkAttrs(key)}
+                  role="listitem"
+                  // MEH-1583: stable locator for the VRT reveal shot — the
+                  // circle's only other handle is its Hebrew aria-label, and
+                  // E2E must not key on copy (docs/E2E-LOCATORS.md).
+                  data-testid={`contact-channel-${key}`}
+                  aria-label={t(`producer.detail.contact_card.aria.${key}`)}
+                  title={t(`producer.detail.contact_card.aria.${key}`)}
+                  onClick={(e) => onChannelClick(e, channel)}
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white text-primary-dark hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <Icon size={18} aria-hidden="true" />
+                </a>
+              );
+            })}
+
+            {/* MEH-1583: the revealed number is the LAST child of the same
+                container and wears ROW_ANATOMY, so it reads as one more row
+                rather than a pill wedged between circles. w-full + the
+                container's flex-wrap put it on its own line under any
+                surviving circles. dir="ltr" + .numeric sit on the NUMBER SPAN
+                only — on the row they would flip the icon to the visual end in
+                RTL; on the span they just stop the digits reordering. Still a
+                tel: link so a desktop softphone / click-to-call can act on it. */}
+            {revealed && (
+              <a
+                href={`tel:${producer.phone}`}
+                data-testid="revealed-phone"
+                role="listitem"
+                className={`${ROW_ANATOMY} text-text focus-visible:ring-2 focus-visible:ring-primary/40`}
+              >
+                <Phone size={18} className="text-primary-dark" aria-hidden="true" />
+                <span dir="ltr" className="numeric">
+                  {producer.phone}
+                </span>
+              </a>
+            )}
+          </div>
         )}
 
         {/* MEH-1334: the tertiary follow + share row moved to the header's
             quiet actions row (שמירה · מעקב · שיתוף) — one home per action. */}
 
-        {/* MEH-1443: discreet "found wrong info?" report link (opens a modal;
-            v1 emails the admin). */}
-        <button
-          type="button"
-          onClick={() => setReportOpen(true)}
-          className="mt-4 text-xs text-fg-muted underline hover:text-text transition"
-        >
-          {t("producer.detail.contact_card.report_info_link")}
-        </button>
+        {/* MEH-1460: the "טעות בפרטים?" correction link moved OUT of the
+            contact card to the page-end meta block (ProducerSections.jsx,
+            below ReportButton) — the conversion card no longer mixes a
+            site-directed action with the business-directed CTA. */}
       </div>
-
-      <ReportInfoModal
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        producerSlug={producer.slug || producer.id}
-      />
     </div>
   );
 }

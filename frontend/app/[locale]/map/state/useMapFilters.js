@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CATEGORY_LEGEND } from "@/lib/map-categories";
+import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -8,6 +8,7 @@ import {
   resolveCategoryId,
 } from "@/lib/map-chips";
 import { haversineKm } from "@/lib/distance";
+import { producerInBounds } from "@/lib/producerPoints";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's
@@ -57,7 +58,8 @@ export function sortProducers(list, sortBy, userLoc) {
  * MapClient.jsx:41-78, :232-296, :458-500, :503-524.
  *
  * Shape of the state machine (preserved from source):
- *   - `chipState.categoryKey` ∈ CATEGORY_CHIPS keys (one active or "all")
+ *   - `chipState.categoryKeys` ⊆ CATEGORY_CHIPS keys (MEH-1465 multi-select OR;
+ *     `[]` = "all"/nothing selected — the reset sentinel)
  *   - `chipState.organic / has_delivery / verified / grass_fed` independent toggles
  *   - `cityFilter` is the city-search input (text)
  *   - `committedBounds` is the bounds the LIST is filtered by — set
@@ -81,6 +83,10 @@ export function useMapFilters({
   userCity,
   setUserCity,
   setShowCityPicker,
+  // MEH-1670: the pickup/market_stand layer toggle, owned by MapClient. The
+  // viewport filter needs it so the list drops a business at the same moment
+  // the map does — a producer whose only points are hidden pickups is off both.
+  showSecondaryLayer = true,
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -104,13 +110,13 @@ export function useMapFilters({
     return () => document.body.classList.remove("sheet-open");
   }, [selectedProducer]);
 
-  // MEH-14: chip state per the new spec. Exactly one category chip
-  // is active at a time ("all" is the reset sentinel); organic +
-  // has_delivery are independent toggles on top of that.
+  // MEH-14: chip state per the new spec. MEH-1465: categoryKeys is a multi-select
+  // OR array (`[]` = "all"/nothing selected); organic + has_delivery are
+  // independent toggles on top of that.
   // MEH-1075: state completed to all 7 TOGGLE_CHIPS keys — the diet
   // toggles previously worked only via dynamic `!undefined` toggling.
   const [chipState, setChipState] = useState({
-    categoryKey: "all",
+    categoryKeys: [],
     organic: false,
     has_delivery: false,
     verified: false,
@@ -142,7 +148,14 @@ export function useMapFilters({
 
   const onCategoryChipClick = (key) => {
     cancelPendingSheetFetch();
-    const next = { ...chipState, categoryKey: key };
+    // MEH-1465: multi-select OR. "all" clears the whole set; re-tapping a
+    // selected category removes it; any other category is added to the union.
+    let categoryKeys;
+    if (key === "all") categoryKeys = [];
+    else if (chipState.categoryKeys.includes(key))
+      categoryKeys = chipState.categoryKeys.filter((k) => k !== key);
+    else categoryKeys = [...chipState.categoryKeys, key];
+    const next = { ...chipState, categoryKeys };
     setChipState(next);
     loadProducers(buildParams(next));
     setCommittedBounds(null);
@@ -193,7 +206,7 @@ export function useMapFilters({
   };
 
   // MEH-1075: "ניקוי הכל" inside FilterSheet — resets the 7 toggles only.
-  // categoryKey + cityFilter survive (the tag strip's clear-all,
+  // categoryKeys + cityFilter survive (the tag strip's clear-all,
   // resetAllFilters below, still resets everything). Single action → the
   // fetch is instant, and any pending debounced sheet fetch is superseded.
   const clearSheetFilters = () => {
@@ -232,7 +245,7 @@ export function useMapFilters({
   const resetAllFilters = () => {
     cancelPendingSheetFetch();
     const next = {
-      categoryKey: "all",
+      categoryKeys: [],
       organic: false,
       has_delivery: false,
       verified: false,
@@ -294,16 +307,14 @@ export function useMapFilters({
   // show everything.
   const visibleProducers = useMemo(() => {
     if (!committedBounds) return filteredByCategory;
-    return filteredByCategory.filter((p) => {
-      if (typeof p.lat !== "number" || typeof p.lng !== "number") return false;
-      return (
-        p.lat >= committedBounds.south &&
-        p.lat <= committedBounds.north &&
-        p.lng >= committedBounds.west &&
-        p.lng <= committedBounds.east
-      );
-    });
-  }, [filteredByCategory, committedBounds]);
+    // MEH-1670: was a direct Producer.lat/lng comparison, which dropped a
+    // delivery-only business (coords NULL, MEH-1402) out of the list while its
+    // pickup pin sat on screen. producerInBounds derives points the same way the
+    // marker layer does, so map and list agree by construction.
+    return filteredByCategory.filter((p) =>
+      producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
+    );
+  }, [filteredByCategory, committedBounds, showSecondaryLayer]);
 
   // MEH-722: per-category producer counts for the CURRENT viewport, computed
   // PRE category filter (from allProducers ∩ committedBounds, NOT visibleProducers
@@ -313,14 +324,10 @@ export function useMapFilters({
   const viewportCategoryCounts = useMemo(() => {
     const inView = !committedBounds
       ? allProducers
-      : allProducers.filter(
-          (p) =>
-            typeof p.lat === "number" &&
-            typeof p.lng === "number" &&
-            p.lat >= committedBounds.south &&
-            p.lat <= committedBounds.north &&
-            p.lng >= committedBounds.west &&
-            p.lng <= committedBounds.east,
+      // MEH-1670: same derivation as the list above — otherwise a chip could
+      // read 0 while its card is visible in the list.
+      : allProducers.filter((p) =>
+          producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
         );
     const counts = {};
     for (const p of inView) {
@@ -328,7 +335,7 @@ export function useMapFilters({
       if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
     }
     return counts;
-  }, [allProducers, committedBounds]);
+  }, [allProducers, committedBounds, showSecondaryLayer]);
 
   // Category chips visible in the current DB (hidden if no matching category loaded yet)
   const visibleCategoryChips = useMemo(
@@ -342,17 +349,26 @@ export function useMapFilters({
   );
 
   // Active filters — each tag carries the key needed to remove it.
+  // MEH-1368 / MEH-1181-A tag-strip rule: removable tags represent ATTRIBUTES
+  // ONLY. A category selection is shown by its chip ring in the category row,
+  // never mirrored as a removable tag — its exit affordance is the "כל" chip.
+  // ("נקו הכל" → resetAllFilters still clears BOTH categories and attributes.)
   const activeFilterTags = useMemo(() => {
     const tags = [];
-    if (chipState.categoryKey && chipState.categoryKey !== "all") {
-      const cat = CATEGORY_CHIPS.find((c) => c.key === chipState.categoryKey);
-      if (cat) tags.push({ kind: "category", key: cat.key, label: cat.label });
-    }
     TOGGLE_CHIPS.forEach((c) => {
       if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
     });
     return tags;
   }, [chipState]);
+
+  // MEH-1368: count of ALL active attribute toggles — drives the inline
+  // "סינון · N" count on the FilterChipsBar button. Replaces the old corner
+  // badge's sheet-only count (countActiveSheetOnlyFilters), now that the inline
+  // quick-chip row is gone and every attribute lives in FilterSheet.
+  const activeAttributeCount = useMemo(
+    () => TOGGLE_CHIPS.filter((c) => chipState[c.key]).length,
+    [chipState],
+  );
 
   return {
     // state
@@ -390,5 +406,6 @@ export function useMapFilters({
     viewportCategoryCounts,
     visibleCategoryChips,
     activeFilterTags,
+    activeAttributeCount,
   };
 }

@@ -14,11 +14,15 @@
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
- *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0
- *   products     (auto)    — producer.products_count >= 3
+ *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0, SUPPRESSED for a
+ *                            delivery-only business (MEH-1841 — specific supersedes generic)
+ *   (products REMOVED — MEH-1846: it lit on products_count >= 3, true for
+ *    effectively every approved business, so it differentiated nothing and
+ *    diluted the badges that do. products_count itself is unchanged.)
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > license > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery > products
+ *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > kosher > delivery
+ *   (MEH-1492: license — a regulatory fact — outranks recommended, an opinion.)
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -36,8 +40,16 @@ export const BADGE_CONFIG = {
   },
   recommended: {
     key: "recommended",
-    label: "מומלץ",
-    tooltip: "המלצת עורכת מהמקור — אהבנו את איכות המוצרים או השירות.",
+    // MEH-1492: renamed מומלץ → "בחירת העורכת" — the label now names who stands
+    // behind the opinion (an editor), and the popover links out to the /about
+    // criteria + the ADR-030 "can't be bought" promise (aboutHref below).
+    label: "בחירת העורכת",
+    tooltip:
+      "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
+    // MEH-1492: the badge popover links here (BadgeRow wraps the tooltip in a
+    // LocaleLink when aboutHref is set — mirrors the verified → /about#verification
+    // pattern, MEH-1336). Editorial opinion → publish the criteria.
+    aboutHref: "/about#editors-pick",
     color: "accent",
   },
   // MEH-531: license badge — trust signal for Ministry of Health producer
@@ -106,7 +118,19 @@ export const BADGE_CONFIG = {
   },
   kosher: {
     key: "kosher",
-    label: "כשר",
+    // MEH-1711: "כשר" was our own synthesized label — the bare word claims a
+    // kashrut standard without naming which one, the over-claim MEH-1418
+    // already rejected once for the filter chip (attribute-labels.js:61,
+    // Sapir-LOCKED per MEH-1087) without taking the badge in the same round.
+    // This is now the FALLBACK only: BadgeRow resolves the actual certification
+    // name ("חלק", "בדצ״ה", …) from producer.kashrut_badges when there is
+    // exactly one code, and falls back to this string on zero or 2+ codes —
+    // where naming a single certificate would itself be a misstatement.
+    // Industry precedent: ACM/Booking.com 2024 — the objection was to the
+    // self-synthesized label, and the remedy was naming the third-party
+    // certification instead. Hardcoded Hebrew matches every sibling entry in
+    // this file; no new i18n key, so the MEH-978 en-parity guard is untouched.
+    label: "כשרות מאומתת",
     tooltip: "המוצרים תחת השגחת כשרות.",
     color: "muted",
   },
@@ -116,19 +140,26 @@ export const BADGE_CONFIG = {
     tooltip: "העסק מוסר או שולח לכתובת שלך.",
     color: "muted",
   },
-  products: {
-    key: "products",
-    label: "מוצרים",
-    tooltip: "לעסק יש 3 מוצרים או יותר בקטלוג.",
-    color: "muted",
-  },
+  // MEH-1846: the products badge is REMOVED. It lit on products_count >= 3,
+  // which is true for effectively every approved business — manual approval
+  // means a business with no catalog is not live — so it differentiated
+  // nothing and diluted the badges that do (trust inflation: 3 targeted
+  // signals beat 7 diffuse ones). MEH-1124 had already hidden it from
+  // ProducerHeader as information-class noise; this completes that decision
+  // across every surface. Catalog richness is still communicated by the card's
+  // price label + description and the detail page's products section, and the
+  // nudge to fill a catalog belongs to ProfileCompletenessCard, not to a
+  // consumer-facing badge. producer.products_count is UNCHANGED — it is a
+  // data field with non-badge consumers (ProfileCompletenessCard.jsx:141).
 };
 
 // Priority order — left = highest. Exposed for tests.
+// MEH-1492: recommended ("בחירת העורכת") drops BELOW license — a regulatory
+// fact (Ministry of Health licence) outranks an editorial opinion.
 export const BADGE_PRIORITY = [
   "verified",
-  "recommended",
   "license",
+  "recommended",
   "new",
   // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
   "grass_fed",
@@ -138,11 +169,10 @@ export const BADGE_PRIORITY = [
   "lactose_free",
   "kosher",
   "delivery",
-  "products",
+  // MEH-1846: products removed — see the BADGE_CONFIG note above.
 ];
 
 const NEW_DAYS = 30;
-const PRODUCTS_MIN = 3;
 
 function earnsBadge(producer, key) {
   if (!producer) return false;
@@ -205,16 +235,34 @@ function earnsBadge(producer, key) {
           new Date(producer.kashrut_expires_at) > new Date())
       );
     case "delivery":
+      // MEH-1841 — specific supersedes generic. A delivery-only business
+      // already carries the "משלוחים בלבד" pill on ProducerCard
+      // (ProducerCard.jsx:382), so the generic "משלוח" badge sat next to it
+      // saying strictly less about the same fact — two delivery chips on one
+      // card. Suppressed here, at the derivation layer, so EVERY consumer
+      // stays consistent: the card's top-2 row, the `+N` overflow popover
+      // (which reads allBadges().slice(2)), and badgeCount which drives that
+      // `+N`. Display-only — the ?delivery=true listing filter is a backend
+      // query and is untouched.
+      //
+      // Gated on BOTH fields, mirroring the pill's condition verbatim, so the
+      // generic badge yields only where the specific one actually renders.
+      // (has_physical_location=false, offers_delivery=false) is rejected by the
+      // owner form (ProducerForm.jsx:1047) and by the backend model
+      // (schemas/schemas.py:1262) — but should a legacy row reach a card in
+      // that state, the pill does not render, and suppressing here too would
+      // leave it with no delivery indication at all.
+      if (producer.has_physical_location === false && producer.offers_delivery) {
+        return false;
+      }
       return (
         !!producer.has_delivery ||
         (typeof producer.delivery_count === "number" &&
           producer.delivery_count > 0)
       );
-    case "products":
-      return (
-        typeof producer.products_count === "number" &&
-        producer.products_count >= PRODUCTS_MIN
-      );
+    // MEH-1846: no products case — the badge is removed. producer.products_count
+    // stays on the payload and keeps its non-badge consumers; it simply drives
+    // no badge, the same shape MEH-1259 used to retire "organic".
     default:
       return false;
   }

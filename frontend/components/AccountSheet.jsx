@@ -104,6 +104,8 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
               hasAvatar ? (
+                // raw img: OAuth provider avatar — host not in remotePatterns
+                // (frozen this ticket).
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -192,8 +194,12 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               variant="bare"
               className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
             >
+              {/* MEH-1542: full native language names replace the "עב / EN"
+                  abbreviation — W3C / NN/g best practice (language named in its
+                  own script, no flags). Text-only change; dir="ltr" keeps the
+                  Hebrew-then-English visual order and order logic is untouched. */}
               <span className="font-english" dir="ltr" aria-hidden="true">
-                עב / EN
+                עברית / English
               </span>
             </LanguageToggle>
           </li>

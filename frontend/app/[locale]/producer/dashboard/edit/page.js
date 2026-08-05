@@ -74,9 +74,19 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
+import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
+// MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
+// cards.jsx is already >1600 lines).
+import DietaryScopeCard from "./DietaryScopeCard";
+// MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
+// cards.jsx is already >1600 lines).
+import GrassFedCard from "./GrassFedCard";
+// MEH-1544: weekly order-acceptance window (own file, same reason as above —
+// imported directly rather than via a cards.jsx passthrough wrapper).
+import OrderWindowEditor from "./OrderWindowEditor";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -97,6 +107,8 @@ const ANCHOR_TO_KEY = {
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  // MEH-1544: weekly order-acceptance window (sibling of hours, same group).
+  "order-window": "orderWindow",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
   // OwnerCard).
   "owner-story": "ownerStory",
@@ -150,6 +162,12 @@ const KEY_TO_ANCHOR = {
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  orderWindow: "order-window",
+  // MEH-1823: registered here so #offer deep-links resolve like every other
+  // card. These three maps are a guarded registry — a card added to the JSX
+  // without an entry renders but is unreachable by anchor, which is the
+  // silent-gap class .claude/rules/testing.md documents for path registries.
+  offer: "offer",
 };
 
 // MEH-1408: hub-and-spoke group layer OVER the existing accordion. The card
@@ -174,6 +192,14 @@ const KEY_TO_GROUP = {
   location: "location",
   delivery: "location",
   hours: "location",
+  orderWindow: "location",
+  // MEH-1823: the offer lives in the location group — it is read against the
+  // delivery terms above it. Deliberately NOT added to GROUP_MEMBERS below,
+  // for the same reason orderWindow isn't: membership drives the hub's
+  // "{done}/{total}", and an opt-in field would show every existing business
+  // as 2/4 instead of 2/3 and nudge them into running promotions nobody asked
+  // for — the GBP-staleness risk that note already cites.
+  offer: "location",
   contact: "contact",
   questions: "contact",
 };
@@ -191,6 +217,12 @@ const OPEN_KEY_FOR = (key) =>
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
   trust: ["license", "kashrut"],
+  // MEH-1544: `orderWindow` is deliberately NOT a member. Membership drives the
+  // hub's "{done}/{total}" completion count, and the order window is an opt-in
+  // field — counting it would show every existing business as 2/4 instead of
+  // 2/3 and nudge them to maintain hours they never asked for (the exact
+  // GBP-staleness risk the ticket cites). It still belongs to the location
+  // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
   location: ["location", "delivery", "hours"],
   contact: ["contact", "questions"],
 };
@@ -218,8 +250,17 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-1823: the offer feature owns one namespace shared by the dashboard
+  // card and the public badge, so the four type labels have a single source.
+  const tOffer = useTranslations("producer.offer");
   const tProducts = useTranslations("settings.products");
   const tLoc = useTranslations("settings.locations");
+  // MEH-1773: point-of-decision explainer for the order-window card. The
+  // ContactChannelsCard hook of the same name (:1202) is scoped to that
+  // component and not reachable from here.
+  // REUSES: frontend/app/[locale]/producer/dashboard/edit/page.js:1202 — same
+  // top-level whats_this namespace, same WhatsThis component (MEH-1115).
+  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
 
@@ -563,6 +604,8 @@ function EditPageInner() {
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
     hours: Boolean((profile.opening_hours || "").trim()),
+    // MEH-1544: opt-in field — "filled" means at least one day accepts orders.
+    orderWindow: Object.keys(profile.order_window || {}).length > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
   };
@@ -602,11 +645,12 @@ function EditPageInner() {
     pricing: t("pricing.heading"),
     delivery: t("delivery.heading"),
     hours: t("hours.heading"),
+    orderWindow: t("order_window.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
+    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -872,6 +916,46 @@ function EditPageInner() {
             </h3>
             <KashrutCard profile={profile} reportDirty={reportDirty} />
           </div>
+
+          {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
+              vegan/vegetarian + gluten facility). Sub-section next to kashrut;
+              writes producer scope fields via PUT /producers/me (onSave merges). */}
+          <div
+            id="dietary-scope"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("dietaryScope.heading")}
+            </h3>
+            <DietaryScopeCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
+
+          {/* ②e MEH-1851 row 23 — owner-declared grass_fed. Sits in the trust
+              group next to dietary scope because it is the same KIND of claim:
+              a business-level property the owner asserts and nobody verifies
+              (labels.md records its evidence as `self-declared` already). It is
+              NOT inside DietaryScopeCard: that card asks what the catalog
+              CONTAINS, and how livestock was raised is not a dietary scope —
+              folding it in would mislabel the question. The column was already
+              writable via PUT /producers/me; only the ADMIN form could produce
+              a value, which bought friction and no verification. */}
+          <div
+            id="grass-fed"
+            className="scroll-mt-24 mt-8 pt-6 border-t border-border"
+          >
+            <h3 className="font-headline-md text-sm font-bold text-text mb-3">
+              {t("grassFed.heading")}
+            </h3>
+            <GrassFedCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </div>
         </EditAccordionCard>
       </div>
 
@@ -947,6 +1031,29 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
+        {/* MEH-1823 — the owner's single typed offer. Sits after delivery
+            because the most common offer (free delivery over a threshold) is
+            read against the delivery terms above it. Summary shows the live
+            offer sentence, or "no active offer" — the empty state is a real
+            state here, not a placeholder. */}
+        <EditAccordionCard
+          anchorId="offer"
+          title={tOffer("card_title")}
+          summary={
+            profile.active_offer
+              ? tOffer(`types.${profile.active_offer.offer_type}`)
+              : tOffer("type_none")
+          }
+          open={openKey === "offer"}
+          onToggle={() => toggleKey("offer")}
+        >
+          <OffersCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
         {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
         <EditAccordionCard
           anchorId="hours"
@@ -956,6 +1063,40 @@ function EditPageInner() {
           onToggle={() => toggleKey("hours")}
         >
           <HoursCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-1544 — weekly ORDER-acceptance window. Opt-in and separate from
+            the opening-hours card above: a business that never opens this
+            renders nothing on its public page. */}
+        <EditAccordionCard
+          anchorId="order-window"
+          title={t("order_window.heading")}
+          summary={
+            cardFilled.orderWindow
+              ? t("order_window.summary_set", {
+                  count: Object.keys(profile.order_window || {}).length,
+                })
+              : t("order_window.summary_empty")
+          }
+          open={openKey === "orderWindow"}
+          onToggle={() => toggleKey("orderWindow")}
+        >
+          {/* MEH-1773: "חלון הזמנות" and the "זמינות" card on the dashboard
+              landing page both read as "when am I open", so owners could not
+              tell them apart. This names the distinction at the point of
+              editing — the recurring weekly schedule — and its twin sits on
+              the availability card (dashboard/page.js) saying the other half:
+              a manual, temporary exception. */}
+          <WhatsThis
+            content={tWhat("order_window")}
+            className="mb-1"
+            testId="whats-this-order-window"
+          />
+          <OrderWindowEditor
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
@@ -1072,8 +1213,11 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
         {t("subtitle")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
       </p>
+      {/* MEH-1477: content guidance — nudges owners toward the questions
+          customers actually ask before buying (stock / delivery / ordering),
+          reusing the MEH-1116 helper-text idiom. */}
       <p className="text-xs text-fg-muted mb-4">
-        {t("context_line")}
+        {t("guidance")}
       </p>
       <div className="space-y-2">
         {questions.map((q, i) => (
@@ -1192,9 +1336,12 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      // Surface the Chunk-2 server guards (scheme / 7-value) inline.
-      const detail = err?.response?.data?.detail;
-      setErrorMsg(typeof detail === "string" ? detail : t("save_error"));
+      // Surface the server contact guards inline (Chunk-2 scheme / 7-value +
+      // MEH-1537 email/phone/whatsapp_group format). detailToMessage handles
+      // BOTH the string detail (400/409) and the 422 RequestValidationError
+      // array — the earlier `typeof detail === "string"` check collapsed the
+      // 422 array to the generic copy, hiding the specific Hebrew field error.
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
     } finally {
       setSaving(false);
     }
@@ -1210,19 +1357,31 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       <ViewOnPageLink producerId={profile?.id} anchor="section-contact" />
 
       <div className="space-y-3">
-        <Input type="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
+        <Input type="tel" inputMode="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
           onChange={(e) => upd("phone", e.target.value)} error={fieldError("phone")} />
+        {/* MEH-1597: each placeholder shows the shape that field's validator
+            actually accepts (ProducerUpdate, backend/app/schemas/schemas.py).
+            instagram is the odd one out: it has NO validator (:997 is a bare
+            `str | None` — :1205 covers only website/facebook/external_order_form)
+            and ContactCard.jsx:105-106 builds `https://instagram.com/${handle}`
+            itself, so a URL here would render a doubled, dead link. Bare handle
+            on purpose. */}
         <Input type="text" dir="ltr" label={t("field_instagram")} value={form.instagram}
+          placeholder={t("instagram_placeholder")}
           onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
         <Input type="url" dir="ltr" label={t("field_website")} value={form.website}
+          placeholder={t("website_placeholder")}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
         {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
             empty-primary guard applies (fieldError never targets it). */}
         <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          placeholder={t("whatsapp_group_placeholder")}
           onChange={(e) => upd("whatsapp_group", e.target.value)} />
-        <Input type="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+        <Input type="email" inputMode="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+          placeholder={t("email_placeholder")}
           onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
         <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
+          placeholder={t("facebook_placeholder")}
           onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
         <Input type="url" dir="ltr" label={t("field_external_order")} value={form.external_order_form}
           onChange={(e) => upd("external_order_form", e.target.value)} error={fieldError("external_order_form")} />

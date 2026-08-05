@@ -54,7 +54,7 @@ describe("BadgeRow", () => {
       />,
     );
     expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("מומלץ")).toBeInTheDocument();
+    expect(screen.getByText("בחירת העורכת")).toBeInTheDocument(); // MEH-1492 rename
     expect(screen.getByText("חדש")).toBeInTheDocument();
   });
 
@@ -71,22 +71,30 @@ describe("BadgeRow", () => {
         }}
       />,
     );
+    // This fixture earns no license badge (has_producer_license unset — the
+    // "license" here is the verification DOC TYPE), so the top-2 stay
+    // verified + recommended ("בחירת העורכת" after the MEH-1492 rename).
     expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("מומלץ")).toBeInTheDocument();
+    expect(screen.getByText("בחירת העורכת")).toBeInTheDocument();
     expect(screen.queryByText("חדש")).not.toBeInTheDocument();
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
   });
 
-  it("hideKeys drops the named badges, keeps the rest (MEH-1124)", () => {
+  // MEH-1846: this used to pass hideKeys={["products", "delivery"]} and assert
+  // "מוצרים" was absent. After the products badge was removed that assertion
+  // passed for a SECOND reason — the badge no longer exists — so it held
+  // identically on a tree where hideKeys was broken. Narrowed to the one key
+  // that still exercises the mechanism, and the absence assertion is now on a
+  // badge the producer genuinely earns.
+  it("hideKeys drops the named badge, keeps the rest (MEH-1124)", () => {
     render(
       <BadgeRow
-        hideKeys={["products", "delivery"]}
+        hideKeys={["delivery"]}
         producer={{ ...VERIFIED_LICENSE, has_delivery: true, products_count: 10 }}
       />,
     );
     expect(screen.getByText("מאומת")).toBeInTheDocument();
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
-    expect(screen.queryByText("מוצרים")).not.toBeInTheDocument();
   });
 
   describe("tooltip interaction", () => {
@@ -166,20 +174,32 @@ describe("BadgeRow", () => {
     });
 
     // MEH-1334: the hero seal ALWAYS opens the verification popover with the
-    // LOCKED dateless copy (title + body + /about#verification link) — the
-    // pre-existing MEH-762 doc-date line was dropped from the hero surface
-    // (CLARIFY c). Same content for every doc type; cosmetics included.
+    // LOCKED dateless copy (title + body + about-link) — the pre-existing
+    // MEH-762 doc-date line was dropped from the hero surface (CLARIFY c).
+    // Same content for every doc type; cosmetics included.
+    // MEH-1840: the link target moved /about#verification → /about/process. The
+    // assertion's SUBJECT changed (the canonical destination), not its strength —
+    // it still pins an exact href, so a regression to the old target reds it.
     it("hero popover shows the locked dateless copy for license doc type", () => {
       render(<BadgeRow producer={VERIFIED_LICENSE} />);
       fireEvent.click(screen.getByText("מאומת"));
       const pop = screen.getByTestId("badge-tooltip-verified");
-      expect(pop.querySelector('a[href="/about#verification"]')).not.toBeNull();
-      expect(pop.textContent).toContain("verified_popover_body");
-      // the pre-existing doc-date line must NOT appear on the hero surface
+      expect(pop.querySelector('a[href="/about/process"]')).not.toBeNull();
+      // the retargeted link must not leave the old destination behind
+      expect(pop.querySelector('a[href="/about#verification"]')).toBeNull();
+      // MEH-1843: exact key, not a substring — every per-doc-type key starts
+      // with "verified_popover_body", so a loose match would pass no matter
+      // which variant the component picked, including the wrong one.
+      expect(pop.textContent).toContain("verified_popover_body_license");
+      // the CARD-surface tooltip phrasing must not leak onto the hero surface
       expect(pop.textContent).not.toContain("הוגש ונבדק");
     });
 
-    it("hero popover copy is identical for a cosmetics doc type (still no date)", () => {
+    // MEH-1843 inverts this case. It previously asserted cosmetics got the
+    // IDENTICAL body as license — which is exactly the flaw the ticket fixes:
+    // a cosmetics business was told it "operates under licence". The two must
+    // now differ.
+    it("hero popover copy for cosmetics differs from the license variant", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
@@ -187,12 +207,15 @@ describe("BadgeRow", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: "בית עסק מאומת" }));
       const pop = screen.getByTestId("badge-tooltip-verified");
-      expect(pop.textContent).toContain("verified_popover_body");
+      expect(pop.textContent).toContain("verified_popover_body_cosmetics");
+      expect(pop.textContent).not.toContain("verified_popover_body_license");
       expect(pop.textContent).not.toContain("הוגש ונבדק");
     });
 
     // CLARIFY a/b: the seal — and therefore this popover — never renders for a
-    // non-verified producer, so the "אישור ידני ופועל ברישיון" claim is safe.
+    // non-verified producer, so its manual-approval claim is safe. (MEH-1843
+    // retired the flat "ופועל ברישיון" wording this comment used to quote; the
+    // gate it describes is unchanged.)
     it("renders NO verified seal (and no popover) when verification_tier !== verified", () => {
       const { container } = render(
         <BadgeRow producer={{ verification_tier: "declared" }} />,
@@ -231,7 +254,19 @@ describe("BadgeRow", () => {
       );
       expect(screen.queryByText("מאומת")).not.toBeInTheDocument();
       expect(screen.queryByText("מוצהר")).not.toBeInTheDocument();
-      expect(screen.getByText("מומלץ")).toBeInTheDocument();
+      expect(screen.getByText("בחירת העורכת")).toBeInTheDocument(); // MEH-1492 rename
+    });
+
+    // MEH-1492: the recommended badge popover links to the /about criteria +
+    // ADR-030 promise (mirrors the verified seal → /about#verification).
+    it("recommended badge popover links to /about#editors-pick", async () => {
+      const { container } = render(
+        <BadgeRow producer={{ verification_tier: null, is_recommended: true }} />,
+      );
+      // open the popover by clicking the chip trigger
+      fireEvent.click(screen.getByText("בחירת העורכת"));
+      const link = container.querySelector('a[href="/about#editors-pick"]');
+      expect(link).not.toBeNull();
     });
   });
 });

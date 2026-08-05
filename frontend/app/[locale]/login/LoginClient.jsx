@@ -64,7 +64,7 @@ function LoginPageBody() {
   const params = useSearchParams();
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
   const redirectTo = safeInternalRedirect(params.get("redirect"));
-  const { login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +79,16 @@ function LoginPageBody() {
       showToast.success(t("reset_success"));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-1489 chunk C: an already-authenticated visitor never needs the login
+  // form — bounce to the clamped ?redirect= target (falls back to "/" via the
+  // MEH-810 helper). replace() so /login doesn't sit in history. Guests keep
+  // the form + the ?reset=1 toast above; the register inbox screen has no token
+  // so user stays null there (no redirect). Post-login/OAuth push() lands on
+  // the same target, so this is idempotent, not a second navigation elsewhere.
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectTo);
+  }, [authLoading, user, router, redirectTo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,6 +136,17 @@ function LoginPageBody() {
   const passwordInvalid = passwordTouched && password.length > 0 && password.length < 1;
   const passwordValidLength = passwordTouched && password.length >= 1;
   const formIsValid = validateEmail(email) && password.length >= 1;
+
+  // MEH-1489 chunk C: gate the form render while auth resolves (or once a user
+  // is present and the redirect above is in flight) so the login form never
+  // flashes for an authenticated visitor.
+  if (authLoading || user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+        {t("loading")}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
@@ -211,13 +232,17 @@ function LoginPageBody() {
               </span>
               <input
                 id="login-email"
+                // MEH-1599: locators for the ?redirect= round-trip spec
+                // (25-role-reachability), per docs/E2E-LOCATORS.md.
+                data-testid="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setEmailTouched(true)}
                 required
                 // MEH-991 (LOGIN-04): S9 email field shows a format example.
-                placeholder="name@example.com"
+                // MEH-1617: value moved to auth.login.email_placeholder.
+                placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   emailInvalid
@@ -252,6 +277,7 @@ function LoginPageBody() {
               </span>
               <input
                 id="login-password"
+                data-testid="login-password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -303,6 +329,7 @@ function LoginPageBody() {
               Overrides the prior site-standard-rounded ("NOT green pill") constraint. */}
           <button
             type="submit"
+            data-testid="login-submit"
             disabled={loading || !formIsValid}
             className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >

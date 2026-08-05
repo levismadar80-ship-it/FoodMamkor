@@ -1,13 +1,28 @@
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
 
+import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import ShareButton from "@/components/ShareButton";
+import { useAuth } from "@/lib/auth-context";
+import {
+  ensureFavoritesLoaded,
+  isFavorited as isFavoritedCache,
+  subscribeFavorites,
+} from "@/lib/favorites-cache";
 import { allBadges } from "@/lib/badges";
+import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { getVacationReturnDate } from "../lib/producer-format";
+// MEH-1546: the meta-line status is the page's ONLY order-status element, so
+// order_window feeds THAT branch rather than adding a second line — see
+// lib/order-status.js for the precedence and the contradiction it avoids.
+// (Copy itself lives in messages/{he,en}.json; comments stay English per
+// docs/CLAUDE-REVIEW.md rule 5.)
+import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
 
 /**
  * Main-column header block for the producer detail page.
@@ -35,9 +50,56 @@ export default function ProducerHeader({
   primaryCategory,
   hasImages = true,
   shareUrl,
+  alertsOpen = false,
+  onOpenAlerts,
+  onCloseAlerts,
 }) {
   const t = useTranslations();
   const locale = useLocale();
+
+  // MEH-1609 built the page's only AlertPrefsPanel mount here, reached by an
+  // alerts_reentry bell in the actions row. MEH-1693 keeps the MOUNT (its
+  // position — normal flow, outside the lg:absolute-pinned row — is what makes
+  // the panel survivable) and retires the bell: the panel now opens from the
+  // save itself, which is the moment the ask belongs to.
+  //
+  // `alertsOpen` is owned by ProducerDetail, not here, because the mobile heart
+  // that opens it lives on the hero (ImageGallery) — a SIBLING of this
+  // component, so the page is their only common ancestor. Favorited state is
+  // still read locally from the shared favorites-cache (MEH-1325), the same
+  // source both hearts write, so this gate stays correct no matter which one
+  // the visitor tapped.
+  const { user } = useAuth();
+  const [favorited, setFavorited] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setFavorited(false);
+      return undefined;
+    }
+    let alive = true;
+    ensureFavoritesLoaded().then(() => {
+      if (alive) setFavorited(isFavoritedCache(producer.id));
+    });
+    const unsub = subscribeFavorites(() => {
+      if (alive) setFavorited(isFavoritedCache(producer.id));
+    });
+    return () => {
+      alive = false;
+      unsub();
+    };
+  }, [user, producer.id]);
+
+  // Un-favoriting while the panel is open must not leave `alertsOpen` armed —
+  // otherwise re-saving the business would silently re-open the panel. The
+  // state moved to the page (MEH-1693) but the guard stays here, because this
+  // is where the cache subscription lives; it fires for an un-save from EITHER
+  // heart, and from a card heart on another surface in the same session.
+  useEffect(() => {
+    if (!favorited) onCloseAlerts?.();
+  }, [favorited, onCloseAlerts]);
+
+  const showAlerts = Boolean(favorited && user);
 
   // MEH-1334: 3-state status. `full` is the legacy availability_status twin of
   // full_this_week (MEH-291 7-day overlap contract, same as isVacation in
@@ -46,6 +108,41 @@ export default function ProducerHeader({
   const availState = producer.availability_state || producer.availability_status;
   const isClosed = !isVacation && (availState === "full_this_week" || availState === "full");
   const vacationDate = getVacationReturnDate(producer, locale);
+
+  // MEH-1546: order_window status is time-derived, so it must not run during
+  // SSR — the server and the client would disagree and React would flag a
+  // hydration mismatch (MEH-1531). Until mounted, orderStatus stays null and
+  // resolveHeaderStatus falls through to branch 5, i.e. exactly the pre-1546
+  // output. `mounted` also re-runs nothing on a timer: the status refreshes on
+  // the next navigation/render, which is honest enough for a weekly window.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const orderStatus = mounted ? getOrderWindowStatus(producer.order_window) : null;
+  const status = resolveHeaderStatus({ isVacation, isClosed, orderStatus });
+  const statusLabel = {
+    vacation: () =>
+      vacationDate
+        ? t("producer.detail.header.status.vacation", { date: vacationDate })
+        : t("producer.detail.header.status.vacation_no_date"),
+    closed: () => t("producer.detail.header.status.closed"),
+    // The mapper guarantees nextChange is a Date on this branch. The dayKey
+    // fallback covers the residual case where ICU returns an abbreviation we
+    // don't recognise — better the plain closed copy than `weekdays.undefined`.
+    orders_closed: () => {
+      const dayKey = israelDayKey(status.nextChange);
+      return dayKey
+        ? t("producer.detail.header.status.orders_closed", {
+            day: t(`opening_hours.weekdays.${dayKey}`),
+            time: israelTime(status.nextChange),
+          })
+        : t("producer.detail.header.status.closed");
+    },
+    orders_open: () =>
+      t("producer.detail.header.status.orders_open", {
+        time: israelTime(status.nextChange),
+      }),
+    open: () => t("producer.detail.header.status.open"),
+  }[status.branch]();
 
   // Single verified seal next to the name — every other earned badge left the
   // header (MEH-1334 decision 4). hideKeys derives from the live badge set so
@@ -126,22 +223,27 @@ export default function ProducerHeader({
           {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
           {primaryCategory && <span>{primaryCategory.name}</span>}
           {(producer.city || primaryCategory) && <span aria-hidden="true" className="opacity-60">·</span>}
-          {isVacation ? (
-            <span className="font-semibold text-gold-deep" data-testid="status-vacation">
-              {vacationDate
-                ? t("producer.detail.header.status.vacation", { date: vacationDate })
-                : t("producer.detail.header.status.vacation_no_date")}
-            </span>
-          ) : isClosed ? (
-            <span className="font-semibold text-muted" data-testid="status-closed">
-              {t("producer.detail.header.status.closed")}
-            </span>
-          ) : (
-            <span className="font-semibold text-primary" data-testid="status-open">
-              {t("producer.detail.header.status.open")}
-            </span>
-          )}
+          {/* MEH-1546: ONE status element, five-branch precedence (see
+              resolveHeaderStatus). order_window feeds this line instead of
+              adding a second one — two order-status assertions on one page
+              would contradict each other. */}
+          <span className={`font-semibold ${status.tone}`} data-testid={status.testid}>
+            {statusLabel}
+          </span>
         </p>
+
+        {/* MEH-1541: quiet "מאז {שנה}" heritage line — a veteran-business trust
+            signal in the magazine voice, NOT a badge. Plain body text (DM Sans),
+            fg-muted, no icon / emoji / gold / border (Emoji LOCK + Quiet
+            Direction v3 — the single-green rule stays with the status above).
+            The year numerals are wrapped dir="ltr". Null-safe: the whole line is
+            absent from the DOM when established_year is unset. */}
+        {producer.established_year ? (
+          <p className="text-sm text-fg-muted" data-testid="established-year">
+            {t("producer.detail.header.since_prefix")}{" "}
+            <span dir="ltr" className="numeric">{producer.established_year}</span>
+          </p>
+        ) : null}
 
         {/* Kosher renders ONCE (MEH-1334): specific admin-assigned badges via
             the quiet strip variant (owns the MEH-1260 expiry gate), else the
@@ -153,6 +255,10 @@ export default function ProducerHeader({
             badges={producer.kashrut_badges}
             verified_at={producer.kashrut_verified_at}
             expires_at={producer.kashrut_expires_at}
+            /* MEH-1672: badge codes only — the certificate itself is fetched
+               through our proxy, so no Cloudinary URL reaches the client. */
+            certs={producer.kashrut_certs}
+            producerId={producer.id}
           />
         ) : producer.kashrut_verified_at ? (
           <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
@@ -160,6 +266,27 @@ export default function ProducerHeader({
             {t("producer.detail.header.attr.kosher")}
           </p>
         ) : null}
+
+        {/* MEH-1508 ch2 Phase B — gluten production-facility line. Plain text,
+            no badge / icon / checkmark (MEH-1259 self-declaration pattern, NOT
+            the MEH-1087 verified pattern — a checkmark would imply a certificate).
+            Renders ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
+        {producer.gluten_free_facility === "shared" && (
+          <p
+            className="text-xs text-fg-muted leading-relaxed max-w-prose"
+            data-testid="gluten-facility-shared"
+          >
+            {t("producer.detail.header.gluten_facility.shared")}
+          </p>
+        )}
+        {producer.gluten_free_facility === "dedicated" && (
+          <p
+            className="text-xs text-fg-muted leading-relaxed max-w-prose"
+            data-testid="gluten-facility-dedicated"
+          >
+            {t("producer.detail.header.gluten_facility.dedicated")}
+          </p>
+        )}
       </div>
 
       {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
@@ -171,32 +298,60 @@ export default function ProducerHeader({
         </p>
       )}
 
-      {/* Quiet actions row (MEH-1334): שמירה · שיתוף-on-desktop.
-          Desktop: absolutely pinned to the title row's inline-end. MEH-1363
-          (decision A, MEH-1362): FollowButton removed — the heart is the single
-          interest control; its toast promised updates that were never wired.
-          Mobile share lives in the hero overlay only (decision 6), hence
-          hidden lg:inline-flex.
-          MEH-1411: after the FollowButton removal the mobile row was a lone
-          heart under a full-width hairline — a framed orphan. Collapsed the
-          hairline (border-t + lg:border-t-0 dropped) and tightened the top
-          margin (mt-3 → mt-2) so the שמירה heart folds quietly into the end of
-          the meta cluster instead of reading as a separate toolbar strip. The
-          44px tap target + aria-pressed live in FavoriteButton (variant="quiet")
-          and are unchanged; desktop still absolute-pins to the title row. */}
-      <div className="flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0">
-        <FavoriteButton producerId={producer.id} producerName={producer.name} variant="quiet" />
-        <span className="hidden lg:inline-flex">
-          <ShareButton
-            variant="quiet"
-            url={shareUrl}
-            title={producer.name}
-            description={producer.description}
-            city={producer.city}
-            category={primaryCategory?.name}
-          />
-        </span>
+      {/* Quiet actions row (MEH-1334): שמירה · שיתוף. DESKTOP ONLY.
+          Desktop: absolutely pinned to the title row's inline-end, two labeled
+          actions. MEH-1363 (decision A, MEH-1362): FollowButton removed — the
+          heart is the single interest control.
+          MEH-1693: the row no longer renders below lg. Mobile's heart moved up
+          to the hero overlay beside the share circle (ImageGallery), which is
+          an explicit override of MEH-1334 decision 6 — that decision pulled the
+          heart OFF the hero to avoid a ❤️-hero/עקבו-row duplication, and the
+          duplication died with the mobile row. This also retires MEH-1411's
+          lone-heart problem by removing the surface it lived on. The share
+          child's own `hidden lg:inline-flex` wrapper went with it: redundant
+          once the row itself is desktop-only, and misleading to the next
+          reader. 44px tap target + aria-pressed still live in FavoriteButton. */}
+      <div className="hidden lg:flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0">
+        <FavoriteButton
+          producerId={producer.id}
+          producerName={producer.name}
+          variant="quiet"
+          onFavorited={onOpenAlerts}
+        />
+        <ShareButton
+          variant="quiet"
+          url={shareUrl}
+          title={producer.name}
+          description={producer.description}
+          city={producer.city}
+          category={primaryCategory?.name}
+        />
       </div>
+
+      {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what
+          opens it. It sits OUTSIDE the actions row, in normal flow: the row is
+          `lg:absolute`-pinned to the title's inline-end, so a block panel
+          inside it would be pinned too — the exact layout break MEH-1334 cited
+          when it suppressed the auto-open panel for variant="quiet". It is
+          ALSO outside the hero overlay, which is why the mobile hero heart can
+          reuse it instead of needing a second mount. One panel, both hearts,
+          both viewports.
+
+          TRADE-OFF (conscious, MEH-1693 §4): retiring the bell gives up the
+          RE-ENTRY case MEH-1609 existed for — editing alert prefs on a later
+          visit, when no save is happening. That path now lives on /favorites
+          (per-card bell). Accepted so the ask lands at the moment of interest
+          rather than before it. Restoring re-entry here means a new control,
+          not a revert of this wiring. */}
+      {showAlerts && alertsOpen && (
+        <div className="mt-3" data-testid="alerts-reentry-panel">
+          <AlertPrefsPanel
+            producerId={producer.id}
+            producerName={producer.name}
+            onClose={onCloseAlerts}
+          />
+        </div>
+      )}
 
       {/* MEH-291 — full_this_week banner (response-time hint, not a closure
           signal; kept per decision 4 alongside the closed status text).

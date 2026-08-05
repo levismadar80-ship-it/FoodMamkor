@@ -3,9 +3,14 @@
 # Exit 2 = block. Fail-closed if jq missing (deny by default for safety).
 #
 # Allowlist (per Linear MEH-397):
-#   github.com, anthropic.com, npmjs.com, pypi.org,
+#   github.com, anthropic.com, claude.com, npmjs.com, pypi.org,
 #   mehamakor.online (incl. staging.mehamakor.online),
-#   vercel.com, railway.app
+#   vercel.com, railway.app, developers.google.com, cloudinary.com,
+#   w3.org, developer.mozilla.org
+# MEH-1798 (item 3 of docs/guardrails/meh-1779-permissions.patch.md):
+#   five documentation hosts added. Matching is host-only, never path —
+#   cloudinary.com/documentation is only expressible as all of cloudinary.com.
+#   claude.com is NOT covered by anthropic.com; it needs its own entry.
 # Subdomain wildcards permitted (api.github.com, docs.anthropic.com, etc.).
 
 set -u
@@ -49,8 +54,13 @@ case "$host" in
   mehamakor.online|*.mehamakor.online) exit 0 ;;
   vercel.com|*.vercel.com) exit 0 ;;
   railway.app|*.railway.app) exit 0 ;;
+  developers.google.com) exit 0 ;;
+  claude.com|*.claude.com) exit 0 ;;
+  cloudinary.com|*.cloudinary.com) exit 0 ;;
+  w3.org|*.w3.org) exit 0 ;;
+  developer.mozilla.org) exit 0 ;;
 esac
 
 echo "WebFetch denied: host '$host' not in MEH-397 allowlist." >&2
-echo "Allowlist: github.com, anthropic.com, npmjs.com, pypi.org, mehamakor.online, vercel.com, railway.app (+ subdomains)." >&2
+echo "Allowlist: github.com, anthropic.com, claude.com, npmjs.com, pypi.org, mehamakor.online, vercel.com, railway.app, developers.google.com, cloudinary.com, w3.org, developer.mozilla.org (+ subdomains)." >&2
 exit 2

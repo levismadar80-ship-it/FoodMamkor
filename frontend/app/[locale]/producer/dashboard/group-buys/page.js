@@ -1,8 +1,7 @@
 "use client";
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
@@ -14,9 +13,12 @@ import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import CitySearch from "@/components/CitySearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+// MEH-999: shared back link — one owner for target + arrow direction.
+import BackLink from "@/components/ui/BackLink";
 
 const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700 border-blue-200",
@@ -40,6 +42,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     max_participants: "",
     deadline: "",
     city: producerCity || "",
+    fulfillment_note: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -97,6 +100,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             label={`${t("title_label")}${t("required_marker")}`}
             value={form.title}
             onChange={set("title")}
+            placeholder={t("title_placeholder")}
             required
             dir="rtl"
           />
@@ -107,6 +111,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           <textarea
             value={form.description}
             onChange={set("description")}
+            placeholder={t("description_placeholder")}
             rows={2}
             className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
             dir="rtl"
@@ -117,6 +122,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           label={`${t("product_name_label")}${t("required_marker")}`}
           value={form.product_name}
           onChange={set("product_name")}
+          placeholder={t("product_name_placeholder")}
           required
           dir="rtl"
         />
@@ -170,6 +176,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           min={2}
           value={form.min_participants}
           onChange={set("min_participants")}
+          placeholder={t("min_placeholder")}
           required
           dir="ltr"
         />
@@ -179,6 +186,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           min={2}
           value={form.max_participants}
           onChange={set("max_participants")}
+          placeholder={t("max_placeholder")}
           dir="ltr"
         />
 
@@ -193,12 +201,33 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           helperText={t("deadline_helper")}
           dir="ltr"
         />
-        <Input
+        {/* MEH-1455: canonical CitySearch (was a free-text Input) — a group
+            created with a canonical city name is findable under the /group-buys
+            city filter (exact-match `GroupBuy.city == city`). Prefill from
+            producerCity kept; free typing still allowed (CitySearch default). */}
+        <CitySearch
+          id="gb-city"
           label={t("city_label")}
+          labelVisible
           value={form.city}
-          onChange={set("city")}
-          dir="rtl"
+          onChange={(val) => setForm({ ...form, city: val })}
         />
+
+        {/* MEH-1457: optional "מתי ואיך מקבלים" — free text (OFN "Ready for"). */}
+        <div className="sm:col-span-2">
+          <label htmlFor="gb-fulfillment" className="block text-sm font-medium mb-1">
+            {t("fulfillment_label")}
+          </label>
+          <textarea
+            id="gb-fulfillment"
+            value={form.fulfillment_note}
+            onChange={set("fulfillment_note")}
+            placeholder={t("fulfillment_placeholder")}
+            rows={2}
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
+            dir="rtl"
+          />
+        </div>
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
@@ -283,11 +312,12 @@ export default function ProducerGroupBuysPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
+      {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
+          when the button unmounts. */}
+      <div className="flex items-center justify-between mb-6 min-h-[44px]">
         <div>
-          <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            {t("back")}
-          </Link>
+          {/* MEH-999: entered from the Tools tab (tools/page.js:92). */}
+          <BackLink href="/producer/dashboard/tools" label={t("back")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
@@ -297,28 +327,36 @@ export default function ProducerGroupBuysPage() {
         {/* MEH-1420: hide the header toggle in the approved empty state so the
             EmptyState CTA is the single create entry point (mirrors MEH-1097 F14
             in recipes/page.js:85). The button returns once a group exists, or
-            while the form is open (rendering as "close"). notApproved is the
-            exception — keep the disabled button + aria-describedby hint
-            (MEH-1350 / MEH-1165): EmptyState self-hides its CTA there, so hiding
-            the header button too would orphan the hint's aria-describedby target
-            and leave zero affordance. */}
-        {!(items?.length === 0 && !showForm && !notApproved) && (
+            while the form is open (rendering as "close"). MEH-1655: also hidden
+            while loading (items === null) — it used to render then jump to the
+            EmptyState CTA on an empty result.
+            MEH-1709: notApproved is no longer the exception that kept a
+            *disabled* button + a separate aria-describedby hint (MEH-1350 /
+            MEH-1165). A muted control that does nothing is the only thing that
+            looks pressable on that screen (NN/g). The button is now absent
+            while unapproved, and the why-locked string moved into the
+            EmptyState description below — so the explanation still has a
+            home and nothing on screen invites a dead press. */}
+        {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            disabled={notApproved}
-            aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
-            className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>
         )}
       </div>
 
-      {/* MEH-1165: why-locked hint, aria-describedby-linked so it's announced
-          (availability-card idiom, dashboard/page.js:457-461). */}
-      {notApproved && (
+      {/* MEH-1165: why-locked hint (availability-card idiom,
+          dashboard/page.js:457-461).
+          MEH-1709: only when the list is NON-empty. In the empty state the same
+          string is now the EmptyState description, and rendering both would say
+          it twice. The `id` is gone with the button that pointed at it — the
+          aria-describedby target had exactly one consumer (grep: this file
+          only). This branch is the suspended-with-existing-groups case: no
+          create affordance, but the reason still has to be on screen. */}
+      {notApproved && items !== null && items.length > 0 && (
         <p
-          id="group-buy-approval-hint"
           data-testid="group-buy-approval-hint"
           className="text-xs text-fg-muted -mt-3 mb-6"
         >
@@ -347,10 +385,17 @@ export default function ProducerGroupBuysPage() {
           <EmptyState
             icon={ShoppingCart}
             title={t("empty_title")}
-            description={t("empty_description")}
-            ctaLabel={t("empty_cta")}
-            // MEH-1165: no CTA while unapproved — EmptyState self-hides the
-            // button when the handler is absent; the hint above carries why.
+            // MEH-1709: while unapproved the description IS the why-locked
+            // string — one region, one explanation, one (absent) affordance.
+            // Structural only: both strings already exist, neither is reworded
+            // here. The title still reads as a value proposition rather than a
+            // state; that is the copy convention MEH-1710 locks and MEH-1630
+            // applies, deliberately out of scope for this fix.
+            description={notApproved ? t("approval_required_hint") : t("empty_description")}
+            // MEH-1165 / MEH-1709: no CTA while unapproved — both props drop,
+            // so EmptyState renders no button at all (ctaLabel && (ctaHref ||
+            // ctaOnClick)).
+            ctaLabel={notApproved ? undefined : t("empty_cta")}
             ctaOnClick={notApproved ? undefined : () => setShowForm(true)}
           />
         )

@@ -99,16 +99,26 @@ describe("MEH-1315 retry-once guard", () => {
     expect(localStorage.getItem("token")).toBe("new-token");
   });
 
-  it("failed refresh unchanged: 401 → refresh-401 expires session without retrying", async () => {
-    installAdapter({ refreshResult: "fail", protectedScript: ["401"] });
+  it("failed refresh: 401 → refresh-401 expires session, one anonymous retry, no refresh loop", async () => {
+    installAdapter({ refreshResult: "fail", protectedScript: ["401", "401"] });
 
     await expect(api.get("/auth/me")).rejects.toMatchObject({
       response: { status: 401 },
     });
 
+    // MEH-1315's invariant — the reason this test exists — is unchanged and
+    // still the load-bearing assertion: a failed refresh must never lead to
+    // another refresh.
     expect(refreshCalls).toHaveLength(1);
-    expect(protectedCalls).toHaveLength(1); // no retry after failed refresh
     expect(expiredEvents).toBe(1);
+
+    // MEH-1627 changed the count below from 1 to 2, deliberately. The extra
+    // call is the credential-free replay (a guest with a stale token should
+    // still see a public resource), NOT an authenticated retry — which is
+    // what the header assertion below pins. It terminates: the replay carries
+    // _retry, so its own 401 rejects rather than refreshing again.
+    expect(protectedCalls).toHaveLength(2);
+    expect(protectedCalls[1].headers.Authorization).toBeUndefined();
   });
 
   it("SKIP_REFRESH unchanged: 401 on /auth/login never triggers refresh", async () => {
@@ -120,5 +130,85 @@ describe("MEH-1315 retry-once guard", () => {
 
     expect(refreshCalls).toHaveLength(0);
     expect(expiredEvents).toBe(0);
+  });
+});
+
+/**
+ * MEH-1627 — the backend now propagates a 401 for a present-but-invalid
+ * Bearer token instead of silently treating the caller as anonymous. These
+ * pin the two frontend halves of that contract.
+ */
+describe("MEH-1627 anonymous retry after failed refresh", () => {
+  it("GET: failed refresh → exactly one retry, sent WITHOUT Authorization", async () => {
+    // Guest with a stale localStorage token hitting a public resource:
+    // the refresh fails (no valid refresh cookie), but the page itself
+    // renders fine anonymously — so the retry must actually succeed.
+    installAdapter({ refreshResult: "fail", protectedScript: ["401", "200"] });
+
+    const res = await api.get("/producers");
+
+    expect(res.data).toEqual({ ok: true });
+    expect(refreshCalls).toHaveLength(1);
+    expect(protectedCalls).toHaveLength(2); // original + one anonymous retry
+    // The whole point: the replay carries no credentials.
+    expect(protectedCalls[1].headers.Authorization).toBeUndefined();
+    expect(protectedCalls[1]._noAuth).toBe(true);
+    // Session still expired — the toast fires exactly once, not twice.
+    expect(expiredEvents).toBe(1);
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("GET: anonymous retry that also 401s rejects without a second refresh", async () => {
+    installAdapter({ refreshResult: "fail", protectedScript: ["401", "401"] });
+
+    await expect(api.get("/producers")).rejects.toMatchObject({
+      response: { status: 401 },
+    });
+
+    expect(refreshCalls).toHaveLength(1); // no refresh loop
+    expect(protectedCalls).toHaveLength(2); // no retry loop
+    expect(expiredEvents).toBe(1); // _noAuth suppresses the duplicate
+  });
+
+  it("POST: failed refresh does NOT retry without auth", async () => {
+    // Blocked by design. POST /auth/register/producer replayed without a
+    // Bearer takes the anonymous-registration branch and 422s on the
+    // absent email — re-creating MEH-1627's original bug behind a
+    // success-shaped code path.
+    installAdapter({ refreshResult: "fail", protectedScript: ["401", "200"] });
+
+    await expect(api.post("/home-products", { name: "x" })).rejects.toMatchObject(
+      { response: { status: 401 } }
+    );
+
+    expect(refreshCalls).toHaveLength(1);
+    expect(protectedCalls).toHaveLength(1); // original only — no replay
+    expect(expiredEvents).toBe(1);
+  });
+
+  it("POST /auth/register/producer is no longer skipped: 401 triggers refresh + retry", async () => {
+    // The launch blocker. Both "/auth/register" and
+    // "/auth/register/producer" prefix-match SKIP_REFRESH, so before
+    // MEH-1627 the expired-token upgrade never got a refresh at all.
+    installAdapter({ protectedScript: ["401", "200"] });
+
+    const res = await api.post("/auth/register/producer", { producer_name: "x" });
+
+    expect(res.data).toEqual({ ok: true });
+    expect(refreshCalls).toHaveLength(1);
+    expect(protectedCalls).toHaveLength(2); // original + authenticated replay
+    expect(expiredEvents).toBe(0); // refresh succeeded — session intact
+  });
+
+  it("POST /auth/register/producer/oauth stays skipped (exact match, not prefix)", async () => {
+    // A different endpoint that takes no optional auth; un-skipping it
+    // would be collateral damage from a prefix match.
+    installAdapter({ protectedScript: [] });
+
+    await expect(
+      api.post("/auth/register/producer/oauth", {})
+    ).rejects.toMatchObject({ response: { status: 401 } });
+
+    expect(refreshCalls).toHaveLength(0);
   });
 });

@@ -6,28 +6,37 @@ name: VRT baseline update
 # chromium): dev machines (Windows) and the CC sandbox render different font
 # stacks, so locally-generated baselines would red-line every CI comparison.
 #
-# Triggers:
-# - workflow_dispatch on a feature branch (when a token with actions:write
-#   is available — the GitHub MCP integration in CC sessions is not).
-# - push to a feature branch touching e2e/visual/** or this file — the
-#   self-service path: any change to the VRT spec/css regenerates baselines
-#   for that branch automatically. The actor guard below stops the bot's
-#   own baseline commit from re-triggering the workflow (self-loop).
-# It never runs on a schedule and never pushes to staging/main — it commits
-# to the ref it ran on, and both protected branches reject direct pushes at
-# the ruleset level anyway (post-merge pushes to staging are filtered out
-# by branches-ignore).
+# Trigger: workflow_dispatch ONLY (manual). MEH-1496 removed the push
+# auto-fire (on.push on e2e/visual/** or this file): it regenerated EVERY
+# route's baseline and committed each changed one, so a targeted regen of a
+# single route (e.g. /map) also rewrote the deliberately-frozen home baseline
+# (MEH-1450 Phase 0; PR #2102 hit exactly this and merged the frozen home
+# baseline to staging). The optional `route` dispatch input (--grep) scopes a
+# run to one baseline; empty input keeps the full regen. Dispatch needs a token
+# with actions:write (the GitHub MCP integration in CC sessions does not have
+# it — run it from the Actions tab / gh CLI on a feature branch).
+# It never runs on a schedule and never pushes to staging/main — it commits to
+# the ref it ran on, and both protected branches reject direct pushes at the
+# ruleset level anyway.
+#
+# MEH-1705: DISPATCH THIS AGAINST THE FEATURE BRANCH, NEVER staging/main. The
+# sentence above describes the design; it did not stop four dispatches against
+# staging that regenerated every baseline and then died at the commit step with
+# nothing saved. The first job step now rejects a protected ref up front with
+# the correct usage, so the failure names itself instead of looking transient.
 #
 # Build/start steps mirror e2e.yml (MEH-1044 localhost target) — keep the
 # two in sync when the server strategy changes.
 
 on:
+  # MEH-1496: manual dispatch ONLY. `route` scopes the regen to a single
+  # baseline via Playwright --grep (empty = every route, the prior behavior).
   workflow_dispatch:
-  push:
-    branches-ignore: [staging, main]
-    paths:
-      - "frontend/e2e/visual/**"
-      - ".github/workflows/vrt-update.yml"
+    inputs:
+      route:
+        description: 'Playwright --grep pattern (ריק = כל ה-routes)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -45,12 +54,37 @@ jobs:
     if: github.actor != 'github-actions[bot]'
 
     steps:
+      # MEH-1705: fail FAST on a protected ref. This job regenerates baselines
+      # and then commits them back to the ref it ran on — but `protect-staging`
+      # (and the main ruleset) reject direct pushes, so a dispatch against
+      # staging/main regenerates the images and then throws them away at the
+      # commit step. That failure lands ~90s in, at the LAST step, and reads
+      # like a transient CI fault rather than a usage error; it produced four
+      # wasted dispatches (30301613939, 30212779646, 30212224342, 30211514753)
+      # against staging while every feature-branch dispatch succeeded. The
+      # header above already said "never pushes to staging/main" — prose alone
+      # did not stop it, so this is the mechanism (MEH-271: mechanism > memory).
+      - name: Reject dispatch against a protected branch
+        if: github.ref_name == 'staging' || github.ref_name == 'main'
+        run: |
+          echo "::error title=Dispatch this against the feature branch, not ${{ github.ref_name }}::VRT baselines are committed back to the ref the run was launched from, and '${{ github.ref_name }}' rejects direct pushes at the ruleset level. This run would regenerate every baseline and then fail at 'Commit updated baselines' with nothing saved."
+          echo ""
+          echo "  Correct usage:  Actions -> VRT baseline update -> Run workflow"
+          echo "                  Branch: the FEATURE branch whose PR is red"
+          echo "                  route:  the single baseline to regen (e.g. home)"
+          echo ""
+          echo "  The baselines land as a commit on that branch. Because the bot"
+          echo "  pushes with GITHUB_TOKEN, no workflow re-runs on it — push a"
+          echo "  follow-up commit as yourself to re-trigger the gates"
+          echo "  (MEH-1112/1113)."
+          exit 1
+
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: "npm"
@@ -78,6 +112,16 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: "1"
           NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          # MEH-1778 follow-up: e2e.yml gained this var so the GSI script
+          # actually loads in CI; this file did not, and the header above
+          # ("Build/start steps mirror e2e.yml — keep the two in sync") is
+          # exactly the contract that was broken. The cost was a silent no-op:
+          # without the client id, LoginClient.jsx:111-113 and
+          # RegisterClient.jsx:195 render no OAuth section, so a regen produced
+          # baselines byte-identical to the stale ones and the commit step
+          # reported "Baselines unchanged — nothing to commit" with a GREEN run.
+          # A regen that cannot regenerate is the MEH-1778 defect in a new file.
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
       - name: Start Next.js server (background)
         run: |
@@ -102,7 +146,15 @@ jobs:
           exit 1
 
       - name: Regenerate baselines
-        run: npx playwright test e2e/visual --update-snapshots
+        # MEH-1496: scope to one route when `route` is set (e.g. "map" or
+        # "producer detail"); empty input regenerates every baseline. PR #2102
+        # added the input but left this step unscoped — the input was dead.
+        run: |
+          if [ -n "${{ inputs.route }}" ]; then
+            npx playwright test e2e/visual --update-snapshots --grep "${{ inputs.route }}"
+          else
+            npx playwright test e2e/visual --update-snapshots
+          fi
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000

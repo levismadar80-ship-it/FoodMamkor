@@ -101,7 +101,6 @@ export default function GroupBuyDetailClient({ id }) {
   const [gb, setGb] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
@@ -135,10 +134,6 @@ export default function GroupBuyDetailClient({ id }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  useEffect(() => {
-    if (user?.phone && !phone) setPhone(user.phone);
-  }, [user]);
-
   const handleCommit = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -149,9 +144,9 @@ export default function GroupBuyDetailClient({ id }) {
     setSubmitting(true);
     try {
       // MEH-975: send a schema-valid quantity (1–100) regardless of input state.
+      // MEH-1651: no phone in the payload — the field is no longer collected.
       await api.post(`/group-buys/${id}/commit`, {
         quantity: clampQuantity(quantity),
-        phone: phone || undefined,
       });
       await load();
       if (gb?.status === "funded" || prevStatusRef.current === "funded") {
@@ -315,14 +310,23 @@ export default function GroupBuyDetailClient({ id }) {
             <p className="text-xs text-fg-muted mt-1">
               {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
+            {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
+            {gb.fulfillment_note && (
+              <p className="text-xs text-text mt-1 whitespace-pre-line">
+                <span className="font-medium">{t("fulfillment_prefix")}</span>
+                {gb.fulfillment_note}
+              </p>
+            )}
           </div>
 
           {/* Commit form */}
           {open && !expired && !gb.user_committed && (
             <form onSubmit={handleCommit} className="space-y-4">
-              {/* MEH-1145 Wave E2: number + phone fields → ui/Input; the clamp-on-
-                  blur and the ltr end-anchored digits (a text-align via className,
-                  not a physical inset) pass through ...rest + className unchanged. */}
+              {/* MEH-1145 Wave E2: number field → ui/Input; the clamp-on-blur and
+                  the ltr end-anchored digits (a text-align via className, not a
+                  physical inset) pass through ...rest + className unchanged.
+                  MEH-1651: the phone field that sat below was removed — it asked
+                  for a number nothing read and implied a callback nobody made. */}
               <Input
                 type="number"
                 label={t("quantity_label")}
@@ -331,14 +335,13 @@ export default function GroupBuyDetailClient({ id }) {
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
+                // rtl-ok — dir="ltr" numeric quantity: physical right IS the
+                // inline start of an LTR field inside the RTL form. Same
+                // documented exception as the licence number in
+                // RegisterProducerClient.jsx:815. MEH-1721 P7 filed this under
+                // F-1 (locale-breaking); it belongs in F-5 (correct use, marker
+                // missing) — swapping to text-start would misalign it.
                 className="text-right"
-                dir="ltr"
-              />
-              <Input
-                label={t("phone_label")}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder={t("phone_placeholder")}
                 dir="ltr"
               />
               {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}

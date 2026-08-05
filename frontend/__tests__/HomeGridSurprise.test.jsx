@@ -1,0 +1,114 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { HomeHero } from "@/app/[locale]/home/HomeHero";
+import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
+
+// MEH-1812: HomeHero now mounts EnSearchNotice, which calls useLocale() and
+// pulls in LanguageToggle -> @/i18n/navigation. This spec covers HomeHero's own
+// behaviour, so the notice is stubbed out rather than dragging the i18n
+// navigation stack into it. Its own contract is asserted in
+// __tests__/EnSearchNotice.test.jsx, including the /he absence case.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
+
+
+// MEH-1476 — "הפתיעו אותי" surprise-me button relocated from the hero to the
+// producers-grid end (was MEH-1288/MEH-1369, a text link beside "how it works").
+// It now sits near "load more" as a secondary outline pill:
+//  A) the hero no longer renders it (only near-me + how-it-works remain)
+//  B) the grid renders it only when hasProducers (empty catalog → no button)
+//  C) clicking it calls onSurprise (navigate to a random approved producer)
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k),
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
+}));
+vi.mock("framer-motion", () => {
+  const strip = ({ children, initial, animate, whileInView, viewport, transition, ...p }, Tag) => (
+    <Tag {...p}>{children}</Tag>
+  );
+  return {
+    MotionConfig: ({ children }) => <>{children}</>,
+    motion: {
+      div: (props) => strip(props, "div"),
+      h1: (props) => strip(props, "h1"),
+      p: (props) => strip(props, "p"),
+    },
+  };
+});
+vi.mock("@/components/HeroSearch", () => ({ default: () => <div data-testid="hero-search" /> }));
+vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: () => "https://img/hero.jpg" }));
+vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
+vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
+vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
+vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
+// MEH-1774: this suite pulls use-home-page transitively (HomeProducersGrid
+// imports LOAD_MORE_CAP from it), and that module now imports the locale-aware
+// router. Stub it so next-intl's ESM createNavigation never loads under vitest.
+vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+
+const heroProps = {
+  fridayMode: false,
+  geoLoading: false,
+  onNearMe: vi.fn(),
+  onScrollDown: vi.fn(),
+};
+
+const gridProps = {
+  producers: [],
+  producersLoading: false,
+  visibleProducers: [],
+  hasMore: false,
+  visibleCount: 8,
+  filters: { category: "", delivery_city: "", has_delivery: false },
+  chips: {},
+  categories: [],
+  showNewUserHint: false,
+  fridayMode: false,
+  step0Visible: false,
+  onboardStep: -1,
+  onboardAdvance: () => {},
+  onboardDismiss: () => {},
+  onAdvanceFromStep0: () => {},
+  onChipNavigate: () => {},
+  onClearCategory: () => {},
+  onClearLocation: () => {},
+  onLoadMore: () => {},
+  onSurprise: vi.fn(),
+  hasProducers: true,
+  geoActive: false,
+  cityActive: false,
+  geoEmptyNotice: false,
+};
+
+describe("HomeHero (MEH-1476 — surprise-me removed)", () => {
+  // MEH-1690: "how it works" left the hero zone entirely (it lives only in the
+  // HomeStaticBlocks section it used to scroll to), so this no longer asserts
+  // its presence. near-me is still the thing MEH-1476 was protecting.
+  it("no longer renders the surprise-me button; keeps near-me", () => {
+    render(<HomeHero {...heroProps} />);
+    expect(screen.queryByText("home.hero.surprise_me")).not.toBeInTheDocument();
+    expect(screen.getByText("home.hero.near_me")).toBeInTheDocument();
+    expect(screen.queryByText("home.hero.how_it_works")).not.toBeInTheDocument();
+  });
+});
+
+describe("HomeProducersGrid surprise-me button (MEH-1476)", () => {
+  it("renders the button at the grid end when hasProducers is true", () => {
+    render(<HomeProducersGrid {...gridProps} />);
+    expect(screen.getByText("home.hero.surprise_me")).toBeInTheDocument();
+  });
+
+  it("does NOT render the button when hasProducers is false (empty catalog)", () => {
+    render(<HomeProducersGrid {...gridProps} hasProducers={false} />);
+    expect(screen.queryByText("home.hero.surprise_me")).not.toBeInTheDocument();
+  });
+
+  it("calls onSurprise on click", () => {
+    const onSurprise = vi.fn();
+    render(<HomeProducersGrid {...gridProps} onSurprise={onSurprise} />);
+    fireEvent.click(screen.getByText("home.hero.surprise_me"));
+    expect(onSurprise).toHaveBeenCalledTimes(1);
+  });
+});

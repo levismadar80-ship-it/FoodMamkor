@@ -19,6 +19,7 @@ erDiagram
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
     producers ||--o{ delivery_areas : "delivers_to"
+    producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
     categories ||--o{ producer_categories : ""
 
     users {
@@ -41,6 +42,7 @@ erDiagram
         uuid id PK
         string name
         string slug UK "nullable"
+        string google_place_id "nullable — MEH-1490 admin map; only Google datum stored"
         string description
         string city
         string address "nullable — MEH-829, VARCHAR(255); collected at register"
@@ -71,6 +73,12 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
+        integer delivery_fee "nullable — MEH-1577, whole shekels; 0 is a VALUE (משלוח חינם), NULL = not stated; INTEGER to match delivery_areas.min_order, app-validated >= 0, no DB CHECK"
+        integer free_delivery_above "nullable — MEH-1577, whole shekels; app-validated > 0 (0 rejected — unlike delivery_fee); independent of delivery_fee, renders alone"
+        string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
+        string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
+        timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
     }
 
     categories {
@@ -90,6 +98,7 @@ erDiagram
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
+        boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
     }
 
@@ -99,6 +108,20 @@ erDiagram
         string city
         int min_order
         string delivery_day
+    }
+
+    producer_offers {
+        uuid id PK
+        uuid producer_id FK "CASCADE"
+        text offer_type "MEH-1823/1898: CHECK free_delivery_above|gift_above|first_order|pickup_discount|custom"
+        int threshold_value "nullable; CHECK > 0 when stated — 'over 0' is unconditional, which NULL already spells"
+        text threshold_unit "nullable; CHECK ils|units|liters|kg. Both-or-neither with threshold_value — this is why a litres threshold is expressible at all, producers.free_delivery_above being INTEGER shekels"
+        text headline "nullable; app-capped at 60 in chunk 2"
+        date starts_at "nullable = active now; CHECK expires_at > starts_at when given"
+        date expires_at "NOT NULL — expiry is mandatory; an offer that cannot expire is a permanent discount nobody decided to give"
+        boolean is_active "default true; UNIQUE partial index on (producer_id) WHERE is_active = at most one active offer per business. Inactive rows persist as history"
+        timestamp created_at
+        timestamp updated_at
     }
 
     favorites {

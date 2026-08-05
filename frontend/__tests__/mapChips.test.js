@@ -2,9 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
-  QUICK_CHIP_KEYS,
-  countActiveSheetOnlyFilters,
   resolveCategoryId,
+  resolveCategoryIds,
   chipStateToParams,
   boundsToCenterRadius,
 } from "@/lib/map-chips";
@@ -71,13 +70,16 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(keys).not.toContain("organic");
   });
 
-  it("MEH-1087: kosher is a sheet-only quality chip with the locked label", () => {
+  it("MEH-1087: kosher is a quality-group toggle with the locked label", () => {
     const kosher = TOGGLE_CHIPS.find((c) => c.key === "kosher");
     expect(kosher).toMatchObject({ label: "כשרות מאומתת", group: "quality" });
-    // Sheet-only: must not sit in the inline quick-chip row.
-    expect(QUICK_CHIP_KEYS).not.toContain("kosher");
-    // Counts toward the "סינון" badge (sheet-only active).
-    expect(countActiveSheetOnlyFilters({ kosher: true })).toBe(1);
+  });
+
+  // MEH-1468: pickup is not a producer toggle filter (it's a map-layer toggle).
+  // Preserved from the retired MEH-1461 quick-row test — the sole assertion in it
+  // that was independent of the now-deleted QUICK_CHIP_KEYS.
+  it("no pickup toggle exists in TOGGLE_CHIPS", () => {
+    expect(TOGGLE_CHIPS.some((c) => /pickup/.test(c.key))).toBe(false);
   });
 });
 
@@ -109,60 +111,136 @@ describe("resolveCategoryId", () => {
   });
 });
 
+// MEH-1465 Chunk A: an aggregate chip maps to ALL its matched DB ids, not just
+// the first. This is the OR-across-matches fix — resolveCategoryId (first-match)
+// stays for the "does this chip match anything?" visibility check in useMapFilters.
+describe("resolveCategoryIds", () => {
+  it("returns [] for 'all' (no matches array)", () => {
+    const all = CATEGORY_CHIPS.find((c) => c.key === "all");
+    expect(resolveCategoryIds(all, dbCategories)).toEqual([]);
+  });
+
+  it("returns EVERY matched id when the DB carries several of the chip's names", () => {
+    const meat = CATEGORY_CHIPS.find((c) => c.key === "meat");
+    // meat.matches = [בשר ועוף, בשר, דגים, בשר ודגים, בשר, עוף ודגים].
+    const db = [
+      { id: 1, name: "בשר ועוף", emoji: "🥩" },
+      { id: 5, name: "דגים", emoji: "🐟" },
+      { id: 9, name: "חלב וגבינות", emoji: "🥛" }, // unrelated — excluded
+    ];
+    expect(resolveCategoryIds(meat, db)).toEqual([1, 5]);
+  });
+
+  it("returns the single id when only one name matches", () => {
+    const dairy = CATEGORY_CHIPS.find((c) => c.key === "dairy");
+    expect(resolveCategoryIds(dairy, dbCategories)).toEqual([3]);
+  });
+
+  it("returns [] when no candidate matches / chip is nullish", () => {
+    const meat = CATEGORY_CHIPS.find((c) => c.key === "meat");
+    expect(resolveCategoryIds(meat, [])).toEqual([]);
+    expect(resolveCategoryIds(null, dbCategories)).toEqual([]);
+    expect(resolveCategoryIds(undefined, dbCategories)).toEqual([]);
+  });
+});
+
 describe("chipStateToParams", () => {
   it("returns {} for the default 'all' state", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "all", organic: false, has_delivery: false },
+        { categoryKeys: [], organic: false, has_delivery: false },
         dbCategories,
       ),
     ).toEqual({});
   });
 
-  it("maps a category chip to {category: <id>}", () => {
+  it("maps a category chip to {category: [<ids>]} — always a list (MEH-1465)", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "dairy", organic: false, has_delivery: false },
+        { categoryKeys: ["dairy"], organic: false, has_delivery: false },
         dbCategories,
       ),
-    ).toEqual({ category: 3 });
+    ).toEqual({ category: [3] });
+  });
+
+  it("MEH-1465: an aggregate chip emits ALL its matched ids (OR-across-matches)", () => {
+    const db = [
+      { id: 1, name: "בשר ועוף", emoji: "🥩" },
+      { id: 5, name: "דגים", emoji: "🐟" },
+      { id: 2, name: "ירקות ופירות", emoji: "🥬" },
+    ];
+    expect(
+      chipStateToParams(
+        { categoryKeys: ["meat"], organic: false, has_delivery: false },
+        db,
+      ),
+    ).toEqual({ category: [1, 5] });
   });
 
   it("ignores a category chip whose match isn't in the DB", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "meat", organic: false, has_delivery: false },
+        { categoryKeys: ["meat"], organic: false, has_delivery: false },
         [], // empty DB → no match
       ),
     ).toEqual({});
+  });
+
+  it("MEH-1465: multi-select unions the ids of ALL selected chips", () => {
+    // dairy → [3], bread → [4]; the OR union is [3, 4] (chip-array order).
+    expect(
+      chipStateToParams(
+        { categoryKeys: ["dairy", "bread"], organic: false, has_delivery: false },
+        dbCategories,
+      ),
+    ).toEqual({ category: [3, 4] });
+  });
+
+  it("MEH-1465: unions an aggregate chip's ids with a single-id chip", () => {
+    const db = [
+      { id: 1, name: "בשר ועוף", emoji: "🥩" },
+      { id: 5, name: "דגים", emoji: "🐟" },
+      { id: 3, name: "חלב וגבינות", emoji: "🥛" },
+    ];
+    // meat → [1, 5], dairy → [3]; union preserves insertion order → [1, 5, 3].
+    expect(
+      chipStateToParams({ categoryKeys: ["meat", "dairy"] }, db),
+    ).toEqual({ category: [1, 5, 3] });
+  });
+
+  it("MEH-1465: dedups ids across the selection (Set union — defensive)", () => {
+    // A duplicated key must not double-emit its id.
+    expect(
+      chipStateToParams({ categoryKeys: ["dairy", "dairy"] }, dbCategories),
+    ).toEqual({ category: [3] });
   });
 
   it("composes category + grass_fed + delivery into one param object", () => {
     // MEH-1259: organic removed — grass_fed stands in as the quality toggle.
     expect(
       chipStateToParams(
-        { categoryKey: "produce", grass_fed: true, has_delivery: true },
+        { categoryKeys: ["produce"], grass_fed: true, has_delivery: true },
         dbCategories,
       ),
-    ).toEqual({ category: 2, grass_fed: true, has_delivery: true });
+    ).toEqual({ category: [2], grass_fed: true, has_delivery: true });
   });
 
   it("MEH-1087: kosher state maps to the verified-only ?kosher param", () => {
     expect(
-      chipStateToParams({ categoryKey: "all", kosher: true }, dbCategories),
+      chipStateToParams({ categoryKeys: [], kosher: true }, dbCategories),
     ).toEqual({ kosher: true });
   });
 
   it("MEH-1438: vegetarian state maps to the ?vegetarian param", () => {
     expect(
-      chipStateToParams({ categoryKey: "all", vegetarian: true }, dbCategories),
+      chipStateToParams({ categoryKeys: [], vegetarian: true }, dbCategories),
     ).toEqual({ vegetarian: true });
   });
 
   it("ignores a lingering organic state key (filter removed — MEH-1259)", () => {
     expect(
       chipStateToParams(
-        { categoryKey: "all", organic: true, has_delivery: false },
+        { categoryKeys: [], organic: true, has_delivery: false },
         dbCategories,
       ),
     ).toEqual({});
@@ -208,5 +286,24 @@ describe("boundsToCenterRadius", () => {
       west: 34,
     });
     expect(result.radius_km).toBe(0);
+  });
+});
+
+// MEH-1461: the /map pickup-layer toggle uses consumer language "איסוף עצמי",
+// never the data-model jargon "נקודות איסוף" / "נק' איסוף".
+describe("MEH-1461 — /map pickup-layer consumer copy", () => {
+  it('he: pickup_layer label is "איסוף עצמי", not the jargon "נקודות איסוף"', async () => {
+    const he = (await import("@/messages/he.json")).default;
+    const pl = he.map.pane.pickup_layer;
+    expect(pl.label).toBe("איסוף עצמי");
+    expect(pl.label).not.toContain("נקודות איסוף");
+    expect(pl.aria).not.toContain("נקודות איסוף");
+  });
+
+  it("en: pickup_layer label is the consumer term, not \"Pickup points\"", async () => {
+    const en = (await import("@/messages/en.json")).default;
+    const pl = en.map.pane.pickup_layer;
+    expect(pl.label).toBe("Self-pickup");
+    expect(pl.label).not.toContain("Pickup points");
   });
 });

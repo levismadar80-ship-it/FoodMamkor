@@ -22,6 +22,10 @@ vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
 vi.mock("@/components/OnboardingTip", () => ({ default: () => null }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
+// MEH-1774: this suite pulls use-home-page transitively (HomeProducersGrid
+// imports LOAD_MORE_CAP from it), and that module now imports the locale-aware
+// router. Stub it so next-intl's ESM createNavigation never loads under vitest.
+vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
 const baseProps = {
   producers: [],
@@ -38,7 +42,7 @@ const baseProps = {
   onboardAdvance: () => {},
   onboardDismiss: () => {},
   onAdvanceFromStep0: () => {},
-  onToggleChip: () => {},
+  onChipNavigate: () => {},
   onLoadMore: () => {},
 };
 
@@ -74,5 +78,46 @@ describe("HomeProducersGrid empty state (MEH-1085 DISC-07)", () => {
     const link = screen.getByText("home.producers.explore_map").closest("a");
     expect(link).toHaveAttribute("href", "/map");
     expect(screen.queryByText("home.producers.empty_heading_category")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1487: when a delivery_city filter returns 0 but the city belongs to a
+// region, the empty state is replaced by the region-fallback section.
+describe("HomeProducersGrid region fallback (MEH-1487)", () => {
+  it("region hit → fallback header + region producer cards, no generic empty state", () => {
+    render(
+      <HomeProducersGrid
+        {...baseProps}
+        filters={{ category: "", delivery_city: "אריאל", has_delivery: false }}
+        onClearCategory={() => {}}
+        regionFallback={{
+          regionName: "השרון",
+          producers: [{ id: "a" }, { id: "b" }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("region-fallback")).toBeInTheDocument();
+    // header interpolates city + region
+    expect(
+      screen.getByText(/home\.producers\.region_fallback_header/),
+    ).toHaveTextContent("אריאל");
+    expect(
+      screen.getByText(/home\.producers\.region_fallback_header/),
+    ).toHaveTextContent("השרון");
+    // generic empty state is suppressed
+    expect(screen.queryByText("home.producers.empty_heading")).not.toBeInTheDocument();
+  });
+
+  it("no fallback (region miss) → generic empty state renders", () => {
+    render(
+      <HomeProducersGrid
+        {...baseProps}
+        filters={{ category: "", delivery_city: "עיר קטנה", has_delivery: false }}
+        onClearCategory={() => {}}
+        regionFallback={null}
+      />,
+    );
+    expect(screen.queryByTestId("region-fallback")).not.toBeInTheDocument();
+    expect(screen.getByText("home.producers.empty_heading")).toBeInTheDocument();
   });
 });

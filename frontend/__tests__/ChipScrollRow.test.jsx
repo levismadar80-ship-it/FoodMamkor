@@ -2,42 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 
-// MEH-1340: the active chip was washed out under the widened (w-12) end fade
-// because the fade was always rendered and the scroller had no scroll-pe. This
-// suite locks the DYNAMIC-fade behaviour: each edge fade renders only while its
-// sentinel is off-screen (IntersectionObserver, rooted on the scroller). A row
-// that doesn't overflow (both sentinels visible) shows zero fades; at the far
-// end the end fade is gone so the active chip is never covered. The IO is
-// mocked so we can drive sentinel visibility deterministically.
+// MEH-1340 made the edge fades DYNAMIC (a side fades only while content is
+// hidden past it). MEH-1572 changed how they are DRAWN and who decides:
+//   - drawn as a `mask-image` on the scroller, not two painted gradient divs,
+//     so the fade is transparent and needs no per-caller `fadeBg` colour;
+//   - decided by useScrollAffordance's scroll+RO math — the ONE authority
+//     that also drives the arrows and the conditional end spacer. The
+//     IntersectionObserver sentinels are gone.
+// These suites therefore drive scroll GEOMETRY (as the arrow suite below
+// already did) and assert on the mask's stop positions.
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
 }));
-
-// Controllable IntersectionObserver: capture every instance so a test can
-// fire the observer callback with hand-picked { target, isIntersecting }
-// entries — the component keys off entry.target === startEl/endEl.
-let ioInstances = [];
-class MockIntersectionObserver {
-  constructor(cb, options) {
-    this.cb = cb;
-    this.options = options;
-    this.targets = [];
-    ioInstances.push(this);
-  }
-  observe(el) {
-    this.targets.push(el);
-  }
-  unobserve(el) {
-    this.targets = this.targets.filter((t) => t !== el);
-  }
-  disconnect() {
-    this.targets = [];
-  }
-  fire(entries) {
-    act(() => this.cb(entries));
-  }
-}
 
 const CHIPS = [
   { key: "all", label: "כל" },
@@ -45,138 +22,136 @@ const CHIPS = [
   { key: "meat", label: "בשר ודגים" },
 ];
 
-// The two w-px flex children are the edge sentinels (DOM order: start, end).
-function getSentinels(container) {
-  const [start, end] = container.querySelectorAll("div.shrink-0.w-px");
-  return { start, end };
+// MEH-1572 fade depths, mirrored from the component.
+const START_FADE_PX = 12;
+const END_FADE_PX = 48;
+
+function getScroller(container) {
+  return container.querySelector("div.overflow-x-auto");
 }
 
-// Fades are the only pointer-events-none gradient overlays; start uses .start-0,
-// end uses .end-0. querySelector returns null when the fade isn't rendered.
-function getFades(container) {
+// The mask is the single source of fade truth now. The gradient lives in
+// globals.css (.chip-scroll-fade-mask); the component publishes only the two
+// stop depths as custom properties. A side with nothing hidden past it
+// publishes 0px (= no fade).
+function fadeStops(container) {
+  const { style } = getScroller(container);
   return {
-    start: container.querySelector("div.pointer-events-none.start-0"),
-    end: container.querySelector("div.pointer-events-none.end-0"),
+    start: Number.parseInt(style.getPropertyValue("--chip-fade-start"), 10),
+    end: Number.parseInt(style.getPropertyValue("--chip-fade-end"), 10),
   };
 }
 
+// Give the scroller real geometry (jsdom defaults everything to 0) and fire a
+// scroll event so the hook recomputes. RTL: scrollLeft is 0 at the inline
+// start and grows NEGATIVE toward the inline end.
+function setScrollGeometry(container, { scrollWidth, clientWidth, scrollLeft }) {
+  const scroller = getScroller(container);
+  Object.defineProperty(scroller, "scrollWidth", { value: scrollWidth, configurable: true });
+  Object.defineProperty(scroller, "clientWidth", { value: clientWidth, configurable: true });
+  Object.defineProperty(scroller, "scrollLeft", {
+    value: scrollLeft,
+    configurable: true,
+    writable: true,
+  });
+  fireEvent.scroll(scroller);
+  return scroller;
+}
+
+function renderRow(props = {}) {
+  return render(
+    <ChipScrollRow
+      variant="category"
+      activeKey="all"
+      chips={CHIPS}
+      onChipClick={() => {}}
+      {...props}
+    />,
+  );
+}
+
 beforeEach(() => {
-  ioInstances = [];
-  global.IntersectionObserver = MockIntersectionObserver;
   // jsdom doesn't implement these scroll methods the component calls on mount.
   Element.prototype.scrollTo = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-describe("ChipScrollRow — dynamic edge fades (MEH-1340)", () => {
-  it("renders no fade before the observer reports (default state)", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getFades(container);
-    expect(start).toBeNull();
-    expect(end).toBeNull();
+describe("ChipScrollRow — mask-image edge fades (MEH-1572)", () => {
+  it("fades are a mask on the scroller — no painted gradient overlay survives", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
+    // The MEH-1340 overlays were the only pointer-events-none edge divs.
+    expect(container.querySelector("div.pointer-events-none.start-0")).toBeNull();
+    expect(container.querySelector("div.pointer-events-none.end-0")).toBeNull();
+    // The scroller opts into the shared mask utility...
+    expect(getScroller(container).className).toContain("chip-scroll-fade-mask");
+    // ...and carries no colour of its own: a mask is colourless, so no caller
+    // background can leak into it (this is what killed the fadeBg prop).
+    const inlineStyle = getScroller(container).getAttribute("style") || "";
+    expect(inlineStyle).not.toMatch(/#F5F0E8|#ffffff/i);
   });
 
-  it("wires ONE IntersectionObserver rooted on the scroller, observing both sentinels", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    expect(ioInstances).toHaveLength(1);
-    const io = ioInstances[0];
-    // root is the horizontally-scrolling flex container.
-    expect(io.options.root).toBe(container.querySelector("div.overflow-x-auto"));
-    const { start, end } = getSentinels(container);
-    expect(io.targets).toEqual([start, end]);
+  it("non-overflowing row → both stops 0px (fully opaque, no fade)", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 500, clientWidth: 500, scrollLeft: 0 });
+    expect(fadeStops(container)).toEqual({ start: 0, end: 0 });
   });
 
-  it("non-overflowing row (both sentinels visible) → zero fades", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: true },
-    ]);
-    expect(getFades(container).start).toBeNull();
-    expect(getFades(container).end).toBeNull();
+  it("at the start edge → only the end fade", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: 0 });
+    expect(fadeStops(container)).toEqual({ start: 0, end: END_FADE_PX });
   });
 
-  it("at the start edge (start sentinel visible, end hidden) → only the end fade", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: false },
-    ]);
-    expect(getFades(container).start).toBeNull();
-    expect(getFades(container).end).not.toBeNull();
+  it("in the middle → both fades", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -250 });
+    expect(fadeStops(container)).toEqual({ start: START_FADE_PX, end: END_FADE_PX });
   });
 
-  it("in the middle (neither sentinel visible) → both fades", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: false },
-    ]);
-    expect(getFades(container).start).not.toBeNull();
-    expect(getFades(container).end).not.toBeNull();
+  it("at the far end → end fade GONE so the active chip isn't washed out", () => {
+    const { container } = renderRow({ activeKey: "bread" });
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(fadeStops(container)).toEqual({ start: START_FADE_PX, end: 0 });
   });
 
-  it("at the far end (end sentinel visible) → end fade GONE so the active chip isn't washed", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="bread" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const { start, end } = getSentinels(container);
-    // scrolled fully to the end: start content hidden, end reached.
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: true },
-    ]);
-    expect(getFades(container).end).toBeNull();
-    expect(getFades(container).start).not.toBeNull();
-  });
-
-  it("disconnects the observer on unmount", () => {
-    const { unmount } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const io = ioInstances[0];
-    const spy = vi.spyOn(io, "disconnect");
-    unmount();
-    expect(spy).toHaveBeenCalledTimes(1);
+  it("publishes both stop depths on every render so the mask is never partial", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
+    const { style } = getScroller(container);
+    // Both vars must always be present — a missing one would fall back to the
+    // stylesheet default and silently pin that edge open.
+    expect(style.getPropertyValue("--chip-fade-start")).toMatch(/^\d+px$/);
+    expect(style.getPropertyValue("--chip-fade-end")).toMatch(/^\d+px$/);
   });
 });
 
-describe("ChipScrollRow — end-fade clearance structure (MEH-1340)", () => {
-  it("scroller carries scroll-pe-12 (matches the end fade width)", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    const scroller = container.querySelector("div.overflow-x-auto");
-    expect(scroller.className).toContain("scroll-pe-12");
-    expect(scroller.className).toContain("scroll-ps-4");
+describe("ChipScrollRow — conditional end spacer + shared gutter (MEH-1572)", () => {
+  it("non-overflowing row renders NO end spacer (zero trailing dead space)", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 500, clientWidth: 500, scrollLeft: 0 });
+    expect(container.querySelector("div.shrink-0.w-12")).toBeNull();
   });
 
-  it("end spacer is w-12 (widened from w-8 so the last chip clears the fade)", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
+  it("overflowing row still reserves the w-12 spacer", () => {
+    const { container } = renderRow();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
     expect(container.querySelector("div.shrink-0.w-12")).not.toBeNull();
-    expect(container.querySelector("div.shrink-0.w-8")).toBeNull();
   });
 
-  it("has exactly two w-px sentinels bracketing the chips", () => {
-    const { container } = render(
-      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
-    );
-    expect(container.querySelectorAll("div.shrink-0.w-px")).toHaveLength(2);
+  it("the IO sentinels are gone — the hook is the only affordance authority", () => {
+    const { container } = renderRow();
+    expect(container.querySelectorAll("div.shrink-0.w-px")).toHaveLength(0);
+  });
+
+  it("scroller sits at the shared inline-start inset (0) and keeps scroll-pe-12", () => {
+    const { container } = renderRow();
+    const cls = getScroller(container).className;
+    expect(cls).toContain("ps-0");
+    expect(cls).toContain("scroll-ps-0");
+    expect(cls).not.toContain("ps-4");
+    // scroll-pe-12 remains the scrollIntoView clearance mechanism.
+    expect(cls).toContain("scroll-pe-12");
   });
 });
 
@@ -191,11 +166,14 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
     expect(onChipClick).toHaveBeenCalledWith("bread");
   });
 
-  it("category variant → radiogroup; active chip has aria-pressed", () => {
+  it("category variant → toolbar (MEH-1465 multi-select); active chip has aria-pressed", () => {
     render(
       <ChipScrollRow variant="category" activeKey="bread" chips={CHIPS} onChipClick={() => {}} />,
     );
-    expect(screen.getByRole("radiogroup")).toBeInTheDocument();
+    // MEH-1465: category rows are multi-select now → role="toolbar", not the
+    // single-choice "radiogroup".
+    expect(screen.getByRole("toolbar")).toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.getByText("לחמים ואפייה").closest("button")).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -219,10 +197,13 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
   });
 });
 
-describe("ChipScrollRow — category glyph tint (inactive only)", () => {
-  // Chips carry a leading glyph (icon) + an iconColor. The INACTIVE chip's glyph
-  // span is tinted with iconColor; the ACTIVE chip's glyph inherits the button's
-  // white text (no inline color); a chip without iconColor is never tinted.
+describe("ChipScrollRow — category glyph tint (MEH-1465 Direction A)", () => {
+  // Chips carry a leading glyph (icon) + an iconColor. An INACTIVE category chip
+  // tints its glyph with iconColor. Under MEH-1181-A "Direction A", a SELECTED
+  // category chip ALSO keeps the tint (the ring/glyph carry the colour, the
+  // label stays neutral) — only a solid white-fill state (toggle-active, "כל"
+  // baseline) drops the tint so the glyph inherits white. A chip without
+  // iconColor is never tinted.
   const TINT_CHIPS = [
     { key: "meat", label: "בשר", icon: <span data-testid="glyph-meat" />, iconColor: "#c04040" },
     { key: "dairy", label: "חלב", icon: <span data-testid="glyph-dairy" />, iconColor: "#3b72ad" },
@@ -233,7 +214,7 @@ describe("ChipScrollRow — category glyph tint (inactive only)", () => {
     return screen.getByTestId(testid).parentElement;
   }
 
-  it("inactive chip → glyph span is tinted with iconColor", () => {
+  it("inactive category chip → glyph span is tinted with iconColor", () => {
     render(
       <ChipScrollRow variant="category" activeKey="all" chips={TINT_CHIPS} onChipClick={() => {}} />,
     );
@@ -241,13 +222,30 @@ describe("ChipScrollRow — category glyph tint (inactive only)", () => {
     expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
   });
 
-  it("active chip → glyph is NOT tinted (inherits white currentColor)", () => {
+  it("SELECTED category chip → glyph STAYS tinted (Direction A: glyph carries the colour)", () => {
     render(
       <ChipScrollRow variant="category" activeKey="meat" chips={TINT_CHIPS} onChipClick={() => {}} />,
     );
-    // Active chip: no inline color style at all.
+    // Direction A: the selected chip is NOT a solid white fill, so the glyph keeps
+    // the category tint (unlike the old radio-fill behaviour where it went white).
+    expect(glyphWrapper("glyph-meat")).toHaveStyle({ color: "#c04040" });
+    // A different, inactive chip in the same row also stays tinted.
+    expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
+  });
+
+  it("toggle-active chip → glyph is NOT tinted (solid fill → inherits white)", () => {
+    render(
+      <ChipScrollRow
+        variant="toggle"
+        activeKeys={{ meat: true }}
+        chips={TINT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    // A solid state-selected fill (toggle-active) drops the tint so the glyph
+    // inherits the button's white currentColor.
     expect(glyphWrapper("glyph-meat").getAttribute("style")).toBeNull();
-    // A different, inactive chip in the same row stays tinted.
+    // The still-inactive chip keeps its tint.
     expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
   });
 
@@ -424,5 +422,97 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383/MEH-1391)", () 
     act(() => mqChangeListeners.forEach((cb) => cb({ matches: false })));
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).toBeNull();
+  });
+});
+
+describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-1181-A)", () => {
+  // Category chips carry `iconColor` = the registry tint (textColor ?? color),
+  // which ChipScrollRow reuses as --cat-ring for the Direction A selected state.
+  const CAT_CHIPS = [
+    { key: "all", label: "כל" }, // reset sentinel — no iconColor
+    { key: "meat", label: "בשר ודגים", iconColor: "#c04040" },
+    { key: "dairy", label: "חלב וגבינות", iconColor: "#3b72ad" },
+    { key: "bread", label: "לחמים ואפייה", iconColor: "#896714" },
+  ];
+
+  function btn(label) {
+    return screen.getByText(label).closest("button");
+  }
+
+  it("legacy single-key activeKey selects one chip with the Direction A ring + wash", () => {
+    render(
+      <ChipScrollRow variant="category" activeKey="meat" chips={CAT_CHIPS} onChipClick={() => {}} />,
+    );
+    const style = btn("בשר ודגים").getAttribute("style");
+    // ring (1.5px, cat colour) + 12% wash + fw600, neutral label (no white fill).
+    // jsdom serialises the hex to rgb() in the style attribute (#c04040 →
+    // rgb(192, 64, 64)).
+    expect(style).toContain("border: 1.5px solid rgb(192, 64, 64)");
+    expect(style).toContain("color-mix(in srgb, rgb(192, 64, 64) 12%");
+    expect(style).toContain("font-weight: 600");
+    expect(btn("בשר ודגים").className).toContain("text-text");
+    expect(btn("בשר ודגים").className).not.toContain("bg-state-selected");
+    expect(btn("בשר ודגים")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("activeKeys Set selects MULTIPLE chips (each gets its own ring colour)", () => {
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set(["meat", "dairy"])}
+        chips={CAT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    expect(btn("בשר ודגים").getAttribute("style")).toContain("1.5px solid rgb(192, 64, 64)");
+    expect(btn("חלב וגבינות").getAttribute("style")).toContain("1.5px solid rgb(59, 114, 173)");
+    expect(btn("בשר ודגים")).toHaveAttribute("aria-pressed", "true");
+    expect(btn("חלב וגבינות")).toHaveAttribute("aria-pressed", "true");
+    // an unselected category chip stays the plain inactive style (no inline style)
+    expect(btn("לחמים ואפייה").getAttribute("style")).toBeNull();
+    expect(btn("לחמים ואפייה")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it('"כל" is a solid primary fill at baseline (nothing selected) and pressed', () => {
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set()}
+        chips={CAT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    expect(btn("כל").className).toContain("bg-state-selected");
+    expect(btn("כל").className).toContain("text-white");
+    expect(btn("כל")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it('"כל" drops to a ghost (bg-white + muted, not pressed) once ≥1 category is selected', () => {
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set(["meat"])}
+        chips={CAT_CHIPS}
+        onChipClick={() => {}}
+      />,
+    );
+    expect(btn("כל").className).toContain("bg-white");
+    expect(btn("כל").className).toContain("text-muted");
+    expect(btn("כל").className).not.toContain("bg-state-selected");
+    expect(btn("כל")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("fires onChipClick with the chip key (toggle semantics live in the caller this chunk)", () => {
+    const onChipClick = vi.fn();
+    render(
+      <ChipScrollRow
+        variant="category"
+        activeKeys={new Set(["meat"])}
+        chips={CAT_CHIPS}
+        onChipClick={onChipClick}
+      />,
+    );
+    fireEvent.click(btn("חלב וגבינות"));
+    expect(onChipClick).toHaveBeenCalledWith("dairy");
   });
 });

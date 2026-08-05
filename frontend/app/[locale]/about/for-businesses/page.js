@@ -8,6 +8,7 @@ import {
   ChatCircleText,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -47,34 +48,47 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// MEH-1770: FAQ set replaced 8 -> 10 (research-backed; money -> ownership ->
+// numbers -> return). The locked copy fixes the Q1..Q10 order, and this array is
+// what produces render order, so each category must hold a CONTIGUOUS run of that
+// sequence — section order therefore follows the copy, not the previous grouping.
+// DO NOT collapse this back to 4 sections. Q10 ("difference") needs its own:
+// it lands after Q9, and `trust` — where it belongs by subject — is already spent
+// on Q7/Q8, so any 4-section arrangement of this sequence mis-files at least one
+// question. `categories.difference` ("ההבדל והאנשים") was approved for exactly
+// this slot; the 4 pre-existing headings are unchanged (MEH-579: an unauthorized
+// heading change cost a revert PR).
 const CATEGORIES = [
   {
     key: "money_value",
     items: [
       { key: "cost", open: true },
-      { key: "value" },
-    ],
-  },
-  {
-    key: "time_effort",
-    items: [
-      { key: "time" },
-      { key: "writing" },
-    ],
-  },
-  {
-    key: "trust",
-    items: [
-      { key: "founder" },
-      { key: "leads" },
+      { key: "revenue_model" },
     ],
   },
   {
     key: "control",
     items: [
+      { key: "customer_ownership" },
+      { key: "analytics" },
+      { key: "repeat_customers" },
       { key: "visibility" },
-      { key: "control" },
     ],
+  },
+  {
+    key: "trust",
+    items: [
+      { key: "reviews" },
+      { key: "license" },
+    ],
+  },
+  {
+    key: "time_effort",
+    items: [{ key: "time" }],
+  },
+  {
+    key: "difference",
+    items: [{ key: "difference" }],
   },
 ];
 
@@ -140,12 +154,13 @@ export default async function FaqForBusinessesPage({ params }) {
               items. Same string t("cta") + markup as the footer CTA below — no
               new he.json key (MEH-840 freeze). Footer CTA also updated to the
               next-intl Link + focus-ring in this PR (IMP-21). */}
-          <Link
+          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+          <BusinessCtaLink
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">
@@ -279,12 +294,13 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          <Link
+          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
+          <BusinessCtaLink
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </Link>
+          </BusinessCtaLink>
         </footer>
       </div>
     </section>
