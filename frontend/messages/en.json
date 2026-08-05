@@ -4133,7 +4133,8 @@
           "image": "Main photo",
           "location": "Categories & location",
           "products": "First product in your catalog",
-          "contact": "Contact details"
+          "contact": "Contact details",
+          "hours": "Opening hours"
         },
         "fields": {
           "city": "City",
