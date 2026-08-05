@@ -169,6 +169,38 @@ Postgres 15 service (fresh DB)
 
 כאשר מוסיפים טבלה חדשה: עדכני `EXPECTED_TABLES=34` → `EXPECTED_TABLES=35` (וכן הלאה) ב-pr-checks.yml.
 
+### ספירת ראשים — `alembic heads` בלבד. לא grep. (MEH-1909)
+
+**הפקודה הסמכותית:**
+
+```bash
+cd backend && uv run alembic heads   # ראש יחיד = שורה אחת
+```
+
+`alembic upgrade head` נכשל ממילא על ריבוי ראשים (*"Multiple head revisions are present"*), אז ה-gate מכסה את זה — **אבל רק ב-job של ה-backend, שהוא paths-filtered ומדלג על PR שנוגע ב-frontend בלבד.** לכן בהכנת release, שבה סופרים ראשים ידנית מול טווח, כדאי להריץ את הפקודה במפורש.
+
+⚠️ **אל תספרי ראשים ב-grep על הקבצים.** זו לא הקפדה תיאורטית — סקריפט אד-הוק שעשה בדיוק את זה דיווח **שני ראשים** בהכנת release #2 (MEH-1909), והשרשרת הייתה תקינה לחלוטין.
+
+**המלכודת, כדי שלא תחזור:** קבצי revision בריפו נושאים את המחרוזת `down_revision` **גם בתוך docstrings**, בצורת פרוזה בלי מרכאות —
+
+```python
+"""
+down_revision = a9f2c7d41b6e (MEH-1490 producer_google_place_id) — the single
+...
+"""
+revision: str = "d51508a7c9e2"
+down_revision: Union[str, None] = "a9f2c7d41b6e"   # ← ההשמה האמיתית, 14 שורות מתחת
+```
+
+regex עם `re.search` על `^down_revision.*=` תופס את **שורת ה-docstring** ועוצר שם. אין בה ערך מרוכאה, כלומר לא נחלץ מזהה, וההורה האמיתי לא נספר — ומי שההורה שלו לא נספר **נראה כמו ראש**.
+
+**שתי הנגזרות, ושתיהן חלות מעבר לאלמביק:**
+
+1. אם בכל זאת סופרים בכלי משלכן — `findall` על **כל** שורות ההשמה, וחילוץ מזהים **מרוכאים בלבד**; ו-`down_revision` יכול להיות tuple (`("a", "b")`) ב-merge revisions, אז המזהים הם רבים ולא אחד.
+2. **הכלי צריך self-test על קישור שידוע כתקין.** הסקריפט המתוקן מאמת ש-`d51508a7c9e2 → a9f2c7d41b6e` נפתר לפני שהוא סופר משהו. בלי זה, "שני ראשים" ו"הכלי שבור" נראים זהה.
+
+זה המקרה של *"validate a probe on a case whose answer you already know"* (`.claude/rules/testing.md`) על משטח שבו **עצירה שגויה יקרה במיוחד** — release שנעצר על שרשרת תקינה עולה יותר מ-grep שנכתב נכון מלכתחילה.
+
 **מקומית, לפני PR:** `cd backend && uv run alembic check` — אם CI ייכשל, זה ייכשל מקומית קודם. דורש Postgres רץ + `alembic upgrade head` ניקיון לפני זה.
 
 **MEH-836 — CC רשאית לכתוב migrations:** עם הסרת ה-deny על `backend/alembic/versions/**` (Edit+Write ב-`.claude/settings.json`), Claude Code יכולה לחבר revision כתוב-ביד בעצמה (hand-written, לא `--autogenerate`). ה-apply נשאר אוטומטי ב-boot של ה-Dockerfile (`alembic upgrade head`) — אין צעד ידני להחלת המיגרציה.
