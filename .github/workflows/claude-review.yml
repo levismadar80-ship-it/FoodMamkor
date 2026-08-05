@@ -61,9 +61,23 @@ jobs:
           # Full history so the action can diff against the base branch.
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1
+      # MEH-1844: pinned to a full commit SHA. The floating @v1 tag let an
+      # upstream change land unannounced and un-reviewed in the one job whose
+      # purpose IS review — the leading hypothesis for why this job has been
+      # exiting at num_turns:1 repo-wide. Re-pin deliberately, never silently.
+      - uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # MEH-1844: surfaces the action's own error text, which is otherwise
+          # swallowed — GitHub masks an UNSET secret and an EXPIRED one
+          # identically, so without this the credential and upstream-breakage
+          # hypotheses are indistinguishable.
+          # ⚠ THIS REPO IS PUBLIC. Upstream's own description: "outputs ALL
+          # Claude messages including tool execution results which may contain
+          # secrets, API keys, or other sensitive information. These logs are
+          # publicly visible." Diagnostic aid only — turn it back off once the
+          # reviewer is proven running.
+          show_full_output: true
           # MEH-1844 — three changes, shipped together on purpose.
           #
           # Read/Glob/Grep: the prompt below orders the reviewer to read

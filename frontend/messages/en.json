@@ -774,7 +774,17 @@
         },
         "products": {
           "heading": "Products",
-          "signature_label": "Signature product"
+          "signature_label": "Signature product",
+          "diet": {
+            "gluten_free": "Gluten-free",
+            "vegan": "Vegan",
+            "vegetarian": "Vegetarian",
+            "lactose_free": "Lactose-free"
+          },
+          "sheet_open_aria": "Details about {name}",
+          "sheet_close_aria": "Close product details",
+          "sheet_cta": "Ask about this product on WhatsApp",
+          "sheet_wa_prefill": "Hi, I saw “{name}” on your Mehamakor page and would love to hear more"
         },
         "recipes": {
           "cta": "Our recipes"
@@ -846,10 +856,9 @@
         "report_info_link": "Wrong info? Let us know"
       },
       "sticky_bar": {
-        "vacation_msg": "Send a message — they will respond soon"
+        "vacation_msg": "Send a message"
       },
       "order_window": {
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
         "schedule_heading": "When orders are accepted",
         "schedule_subtitle": "The days and hours this business accepts orders",
         "days": {
@@ -892,7 +901,8 @@
         "free_delivery_above": "Free delivery",
         "gift_above": "Gift",
         "first_order": "First-order benefit",
-        "pickup_discount": "Self-pickup discount"
+        "pickup_discount": "Self-pickup discount",
+        "custom": "Custom wording"
       },
       "text": {
         "free_delivery_above": "Free delivery",
@@ -930,6 +940,8 @@
       "headline_label": "Your own line (optional)",
       "headline_hint": "Shown under the offer on your page. Up to 60 characters, no emoji.",
       "headline_placeholder": "The gift: a small jar of honey",
+      "custom_hint": "Word the offer yourself — up to 60 characters",
+      "custom_headline_required": "A custom offer needs a headline",
       "expires_label": "Valid until",
       "expires_hint": "Required. After this date the offer disappears from the site on its own.",
       "expires_required": "Please choose an end date for the offer",
@@ -2014,7 +2026,9 @@
       "confirm_delete": "Delete the review by {user} on {producer}?",
       "default_user": "User",
       "default_producer": "the business",
-      "deleted_toast": "Review deleted"
+      "deleted_toast": "Review deleted",
+      "expand": "More",
+      "collapse": "Less"
     },
     "settings": {
       "title": "Settings",
@@ -4118,7 +4132,8 @@
           "image": "Main photo",
           "location": "Categories & location",
           "products": "First product in your catalog",
-          "contact": "Contact details"
+          "contact": "Contact details",
+          "hours": "Opening hours"
         },
         "fields": {
           "city": "City",

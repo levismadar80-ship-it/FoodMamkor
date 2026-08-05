@@ -35,6 +35,17 @@ const STATIC_ROUTES = new Set(staticRoutes.routes);
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const intlMiddleware = createMiddleware(routing);
 
+// MEH-1899: the failure this exists for ran with ZERO observability — no log,
+// no Sentry — and was found only because an E2E spec happened to bite on it.
+// `console.error` and not Sentry deliberately: whether Edge Middleware can
+// reach Sentry at all is still an open Phase 0 question on MEH-1521, and a
+// report that depends on an unverified transport is not a report. Vercel
+// captures middleware console output in runtime logs, which is available today.
+// If MEH-1521 establishes a Sentry path, this is the one place to change.
+function report(message, err) {
+  console.error(`[middleware/producerExists] ${message}`, err ?? "");
+}
+
 async function producerExists(url) {
   try {
     // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
@@ -45,10 +56,30 @@ async function producerExists(url) {
     // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
     // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
     const res = await fetch(url, { next: { revalidate: 60 } });
-    return res.ok;
-  } catch {
+    if (res.ok) return true;
+
+    // MEH-1899: 404 is the ONLY status that answers the question we asked.
+    // Everything else means the backend replied about something other than
+    // this producer's existence, and must not be read as "no such business".
+    if (res.status === 404) return false;
+
+    // 5xx · 429 · anything else → fail OPEN, same decision as "unreachable".
+    // `return res.ok` used to collapse these onto the 404 branch, so a backend
+    // that stuttered produced a HARD 404 on the canonical, indexable URL
+    // (lib/seo.js:120 prefers the slug). 404 tells Google the resource is GONE
+    // and it gets deindexed; 5xx tells it to retry. A transient fault was
+    // therefore presented as a permanent disappearance.
+    //
+    // 429 lands here too and that is not hypothetical: the comment above
+    // records that every slug-shaped request costs one LIVE backend GET with no
+    // edge cache, so a burst from one IP is rate-limited by slowapi — and a 429
+    // was previously indistinguishable from "this business does not exist".
+    report(`backend answered ${res.status} for ${url} — failing open`);
+    return true;
+  } catch (err) {
     // Backend unreachable → fail OPEN (let the page handle it) rather than
     // false-404 a possibly-valid page on a transient blip.
+    report(`fetch threw for ${url} — failing open`, err);
     return true;
   }
 }
