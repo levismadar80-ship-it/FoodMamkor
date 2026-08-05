@@ -1,4 +1,5 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { authedContext, fixtureExists } from "../auth-fixture";
 
 /**
  * Spec:     19-publish-approve-visible
@@ -71,18 +72,7 @@ interface Category {
   name: string;
 }
 
-const authHeader = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-async function adminLogin(request: APIRequestContext): Promise<string> {
-  const res = await request.post("/api/auth/login", {
-    data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
-  });
-  expect(
-    res.ok(),
-    `admin login failed (${res.status()}) — check SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD`,
-  ).toBeTruthy();
-  return (await res.json()).access_token as string;
-}
 
 test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
   test("a published producer is pending, hidden until approved, then live on /producers and /map", async ({
@@ -93,6 +83,12 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
       !ADMIN_EMAIL || !ADMIN_PASSWORD,
       "SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD not configured — admin-driven path unavailable",
     );
+    // MEH-1858 / MEH-999: vars set but fixture absent = real provisioning
+    // breakage, which must fail loud rather than hide behind a skip.
+    expect(
+      fixtureExists("smoke-admin"),
+      "SMOKE_ADMIN_* are set but e2e/.auth/smoke-admin.json is missing — global-setup did not provision it",
+    ).toBeTruthy();
     // Run on ONE project only: this spec creates a real staging producer, and
     // the /auth/register limiter quota is shared across CI runs (frontend/e2e/
     // CLAUDE.md). Two projects → two registrations → wasted quota + DB litter.
@@ -102,11 +98,11 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
     );
 
     let producerId = "";
-    let adminToken = "";
+    // MEH-1858: an authenticated CONTEXT, not a bare token — _check_fingerprint
+    // (auth.py:211-230) needs the __Secure-Fgp cookie that storageState carries.
+    const adminCtx = await authedContext("smoke-admin");
 
     try {
-      // ── 0) Admin auth (seeded staging admin → JWT) ──────────────────────
-      adminToken = await adminLogin(request);
 
       // ── 1) A real, existing category for the publish payload ────────────
       const catsRes = await request.get("/api/categories");
@@ -141,9 +137,7 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
 
       // ── 3) Lands in the admin queue as pending ──────────────────────────
       // status=pending groups both "pending" and "pending_whatsapp" (admin.py).
-      const queueRes = await request.get("/api/admin/producers?status=pending", {
-        headers: authHeader(adminToken),
-      });
+      const queueRes = await adminCtx.get("/api/admin/producers?status=pending");
       expect(queueRes.ok(), `admin queue fetch failed (${queueRes.status()})`).toBeTruthy();
       const queue = (await queueRes.json()) as QueueProducer[];
       const mine = queue.find((p) => p.name === PRODUCER_NAME);
@@ -161,8 +155,7 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
       ).toBeFalsy();
 
       // ── 4) Admin attaches the MEH-799 required image + physical location ─
-      const putRes = await request.put(`/api/admin/producers/${producerId}`, {
-        headers: authHeader(adminToken),
+      const putRes = await adminCtx.put(`/api/admin/producers/${producerId}`, {
         data: { images: [TEST_IMAGE], has_physical_location: true, lat: LAT, lng: LNG },
       });
       expect(
@@ -171,9 +164,7 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
       ).toBeTruthy();
 
       // ── 5) Admin approves ───────────────────────────────────────────────
-      const approveRes = await request.post(`/api/admin/producers/${producerId}/approve`, {
-        headers: authHeader(adminToken),
-      });
+      const approveRes = await adminCtx.post(`/api/admin/producers/${producerId}/approve`);
       expect(
         approveRes.ok(),
         `approve failed (${approveRes.status()}): ${await approveRes.text()}`,
@@ -215,13 +206,12 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
       );
     } finally {
       // Cleanup — delete the disposable producer no matter what happened above.
-      if (producerId && adminToken) {
-        await request
-          .delete(`/api/admin/producers/${producerId}`, { headers: authHeader(adminToken) })
-          .catch(() => {
-            /* fail-open: an orphan is tagged E2E-MEH216-* and admin-sweepable */
-          });
+      if (producerId) {
+        await adminCtx.delete(`/api/admin/producers/${producerId}`).catch(() => {
+          /* fail-open: an orphan is tagged E2E-MEH216-* and admin-sweepable */
+        });
       }
+      await adminCtx.dispose();
     }
   });
 });

@@ -10,6 +10,7 @@ import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -142,6 +143,8 @@ const EMPTY = {
   short_description: "",
   top_product_name: "",
   price_range: "",
+  // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
+  established_year: "",
   category_ids: [],
   has_delivery: false,
   pickup_points: false,
@@ -251,6 +254,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
+        // MEH-1541: null → "" so the number input stays controlled + empty.
+        established_year: initial.established_year ?? "",
         admin_notes: initial.admin_notes ?? "",
         opening_hours: initial.opening_hours ?? "",
         // MEH-213 — location mode
@@ -394,6 +399,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       short_description: form.short_description,
       top_product_name: form.top_product_name,
       price_range: form.price_range,
+      // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
+      established_year:
+        String(form.established_year).trim() === ""
+          ? null
+          : Number(form.established_year),
       category_ids: form.category_ids,
       has_delivery: form.has_delivery,
       pickup_points: form.pickup_points,
@@ -470,6 +480,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("contact_name", e.target.value)}
           />
           <Input
+            type="tel"
             label={t("producers.form.fields.phone")}
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}
@@ -817,7 +828,27 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             <input
               type="checkbox"
               checked={form.offers_delivery}
-              onChange={(e) => update("offers_delivery", e.target.checked)}
+              onChange={(e) => {
+                const on = e.target.checked;
+                update("offers_delivery", on);
+                // MEH-1879: the delivery block below is CONDITIONALLY RENDERED
+                // (`form.offers_delivery &&`), and unmounting it leaves its
+                // state untouched — so unticking here used to submit
+                // delivery_nationwide=true alongside offers_delivery=false,
+                // which CHECK producer_nationwide_requires_delivery (MEH-1849)
+                // rejects as a 500 on the manual-approval path.
+                // All THREE fields the block owns are cleared, mirroring the
+                // owner dashboard's normalisation (edit/cards.jsx). delivery_
+                // cities is included deliberately: it submits as
+                // delivery_area_cities ungated, so leaving it would write
+                // delivery_areas rows onto a business declaring no delivery —
+                // the cross-table contradiction no CHECK can express.
+                if (!on) {
+                  update("delivery_nationwide", false);
+                  update("delivery_cities", []);
+                  update("delivery_excluded_cities", []);
+                }
+              }}
               className="w-4 h-4 accent-primary"
             />
             {t("producers.form.fields.offers_delivery")}
@@ -925,6 +956,20 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("price_range", e.target.value)}
             placeholder={t("producers.form.fields.price_range_placeholder")}
           />
+          {/* MEH-1541: founding year (optional) — numeric, dir="ltr".
+              MEH-1581: bounds derive from the shared helper (Israel-tz year),
+              parity with the server validator (1800..israel_today().year). */}
+          <Input
+            type="number"
+            label={t("producers.form.fields.established_year")}
+            value={form.established_year}
+            onChange={(e) => update("established_year", e.target.value)}
+            min={MIN_ESTABLISHED_YEAR}
+            max={currentIsraelYear()}
+            dir="ltr"
+            inputMode="numeric"
+            placeholder={t("producers.form.fields.established_year_placeholder")}
+          />
         </div>
       </Section>
 
@@ -942,6 +987,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
               <div key={url} className="relative group">
+                {/* raw img: admin-entered image URLs may be ANY host (the
+                    MEH-1222 "https://bread.jpg" case). next/image throws on
+                    a src outside remotePatterns / non-absolute instead of
+                    firing onError. Measured under MEH-1833, see PR. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={optimizeCloudinary(url)}

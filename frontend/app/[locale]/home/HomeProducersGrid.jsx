@@ -10,6 +10,8 @@ import OnboardingTip from "@/components/OnboardingTip";
 import { useMemo } from "react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
+// MEH-1825: the day row is shared with /producers — one definition in components/.
+import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
@@ -21,8 +23,13 @@ import { LOAD_MORE_CAP } from "@/lib/use-home-page";
  * and the "load more" button.
  *
  * All state ownership stays in useHomePage; this component is purely
- * presentational and emits its callbacks (onToggleChip / onClearCategory
+ * presentational and emits its callbacks (onChipNavigate / onClearCategory
  * / onLoadMore / onSurprise) plus the onboarding-advance/dismiss pair.
+ *
+ * MEH-1774: the attribute chip row is NAVIGATION, not filtering — a tap
+ * deep-links to /producers with that attribute applied, so attribute filtering
+ * has one canonical home instead of two drifting ones. Category / city /
+ * delivery-day / "קרוב אליי" still filter this grid in place, unchanged.
  *
  * MEH-1476: owns the "הפתיעו אותי" surprise-me button at the grid end (moved
  * from the hero, MEH-1288/MEH-1369). onSurprise = use-home-page handleSurprise
@@ -44,7 +51,7 @@ export function HomeProducersGrid({
   onboardAdvance,
   onboardDismiss,
   onAdvanceFromStep0,
-  onToggleChip,
+  onChipNavigate,
   onClearCategory,
   onClearLocation,
   onLoadMore,
@@ -52,6 +59,9 @@ export function HomeProducersGrid({
   hasProducers,
   geoActive,
   cityActive,
+  // MEH-1645: active day refinement + its handler (day row + empty-state CTA).
+  dayActive,
+  onSelectDay,
   geoEmptyNotice,
   regionFallback,
 }) {
@@ -90,13 +100,17 @@ export function HomeProducersGrid({
         </Link>
       </div>
 
-      {/* Filter chips */}
+      {/* MEH-1774: this row is now NAVIGATION, not filtering — a tap deep-links
+          to /producers with the attribute applied, so the canonical filtering
+          surface is one place instead of two. `variant="toggle"` and
+          `activeKeys` are retained on purpose: home still hydrates chips from
+          its own URL params, and changing that reading is out of scope here
+          (MEH-1083). Visuals are unchanged by design — behavior only. */}
       <ChipScrollRow
         variant="toggle"
         chips={chipsWithIcons}
         activeKeys={chips}
-        onChipClick={onToggleChip}
-        fadeBg="#F5F0E8"
+        onChipClick={onChipNavigate}
         className="mb-3"
       />
       {/* Step 1 — filter chips tip */}
@@ -138,7 +152,17 @@ export function HomeProducersGrid({
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
+        dayActive={dayActive}
         onClear={onClearLocation}
+      />
+
+      {/* MEH-1645 day refinement, made permanently visible in MEH-1771: always
+          rendered — without a city it self-renders a muted ghost row + hint,
+          and a pill click routes into the LocationModal (handleDaySelected). */}
+      <DeliveryDayRow
+        cityActive={cityActive}
+        dayActive={dayActive}
+        onSelectDay={onSelectDay}
       />
 
       {producersLoading ? (
@@ -194,6 +218,23 @@ export function HomeProducersGrid({
               </motion.div>
             ))}
           </div>
+          {/* MEH-1645: zero results while a DAY refinement is active → suggest
+              removing the day BEFORE the region fallback — the day is the
+              narrowest filter, so it is the first thing to relax. */}
+          {producers.length === 0 && dayActive && (
+            <div className="text-center py-8" data-testid="day-empty-suggestion">
+              <p className="text-fg-muted mb-3 max-w-md mx-auto">
+                {t("home.producers.day_empty_suggestion", { day: dayActive, city: filters.delivery_city })}
+              </p>
+              <button
+                type="button"
+                onClick={() => onSelectDay(dayActive)}
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+              >
+                {t("home.producers.day_empty_clear_cta")}
+              </button>
+            </div>
+          )}
           {/* MEH-1487: region fallback — when a city filter returned 0 but the
               city belongs to a region, show the businesses that deliver
               anywhere in that region. Editorial discovery framing, not a

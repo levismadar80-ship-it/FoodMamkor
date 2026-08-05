@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CaretLeft, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges } from "@/lib/badges";
+import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import Popover from "@/components/ui/Popover";
 
 /**
@@ -37,9 +38,53 @@ import Popover from "@/components/ui/Popover";
  * Hebrew explainer. Outside click + Esc closes. Works on mobile
  * without requiring hover.
  */
-export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }) {
+// MEH-1711: the card badge names the CERTIFICATION, not a word we invented.
+// `CODE_TO_KEY` is imported from KashrutBadgeStrip — the detail page's owner of
+// that map — rather than copied, so the two surfaces cannot drift apart. That
+// import is also what preserves the map's WHITELIST role
+// (KashrutBadgeStrip.jsx:144 filters unknown codes through it); deriving the
+// key with `code.replace(/-/g,"_")` would have produced the same string for
+// known codes while silently accepting unknown ones.
+//
+// Filter BEFORE counting, deliberately: the detail page renders the filtered
+// set, so counting raw codes could show "חלק" there and the fallback here for
+// the same producer — the exact cross-surface disagreement this ticket closes.
+//
+// Zero or 2+ codes -> the locked fallback. Naming one certificate out of two
+// would be a misstatement, and naming none is the honest state; both are the
+// MEH-986 / MEH-1259 legal-compliance posture, not a display preference.
+function kosherLabel(producer, tKashrut, fallback) {
+  const codes = (producer?.kashrut_badges ?? []).filter((code) => CODE_TO_KEY[code]);
+  if (codes.length !== 1) return fallback;
+  return tKashrut(`badges.${CODE_TO_KEY[codes[0]]}.label`);
+}
+
+/**
+ * The one entry point every surface that renders a badge label must call.
+ *
+ * MEH-1711 resolved the label inside BadgeRow's own `.map`, which fixed the
+ * visible pills and left one surface behind: ProducerCard builds the `+N`
+ * overflow list straight from `allBadges(producer)` (ProducerCard.jsx:349-356)
+ * and reads `b.label` off BADGE_CONFIG, never passing through BadgeRow at all.
+ * A kosher pill in position 3+ therefore said the fallback while the detail
+ * page said "חלק" — the original three-surface contradiction surviving on the
+ * one surface nobody was looking at.
+ *
+ * Exported rather than duplicated so the overflow cannot drift from the pill:
+ * the resolution rule (filter through CODE_TO_KEY, then count) lives here once.
+ * Every other badge is returned untouched — this is a label resolver, not a
+ * badge filter, and it must not become one.
+ */
+export function resolveBadgeLabel(badge, producer, tKashrut) {
+  return badge.key === "kosher" ? kosherLabel(producer, tKashrut, badge.label) : badge.label;
+}
+
+export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
+  // MEH-1711: same namespace KashrutBadgeStrip.jsx:115 uses, so both surfaces
+  // read the identical `kashrut.badges.*.label` strings.
+  const tKashrut = useTranslations("kashrut");
   const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
   // MEH-1124 (MEH-1074 Task C): optional per-surface suppression. The producer
   // detail header passes hideKeys={["products", "delivery"]} — the products
@@ -57,9 +102,17 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }
     >
       {badges.map((b) =>
         b.key === "verified" ? (
-          <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} />
+          <VerifiedTierBadge key="verified" producer={producer} surface={surface} t={tTier} avoidRef={avoidRef} />
         ) : (
-          <Badge key={b.key} badge={b} surface={surface} />
+          // MEH-1711: only the kosher pill's LABEL is swapped. earnsBadge, the
+          // badge set, the ordering, and the max-2 cap are untouched — this
+          // changes what the pill says, never who earns it.
+          <Badge
+            key={b.key}
+            badge={{ ...b, label: resolveBadgeLabel(b, producer, tKashrut) }}
+            surface={surface}
+            avoidRef={avoidRef}
+          />
         ),
       )}
     </div>
@@ -87,6 +140,36 @@ function formatTierDate(isoDate) {
   return `\u2066${d}.${m}.${y}\u2069`;
 }
 
+/**
+ * MEH-1843 — the hero/masthead popover body, derived from what was actually
+ * checked instead of one absolute sentence for everyone.
+ *
+ * The retired copy ("...עובר אישור ידני ופועל ברישיון") was false for two of the
+ * three doc types: an `exemption` business operates lawfully with NO licence
+ * (honey, raw produce), and `cosmetics` fell through to the same claim. That put
+ * the popover in direct conflict with /terms §5, which already disclaims any
+ * guarantee about licences.
+ *
+ * Exported because ImageGallery's masthead seal renders this same popover on the
+ * same producer page — one owner, so the two cannot drift. (A shared home in
+ * lib/ would read better; the shared-extraction axis is MEH-800's, so this stays
+ * a named export here rather than opening a new file under this ticket.)
+ *
+ * `hasDate` drives an ICU select rather than concatenation, so a missing
+ * verified_at drops the whole " נבדק ב-…" clause instead of leaving a dangling
+ * preposition or an empty placeholder.
+ */
+export function getVerifiedPopoverBody(producer, t) {
+  const date = formatTierDate(producer?.verified_at);
+  const key =
+    {
+      license: "verified_popover_body_license",
+      exemption: "verified_popover_body_exemption",
+      cosmetics: "verified_popover_body_cosmetics",
+    }[producer?.verification_doc_type] ?? "verified_popover_body_generic";
+  return t(key, { hasDate: date ? "yes" : "no", date: date ?? "" });
+}
+
 /** Locked tooltip per doc type — null = render chip without a popover. */
 function getVerifiedTooltip(producer, t) {
   const date = formatTierDate(producer?.verified_at);
@@ -106,7 +189,7 @@ function getVerifiedTooltip(producer, t) {
  * S12 verified chip/seal — gold seal glyph; the word "מאומת" only on the
  * hero surface (cards drop to icon-only so the name stays the hero).
  */
-function VerifiedTierBadge({ producer, surface, t }) {
+function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
   const tooltip = getVerifiedTooltip(producer, t);
   const ariaLabel = tooltip ? t("aria_verified", { tooltip }) : t("aria_verified_plain");
   const iconOnly = surface === "card";
@@ -144,13 +227,23 @@ function VerifiedTierBadge({ producer, surface, t }) {
   // MEH-1334: the hero seal gets the richer verification popover — the manual
   // approval + licensing story (DNA-LOCK differentiator) was invisible behind
   // a date-only tooltip. Content = the LOCKED v3 copy exactly: title + body +
-  // link to /about#verification (placeholder target until MEH-1336 ships the
-  // section). The pre-existing MEH-762 doc-date line is intentionally dropped
-  // here — the locked copy is dateless (chunk-2 CLARIFY c). The verified SEAL
-  // itself only renders for verification_tier === "verified" (badges.js:140),
-  // so this popover can never make a false trust claim on a non-verified
-  // producer (CLARIFY a/b). Cards keep the compact date tooltip (surface
-  // unchanged) via the non-hero branch below.
+  // link out. MEH-1840: the link target moved /about#verification → /about/process
+  // — the acceptance-process page is the canonical "how we vet" surface, while the
+  // /about section is a summary. The #verification anchor stays live on /about
+  // (AboutClient.jsx) so existing deep-links keep resolving. Same retarget applied
+  // to the duplicate popover in ImageGallery.jsx (masthead seal) — the two must
+  // not diverge, they render identically on the same producer page.
+  // MEH-1334 chunk-2 (CLARIFY c) deliberately made this popover DATELESS and
+  // one-size-fits-all. MEH-1843 reverses both halves of that: the body is now
+  // per-doc-type and carries the check date again. Not a regression of that
+  // decision — a supersession of it, on newer grounds (copy-honesty guard +
+  // the /terms §5 conflict, since the flat "פועל ברישיון" claim was untrue for
+  // exemption and cosmetics businesses). The industry pattern it now follows —
+  // declared scope + a date + no promise — is Thumbtack/Airbnb/Yelp's.
+  // Unchanged from MEH-1334: the verified SEAL only renders for
+  // verification_tier === "verified" (badges.js:140), so this popover can never
+  // make a trust claim on a non-verified producer (CLARIFY a/b). Cards keep
+  // their own compact date tooltip via the non-hero branch below.
   if (surface === "hero") {
     return (
       <span role="listitem" className="inline-block">
@@ -166,9 +259,11 @@ function VerifiedTierBadge({ producer, surface, t }) {
             <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
             {t("verified_popover_title")}
           </span>
-          <span className="block text-[13px] leading-relaxed">{t("verified_popover_body")}</span>
+          <span className="block text-[13px] leading-relaxed">
+            {getVerifiedPopoverBody(producer, t)}
+          </span>
           <LocaleLink
-            href="/about#verification"
+            href="/about/process"
             className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
           >
             {t("verified_popover_link")}
@@ -183,7 +278,7 @@ function VerifiedTierBadge({ producer, surface, t }) {
   return (
     <span role="listitem" className="inline-block">
       {tooltip ? (
-        <Popover trigger={chip} contentTestId="badge-tooltip-verified" contentClassName="w-52">
+        <Popover trigger={chip} contentTestId="badge-tooltip-verified" contentClassName="w-52" overlay={Boolean(avoidRef)} avoidRef={avoidRef}>
           {tooltip}
         </Popover>
       ) : (
@@ -202,15 +297,17 @@ function VerifiedTierBadge({ producer, surface, t }) {
   );
 }
 
-function Badge({ badge, surface = "hero" }) {
+function Badge({ badge, surface = "hero", avoidRef = null }) {
   const colorClass = COLOR_CLASSES[badge.color] || COLOR_CLASSES.muted;
 
   // MEH-1492: on the HERO surface (producer detail), a badge with an aboutHref
   // (recommended → /about#editors-pick) turns its popover body into a link — the
   // locked tooltip copy becomes the clickable explainer to the criteria + the
   // ADR-030 "can't be bought" promise. Mirrors the verified seal's hero-only
-  // popover → /about#verification (MEH-1336); no new copy. Card surfaces keep the
-  // compact plain-text tooltip (and never mount a locale link).
+  // link-out popover above (which MEH-1840 retargeted to /about/process); no new
+  // copy. `recommended` still points at the /about#editors-pick anchor — that
+  // section has no standalone page, so the retarget did NOT apply to it.
+  // Card surfaces keep the compact plain-text tooltip (never mount a locale link).
   const linkOut = badge.aboutHref && surface === "hero";
   const popoverBody = linkOut ? (
     <LocaleLink
@@ -233,6 +330,11 @@ function Badge({ badge, surface = "hero" }) {
       <Popover
         contentTestId={`badge-tooltip-${badge.key}`}
         contentClassName="w-52"
+        // MEH-1593: ProducerCard supplies the badge strip as the boundary, which
+        // switches this popover to the MEH-1592 overlay mode. Hero surfaces pass
+        // no ref and are byte-identical.
+        overlay={Boolean(avoidRef)}
+        avoidRef={avoidRef}
         trigger={
           // MEH-813: outer button = ≥24×24 hit-area (WCAG 2.5.8 AA); visible
           // pill in inner span keeps byte-identical bg/border/padding.

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
 import ExperienceDetailClient from "./ExperienceDetailClient";
+import { ExperienceMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -9,14 +11,41 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // static const. Fetches experience title server-side for D1 title format;
 // gracefully falls back to seo.experience.title_fallback if API unreachable
 // or experience not found (404 path).
+// MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
+// decided in docs/audits/producer-detail-page-validation.md §6 — never throw,
+// never notFound() (the MEH-1754 class). Inline per the over-engineering guard.
+const ROUTE = "/[locale]/experiences/[id]";
+
 async function getExperience(id) {
   try {
     const res = await serverFetch(`${API_URL}/experiences/${id}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    if (!res.ok) {
+      // >= 500 only — a pending/rejected experience is 404 to the public by
+      // design (routers/experiences.py:7). Threshold from lib/api.js:140.
+      if (res.status >= 500) {
+        Sentry.captureMessage("SSR fetch failed", {
+          level: "error",
+          extra: { route: ROUTE, id, status: res.status },
+        });
+      }
+      return null;
+    }
+    const data = await res.json();
+    const parsed = ExperienceMetadataSchema.safeParse(data);
+    if (!parsed.success) {
+      Sentry.captureMessage("SSR payload failed schema validation", {
+        level: "warning",
+        extra: { route: ROUTE, id, issues: parsed.error.issues },
+      });
+    }
+    // Raw, never `parsed.data` — the schema is minimal, so parsing would strip
+    // every undeclared key from the metadata input (MEH-901 class).
+    return data;
+  } catch (err) {
+    // Was `catch { return null }`. Same return, no longer silent.
+    Sentry.captureException(err, { extra: { route: ROUTE, id } });
     return null;
   }
 }

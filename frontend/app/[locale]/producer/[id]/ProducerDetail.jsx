@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
@@ -47,6 +47,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const { activeTab, sectionRefs, tabBarRef, scrollToSection } = useTabScroll();
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+
+  // MEH-1693: the post-save AlertPrefsPanel is owned HERE, not by either heart.
+  // The page has two hearts on different surfaces — the hero overlay circle
+  // (ImageGallery, mobile) and the quiet row (ProducerHeader, desktop) — and
+  // they are siblings, so this is their only common ancestor. Both call
+  // openAlerts; ProducerHeader renders the single panel (its mount sits in
+  // normal flow, clear of both the pinned row and the absolute hero overlay).
+  // One owner ⇒ exactly one panel in the DOM regardless of which heart fired.
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const openAlerts = useCallback(() => setAlertsOpen(true), []);
+  const closeAlerts = useCallback(() => setAlertsOpen(false), []);
 
   // MEH-1306: deep-link landing for the edit tab's "view on page" links. The
   // sections mount only after the client fetch resolves, so the browser's
@@ -118,12 +129,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           it (→ #images card). Non-owners get an empty zero-height flex div —
           no reserved space, no CLS. */}
       <div id="section-images" className="scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
+        {/* MEH-1843: verificationDocType + verifiedAt feed the masthead seal's
+            popover body, which must read word-for-word the same as BadgeRow's
+            hero chip popover — both render on this page. Without them the
+            masthead falls back to the generic sentence while the hero chip
+            shows the doc-type-specific one: two different claims, one page. */}
         <ImageGallery
           images={images}
           producerId={producer.id}
           producerName={producer.name}
           verified={producer.verification_tier === "verified"}
+          verificationDocType={producer.verification_doc_type}
+          verifiedAt={producer.verified_at}
           shareUrl={shareUrl}
+          onFavorited={openAlerts}
         />
         <div className="flex justify-end">
           <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
@@ -143,28 +162,56 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">
-          {[
-            { key: "about", label: t("producer.detail.tabs.about"), Icon: Info },
-            { key: "products", label: t("producer.detail.tabs.products"), Icon: Package },
-            { key: "delivery", label: t("producer.detail.tabs.delivery"), Icon: Truck },
-            // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
-            // star implies a rating system the reviews section doesn't provide.
-            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => scrollToSection(tab.key)}
-              className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
-                activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-fg-muted"
-              }`}
-            >
-              <tab.Icon size={18} weight={activeTab === tab.key ? "fill" : "regular"} />
-              {tab.label}
-            </button>
-          ))}
+          {/* MEH-1390: a tab whose section never renders is a dead click, so
+              each tab mirrors its section's render condition from
+              ProducerSections.jsx (about :141 — description; products :159 —
+              products/signature; delivery :410-412 — any delivery/pickup
+              signal). Keep the pairs in sync when a section condition changes.
+              The reviews wrapper always renders (it is the IO observation
+              point), so that tab is unconditional — the list is never empty.
+              activeTab seeds to "about" (useTabScroll.js:13) and changes only
+              on tap, so when the about tab is filtered out the seed points at
+              a tab that doesn't exist and nothing would highlight until the
+              first tap. Derived render-side (no state, no effect): fall back
+              to the first visible tab. */}
+          {(() => {
+            const visibleTabs = [
+              { key: "about", label: t("producer.detail.tabs.about"), Icon: Info, show: !!producer.description },
+              {
+                key: "products",
+                label: t("producer.detail.tabs.products"),
+                Icon: Package,
+                show: !!(producer.products?.length > 0 || producer.top_product_name || producer.starting_price_label),
+              },
+              {
+                key: "delivery",
+                label: t("producer.detail.tabs.delivery"),
+                Icon: Truck,
+                show: !!(producer.offers_delivery || producer.delivery_areas?.length > 0 || producer.pickup_points),
+              },
+              // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
+              // star implies a rating system the reviews section doesn't provide.
+              { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText, show: true },
+            ].filter((tab) => tab.show);
+            const effectiveActiveTab = visibleTabs.some((tab) => tab.key === activeTab)
+              ? activeTab
+              : visibleTabs[0].key;
+            return visibleTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => scrollToSection(tab.key)}
+                className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
+                  effectiveActiveTab === tab.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-fg-muted"
+                }`}
+              >
+                <tab.Icon size={18} weight={effectiveActiveTab === tab.key ? "fill" : "regular"} />
+                {tab.label}
+              </button>
+            ));
+          })()}
         </div>
       </nav>
 
@@ -178,7 +225,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             primaryCategory={primaryCategory}
             hasImages={hasImages}
             shareUrl={shareUrl}
+            alertsOpen={alertsOpen}
+            onOpenAlerts={openAlerts}
+            onCloseAlerts={closeAlerts}
           />
+          {/* MEH-1691: the weekly order-acceptance strip that used to render
+              here was removed — the order window is stated exactly once, as the
+              derived status inside ProducerHeader's meta line. DO NOT re-add a
+              second schedule render to this column (MEH-1305 A discipline). */}
           {/* Mobile/tablet inline contact card — the IntersectionObserver
               target for useStickyBar. Must stay the first child after
               ProducerHeader so the sticky bar fires at the same scroll
@@ -194,6 +248,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
+            {/* MEH-1649: the closed-window note moved INSIDE ContactCard,
+                directly under the primary CTA. Above the card it sat on the
+                cream background, visually detached from the button it
+                explains — the same defect Sapir reported on desktop. The
+                earlier "never inside it" note here assumed the card's other
+                content would separate the line from the CTA; under the button
+                itself (above the FAQ chips) it is adjacent to exactly what it
+                describes. */}
             <ContactCard producer={producer} isVacation={isVacation} />
           </div>
           <ProducerSections

@@ -5,9 +5,10 @@
  * Purpose:  Render h1-h4 with the project's font tokens so pages stop repeating
  *           inline `font-headline-* text-* font-bold` triplets. Net-new atom.
  * Does NOT: set color beyond the default `text` ink — pass `className` to tint.
- * Related:  ProducerCard.jsx:283 (font-headline-md title), ParallaxQuote.jsx:51
- *           (font-headline-display), tailwind.tokens.json (font families/sizes).
- * History:  MEH-602 (creation).
+ * Related:  ProducerCard.jsx:283 (font-headline-md title),
+ *           tailwind.tokens.json (font families/sizes).
+ * History:  MEH-602 (creation); MEH-1567 (dropped the ParallaxQuote.jsx
+ *           font-headline-display ref — that component was deleted).
  *
  * level   : 1 | 2 | 3 | 4  → semantic tag h1…h4 (and default size step)
  * variant : editorial (Frank Ruhl headline) | hero (display headline) | sans

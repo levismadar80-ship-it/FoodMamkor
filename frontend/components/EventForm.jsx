@@ -11,7 +11,10 @@
  *           the consuming page renders those and passes onSuccess/onCancel.
  * Related:  app/[locale]/producer/dashboard/events/new/page.js (create wrapper),
  *           events/[id]/edit/page.js (edit wrapper), components/AddressSearch.jsx.
- * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here).
+ * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
+ *           MEH-1809 (client-side required/range validation, inline per field
+ *           via ui/Input + focus to the first invalid one — the top banner now
+ *           carries server/network errors only).
  */
 
 import { useState } from "react";
@@ -37,7 +40,7 @@ const DEFAULTS = {
   lng: null,
   city: "",
   image_url: "",
-  category: "סדנה",
+  category: "אחר",
   price: 0,
   max_participants: "",
   registration_url: "",
@@ -56,11 +59,54 @@ function seed(initial) {
     lng: initial.lng ?? null,
     city: initial.city ?? "",
     image_url: initial.image_url ?? "",
-    category: initial.category ?? "סדנה",
+    category: initial.category ?? "אחר",
     price: initial.price ?? 0,
     max_participants: initial.max_participants ?? "",
     registration_url: initial.registration_url ?? "",
   };
+}
+
+// MEH-1809: the fields the browser used to police via native `required` / `min`
+// attributes. The form is `noValidate` now, so these checks replace them — all
+// evaluated together, each landing on its own field. Order = DOM order, which is
+// what makes "focus the first invalid field" mean the topmost one.
+const EVENT_FIELD_ORDER = ["title", "event_date", "price", "max_participants", "registration_url"];
+
+// `type="url"` rejects "abc" and "www.example.com" but ACCEPTS "javascript:…"
+// and "data:…" — measured in Chromium, not assumed. This mirrors that exactly,
+// so the boundary is restored and nothing more: registration_url reaches an
+// href (EventDetailClient.jsx:157) with no backend validation of any kind
+// (schemas.py:2937), and closing the scheme hole is a security fix that needs
+// its own ticket rather than a quiet ride-along here.
+function isNativeValidUrl(value) {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const isWholeNumber = (value) => Number.isInteger(Number(value));
+
+function validateEventForm(f, t) {
+  const errors = {};
+  if (!f.title.trim()) errors.title = t("error_title_required");
+  if (!f.event_date) errors.event_date = t("error_date_required");
+  if (f.price !== "") {
+    if (Number(f.price) < 0) errors.price = t("error_price_negative");
+    // EventCreate.price is `int` — a fractional value 422s with an opaque
+    // banner, which is what the browser's implicit step=1 used to prevent.
+    else if (!isWholeNumber(f.price)) errors.price = t("error_whole_number");
+  }
+  if (f.max_participants !== "") {
+    if (Number(f.max_participants) < 1) errors.max_participants = t("error_max_participants_min");
+    else if (!isWholeNumber(f.max_participants)) errors.max_participants = t("error_whole_number");
+  }
+  if (f.registration_url.trim() !== "" && !isNativeValidUrl(f.registration_url.trim())) {
+    errors.registration_url = t("error_invalid_url");
+  }
+  return errors;
 }
 
 /**
@@ -74,12 +120,18 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   const tCat = useTranslations("events.categories");
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [unverified, setUnverified] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const isEdit = mode === "edit";
-  const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const update = (field) => (e) => {
+    const { value } = e.target;
+    setForm((f) => ({ ...f, [field]: value }));
+    // A field the owner is fixing stops shouting at them (GOV.UK).
+    setFieldErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
+  };
 
   // MEH-988: click-to-upload replaces the raw Cloudinary-URL input.
   const handleImageUpload = async (e) => {
@@ -103,6 +155,17 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     e.preventDefault();
     setError("");
     setUnverified(false);
+
+    const errors = validateEventForm(form, t);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstInvalid = EVENT_FIELD_ORDER.find((field) => errors[field]);
+      const el = document.getElementById(firstInvalid);
+      el?.focus();
+      el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setFieldErrors({});
     setSubmitting(true);
     try {
       const payload = {
@@ -136,7 +199,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <Input
           id="title"
           type="text"
@@ -145,6 +208,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           value={form.title}
           onChange={update("title")}
           placeholder={t("field_title_placeholder")}
+          error={fieldErrors.title}
         />
 
         <Field id="description" label={t("field_description_label")}>
@@ -166,6 +230,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             required
             value={form.event_date}
             onChange={update("event_date")}
+            error={fieldErrors.event_date}
           />
           <Input
             id="event_time"
@@ -235,6 +300,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             label={t("field_price_label_full")}
             value={form.price}
             onChange={update("price")}
+            error={fieldErrors.price}
           />
           <Input
             id="max_participants"
@@ -244,6 +310,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             value={form.max_participants}
             onChange={update("max_participants")}
             placeholder={t("field_max_participants_hint")}
+            error={fieldErrors.max_participants}
           />
         </div>
 
@@ -251,6 +318,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           <label className="block text-sm font-medium text-text mb-1">{t("image_label")}</label>
           {form.image_url ? (
             <div className="flex items-center gap-3">
+              {/* raw img: upload preview. `form.image_url` is whatever POST /upload returned —
+                  a Cloudinary secure_url OR the local /placeholder-image.png fallback
+                  (upload.py:115). Mixed provenance, authenticated form chrome, 96px. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={form.image_url}
@@ -289,6 +359,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           onChange={update("registration_url")}
           placeholder={t("field_registration_url_placeholder")}
           dir="ltr"
+          error={fieldErrors.registration_url}
         />
 
         <div className="flex gap-3 pt-4">

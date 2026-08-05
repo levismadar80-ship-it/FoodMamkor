@@ -34,7 +34,10 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  # MEH-1653: ready_for_review מקבל group נפרד כדי שלא יבטל ריצת synchronize
+  # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
+  # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event.action == 'ready_for_review' }}
   cancel-in-progress: true
 
 jobs:
@@ -73,10 +76,19 @@ jobs:
           fi
           echo "No DO-NOT-MERGE marker. OK."
 
+  repo-guards:
+    name: Repo guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run every guard in scripts/checks/ (MEH-999)
+        run: bash scripts/checks/run-all.sh
+
   qa-artifacts-size:
     name: qa-artifacts size cap
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -129,6 +141,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
       workflows: ${{ steps.filter.outputs.workflows }}
+      deps: ${{ steps.filter.outputs.deps }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v3
@@ -144,6 +157,11 @@ jobs:
               - 'tests/**'
             workflows:
               - '.github/workflows/**'
+            # MEH-1585: mirrors dependency-audit.yml's backend manifests exactly.
+            # If the two lists diverge the gate silently stops covering a manifest.
+            deps:
+              - 'backend/pyproject.toml'
+              - 'backend/uv.lock'
 
   # ─────────────────────────────────────────────
   # JOB 1: npm run build
@@ -271,7 +289,7 @@ jobs:
     needs: changes
     if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -339,7 +357,7 @@ jobs:
           # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
           # risk_reasoning) to producers — additive, no table count change.
           # MEH-1338: alert_log (frequency-cap ledger for fire_alerts) — 36 -> 37.
-          EXPECTED_TABLES=38
+          EXPECTED_TABLES=39
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
@@ -641,6 +659,35 @@ jobs:
       - name: Check for bare Linear identifiers (warn-only)
         run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" || true
 
+  # ─────────────────────────────────────────────
+  # MEH-1585: backend CVE gate, as a ci-gate LEG.
+  # Lives here and not in dependency-audit.yml because `needs:` cannot cross
+  # workflows, and that workflow's paths filter means it does not run at all
+  # on a normal PR — a directly-required context would hang as Expected.
+  # ─────────────────────────────────────────────
+  pip-audit:
+    name: Backend dependency audit (pip-audit)
+    needs: changes
+    if: ${{ needs.changes.outputs.deps == 'true' && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+      - name: Install dependencies (uv sync --frozen)
+        run: uv sync --frozen
+        working-directory: backend
+      - name: pip-audit
+        run: uv run --with pip-audit pip-audit
+        working-directory: backend
+
   ci-gate:
     name: CI gate (required)
     if: always()
@@ -648,6 +695,7 @@ jobs:
       - changes
       - do-not-merge-gate
       - qa-artifacts-size
+      - repo-guards
       - build
       - ai-artifact-scan
       - pytest
@@ -657,6 +705,7 @@ jobs:
       - frontend-knip
       - frontend-tsc-strict
       - frontend-vitest
+      - pip-audit
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -667,6 +716,7 @@ jobs:
           R_CHANGES: ${{ needs.changes.result }}
           R_DNM: ${{ needs.do-not-merge-gate.result }}
           R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
+          R_REPO_GUARDS: ${{ needs.repo-guards.result }}
           R_BUILD: ${{ needs.build.result }}
           R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
           R_PYTEST: ${{ needs.pytest.result }}
@@ -676,6 +726,8 @@ jobs:
           R_FRONTEND_KNIP: ${{ needs.frontend-knip.result }}
           R_FRONTEND_TSC: ${{ needs.frontend-tsc-strict.result }}
           R_FRONTEND_VITEST: ${{ needs.frontend-vitest.result }}
+          R_PIP_AUDIT: ${{ needs.pip-audit.result }}
+          DEPS_TOUCHED: ${{ needs.changes.outputs.deps }}
         run: |
           set -euo pipefail
           fail=0
@@ -696,6 +748,25 @@ jobs:
             fi
           }
 
+          # MEH-1582: a job that the gate is actively enforcing must have RUN.
+          # `skipped` there means a draft suppressed it (or a future `if:` did) —
+          # that is an absence of evidence, not a pass.
+          strict_ok() {
+            case "$1" in
+              success) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          check_ran() {
+            if strict_ok "$2"; then
+              echo "  OK  $1: $2"
+            else
+              echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
+              fail=1
+            fi
+          }
+
           echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED"
 
           if ! ok "$R_CHANGES"; then
@@ -704,26 +775,37 @@ jobs:
           fi
 
           echo "Always required (stack-independent):"
-          check "DO-NOT-MERGE marker gate" "$R_DNM"
-          check "qa-artifacts size cap" "$R_QA_SIZE"
-          check "Env drift (.env.example)" "$R_ENV_DRIFT"
+          check_ran "DO-NOT-MERGE marker gate" "$R_DNM"
+          check_ran "qa-artifacts size cap" "$R_QA_SIZE"
+          check_ran "Repo guards" "$R_REPO_GUARDS"
+          check_ran "Env drift (.env.example)" "$R_ENV_DRIFT"
 
           if [ "$BACKEND_TOUCHED" = "true" ]; then
             echo "Backend stack touched — enforcing backend checks:"
-            check "Backend tests (pytest)" "$R_PYTEST"
-            check "Backend lint (ruff)" "$R_LINT_BACKEND"
+            check_ran "Backend tests (pytest)" "$R_PYTEST"
+            check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
             check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
           else
             echo "Backend stack not touched — backend checks not enforced."
           fi
 
+          # MEH-1585: enforced ONLY when a dependency manifest changed. On every
+          # other PR the job is `skipped` and this branch is not taken — so the
+          # gate neither blocks nor pretends the audit ran.
+          if [ "$DEPS_TOUCHED" = "true" ]; then
+            echo "Dependency manifest touched — enforcing the CVE audit:"
+            check_ran "Backend dependency audit (pip-audit)" "$R_PIP_AUDIT"
+          else
+            echo "No dependency manifest touched — pip-audit not enforced."
+          fi
+
           if [ "$FRONTEND_TOUCHED" = "true" ]; then
             echo "Frontend stack touched — enforcing frontend checks:"
-            check "Frontend build (Next.js)" "$R_BUILD"
-            check "AI artifact scan (MEH-449)" "$R_AI_SCAN"
+            check_ran "Frontend build (Next.js)" "$R_BUILD"
+            check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
             check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
             check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
-            check "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
+            check_ran "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
           else
             echo "Frontend stack not touched — frontend checks not enforced."
           fi

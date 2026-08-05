@@ -25,6 +25,45 @@ export function getWhatsAppHref(phone, text = "") {
 }
 
 /**
+ * MEH-1525: tag a business's own outbound website URL with the referral
+ * params GA4 maps to its "Referral" channel, so the business owner sees
+ * traffic from mehamakor in her own analytics — the cross-domain side of
+ * source-marking (the WhatsApp side is MEH-1524). Pure + synchronous, no
+ * side effects. Apply ONLY to a business's own website URL — never to a
+ * social profile, an external_order link, or the JSON-LD canonical URL.
+ *
+ * Contract:
+ *  - Parse with `new URL()`. If it throws, prepend "https://" and retry
+ *    once; if it still throws, return `rawUrl` UNCHANGED — never emit a
+ *    broken href.
+ *  - Preserve every existing query param (URLSearchParams, no string
+ *    concatenation) and the hash fragment (params land before the hash).
+ *  - If `utm_source` is ALREADY present, return `rawUrl` UNCHANGED — the
+ *    business set it deliberately; do not overwrite.
+ *
+ * @param {string} rawUrl — the business website URL (scheme optional)
+ * @returns {string} the tagged URL, or `rawUrl` unchanged on any failure
+ */
+export function withReferralParams(rawUrl) {
+  if (typeof rawUrl !== "string" || rawUrl.trim() === "") return rawUrl;
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    try {
+      url = new URL(`https://${rawUrl}`);
+    } catch {
+      return rawUrl;
+    }
+  }
+  // Business set utm_source deliberately — leave their URL untouched.
+  if (url.searchParams.has("utm_source")) return rawUrl;
+  url.searchParams.set("utm_source", "mehamakor");
+  url.searchParams.set("utm_medium", "referral");
+  return url.toString();
+}
+
+/**
  * Normalize an Israeli phone number into the exact format that WhatsApp's
  * `wa.me` deep-link expects: a contiguous digit string with NO `+`, NO
  * spaces, NO dashes, NO parentheses, NO dots, NO other punctuation.

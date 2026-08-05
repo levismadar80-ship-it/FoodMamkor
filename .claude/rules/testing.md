@@ -45,6 +45,172 @@ swapped to `GET /auth/me` (a real route, not in `SKIP_REFRESH`)._
 
 ---
 
+## Every new guard test must be shown failing (MEH-1619)
+
+A guard test that has never been observed failing is not evidence — it is a green light
+of unknown wiring. Any new or strengthened assertion (unit, e2e, or QA harness) ships
+with a **demonstrated failing-by-construction run**: break the thing it guards, show it
+goes red, restore, show it goes green. Put the two outcomes in the PR body.
+
+**The construction has to discriminate.** This is the part that is easy to get wrong.
+Showing "I broke it and the suite went red" proves nothing about *your change* if the
+**previous** version of the assertion also went red on that same construction. Before
+citing a failing run as justification, ask: would the old assertion have passed this?
+If you can't answer yes, the run is not evidence for the change.
+
+_MEH-1619, C-1: reintroducing a known-broken CSS form turned the suite red — and the old,
+weaker assertion failed on it too, because by sample time the library had already undone
+the broken state. The construction couldn't tell the two apart. What did: a **self-test**
+feeding the real classifier three synthetic inputs (correct / regression-shaped / neutral)
+and asserting how it sorts them. Deterministic — no animation, no timing — and it isolates
+exactly the changed condition._
+
+**Where the assertion is a classifier, ship the self-test.** Run it **first**: if the
+classifier can't tell a correct state from a broken one, nothing it reports afterwards is
+worth reading. Exercise the **real** implementation, never a copy — a second copy is free
+to drift from the one that matters. Repo precedent: `.claude/scripts/audit-skills.sh
+--self-test`, which CI asserts must exit 1.
+
+**Watch the shape of the pass condition.** An `||` between two cues lets either one carry
+the assertion, so losing the other is undetectable — that is how a probe signs off on a
+broken state. Prefer `&&`, or split into separate named checks so the failure message says
+which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
+
+**Lifting a quarantine is not the fix.** A `count()===0` skip reports green against a
+control that does not exist — proven on MEH-1698, where the old spec skipped past a
+completely missing element with only `test.fixme` lifted.
+
+That last clause is the whole rule, and it is why "un-quarantine it" is the wrong first
+move on any silent spec. The MEH-1698 file carried **two** disablers stacked — a
+`test.fixme` and, under it, `if ((await toggle.count()) === 0) test.skip(...)`. The
+obvious reading is that the quarantine was the problem. It was not: run the spec with the
+`fixme` removed and the skip intact, against a Header from which the control had been
+deleted entirely, and it still reports **skipped — exit 0**. The quarantine was decoration
+on top of a guard that could never have failed.
+
+The defect class is a guard that **consults its own subject**. `count()` on the element
+under test, `length === 0 → skip`, `if (!el) return` — each reads as defensive
+hygiene and each converts "the thing is gone" (the exact condition worth failing on) into
+"nothing to check". Gate on something the product cannot move instead: a static project
+identity (`test.skip(testInfo.project.name !== "desktop")`, as
+`e2e/visual/parity.spec.ts:585` does), an env var, a fixture file's presence.
+_(Citation re-derived 2026-08-03 — this read `:522`, which is now a comment; the
+pattern lives at `:585`, with siblings at `:615` and `:648`.)_
+
+**The review question:** if the element vanished entirely, does this test go red — or
+green? If you cannot answer from reading it, run it against a build with the element
+deleted. That two-run control is the only thing that distinguishes a guard from a
+decoration, and it is cheap.
+
+**A green VRT is not evidence that the frame is unchanged — read the text in it (MEH-1765).**
+`playwright.config.ts:61` sets `maxDiffPixelRatio: 0.02` (citation re-derived
+2026-08-03, MEH-1861 — accurate, unchanged). On the mobile project (Pixel 5,
+393×851, no `fullPage`) that is a **6,688 px** budget; on desktop (1440×900), **25,920 px**.
+Both are large enough to swallow a complete copy change or the loss of a navigation control.
+Measured on 29/07: the `home` hero label went `«מחפשות עכשיו:»` → `«פופולרי עכשיו:»` (~2,800 px
+of ink) and VRT stayed green; the MEH-1390 producer-detail tab bar went from **4 tabs to 2**
+(~3,100 px) and a scoped regen reported *"Baselines unchanged — nothing to commit."*
+
+The second-order effect is what makes this dangerous rather than merely loose: because
+`--update-snapshots` rewrites only a **failing** snapshot, a passing comparison produces **no
+new PNG** — so there is nothing for the eye pass to review, and the change leaves no trace in
+the diff at all. *"Baselines unchanged"* means **"under tolerance"**, never **"the frame is the
+same."** Any baseline review must therefore read the rendered strings, and any claim that a
+surface is unaffected needs a source other than a green VRT. Whether 2% is the right number is
+MEH-1765 — do not change `playwright.config.ts` under another ticket.
+
+**Requesting a regen by label instead of by dispatch:**
+[docs/ci/vrt-label-trigger.patch.md](../../docs/ci/vrt-label-trigger.patch.md) (MEH-1764,
+staged for Sapir — `.github/workflows/**` is CC-deny). That doc also records, with run ids,
+that CC's GitHub App **does** hold `actions: write`: `vrt-update.yml:15`'s claim to the
+contrary is false, and the label path is a deliberate narrowing of a permission CC holds —
+not a workaround for one it lacks.
+
+**Restoring an old artifact is not ratification.** A runner-generated image carries
+**credibility, not currency** — restoring it returns the first and not the second, and the
+file name looks identical either way. Before restoring any baseline, count the commits
+touching that surface since the blob was captured; if the answer is not zero, take a fresh
+capture instead.
+
+_Proven on `10ed80d7`, which restored a 3.5-day-old `home-mobile` blob across **36
+unmeasured home-render commits** — in a PR that cited the MEH-1552 candidate-baseline
+lesson while committing the same error in the one disguise that lesson doesn't name._
+
+**The class is wider than VRT: inheriting an artifact's authority without its currency.**
+Every instance has the same three parts — an artifact that was rigorously produced, a gap
+during which the world moved, and a reuse that carries the rigour forward while silently
+dropping the as-of. The artifact is not wrong; it is *stale*, and staleness has no visual
+tell. Same shape, different surfaces:
+
+- a **lockfile hash** or dependency pin re-pointed at a previously-audited version
+- a **cached CI layer** or fixture reused because it was built from a clean tree — once
+- an **audit verdict** (`approved` in `skills-allowlist.json`) carried across a content
+  change, which is exactly why MEH-420 made the hash the trust anchor and not the verdict
+- a **benchmark or perf number** requoted after the workload changed
+- a **screenshot in a ticket** used as current evidence of a live surface
+
+**The question that detects all of them:** *as of when was this true, and what has changed
+since?* If the answer needs a count and nobody has counted, the artifact is a claim about
+the past being presented as a claim about the present. **Reproduce, don't restore** — and
+where reproduction is expensive, record the as-of next to the artifact so the next reader
+can do the subtraction. An artifact whose as-of is unrecoverable cannot be ratified at all,
+only replaced.
+
+Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/audits/silent-failure-audit.md).
+
+---
+
+## A green that has two possible causes is not a signal
+
+> **A check that can be green for two opposite reasons is not a check.
+> Before trusting a green, ask what else would produce it.**
+
+The discrimination rule above asks whether an assertion goes red when the thing it guards
+breaks. This one asks the mirror question, and it is the one that keeps getting skipped:
+**when the check is green, is "the code is correct" the only explanation?** A green with two
+possible causes carries no information, and it is indistinguishable from a real pass at the
+moment you read it — which is why it survives review.
+
+The failure is not exotic. It happened **four times in a single day** (2026-07-28), across
+four different surfaces, to a session that had the discrimination rule loaded the whole time.
+
+| # | The green | What else produced it |
+|---|---|---|
+| 1 | **VRT `about` + `login` passing** for days | Webfonts were CORS-blocked (MEH-1727) in **both** the baseline capture and the PR run. Both sides were wrong *in the same way*, so the comparison matched. The fix (`35ce2619`) made the runs correct, the baselines stayed wrong, and all three specs went red **within minutes of the bug being fixed**. |
+| 2 | **`size` fallback guard passing** | The probe used `size="enormous"`, which is absent from `Object.prototype` too — so `CIRCLE_SIZES[size] \|\| …` and `Object.hasOwn(…)` behave identically on it. The assertion passed against the implementation it existed to reject. Only `constructor` / `toString` / `valueOf` / `__proto__` separate them. |
+| 3 | **`E2E gate (required)` = success** | `Playwright E2E` was `skipped`, and a skipped leg passes the aggregator. The green meant *nothing ran*, not *nothing failed*. Same mechanic as the draft-PR and docs-only cases already documented under "Required status checks", and the subject of MEH-1582. |
+| 4 | **`DashboardEmptyStateFormExclusive` passing** | Its mock producer carries no `status` field, so `notApproved` is never true and the gated branch is unreachable. It passed identically on the broken and the fixed page. The file list said the page was covered; the state matrix said otherwise. |
+
+**What they share:** in every case a *second* fault, a *skip*, or an *unreachable branch*
+supplied the green, and the reviewer read it as evidence of the first thing they thought of.
+Cases 1 and 4 are the dangerous shape — **symmetric** wrongness, where the reference and the
+subject drift together. Nothing in the output distinguishes that from agreement.
+
+**The practical test**, cheap enough to apply every time:
+
+1. Name at least one *other* world in which this check is green. If you can name one, the
+   check does not yet discriminate.
+2. For any comparison against a stored reference (VRT baseline, golden file, recorded
+   fixture, cached hash), ask whether the reference and the subject could be wrong
+   **together**. They share a generator far more often than anyone expects.
+3. Treat a green that appears the moment a *bug is fixed elsewhere* as a defect report about
+   the check, not as new breakage. Case 1 inverted: three specs went red because an unrelated
+   fix landed, which is what finally exposed years-shaped staleness in the baselines.
+
+**The inverse is worth one line, because it cost time the same day.** A *red* from an
+unvalidated probe is the same error wearing the opposite sign: a malformed `grep` reported
+every Tailwind class missing from the built CSS — including `w-16`, which is used site-wide.
+The build was fine; the probe was broken. **Validate a probe on a case whose answer you
+already know before you trust either its red or its green** — and report the retraction, since
+a withdrawn finding is evidence the probe was checked and a silent one is not.
+
+Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
+"Required status checks + docs-only merge" documents the skip-green mechanic for the
+aggregators; MEH-1582 tracks the bypass itself. Recorded under MEH-1732's pipeline-reliability
+scope — not a separate ticket.
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files. Fix every REFEREE
@@ -102,10 +268,11 @@ ruleset only ever gated on the 2 aggregators). Full mechanism:
 
 **`Playwright E2E (Vercel preview)` (mobile Pixel 5 + VRT parity) runs on every
 PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
-`staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
-MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
+`staging` (`e2e.yml:36-40`, re-derived 2026-08-03 — this read `:33-37`, which is
+now the trailing comment block — the old `deployment_status` trigger was dropped
+when MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
 wired into the required-check set — the sanctioned way to make it block merge is
-the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+the `E2E gate` aggregator (job id `e2e-gate`, `always()` +
 `needs: [filter, e2e]`) whose YAML is staged in
 [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
 (`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
@@ -113,23 +280,51 @@ ruleset was tried on 2026-07-13 and reverted the same day because it re-introduc
 MEH-892 (a skipped-but-directly-required job reads as `Expected` → blocks
 docs-only).
 
-> **⚠️ `e2e.yml`'s paths-filter does NOT currently skip docs-only** — proven by
-> MEH-1201's own CI (PR #1741, a docs-only diff, run `29283974004`): the `filter`
-> job emitted `frontend = true` for 5 `.md` files and the full suite ran (and was
-> red). Root cause: `e2e.yml`'s filter uses `predicate-quantifier: some` with
-> negation patterns (`!**/*.md`, `!docs/**`, …), under which each negation is an
-> additive OR that matches nearly everything — so the MEH-499 "docs-skip" never
-> worked. (`pr-checks.yml`'s `changes` job has **no** negations and correctly
-> skips docs — which is why the 2 required aggregators stayed green.) **Therefore
-> the E2E gate must NOT be added to the ruleset until (A) the `e2e.yml` filter is
-> fixed to actually skip docs-only, and (B) the suite is green.** Both fixes +
-> evidence are in [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
-> ("תנאי מוקדם A/B").
+> **✅ Precondition A is now MET — `e2e.yml`'s paths-filter DOES skip docs-only.**
+> This note previously said the opposite; that was true when written and is not
+> true now. The filter (`e2e.yml:74-78`, re-verified 2026-08-03 — the citation
+> read `:62-70`, which is now the `filter` job's `steps:`) is **positive-only** today —
+> `frontend/**`, `public/**`, `package.json`, `package-lock.json` — with **no**
+> negation patterns and **no** `predicate-quantifier`, which is exactly the
+> replacement block `e2e-gate.patch.md` prescribed for precondition A.
+> **Empirical proof** (MEH-999, 26/07): run `30220080416`, the docs-only staging
+> push `80d5c62` — the `Playwright E2E (Vercel preview)` job reported `skipped`.
+> The history that produced the old note is still accurate for its date: under
+> `predicate-quantifier: some`, each negation (`!**/*.md`, `!docs/**`, …) is an
+> additive OR matching nearly everything, so MEH-499's "docs-skip" never worked
+> and PR #1741 (run `29283974004`) ran the full suite on 5 `.md` files. The
+> negations are simply gone now. (The exact commit that removed them is not
+> recoverable — squash-merge flattened `e2e.yml`'s history — so this rests on the
+> live file plus the run above, not on a blame line.)
+>
+> **Precondition B — STALE, re-measured 2026-08-03 (MEH-1861).** This paragraph
+> read *"The suite is not green: 2 VRT `parity.spec.ts` failures (`map` desktop,
+> `home` mobile) as of run `30220096957`."* **That has not been true since at
+> least 2026-08-02.** Measured: the eight most recent `e2e.yml` runs (through
+> `30793569028`, 2026-08-03T07:24:58Z) all report `conclusion: success`,
+> including on `staging` (`30770303168`); and the QA bot on PR #2542 reported
+> **192 tests executed, 32 skipped, all green with `--fail-on-flaky-tests`
+> on** (run `30767398989`).
+>
+> **So both preconditions now look met** — A since 26/07, B as of 02–03/08. What
+> still blocks the gate is not a red suite: applying `e2e-gate.patch.md` edits
+> `.github/workflows/**` (CC-deny, MEH-671) and adding the context to ruleset
+> 15240090 is a GitHub-settings change. **Both are Sapir's**, and neither is
+> something a green suite makes automatic. See
+> [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
+> ("תנאי מוקדם A/B"). Re-measure before acting — this line is itself an
+> empirical claim with an as-of date, and one green window is not a trend.
+>
+> **Not to be confused with the *other* e2e.yml problem:** the filter skipping
+> docs-only is correct, but combined with the collapsed staging concurrency group
+> it silently destroys post-merge coverage — a docs push cancels the previous
+> code push's run and puts nothing in its place. That is MEH-1601, and its fix is
+> [docs/ci/e2e-concurrency.patch.md](../../docs/ci/e2e-concurrency.patch.md).
 
 Governance + gate matrix:
 [ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
 amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
-aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
 

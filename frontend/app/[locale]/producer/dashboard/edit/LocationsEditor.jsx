@@ -10,7 +10,9 @@
  *           of these rows lives in MapComponent (chunk 3, shipped).
  * Related:  frontend/lib/schemas.js:LocationInputSchema (Rule-19 safeParse);
  *           backend/app/routers/producer_me.py (CRUD + invariants).
- * History:  MEH-1421 (creation, MEH-1388 chunk 4a).
+ * History:  MEH-1421 (creation, MEH-1388 chunk 4a); MEH-1563 (field-guidance
+ *           layer per the MEH-1539 standard — card intro, per-field hints,
+ *           example placeholders, lat/lng behind a collapsed disclosure).
  */
 "use client";
 
@@ -194,6 +196,13 @@ export default function LocationsEditor() {
 
   return (
     <div className="space-y-3" data-testid="locations-editor">
+      {/* MEH-1563: card-level intro — what a location point is + where it renders.
+          Under the MEH-1539 standard a card-level "where" line covers every field
+          below it, so it stays visible in all three list states (0 / 1 / many). */}
+      <p className="text-xs text-fg-muted" data-testid="locations-intro">
+        {t("intro")}
+      </p>
+
       {locations.length === 0 && !adding ? (
         <EmptyState
           icon={MapPin}
@@ -316,8 +325,36 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
   const [form, setForm] = useState(initial);
+  // MEH-1563: collapsed for a NEW location (the point of the disclosure — the
+  // form must not open on two unexplained numbers), but expanded when the row
+  // already carries coordinates, so editing never hides a value the owner
+  // previously set. Seeded once via useState so a re-render can't reopen a
+  // disclosure the owner just closed. Null-checked rather than String()-cast:
+  // String(null) is "null", which is !== "" and would open the disclosure on a
+  // NEW location if a caller ever passed null for an unset coordinate. Both of
+  // today's callers (EMPTY_FORM, toEditForm) hand over "", so this is a guard
+  // on the invariant, not a live bug.
+  const [coordsOpen] = useState(
+    () =>
+      initial.lat != null &&
+      initial.lat !== "" &&
+      initial.lng != null &&
+      initial.lng !== "",
+  );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  // MEH-1579: the city/address hint follows the precision selected RIGHT NOW —
+  // an `approximate` location renders a pin in the area with no address, so a
+  // flat "shown in navigation" line promised a surface the customer never sees
+  // (MEH-1539 standard, principle 2). Reads `form.location_precision`, so it
+  // re-renders live as the owner switches the select — no save round-trip.
+  // REUSES: the per-option `precision_helper` mechanism two fields above.
+  const placeHint = tForm(
+    form.location_precision === "approximate"
+      ? "place_hint_approximate"
+      : "place_hint_exact",
+  );
 
   return (
     <form
@@ -340,8 +377,18 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tForm("kind_label")}>
+      {/* MEH-1563: every field carries a hint and/or an example placeholder
+          (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
+          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment.
+          MEH-1595: single column below `sm`. Two columns gave each input 134px
+          at 375px (108px usable) while the example placeholders measure
+          125–186px, so four of five were cut mid-example — `למשל: 050-1234567`
+          rendered as `של: 050-1234567`, losing the word that marks it as an
+          example. The same squeeze wrapped `kind_helper` to 5 lines and
+          `precision_helper` to 4. Full width fixes both at once; `sm:` and up
+          is unchanged. */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <Field label={tForm("kind_label")} hint={tForm("kind_helper")}>
           <select
             value={form.kind}
             onChange={set("kind")}
@@ -355,7 +402,7 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             ))}
           </select>
         </Field>
-        <Field label={tForm("precision_label")}>
+        <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
           <select
             value={form.location_precision}
             onChange={set("location_precision")}
@@ -365,31 +412,41 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             <option value="approximate">{tForm("precision_approximate")}</option>
           </select>
         </Field>
-        <Field label={tForm("label_label")}>
-          <TextInput value={form.label} onChange={set("label")} />
-        </Field>
-        <Field label={tForm("city_label")}>
-          <TextInput value={form.city} onChange={set("city")} />
-        </Field>
-        <Field label={tForm("address_label")}>
-          <TextInput value={form.address} onChange={set("address")} />
-        </Field>
-        <Field label={tForm("phone_label")}>
-          <TextInput value={form.phone} onChange={set("phone")} type="tel" />
-        </Field>
-        <Field label={tForm("lat_label")}>
+        <Field label={tForm("label_label")} hint={tForm("label_hint")}>
           <TextInput
-            value={form.lat}
-            onChange={set("lat")}
-            inputMode="decimal"
-            testid="location-lat"
+            value={form.label}
+            onChange={set("label")}
+            placeholder={tForm("label_placeholder")}
           />
         </Field>
-        <Field label={tForm("lng_label")}>
-          <TextInput value={form.lng} onChange={set("lng")} inputMode="decimal" />
+        <Field label={tForm("city_label")} hint={placeHint}>
+          <TextInput
+            value={form.city}
+            onChange={set("city")}
+            placeholder={tForm("city_placeholder")}
+          />
+        </Field>
+        <Field label={tForm("address_label")} hint={placeHint}>
+          <TextInput
+            value={form.address}
+            onChange={set("address")}
+            placeholder={tForm("address_placeholder")}
+          />
+        </Field>
+        <Field label={tForm("phone_label")}>
+          <TextInput
+            value={form.phone}
+            onChange={set("phone")}
+            type="tel"
+            placeholder={tForm("phone_placeholder")}
+          />
         </Field>
         <Field label={tForm("hours_label")}>
-          <TextInput value={form.opening_hours} onChange={set("opening_hours")} />
+          <TextInput
+            value={form.opening_hours}
+            onChange={set("opening_hours")}
+            placeholder={tForm("hours_placeholder")}
+          />
         </Field>
         <label className="flex items-center gap-2 self-end text-sm text-text">
           <input
@@ -403,6 +460,42 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
           {tForm("primary_label")}
         </label>
       </div>
+
+      {/* MEH-1563: raw coordinates are an escape hatch, not a required field —
+          collapsed by default so the form no longer opens on two unexplained
+          numeric inputs. Presentation only: `form.lat` / `form.lng` state and
+          buildPayload are untouched. REUSES: components/admin/ProducerForm.jsx:647
+          (MEH-1242 PR2 manual-coords disclosure). */}
+      <details
+        open={coordsOpen}
+        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+      >
+        {/* MEH-1595: 44px minimum tap target — the row was 16px tall, on the
+            one control an owner has to go looking for. Padding + min-height
+            only: no `display` override, because anything other than the
+            default `list-item` drops the disclosure triangle that signals the
+            row is expandable. */}
+        <summary
+          className="min-h-[44px] cursor-pointer py-3 text-xs font-medium text-fg-muted"
+          data-testid="location-coords-toggle"
+        >
+          {tForm("coords_summary")}
+        </summary>
+        <p className="mt-1 text-[11px] text-fg-muted">{tForm("coords_hint")}</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Field label={tForm("lat_label")}>
+            <TextInput
+              value={form.lat}
+              onChange={set("lat")}
+              inputMode="decimal"
+              testid="location-lat"
+            />
+          </Field>
+          <Field label={tForm("lng_label")}>
+            <TextInput value={form.lng} onChange={set("lng")} inputMode="decimal" />
+          </Field>
+        </div>
+      </details>
 
       <div className="flex items-center gap-2">
         <button
@@ -425,22 +518,35 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   );
 }
 
-function Field({ label, children }) {
+// MEH-1563: `hint` renders the field's "where it appears" / explanation line
+// under the input. Omitted → nothing renders (fields whose guidance is carried
+// by the card intro alone). The hint sits OUTSIDE the <label> on purpose: an
+// implicit label contributes its whole text to the control's accessible name,
+// so an in-label hint would make a screen reader announce the select as
+// "דיוק מדויק — הלקוחות יראו סיכה…". REUSES: edit/cards.jsx:801-802 — same
+// label/`*_where`-sibling split.
+function Field({ label, hint, children }) {
   return (
-    <label className="block text-xs">
-      <span className="mb-1 block font-medium text-fg-muted">{label}</span>
-      {children}
-    </label>
+    <div className="text-xs">
+      <label className="block">
+        <span className="mb-1 block font-medium text-fg-muted">{label}</span>
+        {children}
+      </label>
+      {hint ? (
+        <span className="mt-1 block text-[11px] text-fg-muted">{hint}</span>
+      ) : null}
+    </div>
   );
 }
 
-function TextInput({ value, onChange, type = "text", inputMode, testid }) {
+function TextInput({ value, onChange, type = "text", inputMode, testid, placeholder }) {
   return (
     <input
       type={type}
       inputMode={inputMode}
       value={value}
       onChange={onChange}
+      placeholder={placeholder}
       data-testid={testid}
       className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
     />
