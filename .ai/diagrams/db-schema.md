@@ -113,7 +113,7 @@ erDiagram
     producer_offers {
         uuid id PK
         uuid producer_id FK "CASCADE"
-        text offer_type "MEH-1823: CHECK free_delivery_above|gift_above|first_order|pickup_discount"
+        text offer_type "MEH-1823/1898: CHECK free_delivery_above|gift_above|first_order|pickup_discount|custom"
         int threshold_value "nullable; CHECK > 0 when stated — 'over 0' is unconditional, which NULL already spells"
         text threshold_unit "nullable; CHECK ils|units|liters|kg. Both-or-neither with threshold_value — this is why a litres threshold is expressible at all, producers.free_delivery_above being INTEGER shekels"
         text headline "nullable; app-capped at 60 in chunk 2"

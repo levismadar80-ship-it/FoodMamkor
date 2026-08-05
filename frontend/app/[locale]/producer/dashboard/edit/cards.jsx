@@ -2087,12 +2087,26 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
 // The third is why every other card can be saved without wiping the offer.
 // ============================================================
 
-// Which types show the threshold pair. Currently all four — the threshold is
+// Which types show the threshold pair. All four typed ones — the threshold is
 // optional for EVERY type and deliberately not gated by type (Sapir, 02/08:
 // "10% off pickup over ₪100" and "first order over ₪150" are real offers).
 // Kept as a named constant rather than inlined `true` so the decision is
 // visible at the point a future reader would try to narrow it.
-const OFFER_TYPES = ["free_delivery_above", "gift_above", "first_order", "pickup_discount"];
+//
+// MEH-1898 added `custom` as the fifth, and it IS the one exception to the
+// paragraph above — but only here, in the form. The backend stayed uniform
+// (no type-conditional validation, five CHECKs unchanged); what changes is
+// what the owner is shown. `custom` has no platform sentence for a threshold
+// to sit inside, so there is nothing to attach «מעל 100 ₪» to, and a field
+// whose value can never be rendered is a field that should not be on screen.
+const OFFER_TYPES = [
+  "free_delivery_above",
+  "gift_above",
+  "first_order",
+  "pickup_discount",
+  "custom",
+];
+const CUSTOM_OFFER_TYPE = "custom";
 const THRESHOLD_UNITS = ["ils", "units", "liters", "kg"];
 const MAX_OFFER_HEADLINE = 60;
 
@@ -2140,11 +2154,27 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
   // owner sees them before a round-trip. The server remains the authority —
   // these only shorten the loop, they do not replace the 422.
   const hasType = form.type !== "";
+  const isCustom = form.type === CUSTOM_OFFER_TYPE;
   const thresholdStated = String(form.threshold).trim() !== "";
   const unitStated = form.unit !== "";
-  const pairBroken = hasType && thresholdStated !== unitStated;
+  // Suppressed for `custom`, where the threshold inputs are not rendered. An
+  // owner who half-filled the pair under another type and then switched would
+  // otherwise be blocked by an error naming two fields she can no longer see.
+  const pairBroken = hasType && !isCustom && thresholdStated !== unitStated;
   const missingExpiry = hasType && !form.expires;
-  const blocked = pairBroken || missingExpiry;
+  // MEH-1898 — the ONLY required-headline rule in the system, and it lives
+  // here on purpose. The API accepts a headline-less `custom` offer (uniform
+  // validation, see ProducerOfferCreate) and OfferBadge renders nothing for
+  // one. Neither is a good outcome for the owner: she would save successfully
+  // and then find no offer on her page, with nothing telling her why. This
+  // check is what turns that silent no-op into a visible "write your words"
+  // before the request is made.
+  //
+  // `.trim()` matches OfferBadge's own test on the render side — the two must
+  // agree about what counts as words, or the form permits exactly the state
+  // the badge refuses to draw.
+  const missingCustomHeadline = isCustom && form.headline.trim() === "";
+  const blocked = pairBroken || missingExpiry || missingCustomHeadline;
 
   const handleSave = async () => {
     setSaving(true);
@@ -2156,8 +2186,17 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
             // toNullableInt semantics: "" -> null, never 0. A 0 here would be
             // rejected by the server anyway (threshold must be > 0), but
             // sending null is the honest encoding of "not stated".
-            threshold_value: thresholdStated ? Number(form.threshold) : null,
-            threshold_unit: thresholdStated ? form.unit : null,
+            //
+            // `!isCustom &&` — a hidden field's value must not be submitted.
+            // Switching an existing offer to `custom` leaves the old threshold
+            // in form state while its inputs are unmounted, and sending it
+            // would persist a number the owner can no longer see, edit, or
+            // find rendered anywhere. Clearing it is what the screen says is
+            // happening. The pair goes to null TOGETHER, so the both-or-neither
+            // CHECK holds either way.
+            threshold_value:
+              !isCustom && thresholdStated ? Number(form.threshold) : null,
+            threshold_unit: !isCustom && thresholdStated ? form.unit : null,
             headline: form.headline.trim() || null,
             expires_at: form.expires,
           }
@@ -2209,6 +2248,10 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
             form full of disabled inputs. */}
         {hasType && (
           <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+            {/* MEH-1898: hidden for `custom`. Unmounted, not disabled — a
+                disabled input still reads as "a thing this offer has, greyed
+                out", and a threshold is not a thing a custom offer has. */}
+            {!isCustom && (
             <div>
               <span className="block text-sm text-muted mb-0.5">{t("threshold_label")}</span>
               <p className="text-xs text-fg-muted mb-2">{t("threshold_hint")}</p>
@@ -2244,21 +2287,37 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 </p>
               )}
             </div>
+            )}
 
             <div>
+              {/* MEH-1898: under `custom` this field stops being the optional
+                  extra line and becomes the offer itself, so the label must
+                  stop saying «(לא חובה)». Reuses the dropdown's own approved
+                  string rather than inventing a second name for one thing. */}
               <label htmlFor="offer-headline" className="block text-sm text-muted mb-1">
-                {t("headline_label")}
+                {isCustom ? t("types.custom") : t("headline_label")}
               </label>
-              <p className="text-xs text-fg-muted mb-1">{t("headline_hint")}</p>
+              <p className="text-xs text-fg-muted mb-1">
+                {isCustom ? t("custom_hint") : t("headline_hint")}
+              </p>
               <input
                 id="offer-headline"
                 type="text"
                 maxLength={MAX_OFFER_HEADLINE}
                 value={form.headline}
+                required={isCustom}
+                aria-required={isCustom}
+                aria-invalid={missingCustomHeadline}
+                data-testid="offer-headline-input"
                 onChange={(e) => set({ headline: e.target.value })}
                 placeholder={t("headline_placeholder")}
                 className="w-full border border-border rounded-[10px] px-3 py-2 text-sm"
               />
+              {missingCustomHeadline && (
+                <p className="text-xs text-red-600 mt-1" data-testid="offer-headline-error">
+                  {t("custom_headline_required")}
+                </p>
+              )}
             </div>
 
             <div>
