@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-05 — סוויפ reconcile: 5 נסגרו, 2 נחתו, ואחד כמעט נסגר בטעות
+
+**PRs:** #2597 (מוזג — MEH-1895) · #2617 (מוזג — MEH-1652 חצי ב') · #2618 (פתוח — `cls-measure.yml`, **ספיר ממרג'ת**) · #2055 (auto-merge חמוש) · ה-PR הנוכחי (docs-בלבד).
+
+**ענפים:** `feature/meh-1652-copy-honesty-strings` · `feature/meh-1895-completeness-hours-step` · `feature/meh-1074-docs-backfill` — כולם מ-`origin/staging` טרי.
+
+### מה שצריך לדעת לפני שממשיכים
+
+1. **🚨 #2480 הוא ה-release לפרודקשן, לא PR מיושן.** `staging`→`main`, 928 commits, 1,410 קבצים — וכותרתו («MEH-1721: Full-codebase audit») מסתירה את זה לגמרי. **אל תחילי עליו כלל סגירה ואל תכניסי אותו ל-stale sweep.** הוא נתפס בדרך להחלת כלל כזה; מה שמנע היה אימות רשימת הקבצים לפני פעולה (כלל 26). MEH-1909 לוקח עליו בעלות — לאמץ, לשנות כותרת, **לא למזג**.
+
+2. **`require branches to be up to date` הודלק 05/08 (ספיר), וזה משנה את התור מיידית.** כל PR פתוח חייב sync לפני merge. **חוויתי את זה פעמיים באותה שעה** — #2055 סונכרן, #2242 נחת, והוא חזר להיות `behind` תוך דקות. זו לא תקלה; זו העלות ש-MEH-1527 §4.3 חזתה. **שלושת ה-pip PRs (#2127 · #2126 · #2125) יאדימו את שער ה-backend ברגע שיסונכרנו** — פגם ה-`uv.lock` עובר משקט לקולני, וזו התקדמות.
+
+3. **הכלל שנוסח וה-CI שלא אכף אותו — שמונה ימים.** `BRAND.md` §7 נחת 28/07; המחרוזת שהוא אוסר עוד רונדרה ב-05/08. **ההכללה שווה יותר מהמקרה:** כלל שנכתב כפרוזה בלי שער באותו PR הוא הצעה. ההזדמנות שנתפסה כאן — `scripts/checks/run-all.sh` ו-vitest **שניהם** מאפשרים שער חדש בלי לגעת ב-`.github/workflows/**`. לפני שמתכננים patch-doc ל-RED, לבדוק אם אחד מהשניים מספיק. כאן הוא הספיק וחסך פריט RED שלם.
+
+4. **דפוס שחזר שלוש פעמים בסשן: העבודה נסגרה מתחת לכרטיס אחר ואיש לא חזר לסמן.** MEH-784 פריט 4 (חי ב-`check-bash-safety.sh:114-131`) · MEH-1442 chunk 2 (הוחלף לפי **כותרתו** של MEH-1517) · MEH-1518 #1531 (סגור). **הכלל שנגזר: כשכרטיס X מכריז שהוא מחליף חלק מכרטיס Y — לעדכן את Y באותו רגע**, לא בסוויפ הבא. שלושתם ישבו In Progress שבועות על עבודה גמורה.
+
+5. **MEH-1853 עצור בעצירה מתוכננת אחת.** `cls-measure.yml` אינו קיים על `staging` — `actions/workflows` מחזיר 13 ו-הוא לא אחד מהם, ולכן `run_workflow` יחזיר 404. **ספיר ממרג'ת את #2618 וזהו**; משם CC מריצה, מורידה artifact, קוראת, מתקנת, מודדת שוב וסוגרת. **⛔ שער ה-baseline חמוש ולא נבדק:** control נכשל או `installed:false` → המספרים חסרי ערך, עצירה, אין תיקון.
+
+6. **`Adversarial review (calibration)` אדום על כל PR שנבדק היום** (#2597 · #2618 · #2055) — ובלוג של #2055 שלב ה-action עצמו מדווח `outcome=success`. כלומר תנאי ברמת הריפו, לא ממצא על ה-diff. `continue-on-error: true` ומחוץ ל-`needs:` של `ci-gate` → **גוזר כלום**. נושא: MEH-1844.
+
+7. **שבעה כרטיסים סומנו `needs-sapir` עם מה שחוסם כל אחד** — MEH-1527 (ההגדרה של 2b הודלקה, **שלוש ההוכחות טרם נצפו**) · MEH-1518 · MEH-1508 (המלצה: לפצל 3א backend מ-3ב VRT — הסתירה ב-`?vegan=true` פתירה **היום** ולא תלויה ב-VRT) · MEH-1442 · MEH-784 · MEH-1214 · ועוד.
+
 ## 2026-08-04 — MEH-1700 Phase 2 + פרישת עוגן ה-resume הכפול
 
 **PRs:** #2600 (מוזג — MEH-1700 Phase 2, tests-only) · PR הנוכחי (docs-בלבד: CHANGELOG/HANDOFF + מחיקת `.cc-sweep/queue-state.json`).
