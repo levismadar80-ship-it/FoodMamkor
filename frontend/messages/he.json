@@ -854,7 +854,6 @@
         "vacation_msg": "שליחת הודעה"
       },
       "order_window": {
-        "cta_note": "אפשר לשלוח הודעה גם עכשיו — היא תמתין לבית העסק עד שההזמנות ייפתחו",
         "schedule_heading": "מתי מקבלים הזמנות",
         "schedule_subtitle": "הימים והשעות שבהם בית העסק מקבל הזמנות",
         "days": {
@@ -897,7 +896,8 @@
         "free_delivery_above": "משלוח חינם",
         "gift_above": "מתנה",
         "first_order": "הטבה להזמנה ראשונה",
-        "pickup_discount": "הנחה באיסוף עצמי"
+        "pickup_discount": "הנחה באיסוף עצמי",
+        "custom": "הטבה בניסוח חופשי"
       },
       "text": {
         "free_delivery_above": "משלוח חינם",
@@ -935,6 +935,8 @@
       "headline_label": "משפט משלך (לא חובה)",
       "headline_hint": "מוצג מתחת להטבה בעמוד שלך. עד 60 תווים, בלי אימוג'י.",
       "headline_placeholder": "המתנה: צנצנת דבש קטנה",
+      "custom_hint": "נסחי את ההטבה במילים שלך — עד 60 תווים",
+      "custom_headline_required": "להטבה בניסוח חופשי חייבת להיות כותרת",
       "expires_label": "בתוקף עד",
       "expires_hint": "חובה. אחרי התאריך הזה ההטבה נעלמת מהאתר בלי שתצטרכי לגעת בה.",
       "expires_required": "צריך לבחור תאריך סיום להטבה",
@@ -2026,7 +2028,9 @@
       "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
       "default_user": "משתמשת",
       "default_producer": "העסק",
-      "deleted_toast": "הביקורת נמחקה"
+      "deleted_toast": "הביקורת נמחקה",
+      "expand": "עוד",
+      "collapse": "פחות"
     },
     "settings": {
       "title": "הגדרות",
@@ -4145,7 +4149,8 @@
           "image": "תמונה ראשית",
           "location": "קטגוריות ומיקום",
           "products": "מוצר ראשון בקטלוג",
-          "contact": "פרטי קשר"
+          "contact": "פרטי קשר",
+          "hours": "שעות פתיחה"
         },
         "fields": {
           "city": "עיר",
