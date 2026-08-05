@@ -854,7 +854,6 @@
         "vacation_msg": "שליחת הודעה"
       },
       "order_window": {
-        "cta_note": "אפשר לשלוח הודעה גם עכשיו — היא תמתין לבית העסק עד שההזמנות ייפתחו",
         "schedule_heading": "מתי מקבלים הזמנות",
         "schedule_subtitle": "הימים והשעות שבהם בית העסק מקבל הזמנות",
         "days": {
@@ -2029,7 +2028,9 @@
       "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
       "default_user": "משתמשת",
       "default_producer": "העסק",
-      "deleted_toast": "הביקורת נמחקה"
+      "deleted_toast": "הביקורת נמחקה",
+      "expand": "עוד",
+      "collapse": "פחות"
     },
     "settings": {
       "title": "הגדרות",
@@ -4148,7 +4149,8 @@
           "image": "תמונה ראשית",
           "location": "קטגוריות ומיקום",
           "products": "מוצר ראשון בקטלוג",
-          "contact": "פרטי קשר"
+          "contact": "פרטי קשר",
+          "hours": "שעות פתיחה"
         },
         "fields": {
           "city": "עיר",

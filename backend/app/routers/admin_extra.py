@@ -6,7 +6,7 @@ Lives in a separate file from admin.py to keep things readable.
 MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -43,6 +43,7 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import server_health
 from app.services.vacation_state import read_vacation_state
+from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
@@ -763,15 +764,31 @@ def get_dashboard(
     # main.py on every authenticated request. Pre-existing users who
     # haven't made a request since the column was added won't count
     # until they touch the API.
-    today = date.today()
-    dau_cutoff = datetime.combine(today - timedelta(days=29), datetime.min.time())
+    # MEH-1894: same three-part Israel-day alignment as the producer-side
+    # series (producer_me.py). last_active_at is a NAIVE UTC column
+    # (models.py:504), so the bucket is labelled UTC and then converted to
+    # Israel local before func.date() cuts the day — otherwise the boundary
+    # sits at midnight UTC (02:00/03:00 Israel) and a 00:30 session counts as
+    # yesterday. The cutoff is Israel midnight expressed back in naive UTC, so
+    # the oldest bucket keeps its first 2-3 hours.
+    today = israel_today()
+    dau_cutoff = (
+        datetime.combine(
+            today - timedelta(days=29), datetime.min.time(), tzinfo=ISRAEL_TZ
+        )
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    israel_day = func.date(
+        func.timezone("Asia/Jerusalem", func.timezone("UTC", User.last_active_at))
+    )
     dau_rows = (
         db.query(
-            func.date(User.last_active_at).label("day"),
+            israel_day.label("day"),
             func.count(func.distinct(User.id)).label("count"),
         )
         .filter(User.last_active_at.isnot(None), User.last_active_at >= dau_cutoff)
-        .group_by(func.date(User.last_active_at))
+        .group_by(israel_day)
         .all()
     )
     by_day = {str(r.day): int(r.count) for r in dau_rows}

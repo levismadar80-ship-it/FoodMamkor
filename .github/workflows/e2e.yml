@@ -403,6 +403,163 @@ jobs:
   # why the E2E job must NOT be added to the ruleset — THIS aggregator is the
   # required context instead.
   # ─────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────
+  # MEH-1788 step B — real Safari engine coverage, SHADOW MODE.
+  #
+  # Step A (merged) added the webkit projects to playwright.config.ts behind
+  # PW_WEBKIT=1. Without the flag the project list is byte-identical to before,
+  # so nothing here can change what the Chromium `e2e` job runs.
+  #
+  # Three properties make this non-blocking BY CONSTRUCTION, not by convention:
+  #   1. `continue-on-error: true` — a webkit failure never reds the run.
+  #   2. It is NOT in `e2e-gate`'s `needs:`. The required check literally
+  #      cannot see this job, so it cannot block a merge even if it fails.
+  #   3. A separate cache key. Sharing `playwright-${{ runner.os }}-chromium-*`
+  #      would let a webkit install poison the Chromium job's cache and vice
+  #      versa — the two jobs install different browsers into the same path.
+  #
+  # ONE profile on purpose: webkit-iphone13 is the device class the Israeli
+  # mobile-first audience actually carries. webkit-pixel5-viewport exists in the
+  # config as a controlled local comparison (same viewport, different engine);
+  # running both here would double the minutes to characterise the same engine.
+  #
+  # Promotion to blocking is a SEPARATE decision after a burn-in: once the
+  # failure list is stable and understood, drop continue-on-error and add this
+  # job to e2e-gate's needs. Do not promote on a single green run — a new engine
+  # surfacing zero failures on its first outing means the specs did not exercise
+  # anything engine-specific, not that Safari is fine.
+  # ─────────────────────────────────────────────────────────────────────────
+  e2e-webkit:
+    name: Playwright E2E (WebKit — shadow, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: filter
+    # Never fails the workflow. See property 1 above.
+    continue-on-error: true
+
+    # Identical trigger condition to the `e2e` job — same frontend paths-filter,
+    # same workflow_dispatch escape (MEH-1712), same dependabot exclusion.
+    if: |
+      (needs.filter.outputs.frontend == 'true' ||
+       github.event_name == 'workflow_dispatch') &&
+      github.actor != 'dependabot[bot]'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # Separate key from the Chromium job. See property 3 above.
+      - name: Cache Playwright browsers (webkit)
+        id: playwright-cache-webkit
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-webkit-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install Playwright (WebKit only)
+        run: npx playwright install --with-deps webkit
+        working-directory: frontend
+        if: steps.playwright-cache-webkit.outputs.cache-hit != 'true'
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
+
+      - name: Start Next.js server (background)
+        run: |
+          nohup npm run start > /tmp/next-start-webkit.log 2>&1 &
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+
+      - name: Wait for localhost readiness
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 000)
+            echo "attempt $i → HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::next start did not serve 200 within ~90s."
+          tail -50 /tmp/next-start-webkit.log
+          exit 1
+
+      # No --fail-on-flaky-tests here, deliberately: this run characterises a
+      # new engine, and treating first-outing flake as a hard failure would bury
+      # the real engine differences under retry noise. The Chromium job keeps
+      # the strict flag (MEH-484) — that is the one that gates.
+      - name: Run E2E tests (WebKit iPhone 13)
+        id: e2e-webkit-run
+        run: npx playwright test --project=webkit-iphone13
+        working-directory: frontend
+        env:
+          PW_WEBKIT: "1"
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          CI: "true"
+          DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+          DEMO_CONSUMER_PASSWORD: ${{ secrets.DEMO_CONSUMER_PASSWORD }}
+          DEMO_ADMIN_PASSWORD: ${{ secrets.DEMO_ADMIN_PASSWORD }}
+
+      # MEH-1604's lesson, applied to the shadow run: "0 executed" and "all
+      # passed" are indistinguishable from a green tick. During burn-in the
+      # executed count is the only number that proves the engine ran at all.
+      - name: Report WebKit executed count
+        if: always() && steps.e2e-webkit-run.outcome != 'cancelled'
+        working-directory: frontend
+        run: |
+          REPORT=playwright-report/results.json
+          if [ ! -f "$REPORT" ]; then
+            echo "::warning::No JSON report at $REPORT — the WebKit run produced no results."
+            exit 0
+          fi
+          EXPECTED=$(jq '.stats.expected // 0' "$REPORT")
+          UNEXPECTED=$(jq '.stats.unexpected // 0' "$REPORT")
+          FLAKY=$(jq '.stats.flaky // 0' "$REPORT")
+          SKIPPED=$(jq '.stats.skipped // 0' "$REPORT")
+          EXECUTED=$((EXPECTED + UNEXPECTED + FLAKY))
+          echo "WebKit iPhone 13 — executed=$EXECUTED (passed=$EXPECTED failed=$UNEXPECTED flaky=$FLAKY skipped=$SKIPPED)"
+          {
+            echo "### WebKit (iPhone 13) — shadow run"
+            echo ""
+            echo "| executed | passed | failed | flaky | skipped |"
+            echo "| -- | -- | -- | -- | -- |"
+            echo "| $EXECUTED | $EXPECTED | $UNEXPECTED | $FLAKY | $SKIPPED |"
+            echo ""
+            echo "Non-blocking. Not a leg of \`E2E gate\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$EXECUTED" -eq 0 ]; then
+            echo "::warning::WebKit run executed 0 tests — the shadow job proved nothing this run."
+          fi
+
+      # Distinct artifact name: two jobs uploading `playwright-report` in the
+      # same run collide.
+      - name: Upload Playwright report (webkit)
+        uses: actions/upload-artifact@v7
+        if: always() && steps.e2e-webkit-run.outcome == 'failure'
+        with:
+          name: playwright-report-webkit
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/**/trace.zip
+          retention-days: 7
+
   e2e-gate:
     name: E2E gate 
     if: always()
