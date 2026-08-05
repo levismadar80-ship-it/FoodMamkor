@@ -856,10 +856,9 @@
         "report_info_link": "Wrong info? Let us know"
       },
       "sticky_bar": {
-        "vacation_msg": "Send a message — they will respond soon"
+        "vacation_msg": "Send a message"
       },
       "order_window": {
-        "cta_note": "You can send a message now — it'll wait for the business until orders reopen",
         "schedule_heading": "When orders are accepted",
         "schedule_subtitle": "The days and hours this business accepts orders",
         "days": {
