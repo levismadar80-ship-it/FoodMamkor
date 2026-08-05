@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-05 — סוויפ תור: dependabot 8→3, CLS baseline ראשון, backfill משלוחים, ושלוש טענות קיימות שהתהפכו
+
+**PRs שנמזגו:** #2546 (`actions/stale`, תחת פיצול ההרשאות ל-workflows) · #2585 (harness ל-CLS) · #2615 (backfill docs 04/08) · #2620 (ספירת ראשי alembic) · #2622 (CI baseline של MEH-1910).
+**PRs פתוחים שנפתחו כאן:** **#2625** (backfill `offers_delivery`, **ספיר ממזגת**) · **#2626** (placeholder ל-MiniMap).
+**PRs שנסגרו לטובת כרטיסים:** #2131 → MEH-1914 · #2132 → MEH-1913. הענפים נשמרו.
+**נשאר לספיר:** #2125 · #2127 · #2129 · #2480 (ה-release) · #2625.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **ה-CI reviewer מת על מכסת הוצאה, לא על credential ולא על tag צף.** `429 · "You've hit your org's monthly spend limit"`. **אל תפתחו כרטיס נוסף על "ה-reviewer לא רץ" ואל תשנו עוד workflow** — שום שינוי בריפו לא יעזור עד שהמכסה תועלה ב-`claude.ai/settings/usage`. **ואל תכבו את `show_full_output`** עד אז: הוא היחיד שהופך את ה-429 לקריא, ובלעדיו זה נראה בדיוק כמו ההשבתה הישנה הבלתי-מוסברת. המחיר שלו אמיתי (**הריפו ציבורי — אומת ב-API**), אבל כרגע הוא משלם את עצמו.
+
+2. **הריפו ציבורי. אם מסמך אומר "פרטי" — הוא שגוי.** התיקון נחת ב-#2622. הטעות נוצרה מהכללת 403 על endpoint אחד (ruleset) ל"אין גישה ל-metadata"; `search_repositories` מחזיר את מלוא האובייקט. **לפני שכותבים טענה על הגדרות הריפו — לנסות את ה-endpoint שנותן אותה, לא להסיק מ-403 של שכנו.**
+
+3. **`MiniMap` הוא 356px, לא 300** — 300px מפה **ועוד** שורת ניווט שדלוקה כברירת מחדל (`MiniMap.jsx:546`). כל מי שיגע ב-placeholder של MEH-1853: **placeholder של 300 משאיר ~56px מההזזה ונראה כמו תיקון**. `e2e/qa-meh1853-placeholder-fit.mjs` מודד את שתי התיבות ומשווה; ה-self-test שלו מזין placeholder נאיבי ומוודא שהוא מדווח 300.
+
+4. **מובייל בעמוד בית העסק אינו `0.0000` — הוא `1.3735`, גרוע מדסקטופ ב-57%.** ה-DoD המקורי של MEH-1853 (*"מובייל לא יעלה מעל 0.0000"*) נכתב מול מספר שלא היה אמיתי. **היעד אחרי התיקון: מובייל חייב לרדת, לא רק "לא להידרדר".**
+
+5. **`leaflet.closest("div")` מחזיר את ה-container עצמו.** `closest()` מתאים את האלמנט לפני האבות. זה הפיל את ה-probe שלי ל-`realH=300` והפיק FAIL על תיקון תקין. כל probe שמאתר את MiniMap מבפנים החוצה צריך ללכת ל-**תיבת ה-300px** (`style.height === "300px"`) ואז ל-`parentElement` שלה.
+
+6. **סחיפת `uv.lock` היא ecosystem, לא באג של dependabot.** `.github/dependabot.yml:14` על `pip`; קיים `package-ecosystem: "uv"` שמעדכן גם את ה-lock. עד שזה יוחלף — **כל bump של backend יגיע אדום**, וה-red לא אומר כלום על החבילה. התיקון: `cd backend && uv lock` על הענף.
+
+7. **אל תעדכנו ענפים בצרורות.** תחת `require branches to be up to date` כל merge מחזיר את השאר ל-`behind`, והפיתוי הוא לעדכן את כולם. **זה שורף מכסת Vercel גם כשה-previews כבויים** (`api-deployments-free-per-day` נחצה היום). השאירו ל-`auto-merge` לסנכרן — SHA חדש אחד לכל PR שבאמת מתמזג.
+
+8. **`downgrade()` של backfill דאטה הוא no-op בכוונה, ולא עצלות.** הערך שהוזרם נכון, ושורה מתוקנת אינה ניתנת להבחנה משורה שתמיד הייתה עקבית. **הנגזרת התפעולית:** הספירה ניתנת להשגה **רק לפני** ההרצה — השאילתה ב-MEH-1909 §5ב חייבת לרוץ מול production לפני שה-release מגיע ל-main.
+
 ## 2026-08-04 — batch: תקרת preview לשורות המשלוח (נמזג) + MEH-1694 חלק א' (Phase 0, עוצר להכרעה)
 
 **PRs:** #2610 (קוד, נמזג `d7cf0daf`) · **ה-PR הזה** (backfill, כלל 31). MEH-1694 חלק א' **לא הפיק PR** — הוא read-only לפי ההגדרה, והתוצר הוא דוח בכרטיס.
