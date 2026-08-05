@@ -10,10 +10,11 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
  *
  * Module:   ProfileCompletenessCard
  * Purpose:  Surface a clear onboarding path to the business owner at the top
- *           of /producer/dashboard as a 4-step checklist (photo →
- *           categories+location → first product → primary contact) so a brand-new
- *           producer sees concrete next steps instead of three 0/0/0 analytics
- *           cards. Read-only consumer of the shared completeness heuristic.
+ *           of /producer/dashboard as a 5-step checklist (photo →
+ *           categories+location → first product → primary contact → opening
+ *           hours) so a brand-new producer sees concrete next steps instead of
+ *           three 0/0/0 analytics cards. Read-only consumer of the shared
+ *           completeness heuristic.
  * Does NOT: own the completeness logic — that lives in
  *           lib/producer-completeness.js (heuristic; never edited here) and is
  *           shared with the admin producers list. Does not mutate producer data
@@ -30,19 +31,26 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
  *           MEH-897 (state-progressive checklist). MEH-1092 (F3 de-red).
  *           MEH-1106 (4-step checklist; card-only products step, B1).
  *           MEH-1238 (checklist products step 3→1; badge threshold unchanged).
+ *           MEH-1895 (hours as the 5th step; the ring's divisor became
+ *           steps.length, closing the gap MEH-1884 left — the card mounted for
+ *           missing hours while showing 4/4 green).
  *
  * States:
- *   complete (4/4 steps) — collapses to a single confirmation line.
- *   incomplete           — progress ring + 4-step checklist, each row a
+ *   complete (all steps) — collapses to a single confirmation line.
+ *   incomplete           — progress ring + the checklist, each row a
  *                          deep-link to its editor section, plus an emphasized
  *                          next-step box and CTA. Never red (MEH-1092) — a
  *                          partial profile is progress, not a failure.
  */
 
-// The 4 checklist steps drive the ring + percent (goal-gradient). Named per
-// exec §10. Steps ①②④ derive from the shared heuristic (image, category+city+
-// location, contact); step ③ (products) is card-only per MEH-1106 B1.
-const STEP_COUNT = 4;
+// The checklist steps drive the ring + percent (goal-gradient). Named per
+// exec §10. Steps ①②④⑤ derive from the shared heuristic (image, category+city+
+// location, contact, hours); step ③ (products) is card-only per MEH-1106 B1.
+//
+// MEH-1895: the count is NOT a constant any more. It was `STEP_COUNT = 4`,
+// which meant adding a step silently produced percentages over 100 — and,
+// worse, left the card mounting for a missing field it could not name.
+// `steps.length` is the single source; there is nothing left to keep in sync.
 
 // MEH-1238: the checklist products step is DECOUPLED from the badge threshold.
 // badges.js:125 PRODUCTS_MIN = 3 stays as the auto-badge rule (intentionally
@@ -121,7 +129,7 @@ function ProgressRing({ percent, tone, label }) {
   );
 }
 
-// Build the 4 checklist steps from the shared heuristic + the card-only
+// Build the checklist steps from the shared heuristic + the card-only
 // products signal. Each step: { key, done, href }.
 function buildSteps(producer, missingLabels) {
   // MEH-213: delivery-only producers have no lat/lng — the location field is
@@ -160,6 +168,11 @@ function buildSteps(producer, missingLabels) {
       href: `${EDIT_HUB}#profile-products`,
     },
     { key: "contact", done: has("contact"), href: `${EDIT_HUB}#profile-contact` },
+    // MEH-1895: hours reads the SAME heuristic slug that mounts this card
+    // (producer-completeness.js:91-92, MEH-1884) — no second condition to
+    // drift. Anchor is the KEY_TO_ANCHOR value (edit/page.js:164), the form
+    // MEH-1165 established for the location row.
+    { key: "hours", done: has("hours"), href: `${EDIT_HUB}#hours` },
   ];
 }
 
@@ -171,8 +184,8 @@ export default function ProfileCompletenessCard({ producer }) {
   const missingLabels = new Set(missing);
   const steps = buildSteps(producer, missingLabels);
   const doneCount = steps.filter((s) => s.done).length;
-  const percent = Math.round((doneCount / STEP_COUNT) * 100);
-  const isComplete = doneCount === STEP_COUNT;
+  const percent = Math.round((doneCount / steps.length) * 100);
+  const isComplete = doneCount === steps.length;
   const firstTodo = steps.find((s) => !s.done);
 
   // Complete → collapse to a single confirmation line (the card never fully
@@ -191,7 +204,8 @@ export default function ProfileCompletenessCard({ producer }) {
     );
   }
 
-  // Percent lands on 0/25/50/75 for the 4-step model. >70 (i.e. 75%, 3 of 4)
+  // Percent lands on 0/20/40/60/80 for the 5-step model (MEH-1895 — it was
+  // 0/25/50/75 at four). >70 is now reached only at 80% (4 of 5), which still
   // reads as "almost there"; below that is the neutral progress headline. Calm
   // idiom (MEH-1092): gold ring, never red, for every incomplete state.
   const headline =
@@ -216,7 +230,7 @@ export default function ProfileCompletenessCard({ producer }) {
           </h2>
           <p className="text-sm md:text-base text-fg-muted mt-1">{t("checklist_sub")}</p>
 
-          {/* 4-step checklist. Done → text-primary ✓ + label; remaining →
+          {/* The checklist. Done → text-primary ✓ + label; remaining →
               text-fg-muted label, no marker (per the MEH-897 locked design). Each
               row deep-links to its editor section. */}
           <ul className="mt-4 space-y-1" aria-label={t("checklist_aria")}>

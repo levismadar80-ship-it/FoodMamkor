@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 // MEH-999: the events card became a Link to /events/[id] (was a static div).
 import Link from "next/link";
-import { Leaf, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter, useLocale } from "next-intl";
 import api from "@/lib/api";
@@ -27,6 +27,9 @@ import OwnerCard from "./OwnerCard";
 import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
+// MEH-1901: the full product detail (long description, per-product diet flags)
+// as an overlay — no route, no marketplace.
+import ProductSheet from "@/components/public/ProductSheet";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -48,6 +51,31 @@ const MIN_NEARBY_BUSINESSES = 4;
 // location" — gates both the merged location section and the MiniMap mount.
 function parseHasLocation(producer) {
   return producer.has_physical_location !== false && !!producer.lat && !!producer.lng;
+}
+
+// MEH-1901: the signature card's outer element. A <button> when the free-text
+// top_product_name matched a real product row (so there is a sheet to open),
+// an inert <div> otherwise. Same classes either way — the card looks identical;
+// only its interactivity is conditional, which is the honest rendering of
+// "signatureProduct may be null" (see the MEH-1233 B4 note on the derivation).
+const SIGNATURE_SHELL_CLASS =
+  "mb-4 flex items-center gap-3 bg-surface-card border border-border rounded-md p-3";
+
+function SignatureShell({ product, onOpen, ariaLabel, children }) {
+  if (!product) {
+    return <div className={SIGNATURE_SHELL_CLASS}>{children}</div>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(product)}
+      aria-label={ariaLabel}
+      data-testid="signature-product-trigger"
+      className={`${SIGNATURE_SHELL_CLASS} w-full text-start transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40`}
+    >
+      {children}
+    </button>
+  );
 }
 
 /**
@@ -83,6 +111,9 @@ export default function ProducerSections({
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
   const [reportOpen, setReportOpen] = useState(false);
+  // MEH-1901: which product's detail sheet is open (null = closed). The sheet
+  // is an overlay, not a route — one piece of state, no URL surface.
+  const [openProduct, setOpenProduct] = useState(null);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -177,8 +208,20 @@ export default function ProducerSections({
               numeric amount). The photo comes from the matching grid product
               when one exists (that product is deduped out of the grid below);
               otherwise the canonical leaf placeholder (MEH-1138). */}
+          {/* MEH-1901: the signature card opens the same sheet as a grid row —
+              but ONLY when top_product_name matched a real product row
+              (signatureProduct). A free-text label with no matching product has
+              no description, no diet flags and no id, so there is nothing for a
+              sheet to show; it stays the static card it has always been rather
+              than opening an empty overlay. */}
           {hasSignature && (
-            <div className="mb-4 flex items-center gap-3 bg-surface-card border border-border rounded-md p-3">
+            <SignatureShell
+              product={signatureProduct}
+              onOpen={setOpenProduct}
+              ariaLabel={t("producer.detail.sections.products.sheet_open_aria", {
+                name: producer.top_product_name || "",
+              })}
+            >
               <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-background">
                 {signatureImg ? (
                   <Image
@@ -215,7 +258,12 @@ export default function ProducerSections({
                   <p className="text-accent font-semibold mt-0.5">{signatureFreeTextPrice}</p>
                 ) : null}
               </div>
-            </div>
+              {/* Forward chevron points LEFT in RTL — same convention as
+                  ReviewExcerpt.jsx:86. Only when the card actually opens. */}
+              {signatureProduct && (
+                <CaretLeft size={14} className="ms-auto shrink-0 text-fg-muted" aria-hidden="true" />
+              )}
+            </SignatureShell>
           )}
 
           {/* MEH-1168 P2: compact product ROWS (approved 1b anatomy), replacing
@@ -244,9 +292,20 @@ export default function ProducerSections({
                     : null;
                 const freeTextPrice = numericPrice ? null : product.price_range || null;
                 return (
-                  <div
+                  // MEH-1901: the row is the trigger for the product sheet, so
+                  // it is a real <button> (keyboard + AT reachable), not a div
+                  // with a click handler. min-h-[96px] already clears the 44px
+                  // tap-target floor. Its accessible name is the product name;
+                  // the visible children stay exactly as they were.
+                  <button
                     key={product.id}
-                    className="flex items-center gap-3 py-2 min-h-[96px] border-b border-border"
+                    type="button"
+                    onClick={() => setOpenProduct(product)}
+                    aria-label={t("producer.detail.sections.products.sheet_open_aria", {
+                      name: product.name,
+                    })}
+                    data-testid="product-row"
+                    className="w-full text-start flex items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
                   >
                     <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-background">
                       {img ? (
@@ -277,8 +336,13 @@ export default function ProducerSections({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
+                      {/* MEH-1901: the row clamp goes from one line to two. One
+                          line was too little to judge whether the sheet is worth
+                          opening; the full text now lives in the sheet either
+                          way. (Worded without the old class name on purpose —
+                          the ticket's verification greps the repo for it.) */}
                       {product.description && (
-                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">{product.description}</p>
+                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{product.description}</p>
                       )}
                       {/* Same price cell/position for every card. MEH-1168 P1:
                           the ₪-suffixed numeric amount is bidi-isolated so RTL
@@ -290,10 +354,23 @@ export default function ProducerSections({
                         <p className="text-accent font-medium mt-1">{freeTextPrice}</p>
                       )}
                     </div>
-                  </div>
+                    {/* Forward chevron points LEFT in RTL (ReviewExcerpt.jsx:86). */}
+                    <CaretLeft size={14} className="shrink-0 text-fg-muted" aria-hidden="true" />
+                  </button>
                 );
               })}
             </div>
+          )}
+
+          {/* MEH-1901: mounted inside the products section, rendered only while
+              a product is open. `position: fixed` + backdrop, so the DOM
+              position has no bearing on where it paints. */}
+          {openProduct && (
+            <ProductSheet
+              product={openProduct}
+              producer={producer}
+              onClose={() => setOpenProduct(null)}
+            />
           )}
         </section>
       )}
