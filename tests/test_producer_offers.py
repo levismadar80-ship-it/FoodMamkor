@@ -432,3 +432,98 @@ def test_is_active_false_cannot_create_an_inactive_row(client, db, owner):
 
     served = client.get(f"/producers/{producer.id}").json()["active_offer"]
     assert served is not None, "an offer written as active must leave the API"
+
+
+# --------------------------------------------------------------------------- #
+# MEH-1898 — the fifth type, `custom`.
+#
+# The point of these three is that `custom` is NOT special anywhere in the
+# backend. The whole feature is a one-value widening of the CHECK plus a
+# rendering rule on the frontend, and the tests are written to fail if someone
+# later "tidies" that into a type-conditional branch.
+# --------------------------------------------------------------------------- #
+
+
+def test_custom_offer_with_a_headline_round_trips(client, db, owner):
+    """The happy path: `custom` + the owner's own words, served back verbatim.
+
+    Asserts on the PUBLIC read (`GET /producers/{id}`), not on the row, because
+    the headline being stored is not the feature — the headline reaching the
+    consumer surface is. OfferBadge renders exactly this string as the offer
+    text for `custom`.
+    """
+    user, producer = owner
+    headline = "שני מגשי בורקס במחיר אחד בימי שישי"
+    res = _put(
+        client,
+        user,
+        _offer(
+            offer_type="custom",
+            headline=headline,
+            threshold_value=None,
+            threshold_unit=None,
+        ),
+    )
+    assert res.status_code == 200, res.text
+
+    served = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert served["offer_type"] == "custom"
+    assert served["headline"] == headline
+
+
+def test_custom_without_a_headline_is_accepted_by_the_api(client, db, owner):
+    """A headline-less `custom` offer is a **200**, and that is deliberate.
+
+    This is the test most likely to be read as documenting a bug, so it is the
+    one that most needs to exist. `custom` carries no platform sentence, so an
+    empty headline means the offer has no text — and the reflex is to reject it
+    at the API. We do not, for the reasons in ProducerOfferCreate's docstring:
+    it would be the FIRST type-conditional rule in a model that is uniform by
+    an explicit 02/08 decision, and it would buy nothing, because the dashboard
+    already requires the headline client-side and OfferBadge renders nothing at
+    all for this row.
+
+    If someone adds `if offer_type == "custom" and not headline: raise`, this
+    test goes red. That is the alarm working, not a stale test — take it to the
+    decision in models.py before changing either.
+    """
+    user, producer = owner
+    res = _put(
+        client,
+        user,
+        _offer(
+            offer_type="custom",
+            headline=None,
+            threshold_value=None,
+            threshold_unit=None,
+        ),
+    )
+    assert res.status_code == 200, (
+        "a headline-less custom offer must be accepted — the backend is "
+        f"uniform across offer_types by design; got {res.status_code}: {res.text}"
+    )
+
+    served = client.get(f"/producers/{producer.id}").json()["active_offer"]
+    assert served["offer_type"] == "custom"
+    assert served["headline"] is None
+
+
+def test_an_unknown_offer_type_is_422_with_the_hebrew_message(client, db, owner):
+    """The closed set stays closed, and says so in Hebrew.
+
+    Two assertions, and the second is the one with teeth. A bare `== 422` would
+    pass against a validator that rejected EVERY type, including the four that
+    already worked — so this also pins that the message enumerates the live
+    vocabulary and that `custom` is inside it. The message is built by
+    interpolating OFFER_TYPES, so a type added to the tuple appears here for
+    free; a type added to the DB CHECK alone would not, and this is where that
+    drift surfaces.
+    """
+    user, _ = owner
+    res = _put(client, user, _offer(offer_type="not_a_real_type"))
+    assert res.status_code == 422, res.text
+    assert "סוג הטבה חייב להיות אחד מ" in res.text, res.text
+    assert "custom" in res.text, (
+        "the 422 must enumerate the live vocabulary including `custom` — if "
+        "this fails, the message and OFFER_TYPES have drifted apart"
+    )
