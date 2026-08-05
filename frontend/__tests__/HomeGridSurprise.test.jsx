@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 
+// MEH-1812: HomeHero now mounts EnSearchNotice, which calls useLocale() and
+// pulls in LanguageToggle -> @/i18n/navigation. This spec covers HomeHero's own
+// behaviour, so the notice is stubbed out rather than dragging the i18n
+// navigation stack into it. Its own contract is asserted in
+// __tests__/EnSearchNotice.test.jsx, including the /he absence case.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
+
+
 // MEH-1476 — "הפתיעו אותי" surprise-me button relocated from the hero to the
 // producers-grid end (was MEH-1288/MEH-1369, a text link beside "how it works").
 // It now sits near "load more" as a secondary outline pill:

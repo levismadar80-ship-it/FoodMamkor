@@ -1056,7 +1056,19 @@ class ProducerLocationOwnerOut(BaseModel):
 # (models.py `ProducerOffer.__table_args__`, revision b6e1d94a3f27). Kept as
 # module constants so the router, the tests and the 422 message all read the
 # same list — a second hand-written copy is how MEH-272 happened.
-OFFER_TYPES = ("free_delivery_above", "gift_above", "first_order", "pickup_discount")
+# MEH-1898 added the fifth member, `custom`. It is a plain member of the same
+# tuple and gets NO special handling anywhere in this file: the 422 message
+# below interpolates the tuple, so it names the new type for free, and every
+# other validator stays type-blind. `custom` carries no typed sentence, so its
+# text is the owner's `headline` — a rendering fact, enforced on the consumer
+# surface (OfferBadge.jsx), never a conditional branch here.
+OFFER_TYPES = (
+    "free_delivery_above",
+    "gift_above",
+    "first_order",
+    "pickup_discount",
+    "custom",
+)
 THRESHOLD_UNITS = ("ils", "units", "liters", "kg")
 MAX_OFFER_HEADLINE = 60
 
@@ -1092,6 +1104,24 @@ class ProducerOfferCreate(BaseModel):
     order over ₪150" are both real offers, so which types may carry a threshold
     is a product question, not a validation one. Do not add a type-conditional
     branch here — see the note on ProducerOffer in models.py.
+
+    **MEH-1898 extends that same rule to `custom`, and the tempting exception
+    is the headline.** `custom` has no typed sentence, so on the consumer
+    surface its `headline` IS the offer text — which reads like an argument for
+    `if offer_type == "custom" and not headline: raise`. There is no such
+    branch, and adding one would be the first type-conditional rule in this
+    model. Two reasons it stays out. (1) It buys nothing a caller can rely on:
+    the headline is `str | None` for every other type, the dashboard already
+    requires it client-side before the request is ever sent, and OfferBadge
+    renders nothing for a headline-less `custom` — so the empty case is already
+    handled where it is visible, by showing no offer rather than an empty one.
+    (2) It costs the uniformity that makes this model auditable: one
+    type-conditional branch is the precedent for the cross-constraint Sapir
+    rejected on 02/08, arriving through a side door.
+
+    So `{"offer_type": "custom", "headline": null}` is a **200**, deliberately,
+    and `tests/test_producer_offers.py` asserts exactly that. A future reader
+    who reads it as a bug should read this paragraph first.
 
     **`is_active` is deliberately NOT a field here.** It used to be, defaulting
     to True, and `_sync_active_offer` passed it through — so a caller could send
@@ -1470,6 +1500,17 @@ class ProducerAdminCreate(BaseModel):
         # MEH-1255: an exclusion list is only meaningful in nationwide mode.
         if self.delivery_excluded_cities and not self.delivery_nationwide:
             raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
+        # MEH-1879: nationwide scope on a business that declares no delivery is
+        # the contradiction CHECK producer_nationwide_requires_delivery rejects
+        # (MEH-1849, models.py:466). Create has no stored row to merge against,
+        # so the effective-state guard in services/delivery_validation.py does
+        # not fit here — this is the create-path half of the same invariant.
+        # Both fields carry defaults (False/False), so a payload naming only
+        # delivery_nationwide would otherwise reach the DB and 500.
+        if self.delivery_nationwide and not self.offers_delivery:
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
         return self
 
 
@@ -1802,6 +1843,15 @@ class ProducerUpdate(BaseModel):
         # check lives in the routers).
         if self.delivery_excluded_cities and dn is False:
             raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
+        # MEH-1879: nationwide=true sent together with an explicit
+        # offers_delivery=false is always invalid, whatever the stored row
+        # says. `od is False` and not `not od`: None means "field absent from
+        # this partial update", which is the effective-state guard's job
+        # (services/delivery_validation.py), not this one.
+        if dn and od is False:
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
         return self
 
     @model_validator(mode="after")
@@ -1943,6 +1993,13 @@ class ProducerListOut(BaseModel):
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
+    # MEH-1880: the declared weekly order window. Expand-only (ADR-007) and no
+    # migration — the column has existed since f4a1e9c3b7d2; only the LIST
+    # serializer was missing it, which is why no list surface (home grid,
+    # /producers, /map cards, favorites) could derive "open for orders now"
+    # while the producer PAGE already could. Defaults to None, so every
+    # existing response is byte-identical for a producer that has no window.
+    order_window: dict | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -2072,7 +2129,12 @@ class ProducerListOut(BaseModel):
         # both surfaces stay consistent during the 7-day overlap.
         if (
             self.vacation_until is not None
-            and self.vacation_until < date.today()
+            # MEH-1883: Israel calendar day, not the server's UTC one.
+            # `vacation_until` is a Date the owner picked in Israel terms, so
+            # between 00:00 and ~03:00 Israel the UTC clock still reads
+            # yesterday and the business stayed hidden from the listings
+            # (default-hide on on_vacation) for those extra hours every night.
+            and self.vacation_until < israel_today()
             and (
                 self.availability_status == "vacation"
                 or self.availability_state == "on_vacation"

@@ -19,6 +19,7 @@ export const COMPLETENESS_FIELDS = {
   category: "קטגוריה",
   image: "תמונה",
   short_desc: "תיאור קצר",
+  hours: "שעות פתיחה",
 };
 
 // MEH-1173: the MEH-532 seed description, written at registration from the
@@ -76,6 +77,19 @@ export function producerCompleteness(p) {
     !!(p.description || "").trim() && !isDefaultDescription(p.description);
   const noDescription = !(p.short_description || "").trim() && !hasRealDescription;
   if (noDescription) missing.push(COMPLETENESS_FIELDS.short_desc);
+
+  // MEH-1884: opening_hours is the visibility currency — it feeds the
+  // LocalBusiness JSON-LD `openingHoursSpecification` (lib/seo.js:288-291) and
+  // the open-now surfaces — but nothing told the owner it was missing. Counted
+  // here so the dashboard completeness card (page.js:338 gate) and the admin
+  // tooltip both surface it.
+  // Yellow-tier only: never part of redCondition below — a business with no
+  // hours is still findable and contactable, which is what red is reserved for.
+  // DO NOT add order_window here: it is a per-cycle ordering window, not a
+  // standing profile field, so an owner who runs no order cycles would read as
+  // permanently incomplete. Deliberately excluded (MEH-1884).
+  const noHours = !(p.opening_hours || "").trim();
+  if (noHours) missing.push(COMPLETENESS_FIELDS.hours);
 
   let priority = "green";
   const redCondition = !p.city

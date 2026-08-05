@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 
+// MEH-1812: HomeHero now mounts EnSearchNotice, which calls useLocale() and
+// pulls in LanguageToggle -> @/i18n/navigation. This spec covers HomeHero's own
+// behaviour, so the notice is stubbed out rather than dragging the i18n
+// navigation stack into it. Its own contract is asserted in
+// __tests__/EnSearchNotice.test.jsx, including the /he absence case.
+vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
+
+
 // MEH-1684 — hero search-zone redesign. This file carries the ticket's two
 // NUMERIC ABSENCE assertions, which are the whole point of the change:
 //
