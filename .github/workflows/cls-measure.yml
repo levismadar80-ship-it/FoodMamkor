@@ -1,0 +1,62 @@
+name: CLS measurement (manual)
+
+# workflow_dispatch בלבד — זו מדידה, לא שער. אסור שיהפוך ל-required:
+# הוא פוגע ביעד חיצוני חי, ולכן אדום שלו יכול להיות «ה-staging היה איטי»
+# באותה מידה כמו «הקוד נסוג» — ושער שאדום משתי סיבות אינו שער.
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Path to measure (e.g. /producer/<id>)"
+        required: true
+        type: string
+      url:
+        description: "Base URL"
+        required: false
+        default: "https://staging.mehamakor.online"
+        type: string
+      runs:
+        description: "Loads per viewport"
+        required: false
+        default: "3"
+        type: string
+
+jobs:
+  measure:
+    name: CLS measurement
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Measure CLS (control first, then 3 loads x 2 viewports)
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          node e2e/qa-meh1853-cls.mjs \
+            --url "${{ inputs.url }}" \
+            --path "${{ inputs.path }}" \
+            --runs "${{ inputs.runs }}" \
+            --out cls-results.json
+
+      - name: Upload numbers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cls-results
+          path: frontend/cls-results.json
+          if-no-files-found: error
+          retention-days: 30
