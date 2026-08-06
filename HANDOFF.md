@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-06 — MEH-1911: בידוד DB לכל worker (pytest -n auto). ההוכחה הושלמה, ה-PR חסום על השבתה של GitHub Actions
+
+**PRs:** **#2633** (`test(ci): per-worker DB isolation so pytest -n auto is safe`) — **פתוח, `mergeable_state: blocked`**, לא נמזג · ה-PR הזה (docs-בלבד, כלל 31).
+**ענפים:** `feature/meh-1911-pytest-parallel-db-isolation` · `feature/meh-1911-handoff-backfill` — שניהם מ-`origin/staging` טרי (`5501f9bc`).
+**אימות (מקומי, מלא):** 7 ריצות מלאות של הסוויטה — 2 סדרתיות (baseline לפני/אחרי) + 5 דו-שלביות מקביליות. **2,738 נאספו · 2,368 עברו · 89% coverage בכל חמש הריצות (0.0pt drift).**
+**מה שלא רץ:** `Backend tests (pytest)` **מעולם לא הורץ ב-CI על ה-head** — ראו סעיף 1. כל מספר בגוף ה-PR הוא מדידה מקומית על 4 ליבות; ה-runner הוא 2 ליבות.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **⛔ #2633 חסום על השבתה של GitHub Actions — לא על ה-diff, ולא על כשל טסט.** ריצת `pr-checks` על ה-head `d1cd511c` היא `31117022132` **attempt 2**, ומצבה **`queued` מאז 15:41:51Z** — היא לא התחילה. שלושה ניסיונות קודמים מתו ב-`Prepare all required actions` על `Service Unavailable` בהורדת ה-action, כשעתיים לפני כן. **אומת כלא-ספציפי ל-PR:** אותה חתימה בדיוק על jobs שאין ביניהם קשר מבני. `Deploy gate (required)` ירוק (17:26:37Z); `CI gate` לא דיווח כלל.
+   - **מה כן ירוק בענף:** `pr-checks` עברה בהצלחה על שני commits קודמים — `3c6d73d5` (14:22:52Z) ו-`f46bf12a` (14:44:01Z). כלומר ה-diff עבר CI, רק לא בגרסתו הסופית.
+   - **מה לא נעשה בכוונה:** לא נדחפו commits לריטריגר ולא הוזמנו re-runs נוספים. השבתת תשתית אינה כשל שמתקנים בדחיפה, וכלל 30 אוסר על ניטרול שער חסום. **הפעולה הבאה היא להמתין ולבדוק שוב** — לא לתקן.
+   - **אזהרה שכלל 21 מנסח והיא רלוונטית כאן:** `cancelled` מ**השבתה** נראה זהה ל-`cancelled` מ**supersession**, וההחלטה הפוכה. כאן אין ריצה חדשה יותר על אותו SHA, ולכן זו לא supersession.
+
+2. **ההוכחה שלמה ומבחינה — היא לא נשענת על ירוק.** על ה-conftest **המקורי**, `pytest tests/test_api.py -n 4` שוגה ב-~82% מהמודול (`EEEE…`) ואז נתקע עד kill ב-10 דקות. אותה פקודה בדיוק, ירוקה עם הבידוד. בלי הריצה האדומה הזאת הירוק לא היה עדות לכלום.
+   - **Teardown נמדד ולא הונח:** חמש הריצות יצרו והפילו **18** מסדי worker; `pg_database` אחריהן מכיל רק `mehamakor_test`.
+   - **מהירות:** 769s → **287–319s** (~2.5×). המעבר המקבילי לבדו 205–224s מול 758s (~3.5×); המעבר הסדרתי מוסיף ~66s קבועים.
+
+3. **טסט אחד לא ניתן להקבלה, וההכרעה הייתה לא לגעת בסף.** `test_login_timing_equivalence_across_failure_modes` (p95 spread < 20ms על שלושת ענפי הכשל של `/login`) נפל **3 מתוך 3** תחת `-n auto` עם spread של **526ms** — כולל שני ה-reruns שכבר היו לו. זו תחרות CPU, וה-docstring של הטסט עצמו חוזה אותה ומורה במפורש *"do NOT silently raise the 20ms threshold"*. לכן הוא סומן `serial` ורץ במעבר נפרד. **הכיסוי הביטחוני נשמר במלואו — הטסט לא דולג ולא הוחלש** (`.claude/rules/security.md` אוסר להחליש invariant כדי להעביר טסט).
+
+4. **ה-workflow דורש שני מעברים, לא שורה אחת.** הכרטיס ביקש `-n auto --durations=15` בשורה אחת; זה לא מספיק. צריך מעבר מקבילי (`-m "not serial"`) ומעבר סדרתי (`-m serial` עם **`--cov-append`**), והשער של 70% על הסכום. **בלי `--cov-append` המעבר השני מוחק את נתוני הכיסוי של הראשון והשער נבחן מול טסט אחד.**
+
+5. **שלושת קבצי ה-patch — שניים כבר ב-staging, אחד לא.** `docs/ci/meh-1910-ci-speedup.patch.md` ו-`docs/ci/meh-1912-vitest-shard.patch.md` נמצאים ב-`origin/staging`. **`docs/ci/meh-1911-pytest-parallel.patch.md` קיים רק בענף של #2633** — הוא מגיע ל-staging רק כשה-PR נמזג. סדר ההחלה של 1911: (א) `"pytest-xdist>=3.8.0",` ב-`pyproject.toml` אחרי `pytest-timeout`, (ב) `uv lock`, (ג) שני שלבי ה-workflow במקום `pr-checks.yml:396-404`. `.github/workflows/**` ו-`pyproject`/`uv.lock` אינם של CC.
+
+6. **#2629 נמזג — הפעולה הזאת כבר לא פתוחה.** הוא נרשם כאן כ"החלטה של ספיר שממתינה", וזה כבר לא נכון: `fix(ci): drop show_full_output before the spend limit is raised, not after` נמזג **06/08 13:04:28Z** ע"י ספיר. **הנגזרת שכן פתוחה:** `show_full_output` כבוי מעכשיו, ולכן כשמכסת ההוצאה תועלה ו-ה-reviewer יחזור לרוץ — **ה-429 שוב לא יהיה קריא בלוג**. מי שיאבחן את ה-job הבא לא יראה סיבה, רק צורה.
+
+7. **שתי פעולות של ספיר עדיין פתוחות:** (א) **מכסת ההוצאה של הארגון** — ה-CI reviewer מת על `429 / "You've hit your org's monthly spend limit"` (job `92308149134`, 05/08), וזו הסיבה השלישית שלא הייתה על השולחן קודם; (ב) **ה-ruleset המחמיר** — הוספת ההקשרים לשער נשארת שינוי הגדרות ב-GitHub, לא משהו שסוויטה ירוקה הופכת לאוטומטי.
+
 ## 2026-08-06 — MEH-1920: טקסט חופשי יצא מ-preview של כרטיסי ה-hub
 
 **PRs:** #2635 (קוד, **נמזג** `75d239d1` ע"י ספיר דרך auto-merge) · **ה-PR הזה** (backfill, כלל 31).
