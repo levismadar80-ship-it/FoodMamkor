@@ -3,6 +3,54 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-06 — MEH-1920: טקסט חופשי יצא מ-preview של כרטיסי ה-hub
+
+**PRs:** #2635 (קוד, **נמזג** `75d239d1` ע"י ספיר דרך auto-merge) · **ה-PR הזה** (backfill, כלל 31).
+**ענפים:** `feature/meh-1920-fix-hub-preview-chips` · `feature/meh-1920-docs-backfill` — שניהם מ-`origin/staging` טרי. ה-clone אומת כלא-shallow לפני כל שאלת provenance.
+**אימות (#2635):** build ירוק · vitest **2423 passed** / 1 skipped (283 קבצים) · lint 0 errors · 10/10 repo guards · API contract 0/0 · `CI gate` + `Deploy gate` + `E2E gate` ירוקים · Playwright E2E (Chromium) ירוק.
+**מה שלא רץ:** `pytest tests/test_api.py` — התקנת התלויות של ה-backend חסומה ב-sandbox. אפס קבצי backend ב-diff; ה-job ב-CI דילג בהתאם ל-paths-filter. לא נטען מעבר לכך.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **הבאג היה layout ולא data, וההיפותזה הראשית בכרטיס הייתה הפוכה.** הכרטיס הניח string שהועבר ל-`PreviewChips`. זה **בלתי אפשרי מכנית** — `shown.map()` זורק על מחרוזת. ה-DOM היה תקין, השמות שלמים, ורק הרוחב המרונדר היה שגוי. **הנגזרת הכללית:** כשמדווח "אותיות בודדות", לבדוק את הרוחב המחושב לפני שמחפשים את הדאטה. `chip.scrollWidth > chip.clientWidth` הוא ההבחנה.
+
+2. **`truncate` על flex item הופך אותו לניתן לכיווץ עד אפס.** `overflow: hidden` מאפס את `min-width: auto`. לכן כל node של טקסט חופשי בשורת preview **מכווץ את שכניו**, לא רק את עצמו. זה הכלל שנשבר, והוא חל על כל שורת flex עם `truncate` — לא רק על ה-hub.
+
+3. **jsdom עיוור לזה לחלוטין.** טסט הרגרסיה (`EditHubPreviewComposition.test.jsx`) מקבע את ה**הרכבה** — שהטקסט החופשי לא מגיע ל-tile — ולא את הפיקסלים. הוא הודגם נופל מול הקוד הלא-מתוקן (2 assertions אדומות) לפני שנטען שהוא שומר על משהו. **מי שיוסיף כאן טסט: ירוק ב-vitest אינו עדות שהשורה נראית תקין.**
+
+4. **ה-CI reviewer עדיין מת — ואותה חתימה בדיוק מ-05/08.** ריצה `31111740159`: `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, `542ms`. אומת כ**רוחבי-ריפו** ולא ספציפי ל-PR (אותו job נפל על `feature/meh-1919-*` באותה דקה). לפי סעיף 1 של 05/08 הסיבה היא **מכסת ההוצאה (429)** — לא credential ולא tag צף; ה-action כבר נעוץ ל-SHA (`be7b93b`). **לא נפתח כרטיס ולא נגעתי בשום workflow, כפי שאותו סעיף מורה.** מה שכן השתנה: **`show_full_output` אינו פעיל ב-workflow שרץ בפועל** (הלוג אומר במפורש *"full output hidden … enable `show_full_output: true`"*), ולכן ה-429 **אינו** קריא היום — בדיוק המצב שסעיף 1 הזהיר מפניו.
+
+5. **ה-lane של WebKit (shadow) אדום גם הוא, וגם הוא לא שלי.** נפל באותה דקה על `feature/meh-1919-*`. non-blocking בהגדרה; לא נבדק לעומק כי הוא מקדים את ה-PR.
+
+6. **poll עם `curl` לא מאומת החזיר לי "pending=0" עשר פעמים ברצף — כי הוא לא היה מאומת.** ה-API החזיר `{message, documentation_url}` ולא `check_runs`, וספירת "אין ממתינים" על מערך שאינו קיים היא אפס. ה-probe נכתב כך שיצעק `NO_KEY` במקום להחזיר אפס שקט, וזה מה שתפס. **כל poll על CI חייב לאמת שהתשובה מכילה את המפתח שהוא סופר.**
+
+## 2026-08-06 — batch 1916→1918: CTA לפי ערוץ, חלון הזמנות דו-שכבתי, וקישור חוויות מגודר
+
+**PRs:** **#2634** (1916 — נמזג `14:25:59Z`) · **#2637** (1917 — פתוח, **חסום על שער DO-NOT-MERGE**, ראו למטה) · **#2643** (1918 — פתוח, auto-merge חמוש) · ה-PR הזה (docs-בלבד, כלל 31).
+
+**ענפים:** `feature/meh-1916-product-sheet-primary-cta` · `feature/meh-1917-order-window-two-layer` · `feature/meh-1918-experiences-nav-gate` — כולם מ-`origin/staging` טרי. ה-clone אומת כלא-shallow לפני כל שאלת provenance.
+
+**אימות:** vitest **2446 passed / 2 skipped** · pytest experiences **66 passed** מול Postgres אמיתי · build ירוק בשלושתם · 10/10 repo guards · 11 pins של self-QA ב-Chromium@375 (5 + 6) · 6 צילומים שנפתחו ונסקרו בעין.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **🔴 MEH-1917 לא הושלם, וזו הכרעה שממתינה לספיר — לא באג.** שורת הסטטוס החיה **לא נבנתה**. הכותרת של עמוד העסק כבר מרנדרת את אותו משפט (`order-status.js:84-97`), ו-`OrderWindowStrip` אסורה חוזית לשאת verdict: יש `Does NOT` ב-docstring, יש היסטוריה של strip שנמחק בדיוק על החזרה כפולה, ויש **טסט שומר חי**. לבנות אותה פירושו למחוק את השומר = הסרת אילוץ (כלל 32). **הכרטיס נשאר פתוח בכוונה — אין `Closes` ב-PR.** שתי האפשרויות מנוסחות בגוף #2637.
+
+2. **⛔ #2637 חסום על false-positive של שער ה-DO-NOT-MERGE, ו-CC לא תנקה אותו.** שם טסט שהודבק לגוף ה-PR — «many open days that do NOT merge», על **מיזוג ימים** — תואם את `do[ _-]?not[ _-]?merge` ב-`pr-checks.yml:73`. כלל 30 אוסר על CC לערוך גוף PR כדי לשחרר את השער **גם כשה-trigger הוא טעות של CC**. התיקון: לשנות את שם הטסט ל-«many open days with no merging» + לעדכן את השורה בגוף. **מילה אחת ממך ואני עושה את זה.**
+   - **הנגזרת התפעולית:** להריץ את ה-regex של השער על גוף ה-PR **לפני** שפותחים, בדיוק כמו `check-linear-mentions.sh`. נעשה כך ל-#2643 והוא נקי.
+
+3. **`AdminReviewsExpand.test.jsx:95` flaky — אומת, לא הונח.** האדים ב-#2637, ואז **ריצה חוזרת על אותו SHA בדיוק חזרה ירוקה** (`R_FRONTEND_VITEST: success`). קוד זהה, תוצאה הפוכה. חשוד מוביל: `559d7db8` ("pin vitest to the threads pool") שנחת ב-staging רגע לפני — **לא הוכח**. שווה כרטיס: spec לא-דטרמיניסטי מאדים PRs לא קשורים ומאמן את כולן ללחוץ re-run, וכך אדום אמיתי עובר.
+
+4. **ה-eye pass תפס מה שכל ה-pins פספסו.** בבנייה הראשונה של 1917 הסיכום והפירוט רונדרו **שניהם** — אותו לוח זמנים פעמיים בכרטיס אחד — וכל ששת ה-pins עברו. **צילום שנוצר ולא נפתח אינו ראיה.**
+
+5. **בקרה שלא מפילה כלום היא ממצא, לא הצלחה.** טסט ה-SSR של 1917 עבר, ואז הבקרה לא הפילה אותו: הפאנל סגור בשרת, אז הענף תלוי-השעון לא מרונדר שם **בשני** המימושים — ירוק משתי סיבות. הוחלף בטענה שמבחינה (השרת מרנדר את הפאנל סגור) ואומת שהיא מאדימה. ה-mounted guard נשאר, מתועד כהגנה ליום שברירת המחדל תתהפך — **לא** כמי שעושה את העבודה היום.
+
+6. **`_public_listing_query` הוא עכשיו הבעלים היחיד של פילטרי הרשימה.** `event_date >= israel_today()` ו-`is_active` היו inline ב-route; הספירה היא קורא שני, וספירה שחולקת עם הרשימה שהיא מפרסמת היא בדיוק הכשל (קישור שמבטיח דף ונוחת ריק). **אל תבטאו אותם מחדש ב-route שלישי** — אותה מחלקה כמו ה-`DO NOT re-express` שכבר על `_publicly_visible_query`.
+
+7. **פער ידוע שנרשם ולא תוקן:** `OpeningHours.jsx` עדיין מציג `09:00` בעוד חלון ההזמנות עבר ל-`9:00`. שני הכרטיסים הם משפחה ויזואלית מכוונת, וכעת הם נבדלים באפס מוביל. תיקון = עריכת `OpeningHours`, מחוץ ל-scope של 1917.
+
+8. **`min-h-[44px]` על ה-disclosure אינו קישוט — נמדד 41px.** ה-pin של ה-self-QA תפס את זה, לא העין. הרצפה מפורשת ולא מכוונת דרך padding, כדי ששינוי גודל-גופן עתידי לא יחזיר אותה מתחת לסף בשקט.
+
 ## 2026-08-05 — סוויפ תור: dependabot 8→3, CLS baseline ראשון, backfill משלוחים, ושלוש טענות קיימות שהתהפכו
 
 **PRs שנמזגו:** #2546 (`actions/stale`, תחת פיצול ההרשאות ל-workflows) · #2585 (harness ל-CLS) · #2615 (backfill docs 04/08) · #2620 (ספירת ראשי alembic) · #2622 (CI baseline של MEH-1910).
