@@ -38,7 +38,9 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           (OAuth success honors clamped ?redirect= — Suspense boundary
  *           added for useSearchParams, mirrors LoginClient).
  *           MEH-839 (de-box container + filled-green CTA → /login parity;
- *           OAuth render order FROZEN form-first, MEH-132 #3 untouched).
+ *           OAuth render order FROZEN form-first, MEH-132 #3 untouched);
+ *           MEH-1919 (success-affordance noise: name success removed, email
+ *           success reduced to the border tint and armed by blur only).
  */
 
 export default function RegisterClient() {
@@ -100,6 +102,11 @@ function RegisterPageBody() {
   // feedback now lives in <PasswordInput> (MEH-306 sub-B).
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
+  // MEH-1919: separate arming flag for the email SUCCESS affordance only.
+  // emailTouched is sticky by design (an error raised on blur must persist
+  // while the user corrects it), so it can't also gate success — see the
+  // emailValid derivation below.
+  const [emailSuccessArmed, setEmailSuccessArmed] = useState(false);
   const [passwordOk, setPasswordOk] = useState(false);
   // MEH-328 Chunk D: emailSent toggles the inbox-check success screen.
   // emailExpected state removed — backend no longer carries email_sent,
@@ -179,9 +186,14 @@ function RegisterPageBody() {
   // input pass every required rule" check.
   const nameTrimmed = form.name.trim();
   const nameInvalid = nameTouched && !nameTrimmed;
-  const nameValid = nameTouched && !!nameTrimmed;
+  // MEH-1919: no nameValid derivation — the name field carries no success
+  // affordance at all. "You typed a non-empty name" is feedback the user
+  // already has; the field only speaks when something is wrong.
   const emailInvalid = emailTouched && form.email.length > 0 && !validateEmail(form.email);
-  const emailValid = emailTouched && validateEmail(form.email);
+  // MEH-1919: armed by blur, disarmed by the next keystroke (see the email
+  // Input's onChange). Gating on emailTouched alone made the success border
+  // flicker on/off per character once the field had been blurred once.
+  const emailValid = emailSuccessArmed && validateEmail(form.email);
   // MEH-306: passwordOk comes from <PasswordInput>'s onValidityChange and
   // already covers length + (debounced) breach. Backend re-validates on
   // submit including deny-list, so the submit guard above is redundant
@@ -303,13 +315,17 @@ function RegisterPageBody() {
             referralCode state + /referral/claim call below stay live; copy only. */}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* MEH-1128 D2: name + email adopt ui/Input with the D1 success state —
-              this closes Wave A's "0 migrations" gap (the consumer valid-state
-              affordance the primitive couldn't express pre-D1). Same
-              nameTouched/emailTouched trigger logic + i18n keys; error wins over
-              success inside the primitive, mirroring the mutually-exclusive
-              invalid/valid derivations. text-end on the ltr email = right (its
-              own end), preserving the old physical text-right. */}
+          {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
+              = right (its own end), preserving the old physical text-right.
+              MEH-1919: the D1 success state is now email-only and quieter. The
+              name field lost it entirely (a non-empty name needs no
+              confirmation), and the email keeps the border-primary tint but
+              drops the "✓ תקין" successText — three simultaneous "you did it
+              right" signals on a 3-field form read as noise, not reassurance.
+              Note the coupling in the primitive: ui/Input.jsx:117-125 renders
+              the Check INSIDE the successText span, so dropping the text also
+              drops the icon. Leaving it that way is deliberate — an icon-only
+              success would mean editing the D1-snapshot-locked primitive. */}
           <Input
             id="register-name"
             label={t("auth.register.consumer.fields.name")}
@@ -318,8 +334,6 @@ function RegisterPageBody() {
             onBlur={() => setNameTouched(true)}
             required
             error={nameInvalid ? t("auth.register.consumer.validation.name_required") : undefined}
-            success={nameValid}
-            successText={nameValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
             dir="rtl"
           />
           <Input
@@ -327,12 +341,18 @@ function RegisterPageBody() {
             type="email"
             label={t("auth.register.consumer.fields.email")}
             value={form.email}
-            onChange={set("email")}
-            onBlur={() => setEmailTouched(true)}
+            onChange={(e) => {
+              // MEH-1919: editing re-hides the success tint until the next blur.
+              setEmailSuccessArmed(false);
+              set("email")(e);
+            }}
+            onBlur={() => {
+              setEmailTouched(true);
+              setEmailSuccessArmed(true);
+            }}
             required
             error={emailInvalid ? t("auth.register.consumer.validation.email_invalid") : undefined}
             success={emailValid}
-            successText={emailValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
             className="text-end"
             dir="ltr"
           />
