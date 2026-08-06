@@ -102,11 +102,6 @@ function RegisterPageBody() {
   // feedback now lives in <PasswordInput> (MEH-306 sub-B).
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
-  // MEH-1919: separate arming flag for the email SUCCESS affordance only.
-  // emailTouched is sticky by design (an error raised on blur must persist
-  // while the user corrects it), so it can't also gate success — see the
-  // emailValid derivation below.
-  const [emailSuccessArmed, setEmailSuccessArmed] = useState(false);
   const [passwordOk, setPasswordOk] = useState(false);
   // MEH-328 Chunk D: emailSent toggles the inbox-check success screen.
   // emailExpected state removed — backend no longer carries email_sent,
@@ -186,14 +181,11 @@ function RegisterPageBody() {
   // input pass every required rule" check.
   const nameTrimmed = form.name.trim();
   const nameInvalid = nameTouched && !nameTrimmed;
-  // MEH-1919: no nameValid derivation — the name field carries no success
-  // affordance at all. "You typed a non-empty name" is feedback the user
-  // already has; the field only speaks when something is wrong.
+  // MEH-1919: neither field carries a success affordance, so there is no
+  // nameValid/emailValid derivation. Name and email are simple fields —
+  // "you typed a non-empty name", "that parses as an address" is feedback
+  // the user already has. They speak only when something is wrong.
   const emailInvalid = emailTouched && form.email.length > 0 && !validateEmail(form.email);
-  // MEH-1919: armed by blur, disarmed by the next keystroke (see the email
-  // Input's onChange). Gating on emailTouched alone made the success border
-  // flicker on/off per character once the field had been blurred once.
-  const emailValid = emailSuccessArmed && validateEmail(form.email);
   // MEH-306: passwordOk comes from <PasswordInput>'s onValidityChange and
   // already covers length + (debounced) breach. Backend re-validates on
   // submit including deny-list, so the submit guard above is redundant
@@ -317,15 +309,19 @@ function RegisterPageBody() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
               = right (its own end), preserving the old physical text-right.
-              MEH-1919: the D1 success state is now email-only and quieter. The
-              name field lost it entirely (a non-empty name needs no
-              confirmation), and the email keeps the border-primary tint but
-              drops the "✓ תקין" successText — three simultaneous "you did it
-              right" signals on a 3-field form read as noise, not reassurance.
-              Note the coupling in the primitive: ui/Input.jsx:117-125 renders
-              the Check INSIDE the successText span, so dropping the text also
-              drops the icon. Leaving it that way is deliberate — an icon-only
-              success would mean editing the D1-snapshot-locked primitive. */}
+              MEH-1919: NEITHER field passes ui/Input's D1 success props. Per
+              NN/g, success indicators belong on fields whose validity the user
+              cannot self-assess — password strength, username availability —
+              not on a name or an email. The password field keeps its checklist
+              (PasswordInput, MEH-306); these two say nothing unless wrong.
+              The first pass kept a border-primary tint on the email. It was
+              removed (Sapir, 06/08) because with no successText the primitive
+              renders no Check either — ui/Input.jsx:117-125 puts the icon
+              INSIDE the successText span — which left the state carried by
+              colour alone, a WCAG 1.4.1 failure. Removing it closes that
+              rather than working around the primitive, which stays untouched.
+              DO NOT re-add success/successText here — that is the decision,
+              not an oversight. */}
           <Input
             id="register-name"
             label={t("auth.register.consumer.fields.name")}
@@ -341,18 +337,10 @@ function RegisterPageBody() {
             type="email"
             label={t("auth.register.consumer.fields.email")}
             value={form.email}
-            onChange={(e) => {
-              // MEH-1919: editing re-hides the success tint until the next blur.
-              setEmailSuccessArmed(false);
-              set("email")(e);
-            }}
-            onBlur={() => {
-              setEmailTouched(true);
-              setEmailSuccessArmed(true);
-            }}
+            onChange={set("email")}
+            onBlur={() => setEmailTouched(true)}
             required
             error={emailInvalid ? t("auth.register.consumer.validation.email_invalid") : undefined}
-            success={emailValid}
             className="text-end"
             dir="ltr"
           />
