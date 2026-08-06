@@ -68,16 +68,40 @@ jobs:
       - uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # MEH-1844: surfaces the action's own error text, which is otherwise
-          # swallowed — GitHub masks an UNSET secret and an EXPIRED one
-          # identically, so without this the credential and upstream-breakage
-          # hypotheses are indistinguishable.
-          # ⚠ THIS REPO IS PUBLIC. Upstream's own description: "outputs ALL
-          # Claude messages including tool execution results which may contain
-          # secrets, API keys, or other sensitive information. These logs are
-          # publicly visible." Diagnostic aid only — turn it back off once the
-          # reviewer is proven running.
-          show_full_output: true
+          # MEH-1844: `show_full_output: true` lived here as a temporary
+          # diagnostic. REMOVED 2026-08-05 — it did its job, and leaving it on
+          # past that point is a live exposure on a public repo.
+          #
+          # WHAT IT BOUGHT. The reviewer had been exiting at num_turns:1,
+          # total_cost_usd:0, is_error:true with no readable reason, and GitHub
+          # masks an unset secret and an expired one identically. Two candidate
+          # causes were on record and neither was confirmable. With the flag on,
+          # the real one printed in full — job 92308149134, 2026-08-05:
+          #
+          #     "error": "rate_limit", "api_error_status": 429,
+          #     "result": "You've hit your org's monthly spend limit"
+          #
+          # A THIRD cause, invisible for as long as the output was suppressed,
+          # and one that no amount of config archaeology would have found.
+          #
+          # WHY IT COMES OFF *BEFORE* THE FIX, NOT AFTER. Its own note said
+          # "turn it back off once the reviewer is proven running". That
+          # ordering is backwards here. While the 429 holds, the reviewer never
+          # reaches a tool call, so nothing is printed — the outage is the only
+          # thing currently containing the exposure. The instant the spend limit
+          # is raised, the reviewer resumes AND begins writing tool results into
+          # world-readable Actions logs, in the same moment. There is no window
+          # in which "proven running" can be observed safely. So: off first,
+          # raise the limit second.
+          #
+          # Upstream's own description of the flag: "outputs ALL Claude messages
+          # including tool execution results which may contain secrets, API
+          # keys, or other sensitive information. These logs are publicly
+          # visible." This repo is public — verified from the API, not assumed:
+          # GET /repos/... returns "visibility": "public", "private": false.
+          #
+          # IF A FUTURE OUTAGE NEEDS IT AGAIN: turn it on, capture the one run,
+          # turn it off in the same session. Never leave it on across a fix.
           claude_args: "--model claude-sonnet-4-6 --allowed-tools mcp__github__add_issue_comment"
           prompt: |
             REPO: ${{ github.repository }}
