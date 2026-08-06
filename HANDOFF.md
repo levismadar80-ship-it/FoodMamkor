@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-06 — MEH-1920: טקסט חופשי יצא מ-preview של כרטיסי ה-hub
+
+**PRs:** #2635 (קוד, **נמזג** `75d239d1` ע"י ספיר דרך auto-merge) · **ה-PR הזה** (backfill, כלל 31).
+**ענפים:** `feature/meh-1920-fix-hub-preview-chips` · `feature/meh-1920-docs-backfill` — שניהם מ-`origin/staging` טרי. ה-clone אומת כלא-shallow לפני כל שאלת provenance.
+**אימות (#2635):** build ירוק · vitest **2423 passed** / 1 skipped (283 קבצים) · lint 0 errors · 10/10 repo guards · API contract 0/0 · `CI gate` + `Deploy gate` + `E2E gate` ירוקים · Playwright E2E (Chromium) ירוק.
+**מה שלא רץ:** `pytest tests/test_api.py` — התקנת התלויות של ה-backend חסומה ב-sandbox. אפס קבצי backend ב-diff; ה-job ב-CI דילג בהתאם ל-paths-filter. לא נטען מעבר לכך.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **הבאג היה layout ולא data, וההיפותזה הראשית בכרטיס הייתה הפוכה.** הכרטיס הניח string שהועבר ל-`PreviewChips`. זה **בלתי אפשרי מכנית** — `shown.map()` זורק על מחרוזת. ה-DOM היה תקין, השמות שלמים, ורק הרוחב המרונדר היה שגוי. **הנגזרת הכללית:** כשמדווח "אותיות בודדות", לבדוק את הרוחב המחושב לפני שמחפשים את הדאטה. `chip.scrollWidth > chip.clientWidth` הוא ההבחנה.
+
+2. **`truncate` על flex item הופך אותו לניתן לכיווץ עד אפס.** `overflow: hidden` מאפס את `min-width: auto`. לכן כל node של טקסט חופשי בשורת preview **מכווץ את שכניו**, לא רק את עצמו. זה הכלל שנשבר, והוא חל על כל שורת flex עם `truncate` — לא רק על ה-hub.
+
+3. **jsdom עיוור לזה לחלוטין.** טסט הרגרסיה (`EditHubPreviewComposition.test.jsx`) מקבע את ה**הרכבה** — שהטקסט החופשי לא מגיע ל-tile — ולא את הפיקסלים. הוא הודגם נופל מול הקוד הלא-מתוקן (2 assertions אדומות) לפני שנטען שהוא שומר על משהו. **מי שיוסיף כאן טסט: ירוק ב-vitest אינו עדות שהשורה נראית תקין.**
+
+4. **ה-CI reviewer עדיין מת — ואותה חתימה בדיוק מ-05/08.** ריצה `31111740159`: `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, `542ms`. אומת כ**רוחבי-ריפו** ולא ספציפי ל-PR (אותו job נפל על `feature/meh-1919-*` באותה דקה). לפי סעיף 1 של 05/08 הסיבה היא **מכסת ההוצאה (429)** — לא credential ולא tag צף; ה-action כבר נעוץ ל-SHA (`be7b93b`). **לא נפתח כרטיס ולא נגעתי בשום workflow, כפי שאותו סעיף מורה.** מה שכן השתנה: **`show_full_output` אינו פעיל ב-workflow שרץ בפועל** (הלוג אומר במפורש *"full output hidden … enable `show_full_output: true`"*), ולכן ה-429 **אינו** קריא היום — בדיוק המצב שסעיף 1 הזהיר מפניו.
+
+5. **ה-lane של WebKit (shadow) אדום גם הוא, וגם הוא לא שלי.** נפל באותה דקה על `feature/meh-1919-*`. non-blocking בהגדרה; לא נבדק לעומק כי הוא מקדים את ה-PR.
+
+6. **poll עם `curl` לא מאומת החזיר לי "pending=0" עשר פעמים ברצף — כי הוא לא היה מאומת.** ה-API החזיר `{message, documentation_url}` ולא `check_runs`, וספירת "אין ממתינים" על מערך שאינו קיים היא אפס. ה-probe נכתב כך שיצעק `NO_KEY` במקום להחזיר אפס שקט, וזה מה שתפס. **כל poll על CI חייב לאמת שהתשובה מכילה את המפתח שהוא סופר.**
+
 ## 2026-08-05 — סוויפ תור: dependabot 8→3, CLS baseline ראשון, backfill משלוחים, ושלוש טענות קיימות שהתהפכו
 
 **PRs שנמזגו:** #2546 (`actions/stale`, תחת פיצול ההרשאות ל-workflows) · #2585 (harness ל-CLS) · #2615 (backfill docs 04/08) · #2620 (ספירת ראשי alembic) · #2622 (CI baseline של MEH-1910).
