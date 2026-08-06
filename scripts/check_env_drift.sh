@@ -38,7 +38,13 @@ cd "$ROOT"
 # configures the TEST RUNNER, not the application. Listing it in .env.example
 # would tell every developer to set a variable the app never reads, which is
 # the opposite of what that file is for.
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|PATH|HOME|USER|PYTHONPATH)$'
+# GITHUB_SHA / GITHUB_REPOSITORY (MEH-1853): injected by the Actions runner into
+# every job, never set by a human and never read by the app — the same category as
+# RAILWAY_GIT_COMMIT_SHA and VERCEL_ENV already on this list. Documenting them in
+# `.env.example` would be actively wrong: it would tell a reader they are theirs to
+# configure. Read by frontend/e2e/qa-meh1853-cls.mjs, which resolves the commit it
+# was launched from so it can refuse to measure an undeployed build.
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")
