@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-06 — MEH-1919: סימני ההצלחה בהרשמה הצרכנית הושתקו
+
+**PRs:** #2636 (קוד, **נמזג** `5501f9bc`) · **ה-PR הזה** (backfill, כלל 31).
+**ענפים:** `feature/meh-1919-register-success-noise` · `feature/meh-1919-docs-backfill` — שניהם מ-`origin/staging` טרי.
+**אימות (#2636):** build ירוק · vitest **2430 passed** / 2 skipped (282 קבצים) · eslint 0 errors · 10/10 repo guards · `CI gate` + `Deploy gate` ירוקים · Playwright E2E (Chromium) **199 executed** ירוקים עם `--fail-on-flaky-tests`.
+**מה שלא רץ:** `pytest tests/test_api.py` — אפס קבצי backend ב-diff, ה-job דילג לפי paths-filter. לא נטען מעבר לכך. **QA על iOS/Android אמיתי לא בוצע** — אין preview לענף (ה-`ignoreCommand` דורש `[preview]` בהודעת commit; Vercel דיווח מפורשות *"Canceled by Ignored Build Step"*). ה-QA נעשה ב-Chromium מקומי ב-390px.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **הכרטיס ביקש דבר שה-API של `ui/Input` לא יכול לבטא, וזה נשאר פתוח להכרעה.** "`border-primary` + Check בלי `successText`" — אבל ה-Check יושב **בתוך** ה-span של `successText` (`Input.jsx:117-125`, מגודר ב-`:61`). אין טקסט → אין אייקון. **התוצאה בפועל: הצלחת האימייל היא צבע בלבד, כלומר דלתא של WCAG 1.4.1 שה-PR הזה הכניס.** קיימת עקיפה של שורה אחת — `successText={" "}`, רווח הוא truthy ומרנדר Check בלי טקסט — ו**נדחתה** כניצול לרעה של ה-API (שביר מול כל trim עתידי, ומזין node של רווח ל-`aria-describedby`). התיקון הנקי הוא וריאנט icon-only ב-`Input.jsx`, שנעול D1. **לספיר להכריע — לא להניח שזה נשכח.**
+
+2. **דגל הצלחה נפרד אינו קישוט: `emailTouched` דביק בכוונה.** שגיאה שעלתה ב-blur חייבת לשרוד את התיקון, ולכן גידור ההצלחה עליה גורם לסימן להתחשב מחדש בכל תו. `emailSuccessArmed` (blur→on, change→off) מפריד את השניים ומשאיר את נגזרת השגיאה ללא שינוי. מי שיאחד אותם בחזרה יחזיר את הבאג.
+
+3. **ה-probe שלי החזיר תשובה שגויה פעמיים, ומקרה בקרה עם תשובה ידועה הוא שתפס — לא הריצה.** (א) `className.includes("border-primary")` מתאים גם `focus:border-primary`, ולכן ענה "מסומן" תמיד → 3 FAIL שקריים; (ב) `transition-colors` (`Input.jsx:80`) גרם לדגימת צבע באמצע המעבר — שדה השגיאה נמדד `rgb(46,104,83)` (מזיגה) במקום `rgb(179,38,30)`. **בכל probe על מצב ויזואלי: לתקן על tokens, ולהמתין להתייצבות לפני מדידת צבע.**
+
+4. **בזמן focus הצבע אינו מבחין בין הצלחה למיקוד.** `focus:border-primary` צובע ראשי בלי קשר לתקינות, ולכן "כלום בזמן הקלדה" נמדד על ה-token הסטטי בלבד. המסגרת הירוקה בזמן הקלדה היא **מיקוד** וקיימת גם לפני השינוי — לא לדווח עליה כרגרסיה.
+
+5. **`Repo guards` מתחרה בטיימאוט של עצמו — רוחבי-ריפו, ומאדים gate נדרש על לא-כלום.** `pr-checks.yml:82` קובע `timeout-minutes: 3`; כל שלבי ה-job מדווחים `success` (כולל הרצת הguards) ואז ה-job מסומן `cancelled`, ו-`ci-gate` ממפה זאת ל-FAIL. שתי הופעות ב-PR הזה: 3m18s ו-3m05s, כש-`actions/checkout` לבדו אכל ~3 דקות — מול **14 שניות** לכל ה-job במחזור שעבר. זו שונות במהירות ה-clone מול תקרה צמודה מדי. **התיקון (העלאת התקרה ל-10 כמו ב-`:91`, או `sparse-checkout`) הוא של ספיר** — `.github/workflows/**` הוא CC-deny. עד אז: `rerun_failed_jobs` מנקה, וזה אינו עקיפה של כלל 30 אלא הרצה בפועל.
+
+6. **"require branches to be up to date" אכן נאכף — והוא הפך את הסערה למחזור אינסופי כמעט.** ניסיון merge ישיר החזיר `405 · 2 of 2 required status checks are expected` בזמן שהענף היה `behind`, עם שני ה-gates ירוקים. כלומר צריך **ענף מעודכן וירוק באותו חלון**, ו-staging נמזג מהר יותר ממחזור CI של ~13 דקות. **auto-merge לא סנכרן את הענף בעצמו** — נדרשו שתי קריאות `update_pull_request_branch` ידניות. כלל 25 והערה 7 של 05/08 עדיין נכונים (לא לעדכן ענפים בצרורות), אבל **עדכון יחיד על PR שבאמת נמזג הוא הכרחי, לא מותרות**.
+
+7. **גל `abandoned` של GitHub הפיל job `warn-only` והאדים את שני ה-gates.** `R_FRONTEND_KNIP: abandoned` (job שנגמר ב-`|| true`) הספיק כדי להפיל את `CI gate`, ובמקביל `Paths filter` + `Deploy gate` נפלו באותו גל. **אבחנה:** כשקבוצת jobs לא-קשורים נופלת יחד — ובתוכה warn-only — זו תשתית, לא הdiff. `rerun_failed_jobs` על **שתי** הריצות ניקה.
+
+8. **ה-CI reviewer מת גם כאן, אותה חתימה בדיוק.** `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, 401ms. לפי סעיף 1 של 05/08 הסיבה היא **מכסת הוצאה (429)** — לא credential ולא tag צף. **לא נפתח כרטיס ולא נגעתי בשום workflow.** תיקנתי בתוך ה-PR ספקולציה שלי עצמי שתלתה זאת ב-tag צף. **הנגזרת המעשית: ל-PR הזה לא הייתה שום ביקורת עצמאית** — רק self-review של אותו session. גם כאן `show_full_output` אינו פעיל, ולכן ה-429 אינו קריא.
+
 ## 2026-08-06 — MEH-1920: טקסט חופשי יצא מ-preview של כרטיסי ה-hub
 
 **PRs:** #2635 (קוד, **נמזג** `75d239d1` ע"י ספיר דרך auto-merge) · **ה-PR הזה** (backfill, כלל 31).
