@@ -779,6 +779,7 @@
           "sheet_open_aria": "פרטים על {name}",
           "sheet_close_aria": "סגירת פרטי המוצר",
           "sheet_cta": "שאלי על המוצר בוואטסאפ",
+          "sheet_secondary_wa": "או שאלי על המוצר בוואטסאפ",
           "sheet_wa_prefill": "היי, ראיתי את ״{name}״ בעמוד שלכם במהמקור ואשמח לשמוע פרטים"
         },
         "recipes": {
