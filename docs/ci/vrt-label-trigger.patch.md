@@ -8,6 +8,43 @@ Same shape as [`docs/ci/ci-gate-skip-green.patch.md`](./ci-gate-skip-green.patch
 [`docs/ci/e2e-gate.patch.md`](./e2e-gate.patch.md) and
 [`docs/ci/repo-guards.patch.md`](./repo-guards.patch.md).
 
+> ## 🔴 This stays Sapir's even under the 2026-08 workflow-merge split — evaluated 06/08
+>
+> A standing split now lets CC merge a `.github/workflows/**` change when **all four**
+> hold: (1) triggers are `workflow_dispatch`/`schedule` only **or** every job carries
+> `continue-on-error: true`; (2) no job of it is in `ci-gate`'s `needs:`; (3) its
+> contexts are not in the `protect-staging` ruleset; (4) the diff edits that file only.
+>
+> **`vrt-update.yml` as it stands today passes 1 and 2** — it is `workflow_dispatch`-only
+> and `update-baselines` is absent from `ci-gate.needs`. That makes this patch look
+> eligible, and it is not. **The tests apply to the file the diff produces, not the file
+> it starts from**, and this patch changes the exact property test 1 turns on:
+>
+> | # | Against the **post-patch** file | |
+> |---|---|---|
+> | 1 | ❌ **fails both clauses** | §3.2 adds `pull_request: types: [labeled]`, so triggers stop being dispatch-only — that *is* the ticket. And the only `continue-on-error: true` in the patch (§3.6) is on a **step** ("Remove the regen label"), not on the job; `update-baselines` has no job-level `continue-on-error` before or after. |
+> | 2 | ✅ | `update-baselines` still absent from `ci-gate.needs`. |
+> | 3 | ✅ | publishes no required context. |
+> | 4 | ✅ | this file only. |
+>
+> **Two further reasons, each sufficient on its own and neither reducible to a test:**
+>
+> 1. **It widens permissions.** §3.6 requires `pull-requests: write` in the top-level
+>    `permissions:` block alongside `contents: write`. Broadening a token's scope is not
+>    what "a workflow that cannot block a merge" licenses.
+> 2. **This job pushes commits, and the patch makes it do so on a `pull_request` event.**
+>    The split's rationale is *"if it fails, it fails alone."* A job that writes baseline
+>    PNGs into a PR's head branch does not fail alone — it changes the diff under review.
+>
+> The patch's own care — `pull_request` rather than `pull_request_target`, the fork
+> guard, the actor guard, the closed scope vocabulary — is **evidence that this is RED**,
+> not evidence that it is safe to self-merge.
+>
+> **MEH-1764 is archived** (2026-07-29), so this determination could not be recorded on
+> the ticket and lives here instead. Note for anyone re-querying: a Linear
+> `list_issues` call includes archived issues **by default**, which is how this card can
+> still surface in a `cc-queue` sweep looking live. Pass `includeArchived: false`.
+
 ---
 
 ## 0 · Read this first — the premise this ticket was written on is FALSE
