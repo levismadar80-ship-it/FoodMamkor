@@ -3,18 +3,20 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-08-06 — MEH-1919: סימני ההצלחה בהרשמה הצרכנית הושתקו
+## 2026-08-06 — MEH-1919: סימני ההצלחה בהרשמה הצרכנית הוסרו (בשני צעדים)
 
-**PRs:** #2636 (קוד, **נמזג** `5501f9bc`) · **ה-PR הזה** (backfill, כלל 31).
-**ענפים:** `feature/meh-1919-register-success-noise` · `feature/meh-1919-docs-backfill` — שניהם מ-`origin/staging` טרי.
+**PRs:** #2636 (קוד, **נמזג** `5501f9bc`) · **#2646** (קוד, המשך — הסרת ההצלחה מהאימייל) · **ה-PR הזה** (backfill, כלל 31).
+**ענפים:** `feature/meh-1919-register-success-noise` · `feature/meh-1919-email-success-removal` · `feature/meh-1919-docs-backfill` — כולם מ-`origin/staging` טרי.
+**המצב הסופי:** לשם ולאימייל **אין סימן הצלחה בשום מצב**. #2636 השאיר לאימייל מסגרת `border-primary`; #2646 הסיר גם אותה, וסגר בכך כשל WCAG 1.4.1 שהצעד הראשון הכניס (בלי `successText` אין גם Check, אז המצב עבר בצבע בלבד). `ui/Input` לא נגעו בו באף אחד מהשניים.
 **אימות (#2636):** build ירוק · vitest **2430 passed** / 2 skipped (282 קבצים) · eslint 0 errors · 10/10 repo guards · `CI gate` + `Deploy gate` ירוקים · Playwright E2E (Chromium) **199 executed** ירוקים עם `--fail-on-flaky-tests`.
+**אימות (#2646):** build ירוק · vitest **2435 passed** / 2 skipped (283 קבצים) · eslint **0 errors** · 10/10 repo guards · harness 390px **17/17**.
 **מה שלא רץ:** `pytest tests/test_api.py` — אפס קבצי backend ב-diff, ה-job דילג לפי paths-filter. לא נטען מעבר לכך. **QA על iOS/Android אמיתי לא בוצע** — אין preview לענף (ה-`ignoreCommand` דורש `[preview]` בהודעת commit; Vercel דיווח מפורשות *"Canceled by Ignored Build Step"*). ה-QA נעשה ב-Chromium מקומי ב-390px.
 
 ### מה שצריך לדעת לפני שנוגעים בזה שוב
 
-1. **הכרטיס ביקש דבר שה-API של `ui/Input` לא יכול לבטא, וזה נשאר פתוח להכרעה.** "`border-primary` + Check בלי `successText`" — אבל ה-Check יושב **בתוך** ה-span של `successText` (`Input.jsx:117-125`, מגודר ב-`:61`). אין טקסט → אין אייקון. **התוצאה בפועל: הצלחת האימייל היא צבע בלבד, כלומר דלתא של WCAG 1.4.1 שה-PR הזה הכניס.** קיימת עקיפה של שורה אחת — `successText={" "}`, רווח הוא truthy ומרנדר Check בלי טקסט — ו**נדחתה** כניצול לרעה של ה-API (שביר מול כל trim עתידי, ומזין node של רווח ל-`aria-describedby`). התיקון הנקי הוא וריאנט icon-only ב-`Input.jsx`, שנעול D1. **לספיר להכריע — לא להניח שזה נשכח.**
+1. **הוכרע וסגור — אל תחזירו סימן הצלחה לשם או לאימייל.** הכרטיס ביקש "`border-primary` + Check בלי `successText`", צירוף ש-`ui/Input` **אינו יכול לבטא**: ה-Check יושב **בתוך** ה-span של `successText` (`Input.jsx:117-125`, מגודר ב-`:61`). אין טקסט → אין אייקון → המצב עובר בצבע בלבד = WCAG 1.4.1. ההכרעה (ספיר, 06/08): **להסיר את ההצלחה כולה** (#2646), ולא לעקוף. נדחו במפורש: `successText={" "}` (רווח truthy שמרנדר Check בלי טקסט — ניצול לרעה של ה-API, שביר מול כל trim עתידי, ומזין node ריק ל-`aria-describedby`) ווריאנט icon-only ב-`Input.jsx` (נעול D1). **הערת התכנון:** כשה-API לא יכול לבטא בקשה, "לוותר על האפקט" הוא אפשרות שלישית אמיתית — וכאן היא גם מיושרת עם NN/g.
 
-2. **דגל הצלחה נפרד אינו קישוט: `emailTouched` דביק בכוונה.** שגיאה שעלתה ב-blur חייבת לשרוד את התיקון, ולכן גידור ההצלחה עליה גורם לסימן להתחשב מחדש בכל תו. `emailSuccessArmed` (blur→on, change→off) מפריד את השניים ומשאיר את נגזרת השגיאה ללא שינוי. מי שיאחד אותם בחזרה יחזיר את הבאג.
+2. **`emailTouched` דביק בכוונה — וזה עדיין רלוונטי אף שהדגל השני מת.** שגיאה שעלתה ב-blur חייבת לשרוד את התיקון. לכן ב-#2636 ההצלחה חייבה flag נפרד (`emailSuccessArmed`, blur→on/change→off) ולא יכלה להיתלות על `emailTouched`. ב-#2646 הדגל הוסר כקוד מת יחד עם ההצלחה, ו-`emailInvalid` נשאר בית-בית. **אם מישהו יחזיר סימן הצלחה לשדה כלשהו כאן — הוא ייתקל שוב באותה מלכודת;** אל תגדרו אותו על `*Touched`.
 
 3. **ה-probe שלי החזיר תשובה שגויה פעמיים, ומקרה בקרה עם תשובה ידועה הוא שתפס — לא הריצה.** (א) `className.includes("border-primary")` מתאים גם `focus:border-primary`, ולכן ענה "מסומן" תמיד → 3 FAIL שקריים; (ב) `transition-colors` (`Input.jsx:80`) גרם לדגימת צבע באמצע המעבר — שדה השגיאה נמדד `rgb(46,104,83)` (מזיגה) במקום `rgb(179,38,30)`. **בכל probe על מצב ויזואלי: לתקן על tokens, ולהמתין להתייצבות לפני מדידת צבע.**
 
