@@ -39,46 +39,24 @@ import ReviewsSection from "@/components/ReviewsSection";
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 
-/**
- * MEH-1853: the box `MiniMap` will occupy, reserved while its chunk loads.
- *
- * `dynamic(..., { ssr: false })` renders NOTHING until the chunk arrives, so
- * the map's full height appeared out of nowhere and pushed everything below it
- * — measured against staging with an observer-verified sampler:
- * desktop-1440 CLS **0.8744**, mobile-375 **1.3735**.
- *
- * IT MIRRORS THE WHOLE COMPONENT, NOT JUST THE MAP. `MiniMap` renders a 300px
- * map box (`MiniMap.jsx:502`) AND, below it, a navigation row that is on by
- * default (`showNavigation` defaults true, `MiniMap.jsx:546`) — `mt-3` plus a
- * `min-h-[44px]` pill pair. Reserving only the 300px would leave ~56px of the
- * original shift in place and look like a fix. The classes below are copied
- * from those two elements so the reserved box is the box that arrives.
- *
- * `aria-hidden` because it is furniture: it carries no information a screen
- * reader should announce, and the real component replaces it within a tick.
- */
-function MiniMapPlaceholder() {
-  return (
-    <div aria-hidden="true" data-testid="minimap-placeholder">
-      {/* Mirrors MiniMap.jsx:500-502. green-50 (#eaf3de) rather than a grey so
-          the reserved area reads as part of the page while it fills. */}
-      <div
-        className="relative rounded-lg overflow-hidden border border-border bg-green-50"
-        style={{ height: 300 }}
-      />
-      {/* Mirrors MiniMap.jsx:549 — the Waze / Google pill row. */}
-      <div className="flex gap-3 mt-3">
-        <div className="flex-1 min-h-[44px] rounded-full border border-border bg-white" />
-        <div className="flex-1 min-h-[44px] rounded-full border border-border bg-white" />
-      </div>
-    </div>
-  );
-}
-
-const MiniMap = dynamic(() => import("@/components/MiniMap"), {
-  ssr: false,
-  loading: MiniMapPlaceholder,
-});
+// MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
+// WORSE, and the measurement is on the ticket. Reserving a 356px box that
+// matches the component to the pixel (proven: delta=0px at 390 and 1280)
+// did NOT remove the shift on the real page:
+//
+//     desktop-1440   0.8744  ->  1.0929   (+25%)
+//     mobile-375     1.3735  ->  1.3735   (unchanged)
+//
+// Both measured against staging with a verified-fresh deployment and an
+// observer-verified sampler (runs 31005749506 and 31105035597).
+//
+// DO NOT re-add a `loading:` here without re-measuring. The geometry argument
+// is not sufficient and has now been falsified once: `ssr: false` means the
+// placeholder is NOT in the server HTML and mounts at hydration, so it may add
+// a shift rather than replace one. That is a hypothesis, not a finding —
+// entries stayed at 4 on desktop before and after, which does not obviously
+// fit it. See MEH-1853.
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 // MEH-1146 chunk C: the discovery loop ("עוד בתי עסק באזור") renders only when
 // at least this many same-city businesses (excluding the current one) come
