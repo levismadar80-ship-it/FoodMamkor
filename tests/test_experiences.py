@@ -265,6 +265,115 @@ class TestExperienceValidate:
         assert db.query(Experience).count() == 0
 
 
+# ---------- Public count (MEH-1918) ----------
+
+
+class TestExperienceCount:
+    """GET /experiences/count — the number the nav gates the link on.
+
+    Every case here asserts the count against the SAME fixture the listing
+    tests use for the equivalent exclusion, because a count that disagrees
+    with the list it advertises is the whole failure mode: the nav would
+    promise a page that renders empty.
+    """
+
+    def test_counts_only_publicly_listed(self, client, db):
+        host = _make_host(db)
+        _make_experience(db, host, title="Live", status="approved")
+        _make_experience(db, host, title="Wait", status="pending")
+        _make_experience(db, host, title="Dead", status="rejected")
+        _make_experience(db, host, title="Edit", status="changes_requested")
+
+        resp = client.get("/experiences/count")
+        assert resp.status_code == 200
+        assert resp.json() == {"count": 1}
+
+    def test_past_experiences_are_not_counted(self, client, db):
+        host = _make_host(db)
+        _make_experience(
+            db,
+            host,
+            title="Old",
+            status="approved",
+            event_date=date.today() - timedelta(days=2),
+        )
+        _make_experience(
+            db,
+            host,
+            title="Soon",
+            status="approved",
+            event_date=date.today() + timedelta(days=2),
+        )
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_today_still_counts(self, client, db):
+        """The boundary the filter is `>=`, not `>` — an experience happening
+        today is still orderable and must not vanish from the count at
+        midnight."""
+        host = _make_host(db)
+        _make_experience(
+            db, host, title="Today", status="approved", event_date=date.today()
+        )
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_cancelled_experiences_are_not_counted(self, client, db):
+        host = _make_host(db)
+        _make_experience(db, host, title="On", status="approved", is_active=True)
+        _make_experience(db, host, title="Off", status="approved", is_active=False)
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_unapproved_business_is_not_counted(self, client, db):
+        """MEH-1749's gate: approved experience, unapproved host business."""
+        pending_host = _make_host(db, producer_status="pending", email="pend@example.com")
+        _make_experience(db, pending_host, title="Hidden", status="approved")
+        assert client.get("/experiences/count").json() == {"count": 0}
+
+        approved_host = _make_host(db, email="ok@example.com")
+        _make_experience(db, approved_host, title="Shown", status="approved")
+        assert client.get("/experiences/count").json() == {"count": 1}
+
+    def test_count_matches_the_listing_length_exactly(self, client, db):
+        """The invariant the nav actually depends on. Built from a mixed bag so
+        every exclusion above is exercised at once — if any filter drifts
+        between the two callers, these two numbers stop agreeing."""
+        host = _make_host(db)
+        other = _make_host(db, producer_status="rejected", email="rej@example.com")
+        _make_experience(db, host, title="A", status="approved")
+        _make_experience(db, host, title="B", status="approved")
+        _make_experience(db, host, title="C", status="pending")
+        _make_experience(db, host, title="D", status="approved", is_active=False)
+        _make_experience(
+            db,
+            host,
+            title="E",
+            status="approved",
+            event_date=date.today() - timedelta(days=1),
+        )
+        _make_experience(db, other, title="F", status="approved")
+
+        listing = client.get("/experiences").json()
+        count = client.get("/experiences/count").json()["count"]
+        assert count == len(listing) == 2
+
+    def test_empty_database_returns_zero(self, client, db):
+        assert client.get("/experiences/count").json() == {"count": 0}
+
+    def test_is_public_no_auth_required(self, client, db):
+        """No Authorization header anywhere in this class — asserted once,
+        explicitly, so the route cannot quietly acquire a dependency."""
+        resp = client.get("/experiences/count")
+        assert resp.status_code == 200
+        assert set(resp.json()) == {"count"}
+
+    def test_count_is_not_swallowed_by_the_detail_route(self, client, db):
+        """Route ORDER, not behaviour: declared after `/{experience_id}` the
+        path would arrive as an id of "count". A 422/404 here means the
+        catch-all won."""
+        resp = client.get("/experiences/count")
+        assert resp.status_code == 200, resp.text
+        assert isinstance(resp.json().get("count"), int)
+
+
 # ---------- Public listing ----------
 
 
