@@ -14,6 +14,18 @@
   display: none !important;
 }
 
+/* MEH-1917: the "היום" chip on the weekly order-window list marks whichever day
+ * it currently is in Asia/Jerusalem, so its POSITION moves with the calendar —
+ * a baseline captured on a Sunday disagrees with every other day of the week.
+ * Presence varies by date → HIDE, per the rule of thumb above. Belt-and-braces
+ * today: the panel is collapsed by default and the block sits far below the
+ * fold, and the producer-detail shots are viewport-only (see the fullPage note
+ * in parity.spec.ts), so no current baseline can reach it. This exists so that
+ * stops being load-bearing the moment a shot grows or the section moves up. */
+[data-testid="order-window-today-chip"] {
+  display: none !important;
+}
+
 /* Cookie-consent banner overlays the bottom of the viewport until it gets a
  * localStorage flag; the spec pre-seeds consent, this is belt-and-braces. */
 .cookie-banner {
