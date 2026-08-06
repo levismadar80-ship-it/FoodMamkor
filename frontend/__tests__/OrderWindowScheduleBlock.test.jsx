@@ -12,8 +12,8 @@
  * open/closed verdict lives in ProducerHeader). Three of the cases below exist
  * to hold that line, not to check rendering.
  */
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 
@@ -54,7 +54,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     // Consecutive identical days collapse into ONE row (getOrderWindowRanges).
     expect(rows()).toHaveLength(1);
     expect(rows()[0].textContent).toContain(`${COPY.days.sun}–${COPY.days.thu}`);
-    expect(rows()[0].textContent).toContain("09:00–14:00");
+    expect(rows()[0].textContent).toContain("9:00–14:00");
     // No missing-message errors → every key above exists in he.json.
     expect(onError).not.toHaveBeenCalled();
   });
@@ -69,7 +69,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     });
 
     expect(rows()).toHaveLength(2);
-    expect(rows()[0].textContent).toContain("09:00–13:00, 16:00–19:00");
+    expect(rows()[0].textContent).toContain("9:00–13:00, 16:00–19:00");
     // Sunday's second range makes it a different schedule from Monday, so the
     // two must stay separate rows even though they are consecutive days.
     expect(rows()[0].textContent).toContain(COPY.days.sun);
@@ -119,7 +119,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
 
     const nowrapSpans = [...rows()[0].querySelectorAll("span.whitespace-nowrap")];
     expect(nowrapSpans.map((s) => s.textContent)).toEqual([
-      "09:00–13:00,",
+      "9:00–13:00,",
       "16:00–19:00,",
       "20:00–22:00",
     ]);
@@ -128,7 +128,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
       expect(span.textContent).not.toMatch(/\s/);
     }
     // …and the space really is present between them, so a break can happen.
-    expect(rows()[0].textContent).toContain("09:00–13:00, 16:00–19:00");
+    expect(rows()[0].textContent).toContain("9:00–13:00, 16:00–19:00");
   });
 
   it("states no open/closed verdict and carries no status colour (MEH-1305 A)", () => {
@@ -161,7 +161,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     const text = html.replace(/<!-- -->/g, "");
 
     expect(text).toContain(COPY.schedule_heading);
-    expect(text).toContain("09:00–14:00");
+    expect(text).toContain("9:00–14:00");
 
     // Discrimination control: the SAME render path with a null window produces
     // nothing, so the assertion above is reading the window and not just the
@@ -183,5 +183,226 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     expect(rows()[0].textContent).toContain(
       `${en.producer.detail.order_window.days.sun}–${en.producer.detail.order_window.days.thu}`,
     );
+  });
+});
+
+/**
+ * MEH-1917 — layer 2: the full week, per day, behind a quiet disclosure.
+ *
+ * Covered as a MATRIX, not two lists (CLAUDE.md conditional-UI rule, and the
+ * MEH-1583 lesson where (many × open) was the cell that shipped unchecked):
+ *
+ *            | closed (default) | open
+ *   0 days   | block absent — no disclosure to have either way
+ *   1 day    | no disclosure    | n/a — there is nothing to disclose
+ *   many, unmerged | no disclosure | n/a — same reason
+ *   many, merged   | summary only  | full per-day list
+ */
+describe("OrderWindowScheduleBlock — full-week disclosure (MEH-1917)", () => {
+  const toggle = () => screen.queryByTestId("order-window-week-toggle");
+  const weekPanel = () => screen.queryByTestId("order-window-week");
+  const weekRows = () => screen.queryAllByTestId("order-window-week-row");
+
+  // Sun–Thu identical → getOrderWindowRanges merges 5 days into 1 summary row,
+  // which is exactly the compression this layer undoes.
+  it("many + merged × CLOSED — the summary is compressed and the week is not shown", () => {
+    renderBlock(SUN_THU);
+    expect(rows()).toHaveLength(1);
+    expect(toggle()).toBeTruthy();
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(weekPanel()).toBeNull();
+    expect(weekRows()).toHaveLength(0);
+  });
+
+  it("many + merged × OPEN — one row per open day, un-merged, no day span anywhere", () => {
+    renderBlock(SUN_THU);
+    fireEvent.click(toggle());
+
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+    expect(weekPanel()).toBeTruthy();
+    // FIVE rows, not the one merged row above — this is the whole point.
+    expect(weekRows()).toHaveLength(5);
+    const labels = weekRows().map((r) => r.textContent);
+    for (const key of ["sun", "mon", "tue", "wed", "thu"]) {
+      expect(labels.some((l) => l.includes(COPY.days[key]))).toBe(true);
+    }
+    // Not one of them is a merged span like "ראשון–חמישי".
+    for (const label of labels) {
+      expect(label).not.toContain(`${COPY.days.sun}–`);
+    }
+    // Days that are closed never appear.
+    expect(labels.some((l) => l.includes(COPY.days.fri))).toBe(false);
+    expect(labels.some((l) => l.includes(COPY.days.sat))).toBe(false);
+  });
+
+  it("expanding REPLACES the summary — the same schedule never prints twice", () => {
+    renderBlock(SUN_THU);
+    expect(rows()).toHaveLength(1);
+    fireEvent.click(toggle());
+    // The merged summary row is gone; only the per-day list remains. Stacking
+    // the two printed "ראשון–חמישי" directly above ראשון/שני/שלישי/…, which is
+    // what the first build did and what the eye pass caught.
+    expect(rows()).toHaveLength(0);
+    expect(weekRows()).toHaveLength(5);
+    fireEvent.click(toggle());
+    expect(rows()).toHaveLength(1);
+  });
+
+  it("closes again on a second click", () => {
+    renderBlock(SUN_THU);
+    fireEvent.click(toggle());
+    expect(weekPanel()).toBeTruthy();
+    fireEvent.click(toggle());
+    expect(weekPanel()).toBeNull();
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("one open day → NO disclosure (the summary already is the per-day list)", () => {
+    renderBlock({ wednesday: [{ open: "08:00", close: "12:00" }] });
+    expect(rows()).toHaveLength(1);
+    expect(toggle()).toBeNull();
+    expect(weekPanel()).toBeNull();
+  });
+
+  it("many open days that do NOT merge → still no disclosure, nothing is hidden", () => {
+    renderBlock({
+      sunday: [{ open: "09:00", close: "13:00" }],
+      monday: [{ open: "10:00", close: "15:00" }],
+      tuesday: [{ open: "08:00", close: "11:00" }],
+    });
+    // Three summary rows for three open days: the summary is already un-merged.
+    expect(rows()).toHaveLength(3);
+    expect(toggle()).toBeNull();
+  });
+
+  it("zero open days → no block, and therefore no disclosure in either state", () => {
+    renderBlock({});
+    expect(block()).toBeNull();
+    expect(toggle()).toBeNull();
+    expect(weekPanel()).toBeNull();
+  });
+
+  it("a split day stacks its ranges instead of comma-joining them", () => {
+    renderBlock({
+      sunday: [
+        { open: "09:00", close: "13:00" },
+        { open: "16:00", close: "19:00" },
+      ],
+      monday: [
+        { open: "09:00", close: "13:00" },
+        { open: "16:00", close: "19:00" },
+      ],
+    });
+    fireEvent.click(toggle());
+
+    const spans = [...weekRows()[0].querySelectorAll("span.whitespace-nowrap")];
+    expect(spans.map((s) => s.textContent)).toEqual(["9:00–13:00", "16:00–19:00"]);
+    // Stacked, not run together: no comma separator in the expanded view.
+    expect(weekRows()[0].textContent).not.toContain(",");
+  });
+
+  it("times are humanised in BOTH layers — one card, one grammar", () => {
+    renderBlock(SUN_THU);
+    expect(rows()[0].textContent).toContain("9:00–14:00");
+    expect(rows()[0].textContent).not.toContain("09:00");
+    fireEvent.click(toggle());
+    expect(weekRows()[0].textContent).toContain("9:00–14:00");
+    expect(weekRows()[0].textContent).not.toContain("09:00");
+  });
+
+  it("the numerals stay bidi-isolated on the RTL page", () => {
+    renderBlock(SUN_THU);
+    fireEvent.click(toggle());
+    const times = weekRows()[0].querySelector('[dir="ltr"]');
+    expect(times).toBeTruthy();
+    expect(times.textContent).toContain("9:00–14:00");
+  });
+
+  it("has an en.json twin for every new key", () => {
+    const { onError } = renderBlock(SUN_THU, en, "en");
+    const EN = en.producer.detail.order_window;
+    expect(screen.getByTestId("order-window-week-toggle").textContent).toContain(EN.show_week);
+    fireEvent.click(toggle());
+    expect(screen.getByTestId("order-window-week-toggle").textContent).toContain(EN.hide_week);
+    expect(onError).not.toHaveBeenCalled();
+  });
+});
+
+describe("OrderWindowScheduleBlock — today marker (MEH-1917)", () => {
+  const toggle = () => screen.getByTestId("order-window-week-toggle");
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 2026-08-05 12:00 UTC is a Wednesday; Asia/Jerusalem is ahead of UTC, so it
+  // is still Wednesday locally. Pinning the clock is what makes "today" a
+  // deterministic assertion instead of one that passes six days in seven.
+  const pinTo = (iso) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(iso));
+  };
+
+  it("marks exactly one row as today, and it is the right one", () => {
+    pinTo("2026-08-05T12:00:00Z"); // Wednesday
+    renderBlock(SUN_THU);
+    fireEvent.click(toggle());
+
+    const marked = screen.getAllByTestId("order-window-week-row").filter(
+      (r) => r.getAttribute("data-today") === "true",
+    );
+    expect(marked).toHaveLength(1);
+    expect(marked[0].getAttribute("data-day")).toBe("3"); // 0=Sunday → 3=Wednesday
+    expect(marked[0].textContent).toContain(COPY.days.wed);
+    expect(marked[0].textContent).toContain(COPY.today);
+    expect(screen.getAllByTestId("order-window-today-chip")).toHaveLength(1);
+  });
+
+  it("marks NO row when today is a day the business is closed", () => {
+    pinTo("2026-08-08T12:00:00Z"); // Saturday — not in SUN_THU
+    renderBlock(SUN_THU);
+    fireEvent.click(toggle());
+
+    expect(
+      screen
+        .getAllByTestId("order-window-week-row")
+        .filter((r) => r.getAttribute("data-today") === "true"),
+    ).toHaveLength(0);
+    expect(screen.queryByTestId("order-window-today-chip")).toBeNull();
+  });
+
+  /**
+   * RETRACTED ASSERTION, kept as a note because the retraction is the finding.
+   *
+   * This started as "the SERVER pass carries no today marker", asserting
+   * `html` lacked `data-today="true"`. It passed — and it passed for the WRONG
+   * reason. Running the control (initialising todayIndex from the clock
+   * instead of in an effect) did NOT red it: the week panel is collapsed on
+   * the server, so the clock-derived branch is not rendered there under EITHER
+   * implementation. A green with two causes, indistinguishable at read time.
+   *
+   * So the honest statement of why SSR is safe is not "the highlight is
+   * guarded" — it is "the panel that contains the highlight is closed on the
+   * server". That is what this asserts, and it is discriminating: flip the
+   * default to open and it reds immediately. The mounted guard in the
+   * component stays as defence for exactly that day, and is documented there
+   * as such rather than as the thing currently doing the work.
+   */
+  it("the server pass renders the panel CLOSED, which is what keeps the clock out of it", () => {
+    pinTo("2026-08-05T12:00:00Z"); // Wednesday — a marker would appear if it could
+    const html = renderToString(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <OrderWindowScheduleBlock orderWindow={SUN_THU} />
+      </NextIntlClientProvider>,
+    );
+
+    // The block itself IS server-rendered — so this is not green by rendering
+    // nothing at all.
+    expect(html).toContain(COPY.schedule_heading);
+    expect(html).toContain(COPY.show_week);
+    // …and the panel holding the clock-derived row is absent.
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('data-testid="order-window-week"');
+    expect(html).not.toContain('data-today="true"');
   });
 });
