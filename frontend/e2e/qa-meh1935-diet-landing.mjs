@@ -35,9 +35,12 @@ const check = (name, pass, detail = "") => {
 // The repo pins a newer @playwright/test than the sandbox's preinstalled
 // browsers (expects build 1234, /opt/pw-browsers has 1194), so point at the
 // installed binary rather than running `playwright install`.
+// Hardcoded for the same reason as the stub's port: an env var here enters the
+// app's env contract as far as the "Env drift" guard is concerned, and QA
+// scaffolding has no business in .env.example. Edit the literal if the
+// sandbox's browser build moves.
 const browser = await chromium.launch({
-  executablePath:
-    process.env.QA_CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
   args: ["--ssl-version-max=tls1.2"],
 });
 const ctx = await browser.newContext({
