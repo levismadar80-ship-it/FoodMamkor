@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-06 — batch MEH-1922 → MEH-1923 (1924 חסום)
+
+**PRs:** #2646 (1922, auto-merge חמוש) · #2649 (1923, auto-merge חמוש) · **ה-PR הזה** (backfill, כלל 31).
+**ענפים:** `feature/meh-1922-dnm-gate-regex` · `feature/meh-1923-flaky-admin-reviews-expand` — שניהם מ-`origin/staging` טרי.
+
+**מצב ה-batch הקודם — שניהם עדיין פתוחים:**
+- **#2637 (MEH-1917)** — עדיין חסום ע"י `DO-NOT-MERGE marker gate`. ה-false-positive **עדיין בגוף ה-PR** (`updated_at` = 15:15:33Z, התגובה שלי) ולא רצה ריצת CI חדשה. כלל 30 אוסר על CC לערוך את הגוף — לא נגעתי. שורת הסטטוס החיה (Layer 1) **DROPPED** בהוראת ספיר; הטסט השומר לא נגע.
+- **#2643 (MEH-1918)** — לא נמזג. Actions היה תקוע ~3 שעות (jobs ב-`queued` מ-17:12 עד אחרי 20:00); ב-20:55 שוחרר וכל ה-legs חזרו `skipped`. אומת מקומית שהקוד נקי: `ruff check --extend-exclude alembic/versions` = All checks passed, `npm run lint` = 0 errors.
+
+**אימות (#2646):** 11 repo guards, 1 warned (זה שנוסף, בכוונה) · `--self-test` 4/4 — מקבל את הבסיסי ודוחה widened/gutted/neutered · 19 fixtures.
+**אימות (#2649):** קובץ היעד 0/50 אחרי התיקון (2/30 ו-1/36 לפני) · suite מלא **283 passed | 2 skipped** ×3 ריצות עוקבות · בקרת אי-ריקות: 5 failed כשה-toggle נמחק, 5 passed אחרי שחזור.
+
+**החלטות:**
+- **המטצ'ר של שער ה-marker נשאר ב-workflow ולא עובר ל-`scripts/checks/`.** להעביר אותו היה מקל על התחזוקה ומכניס את הכלל לקובץ ש-CC יכולה לערוך — כלומר הסוכן שהשער מפקח עליו כותב מחדש את השער של עצמו. הסלמת הרשאות תחת כלל 32.
+- **`[DNM]` שבור היום** ואינו חוסם. תוקן ב-patch doc, לא חי עד שספיר תחיל.
+
+**הצעד הבא:** ספיר מחילה את `docs/ci/dnm-gate-regex.patch.md` (אז ה-guard נדלק לבד לטבלה המחמירה), ומכריעה על #2637. MEH-1924 מחכה ל-#2637.
+
 ## 2026-08-06 — MEH-1920: טקסט חופשי יצא מ-preview של כרטיסי ה-hub
 
 **PRs:** #2635 (קוד, **נמזג** `75d239d1` ע"י ספיר דרך auto-merge) · **ה-PR הזה** (backfill, כלל 31).
