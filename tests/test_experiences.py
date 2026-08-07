@@ -21,6 +21,7 @@ from datetime import date, time, timedelta
 from decimal import Decimal
 
 from app.models.models import Experience, User
+from app.utils.clock import israel_today
 from conftest import auth_header, make_producer, make_user
 
 
@@ -309,10 +310,25 @@ class TestExperienceCount:
     def test_today_still_counts(self, client, db):
         """The boundary the filter is `>=`, not `>` — an experience happening
         today is still orderable and must not vanish from the count at
-        midnight."""
+        midnight.
+
+        MEH-1918: seed with `israel_today()`, NOT `date.today()`. The route
+        filters on `event_date >= israel_today()` and the CI runner is UTC, so
+        between 21:00 and 24:00 UTC (Israel is UTC+3 in summer) Israel has
+        already rolled over and a row dated UTC-today is in the PAST. This
+        test asserted the exact boundary using the wrong clock and duly went
+        red at 23:39 UTC with `{'count': 0} == {'count': 1}` — the very
+        midnight vanishing it exists to forbid.
+
+        Only the exact-today case is fragile: the other offsets in this file
+        (±2, ±7, ±14 days) carry days of slack that a 3-hour skew cannot flip,
+        which is why this is a one-line fix and not a sweep. `app/utils/clock.py`
+        names the window in its own docstring: "UTC Fri 22:00 is already Sat in
+        Israel."
+        """
         host = _make_host(db)
         _make_experience(
-            db, host, title="Today", status="approved", event_date=date.today()
+            db, host, title="Today", status="approved", event_date=israel_today()
         )
         assert client.get("/experiences/count").json() == {"count": 1}
 
