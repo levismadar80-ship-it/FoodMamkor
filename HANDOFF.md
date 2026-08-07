@@ -3,6 +3,53 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-07 (מאוחר) — MEH-1925 Phase 0b: התקלה **תוארכה**, ההיקף **נמדד**, וההעלאה **לא אושרה כשבורה**
+
+**PR:** ה-PR הזה — docs-בלבד, ונושא את שניהם: נספח א׳ ל-`docs/audits/cloudinary-401-scope.md` **וגם** את הרשומה הזאת. מותר יחד כי כל הדיף תחת `docs/**` + `HANDOFF.md`, ולכן `changelog-branch-guard` עובר (כלל 31 אוסר על לוגים בענף שנוגע גם ב**קוד**).
+**ענף:** `feature/meh-1925-fault-dating` מ-`origin/staging` טרי.
+
+1. **⏱️ חלון של ~20 שעות — לא שבועות.** נקי לאחרונה **06/08 13:58:50Z**, שבור לראשונה **07/08 10:12:39Z**. Sentry ו-Vercel API **שניהם חסומים** מה-sandbox (`CONNECT tunnel 403`); המקור שכן עבד הוא `/tmp/next-start.log` שכל job של Playwright מדפיס, ובו שורות ה-401 מילולית.
+2. **🔴 תיארוך לפי חותמות הזמן של הכשלים היה שגוי ב-~20 שעות.** שלושת הכשלים של 06/08 נבדקו אחד-אחד ואף אחד אינו Cloudinary: **flake** (`unexpected=0, flaky=1`, לוג נקי מ-401), **השבתת GitHub Actions** (`R_E2E: abandoned`), ואחד לא נבדק. **ובכיוון ההפוך:** `success` בסדרת staging הוא בד"כ **skip-green** — אומת על ריצה docs-only שבה Playwright דולג וה-gate עדיין ירוק. אין לקרוא ירוק שם כ"VRT עבר".
+3. **📤 ההעלאה לא אושרה כשבורה — ובכוונה לא נמדדה.** לא בוצעה העלאה, וגם staging אינו מוצא בטוח: אותו ענן `dfzpscjks`, כך שכתיבה משם היא כתיבה לחשבון האמיתי. מה שהקוד כן קובע: **האספקה אינה נושאת אישור, ההעלאה נושאת `api_key`+`api_secret`** → **"מפתח שסובב" נשלל כהסבר ל-401 של האספקה**, ו"האם onboarding חסום" הופך לטבלת הכרעה לפי הסיבה (credits/השהיה → חסום; restricted media types → תקין).
+4. **📐 ההיקף מדוד: הקטלוג עצמו.** דרך ה-optimizer של production — **תמונת בית עסק ותמונת מוצר מחזירות `502 UNAUTHORIZED`**, לא רק שבעה hero-ים. **➕ גם תצוגות שיתוף חברתי** (`lib/seo.js:110` מעביר OG דרך Cloudinary) — לא נראה באתר, לא היה מתגלה בבדיקה ידנית. **דף הבית כן מושפע** דרך רקע ה-hero (`HomeHero.jsx:21`, `background-image` → פנייה ישירה ל-Cloudinary); תמונות הקטגוריות שלו הן Unsplash ותקינות.
+5. **לא בוצע:** אין תיקון, fallback, loader, cache, שינוי tolerance, ואין רגנרוט ל-baselines. `login.png`/`register.png` נשארים אדומים.
+
+## 2026-08-07 — נחיתת #2648 + #2645, ו-MEH-1925 Phase 0: **ה-401 של Cloudinary נוגע ב-production**
+
+**PRs:** **#2648 נמזג** (09:29:20Z, auto-merge) · **#2645 נמזג** (docs backfill) · **#2652 נמזג** — `docs/audits/cloudinary-401-scope.md`, docs-בלבד, המדידה המלאה · ה-PR הזה (HANDOFF, כלל 31).
+**ענפים:** `feature/meh-1925-cloudinary-401-scope` · `feature/meh-1925-handoff-session-log` — שניהם מ-`origin/staging` טרי.
+
+### 1. 🔴 הממצא שהופך את ההנחה שבכרטיס — production מושפע, וה-401 נמשך
+
+**זו הפעולה הדחופה של הסשן הזה.** MEH-1925 הניח שאולי מדובר במטרד preview/staging בלבד. **לא.** ששה נכסים דרך ה-Next image optimizer של **production** (`mehamakor.co.il`) — בדיוק המסלול שדפדפן של משתמשת עובר בו — מחזירים:
+
+```
+502  OPTIMIZED_EXTERNAL_IMAGE_REQUEST_UNAUTHORIZED
+```
+
+נכס ה-login נמדד **3 פעמים ברצף**, `502` בכל שלוש. אין flake.
+
+- **ה-probe אומת לפני שנכתבה שורת מסקנה.** באותה דקה, דרך **אותו** endpoint: `images.unsplash.com` → **200** עם בתי JPEG אמיתיים · host לא-allowlisted → **400** (כלומר `remotePatterns` נאכף וה-URL שלי נקרא) · `mehamakor.co.il/` → **200**. רק Cloudinary נופל. ההבחנה חדה.
+- **נשלל במדידה, לא בטיעון:** (א) **לא strict transformations** — URL **ללא** טרנספורמציה נכשל בדיוק כמו `f_auto,q_auto`; strict transformations היה מתיר את המקור. (ב) **לא deploy שלנו** — `next.config.js` נגע לאחרונה 02/08, `lib/cloudinary.js` 16/07, שניהם קדמו לתקלה.
+- **מה שלא נמדד, ומסומן ככזה:** `res.cloudinary.com` **חסום מה-sandbox** (`CONNECT tunnel failed, 403` — מחלקת חסימת Railway). **זו אינה עדות ל-401.** ה-401 נמדד דרך ה-edge של Vercel, שהוא עד טוב יותר. **staging לא נמדד כלל** — מפנה ל-`vercel.com/sso-api` (Deployment Protection); התנהגותו **לא ידועה**.
+- **שני ממצאים מחוץ להיקף הכרטיס:** (א) ה-backend מחזיק אישורי Cloudinary להעלאה (`config.py:47-48` → `upload.py:123-124`, `:188-189`, `:275-276`) — חשבון מושהה או מפתח שסובב חוסם **העלאת תמונה של בעלת עסק**, כלומר onboarding, לא רק צפייה. לא נמדד. (ב) **אין ניטור על זמינות Cloudinary** — תקלת production התגלתה במקרה כ-snapshot אדום ב-PR לא קשור.
+- **לא בוצע בכוונה:** אין תיקון, fallback, loader, cache, שינוי tolerance, ו**אין רגנרוט ל-baselines**. `login.png` ו-`register.png` נשארים אדומים כי הם מדווחים על תקלה אמיתית.
+- **הפעולה הבאה היא של ספיר:** Cloudinary Console → Usage (credits?) ו-Settings → Security (restricted media types / השהיה?), ואישור בעין על נייד.
+
+### 2. סערת merge — "require branches up to date" נאכף, ו-auto-merge אינו מסנכרן בעצמו
+
+`staging` זז **ארבע פעמים** במהלך הסשן (`eb538a11 → 4279246e → 72c170d1 → 37e30dc7`). כל תזוזה מחזירה PR ל-`behind`, ו-**auto-merge אינו מסנכרן את הענף בעצמו** — הוא רק ממתין. הדפוס שעבד: `git fetch origin staging && git merge origin/staging && git push`, ואז auto-merge נורה מעצמו ברגע שנפתח חלון ירוק+נקי. ניסיון merge ישיר בזמן `behind` מחזיר `405 · 2 of 2 required status checks are expected` גם כששני השערים ירוקים.
+
+### 3. פריטים שהתגלו ואין להם כרטיס (ה-workspace בתקרת התוכנית החינמית — יצירת כרטיסים תיכשל)
+
+1. **ניטור זמינות Cloudinary** — ראו §1. דווח כתגובה על MEH-1925.
+2. **בדיקת מסלול ההעלאה** מול החשבון — ראו §1. דווח באותה תגובה.
+3. **ענף שארי שיש למחוק ידנית:** `feature/meh-1919-email-success-removal` נמחק אוטומטית עם מיזוג #2648, ואז **נוצר מחדש בטעות** ע"י `git push` שלי בזמן סנכרון. הוא מצביע על `37e30dc7` (קצה staging) ו-**התוכן שלו זהה ל-staging — `git diff` ריק**, אין PR מחובר אליו. שלושה ניסיונות מחיקה נדחו ע"י ה-remote (`send-pack: unexpected disconnect`), ולכן הופסקו. **למחוק דרך ה-UI של GitHub.** לא מזיק, רק רועש.
+
+### 4. מה שנשאר פתוח מהסשן הקודם ולא נגעתי בו
+
+`.github/workflows/**` (CC-deny) · MEH-1844 · ה-timeout של `Repo guards` (MEH-1873, של ספיר) · `Adversarial review (calibration)` ממשיך לדווח `failure` על כל PR — `continue-on-error: true` ואינו ב-`needs` של `ci-gate`, ולכן אינו חוסם; זו עדיין מכסת ההוצאה של הארגון.
+
 ## 2026-08-06 — MEH-1911: בידוד DB לכל worker (pytest -n auto). ההוכחה הושלמה, ה-PR חסום על השבתה של GitHub Actions
 
 **PRs:** **#2633** (`test(ci): per-worker DB isolation so pytest -n auto is safe`) — **פתוח, `mergeable_state: blocked`**, לא נמזג · ה-PR הזה (docs-בלבד, כלל 31).
