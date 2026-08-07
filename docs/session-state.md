@@ -1,194 +1,165 @@
-# Session state — overnight autonomous sweep (2026-07-29)
+# Session state — overnight autonomous sweep v2 (2026-08-07 → 08)
 
-> Transient per workflow rule 14. Prior contents (MEH-1512 pickup UI + MEH-1510 verification,
-> 2026-07-23) superseded; that work stays tracked in Linear and shipped in PR #2115.
-
-> **0 merged by me, 1 draft, 0 parked, 1 new issue, staging GREEN.**
-> **The queue is empty by the rule merged tonight — that is why the night is short, not a failure.**
+> **1 merged, 2 PRs awaiting you, 0 parked, 0 quarantined signatures, staging GREEN.**
+> **The headline is not the merge — it is that the sweep drained in ~40 minutes because
+> four of the eight seed items were already done, and that the one item I did work
+> disproved the premise its own ⛔ is built on.**
 
 ---
 
-## ⚠️ Read this first — the sweep stopped early, on purpose
+## ⚠️ Read this first — the seed queue was stale on half its items
 
-Three independent findings, all discovered in pre-flight, point the same way: **there was no
-authorized work to take.**
+`queue_rule` says Linear live beats the seed list. It did, four times:
 
-### 1. The queue rule flipped to opt-in ~1h before this session, and nothing is labelled
+| # | Seed said | Reality at session start | Cost |
+|---|---|---|---|
+| 1 | MEH-1911 — attack first | **merged by you 07/08 10:41Z** (PR #2633); card archived | none — caught in pre-flight |
+| 4 | MEH-1764 — implement | **PR #2430 landed 29/07**; `docs/ci/vrt-label-trigger.patch.md` (19 KB) exists, cited at `.claude/rules/testing.md:149` | none |
+| 6 | MEH-1746 — run Phase 0 | **Phase 0 done by CC 04/08**; description opens `✅ PHASE 0 DONE` | none |
+| 5 | MEH-1868 — prep | **already prepped** as PR #2614 (chunk 0, 04/08) | none |
 
-PR **#2414** landed on `staging` (`150f4927`) as this session was starting. It rewrote
-`.claude/rules/workflow.md` § *Working the queue*:
+MEH-1911 and MEH-1764 were both **archived**, so they did not appear in the
+`cc-queue` label query. I checked each directly instead of reading the empty
+result as "unlabelled" — the presence/absence rule earning its place, because the
+alternative reading was "nobody ever did this, go build it."
 
-```
-state = In Progress · team = Mehamakor · labeled `cc-queue`
-```
-
-> *"**An unlabeled card is not yours even if it looks actionable.**"*
-> *"**An empty queue is the expected steady state, not a failure.** Say so and stop."*
-
-I ran that query. **Zero cards.** Widened to every state, workspace-wide: **still zero — no
-issue in Mehamakor carries a `cc-queue` label at all.**
-
-The rule's own rationale describes exactly the list I was handed: on its first run the old
-opt-out query *"returned **28** cards — epics used as board state, work paused for Sapir, and
-one Urgent card explicitly marked HIGH-RISK with WAIT between chunks."* My brief pointed me at
-that same set, MEH-1698 included. **The rule merged tonight exists to prevent precisely the
-night I was asked to run.** I followed the rule.
-
-### 2. The merge authority named in my brief cannot be verified — filed as MEH-1761
-
-The brief grants auto-merge for GREEN + YELLOW per `.claude/autonomy-cache.json`. That file
-**tops out at MEH-545**:
-
-```
-entries: 143 | min MEH-76 | max MEH-545 | above 1000: []
-```
-
-Every In Progress card is **MEH-784 or higher**. Zero overlap — the cache classifies nothing,
-and it fails as a silent miss, not an error.
-
-The fallback authority is worse. `workflow.md:43` cites **"ADR-017 (MEH-1741)"** — but
-`docs/decisions/ADR-017` is **"JWT access token in localStorage"** (Accepted 2026-05-23,
-MEH-686), indexed as such at `docs/decisions/README.md:40`. ADRs run 001–031; **no
-autonomous-remediation ADR exists in the repo.** `docs/audits/2026-07-full/remediation-log.md:3`
-repeats the same wrong number, which makes it drift rather than a typo.
-
-The reference **resolves to a real file**, so a quick reader sees "ADR-017 exists ✅" and
-concludes the authority is verified. Filed as **MEH-1761** with a proposed fix (renumber to
-ADR-032, correct both citations, decide the cache's fate, add a guard).
-
-### 3. `CI gate` cannot be trusted on a draft PR — patch shipped, Sapir applies
-
-The brief said to distrust green gates until MEH-1582 merges. **MEH-1582 can never be merged by
-me** — the fix lives in `.github/workflows/`, which is CC-deny (MEH-671), and the ticket itself
-prescribes patch-file-only. So that compensating control was in force all night, and would be
-on any future night too.
-
-Root cause, `pr-checks.yml:697-702`: the aggregator's `ok()` accepts `skipped` as a pass. Six
-jobs are draft-gated (`:166 :217 :284 :436 :482 :608`), so a **draft** PR touching the frontend
-enters the *"enforcing frontend checks"* branch and passes it with **zero jobs having run**.
+MEH-1934 and MEH-1909 carry **no `cc-queue` label**, so under the opt-in rule for
+`In Progress` they were not mine regardless of the seed naming them. Both already
+have open PRs (#2673, #2480).
 
 ---
 
 ## 1 · MERGED
 
-**None by me.** No card carried `cc-queue` and no tier was verifiable — every path led to
-Draft-only. Nothing was merged to `staging` or `main` this session.
+**MEH-1853 — CLS harness separates what GREW from what merely moved** ([PR #2676](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2676), squashed to `1992b34e`)
 
-For context, `staging` advanced twice tonight from other sessions: **#2414** (queue rule →
-opt-in) and **#2411** (queue worked from Linear, not chat).
+The harness recorded *displacement* but never *size*, so a block that expanded was
+indistinguishable from one shoved down the page by it. It now records
+`previousRect.height` and ranks growers by growth rather than by CLS.
 
-## 2 · DRAFT PRs AWAITING SAPIR
-
-| PR | Ticket | Why draft | What to review |
-|---|---|---|---|
-| [#2415](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2415) | MEH-1582 | RED — `.github/workflows/**` is CC-deny (MEH-671); ticket prescribes patch-file only | Apply the diff in `docs/ci/ci-gate-skip-green.patch.md`, then verify per its §6 |
-
-**Contents:** the patch doc + `scripts/ci-gate-selftest.sh`, a harness that reads the **real**
-workflow to report whether the fix is applied, then proves the two predicates discriminate:
-
-```
-SCENARIO                                 OLD        NEW
-A draft FE PR, all checks skipped        GREEN      RED     <- the bug
-B docs-only, stack untouched             GREEN      GREEN   <- must not regress
-C non-draft FE PR, everything ran        GREEN      GREEN   <- unchanged
-```
-
-Per `.claude/rules/testing.md` (MEH-1619) both columns are reported: a construction only counts
-if the **old** predicate would have passed it. **B** is the legitimate docs-only skip; **C**
-mirrors real run PR #2412.
-
-The harness is deliberately **not** in `scripts/checks/` — that directory is auto-discovered by
-the required *Repo guards* job (`run-all.sh:97-113`), and a guard reporting the not-yet-applied
-state would red every PR. Verified: `repo-guards OK — all 7 guard(s) passed`, unchanged.
-
-**Also corrects the ticket's first hypothesis:** `ready_for_review` is **not** missing — it is at
-`pr-checks.yml:27`. The remaining candidate is the token-actor rule (MEH-1501), which I did
-**not** prove. The fix does not depend on it: after the patch a draft's gate is RED, so a ready
-flip that fires no run leaves a stale **red** that blocks merge instead of a stale green that
-waves it through. Fail-closed either way.
-
-## 3 · OPENED ISSUES
-
-| Issue | Trigger |
-|---|---|
-| **MEH-1761** (High) | Pre-flight: `autonomy-cache.json` stale at MEH-545 **and** `workflow.md:43`'s "ADR-017" is an occupied number. Queue authority unverifiable from either direction. |
-
-Searched first per rule 27 — MEH-1756 (*"סולם אוטונומיה מדורג"*, Backlog, `not-cc`) is the
-**missing decision**; MEH-1761 is the *evidence that it is missing*, not a duplicate. Cross-linked.
-
-## 4 · PARKED
-
-**None.** No task hit a STOP condition. The night ended on the queue rule's own *"say so and
-stop"* — a clean stop, not a park.
-
-## 5 · SKIPPED
-
-| Card | Why |
-|---|---|
-| All 35 In Progress cards | **No `cc-queue` label** — per `workflow.md`, not mine to take |
-| MEH-1105 | `blocked-needs-sapir` — brief forbids |
-| MEH-1590, MEH-999, MEH-1283 | labelled `not-cc` |
-| MEH-1698 (Urgent) | HIGH-RISK `Header.jsx` → Draft-only by brief — **and already shipped**, see §6 |
-
-## 6 · Board reconciliation — four "In Progress" cards are already shipped
-
-Worth more than any fix I could have made tonight: **the board is behind the repo.** Each
-verified against `origin/staging` by file:line, not by reading the ticket.
-
-| Card | Actual state on `staging` | What is genuinely left |
-|---|---|---|
-| **MEH-1527** | Chunk 1 shipped (#2122). `cd backend && uv lock --check` → **exit 0**, confirmed by running it | Chunk 2a/2b — both `.github/` or repo settings = yours |
-| **MEH-1698** | **All three chunks landed.** `Header.jsx:401` mounts `<LanguageToggle variant="default" />`; spec 14 rewritten with hard assertions and the `count()===0` self-skip **deleted**; docstrings corrected (`f9acc058`) | Your mobile QA on staging + CHANGELOG/HANDOFF |
-| **MEH-1608** | Copy unified (no `instagram.com` placeholder left in `cards.jsx`); server normalizer live at `schemas/schemas.py:203`, wired at 4 call sites | Only your read-only count query (ticket §6) |
-| **MEH-1583** | Code + fixture + **both baselines** on staging | Mobile QA + logs — see below |
-
-### MEH-1583 — I closed its blocking DoD item
-
-The ticket required *"CC opens both PNGs and visually verifies before merge — full row, not a
-pill"* (the MEH-1552 candidate-baseline lesson). **Done, and posted to the card:**
-
-- `producer-detail-phone-revealed-*.png` (1 × open) — full-width row, `rounded-[10px]`, icon at
-  the logical start. **The poisoned baseline really was replaced.**
-- `producer-detail-two-channel-revealed-*.png` (many × open) — two full-width rows, one
-  geometry. **No pill beside a 44px circle.** The 26/07 bug is gone.
-
-One honest deviation, documented on the card: the AC predicted *"circle row + full-width number
-row"*, but with the phone removed only **one** channel remains, so it takes the `single` branch
-and renders as a labeled full-width row. More consistent than the AC described — but different,
-so it is recorded rather than left looking like a miss. **Consequence: the "3+ channels × open"
-cell is still uncovered by VRT.** No card opened (out of scope); a natural sibling if you want it.
-
-**Evidence limit (Skeptic Mode):** I verified the **PNG contents as committed** and the
-className in code. I did **not** run the VRT suite against a live build, so I have not shown
-these shots still match the current render — only that they themselves show the right geometry.
-
-## 7 · Pipeline health
-
-| Signal | State |
-|---|---|
-| `staging` tip | `150f4927` (#2414) |
-| `uv lock --check` on staging | **exit 0** — MEH-1527's blocker is genuinely closed |
-| `scripts/checks/run-all.sh` | **7/7 guards pass** |
-| Required gates | **GREEN — but see §3:** trustworthy only on non-draft PRs until #2415 is applied |
-| Sentry / Vercel delta | **Not measured.** No merge was made, so there is no post-merge delta to compare against a baseline. |
-| Open PRs | 20, unchanged by me (+1 draft = 21) |
-
-## 8 · What to do first
-
-1. **Label 3–5 cards `cc-queue`** — nothing else unblocks an autonomous run. Everything below is
-   downstream of this.
-2. **Apply `docs/ci/ci-gate-skip-green.patch.md`** (PR #2415) — until then a draft PR's green
-   gate is meaningless, which is the hole that makes unattended merging unsafe in the first place.
-3. **Decide MEH-1761** — renumber the remediation ADR to **032**, and either refresh
-   `autonomy-cache.json` or delete it. Right now it is 143 lines of misleading tiers.
-4. **Close the four cards in §6** once their remaining human steps are done.
+Gates: `CI gate` + `Deploy gate` both `success`; frontend build, vitest and Repo
+guards all ran and passed (backend jobs correctly `skipped` — no backend file in
+the diff). Self-test shown red under **three** separate breaks, one of which
+reproduces the exact pre-change behaviour, then green restored.
 
 ---
 
-### Footnote — a guard false-positive I hit, not filed
+## 2 · THE FINDING — and it needs your ruling
 
-`.claude/hooks/check-rtl.sh` exempts `.md` (`:60`) but **not** `.sh`, and flags the literal
-string `pr-checks.yml` because it contains `pr-c`, read as a physical `padding-right` class. I
-used the documented `rtl-ok` escape rather than widening the hook mid-session. Low severity, but
-it will hit anyone writing a shell script that names that workflow. Not filed — say the word and
-I will.
+I then ran the instrument ([run `31221768874`](https://github.com/levismadar80-ship-it/FoodMamkor/actions/runs/31221768874), `staging@1992b34e`, same producer path as the 07/08 baseline so the numbers compare). **DoD item 1 is closed: the block that grows is named.**
+
+**Desktop — §5's candidate was right.**
+`DIV.max-w-6xl.mx-auto.px-4.py-6` = **`ProducerDetail.jsx:107`**, the page's root
+content container. It grows **120 → 818px with `dy=0`** — top edge fixed, content
+filling in beneath, pushing everything below it. The largest grower on desktop.
+
+**Mobile — the ⛔ rests on a premise that does not hold.**
+The card says the footer moves *"because something above it grew"*, and forbids
+touching it until that something is named. On mobile-375, the worst viewport
+(×13.7 the target):
+
+- the **FOOTER is the only element that grows** — `0 → 546px`, i.e. it did not
+  exist and then arrived whole;
+- `DIV.max-w-6xl` **does not appear in the mobile ranking at all.**
+
+Nothing above the footer was measured growing. On desktop the footer *also* grows
+(`42 → 576px`) rather than merely being displaced.
+
+**Your call:** whether the ⛔ lifts for mobile. I did not touch it —
+`ProducerDetail.jsx` is a HIGH-RISK surface tonight, and §5 asked for measurement,
+not a fix. Re-running is one dispatch.
+
+> The distinction that carried this came out of adversarial review, not planning: a
+> source with no prior box reports `previousRect` as **all-zeros, not null**, so a
+> first-render insertion scores like a real expansion. Without capturing `fromH`,
+> mobile's `0→546` (inserted) and desktop's `42→576` (resized) would have printed
+> as the same number and read as one bug. They are two, with two different fixes.
+
+---
+
+## 3 · PRs AWAITING YOU
+
+| PR | What | Why it is yours |
+|---|---|---|
+| [#2677](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2677) | Corrects the self-test fixture comment to the measured truth | Trivial (comment only, self-test unchanged) — merge or let it ride. It exists because the fixture promised to update itself if the run disproved it, and the run did. |
+| [#2665](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2665) | MEH-1935 diet landing pages | **Stop-point.** Needs (a) copy approval for the 5 CC-drafted pages under `diet_pages.pages.*` in `he.json` — rule 22, not mine — and (b) your mobile QA. I pushed `[preview]` commit `0f19a05c` so a preview URL exists; build exit 0 and vitest 2514 passed, both re-verified *after* syncing 2 commits of staging drift. |
+
+Untouched and still yours, unchanged from before the sweep: #2614 (MEH-1868 chunk 0,
+RED-partial), #2661 (MEH-1911 CI patch, workflow), #2480 (release #2), #2673/#2675.
+
+---
+
+## 4 · PARKED / CIRCUIT BREAKER
+
+**Nothing parked. No signature repeated. No quarantine.** Detail and one near-park
+in `docs/overnight/PARKED.md`.
+
+---
+
+## 5 · TWO THINGS THAT ARE WRONG IN OUR OWN DOCS
+
+Both found while following the rules, both reported rather than edited (they are
+other tickets' surfaces):
+
+**a. The CI adversarial reviewer produced nothing on PR #2676** — job `failure`,
+32s, **no `claude[bot]` comment at all**, on a diff that is not docs-only so
+`paths-ignore` did not apply. `.claude/rules/workflow.md` currently states, in a
+block headed `✅ CORRECTED 2026-08-03 — the reviewer works`, that it posts on every
+non-draft non-docs-only PR. That was measured and true on 02–03/08; it is not what
+happened tonight. **I have no explanation and did not diagnose one** — `show_full_output`
+was removed on 05/08, so the action's own error text never reaches the log. Posted
+as an observation on MEH-1844 (RED, yours), not as a cause.
+
+Same file also still lists action **(b) "pin the action to a SHA" as open and staged
+on PR #2511**. It is applied: `claude-review.yml:64` reads
+`anthropics/claude-code-action@be7b93b… # v1.0.183`.
+
+**Consequence for tonight:** rule 5a step 6 says read the reviewer's comment before
+merging. There was none, so both PRs rest on the local `/adversarial-review` alone —
+a self-review, with none of the independence the CI job is meant to add. Stated in
+both PR bodies.
+
+**b. Staging is behind Vercel SSO from the CC sandbox** (`302 → vercel.com/sso-api`).
+This is a *separate* barrier from the documented `*.up.railway.app` egress deny, and
+it is not recorded in `.claude/rules/` anywhere. It cost three attempts before I
+recovered what I needed from a prior job log instead.
+
+---
+
+## 6 · SKIPPED (with the reason, not just the label)
+
+- `needs-sapir` / blocked in description: MEH-1754, MEH-1876, MEH-1925 (Cloudinary
+  401 — blocked on you, Console), MEH-1938 (HIGH-RISK, per-chunk `go`)
+- RED / decision-first title markers: MEH-1907, MEH-1736, MEH-1868 (merge half)
+- `not-cc`: MEH-1244, MEH-1590, MEH-999, MEH-1283
+- Board state, not work: MEH-130, MEH-1204
+- Opt-in failure on `In Progress` (no `cc-queue`): MEH-1934, MEH-1909, MEH-1844
+
+Lane B (Todo + Backlog-Urgent) was swept fresh after the seed drained. **No
+eligible item survived the gate** — every remaining card is either Sapir-gated in
+its description or carries an excluding marker.
+
+---
+
+## 7 · Pipeline health
+
+- **staging: GREEN.** `1992b34e`. CLS unchanged from the 07/08 baseline
+  (`mobile 1.3735`, `desktop 0.8744` ×3) — expected, since the merge was
+  harness-only, and it doubles as a control that the new instrument did not
+  perturb what it measures.
+- **Vercel:** #2676 showed `Ignored` — the configured MEH-1900 behaviour for a
+  commit without `[preview]`, not a fault. The `[preview]` commit on #2665 was
+  pushed to produce a real preview; **I did not confirm the URL rendered** — worth
+  a glance before you rely on it, given the Hobby daily-quota rate-limit that hit
+  #2541/#2542/#2594.
+- **Sentry:** not checked. No pre-flight baseline was captured, so a delta would
+  have been meaningless — saying so rather than reporting a green I did not measure.
+- **Backend:** untouched all night. No migration written, applied, or staged.
+
+---
+
+## Next concrete step
+
+Rule on §2 (does the ⛔ lift for mobile). If yes, the mobile work is scoped to
+`Footer.jsx` first-render, and the desktop work to `ProducerDetail.jsx:107` — two
+separate fronts, both HIGH-RISK, neither to be bundled.

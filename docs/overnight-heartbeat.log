@@ -2,3 +2,7 @@
 2026-07-28T22:21:24Z | MEH-1761 | filed: queue authority unverifiable (cache stale + ADR-017 collision) | DONE
 2026-07-28T22:21:24Z | MEH-1583 | baseline visual review DoD closed, both PNGs verified | DONE
 2026-07-28T22:21:24Z | QUEUE | cc-queue label query returned 0 cards -> expected steady state, stopping | STOP-CLEAN
+2026-08-07T22:00:00Z | MEH-1853 | CLS measurement dispatched + completed (run 31221768874). DoD 1 CLOSED: pusher named = ProducerDetail.jsx:107 (120->818px). Footer also grows (mobile 0->546, ONLY grower there) -> disproves the premise behind the live footer-freeze | DONE
+2026-08-07T22:05:00Z | MEH-1853 | fixture comment corrected to the measured truth -> PR #2677 | IN-FLIGHT
+2026-08-07T22:05:00Z | MEH-1911/1764/1746 | verified already-complete in Linear live; seed list was stale on 4 of 8 items | NO-OP
+2026-08-07T22:05:00Z | LANE-B | Todo+Backlog-Urgent swept: 1938/1925 Sapir-blocked, 1907/1736 RED-marker, 1244 not-cc, 130 board-state. No new eligible item taken | SWEPT
