@@ -23,6 +23,7 @@ import { getVacationReturnDate } from "../lib/producer-format";
 // (Copy itself lives in messages/{he,en}.json; comments stay English per
 // docs/CLAUDE-REVIEW.md rule 5.)
 import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
+import { humanTime } from "@/lib/time-format";
 
 /**
  * Main-column header block for the producer detail page.
@@ -133,13 +134,13 @@ export default function ProducerHeader({
       return dayKey
         ? t("producer.detail.header.status.orders_closed", {
             day: t(`opening_hours.weekdays.${dayKey}`),
-            time: israelTime(status.nextChange),
+            time: humanTime(israelTime(status.nextChange)),
           })
         : t("producer.detail.header.status.closed");
     },
     orders_open: () =>
       t("producer.detail.header.status.orders_open", {
-        time: israelTime(status.nextChange),
+        time: humanTime(israelTime(status.nextChange)),
       }),
     open: () => t("producer.detail.header.status.open"),
   }[status.branch]();

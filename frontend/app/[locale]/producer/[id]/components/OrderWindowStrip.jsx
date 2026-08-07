@@ -60,6 +60,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { CalendarCheck, CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { humanTime } from "@/lib/time-format";
 
 import {
   ORDER_DAY_KEYS,
@@ -105,28 +106,6 @@ function RangeList({ ranges }) {
   ));
 }
 
-/**
- * MEH-1917 — "09:00" → "9:00". The stored value is zero-padded because HH:MM is
- * what sorts and validates; the padding is a storage artifact and reads as a
- * timetable rather than as something a person would say.
- *
- * Applied to BOTH layers on purpose. Humanising only the expanded list would
- * print the same hour two ways inside one card, which is worse than either
- * format on its own.
- *
- * KNOWN COST, not an oversight: components/OpeningHours.jsx still renders
- * "09:00" and the two cards are a deliberate visual family
- * (OrderWindowStrip.jsx:120-121). This card now diverges from that sibling by
- * one leading zero. Aligning them is an OpeningHours edit, which is outside
- * this ticket's scope — flagged in the PR rather than done silently.
- *
- * Only a leading zero on the HOUR is removed; "00:30" → "0:30" would be wrong,
- * so midnight keeps a bare "0" hour exactly as Intl would render it, and the
- * minutes are never touched.
- */
-function humanTime(hhmm) {
-  return typeof hhmm === "string" ? hhmm.replace(/^0(\d:)/, "$1") : hhmm;
-}
 
 /**
  * Every OPEN day on its own row — the un-merged truth behind the summary.
