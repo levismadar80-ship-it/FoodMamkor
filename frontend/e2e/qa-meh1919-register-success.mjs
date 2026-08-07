@@ -136,31 +136,33 @@ async function main() {
     `text="${s2.email.siblingText}"`);
   await page.screenshot({ path: `${OUT}/2-email-typing-390.png` });
 
-  // --- case 3: blur → tint appears ---
+  // --- case 3: blur with a valid value → STILL nothing (the MEH-1919 follow-up)
+  // The interim implementation tinted here. Now the border must be byte-identical
+  // to the pristine reading, which is the strongest form this can take: not
+  // "some other colour", but literally unchanged.
   await email.blur();
   const s3 = await probe(page);
-  const TINTED = s3.email.borderColor;
-  // Blurred → both measures are valid and must agree.
-  check("3. email: tint appears on blur with a valid value",
-    TINTED !== UNTINTED && hasToken(s3.email.classes, "border-primary") && !s3.email.focused,
-    `${UNTINTED} -> ${TINTED}`);
-  check("3. email: still no '✓ תקין' hint", !s3.email.siblingText.includes(VALID_HINT),
+  check("3. email: NO tint on blur with a valid value",
+    s3.email.borderColor === UNTINTED && !hasToken(s3.email.classes, "border-primary") && !s3.email.focused,
+    `borderColor=${s3.email.borderColor} (pristine ${UNTINTED})`);
+  check("3. email: no '✓ תקין' hint", !s3.email.siblingText.includes(VALID_HINT),
     `text="${s3.email.siblingText}"`);
   await page.screenshot({ path: `${OUT}/3-email-blurred-valid-390.png` });
 
-  // --- case 4: resume typing → tint disarms again (the sticky-gate fix) ---
+  // --- case 4: re-typing, then blurring a second time — the interim behaviour
+  // re-armed on every blur, so this is where a careless revert would show up.
   await email.type("x");
   const s4 = await probe(page);
-  check("4. email: success token disarms on the next keystroke",
+  check("4. email: no success token while re-typing",
     !hasToken(s4.email.classes, "border-primary"),
-    `focused=${s4.email.focused} borderColor=${s4.email.borderColor}`);
-  // …and re-blurring with the (still valid) value brings it back, proving the
-  // disarm is a re-arm cycle and not a one-way latch.
+    `focused=${s4.email.focused}`);
   await email.blur();
   const s4b = await probe(page);
-  check("4b. email: tint returns on the next blur",
-    hasToken(s4b.email.classes, "border-primary") && s4b.email.borderColor === TINTED,
+  check("4b. email: still no tint after a SECOND blur",
+    s4b.email.borderColor === UNTINTED && !hasToken(s4b.email.classes, "border-primary"),
     `borderColor=${s4b.email.borderColor}`);
+  check("4b. email: no Check icon in the field wrapper", s4b.email.svgCount === 0,
+    `svg=${s4b.email.svgCount}`);
   await page.screenshot({ path: `${OUT}/4-email-retyping-390.png` });
 
   // --- case 5: error path unchanged — invalid email raised on blur ---
@@ -169,7 +171,7 @@ async function main() {
   const s5 = await probe(page);
   check("5. email: error border on blur with an invalid value",
     hasToken(s5.email.classes, "border-error") && !hasToken(s5.email.classes, "border-primary") &&
-      s5.email.borderColor !== UNTINTED && s5.email.borderColor !== TINTED,
+      s5.email.borderColor !== UNTINTED,
     `borderColor=${s5.email.borderColor}`);
   check("5. email: error text rendered", s5.email.siblingText.length > 0, `text="${s5.email.siblingText}"`);
   await page.screenshot({ path: `${OUT}/5-email-error-390.png` });
