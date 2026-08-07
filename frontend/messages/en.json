@@ -7,6 +7,7 @@
     "explore": "Explore",
     "add_business_short": "Add a business",
     "map": "Map",
+    "experiences": "Experiences",
     "events": "Events",
     "about": "About",
     "favorites": "Favorites",
@@ -32,6 +33,7 @@
     },
     "footer": {
       "events": "Events",
+      "experiences": "Experiences",
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",

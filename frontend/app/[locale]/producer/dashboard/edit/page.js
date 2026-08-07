@@ -227,6 +227,32 @@ const GROUP_MEMBERS = {
   contact: ["contact", "questions"],
 };
 
+// MEH-1920: card keys whose MEH-1158 preview is fixed-shape enough to enter a
+// HUB TILE. The per-card accordion header is unaffected — it owns a full row and
+// still shows every preview below.
+//
+// A hub tile packs its preview nodes into ONE narrow flex row
+// (EditHubCard.jsx:52-58 — `flex items-center gap-2 overflow-hidden`, each node
+// wrapped in `min-w-0`), and every chip carries `truncate`, whose
+// `overflow: hidden` zeroes a flex item's automatic minimum size. So a node
+// holding unbounded owner prose does not merely clip itself — it shrinks the
+// structured chips beside it to a single glyph. Measured in Chromium at 375px
+// with only the free-text node as the variable: category chips 58px→33px and
+// 49px→30px, rendering as "ת…" / "ט…" beside a clipped description. Free text
+// never enters a preview (GOV.UK / NHS summary-list pattern).
+//
+// Allowlist, not denylist: a card key added later stays out of the hub until its
+// preview is shown to be short and fixed-shape. Keys with no preview node at all
+// (kashrut / delivery / hours / questions / ownerStory) are already filtered by
+// the `previews[k]` check below and are deliberately absent here.
+const HUB_PREVIEW_KEYS = new Set([
+  "images", // PreviewThumbs — fixed 40px squares
+  "categories", // PreviewChips — closed vocabulary, capped at 3 (MEH-1297)
+  "license", // masked "•••1234" chip (MEH-1258)
+  "location", // MapPin + city name
+  "contact", // channel glyph + channel label
+]);
+
 // MEH-1408: thin Suspense wrapper — EditPageInner reads useSearchParams (the
 // active ?group), which requires a Suspense boundary at build (Next CSR-bailout
 // rule; mirrors the ProducersClient pattern). The page renders null until auth
@@ -619,10 +645,18 @@ function EditPageInner() {
       (k) => !(k === "location" && profile.has_physical_location === false)
     );
     const done = members.filter((k) => cardFilled[k]).length;
-    const groupPreviews = members
-      .filter((k) => cardFilled[k] && previews[k])
-      .map((k) => previews[k])
-      .slice(0, 2);
+    const withPreview = members.filter((k) => cardFilled[k] && previews[k]);
+    // MEH-1920: hub tiles take only fixed-shape previews (see HUB_PREVIEW_KEYS).
+    const hubSafe = withPreview.filter((k) => HUB_PREVIEW_KEYS.has(k));
+    const groupPreviews =
+      hubSafe.length > 0
+        ? hubSafe.slice(0, 2).map((k) => previews[k])
+        : withPreview.length > 0
+          ? // Filled, but every preview it could offer is free text: keep the
+            // row with the dashed placeholder the empty cards already use,
+            // rather than dropping the tile's preview row without a trace.
+            [<PreviewEmpty key="hub-empty" />]
+          : [];
     return {
       statusLine: tAcc("hub_progress", { done, total: members.length }),
       marker:

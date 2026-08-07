@@ -2813,6 +2813,17 @@ class ExperienceHostOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ExperienceCountOut(BaseModel):
+    """MEH-1918 — how many experiences the public feed would show.
+
+    A number and nothing else, on purpose: the nav needs to know whether the
+    surface has real supply before it links to it, and any field beyond the
+    count would be a second, unaudited public read path.
+    """
+
+    count: int
+
+
 class ExperienceListOut(BaseModel):
     """Public listing — deliberately does NOT expose `address`.
     The full street address is private and only returned by the
