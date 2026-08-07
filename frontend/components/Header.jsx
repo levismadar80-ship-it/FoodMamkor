@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
+import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import LanguageToggle from "@/components/LanguageToggle";
 
 /**
@@ -170,9 +171,15 @@ export default function Header() {
   // MEH-643: navbar uses nav.explore (not nav.discover). MEH-732: both keys
   // de-masculinized to "גלו" (ADR-014 plural-voice for nav chrome) — nav.explore
   // here, nav.discover on the BottomNav home tab.
+  // MEH-1918: the experiences link is data-gated — it joins the desktop nav
+  // only once /experiences has real supply, and is absent (not disabled, not
+  // greyed) below the threshold. Mirrors the existing items exactly; no
+  // redesign, no count badge.
+  const showExperiences = useExperiencesNavGate();
   const NAV_ITEMS = [
     { href: "/", label: t("nav.explore") },
     { href: "/map", label: t("nav.map") },
+    ...(showExperiences ? [{ href: "/experiences", label: t("nav.experiences") }] : []),
     { href: "/about", label: t("nav.about") },
   ];
 
