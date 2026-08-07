@@ -4776,6 +4776,8 @@
         "city_placeholder": "e.g. Haifa",
         "address_label": "Address",
         "address_placeholder": "e.g. 12 Ha'atzmaut St",
+        "address_confirmed": "Location found: {location}",
+        "address_unresolved": "We couldn't locate that address — you can enter coordinates manually below.",
         "place_hint_exact": "Your city and address appear on your page and in navigation.",
         "place_hint_approximate": "Only the city is shown. The full address won't appear on your page or in navigation.",
         "lat_label": "Latitude",
