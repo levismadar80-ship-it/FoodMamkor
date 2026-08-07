@@ -34,6 +34,7 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
+import { humanTime } from "@/lib/time-format";
 
 // MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
 // available_today → primary (brand green); on_vacation / full_this_week →
@@ -545,7 +546,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             data-testid="card-order-window"
           >
             {t("producer.detail.header.status.orders_open", {
-              time: israelTime(orderStatus.nextChange),
+              time: humanTime(israelTime(orderStatus.nextChange)),
             })}
           </p>
         )}
