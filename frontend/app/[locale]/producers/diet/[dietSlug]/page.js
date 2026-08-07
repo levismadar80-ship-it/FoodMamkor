@@ -253,8 +253,14 @@ export default async function DietLandingPage({ params }) {
       <section className="mt-12 max-w-3xl">
         <h2 className="text-xl font-bold text-fg">{t("faq_heading")}</h2>
         <dl className="mt-4 space-y-6">
-          {faq.map((f) => (
-            <div key={f.question}>
+          {/*
+            Keyed by index, not by question text: the copy contract only
+            requires each question to be non-empty, not unique, so a future
+            editor repeating one would collide the keys. The list is static and
+            ordered, which is exactly the case where an index key is safe.
+          */}
+          {faq.map((f, i) => (
+            <div key={i}>
               <dt className="font-semibold text-fg">{f.question}</dt>
               <dd className="mt-1 leading-relaxed text-fg-muted">{f.answer}</dd>
             </div>
