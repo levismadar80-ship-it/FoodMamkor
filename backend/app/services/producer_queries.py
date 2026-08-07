@@ -214,6 +214,63 @@ def get_producer_or_404(db: Session, producer_id: UUID) -> Producer:
     return producer
 
 
+def create_primary_branch_location(
+    db: Session,
+    producer_id: UUID,
+    *,
+    city: str | None,
+    address: str | None,
+    lat: float | None,
+    lng: float | None,
+) -> ProducerLocation | None:
+    """MEH-1939 (MEH-1938 chunk 1) — the registration half of the dual-write.
+
+    Every path that creates a producer from a signup payload also creates ONE
+    `producer_locations` row for it: `kind='branch'`, `is_primary=True`. The
+    `Producer.city/lat/lng` columns keep being written exactly as before — this
+    is Expand, not replacement, and nothing reads the new row yet.
+
+    Why this exists at all: `haversine_min_km` below already COALESCEs to
+    `Producer.lat/lng` and its comment (`:75-95`) says the fallback becomes
+    dead weight "once chunk 4 dual-writes a primary location on create".
+    MEH-1421 shipped only the dashboard write path, so that create never
+    happened and the fallback has been carrying the gap since.
+
+    Returns None — and adds nothing — when either coordinate is missing. That
+    is the CONDITION, not an edge case: a location row without coordinates is
+    invisible to `producerPoints()` and to the geo query alike, so it would be
+    a row that exists only to be skipped, while still counting as "this
+    producer has locations" for anything that tests the collection's length.
+    A delivery-only business legitimately has no point (MEH-213).
+
+    Does NOT commit. Callers add this to their own open transaction, the same
+    way they already do for ProducerCategory and DeliveryArea, so a failure
+    anywhere in registration rolls the location back with everything else.
+
+    # DO NOT add a backfill for existing producers here — that is chunk 2, and
+    # it is an Alembic data migration, not application code.
+    """
+    if lat is None or lng is None:
+        return None
+
+    location = ProducerLocation(
+        producer_id=producer_id,
+        kind="branch",
+        is_primary=True,
+        city=city,
+        address=address,
+        lat=lat,
+        lng=lng,
+        # Coordinates on a signup payload come from AddressSearch's geocode
+        # (MEH-1808), so the point is a real street-level fix. The
+        # `approximate` case is a town with no address, which by the guard
+        # above produces no row at all.
+        location_precision="exact",
+    )
+    db.add(location)
+    return location
+
+
 def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
     """Create a pending producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
@@ -257,6 +314,19 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
                 delivery_day=da.delivery_day,
             )
         )
+
+    # MEH-1939: the dual-write. `ProducerCreate` carries no `address` field
+    # (schemas.py:1324-1338), so the row gets city + coordinates only —
+    # `ProducerLocation.address` is nullable and this is the one caller of the
+    # three with nothing to put in it.
+    create_primary_branch_location(
+        db,
+        producer.id,
+        city=data.city,
+        address=None,
+        lat=data.lat,
+        lng=data.lng,
+    )
 
     db.commit()
     db.refresh(producer)
