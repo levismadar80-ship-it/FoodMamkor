@@ -255,7 +255,10 @@ function rankSources(samples) {
     for (const shift of s.shifts || []) {
       for (const src of shift.sources || []) {
         const prev = totals.get(src.node)
-          || { node: src.node, cls: 0, hits: 0, maxDy: 0, maxDh: 0, grew: false };
+          || {
+            node: src.node, cls: 0, hits: 0, maxDy: 0,
+            maxDh: 0, grew: false, growFromH: null, growToH: null,
+          };
         prev.cls += shift.value;
         prev.hits += 1;
         if (src.dy != null) prev.maxDy = Math.max(prev.maxDy, Math.abs(src.dy));
@@ -263,7 +266,17 @@ function rankSources(samples) {
         // what follows it. A shrink moves later content up and is a different
         // (and here, unobserved) story, so it must not be folded in by Math.abs.
         if (src.dh != null && src.dh > 0) {
-          prev.maxDh = Math.max(prev.maxDh, src.dh);
+          if (src.dh > prev.maxDh) {
+            prev.maxDh = src.dh;
+            // Keep the before/after box of the LARGEST growth, not just its
+            // size. A source with no prior box reports previousRect as
+            // all-zeros rather than null, so `dh` equals its full height and a
+            // node appearing for the first time ranks like a large expansion.
+            // `0 -> 400` and `292 -> 412` are different events with different
+            // fixes; only fromH/toH tells them apart.
+            prev.growFromH = src.fromH ?? null;
+            prev.growToH = src.h ?? null;
+          }
           prev.grew = true;
         }
         totals.set(src.node, prev);
@@ -509,18 +522,22 @@ function attributionSelfTest() {
   // ── MEH-1853 §5: grower vs mover ──────────────────────────────────────────
   //
   // THE DISCRIMINATING CASE, and the reason this pass exists. Case C is built
-  // from the REAL 07/08 desktop-1440 measurement recorded on the ticket — the
-  // element descriptors, the CLS totals, the hit counts and the y-deltas are
-  // all verbatim from run 31164974787, not invented. Anchoring to the shape the
-  // page actually produces is what a purely synthetic fixture cannot do
-  // (.claude/rules/testing.md, MEH-1909).
+  // from the REAL 07/08 desktop-1440 measurement recorded on the ticket (run
+  // 31164974787): the element descriptors, the hit counts and the y-deltas are
+  // verbatim. Anchoring to the shape the page actually produces is what a
+  // purely synthetic fixture cannot do (.claude/rules/testing.md, MEH-1909).
   //
-  // The one value that is NOT measured is `dh` — recording it is precisely what
-  // this change adds, so no prior run could carry it. Here it encodes the
-  // hypothesis under test: the footer is displaced without changing size, and
-  // the zero-displacement DIV changes size. If the real run contradicts that,
-  // the run is the answer and this fixture gets updated — it is a test of the
-  // classifier, never evidence about the page.
+  // Two values are NOT verbatim, and saying so precisely matters more than the
+  // fixture looking authoritative:
+  //   - the PER-SHIFT values are reconstructed to sum to the recorded totals
+  //     (9 x 0.2888 = 2.5992 against a recorded 2.5989 — the run published the
+  //     sums, never the individual entries; the 0.0003 is that rounding).
+  //   - `dh` was never measured at all: recording it is precisely what this
+  //     change adds, so no prior run could carry it. Here it encodes the
+  //     HYPOTHESIS under test — the footer is displaced without changing size,
+  //     the zero-displacement DIV changes size. If the real run contradicts
+  //     that, the run is the answer and this fixture gets updated. It is a test
+  //     of the classifier, never evidence about the page.
   //
   // What it discriminates against: ranking growers by CLS, or passing the
   // ranking straight through. Both put FOOTER first — it outscores the DIV
@@ -572,6 +589,32 @@ function attributionSelfTest() {
   }]));
   check("a source carrying no dh is not classified as a grower",
     unmeasured.length === 0, `got ${unmeasured.length}`);
+
+  // A node appearing for the first time reports previousRect as all-zeros, not
+  // null, so its `dh` equals its full height and it outranks a genuine resize.
+  // Both push what follows; they are different bugs with different fixes, so
+  // the before/after box of the largest growth is retained to tell them apart.
+  // Asserting on the DATA, not on the log line that renders it.
+  const mixed = rankGrowers(rankSources([{
+    viewport: "x",
+    shifts: [
+      { value: 0.5, sources: [{ node: "DIV.appeared", dy: 0, h: 400, fromH: 0, dh: 400 }] },
+      { value: 0.5, sources: [{ node: "DIV.expanded", dy: 0, h: 412, fromH: 292, dh: 120 }] },
+    ],
+  }]));
+  check("a first-render insertion is distinguishable from a resize",
+    mixed.find((g) => g.node === "DIV.appeared")?.growFromH === 0
+    && mixed.find((g) => g.node === "DIV.expanded")?.growFromH === 292,
+    `appeared=${mixed.find((g) => g.node === "DIV.appeared")?.growFromH} ` +
+    `expanded=${mixed.find((g) => g.node === "DIV.expanded")?.growFromH}`);
+  check("the before/after box belongs to the LARGEST growth, not the last seen",
+    rankGrowers(rankSources([{
+      viewport: "x",
+      shifts: [
+        { value: 0.1, sources: [{ node: "DIV.x", dy: 0, h: 500, fromH: 100, dh: 400 }] },
+        { value: 0.1, sources: [{ node: "DIV.x", dy: 0, h: 60, fromH: 50, dh: 10 }] },
+      ],
+    }]))[0]?.growFromH === 100);
 
   // A shrink is not a push. Only positive growth can displace what follows.
   const shrank = rankGrowers(rankSources([{
@@ -712,7 +755,14 @@ async function main() {
       );
     }
     for (const g of growers.slice(0, 8)) {
-      console.log(`    grew=+${g.maxDh}px  cls=${g.cls}  moved=${g.maxDy}px  x${g.hits}  ${g.node}`);
+      // `0 -> 400` is a node appearing; `292 -> 412` is a block expanding.
+      // Both push what follows, but they are different bugs with different
+      // fixes, so the box is printed rather than only its delta.
+      const box = g.growFromH == null ? "?" : `${g.growFromH}→${g.growToH}px`;
+      const kind = g.growFromH === 0 ? " [first render]" : "";
+      console.log(
+        `    grew=+${g.maxDh}px (${box})${kind}  cls=${g.cls}  moved=${g.maxDy}px  x${g.hits}  ${g.node}`
+      );
     }
   }
 
