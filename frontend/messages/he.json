@@ -859,6 +859,9 @@
       "order_window": {
         "schedule_heading": "מתי מקבלים הזמנות",
         "schedule_subtitle": "הימים והשעות שבהם בית העסק מקבל הזמנות",
+        "show_week": "כל השבוע",
+        "hide_week": "הסתרת השבוע",
+        "today": "היום",
         "days": {
           "sun": "ראשון",
           "mon": "שני",
