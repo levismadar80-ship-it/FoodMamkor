@@ -264,7 +264,7 @@ describe("OrderWindowScheduleBlock — full-week disclosure (MEH-1917)", () => {
     expect(weekPanel()).toBeNull();
   });
 
-  it("many open days that do NOT merge → still no disclosure, nothing is hidden", () => {
+  it("many open days with no merging → still no disclosure, nothing is hidden", () => {
     renderBlock({
       sunday: [{ open: "09:00", close: "13:00" }],
       monday: [{ open: "10:00", close: "15:00" }],
