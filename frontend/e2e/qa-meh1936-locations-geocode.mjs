@@ -16,7 +16,7 @@
  * comboboxes and the Leaflet map actually mount and lay out inside this form.
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1936-locations-geocode.mjs [outdir]
+ *   node e2e/qa-meh1936-locations-geocode.mjs [outdir] [/path/to/chrome]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";
@@ -26,6 +26,12 @@ import path from "node:path";
 const OUT = path.resolve(
   process.argv[2] || "/home/user/FoodMamkor/qa-artifacts/MEH-1936",
 );
+// Optional browser path via ARGV, never an env var — a new `process.env.*` read
+// is a new undocumented variable and the Env drift gate (MEH-491) reds it.
+// Regression rule 8. REUSES: e2e/qa-meh1727-font-cors.mjs:37,61-66, which is
+// where this repo already settled the question. Needed because the CC sandbox
+// ships a Chromium whose revision does not match this repo's @playwright/test.
+const BROWSER_PATH = process.argv[3];
 const URL = "http://127.0.0.1:3000/producer/dashboard/edit";
 const NOMINATIM = "**nominatim.openstreetmap.org**";
 
@@ -251,11 +257,8 @@ async function run(browser, label, width, height) {
   await ctx.close();
 }
 
-// The sandbox ships a pinned Chromium that does not match this repo's
-// @playwright/test revision, so default resolution misses it. Unset, this falls
-// through to Playwright's own browsers — CI and dev machines are unchanged.
 const browser = await chromium.launch(
-  process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {},
+  BROWSER_PATH ? { executablePath: BROWSER_PATH } : {},
 );
 await run(browser, "mobile", 375, 812);
 await run(browser, "desktop", 1440, 900);
