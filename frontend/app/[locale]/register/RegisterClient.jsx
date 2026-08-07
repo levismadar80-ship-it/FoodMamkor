@@ -39,8 +39,10 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           added for useSearchParams, mirrors LoginClient).
  *           MEH-839 (de-box container + filled-green CTA → /login parity;
  *           OAuth render order FROZEN form-first, MEH-132 #3 untouched);
- *           MEH-1919 (success-affordance noise: name success removed, email
- *           success reduced to the border tint and armed by blur only).
+ *           MEH-1919 (success-affordance noise, two steps: name success
+ *           removed, then the email's border tint removed too — NEITHER
+ *           field carries a success state now, and re-adding one would
+ *           reintroduce the WCAG 1.4.1 colour-only failure).
  */
 
 export default function RegisterClient() {
