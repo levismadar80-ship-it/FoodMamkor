@@ -286,7 +286,7 @@
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
           "address_optional_hint": "No exact address? The town is enough.",
-          "address_confirmed": "✓ Location found: {location}",
+          "address_confirmed": "Location found: {location}",
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
           "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
@@ -2735,7 +2735,8 @@
       "close_aria": "Close viewer",
       "image_alt": "Image {current} of {total}",
       "prev_aria": "Previous image",
-      "next_aria": "Next image"
+      "next_aria": "Next image",
+      "image_error": "Image failed to load"
     },
     "onboarding_tip": {
       "cta_default": "Got it",
@@ -4775,6 +4776,8 @@
         "city_placeholder": "e.g. Haifa",
         "address_label": "Address",
         "address_placeholder": "e.g. 12 Ha'atzmaut St",
+        "address_confirmed": "Location found: {location}",
+        "address_unresolved": "We couldn't locate that address — you can enter coordinates manually below.",
         "place_hint_exact": "Your city and address appear on your page and in navigation.",
         "place_hint_approximate": "Only the city is shown. The full address won't appear on your page or in navigation.",
         "lat_label": "Latitude",
