@@ -2735,7 +2735,8 @@
       "close_aria": "Close viewer",
       "image_alt": "Image {current} of {total}",
       "prev_aria": "Previous image",
-      "next_aria": "Next image"
+      "next_aria": "Next image",
+      "image_error": "Image failed to load"
     },
     "onboarding_tip": {
       "cta_default": "Got it",
