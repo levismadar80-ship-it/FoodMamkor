@@ -348,11 +348,22 @@ describe("MEH-1935 rendered page", () => {
 describe("MEH-1935 sitemap emission", () => {
   it("lists a passing diet page in both locales, and omits a failing one", async () => {
     // vegan passes; every other backed slug is one below the threshold.
-    serverFetch.mockImplementation(async (url) =>
-      url.includes("vegan=true") && !url.includes("vegetarian=true")
-        ? listing(DIET_PAGE_MIN)
-        : listing(DIET_PAGE_MIN - 1),
-    );
+    //
+    // Dispatch on the EXACT filter param, resolved from the config, rather
+    // than a substring test. `url.includes("vegan=true")` is already wrong-ish
+    // — "vegetarian" contains no "vegan=true", but a future slug whose param
+    // embedded another ("raw_vegan") would silently take the wrong branch and
+    // this test would still be green. Matching `?<param>=true` with a boundary
+    // survives any slug the config grows.
+    const passing = "vegan";
+    serverFetch.mockImplementation(async (url) => {
+      const entry = BACKED_DIET_PAGES.find((p) =>
+        new RegExp(`[?&]${p.filterParam}=true(&|$)`).test(url),
+      );
+      return listing(
+        entry?.slug === passing ? DIET_PAGE_MIN : DIET_PAGE_MIN - 1,
+      );
+    });
     const { default: sitemap } = await import("@/app/sitemap");
     const urls = (await sitemap()).map((e) => e.url);
 
