@@ -651,6 +651,7 @@ its admin-override, so an admin still deletes (→ 200).
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
 GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
 POST   /experiences                    auth    — require_verified_email (already gated pre-MEH-1164 — left unchanged by Chunk 2A). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
