@@ -3,6 +3,62 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-06 — MEH-1911: בידוד DB לכל worker (pytest -n auto). ההוכחה הושלמה, ה-PR חסום על השבתה של GitHub Actions
+
+**PRs:** **#2633** (`test(ci): per-worker DB isolation so pytest -n auto is safe`) — **פתוח, `mergeable_state: blocked`**, לא נמזג · ה-PR הזה (docs-בלבד, כלל 31).
+**ענפים:** `feature/meh-1911-pytest-parallel-db-isolation` · `feature/meh-1911-handoff-backfill` — שניהם מ-`origin/staging` טרי (`5501f9bc`).
+**אימות (מקומי, מלא):** 7 ריצות מלאות של הסוויטה — 2 סדרתיות (baseline לפני/אחרי) + 5 דו-שלביות מקביליות. **2,738 נאספו · 2,368 עברו · 89% coverage בכל חמש הריצות (0.0pt drift).**
+**מה שלא רץ:** `Backend tests (pytest)` **מעולם לא הורץ ב-CI על ה-head** — ראו סעיף 1. כל מספר בגוף ה-PR הוא מדידה מקומית על 4 ליבות; ה-runner הוא 2 ליבות.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **⛔ #2633 חסום על השבתה של GitHub Actions — לא על ה-diff, ולא על כשל טסט.** ריצת `pr-checks` על ה-head `d1cd511c` היא `31117022132` **attempt 2**, ומצבה **`queued` מאז 15:41:51Z** — היא לא התחילה. שלושה ניסיונות קודמים מתו ב-`Prepare all required actions` על `Service Unavailable` בהורדת ה-action, כשעתיים לפני כן. **אומת כלא-ספציפי ל-PR:** אותה חתימה בדיוק על jobs שאין ביניהם קשר מבני. `Deploy gate (required)` ירוק (17:26:37Z); `CI gate` לא דיווח כלל.
+   - **`E2E gate` נפל 21:54:32Z — מאותה השבתה, ובווריאנט שכלל 21 מנסח במפורש.** ה-job עצמו לא הריץ טסטים: `R_FILTER: abandoned`, והשער חוסם על כך בכוונה (*"cannot determine E2E scope"*). ה-`Paths filter` התחיל 19:18:34Z ומת 21:48:05Z — **תקוע ~2.5 שעות בתוך ה-setup של עצמו**. זה **hang, לא supersession**: אין ריצה חדשה יותר על ה-SHA. ההבחנה קובעת את התרופה — ל-supersession **ממתינים**, ל-hang ההמתנה לעולם לא נגמרת ו**מריצים מחדש** (`rerun_failed_jobs`), וזו אינה הפרה של כלל 30 כי היא גורמת לבדיקה לרוץ במקום לנטרל אותה. **לא הורץ מחדש בסשן הזה** — הייתה הוראה מפורשת של ספיר "no re-runs, no pushes" על ה-PR הזה. **זו הפעולה הבאה, והיא ממתינה למילה אחת.**
+   - **מה כן ירוק בענף:** `pr-checks` עברה בהצלחה על שני commits קודמים — `3c6d73d5` (14:22:52Z) ו-`f46bf12a` (14:44:01Z). כלומר ה-diff עבר CI, רק לא בגרסתו הסופית.
+   - **מה לא נעשה בכוונה:** לא נדחפו commits לריטריגר ולא הוזמנו re-runs נוספים. השבתת תשתית אינה כשל שמתקנים בדחיפה, וכלל 30 אוסר על ניטרול שער חסום. **הפעולה הבאה היא להמתין ולבדוק שוב** — לא לתקן.
+   - **אזהרה שכלל 21 מנסח והיא רלוונטית כאן:** `cancelled` מ**השבתה** נראה זהה ל-`cancelled` מ**supersession**, וההחלטה הפוכה. כאן אין ריצה חדשה יותר על אותו SHA, ולכן זו לא supersession.
+
+2. **ההוכחה שלמה ומבחינה — היא לא נשענת על ירוק.** על ה-conftest **המקורי**, `pytest tests/test_api.py -n 4` שוגה ב-~82% מהמודול (`EEEE…`) ואז נתקע עד kill ב-10 דקות. אותה פקודה בדיוק, ירוקה עם הבידוד. בלי הריצה האדומה הזאת הירוק לא היה עדות לכלום.
+   - **Teardown נמדד ולא הונח:** חמש הריצות יצרו והפילו **18** מסדי worker; `pg_database` אחריהן מכיל רק `mehamakor_test`.
+   - **מהירות:** 769s → **287–319s** (~2.5×). המעבר המקבילי לבדו 205–224s מול 758s (~3.5×); המעבר הסדרתי מוסיף ~66s קבועים.
+
+3. **טסט אחד לא ניתן להקבלה, וההכרעה הייתה לא לגעת בסף.** `test_login_timing_equivalence_across_failure_modes` (p95 spread < 20ms על שלושת ענפי הכשל של `/login`) נפל **3 מתוך 3** תחת `-n auto` עם spread של **526ms** — כולל שני ה-reruns שכבר היו לו. זו תחרות CPU, וה-docstring של הטסט עצמו חוזה אותה ומורה במפורש *"do NOT silently raise the 20ms threshold"*. לכן הוא סומן `serial` ורץ במעבר נפרד. **הכיסוי הביטחוני נשמר במלואו — הטסט לא דולג ולא הוחלש** (`.claude/rules/security.md` אוסר להחליש invariant כדי להעביר טסט).
+
+4. **ה-workflow דורש שני מעברים, לא שורה אחת.** הכרטיס ביקש `-n auto --durations=15` בשורה אחת; זה לא מספיק. צריך מעבר מקבילי (`-m "not serial"`) ומעבר סדרתי (`-m serial` עם **`--cov-append`**), והשער של 70% על הסכום. **בלי `--cov-append` המעבר השני מוחק את נתוני הכיסוי של הראשון והשער נבחן מול טסט אחד.**
+
+5. **שלושת קבצי ה-patch — שניים כבר ב-staging, אחד לא.** `docs/ci/meh-1910-ci-speedup.patch.md` ו-`docs/ci/meh-1912-vitest-shard.patch.md` נמצאים ב-`origin/staging`. **`docs/ci/meh-1911-pytest-parallel.patch.md` קיים רק בענף של #2633** — הוא מגיע ל-staging רק כשה-PR נמזג. סדר ההחלה של 1911: (א) `"pytest-xdist>=3.8.0",` ב-`pyproject.toml` אחרי `pytest-timeout`, (ב) `uv lock`, (ג) שני שלבי ה-workflow במקום `pr-checks.yml:396-404`. `.github/workflows/**` ו-`pyproject`/`uv.lock` אינם של CC.
+
+6. **#2629 נמזג — הפעולה הזאת כבר לא פתוחה.** הוא נרשם כאן כ"החלטה של ספיר שממתינה", וזה כבר לא נכון: `fix(ci): drop show_full_output before the spend limit is raised, not after` נמזג **06/08 13:04:28Z** ע"י ספיר. **הנגזרת שכן פתוחה:** `show_full_output` כבוי מעכשיו, ולכן כשמכסת ההוצאה תועלה ו-ה-reviewer יחזור לרוץ — **ה-429 שוב לא יהיה קריא בלוג**. מי שיאבחן את ה-job הבא לא יראה סיבה, רק צורה.
+
+7. **שתי פעולות של ספיר עדיין פתוחות:** (א) **מכסת ההוצאה של הארגון** — ה-CI reviewer מת על `429 / "You've hit your org's monthly spend limit"` (job `92308149134`, 05/08), וזו הסיבה השלישית שלא הייתה על השולחן קודם; (ב) **ה-ruleset המחמיר** — הוספת ההקשרים לשער נשארת שינוי הגדרות ב-GitHub, לא משהו שסוויטה ירוקה הופכת לאוטומטי.
+## 2026-08-06 — MEH-1919: סימני ההצלחה בהרשמה הצרכנית הוסרו (בשני צעדים)
+
+**PRs:** #2636 (קוד, **נמזג** `5501f9bc`) · **#2648** (קוד, המשך — הסרת ההצלחה מהאימייל) · **ה-PR הזה** (backfill, כלל 31).
+**ענפים:** `feature/meh-1919-register-success-noise` · `feature/meh-1919-email-success-removal` · `feature/meh-1919-docs-backfill` — כולם מ-`origin/staging` טרי.
+**המצב הסופי:** לשם ולאימייל **אין סימן הצלחה בשום מצב**. #2636 השאיר לאימייל מסגרת `border-primary`; #2648 הסיר גם אותה, וסגר בכך כשל WCAG 1.4.1 שהצעד הראשון הכניס (בלי `successText` אין גם Check, אז המצב עבר בצבע בלבד). `ui/Input` לא נגעו בו באף אחד מהשניים.
+**אימות (#2636):** build ירוק · vitest **2430 passed** / 2 skipped (282 קבצים) · eslint 0 errors · 10/10 repo guards · `CI gate` + `Deploy gate` ירוקים · Playwright E2E (Chromium) **199 executed** ירוקים עם `--fail-on-flaky-tests`.
+**אימות (#2648):** build ירוק · vitest **2435 passed** / 2 skipped (283 קבצים) · eslint **0 errors** · 10/10 repo guards · harness 390px **17/17**.
+**מה שלא רץ:** `pytest tests/test_api.py` — אפס קבצי backend ב-diff, ה-job דילג לפי paths-filter. לא נטען מעבר לכך. **QA על iOS/Android אמיתי לא בוצע** — אין preview לענף (ה-`ignoreCommand` דורש `[preview]` בהודעת commit; Vercel דיווח מפורשות *"Canceled by Ignored Build Step"*). ה-QA נעשה ב-Chromium מקומי ב-390px.
+
+### מה שצריך לדעת לפני שנוגעים בזה שוב
+
+1. **הוכרע וסגור — אל תחזירו סימן הצלחה לשם או לאימייל.** הכרטיס ביקש "`border-primary` + Check בלי `successText`", צירוף ש-`ui/Input` **אינו יכול לבטא**: ה-Check יושב **בתוך** ה-span של `successText` (`Input.jsx:117-125`, מגודר ב-`:61`). אין טקסט → אין אייקון → המצב עובר בצבע בלבד = WCAG 1.4.1. ההכרעה (ספיר, 06/08): **להסיר את ההצלחה כולה** (#2648), ולא לעקוף. נדחו במפורש: `successText={" "}` (רווח truthy שמרנדר Check בלי טקסט — ניצול לרעה של ה-API, שביר מול כל trim עתידי, ומזין node ריק ל-`aria-describedby`) ווריאנט icon-only ב-`Input.jsx` (נעול D1). **הערת התכנון:** כשה-API לא יכול לבטא בקשה, "לוותר על האפקט" הוא אפשרות שלישית אמיתית — וכאן היא גם מיושרת עם NN/g.
+
+2. **`emailTouched` דביק בכוונה — וזה עדיין רלוונטי אף שהדגל השני מת.** שגיאה שעלתה ב-blur חייבת לשרוד את התיקון. לכן ב-#2636 ההצלחה חייבה flag נפרד (`emailSuccessArmed`, blur→on/change→off) ולא יכלה להיתלות על `emailTouched`. ב-#2648 הדגל הוסר כקוד מת יחד עם ההצלחה, ו-`emailInvalid` נשאר בית-בית. **אם מישהו יחזיר סימן הצלחה לשדה כלשהו כאן — הוא ייתקל שוב באותה מלכודת;** אל תגדרו אותו על `*Touched`.
+
+3. **ה-probe שלי החזיר תשובה שגויה פעמיים, ומקרה בקרה עם תשובה ידועה הוא שתפס — לא הריצה.** (א) `className.includes("border-primary")` מתאים גם `focus:border-primary`, ולכן ענה "מסומן" תמיד → 3 FAIL שקריים; (ב) `transition-colors` (`Input.jsx:80`) גרם לדגימת צבע באמצע המעבר — שדה השגיאה נמדד `rgb(46,104,83)` (מזיגה) במקום `rgb(179,38,30)`. **בכל probe על מצב ויזואלי: לתקן על tokens, ולהמתין להתייצבות לפני מדידת צבע.**
+
+4. **בזמן focus הצבע אינו מבחין בין הצלחה למיקוד.** `focus:border-primary` צובע ראשי בלי קשר לתקינות, ולכן "כלום בזמן הקלדה" נמדד על ה-token הסטטי בלבד. המסגרת הירוקה בזמן הקלדה היא **מיקוד** וקיימת גם לפני השינוי — לא לדווח עליה כרגרסיה.
+
+5. **`Repo guards` מתחרה בטיימאוט של עצמו — רוחבי-ריפו, ומאדים gate נדרש על לא-כלום.** `pr-checks.yml:82` קובע `timeout-minutes: 3`; כל שלבי ה-job מדווחים `success` (כולל הרצת הguards) ואז ה-job מסומן `cancelled`, ו-`ci-gate` ממפה זאת ל-FAIL. שתי הופעות ב-PR הזה: 3m18s ו-3m05s, כש-`actions/checkout` לבדו אכל ~3 דקות — מול **14 שניות** לכל ה-job במחזור שעבר. זו שונות במהירות ה-clone מול תקרה צמודה מדי. **התיקון (העלאת התקרה ל-10 כמו ב-`:91`, או `sparse-checkout`) הוא של ספיר** — `.github/workflows/**` הוא CC-deny. עד אז: `rerun_failed_jobs` מנקה, וזה אינו עקיפה של כלל 30 אלא הרצה בפועל.
+
+6. **"require branches to be up to date" אכן נאכף — והוא הפך את הסערה למחזור אינסופי כמעט.** ניסיון merge ישיר החזיר `405 · 2 of 2 required status checks are expected` בזמן שהענף היה `behind`, עם שני ה-gates ירוקים. כלומר צריך **ענף מעודכן וירוק באותו חלון**, ו-staging נמזג מהר יותר ממחזור CI של ~13 דקות. **auto-merge לא סנכרן את הענף בעצמו** — נדרשו שתי קריאות `update_pull_request_branch` ידניות. כלל 25 והערה 7 של 05/08 עדיין נכונים (לא לעדכן ענפים בצרורות), אבל **עדכון יחיד על PR שבאמת נמזג הוא הכרחי, לא מותרות**.
+
+7. **גל `abandoned` של GitHub הפיל job `warn-only` והאדים את שני ה-gates.** `R_FRONTEND_KNIP: abandoned` (job שנגמר ב-`|| true`) הספיק כדי להפיל את `CI gate`, ובמקביל `Paths filter` + `Deploy gate` נפלו באותו גל. **אבחנה:** כשקבוצת jobs לא-קשורים נופלת יחד — ובתוכה warn-only — זו תשתית, לא הdiff. `rerun_failed_jobs` על **שתי** הריצות ניקה.
+
+8. **ה-CI reviewer מת גם כאן, אותה חתימה בדיוק.** `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, 401ms. לפי סעיף 1 של 05/08 הסיבה היא **מכסת הוצאה (429)** — לא credential ולא tag צף. **לא נפתח כרטיס ולא נגעתי בשום workflow.** תיקנתי בתוך ה-PR ספקולציה שלי עצמי שתלתה זאת ב-tag צף. **הנגזרת המעשית: ל-PR הזה לא הייתה שום ביקורת עצמאית** — רק self-review של אותו session. גם כאן `show_full_output` אינו פעיל, ולכן ה-429 אינו קריא.
+
+9. **ניחשתי מספר PR לפני שנפתח, וזה נחת שגוי בשני הקבצים האלה.** כתבתי `#2646` ב-CHANGELOG וב-HANDOFF (ובהודעת commit) בזמן שהצעד השני עוד לא היה PR; המספר בפועל הוא **#2648**. זו בדיוק המחלקה שכלל 28 §5 מזהיר מפניה עבור מזהי כרטיס — **הסדר הוא: לפתוח, לקרוא את המספר שחזר, ורק אז לכתוב אותו.** התוכן תוקן; הודעת ה-commit שקדמה לו לא ניתנת לתיקון בלי rewrite, אז היא נשארת כעדות למה שקרה.
 ## 2026-08-06 — השבתת GitHub Actions: `staging` קפאה ~7 שעות. **נפתרה.**
 
 > ### ✅ סגור. נרשם כדי שהחתימות יזוהו בפעם הבאה, לא כאזהרה חיה.
