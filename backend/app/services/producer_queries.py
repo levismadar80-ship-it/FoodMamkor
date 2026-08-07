@@ -215,13 +215,7 @@ def get_producer_or_404(db: Session, producer_id: UUID) -> Producer:
 
 
 def create_primary_branch_location(
-    db: Session,
-    producer_id: UUID,
-    *,
-    city: str | None,
-    address: str | None,
-    lat: float | None,
-    lng: float | None,
+    db: Session, producer: Producer
 ) -> ProducerLocation | None:
     """MEH-1939 (MEH-1938 chunk 1) — the registration half of the dual-write.
 
@@ -247,20 +241,27 @@ def create_primary_branch_location(
     way they already do for ProducerCategory and DeliveryArea, so a failure
     anywhere in registration rolls the location back with everything else.
 
+    Takes the flushed `Producer` rather than its five fields: the row this
+    writes is a MIRROR of those columns, so reading them off the instance is
+    what makes the two physically unable to drift. It also keeps the signature
+    at two parameters, which is the arity `PLR0913` / ESLint `max-params` are
+    both asking for (`.claude/rules/code-execution.md:53-55`). Callers must
+    have flushed — `producer.id` is read here.
+
     # DO NOT add a backfill for existing producers here — that is chunk 2, and
     # it is an Alembic data migration, not application code.
     """
-    if lat is None or lng is None:
+    if producer.lat is None or producer.lng is None:
         return None
 
     location = ProducerLocation(
-        producer_id=producer_id,
+        producer_id=producer.id,
         kind="branch",
         is_primary=True,
-        city=city,
-        address=address,
-        lat=lat,
-        lng=lng,
+        city=producer.city,
+        address=producer.address,
+        lat=producer.lat,
+        lng=producer.lng,
         # Coordinates on a signup payload come from AddressSearch's geocode
         # (MEH-1808), so the point is a real street-level fix. The
         # `approximate` case is a town with no address, which by the guard
@@ -316,17 +317,9 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         )
 
     # MEH-1939: the dual-write. `ProducerCreate` carries no `address` field
-    # (schemas.py:1324-1338), so the row gets city + coordinates only —
-    # `ProducerLocation.address` is nullable and this is the one caller of the
-    # three with nothing to put in it.
-    create_primary_branch_location(
-        db,
-        producer.id,
-        city=data.city,
-        address=None,
-        lat=data.lat,
-        lng=data.lng,
-    )
+    # (schemas.py:1324-1338), so `producer.address` is None here — the row gets
+    # city + coordinates only, and `ProducerLocation.address` is nullable.
+    create_primary_branch_location(db, producer)
 
     db.commit()
     db.refresh(producer)
