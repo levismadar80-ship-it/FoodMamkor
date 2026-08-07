@@ -1195,6 +1195,16 @@ class TestLoginTimingEqualization:
         20ms threshold — that hides regressions.
     """
 
+    # MEH-1911: `serial` keeps this out of the parallel `-n auto` pass.
+    # The docstring above says a contended runner invalidates the
+    # measurement and that the 20ms threshold must NOT be raised to
+    # compensate. Running under xdist makes the runner contended by
+    # construction — measured 3/3 failures at `-n auto` on 4 cores, p95
+    # spread 526ms (oauth_only=875ms vs wrong_email=349ms), all three
+    # `flaky` reruns included. So it runs in its own serial pass instead,
+    # which is the "quieter machine" the docstring asks for; the
+    # invariant and the threshold are untouched.
+    @pytest.mark.serial
     @pytest.mark.flaky(reruns=2, reruns_delay=1)
     def test_login_timing_equivalence_across_failure_modes(
         self, client, db, monkeypatch
