@@ -5,7 +5,7 @@
 
 ## 2026-08-07 — נחיתת #2648 + #2645, ו-MEH-1925 Phase 0: **ה-401 של Cloudinary נוגע ב-production**
 
-**PRs:** **#2648 נמזג** (09:29:20Z, auto-merge) · **#2645 נמזג** (docs backfill) · **#2652 פתוח** — `docs/audits/cloudinary-401-scope.md`, docs-בלבד · ה-PR הזה (HANDOFF, כלל 31).
+**PRs:** **#2648 נמזג** (09:29:20Z, auto-merge) · **#2645 נמזג** (docs backfill) · **#2652 נמזג** — `docs/audits/cloudinary-401-scope.md`, docs-בלבד, המדידה המלאה · ה-PR הזה (HANDOFF, כלל 31).
 **ענפים:** `feature/meh-1925-cloudinary-401-scope` · `feature/meh-1925-handoff-session-log` — שניהם מ-`origin/staging` טרי.
 
 ### 1. 🔴 הממצא שהופך את ההנחה שבכרטיס — production מושפע, וה-401 נמשך
