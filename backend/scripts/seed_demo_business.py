@@ -47,7 +47,7 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
     Product,
     ProducerRecipe,
 )
-from app.models.models import ProducerReview, Event, User  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.models.models import ProducerReview, Event, Experience, User  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
@@ -162,6 +162,55 @@ DEMO_RECIPE = {
 # locked axis resolves, hard-coded into the demo. It is now a genuine one-time
 # event: free and uncapped, which is what makes it read as "drop in on the day"
 # rather than "book a seat".
+# MEH-1918: three approved, upcoming experiences. THREE is not decorative —
+# the nav link is gated at EXPERIENCES_NAV_THRESHOLD (3), so a seed with two
+# would leave the gate untestable on staging in its most interesting state.
+# Hosted by the demo owner, whose business is approved, because the public
+# feed walks host → user → producer.status (MEH-1749).
+# GUARD — STAGING ONLY, same as every other row in this file.
+DEMO_EXPERIENCES = [
+    {
+        "title": "סדנת מחמצת לתחילת הדרך",
+        "description": (
+            "שלוש שעות עם הידיים בבצק: איך מתחילים סטארטר, איך יודעים "
+            "שהוא מוכן, ואיך אופים כיכר אחת טובה בתנור ביתי רגיל. כל "
+            "משתתפת חוזרת הביתה עם סטארטר משלה ועם כיכר."
+        ),
+        "days_ahead": 12,
+        "event_time": "17:00",
+        "duration_minutes": 180,
+        "category": "בישול",
+        "max_participants": 8,
+        "price_per_person": 220,
+    },
+    {
+        "title": "ערב חלות — קליעה ובצק מתוק",
+        "description": (
+            "ערב אחד לפני שבת, שתי שיטות קליעה, ובצק מתוק שאפשר לשחזר "
+            "במטבח הביתי. מתאים גם למי שלא לשה מימיה."
+        ),
+        "days_ahead": 19,
+        "event_time": "18:30",
+        "duration_minutes": 150,
+        "category": "אפייה",
+        "max_participants": 12,
+        "price_per_person": 180,
+    },
+    {
+        "title": "בוקר כוסמין — לחם מלא בלי פשרות",
+        "description": (
+            "מה ההבדל בין כוסמין לחיטה, למה בצק כוסמין מתנהג אחרת, ואיך "
+            "לא להרוס אותו בלישה. בוקר אחד, שתי כיכרות, וקפה."
+        ),
+        "days_ahead": 26,
+        "event_time": "09:00",
+        "duration_minutes": 120,
+        "category": "אפייה",
+        "max_participants": 10,
+        "price_per_person": 160,
+    },
+]
+
 DEMO_EVENT = {
     "title": "יום פתוח במאפייה — בוקר מחמצת",
     "description": (
@@ -565,20 +614,50 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
 
     # Owner login (producer role) so the profile is manageable on staging.
     # Password from DEMO_OWNER_PASSWORD env var, else random + unrecorded.
-    db.add(
-        User(
-            email=DEMO_OWNER_EMAIL,
-            name=DEMO_PRODUCER["contact_name"],
-            password_hash=hash_password(
-                os.getenv("DEMO_OWNER_PASSWORD") or secrets.token_urlsafe(16)
-            ),
-            role="producer",
-            producer_id=producer.id,
-            # Seed accounts get no verification email — login gates on this
-            # (auth.py rejects unverified users at token issue).
-            email_verified=True,
-        )
+    # MEH-1918: kept in a local now — the seeded experiences are keyed on this
+    # user's id (an Experience hangs off a User, not a Producer).
+    owner = User(
+        email=DEMO_OWNER_EMAIL,
+        name=DEMO_PRODUCER["contact_name"],
+        password_hash=hash_password(
+            os.getenv("DEMO_OWNER_PASSWORD") or secrets.token_urlsafe(16)
+        ),
+        role="producer",
+        producer_id=producer.id,
+        # Seed accounts get no verification email — login gates on this
+        # (auth.py rejects unverified users at token issue).
+        email_verified=True,
     )
+    db.add(owner)
+    # flush, not commit: the id is needed below and the whole seed still
+    # commits once at the end.
+    db.flush()
+
+    # MEH-1918: the experiences themselves. status="approved" +
+    # moderation_status="APPROVED" + a future event_date + is_active — i.e.
+    # every condition GET /experiences (and /experiences/count) filters on, so
+    # the seeded staging site clears the nav threshold instead of hovering
+    # under it.
+    for ex in DEMO_EXPERIENCES:
+        db.add(
+            Experience(
+                host_user_id=owner.id,
+                title=ex["title"],
+                description=ex["description"],
+                image_url=DEMO_EVENT["image_url"],
+                category=ex["category"],
+                event_date=date.today() + timedelta(days=ex["days_ahead"]),
+                event_time=datetime.strptime(ex["event_time"], "%H:%M").time(),
+                duration_minutes=ex["duration_minutes"],
+                location_type="public",
+                city=DEMO_PRODUCER["city"],
+                max_participants=ex["max_participants"],
+                price_per_person=ex["price_per_person"],
+                status="approved",
+                moderation_status="APPROVED",
+                is_active=True,
+            )
+        )
 
     # MEH-1528: QA admin login (role="admin", NO producer_id) so the Playwright
     # admin.json storageState reaches the admin panel — proving the roles are
