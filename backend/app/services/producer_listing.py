@@ -75,6 +75,10 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
     ("gluten_free", "is_gluten_free"),
     ("vegan", "is_vegan"),
     ("lactose_free", "is_lactose_free"),
+    # MEH-1934: single-column axes, so they belong in this table rather than
+    # beside the vegetarian special case below (which is a two-column OR).
+    ("no_added_sugar", "is_no_added_sugar"),
+    ("low_carb", "is_low_carb"),
 ]
 
 
@@ -687,8 +691,8 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
     category, delivery_city, delivery_cities, delivery_day (MEH-1645 — one
     canonical Hebrew day; explicit-row matching only), has_delivery, verified, kosher, city,
-    is_available_today, grass_fed, gluten_free, vegan, lactose_free,
-    sort, search_q, limit, offset, exclude.
+    is_available_today, grass_fed, gluten_free, vegan, vegetarian, lactose_free,
+    no_added_sugar, low_carb (MEH-1934), sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)
     (MEH-1282: `require_physical` — geo-only opt-in for the has_physical_location
     filter; default False so delivery-only producers appear in geo results.)

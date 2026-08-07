@@ -669,6 +669,18 @@ class Product(Base):
     is_lactose_free = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-1934: fifth + sixth dietary axes — "ללא סוכר מוסף" / "דל פחמימות".
+    # Same any-product, self-declared mechanic as the four above. Unlike
+    # MEH-1438's is_vegetarian these are NOT backfilled from any existing flag:
+    # nothing in the catalog implies "no added sugar" or "low carb", so seeding
+    # would invent a nutrition claim on the business's behalf. The owner's
+    # product form is the only writer.
+    is_no_added_sugar = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
+    is_low_carb = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
 
     producer = relationship("Producer", back_populates="products")
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
@@ -685,12 +697,17 @@ class Product(Base):
     # MEH-1438: predicate extended with is_vegetarian (the MEH-1438 migration
     # drops + recreates the index). Keep this text byte-identical to the
     # migration's create_index predicate so `alembic check` stays drift-free.
+    # MEH-1934: extended again with is_no_added_sugar + is_low_carb (revision
+    # a2f7d4c8e153 drops + recreates). Without them in the predicate, a product
+    # marked ONLY low-carb falls outside the partial index and the ?low_carb
+    # EXISTS subquery seq-scans products.
     __table_args__ = (
         Index(
             "idx_products_dietary",
             "producer_id",
             postgresql_where=text(
-                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free"
+                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free "
+                "OR is_no_added_sugar OR is_low_carb"
             ),
         ),
     )
