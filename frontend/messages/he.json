@@ -4793,6 +4793,8 @@
         "city_placeholder": "למשל: זכרון יעקב",
         "address_label": "כתובת",
         "address_placeholder": "למשל: רחוב העצמאות 12",
+        "address_confirmed": "המיקום זוהה: {location}",
+        "address_unresolved": "לא הצלחנו לאתר את הכתובת — אפשר להזין קואורדינטות ידנית למטה.",
         "place_hint_exact": "היישוב והכתובת יוצגו בעמוד שלך ובניווט.",
         "place_hint_approximate": "רק היישוב יוצג. הכתובת המלאה לא תופיע בעמוד ולא בניווט.",
         "lat_label": "קו רוחב",
