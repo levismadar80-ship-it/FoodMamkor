@@ -19,7 +19,7 @@
  * REUSES: frontend/e2e/qa-meh1808-address-confirm.mjs:56-106
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1937-single-check.mjs [outdir]
+ *   node e2e/qa-meh1937-single-check.mjs [outdir] [/path/to/chrome]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";
@@ -29,6 +29,14 @@ import path from "node:path";
 const OUT = path.resolve(
   process.argv[2] || "/home/user/FoodMamkor/qa-artifacts/MEH-1937",
 );
+// Optional browser path via ARGV, never an env var — a new `process.env.*` read
+// is a new undocumented variable and the Env drift gate (MEH-491) reds it.
+// Regression rule 8. This exact mistake, with this exact variable name, already
+// happened to the MEH-1643 harness; qa-meh1727-font-cors.mjs:37 is the fix that
+// landed, and this matches it rather than inventing a second convention.
+// Needed here because the CC sandbox ships a Chromium whose revision does not
+// match this repo's @playwright/test, so default resolution misses it.
+const BROWSER_PATH = process.argv[3];
 const URL = "http://127.0.0.1:3000/register/producer";
 const NOMINATIM = "**nominatim.openstreetmap.org**";
 
@@ -139,12 +147,8 @@ async function run(browser, label, width, height) {
   await ctx.close();
 }
 
-// The sandbox ships a pinned Chromium that does not match this repo's
-// @playwright/test revision, so the default resolution misses it. PW_CHROMIUM
-// lets the runner point at it; unset (CI, a dev machine) falls through to
-// Playwright's own download, so nothing outside the sandbox changes.
 const browser = await chromium.launch(
-  process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {},
+  BROWSER_PATH ? { executablePath: BROWSER_PATH } : {},
 );
 await run(browser, "mobile", 390, 844);
 await run(browser, "desktop", 1440, 900);
