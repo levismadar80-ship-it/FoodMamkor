@@ -53,6 +53,7 @@ from app.services.oauth_verifiers import (
 )
 from app.constants import DECLARATION_VERSION
 from app.services.license_validation import ensure_license_for_categories
+from app.services.producer_queries import create_primary_branch_location
 from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product, User
@@ -555,6 +556,21 @@ async def register_producer(
                     delivery_day=da.delivery_day,
                 )
             )
+        # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
+        # This is the UPGRADE branch, and it is the one every OAuth signup
+        # lands on — `/auth/register/producer/oauth` creates a consumer and a
+        # token only, never a Producer (its docstring, :865-871), so the
+        # Google/Apple journey finishes here as an already-authenticated user.
+        # Both branches of this route therefore need the call; covering only
+        # the new-email one below would leave OAuth signups with no location.
+        create_primary_branch_location(
+            db,
+            producer.id,
+            city=data.city,
+            address=data.address,
+            lat=data.lat,
+            lng=data.lng,
+        )
         # Link producer to existing user, upgrade role + flag.
         user.producer_id = producer.id
         user.role = "producer"
@@ -670,6 +686,19 @@ async def register_producer(
                     delivery_day=da.delivery_day,
                 )
             )
+
+        # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
+        # This is the NEW-EMAIL branch (password signup). Its twin is the
+        # upgrade branch above; the two are the only Producer writers on this
+        # route, and both need it.
+        create_primary_branch_location(
+            db,
+            producer.id,
+            city=data.city,
+            address=data.address,
+            lat=data.lat,
+            lng=data.lng,
+        )
 
         verify_token = secrets.token_urlsafe(32)
         verify_expires = datetime.utcnow() + timedelta(hours=24)
