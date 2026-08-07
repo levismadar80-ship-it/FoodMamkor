@@ -2756,7 +2756,8 @@
       "close_aria": "סגרו תצוגה",
       "image_alt": "תמונה {current} מתוך {total}",
       "prev_aria": "תמונה קודמת",
-      "next_aria": "תמונה הבאה"
+      "next_aria": "תמונה הבאה",
+      "image_error": "התמונה לא נטענה"
     },
     "onboarding_tip": {
       "cta_default": "הבנתי",
