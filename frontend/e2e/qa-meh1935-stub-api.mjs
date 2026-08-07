@@ -11,7 +11,11 @@
  */
 import { createServer } from "node:http";
 
-const PORT = Number(process.env.STUB_PORT || 8899);
+// Hardcoded on purpose. An env var here would be read by the "Env drift"
+// guard as a new entry in the app's env contract and demand a matching
+// .env.example line — but this is throwaway QA scaffolding, not configuration
+// the app has any opinion about. Change the literal if 8899 is taken.
+const PORT = 8899;
 
 const NAMES = [
   ["רוח השדה", "ruach-hasadeh", "כרמיאל"],
