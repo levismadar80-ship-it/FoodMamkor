@@ -71,6 +71,32 @@ worth reading. Exercise the **real** implementation, never a copy — a second c
 to drift from the one that matters. Repo precedent: `.claude/scripts/audit-skills.sh
 --self-test`, which CI asserts must exit 1.
 
+**A self-test built only from synthetic fixtures proves the probe works on shapes you
+invented. Anchor at least one case to a real file from this repo (MEH-1909).** Synthetic
+cases are still the right way to cover the *edges* — you cannot always find a repo file
+that is broken in the exact way you need. What they cannot establish is that the probe
+recognises the shape the repo **actually uses**, and that is the assumption that silently
+fails.
+
+_Proven on the release-#2 migration audit. An `ast`-based probe carried four synthetic
+cases with known answers — DROP in `upgrade()`, DROP in `downgrade()`, DROP in a helper
+called from `upgrade()`, a docstring that must not shadow a real assignment — and passed
+all four. Run against the 14 real revisions it reported `revision = None` for **every
+one**. The revisions use **annotated** assignments (`revision: str = "…"` → `ast.AnnAssign`)
+while every synthetic case used the plain `ast.Assign` form. The probe was green against a
+shape that does not occur in this repo, and would have reported an empty chain as a healthy
+one — on a release gate. Adding one case lifted verbatim from a real revision file closed
+it._
+
+**The cheap version of this rule:** after the synthetic cases pass, run the probe over the
+real corpus once and **look at the output**, not just the exit code. A column of `None` is
+not a pass, and it is exactly what an exit code hides. Where practical, assert it — a case
+that reads a committed file and requires a non-empty parse cannot regress the way a
+fixture-only suite can.
+
+Same family as "validate a probe on a case whose answer you already know", one level up:
+here the answer you already know is *what the repo's own files look like*.
+
 **Watch the shape of the pass condition.** An `||` between two cues lets either one carry
 the assertion, so losing the other is undetectable — that is how a probe signs off on a
 broken state. Prefer `&&`, or split into separate named checks so the failure message says
