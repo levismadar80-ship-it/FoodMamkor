@@ -6,3 +6,7 @@
 2026-08-07T22:05:00Z | MEH-1853 | fixture comment corrected to the measured truth -> PR #2677 | IN-FLIGHT
 2026-08-07T22:05:00Z | MEH-1911/1764/1746 | verified already-complete in Linear live; seed list was stale on 4 of 8 items | NO-OP
 2026-08-07T22:05:00Z | LANE-B | Todo+Backlog-Urgent swept: 1938/1925 Sapir-blocked, 1907/1736 RED-marker, 1244 not-cc, 130 board-state. No new eligible item taken | SWEPT
+2026-08-07T22:12:00Z | DOCS | docs-only PR #2678 opened (CHANGELOG+HANDOFF+overnight ledgers+morning report) | IN-FLIGHT
+2026-08-07T22:12:00Z | MEH-1844 | 2nd data point: adversarial reviewer failed identically on PR #2677 (job failure, no comment). Pattern confirmed, not one-off | REPORTED
+2026-08-07T22:20:00Z | DOCS/#2678 | PARKED after 2 merge attempts: ruleset says "2 of 2 required checks expected" while BOTH report success (CI gate 93010793341, Deploy gate 93010760760). Docs-only PR. No no-op re-trigger (rule 30). Needs ruleset inspection = Sapir | PARKED
+2026-08-07T22:20:00Z | SWEEP | end of night: 1 merged, 2 PRs open for Sapir, 1 parked (merge-block only), 0 quarantined | STOP-CLEAN
