@@ -101,12 +101,63 @@ const VIEWPORTS = [
 // touches NOTHING on document.documentElement: inside addInitScript that is
 // still null, and an observer that throws there dies silently and reports a
 // clean zero — the failure mode this file is built to rule out.
+// MEH-1853: each entry additionally records WHICH elements moved and by how
+// much (`LayoutShift.sources[]`). The fix that was reverted on 06/08 aimed at
+// the MiniMap because a code read said so, matched its box to the pixel
+// (`delta=0px`), and made desktop CLS 25% WORSE — because "reserving the box
+// removes the shift" was argued from geometry and never measured. Attribution
+// is the missing measurement: it names the moving elements instead of
+// inferring them.
+//
+// Two invariants, both load-bearing:
+//   1. `value`/`entries` are accumulated FIRST and in their own statement, so
+//      the headline numbers stay byte-identical to every run before this and
+//      remain comparable with the 05-06/08 baselines.
+//   2. All attribution sits inside its own try/catch that can only ever write
+//      to `attributionError`. A throw in here must never kill the observer —
+//      that would resurrect the silent-zero this whole file exists to rule out
+//      (a dead sampler and a clean page both report 0.0000).
 const SAMPLER = `
-  window.__cls = { value: 0, entries: 0, installed: false, error: null };
+  window.__cls = {
+    value: 0, entries: 0, installed: false, error: null,
+    shifts: [], attributionError: null,
+  };
   try {
+    const MAX_SHIFTS = 40;
+    const describe = (node) => {
+      if (!node) return "(no node)";
+      if (node.nodeType !== 1) return "(" + node.nodeName + ")";
+      const testid = node.getAttribute("data-testid");
+      const cls = (node.getAttribute("class") || "").trim().split(/\\s+/).filter(Boolean).slice(0, 4).join(".");
+      return node.tagName
+        + (node.id ? "#" + node.id : "")
+        + (testid ? "[data-testid=" + testid + "]" : "")
+        + (cls ? "." + cls : "");
+    };
     const po = new PerformanceObserver((list) => {
       for (const e of list.getEntries()) {
-        if (!e.hadRecentInput) { window.__cls.value += e.value; window.__cls.entries++; }
+        if (e.hadRecentInput) continue;
+        window.__cls.value += e.value;
+        window.__cls.entries++;
+        try {
+          if (window.__cls.shifts.length < MAX_SHIFTS) {
+            window.__cls.shifts.push({
+              value: Number(e.value.toFixed(4)),
+              time: Math.round(e.startTime),
+              sources: Array.from(e.sources || []).slice(0, 4).map((s) => ({
+                node: describe(s.node),
+                fromY: s.previousRect ? Math.round(s.previousRect.y) : null,
+                toY: s.currentRect ? Math.round(s.currentRect.y) : null,
+                dy: (s.previousRect && s.currentRect)
+                  ? Math.round(s.currentRect.y - s.previousRect.y) : null,
+                h: s.currentRect ? Math.round(s.currentRect.height) : null,
+              })),
+            });
+          }
+        } catch (attrErr) {
+          window.__cls.attributionError =
+            String(attrErr && attrErr.message ? attrErr.message : attrErr);
+        }
       }
     });
     po.observe({ type: "layout-shift", buffered: true });
@@ -172,7 +223,40 @@ async function measure(browser, vp, path, run) {
     entries: cls.entries,
     installed: cls.installed,
     observerError: cls.error,
+    // MEH-1853: per-entry attribution — which elements moved, and by how much.
+    shifts: cls.shifts || [],
+    attributionError: cls.attributionError || null,
   };
+}
+
+/**
+ * Rank the shift sources across a set of samples by total CLS contributed.
+ *
+ * The point is to answer "what actually moves on this page" with a number
+ * next to each answer, so the next fix is aimed at a measured culprit rather
+ * than at a plausible one. Keyed on the element descriptor, summing the
+ * OWNING ENTRY's value — a shift entry carries one value for all its sources,
+ * so an entry with several sources contributes its value to each of them.
+ * That over-counts by design: it answers "which elements participate in the
+ * expensive shifts", not "how do we apportion blame between co-movers", and
+ * the latter is not a question the API can answer.
+ */
+function rankSources(samples) {
+  const totals = new Map();
+  for (const s of samples) {
+    for (const shift of s.shifts || []) {
+      for (const src of shift.sources || []) {
+        const prev = totals.get(src.node) || { node: src.node, cls: 0, hits: 0, maxDy: 0 };
+        prev.cls += shift.value;
+        prev.hits += 1;
+        if (src.dy != null) prev.maxDy = Math.max(prev.maxDy, Math.abs(src.dy));
+        totals.set(src.node, prev);
+      }
+    }
+  }
+  return [...totals.values()]
+    .map((t) => ({ ...t, cls: Number(t.cls.toFixed(4)) }))
+    .sort((a, b) => b.cls - a.cls);
 }
 
 /**
@@ -327,12 +411,74 @@ async function selfTest() {
   return ok && nullBlocks;
 }
 
+/**
+ * SELF-TEST for the attribution ranking (MEH-1853).
+ *
+ * `rankSources` is a classifier: it decides which element is "the" culprit,
+ * and a fix will be aimed at whatever it puts on top. Per
+ * `.claude/rules/testing.md`, a classifier ships with a self-test that feeds
+ * the REAL implementation inputs whose ordering is already known — not a
+ * reimplementation, which is free to drift from the one that matters.
+ *
+ * The discriminating case is case B. A ranking keyed on HIT COUNT rather than
+ * on summed CLS gets A and B backwards: the frequent-but-cheap element wins on
+ * count while the rare-but-expensive one is what actually costs the score.
+ * That is the mistake worth catching, because "it moved the most times" is the
+ * intuitive read of a shift log and it is the wrong one.
+ */
+function attributionSelfTest() {
+  let ok = true;
+  const check = (name, cond, detail) => {
+    if (!cond) ok = false;
+    console.log(`  ${cond ? "PASS" : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
+  };
+
+  // A: cheap but frequent (4 shifts x 0.01 = 0.04).
+  // B: expensive but rare  (1 shift  x 0.90 = 0.90).  ← must rank first
+  const samples = [{
+    viewport: "desktop-1440",
+    cls: 0.94,
+    shifts: [
+      ...Array.from({ length: 4 }, () => ({
+        value: 0.01, time: 100, sources: [{ node: "DIV.frequent", dy: 3, h: 10 }],
+      })),
+      { value: 0.9, time: 900, sources: [{ node: "FOOTER.expensive", dy: 356, h: 400 }] },
+    ],
+  }];
+
+  const ranked = rankSources(samples);
+  check("ranks by summed CLS, not by hit count",
+    ranked[0]?.node === "FOOTER.expensive",
+    `top=${ranked[0]?.node} cls=${ranked[0]?.cls}`);
+  check("the frequent-but-cheap element still appears, ranked below",
+    ranked[1]?.node === "DIV.frequent" && ranked[1]?.cls === 0.04,
+    `second=${ranked[1]?.node} cls=${ranked[1]?.cls}`);
+  check("records the largest observed displacement",
+    ranked[0]?.maxDy === 356, `maxDy=${ranked[0]?.maxDy}`);
+  check("counts occurrences independently of cost",
+    ranked[1]?.hits === 4, `hits=${ranked[1]?.hits}`);
+
+  // A shift entry with no sources must not invent one, and must not throw.
+  const empty = rankSources([{ viewport: "x", shifts: [{ value: 0.5, sources: [] }] }]);
+  check("an entry carrying no sources yields no attribution", empty.length === 0,
+    `got ${empty.length}`);
+
+  // Samples predating this change have no `shifts` key at all.
+  const legacy = rankSources([{ viewport: "x", cls: 0.87 }]);
+  check("a sample with no `shifts` key is tolerated, not a crash", legacy.length === 0);
+
+  return ok;
+}
+
 async function main() {
   if (flag("self-test")) {
     console.log("=== deploy-gate self-test (does it discriminate?) ===");
     const ok = await selfTest();
-    console.log(ok ? "\nSELF-TEST PASS" : "\nSELF-TEST FAILED");
-    process.exit(ok ? 0 : 1);
+    console.log("\n=== attribution self-test (does the ranking discriminate?) ===");
+    const attrOk = attributionSelfTest();
+    const all = ok && attrOk;
+    console.log(all ? "\nSELF-TEST PASS" : "\nSELF-TEST FAILED");
+    process.exit(all ? 0 : 1);
   }
   if (!TARGET_PATH) {
     console.error("ERROR: --path is required (e.g. --path /producer/<id>)");
@@ -414,10 +560,47 @@ async function main() {
   await browser.close();
 
   const worst = samples.reduce((a, b) => (b.cls > a.cls ? b : a), samples[0]);
-  const payload = { base: BASE, path: TARGET_PATH, deploy, control: ctrl, controlOk, samples, worst };
+
+  // MEH-1853: attribution, per viewport. Printed to the log as well as written
+  // to the artifact — the log is what gets read first, and a ranking nobody
+  // opens the JSON to see is a ranking nobody uses.
+  const attribution = {};
+  for (const vp of VIEWPORTS) {
+    const forVp = samples.filter((s) => s.viewport === vp.label);
+    const ranked = rankSources(forVp);
+    attribution[vp.label] = ranked;
+    console.log(`\n── shift sources · ${vp.label} (${forVp.length} loads) ──`);
+    if (!ranked.length) {
+      const why = forVp.find((s) => s.attributionError)?.attributionError;
+      console.log(
+        why
+          ? `  no sources recorded — attribution threw: ${why}`
+          : "  no sources recorded (either no shifts, or the entries carried none)"
+      );
+    }
+    for (const r of ranked.slice(0, 8)) {
+      console.log(`  cls=${r.cls}  moved=${r.maxDy}px  x${r.hits}  ${r.node}`);
+    }
+  }
+
+  const payload = {
+    base: BASE, path: TARGET_PATH, deploy, control: ctrl, controlOk,
+    samples, worst, attribution,
+  };
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2));
   console.log(`\nworst: ${worst.viewport} cls=${worst.cls}`);
   console.log(`wrote ${OUT}`);
+
+  // Attribution is diagnostic, not a gate: it must never fail a run whose
+  // measurements are sound. But a silent absence is how a broken probe reads
+  // as a clean answer, so say so loudly.
+  const noAttr = samples.filter((s) => s.cls > 0 && !(s.shifts || []).length);
+  if (noAttr.length) {
+    console.warn(
+      `WARNING — ${noAttr.length} sample(s) recorded CLS > 0 but no shift sources. ` +
+      "The numbers stand; the attribution for those samples does not."
+    );
+  }
 
   // Any sample whose observer never installed invalidates that sample.
   const dead = samples.filter((s) => !s.installed);
