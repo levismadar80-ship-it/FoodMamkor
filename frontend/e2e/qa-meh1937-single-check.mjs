@@ -21,6 +21,10 @@
  * Run from frontend/ with `next start` on :3000:
  *   node e2e/qa-meh1937-single-check.mjs [outdir] [/path/to/chrome]
  * Exits non-zero if any check fails.
+ *
+ * It writes PNGs. Compress before committing — the 2 MB-per-PR cap in
+ * .claude/rules/testing.md is a live CI gate ("qa-artifacts size cap"):
+ *   node scripts/compress-qa-screenshots.mjs ../qa-artifacts/MEH-1937/
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

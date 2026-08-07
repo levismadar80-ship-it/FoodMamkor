@@ -4773,7 +4773,7 @@
         "label_hint": "The name customers see next to the point",
         "label_placeholder": "e.g. The stall at Hanamal Market",
         "city_label": "City",
-        "city_placeholder": "e.g. Zikhron Ya'akov",
+        "city_placeholder": "e.g. Haifa",
         "address_label": "Address",
         "address_placeholder": "e.g. 12 Ha'atzmaut St",
         "place_hint_exact": "Your city and address appear on your page and in navigation.",
