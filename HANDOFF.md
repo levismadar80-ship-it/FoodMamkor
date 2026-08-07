@@ -3,6 +3,31 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-07 (ערב) — MEH-1935 נפתח כ-PR #2665 · MEH-1934 chunk 1 ממתין לאישור
+
+**PRs:** **#2665 פתוח, לא נמזג** (`feature/meh-1935-diet-landing-pages`) — ממתין ל-"go merge #2665" ולאישור העתקים · **MEH-1934: ענף נדחף בלי PR** (`feature/meh-1934-no-added-sugar-low-carb`) — chunk 1 בלבד · ה-PR הזה, docs-בלבד (כלל 31).
+
+### 1. 🔴 ההכרעה שחוסמת הכל אחריה — צורת ה-URL, ולמה זה היה STOP אמיתי
+
+acceptance #1 של MEH-1935 מורה במפורש: *"STOP ושאל אם ה-EPIC לא הכריע slug convention"*. הוא לא הכריע — MEH-1204 החלטה 3 נועלת `/producers/[category]/[region]` עבור קטגוריה×אזור בלבד ואינו אומר דבר על תזונה. וההתנגשות אינה תיאורטית: Next 16.2.12 מסרב לשני שמות slug שונים תחת אותו הורה (`node_modules/next/dist/shared/lib/router/utils/sorted-routes.js`). ברירת המחדל של הכרטיס הייתה תופסת את ה-segment הדינמי הראשון תחת `/producers` לצמיתות.
+
+**ספיר בחרה `/producers/diet/[dietSlug]`.** ה-segment הסטטי מאפשר לשתי הצורות להתקיים, ומשאיר את העמודים תחת ה-hub עבור ה-hub-and-spoke של §B. הבחירה מתועדת ב-`lib/diet-pages.js` (`dietPagePath`) ומוצמדת בטסט, כך שהיא לא תיסחף.
+
+### 2. מה נשאר פתוח, לפי סדר
+
+1. **#2665 — קריאת העתקים לפני merge.** ה-intro וה-FAQ של `no-added-sugar` מילוליים מהכרטיס; **חמשת האחרים נכתבו על ידי** וטרם אושרו — `frontend/messages/he.json` → `diet_pages.pages.*`. שתי שורות ראויות לעין: gluten-free ו-lactose-free מסרבות במפורש לרמוז על מטבח ייעודי ומפנות לשאול את בית העסק. `"מתאים לסוכרתיים"` אינו מופיע בשום מקום; `"קטו"/"קטוגני"` רק בקול העריכתי — שניהם מוצמדים בטסטים.
+2. **#2665 — preview נייד.** previews של ענפי feature הם opt-in וכבויים כברירת מחדל (`frontend/vercel.json` `ignoreCommand` — רק `[preview]` בהודעת commit). המצב הצפוי הוא `Ignored`, לא תקלה. **בדיקת הנייד ב-DoD פתוחה ולא סומנה.** מילה אחת ואני דוחפת commit עם `[preview]`.
+3. **MEH-1934 — לקרוא את ה-revision, ואז להריץ.** `alembic upgrade head` → `downgrade` → `upgrade` הן פעולות של ספיר; המיגרציה **לא הורצה**. אחרי אישור: chunk 2 (models + schemas + producer_listing + routers + pytest), ואז chunk 3 (frontend). עד chunk 2 יש drift מכוון בין `models.py` למיגרציה — ה-predicate של האינדקס ב-models.py עדיין ארבעה דגלים.
+
+### 3. שתי החלטות שכדאי שיישרדו את הסשן
+
+- **`backed` אינו כפילות של שער-הספירה.** FastAPI מתעלם מ-query param לא מוכר, ולכן `?no_added_sugar=true` מחזיר היום את כל הקטלוג ועובר שער-ספירה בגאון. שני העמודים החדשים 404 ללא תנאי עד ש-chunk 3 יהפוך את הדגל.
+- **`X-Total-Count` חסר זורק, לא מ-404.** מקום שלישי שבו סמנטיקת MEH-1754 חלה, ולא היה בכרטיס: הסקת "אפס" מכותרת חסרה הייתה מ-404 שישה עמודים מתאנדקסים בכל רעידה של ה-backend.
+
+### 4. אזהרה לסשן הבא
+
+**הכרטיס של MEH-1934 מפנה לראש alembic ישן** (`d8c3f1a75e29`). הראש בפועל הוא `e4b1c72d9a35`. אל תבנו על המספר שבכרטיס — הריצו `alembic-head-guard.sh`.
+
 ## 2026-08-07 (מאוחר) — MEH-1925 Phase 0b: התקלה **תוארכה**, ההיקף **נמדד**, וההעלאה **לא אושרה כשבורה**
 
 **PR:** ה-PR הזה — docs-בלבד, ונושא את שניהם: נספח א׳ ל-`docs/audits/cloudinary-401-scope.md` **וגם** את הרשומה הזאת. מותר יחד כי כל הדיף תחת `docs/**` + `HANDOFF.md`, ולכן `changelog-branch-guard` עובר (כלל 31 אוסר על לוגים בענף שנוגע גם ב**קוד**).
