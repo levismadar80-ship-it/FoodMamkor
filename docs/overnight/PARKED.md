@@ -47,3 +47,53 @@ Sapir the one-line dispatch, and let the reading happen in the morning.
 
 No signature reached the 3-park threshold. Nothing quarantined. No half-open
 probe needed.
+
+---
+
+## PARKED (added at end of night): merging PR #2678 — the docs-only backfill
+
+**Task:** merge the docs-only session log. **Status: parked after 2 attempts, per
+the max-2 rule. The PR is open, pushed, and complete — only the merge is blocked.**
+
+**The block:**
+
+```
+PUT /repos/.../pulls/2678/merge -> 405 Repository rule violations found
+2 of 2 required status checks are expected.
+```
+
+**Why that is strange, and why I stopped instead of working around it** — both
+required contexts report `success` on the head SHA (`2082286c`):
+
+| check | id | conclusion |
+|---|---|---|
+| `CI gate (required)` | 93010793341 | **success** |
+| `Deploy gate (required)` | 93010760760 | **success** |
+
+`E2E gate` is also `success` (Playwright correctly `skipped` on a docs-only diff).
+So the ruleset is reporting as `Expected` two contexts that have in fact
+completed successfully.
+
+**One difference from PR #2676, which merged minutes earlier with no trouble:**
+#2678 is **docs-only**, so every named job under both aggregators `skipped`. That
+is the documented and intended path (`testing.md` → "Required status checks +
+docs-only merge", MEH-716) — a skipped leg is supposed to let the aggregator
+report `success`, which it did. The aggregators are green; the *ruleset* is not
+accepting them. I could not close that gap from the evidence available.
+
+**What I did NOT do, deliberately:** no no-op commit to re-trigger the gates, no
+edit to PR metadata, no `force`. Rule 30 — a blocking gate is a STOP, and
+"re-trigger until it goes through" is precisely the neutralisation that rule
+forbids. Waiting once and retrying once is the sanctioned remedy and it is what I
+did; it did not clear.
+
+**Failure class:** PERMANENT for this session — it needs a ruleset inspection
+(GitHub settings), which is Sapir's surface. Not transient, so no further retry.
+
+**Cost of leaving it: none.** Nothing is lost. The branch
+`feature/meh-1853-docs-overnight` is pushed and the PR is open; the entire session
+log lives in it. Merging is one click, or one API call from an account the ruleset
+accepts.
+
+**Not a circuit-breaker event** — one signature, one task. Nothing else tonight
+depends on it.
