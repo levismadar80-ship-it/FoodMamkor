@@ -563,14 +563,7 @@ async def register_producer(
         # Google/Apple journey finishes here as an already-authenticated user.
         # Both branches of this route therefore need the call; covering only
         # the new-email one below would leave OAuth signups with no location.
-        create_primary_branch_location(
-            db,
-            producer.id,
-            city=data.city,
-            address=data.address,
-            lat=data.lat,
-            lng=data.lng,
-        )
+        create_primary_branch_location(db, producer)
         # Link producer to existing user, upgrade role + flag.
         user.producer_id = producer.id
         user.role = "producer"
@@ -691,14 +684,7 @@ async def register_producer(
         # This is the NEW-EMAIL branch (password signup). Its twin is the
         # upgrade branch above; the two are the only Producer writers on this
         # route, and both need it.
-        create_primary_branch_location(
-            db,
-            producer.id,
-            city=data.city,
-            address=data.address,
-            lat=data.lat,
-            lng=data.lng,
-        )
+        create_primary_branch_location(db, producer)
 
         verify_token = secrets.token_urlsafe(32)
         verify_expires = datetime.utcnow() + timedelta(hours=24)
