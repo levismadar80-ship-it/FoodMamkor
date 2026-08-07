@@ -864,6 +864,9 @@
       "order_window": {
         "schedule_heading": "When orders are accepted",
         "schedule_subtitle": "The days and hours this business accepts orders",
+        "show_week": "Full week",
+        "hide_week": "Hide full week",
+        "today": "Today",
         "days": {
           "sun": "Sunday",
           "mon": "Monday",
