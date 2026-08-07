@@ -53,6 +53,10 @@ const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 // business page, not for verifying a pin. MEH-1808 added the prop.
 const ADDRESS_CONFIRM_ZOOM = 16;
 
+// AddressSearch's own minimum query length (AddressSearch.jsx:79). Below it no
+// lookup has been issued, so nothing has failed yet.
+const ADDRESS_QUERY_FLOOR = 3;
+
 const KINDS = ["branch", "pickup", "market_stand"];
 const EMPTY_FORM = {
   kind: "branch",
@@ -451,7 +455,14 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   // Typed an address but we hold no point for it. Covers both "the provider
   // returned nothing" and "she never picked from the list" — from the owner's
   // side those are one problem (no pin), and the remedy is the same.
-  const addressUnresolved = form.address.trim() !== "" && !geocoded;
+  //
+  // Gated on the query floor rather than on "any text at all": below 3
+  // characters AddressSearch has not asked the provider anything
+  // (AddressSearch.jsx:79), so a line reading "we couldn't find that address"
+  // would be asserting a failed lookup that never ran. Found in review — the
+  // first version fired on the very first keystroke.
+  const addressUnresolved =
+    form.address.trim().length >= ADDRESS_QUERY_FLOOR && !geocoded;
 
   // MEH-1579: the city/address hint follows the precision selected RIGHT NOW —
   // an `approximate` location renders a pin in the area with no address, so a
@@ -651,7 +662,16 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             />
           </Field>
           <Field label={tForm("lng_label")}>
-            <TextInput value={form.lng} onChange={set("lng")} inputMode="decimal" />
+            {/* MEH-1936: `lat` has carried a testid since MEH-1421 and `lng`
+                never did — an asymmetry with no reason behind it, and the
+                reason no test had ever driven the manual-coordinates path
+                end to end. Added so it can. */}
+            <TextInput
+              value={form.lng}
+              onChange={set("lng")}
+              inputMode="decimal"
+              testid="location-lng"
+            />
           </Field>
         </div>
       </details>
@@ -701,10 +721,21 @@ function AddressState({ geocoded, unresolved, confirmLabel, lat, lng, name }) {
   if (geocoded) {
     return (
       <div data-testid="location-address-confirm">
-        <p className="inline-flex items-center gap-1.5 text-sm text-primary text-start">
-          <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
-          <span>{tForm("address_confirmed", { location: confirmLabel })}</span>
-        </p>
+        {/* The caption is CONDITIONAL on there being something to name. A row
+            whose coordinates were typed by hand into the disclosure below,
+            with no address and no town yet, has coordinates and nothing to
+            caption — the unguarded version rendered "המיקום זוהה: " with a
+            dangling colon. The map is the useful half and still renders; the
+            0-item arm of the same 0/1/many matrix the conditional-UI rule
+            asks for. Found in review, not in a failing run. */}
+        {confirmLabel === "" ? null : (
+          <p className="inline-flex items-center gap-1.5 text-sm text-primary text-start">
+            <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+            <span data-testid="location-address-confirm-label">
+              {tForm("address_confirmed", { location: confirmLabel })}
+            </span>
+          </p>
+        )}
         <div className="mt-2 overflow-hidden rounded-md">
           {/* Confirmation only: no Waze/Google pills — "navigate to your own
               shop" means nothing in an edit form — and a street zoom instead of

@@ -257,6 +257,52 @@ describe("geocoding (MEH-1936)", () => {
 
 });
 
+// Both cases below came out of the local adversarial review rather than a
+// failing run, which is exactly why they get tests: nothing else would have
+// caught either, and both are states a real owner reaches.
+describe("states the review found (MEH-1936)", () => {
+  it("says nothing about a failed lookup before one could have run", async () => {
+    await openAddForm();
+    // AddressSearch's query floor is 3 characters — under it the provider has
+    // not been asked, so claiming we couldn't find the address would be false.
+    fireEvent.change(screen.getByTestId("location-address"), {
+      target: { value: "דר" },
+    });
+    expect(
+      screen.queryByTestId("location-address-unresolved"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("location-address"), {
+      target: { value: "דרך" },
+    });
+    expect(screen.getByTestId("location-address-unresolved")).toBeInTheDocument();
+  });
+
+  it("shows the map without a dangling caption when there is nothing to name", async () => {
+    await openAddForm();
+    // Hand-typed coordinates, no address and no town: the 0-item arm of the
+    // confirmation. `confirmLabel` is empty, so the caption must not render —
+    // the unguarded version printed "המיקום זוהה: " with a trailing colon.
+    fireEvent.change(screen.getByTestId("location-lat"), { target: { value: "32.818" } });
+    fireEvent.change(screen.getByTestId("location-lng"), { target: { value: "34.999" } });
+
+    expect(screen.getByTestId("location-address-confirm")).toBeInTheDocument();
+    expect(screen.getByTestId("mini-map")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("location-address-confirm-label"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("still captions the confirmation once there IS something to name", async () => {
+    await openAddForm();
+    fireEvent.click(screen.getByTestId("address-pick"));
+    await waitFor(() => screen.getByTestId("location-address-confirm-label"));
+    expect(screen.getByTestId("location-address-confirm-label").textContent).toContain(
+      "settings.locations.form.address_confirmed",
+    );
+  });
+});
+
 // Precision follows how the row was entered — until the owner says otherwise.
 // Each case needs a form whose select has never been touched, so they live in
 // their own `it`s rather than sharing one render.
