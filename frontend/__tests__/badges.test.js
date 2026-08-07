@@ -21,6 +21,12 @@ describe("BADGE_PRIORITY", () => {
       "vegetarian",
       "vegan",
       "lactose_free",
+      // MEH-1934: the two new diet badges join the diet run, after
+      // lactose_free — where every other diet badge already sits relative to
+      // kosher/delivery. Only the top 2 reach a card, so position is
+      // load-bearing and is pinned deliberately.
+      "no_added_sugar",
+      "low_carb",
       "kosher",
       "delivery",
     ]);
@@ -33,8 +39,15 @@ describe("BADGE_PRIORITY", () => {
   it("carries no products key, in either structure (MEH-1846)", () => {
     expect(BADGE_PRIORITY).not.toContain("products");
     expect(Object.keys(BADGE_CONFIG)).not.toContain("products");
-    expect(BADGE_PRIORITY).toHaveLength(11);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
+    // MEH-1934: 11 → 13 (no_added_sugar + low_carb). Both numbers move together
+    // on purpose — allBadges() iterates BADGE_PRIORITY while the tooltips live
+    // in BADGE_CONFIG, so a badge present in one and absent from the other is
+    // either never rendered or rendered undefined. This pin caught exactly that
+    // during MEH-1934, when BADGE_PRIORITY was left un-updated.
+    expect(BADGE_PRIORITY).toHaveLength(13);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(13);
+    // Stronger than either count: the two arrays must describe the SAME set.
+    expect([...BADGE_PRIORITY].sort()).toEqual(Object.keys(BADGE_CONFIG).sort());
   });
 });
 
