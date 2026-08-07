@@ -7,6 +7,7 @@
     "explore": "גלו",
     "add_business_short": "הוסיפו עסק",
     "map": "מפה",
+    "experiences": "חוויות",
     "events": "אירועים",
     "about": "אודות",
     "favorites": "מועדפים",
@@ -33,6 +34,7 @@
     },
     "footer": {
       "events": "אירועים",
+      "experiences": "חוויות",
       "about": "אודות",
       "process": "תהליך הקבלה",
       "faq_businesses": "FAQ לבתי עסק",
@@ -857,6 +859,9 @@
       "order_window": {
         "schedule_heading": "מתי מקבלים הזמנות",
         "schedule_subtitle": "הימים והשעות שבהם בית העסק מקבל הזמנות",
+        "show_week": "כל השבוע",
+        "hide_week": "הסתרת השבוע",
+        "today": "היום",
         "days": {
           "sun": "ראשון",
           "mon": "שני",
