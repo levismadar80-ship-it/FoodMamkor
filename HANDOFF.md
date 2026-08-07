@@ -3,6 +3,17 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-07 (מאוחר) — MEH-1925 Phase 0b: התקלה **תוארכה**, ההיקף **נמדד**, וההעלאה **לא אושרה כשבורה**
+
+**PR:** ה-PR הזה — docs-בלבד, ונושא את שניהם: נספח א׳ ל-`docs/audits/cloudinary-401-scope.md` **וגם** את הרשומה הזאת. מותר יחד כי כל הדיף תחת `docs/**` + `HANDOFF.md`, ולכן `changelog-branch-guard` עובר (כלל 31 אוסר על לוגים בענף שנוגע גם ב**קוד**).
+**ענף:** `feature/meh-1925-fault-dating` מ-`origin/staging` טרי.
+
+1. **⏱️ חלון של ~20 שעות — לא שבועות.** נקי לאחרונה **06/08 13:58:50Z**, שבור לראשונה **07/08 10:12:39Z**. Sentry ו-Vercel API **שניהם חסומים** מה-sandbox (`CONNECT tunnel 403`); המקור שכן עבד הוא `/tmp/next-start.log` שכל job של Playwright מדפיס, ובו שורות ה-401 מילולית.
+2. **🔴 תיארוך לפי חותמות הזמן של הכשלים היה שגוי ב-~20 שעות.** שלושת הכשלים של 06/08 נבדקו אחד-אחד ואף אחד אינו Cloudinary: **flake** (`unexpected=0, flaky=1`, לוג נקי מ-401), **השבתת GitHub Actions** (`R_E2E: abandoned`), ואחד לא נבדק. **ובכיוון ההפוך:** `success` בסדרת staging הוא בד"כ **skip-green** — אומת על ריצה docs-only שבה Playwright דולג וה-gate עדיין ירוק. אין לקרוא ירוק שם כ"VRT עבר".
+3. **📤 ההעלאה לא אושרה כשבורה — ובכוונה לא נמדדה.** לא בוצעה העלאה, וגם staging אינו מוצא בטוח: אותו ענן `dfzpscjks`, כך שכתיבה משם היא כתיבה לחשבון האמיתי. מה שהקוד כן קובע: **האספקה אינה נושאת אישור, ההעלאה נושאת `api_key`+`api_secret`** → **"מפתח שסובב" נשלל כהסבר ל-401 של האספקה**, ו"האם onboarding חסום" הופך לטבלת הכרעה לפי הסיבה (credits/השהיה → חסום; restricted media types → תקין).
+4. **📐 ההיקף מדוד: הקטלוג עצמו.** דרך ה-optimizer של production — **תמונת בית עסק ותמונת מוצר מחזירות `502 UNAUTHORIZED`**, לא רק שבעה hero-ים. **➕ גם תצוגות שיתוף חברתי** (`lib/seo.js:110` מעביר OG דרך Cloudinary) — לא נראה באתר, לא היה מתגלה בבדיקה ידנית. **דף הבית כן מושפע** דרך רקע ה-hero (`HomeHero.jsx:21`, `background-image` → פנייה ישירה ל-Cloudinary); תמונות הקטגוריות שלו הן Unsplash ותקינות.
+5. **לא בוצע:** אין תיקון, fallback, loader, cache, שינוי tolerance, ואין רגנרוט ל-baselines. `login.png`/`register.png` נשארים אדומים.
+
 ## 2026-08-07 — נחיתת #2648 + #2645, ו-MEH-1925 Phase 0: **ה-401 של Cloudinary נוגע ב-production**
 
 **PRs:** **#2648 נמזג** (09:29:20Z, auto-merge) · **#2645 נמזג** (docs backfill) · **#2652 נמזג** — `docs/audits/cloudinary-401-scope.md`, docs-בלבד, המדידה המלאה · ה-PR הזה (HANDOFF, כלל 31).
