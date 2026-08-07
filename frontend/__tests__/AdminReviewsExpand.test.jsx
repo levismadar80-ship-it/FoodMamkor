@@ -91,6 +91,19 @@ describe("MEH-1902 — admin review body expands", () => {
     render(<AdminReviewsPage />);
     await waitFor(() => expect(screen.getAllByTestId("review-body").length).toBe(2));
 
+    // MEH-1923: wait on the TOGGLE, not on the bodies. The toggle is rendered a
+    // state update later than the bodies are — page.jsx:51-55 measures in a
+    // useEffect and calls setOverflows — so waiting for `review-body` and then
+    // reading the toggle synchronously races that second commit. Measured at
+    // 2/30 and 1/36 failures in ISOLATION (no pool contention needed), with the
+    // exact CI error: `Unable to find an element by: [data-testid=
+    // "review-body-toggle"]`. Asserting the count inside waitFor keeps both
+    // halves of the claim — a missing toggle times out, and a second toggle on
+    // the short row never settles at 1.
+    await waitFor(() =>
+      expect(screen.getAllByTestId("review-body-toggle")).toHaveLength(1),
+    );
+
     // Exactly one toggle across two rows — the short review is untouched.
     const toggles = screen.getAllByTestId("review-body-toggle");
     expect(toggles).toHaveLength(1);
