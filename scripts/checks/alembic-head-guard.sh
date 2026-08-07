@@ -207,7 +207,13 @@ if failures:
 # ---------------------------------------------------------------------------
 method, heads = None, None
 try:
-    sys.path.insert(0, os.path.join(repo_root, "backend"))
+    # DO NOT add repo_root/backend to sys.path here. `backend/alembic/` is the
+    # migrations directory, and putting its parent on the path makes it shadow
+    # the INSTALLED alembic package — `import alembic` then resolves to the
+    # migrations folder, `alembic.config` does not exist, and this branch fails
+    # 100% of the time while looking like "alembic isn't installed". That is the
+    # same shadowing trap that made `python3 -m alembic heads` fail from within
+    # backend/ during MEH-1909 release prep. Import from the ambient environment.
     from alembic.config import Config          # noqa: E402
     from alembic.script import ScriptDirectory  # noqa: E402
     cfg = Config(os.path.join(repo_root, "backend", "alembic.ini"))
