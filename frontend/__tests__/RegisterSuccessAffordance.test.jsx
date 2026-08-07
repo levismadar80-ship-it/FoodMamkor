@@ -3,22 +3,29 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import RegisterClient from "@/app/[locale]/register/RegisterClient";
 
 /**
- * MEH-1919 — the /register success affordance is quiet and blur-gated.
+ * MEH-1919 — NEITHER /register field carries a success affordance, in any state.
  *
- * Three assertions, each of which fails against the pre-MEH-1919 component
- * (demonstrated fail→pass, workflow testing rule "every new guard test must be
- * shown failing"):
+ * Superseded the first pass, which kept a blur-gated border tint on the email.
+ * That tint was removed (Sapir, 06/08): with no `successText` the primitive
+ * renders no Check either (ui/Input.jsx:117-125 puts the icon inside that span),
+ * so the state was carried by colour alone — WCAG 1.4.1. Per NN/g, success
+ * indicators belong on fields whose validity the user cannot self-assess;
+ * name and email are not those fields.
  *
- *   1. the NAME field carries no success affordance in any state;
- *   2. the "✓ תקין" successText is gone from both fields;
- *   3. the EMAIL success tint is armed by blur and disarmed by the next
- *      keystroke — the old `emailTouched` gate was sticky, so once the field
- *      had been blurred once the tint re-evaluated per character.
+ * What each assertion buys, stated because "no success anywhere" is easy to
+ * satisfy accidentally:
  *
- * The error-path assertions at the bottom are NOT discriminating (they pass on
- * both versions) and are here as a regression guard: MEH-1919 must not have
- * moved the invalid-state behaviour, which still reads the sticky
- * name/emailTouched flags on purpose.
+ *   1-2. name and email show no success token, no Check, and no "✓ תקין" —
+ *        across typing, blur-with-valid-value, and re-typing after blur. These
+ *        fail against BOTH earlier versions of the component (the original,
+ *        and the border-tint interim).
+ *   3.   the tint does not reappear on a later blur — the interim behaviour's
+ *        signature, and the one a careless revert would restore.
+ *
+ * The error-path assertions at the bottom are deliberately NON-discriminating:
+ * they pass on all three versions. They are a regression guard, not evidence —
+ * removing the success state must not have touched the invalid state, which
+ * still reads the sticky `*Touched` flags on purpose.
  *
  * Mock shape mirrors RegisterOAuthRedirect.test.jsx. next-intl returns the key
  * path, so `valid_hint` is assertable as rendered text.
@@ -101,21 +108,28 @@ describe("MEH-1919 — /register success affordance", () => {
     expect(screen.queryByText(VALID_HINT)).toBeNull();
   });
 
-  it("email shows nothing while typing, tints on blur, and un-tints on the next keystroke", () => {
+  it("email shows no success affordance in ANY interaction state", () => {
     const { email } = setup();
 
+    // Walked as a sequence rather than four separate renders on purpose: the
+    // interim implementation only tinted *after* a blur, so a test that never
+    // blurs would pass against it and prove nothing.
     fireEvent.change(email, { target: { value: "a@b.co" } });
-    expect(hasSuccessTint(email)).toBe(false); // valid, but never blurred
+    expect(hasSuccessTint(email), "while typing a valid address").toBe(false);
 
     fireEvent.blur(email);
-    expect(hasSuccessTint(email)).toBe(true);
+    expect(hasSuccessTint(email), "blurred with a valid address").toBe(false);
 
-    // The sticky-gate regression: editing after a blur must hide the tint again.
     fireEvent.change(email, { target: { value: "a@b.com" } });
-    expect(hasSuccessTint(email)).toBe(false);
+    expect(hasSuccessTint(email), "re-typing after a blur").toBe(false);
 
+    // The interim behaviour re-armed on every blur; this is the state that
+    // would light up again if the success prop were restored.
     fireEvent.blur(email);
-    expect(hasSuccessTint(email)).toBe(true);
+    expect(hasSuccessTint(email), "blurred a second time").toBe(false);
+
+    expect(screen.queryByTestId("success-check")).toBeNull();
+    expect(screen.queryByText(VALID_HINT)).toBeNull();
   });
 
   it("never renders the successText hint on either field", () => {
@@ -129,7 +143,7 @@ describe("MEH-1919 — /register success affordance", () => {
     expect(screen.queryByTestId("success-check")).toBeNull();
   });
 
-  // --- regression guard (non-discriminating: passes on both versions) ---
+  // --- regression guard (non-discriminating: passes on all three versions) ---
 
   it("error states are unchanged — blur-raised, and persistent while correcting", () => {
     const { name, email } = setup();
