@@ -102,17 +102,26 @@ async function run(browser, label, width, height) {
   const confirm = page.getByTestId("register-address-confirm");
   await confirm.waitFor({ timeout: 10_000 });
 
+  // Scope to the confirmation PARAGRAPH, not the whole testid block. The block
+  // also holds the MiniMap, and Leaflet mounts an <svg> overlay pane the moment
+  // any vector layer appears — counting svgs across the block would then read 2
+  // and red on a change that has nothing to do with this ticket. It measures 1
+  // today only because MiniMap uses image/div markers; that is a property of
+  // MiniMap's internals, which is exactly the wrong thing for this probe to
+  // depend on. Same reason the glyph regex reads this node and not the block.
+  const row = confirm.locator("p").first();
+
   // Guard against a green that means "nothing rendered": if the row were
   // missing entirely, both cues below would trivially hold. Anchor on the
   // copy actually being there first.
-  const text = ((await confirm.textContent()) || "").trim();
+  const text = ((await row.textContent()) || "").trim();
   check(
     `${label} 0 the confirmation row really rendered its copy`,
     text.includes("המיקום זוהה") && text.includes("זכרון יעקב"),
     `got: ${JSON.stringify(text)}`,
   );
 
-  const icons = await confirm.locator("svg").count();
+  const icons = await row.locator("svg").count();
   const hasGlyph = /[✓✔]/.test(text);
   check(
     `${label} 1 exactly ONE check mark (icon===1 AND no ✓ glyph in the text)`,
