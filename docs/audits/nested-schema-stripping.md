@@ -11,8 +11,9 @@ Both halves need correcting, in opposite directions:
 
 - **`categories[].producer_count` is even more inert than the ticket says** — see §3. It is
   stripped, but nothing on that path ever populates it, so the strip removes a `null`.
-- **`delivery_areas[].delivery_fee` is a LIVE BUG.** It is stripped on the producer-detail
-  path and `DeliveryBlock.jsx:429` reads it. Every link verified — §2.
+- **`delivery_areas[].delivery_fee` was a LIVE BUG — fixed 2026-08-08 under MEH-1942.**
+  It was stripped on the producer-detail path while `DeliveryBlock.jsx:429` read it.
+  Every link verified; the fix and the one gap it does not close are in §2.
 
 The ticket asked for live bugs to be reported "separately and loudly". This is that section.
 
@@ -26,7 +27,7 @@ composition (`api-schemas.js:92`). Neither reaches a nested object.
 | # | Zod nested shape | file:line | Pydantic counterpart | keys STRIPPED |
 |---|---|---|---|---|
 | 1 | `categories[]` | `schemas.js:85-89` | `CategoryOut` `schemas.py:831-841` | `producer_count` |
-| 2 | `delivery_areas[]` | `schemas.js:104-109` | `DeliveryAreaOut` `schemas.py:~899-911` | **`delivery_fee`** |
+| 2 | `delivery_areas[]` | `schemas.js:104-109` | `DeliveryAreaOut` `schemas.py:~899-911` | ~~**`delivery_fee`**~~ — **none, fixed 08/08 (MEH-1942, §2)** |
 | 3 | `locations[]` | `schemas.js:117-125` | `ProducerLocationOut` `schemas.py:~936-951` | `opening_hours`, `phone` |
 | 4 | `active_offer` | `schemas.js:134-142` | `ProducerOfferOut` `schemas.py:1218-1224` | **none — complete** |
 | 5 | `CategorySchema` (top level) | `api-schemas.js:23-27` | `CategoryOut` | `producer_count` |
@@ -42,7 +43,28 @@ side declares `precision`. Worth noting because it looks like a mismatch and is 
 
 ---
 
-## 2 · 🔴 LIVE BUG — `delivery_areas[].delivery_fee`
+## 2 · ✅ FIXED 2026-08-08 (MEH-1942) — `delivery_areas[].delivery_fee`
+
+> **The schema half is closed.** `schemas.js` now declares
+> `delivery_fee: z.number().nullable().optional()` inside the `delivery_areas`
+> shape, matching `int | None`. The parse keeps the value, and a city with free
+> delivery renders **משלוח חינם** instead of the producer's rate.
+> Guard: `frontend/__tests__/DeliveryFeeNestedSchema.test.jsx` — five cases,
+> **all five shown failing** against the shape below and passing after.
+>
+> **One thing the schema fix does NOT reach, measured while fixing it.** The
+> component only consults per-area fees when they **vary**
+> (`DeliveryBlock.jsx:430` — `new Set(effectiveFees).size > 1`). A producer with
+> a **single** area overriding to 0 against a producer-level rate therefore still
+> shows the producer rate: the value now arrives, and nothing reads it. That is a
+> component selection rule, not a stripping bug, and it is out of MEH-1942's
+> stated scope — pinned as a characterisation case in the same test file so the
+> follow-up starts from a measurement. **Worth knowing because MEH-1942's own DoD
+> proposed exactly that single-area payload as its discriminating case**; it does
+> not discriminate, and the two-area form is what does.
+>
+> The rest of this section is preserved as the diagnosis that produced the fix.
+> §1's inventory row 2 is now stale for the same reason.
 
 **Every link verified, in order:**
 
@@ -154,8 +176,13 @@ deletes the hand-maintained parallel entirely.
 Read-only. No schema touched, no `.loose()` added, nothing fixed — including §2. `git status`
 carries only this file.
 
+_(This section describes the audit PR's own scope and stays as written. The
+follow-up status below is the only thing kept current.)_
+
 **Follow-ups this audit should produce (not opened here):**
-1. the `delivery_fee` live bug (§2) — its own ticket, with the free-delivery case as the test
+1. ~~the `delivery_fee` live bug (§2) — its own ticket, with the free-delivery case as the
+   test~~ — **shipped 08/08 (MEH-1942).** The free-delivery case is indeed the test, with one
+   correction the ticket could not have known: it needs **two** areas, not one. See §2.
 2. extend the parity guard to walk nested shapes (option ג)
 3. a note on `admin/content/page.js` so a future "add validation" pass does not introduce §3's
    waiting bug
