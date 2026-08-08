@@ -131,6 +131,23 @@ own terms.
 
 ## PARKED: MEH-1941 — flip `backed: true` on the two diet pages
 
+> ## ✅ RESOLVED 2026-08-08 — unparked and shipped. Do not re-take this card.
+>
+> Measured at 21:12Z (session s5): **MEH-1941 is `Done`**, `completedAt`
+> `2026-08-08T20:28:16Z`, closed by **PR #2701** — *"fix(diet): open
+> no-added-sugar and low-carb — the backend filters landed"*.
+>
+> The park below diagnosed itself correctly: failure class **resource**, *"it will
+> succeed on a fresh session with no changes to anything"*. It did, roughly two
+> hours later. The entry is kept rather than deleted because the analysis under it
+> — especially the correction to the card's prediction about the second test — is
+> what made the follow-up session cheap.
+>
+> **The one item that did NOT resolve itself:** the orphan branch
+> `feature/meh-1941-flip-diet-backed` (one empty claim commit, no PR). It could not
+> be deleted from a CC session because `check-branch-name.sh` parses the delete
+> argument as a branch name. **Still Sapir's, still one line, still not urgent.**
+
 **Not blocked by anything in the ticket.** Parked on **session context budget**: I
 claimed it, verified its preconditions, and then did not have the room left to
 implement it to the standard the card asks for (test surgery + a
@@ -196,3 +213,47 @@ next session can simply cut a differently-named branch off `origin/staging`.
 ## Circuit breaker
 
 No signature reached the 3-park threshold. Nothing quarantined.
+
+---
+
+# Session s5-k2m9xp (2026-08-08 night)
+
+## PARKED: MEH-999 · MEH-215 · MEH-217 · MEH-1897 — all four on one credential gate
+
+**Failure class: PERMANENT for this session — ORDERS §1.2 gate 2 (credentials
+Sapir holds).** Not transient, not resource. No retry will clear it and none was
+attempted after the second confirmation.
+
+**The block, verbatim, reproduced ~20 minutes apart:**
+
+```
+mcp__Linear__get_issue MEH-999
+  -> MCP server "Linear" requires re-authorization (token expired)
+```
+
+The Linear OAuth token expired **mid-session** — the first three `get_issue` calls
+of the run succeeded, so this is an expiry during the sweep and not a session that
+started without access. A non-interactive session cannot run the OAuth flow.
+
+**Why the cards were not built anyway.** The seed list in the prompt names all
+four, and their titles are known. That is not enough: ORDERS §5 states any queue
+list in a prompt is *"a HINT, never state"*, and workflow.md's Lane B eligibility
+gate is **derived from the card's own description**, which could not be read.
+Building from a one-line title is guessing at requirements — rule 4's explicit
+anti-pattern — and the B3 gate (unresolved questions to Sapir? denied action
+required? brand ruling needed?) is unanswerable without the body. **Skipping was
+the rule-compliant outcome, not caution.**
+
+**Nothing was claimed.** No `cc-queue` label was applied (Linear was down, so the
+audit trail ORDERS §5 requires could not be written), no branch was cut for any of
+the four, and `git ls-remote` confirms none exists.
+
+**To unpark:** re-authorize Linear via the claude.ai connector settings. Every one
+of the four is then immediately workable — no repository state blocks them.
+
+## Circuit breaker
+
+One signature (`Linear token expired`) across four cards. **This is one blocker
+counted once, not four parks toward the 3-park threshold** — the threshold exists
+to catch a repeating *failure mode*, and four cards sharing a single credential
+gate is one fact about the environment. Nothing quarantined.
