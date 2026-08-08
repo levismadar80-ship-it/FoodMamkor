@@ -208,9 +208,12 @@ model; a session that merges and moves on has not implemented it.
 **Why the Cloudinary attribution was retired — and why the first replacement for
 it was also wrong (measured 08/08, corrected same day).**
 
-This file used to say the E2E red *was* the documented Cloudinary-401 issue. That
-was retired because the 401s appear in the green runs too, and a constant cannot
-explain a variable.
+This file used to say the E2E red *was* the documented Cloudinary-401 issue. The
+first attempt to retire that reasoned "the 401s appear in the green runs too, so
+a constant cannot explain a variable." **Both halves of that were wrong**, and the
+second one is instructive: the green runs never ran, so they have no server log
+and can say nothing at all about Cloudinary. The comparison was not weak evidence
+— it was *no* evidence, dressed as a refutation.
 
 **The replacement claim — "the suite is flaky, it alternates pass/fail" — lasted
 about twenty minutes and was also wrong.** Checking the paths-filter against all
@@ -229,6 +232,15 @@ the run reports `success`. Verified directly on `6a758f35`: `Playwright E2E
 
 So the honest statement is not "flaky" but **"a 100%-failing suite wearing a
 green mask"**, which is a considerably worse problem and a different fix.
+
+**And note where that leaves Cloudinary: not refuted — possibly promoted.** A live
+401 breaking every image is exactly the shape of a defect that fails a suite
+*consistently*, which is what the data now shows. The thing this file bans is the
+**posture**, not the hypothesis: "it's the known Cloudinary thing, carry on" waves
+through a suite failing 14 out of 14 executions. Whether MEH-1925 is the cause is
+open, and [MEH-1948](https://linear.app/mehamakor/issue/MEH-1948) owns deciding it
+— which needs the per-spec breakdown from the `playwright-report` artifact, not
+another inference from run conclusions.
 
 **Two lessons, and the second is the expensive one:**
 
