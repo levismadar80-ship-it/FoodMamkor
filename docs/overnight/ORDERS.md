@@ -237,10 +237,21 @@ green mask"**, which is a considerably worse problem and a different fix.
 401 breaking every image is exactly the shape of a defect that fails a suite
 *consistently*, which is what the data now shows. The thing this file bans is the
 **posture**, not the hypothesis: "it's the known Cloudinary thing, carry on" waves
-through a suite failing 14 out of 14 executions. Whether MEH-1925 is the cause is
-open, and [MEH-1948](https://linear.app/mehamakor/issue/MEH-1948) owns deciding it
-— which needs the per-spec breakdown from the `playwright-report` artifact, not
+through a suite failing 14 out of 14 executions. Whether it is the cause is open,
+and [MEH-1948](https://linear.app/mehamakor/issue/MEH-1948) owns deciding it —
+which needs the per-spec breakdown from the `playwright-report` artifact, not
 another inference from run conclusions.
+
+> **Do not read any of this as "Cloudinary is handled."**
+> [MEH-1925](https://linear.app/mehamakor/issue/MEH-1925) is a **live, Urgent,
+> unresolved production incident** — 401s on the catalog, the home hero and OG
+> images — and it is **gate 2** (access Sapir physically holds: the Cloudinary
+> console). Nothing in this section touches it. What changed is only that an
+> E2E red may no longer be *attributed* to it without evidence; the incident
+> itself is untouched, still open, and still hers. An earlier draft of this
+> amendment removed the file's only mention of MEH-1925 while re-scoping the
+> attribution, which would have left a session reading these orders with no way
+> to learn the incident exists. Caught in review.
 
 **Two lessons, and the second is the expensive one:**
 
@@ -307,10 +318,19 @@ Three points that are easy to lose and are worth the duplication:
   This is not hypothetical caution. **Both sweeps so far have arrived with a stale
   seed list**, and the second was worse than the first:
 
-  | Sweep | What the prompt said | What was true |
-  |---|---|---|
-  | night 1 | 8 seed items | **4 of 8 already done** |
-  | s3 (08/08) | "clear the immediate backlog first: #2677, #2683, #2665, #2680" | **all four already merged** — #2665 at 11:08:29Z, #2680 at 10:26:44Z |
+  | # | Sweep | What the prompt said | What was true |
+  |---|---|---|---|
+  | 1 | night 1 | 8 seed items | **4 of 8 already done** |
+  | 2 | s3, morning | "clear the immediate backlog first: #2677, #2683, #2665, #2680" | **all four already merged** — #2683 10:17Z, #2680 10:26:44Z, #2677 10:37Z, #2665 11:08:29Z. Recorded in `session-s3-4j6llv.md`, committed to staging **11:39:43Z** |
+  | 3 | s3, evening | *the same prompt, unchanged* | **rediscovered the identical fact from scratch ~6h later**, via fresh API calls, never having read the log from hit 2 |
+
+  **Hit 3 is the one that should sting**, and it is why this bullet is worded as a
+  procedure and not a warning. The answer was already committed to `staging` in a
+  file named for the same sweep; the session re-derived it anyway because it
+  checked the *repository* for staleness and never checked `docs/overnight/` for
+  a predecessor. **Read the most recent `session-*.md` before re-deriving
+  anything** — the anti-stale gate applies to your own prior sessions too, and
+  they are cheaper to read than the API is to query.
 
   In the s3 case staging had already moved **four commits past the very commit
   that landed this file**. A prompt is a photograph of a moving repository, and
