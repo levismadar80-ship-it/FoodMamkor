@@ -209,6 +209,21 @@ def admin_create_producer(
 
     _apply_categories(db, producer, data.category_ids)
     _apply_delivery_cities(db, producer, data.delivery_area_cities)
+    # MEH-1921: this is the FIFTH create-from-payload path, and the one easiest
+    # to miss — `_apply_delivery_cities` is shared with the PUT route (:286),
+    # so classifying it by call site reads "edit path, leave alone" and hides
+    # that THIS caller creates. Like the importer, the row is born
+    # `status="approved"` and is live immediately.
+    #
+    # Unlike the four signup paths, `ProducerAdminCreate` DOES carry
+    # `offers_delivery` (schemas.py:1431), so an admin can state it — and an
+    # explicit `false` alongside delivery cities is a deliberate declaration
+    # that MEH-1848's predicates are right to exclude. Only the UNSTATED case
+    # is derived, which `model_fields_set` distinguishes and a plain falsy
+    # check cannot. Same distinction `_sync_active_offer` (producer_me.py)
+    # already relies on: "omitted" and "explicitly false" are different answers.
+    if data.delivery_area_cities and "offers_delivery" not in data.model_fields_set:
+        producer.offers_delivery = True
 
     db.commit()
     db.refresh(producer)

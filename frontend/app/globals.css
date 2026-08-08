@@ -562,7 +562,19 @@ body.sheet-open .cookie-banner {
   transition:
     transform 0.18s ease-out,
     opacity 0.25s ease-out;
-  mix-blend-mode: multiply;
+  /* MEH-1931: `mix-blend-mode: multiply` used to sit here and is deliberately
+     gone. multiply(#2e6853, near-black) ≈ black, so the dot vanished on every
+     dark surface — `.custom-cursor-on *{cursor:none}` had already removed the
+     native one, leaving no pointer at all inside the Lightbox (bg-black/95).
+     DO NOT re-add the blend to "keep the cream look": a halo cannot rescue it,
+     because an element carrying mix-blend-mode blends as a GROUP with its
+     backdrop — a white ring on this same element multiplies to black too.
+     Measured, not assumed (probe + numbers in the MEH-1931 PR body).
+     Dropping the blend is imperceptible on cream: over #F5F0E8 multiply
+     yields rgb(44,98,76) vs rgb(46,104,83) unblended — ≤7/255 per channel on
+     a 12px dot. The ring below then carries the dark surfaces and stays
+     invisible on light ones (white-on-cream). */
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
 }
 .custom-cursor--hover {
   transform: scale(3);

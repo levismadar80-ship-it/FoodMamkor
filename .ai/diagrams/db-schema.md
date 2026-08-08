@@ -100,6 +100,8 @@ erDiagram
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
         boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
+        boolean is_no_added_sugar "MEH-1934: 5th dietary axis; no backfill — nothing implies it"
+        boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
     }
 
     delivery_areas {

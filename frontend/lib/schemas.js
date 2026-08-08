@@ -169,6 +169,11 @@ export const ProducerListSchema = z.object({
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
   has_lactose_free_products: z.boolean().nullable().optional(),  // → lactose_free
+  // MEH-1934: the contract-parity test is what surfaced these — the backend
+  // schema gained them in chunk 2, and an undeclared field is stripped by the
+  // strict parse, so the badges would never light no matter what the API sent.
+  has_no_added_sugar_products: z.boolean().nullable().optional(),  // → no_added_sugar
+  has_low_carb_products: z.boolean().nullable().optional(),        // → low_carb
   // kosher pair — verified-only (MEH-986 ch2) + expiry (MEH-1260). Both are
   // date-ish strings from the backend; `z.string()` not `z.date()` because the
   // payload is JSON and badges.js:216 does its own `new Date(...)` comparison.
