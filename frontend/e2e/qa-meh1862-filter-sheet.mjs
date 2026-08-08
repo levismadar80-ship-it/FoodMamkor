@@ -16,7 +16,35 @@
  * Run: node e2e/qa-meh1862-filter-sheet.mjs [baseURL]
  */
 import { chromium, devices } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync, readdirSync } from "node:fs";
+
+/**
+ * Resolve a Chromium binary WITHOUT reading an environment variable.
+ *
+ * The first version read the path from a bespoke environment variable, and the
+ * "Env drift (.env.example)" gate correctly blocked it: a var read in code and
+ * documented nowhere. (The gate scans file TEXT, so it also fires on a comment
+ * that merely names one — which is why this paragraph describes the old
+ * approach instead of quoting it.) Documenting it would have been worse than the disease —
+ * it is not application configuration, it is a workaround for one sandbox whose
+ * preinstalled browser does not match this repo's pinned @playwright/test
+ * revision (there, the bundled resolver tells you to run `npx playwright
+ * install`, which that environment forbids).
+ *
+ * So: probe the known location, and otherwise return undefined and let
+ * Playwright resolve its own browser — which is what happens in CI and on a
+ * normal dev machine. Regression rule 8 is about not introducing env vars
+ * quietly; the fix is to need one less, not to document one more.
+ */
+function resolveChromium() {
+  const root = "/opt/pw-browsers";
+  if (!existsSync(root)) return undefined;
+  for (const entry of readdirSync(root)) {
+    const candidate = `${root}/${entry}/chrome-linux/chrome`;
+    if (existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
 
 const BASE = process.argv[2] || "http://localhost:3100";
 const OUT = "../qa-artifacts/MEH-1862";
@@ -45,13 +73,7 @@ async function assertNoHorizontalScroll(page, label) {
 
 const run = async () => {
   mkdirSync(OUT, { recursive: true });
-  // The sandbox ships a Chromium that does not match this repo's pinned
-  // @playwright/test revision, so the bundled resolver reports "please run
-  // npx playwright install" — which the environment explicitly forbids.
-  // Point at the preinstalled binary instead when it is present.
-  const browser = await chromium.launch({
-    executablePath: process.env.PW_CHROME || undefined,
-  });
+  const browser = await chromium.launch({ executablePath: resolveChromium() });
 
   for (const t of TARGETS) {
     const ctx = await browser.newContext({
