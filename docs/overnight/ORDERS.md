@@ -297,6 +297,93 @@ reporting it.
 
 ---
 
+## 4.1 · Pipelined execution — intra-session concurrency
+
+**Added by Sapir, 08/08.** Applies *inside* a single session. It does not change
+the ownership protocol (§2), the self-check bundle (§3), or the turn-end
+contract — only the ordering.
+
+**PRINCIPLE: the bottleneck is wall-clock waiting, not thinking.** CI runs
+~10–20 min; a merge gate can take longer. Idling through that is the single
+largest waste in a session. Work is **pipelined, never serial**: at any moment
+you may have **one task in BUILD** and **up to two tasks in FLIGHT** (pushed,
+awaiting gates/merge).
+
+### Forbidden states — none of these may ever be your current activity
+
+- *"Waiting for gates to complete"* as a foreground action.
+- *"Waiting and retrying once"* as the whole turn. The wait itself is fine;
+  being idle during it is not.
+- Ending a turn with an open PR awaiting gates and **no new task started**.
+
+### The loop
+
+1. Finish a task's build + self-check → push → arm auto-merge (or a timed
+   check-in) → **record it in the in-flight ledger**.
+2. **Immediately claim and start the next task.** Do not read gate logs, do not
+   poll, do not narrate waiting.
+3. Revisit in-flight PRs only at **natural pause points**: after the next task's
+   build completes, after a long test run, or when a background shell returns.
+   **Batch the revisit** — check all in-flight PRs in one pass, not one at a time.
+4. **In-flight cap = 2.** At the cap, resolve the oldest before claiming another.
+   That bounds the blast radius and keeps the ledger reviewable.
+
+### In-flight ledger — maintain in the session log, update on every state change
+
+| PR | MEH-XX | pushed at | gate state | next revisit trigger |
+|---|---|---|---|---|
+
+**A PR without a ledger row does not exist.** If context is about to run out,
+every in-flight row must be resolved or handed off explicitly in the log.
+
+### Task selection for pipelining
+
+Prefer a next task touching **different files** than the in-flight one.
+Same-file follow-ups wait until the first merges — pipelining must never create
+a self-conflict. If the only remaining eligible task overlaps, do it as a
+**stacked branch** off the in-flight branch and say so in the PR body.
+
+### Background delegation — convert dead time into work
+
+- **Long commands** (full pytest, full vitest, Playwright suites, builds) →
+  `run_in_background`, then keep reasoning or building while they run. Never sit
+  on a foreground run you could background.
+- **Review subagent** (already mandated, different model): launch it in the
+  **background** with `isolation: "worktree"` and keep working on the next task.
+  Its findings arrive as a revisit trigger. It stays read-only-ish: **no
+  `git stash` / `checkout` / branch switching on the main working tree** (the s3
+  incident, §3.2).
+- **Parallel read-only work**: independent investigations — Phase 0 discovery,
+  log/artifact analysis, field classification, flake matrices — can run as
+  concurrent background subagents while you build. They return findings; you
+  decide. **Cap: 3 concurrent background jobs**; beyond that, tracing failures
+  costs more than the parallelism saves.
+- **HARD RULE: exactly ONE agent writes to the main working tree at a time —
+  you.** Everything concurrent is read-only or worktree-isolated. Two writers on
+  one tree is the failure mode this repo has already hit.
+
+### While-you-wait lane
+
+When a revisit is not due yet and the next build task needs a decision you do
+not have, pick up a no-conflict filler: update the session log, verify a prior
+merge landed correctly on `origin/staging`, append evidence to a Linear card,
+classify a batch of MEH-1897 fields, download and parse an artifact.
+**Never "wait" as an activity.**
+
+### Interaction with the self-check bundle
+
+**Pipelining changes ordering, never rigor.** Every PR still gets: build + lint
++ tests green with outputs pasted · different-model adversarial review with
+findings addressed · full evidence bundle for UI · post-merge verification read
+back off `origin/staging` (not the merge event) · instant revert on breakage.
+
+If an in-flight PR's review returns findings while you are mid-build on the next
+task: **finish the current atomic edit, then handle the findings.** Never leave a
+flagged PR to auto-merge with unaddressed findings — **auto-merge is armed only
+for PRs whose review has already cleared.**
+
+---
+
 ## 5 · Queue discipline
 
 Lanes, eligibility gates B1–B4, and the `cc-queue` label protocol are defined in
