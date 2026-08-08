@@ -81,7 +81,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, is_low_carb: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -171,10 +171,12 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegan: form.is_vegan,
         is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
+        is_no_added_sugar: form.is_no_added_sugar,  // MEH-1934
+        is_low_carb: form.is_low_carb,              // MEH-1934
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, is_low_carb: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch {
@@ -196,6 +198,8 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       is_vegan: !!product.is_vegan,
       is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
+      is_no_added_sugar: !!product.is_no_added_sugar,  // MEH-1934
+      is_low_carb: !!product.is_low_carb,              // MEH-1934
     });
     setError("");
     setEditFormErrors({});
@@ -279,6 +283,8 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegan: !!editForm.is_vegan,
         is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
+        is_no_added_sugar: !!editForm.is_no_added_sugar,  // MEH-1934
+        is_low_carb: !!editForm.is_low_carb,              // MEH-1934
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -473,6 +479,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                     <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
                     <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={!!editForm.is_vegetarian} onToggle={() => setEditForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
                     <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                    {/* MEH-1934: appended last so the existing diet order is unchanged. No new chip-icons entry — same as vegetarian, which renders iconless. */}
+                    <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={!!editForm.is_no_added_sugar} onToggle={() => setEditForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
+                    <DietChip iconKey="low_carb" label={tForm("diet_low_carb")} pressed={!!editForm.is_low_carb} onToggle={() => setEditForm((f) => ({ ...f, is_low_carb: !f.is_low_carb }))} />
                   </div>
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
                       surfaces the business in the matching public filter. */}
@@ -625,6 +634,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <DietChip iconKey="vegan" label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
                 <DietChip iconKey="vegetarian" label={tForm("diet_vegetarian")} pressed={form.is_vegetarian} onToggle={() => setForm((f) => ({ ...f, is_vegetarian: !f.is_vegetarian }))} />
                 <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
+                {/* MEH-1934 */}
+                <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={form.is_no_added_sugar} onToggle={() => setForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
+                <DietChip iconKey="low_carb" label={tForm("diet_low_carb")} pressed={form.is_low_carb} onToggle={() => setForm((f) => ({ ...f, is_low_carb: !f.is_low_carb }))} />
               </div>
               {/* MEH-1439: tell the owner what marking a diet flag does — it
                   surfaces the business in the matching public filter. */}
