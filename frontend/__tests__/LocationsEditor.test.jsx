@@ -98,7 +98,12 @@ beforeEach(() => {
   apiMock.state.locations = [];
   apiMock.get.mockClear();
   apiMock.post.mockClear();
+  // MEH-1940: `delete` and `toast.error` were previously never reset, so the
+  // new "no bottom toast" assertions would have depended on execution order —
+  // green only because nothing earlier in the file happened to error.
+  apiMock.delete.mockClear();
   toastMock.info.mockClear();
+  toastMock.error.mockClear();
 });
 
 // CitySearch takes no testid prop (and is REUSE-only for this ticket), but it
@@ -139,7 +144,11 @@ describe("LocationsEditor (MEH-1421)", () => {
     fireEvent.change(screen.getByTestId("location-lat"), { target: { value: "200" } });
     fireEvent.click(screen.getByTestId("location-save"));
 
-    await waitFor(() => expect(toastMock.info).toHaveBeenCalled());
+    // MEH-1940: the Rule-19 message moved out of the bottom toast and into the
+    // form, same as the server-side save error. Asserting the destination, not
+    // merely that "something was reported".
+    await waitFor(() => screen.getByTestId("location-form-error"));
+    expect(toastMock.info).not.toHaveBeenCalled();
     expect(apiMock.post).not.toHaveBeenCalled();
   });
 
@@ -232,6 +241,9 @@ describe("geocoding (MEH-1936)", () => {
       ),
     );
     expect(toastMock.info).not.toHaveBeenCalled();
+    // MEH-1940: and nothing was reported in the form either — the old
+    // toast-only assertion could not have caught an inline error appearing.
+    expect(screen.queryByTestId("location-form-error")).toBeNull();
   });
 
   it("typing over a picked address retires the coordinates it belonged to", async () => {
@@ -363,5 +375,89 @@ describe("city is never clobbered by the geocoder (MEH-1936)", () => {
         expect.objectContaining({ city: "תל אביב" }),
       ),
     );
+  });
+});
+
+// MEH-1940 — the same-city 422 used to arrive as a bottom toast, in the strip
+// already occupied by the cookie banner, the chat widget and the BottomNav:
+// dimmed at 1440, clipped at 375, and gone on a timer while the owner was
+// still looking at the field that caused it.
+//
+// These assert the DESTINATION and the PERSISTENCE, which is what changed. A
+// test that only checked "the message text is somewhere on the page" would
+// pass on both the toast and the inline version and could not tell them
+// apart — which of the two it is IS the ticket.
+describe("save errors render in the form, not in the bottom strip (MEH-1940)", () => {
+  const SAME_CITY_422 = {
+    response: {
+      status: 422,
+      data: {
+        detail:
+          "כבר יש לך מיקום ביישוב זכרון יעקב. תני למיקום החדש תווית שתבדיל ביניהם — למשל 'הדוכן בשוק' או 'החנות'.",
+      },
+    },
+  };
+
+  async function submitAndFail(rejection = SAME_CITY_422) {
+    await openAddForm();
+    fireEvent.change(cityInput(), { target: { value: "זכרון יעקב" } });
+    apiMock.post.mockRejectedValueOnce(rejection);
+    fireEvent.click(screen.getByTestId("location-save"));
+    return waitFor(() => screen.getByTestId("location-form-error"));
+  }
+
+  it("puts the server's message inside the form", async () => {
+    const box = await submitAndFail();
+    expect(box.textContent).toContain("כבר יש לך מיקום ביישוב זכרון יעקב");
+    // Inside the form element — not a sibling floating at the page bottom.
+    expect(screen.getByTestId("location-form").contains(box)).toBe(true);
+  });
+
+  it("does NOT also fire a bottom toast", async () => {
+    await submitAndFail();
+    expect(toastMock.error).not.toHaveBeenCalled();
+    expect(toastMock.info).not.toHaveBeenCalled();
+  });
+
+  it("is announced without stealing focus", async () => {
+    const box = await submitAndFail();
+    expect(box.getAttribute("role")).toBe("alert");
+  });
+
+  it("does not disappear on its own", async () => {
+    // The toast auto-dismissed; this must not. Real elapsed time, because a
+    // dismissal timer is exactly what is being ruled out — faking timers here
+    // would hide the thing under test.
+    const box = await submitAndFail();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(screen.getByTestId("location-form-error")).toBe(box);
+  });
+
+  it("clears once she starts correcting it", async () => {
+    await submitAndFail();
+    fireEvent.change(screen.getByLabelText("settings.locations.form.label_label"), {
+      target: { value: "הדוכן בשוק" },
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId("location-form-error")).toBeNull(),
+    );
+  });
+
+  it("falls back to the generic string when the server sends no detail", async () => {
+    const box = await submitAndFail({ response: { status: 500, data: {} } });
+    expect(box.textContent).toBe("settings.locations.errors.save_failed");
+  });
+
+  it("row actions keep the toast — there is no open form to put them in", async () => {
+    apiMock.state.locations = [
+      { id: "a1", kind: "branch", city: "חדרה", label: null, is_primary: true },
+    ];
+    render(<LocationsEditor />);
+    await waitFor(() => screen.getByLabelText("settings.locations.delete_aria"));
+    apiMock.delete.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    fireEvent.click(screen.getByLabelText("settings.locations.delete_aria"));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
+    expect(screen.queryByTestId("location-form-error")).toBeNull();
   });
 });
