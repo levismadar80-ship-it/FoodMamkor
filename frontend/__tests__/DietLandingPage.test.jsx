@@ -57,6 +57,11 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/components/ProducerCard", () => ({ default: () => null }));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 
+// Lets a single spec make t.raw(".faq") return something other than an array,
+// to reproduce next-intl's missing-message behaviour. Default (undefined) keeps
+// the normal array for every other spec.
+const rawFaqOverride = vi.hoisted(() => ({ value: undefined }));
+
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
   getTranslations: async () => {
@@ -64,7 +69,9 @@ vi.mock("next-intl/server", () => ({
       params?.label ? `${key}:${params.label}` : `t:${key}`;
     t.raw = (key) =>
       key.endsWith(".faq")
-        ? [{ question: "Q1", answer: "A1" }]
+        ? rawFaqOverride.value !== undefined
+          ? rawFaqOverride.value
+          : [{ question: "Q1", answer: "A1" }]
         : `raw:${key}`;
     return t;
   },
@@ -333,6 +340,35 @@ describe("MEH-1935 rendered page", () => {
     );
     const list = JSON.parse(html)["@graph"].find((n) => n["@type"] === "ItemList");
     expect(list.itemListElement[0].url).toBe("https://mehamakor.co.il/bakery");
+  });
+
+  /**
+   * next-intl's t.raw() returns the KEY PATH (a string) for a missing message,
+   * NOT undefined — so `t.raw(...) ?? []` sails past the nullish check and the
+   * value reaches `.map` in the FAQ <dl> as a string, throwing at render.
+   * lib/seo.js already coerced its own copy with Array.isArray; the render site
+   * did not, and this pins that asymmetry closed.
+   *
+   * Discriminating: against the pre-fix `?? []` this spec throws
+   * "faq.map is not a function" — the JSX children are built eagerly inside
+   * the component call, so no renderer is needed to trip it.
+   */
+  it("does not throw when a locale loses its faq array (t.raw returns the key path)", async () => {
+    serverFetch.mockResolvedValue(
+      listing(DIET_PAGE_MIN, [{ id: 1, name: "מאפייה", slug: "bakery" }]),
+    );
+    rawFaqOverride.value = "pages.vegan.faq";
+    try {
+      const tree = await DietLandingPage({
+        params: Promise.resolve({ dietSlug: "vegan", locale: "he" }),
+      });
+      expect(tree).toBeTruthy();
+      // And the JSON-LD drops FAQPage rather than emitting a hollow one.
+      const graph = JSON.parse(findJsonLdHtml(tree))["@graph"];
+      expect(graph.some((n) => n["@type"] === "FAQPage")).toBe(false);
+    } finally {
+      rawFaqOverride.value = undefined;
+    }
   });
 
   it("falls back to /producer/[id] for a business with no slug", async () => {
