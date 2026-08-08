@@ -26,6 +26,13 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: () => <span />,
   WhatsappLogo: () => <span />,
   X: () => <span />,
+  // MEH-1916: ProductSheet's per-channel CTA icon set loads through this mock.
+  Phone: () => <span />,
+  Globe: () => <span />,
+  EnvelopeSimple: () => <span />,
+  InstagramLogo: () => <span />,
+  FacebookLogo: () => <span />,
+  Receipt: () => <span />,
 }));
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));

@@ -12,7 +12,11 @@ import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
-import { CHIPS_CONFIG } from "@/lib/producer-filters";
+// MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
+// CHIPS_CONFIG is shared with /producers, so a chip added there appears on
+// this row automatically — gating only at /producers would leave the home
+// row deep-linking to a listing that returns nothing.
+import { CHIPS_CONFIG, GATED_DIET_KEYS, visibleGatedDietKeys } from "@/lib/producer-filters";
 import { withChipIcons } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
@@ -67,7 +71,14 @@ export function HomeProducersGrid({
 }) {
   const t = useTranslations();
   // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
-  const chipsWithIcons = useMemo(() => withChipIcons(CHIPS_CONFIG), []);
+  // MEH-1934: recomputed when the loaded set changes — the gate turns the chips
+  // on by itself once the catalog carries the markings, with nobody flipping a
+  // flag. An ACTIVE chip always survives the gate (see visibleGatedDietKeys).
+  const chipsWithIcons = useMemo(() => {
+    const shown = visibleGatedDietKeys(visibleProducers, chips);
+    const hidden = GATED_DIET_KEYS.filter((k) => !shown.includes(k));
+    return withChipIcons(CHIPS_CONFIG.filter((c) => !hidden.includes(c.key)));
+  }, [visibleProducers, chips]);
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
   // is selected OR the id hasn't resolved against the loaded list yet, so

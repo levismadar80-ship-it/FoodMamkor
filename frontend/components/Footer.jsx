@@ -9,6 +9,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
+import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -66,6 +67,9 @@ export default function Footer() {
     }
   };
 
+  // MEH-1918: shared with the Header so one page load makes one request.
+  const showExperiences = useExperiencesNavGate();
+
   // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
   // producers). NN/g "Footers 101" — group links by secondary audience rather
   // than dumping them in one column. Two labelled groups: readers ("גלו") +
@@ -77,6 +81,13 @@ export default function Footer() {
     { href: "/producers", label: t("nav.footer.producers") },
     { href: "/map", label: t("nav.map") },
     { href: "/events", label: t("nav.footer.events") },
+    // MEH-1918: data-gated — the experiences link joins "גלו" only once
+    // /experiences has real supply (see lib/use-experiences-nav-gate.js). It
+    // sits next to /events because the two are the same kind of thing to a
+    // reader: something happening, on a date.
+    ...(showExperiences
+      ? [{ href: "/experiences", label: t("nav.footer.experiences") }]
+      : []),
     { href: "/about", label: t("nav.footer.about") },
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
