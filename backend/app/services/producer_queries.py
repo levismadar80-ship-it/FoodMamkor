@@ -21,7 +21,7 @@ from app.models import (
     ProducerCategory,
     ProducerLocation,
 )
-from app.schemas.schemas import ProducerCreate
+from app.schemas.schemas import DeliveryAreaCreate, ProducerCreate
 
 logger = structlog.get_logger(__name__)
 
@@ -223,7 +223,9 @@ def get_producer_or_404(db: Session, producer_id: UUID) -> Producer:
     return producer
 
 
-def persist_registration_delivery_areas(db: Session, producer: Producer, areas) -> None:
+def persist_registration_delivery_areas(
+    db: Session, producer: Producer, areas: list[DeliveryAreaCreate] | None
+) -> None:
     """MEH-1921 — write a signup payload's delivery areas AND the declaration.
 
     Asking to be listed for these cities IS declaring that you deliver, so the
@@ -248,11 +250,22 @@ def persist_registration_delivery_areas(db: Session, producer: Producer, areas) 
     and `admin.py:109` replace areas on an existing business whose owner or an
     admin sets `offers_delivery` explicitly (producer_me.py:387-391,
     admin.py:197), policed by `delivery_validation.py:68-74`. Deriving the flag
-    there would silently override a deliberate choice — the opposite bug.
+    there would silently override a deliberate choice — the opposite bug. That
+    split — derive on CREATE, never on EDIT — is the whole rule.
 
     Never writes `False`: an empty list means "this payload said nothing about
     delivery", not "this business does not deliver", and the column default
     already covers the former.
+
+    DOES NOT persist `DeliveryAreaCreate.delivery_fee`, and neither did the
+    three inline loops this replaced — so a signup that states a per-area fee
+    (including 0 = "משלוח חינם") silently loses it and the area inherits the
+    producer-level fee. Pre-existing and deliberately NOT fixed here: it is the
+    write-side twin of MEH-1942, which is under Sapir's decision on PR #2680,
+    and closing one side while that is open would confuse the measurement.
+    Named rather than left silent, because this function now reads as the owner
+    of "persist a signup payload's delivery areas" and a reader would otherwise
+    assume it persists all of them.
     """
     wrote_any = False
     for da in areas or []:
