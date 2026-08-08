@@ -120,8 +120,44 @@ echo "$CHANGED" | grep -qx "$MSG_FILE" || {
 # A removed line is a value that changed or went away; a diff with only added
 # lines is new keys, which the ticket scopes out. -U0 so context lines cannot
 # masquerade as changes.
+#
+# Output is `file:line<TAB>"key"<TAB>kind` per the scripts/checks/README.md
+# contract. A bare key name is not actionable: "cta" occurs dozens of times in
+# a 300KB file, so the reader would have to re-derive the diff by hand — the
+# work the guard exists to save.
+#
+# Line numbers come from walking the -U0 hunk headers, NOT from grepping the
+# file for the key: grep cannot tell which of the dozen "cta" lines moved.
+# Within a hunk, a removed key that also appears added is a VALUE CHANGE and
+# reports the new-side line; a removed key with no added twin is a REMOVED key
+# and reports the base-side line, having no new-side line to point at.
 DIFF="$(git diff -U0 "$BASE" HEAD -- "$MSG_FILE" 2>/dev/null)"
-REMOVED="$(printf '%s\n' "$DIFF" | grep -E '^-[^-]' | grep -oE '"[^"]+"[[:space:]]*:' | sed 's/[[:space:]]*:$//' | sort -u)"
+REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
+  function keyof(s) {
+    if (match(s, /"([^"\\]|\\.)*"[[:space:]]*:/)) return substr(s, RSTART, RLENGTH - 1)
+    return ""
+  }
+  function flush(   i, k) {
+    for (i = 1; i <= nrem; i++) {
+      k = remk[i]
+      if (k in addline) printf "%s:%d\t%s\tchanged\n", f, addline[k], k
+      else              printf "%s:%d\t%s\tremoved (base line)\n", f, remline[i], k
+    }
+    nrem = 0; delete addline
+  }
+  /^@@/ {
+    flush()
+    # @@ -oldStart[,oldCount] +newStart[,newCount] @@
+    split($2, o, ","); split($3, n, ",")
+    oldno = substr(o[1], 2) + 0
+    newno = substr(n[1], 2) + 0
+    next
+  }
+  /^\+\+\+/ || /^---/ { next }
+  /^\+/ { k = keyof($0); if (k != "") addline[k] = newno; newno++; next }
+  /^-/  { k = keyof($0); if (k != "") { nrem++; remk[nrem] = k; remline[nrem] = oldno }; oldno++; next }
+  END { flush() }
+' | sort -u)"
 
 if [ -z "$REMOVED" ]; then
   echo "  $MSG_FILE touched, but the diff adds keys only (no value changed) — no baseline implication."
@@ -147,8 +183,7 @@ cat <<EOF
 
   WARNING — $COUNT changed value(s) in $MSG_FILE, and no baseline moved.
 
-  Keys whose value changed or was removed:
-$(printf '%s\n' "$REMOVED" | sed 's/^/    /')
+$(printf '%s\n' "$REMOVED" | awk -F'\t' '{ printf "    %-38s %s  (%s)\n", $1, $2, $3 }')
 
   Bug Protocol 2b (.claude/rules/workflow.md): when a he.json value rendered on
   a VRT-covered route changes, regenerate $SNAP_DIR/
