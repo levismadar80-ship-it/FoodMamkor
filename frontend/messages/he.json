@@ -4739,6 +4739,8 @@
         "diet_vegan": "טבעוני",
         "diet_vegetarian": "צמחוני",
         "diet_lactose_free": "ללא לקטוז",
+        "diet_no_added_sugar": "ללא סוכר מוסף",
+        "diet_low_carb": "דל פחמימות",
         "diet_helper": "סימון תווית על מוצר מציג את העסק בסינון המתאים בדפי החיפוש והמפה.",
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",

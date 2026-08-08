@@ -156,6 +156,15 @@ def attach_badge_fields(producer):
     producer.has_lactose_free_products = any(
         getattr(p, "is_lactose_free", False) for p in products
     )
+    # MEH-1934: plain single-flag aggregations. Deliberately NOT OR-ed with any
+    # other axis the way has_vegetarian_products folds in is_vegan — no existing
+    # flag implies "no added sugar" or "low carb".
+    producer.has_no_added_sugar_products = any(
+        getattr(p, "is_no_added_sugar", False) for p in products
+    )
+    producer.has_low_carb_products = any(
+        getattr(p, "is_low_carb", False) for p in products
+    )
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
