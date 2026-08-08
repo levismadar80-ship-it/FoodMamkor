@@ -1,0 +1,26 @@
+# mypy baseline — MEH-1868 chunk 0
+#
+# One line per (file, error-code, count). TAB-separated, sorted, so a diff shows
+# exactly which code moved in which file, and concurrent branches touching
+# different files do not conflict.
+#
+# KEYED BY CODE, NOT BY LINE NUMBER — on purpose. A line-keyed baseline shifts
+# wholesale when a line is inserted above, resurrecting errors already accounted
+# for. See the module docstring of scripts/mypy_baseline.py.
+#
+# A count may FALL freely (that is an improvement and is reported as one). A
+# count may not RISE without --allow-increase.
+#
+# DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
+#
+# Frozen 2026-08-04 from mypy 2.3.0 over `mypy app/auth.py --strict`:
+# 20 errors, 3 files, 8 keys. Every number on this
+# line is computed from the rows below, so it cannot drift from them.
+app/auth.py	assignment	1
+app/auth.py	import-untyped	1
+app/auth.py	no-any-return	2
+app/auth.py	type-arg	5
+app/database.py	no-untyped-def	2
+app/database.py	type-arg	2
+app/models/models.py	no-untyped-def	1
+app/models/models.py	var-annotated	6
