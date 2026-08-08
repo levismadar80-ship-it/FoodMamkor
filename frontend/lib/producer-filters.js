@@ -128,6 +128,49 @@ export const PRODUCERS_CHIPS_DEFAULT = {
   open_for_orders_now: false,
 };
 
+// MEH-1862: which FilterSheet section each /producers axis belongs to.
+//
+// Kept as an explicit key→group map rather than a `group` field on
+// PRODUCERS_CHIPS_CONFIG, because that array spreads the SHARED CHIPS_CONFIG —
+// the same array the home grid renders (HomeProducersGrid.jsx:70) — and a field
+// added there travels to a surface this ticket does not touch. Same reasoning
+// MEH-1881 used to justify the PRODUCERS_* pair existing at all.
+//
+// It is NOT derived from TOGGLE_CHIPS at runtime: /producers importing a module
+// named for /map would invert the dependency for a handful of string constants.
+// The drift risk that buys is covered by a test instead — producerSheetChips
+// asserts every /producers key has a group AND that every key shared with
+// TOGGLE_CHIPS is filed under the SAME group on both surfaces, so the two
+// cannot disagree silently.
+const PRODUCERS_CHIP_GROUPS = {
+  kosher: "quality",
+  vegan: "diet",
+  vegetarian: "diet",
+  gluten_free: "diet",
+  lactose_free: "diet",
+  no_added_sugar: "diet",
+  low_carb: "diet",
+  has_delivery: "service",
+  verified: "service",
+  open_for_orders_now: "service",  // MEH-1881 — /producers-only
+};
+
+/**
+ * Attach FilterSheet group metadata to a /producers chip list (MEH-1862).
+ *
+ * Takes the ALREADY-GATED list, so the MEH-1881 open-now and MEH-1934 diet
+ * gates keep deciding what exists — moving the chips into a sheet changes where
+ * they render, never whether they are offered. A key with no group entry falls
+ * back to "service" so it stays reachable rather than vanishing; the test above
+ * is what stops that fallback from ever being the answer in practice.
+ */
+export function withChipGroups(chips = []) {
+  return chips.map((chip) => ({
+    ...chip,
+    group: PRODUCERS_CHIP_GROUPS[chip.key] ?? "service",
+  }));
+}
+
 export function buildChipParams(chips, overrides = {}) {
   const c = { ...chips, ...overrides };
   const p = {};
