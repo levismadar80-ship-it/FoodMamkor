@@ -87,6 +87,75 @@ answer is: **do not build it.**
   what its own description explicitly allows
 - violate DNA-LOCK
 
+### 1.5 · Mobile / manual QA is CC's — Sapir does not test on device
+
+**Added 2026-08-08 as a direct instruction from Sapir. This section fills a gap:
+the 08/08 ruling had a QA half that never reached this file** — the transcription
+above carried only the merge-authority half, so a session reading these orders had
+no way to learn that manual QA had moved.
+
+**Verified against Linear, not taken on trust** (re-checked after the MCP server
+reconnected). MEH-215's description carries the ruling verbatim under
+`## 🔒 Ruling ספיר 08/08/2026 — הסבה מ-QA ידני ל-CC`:
+
+> *"כל המשימות שכתובות QA ידני — אני לא עושה, רק קלוד קוד עושה QA."*
+
+**MOBILE/MANUAL QA = CC.** The DoD item **"נבדק בנייד"** is satisfied by **CC
+evidence**, not by Sapir picking up a handset. The evidence spec is already
+defined in **§3 item 3** — emulation at 390×844 + Pixel-class, `he-IL`, RTL
+asserted, full-page screenshots of changed surfaces in the PR body, no-horizontal-
+scroll **measured**, CLS via the #2676 harness where layout moves. **That spec is
+not restated here on purpose**: two owners for one fact is the smell
+`workflow.md` names, and §3 is the owner.
+
+**BOUNDARY — unchanged and load-bearing.** Emulation is **Chromium-only**: layout
+evidence, not engine evidence. A PR touching **storage / hydration / sticky /
+safe-area / date / touch** marks that class explicitly and **does NOT claim
+"נבדק בנייד"**. §3 already words this as *"do not write נבדק בנייד"*; read the two
+together as **the claim is earned for ordinary layout work and withheld for the
+excepted classes**, not as a blanket ban.
+
+**Cards converted from manual QA to CC suites** (titles on all three now read
+`הוסב מ-QA ידני, ruling 08/08`):
+
+| Card | Scope | State as measured 08/08 22:1x |
+|---|---|---|
+| **MEH-215** | registration journey — full Playwright suite | Backlog, `[CC, tests-only]` |
+| **MEH-217** | admin panel, 6 tabs | Backlog, `[CC, tests-only]` |
+| **MEH-999** | producer dogfood audit | In Progress, `cc-queue` |
+
+**For MEH-215 specifically:** a real inbox and a live Google consent screen are
+**not automatable in CI**. Use a **captured test inbox** and a **mocked OAuth
+callback**, and mark those cases **`covered-by-stub`**.
+
+> **Two things about that label, because they are easy to get wrong.**
+>
+> **It is a NEW convention with no existing pattern in this repo.**
+> `grep -rniE "covered-by-stub|mocked oauth|test inbox"` over every `*.md` returned
+> **nothing** on 08/08. Its exact form is still open — settle it before assertions
+> start carrying it, or it will drift into three spellings.
+>
+> **`covered-by-stub` is a label, not a coverage claim, and MEH-215's own ruling
+> block is stricter than it sounds.** That block says device-only classes are
+> *"מסומנות במפורש ב-spec **ולא נספרות כמכוסות**"* — marked, and **not counted as
+> covered**. The two reconcile only if the label means *"exercised against a stub,
+> and therefore not evidence about the real dependency."* A stubbed case counted
+> toward a coverage number would contradict the ruling it came from. This is the
+> same line §1.2 gate 2 draws: *"say so plainly and route around, **never to
+> simulate the step**"* — a stub reported as a stub is routing around; the same run
+> reported as real coverage is simulating it. **An unlabelled stub-backed assertion
+> is a defect even when it passes.**
+
+**Framework for the conversions:** MEH-1249's MANUAL_TESTING → suites pattern.
+`tests-only` is an auto-merge path.
+
+**Known inconsistency, reported and not edited (ORDERS §5 — a finding is not
+self-authorised work):** MEH-215 still carries its original
+`## 📋 Note: Manual QA checklist (not a Claude task)` and `## למה ידני ולא
+Playwright` sections **above** the ruling block that reverses them. The card is
+internally contradictory; the ruling block is the later text and governs. Cleaning
+the card is Sapir's.
+
 ---
 
 ## 2 · Ownership protocol
