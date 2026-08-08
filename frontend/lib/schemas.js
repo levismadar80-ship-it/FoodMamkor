@@ -101,11 +101,21 @@ export const ProducerListSchema = z.object({
   // MapProducerCard.jsx:44-46 reads to render the "delivers to your city"
   // pill. Permissive on every field (incl. city/delivery_day) so the
   // all-or-nothing parse never drops a producer with a partial row.
+  // MEH-1942: `delivery_fee` is declared here because `.loose()` at the detail
+  // call site (useProducerData.js:26) is TOP-LEVEL ONLY — it does not reach
+  // inside this array, so the nested z.object went on stripping the key while
+  // the parse looked permissive. DeliveryBlock.jsx:429 reads it per area and
+  // schemas.py:911 serializes it per area WITHOUT coalescing, on purpose;
+  // stripping it fired the `?? producerFee` fallback on every row, so a city
+  // with FREE delivery (fee === 0, a value and not an absence) displayed a
+  // charge. `.nullable()` matches `int | None` and keeps "not stated"
+  // distinguishable from 0 — collapsing them would invert the bug.
   delivery_areas: z.array(z.object({
     id: z.string().nullable().optional(),
     city: z.string().nullable().optional(),
     min_order: z.number().nullable().optional(),
     delivery_day: z.string().nullable().optional(),
+    delivery_fee: z.number().nullable().optional(),
   })).optional().default([]),
   // MEH-1412 (MEH-1388 chunk 3): physical presence points from chunk 2's
   // serializer (backend ProducerLocationOut) — {kind, label, city, lat, lng,
