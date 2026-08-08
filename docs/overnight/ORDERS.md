@@ -137,6 +137,28 @@ works"* (exec §9).
    found an entire missed code path (`admin.py`'s create route). On MEH-1862 it
    found a comparator that sorted untracked keys first — contradicting the
    maker's own comment two lines above it.
+
+   **The reviewer runs READ-ONLY, in its own git worktree — never in the
+   session's working tree.** Spawn it with `isolation: "worktree"`, or give it a
+   clone; then diff your tree against expectation immediately before every
+   `git commit` regardless.
+
+   **"Do not edit any files" does NOT cover `git stash` or `git checkout`, and a
+   reviewer will reach for both.** Measured on 08/08 (s3, PR #2695): the reviewer
+   was told not to edit files, obeyed that literally, and then — entirely
+   reasonably, to check that the new guard tests actually fail on the old code —
+   `stash`ed the component back to its pre-change state. The restore left the
+   file at `HEAD`. **The fix silently vanished from the working tree while the
+   tests and the harness that prove it stayed.** It was caught only because the
+   component was missing from a `git status` where it was expected; the commit
+   would otherwise have shipped the guards without the thing they guard.
+
+   Two properties make this worth a rule rather than a war story: the mutation is
+   **invisible in the reviewer's own report** (it reported a clean review, and the
+   review *was* clean), and the reviewer correctly read its own symptom as a
+   parallel-session incident under workflow rule 1 — it had no way to know the
+   other writer was its parent. A subagent sharing a working tree **is** a
+   concurrent writer; instructions do not change that, isolation does.
 3. **Evidence bundle.** For any UI change: emulation screenshots at **390×844**
    and **Pixel 5**, `he-IL`, RTL asserted, and **no horizontal scroll** measured
    (not eyeballed). Where layout moves, CLS via the #2676 harness.
@@ -178,10 +200,74 @@ model; a session that merges and moves on has not implemented it.
 
 | Signal | Status |
 |---|---|
-| `E2E gate` / `Playwright E2E` red | Not a required check. Red for the documented Cloudinary-401 reason ([MEH-1925](https://linear.app/mehamakor/issue/MEH-1925), Sapir's console). **Still read which specs failed** — if a failing spec covers the surface you changed, that is a different question and the environmental explanation does not cover it. |
+| `E2E gate` / `Playwright E2E` red | Not a required check, so it does not block a merge. **Do NOT attribute it to "the known Cloudinary thing" — that attribution is retired.** [MEH-1948](https://linear.app/mehamakor/issue/MEH-1948) owns the diagnosis; correlate the red against it and add your run to its evidence. **Still read which specs failed** — if a failing spec covers the surface you changed, the environmental explanation does not cover it and it is yours. |
 | `Adversarial review (calibration)` red | `continue-on-error: true`, absent from `ci-gate`'s `needs:`. Its *result* gates nothing — but **read its comment before merging**; since 02/08 it posts real findings. |
 | Vercel `Ignored` | Feature-branch previews are opt-in — no `[preview]` token in the commit message (MEH-1900). The configured behaviour, not a fault. |
 | Vercel rate-limited | `api-deployments-free-per-day`, an account quota. **No commit fixes it**; it resets daily. |
+
+**Why the Cloudinary attribution was retired — and why the first replacement for
+it was also wrong (measured 08/08, corrected same day).**
+
+This file used to say the E2E red *was* the documented Cloudinary-401 issue. The
+first attempt to retire that reasoned "the 401s appear in the green runs too, so
+a constant cannot explain a variable." **Both halves of that were wrong**, and the
+second one is instructive: the green runs never ran, so they have no server log
+and can say nothing at all about Cloudinary. The comparison was not weak evidence
+— it was *no* evidence, dressed as a refutation.
+
+**The replacement claim — "the suite is flaky, it alternates pass/fail" — lasted
+about twenty minutes and was also wrong.** Checking the paths-filter against all
+**30** `e2e.yml` staging runs on 07–08/08 gives a **30/30 perfect** split:
+
+| Run conclusion | e2e-relevant files in the push | Count |
+|---|---|---|
+| `success` | **0** — the Playwright job `skipped`, nothing ran | **16 / 16** |
+| `failure` | **≥1** — the job actually executed | **14 / 14** |
+
+There is no alternation. **The suite fails every single time it runs**, and
+"passes" only when the paths-filter (`frontend/**`, `public/**`, `package.json`,
+`package-lock.json`) skips it entirely. A skipped leg passes the aggregator, so
+the run reports `success`. Verified directly on `6a758f35`: `Playwright E2E
+(Vercel preview)` = `skipped`, run = `success`.
+
+So the honest statement is not "flaky" but **"a 100%-failing suite wearing a
+green mask"**, which is a considerably worse problem and a different fix.
+
+**And note where that leaves Cloudinary: not refuted — possibly promoted.** A live
+401 breaking every image is exactly the shape of a defect that fails a suite
+*consistently*, which is what the data now shows. The thing this file bans is the
+**posture**, not the hypothesis: "it's the known Cloudinary thing, carry on" waves
+through a suite failing 14 out of 14 executions. Whether it is the cause is open,
+and [MEH-1948](https://linear.app/mehamakor/issue/MEH-1948) owns deciding it —
+which needs the per-spec breakdown from the `playwright-report` artifact, not
+another inference from run conclusions.
+
+> **Do not read any of this as "Cloudinary is handled."**
+> [MEH-1925](https://linear.app/mehamakor/issue/MEH-1925) is a **live, Urgent,
+> unresolved production incident** — 401s on the catalog, the home hero and OG
+> images — and it is **gate 2** (access Sapir physically holds: the Cloudinary
+> console). Nothing in this section touches it. What changed is only that an
+> E2E red may no longer be *attributed* to it without evidence; the incident
+> itself is untouched, still open, and still hers. An earlier draft of this
+> amendment removed the file's only mention of MEH-1925 while re-scoping the
+> attribution, which would have left a session reading these orders with no way
+> to learn the incident exists. Caught in review.
+
+**Two lessons, and the second is the expensive one:**
+
+- A standing excuse is self-perpetuating. Every red read as "the known thing", so
+  nobody looked, so it stayed unknown. **An explanation that covers every
+  observation equally well is not an explanation.**
+- **The correction itself repeated the mistake it was correcting.** "Alternating
+  pass/fail" was inferred from run-level conclusions without asking what else
+  produces a green — the exact question `.claude/rules/testing.md` § *"A green
+  that has two possible causes is not a signal"* exists to force, and it was in
+  context the whole time. Before treating any run conclusion as a result, confirm
+  the job **ran**: `conclusion: success` on the aggregate is not `conclusion:
+  success` on the thing you care about.
+
+Full per-run matrix and the four-suspect correlation:
+[MEH-1948](https://linear.app/mehamakor/issue/MEH-1948).
 
 **A green that came from a skip is not a pass.** A skipped leg passes the
 aggregator, so both required gates can report `success` while nothing ran.
@@ -218,12 +304,44 @@ Lanes, eligibility gates B1–B4, and the `cc-queue` label protocol are defined 
 queue"*. **That file is authoritative; this one does not restate it**, because
 two owners for one fact is the smell workflow.md itself names (Smell #1).
 
-Two points that are easy to lose and are worth the duplication:
+Three points that are easy to lose and are worth the duplication:
 
 - **Label a card `cc-queue` before the first edit**, in either lane. That is the
   live audit trail — Sapir can pull a card back mid-run.
 - **Do not put `cc-queue` on a card you opened yourself.** Findings are not
   self-authorised work.
+- **Any queue list written into a prompt — including the one below in this file —
+  is a HINT, never state.** Live Linear plus `git`/the GitHub API are the only
+  queue state. Run the anti-stale gate on **every** item before building: a fresh
+  `get_issue`, plus a search for the identifier in merged commits and open PRs.
+
+  This is not hypothetical caution. **Both sweeps so far have arrived with a stale
+  seed list**, and the second was worse than the first:
+
+  | # | Sweep | What the prompt said | What was true |
+  |---|---|---|---|
+  | 1 | night 1 | 8 seed items | **4 of 8 already done** |
+  | 2 | s3, morning | "clear the immediate backlog first: #2677, #2683, #2665, #2680" | **all four already merged** — #2683 10:17Z, #2680 10:26:44Z, #2677 10:37Z, #2665 11:08:29Z. Recorded in `session-s3-4j6llv.md`, committed to staging **11:39:43Z** |
+  | 3 | s3, evening | *the same prompt, unchanged* | **rediscovered the identical fact from scratch ~6h later**, via fresh API calls, never having read the log from hit 2 |
+
+  **Hit 3 is the one that should sting**, and it is why this bullet is worded as a
+  procedure and not a warning. The answer was already committed to `staging` in a
+  file named for the same sweep; the session re-derived it anyway because it
+  checked the *repository* for staleness and never checked `docs/overnight/` for
+  a predecessor. **Read the most recent `session-*.md` before re-deriving
+  anything** — the anti-stale gate applies to your own prior sessions too, and
+  they are cheaper to read than the API is to query.
+
+  In the s3 case staging had already moved **four commits past the very commit
+  that landed this file**. A prompt is a photograph of a moving repository, and
+  the interval between writing it and reading it is unbounded. The failure mode
+  is not wasted effort — it is *redoing finished work on top of itself*, which
+  is how a duplicate merge happens.
+
+  **The tell is cheap:** if an instruction says "merge PR #N", the first action
+  is to fetch #N's state, not to open it. Same for "run the ×5 proof on MEH-XX" —
+  s3 skipped that one correctly because the card's own DoD already showed the
+  proof complete and checked off.
 
 ---
 
