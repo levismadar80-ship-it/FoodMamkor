@@ -134,19 +134,32 @@ count — assert equality with a serial collection"*).
 | 1 | `-n auto` | **2376** | 371 | 1 | 249s |
 | 2 | `-n auto` | **2384** | 371 | 1 | 222s |
 | 3 | `-n auto` | **2384** | 371 | 1 | 218s |
-| 4 | `-n 2` | *in flight at report time* | | | |
-| 5 | `-n 4` | *in flight at report time* | | | |
+| 4 | `-n 2` | **2384** | 371 | 1 | **392s** |
+| 5 | `-n 4` | **2384** | 371 | 1 | 221s |
+| — | `-m serial` | 1 passed, 2756 deselected | | | 59s |
 
-**Run 1 is 8 tests short of runs 2 and 3**, with identical skip counts, on the same commit.
-**I have not established the cause and am not guessing one.** Candidates I did not
-discriminate between: first-run database state, an order-dependent set of 8, or something
-`-n auto` resolves differently under load. All green — no failures — which is what makes it
-the dangerous shape rather than an obvious one.
+**Four of the five agree exactly. Run 1 alone is 8 short**, with identical skips and zero
+failures. **I have not established the cause and am not guessing one.**
 
-What this does *not* mean: the isolation works (a shared-DB `-n 4` run errored on ~82% of
-`test_api.py` before it landed). The parallel win is real — **~3.5–4 min against a ~12 min
-serial baseline.** What is unproven is *stability*, which is the one thing the ticket asked
-for.
+**But the shape of the disagreement is itself the useful finding, and it points away from
+parallelism.** The three runs that differ in *worker count* — `auto`, `2`, `4` — return
+byte-identical results (2384 / 371 / 1). The only run that differs is the **first one against a
+freshly created database**. So worker count does not move the number; run order does. That is
+the opposite of what parallel instability looks like, and `2756 deselected` in the serial pass
+reconciles exactly with 2384 + 371 + 1.
+
+**Why I still won't mark it Done:** the criterion says *identical*, one run wasn't, and
+"probably a first-run artifact" is a hypothesis I did not test. The cheap discriminator is one
+more `-n auto` run against a **fresh** database — if it also returns 2376, the first-run
+explanation is confirmed and the proof can be read as green with that caveat recorded.
+
+Two things this *does* establish:
+
+- **The isolation works.** A shared-DB `-n 4` run errored on ~82% of `test_api.py` before this
+  landed; every run above is clean.
+- **The 2-core number, which is what CI actually has.** `-n 2` = **392s ≈ 6.5 min**, against a
+  ~12 min serial baseline. That lands inside the DoD's revised **≤7 min** target and confirms
+  night-1's extrapolation rather than the original ≤5 min claim.
 
 > **Environmental note worth keeping:** the suite does not run from this sandbox without
 > `PYTHONPATH=<repo root>` — `tests/` has no `__init__.py` and there is no
