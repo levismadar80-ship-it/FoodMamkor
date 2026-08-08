@@ -532,12 +532,20 @@ function attributionSelfTest() {
   //   - the PER-SHIFT values are reconstructed to sum to the recorded totals
   //     (9 x 0.2888 = 2.5992 against a recorded 2.5989 — the run published the
   //     sums, never the individual entries; the 0.0003 is that rounding).
-  //   - `dh` was never measured at all: recording it is precisely what this
-  //     change adds, so no prior run could carry it. Here it encodes the
-  //     HYPOTHESIS under test — the footer is displaced without changing size,
-  //     the zero-displacement DIV changes size. If the real run contradicts
-  //     that, the run is the answer and this fixture gets updated. It is a test
-  //     of the classifier, never evidence about the page.
+  //   - `dh` is SYNTHETIC, and half of it is now known to be counterfactual.
+  //     It was written as the hypothesis under test — footer displaced without
+  //     resizing, zero-displacement DIV resizing — with the note that the real
+  //     run would settle it. **Run 31221768874 settled it, and the footer half
+  //     was wrong**: the footer's own box grows on both viewports (desktop
+  //     42->576, mobile 0->546, where it is the ONLY grower). The DIV half held
+  //     — `ProducerDetail.jsx:107` grew 120->818 with dy=0, the largest on
+  //     desktop.
+  //
+  //     The `dh: 0` on the footer below is KEPT, deliberately, and its meaning
+  //     has changed: it is no longer a claim about the page, only a synthetic
+  //     non-grower proving `rankGrowers` excludes something that scores high on
+  //     CLS. That is still the assertion worth having. Do not read this fixture
+  //     as a description of producer-detail — the measurement is on the ticket.
   //
   // What it discriminates against: ranking growers by CLS, or passing the
   // ranking straight through. Both put FOOTER first — it outscores the DIV
