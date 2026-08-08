@@ -83,10 +83,20 @@ valid revision"*.
 | `/api/events/upcoming?limit=1` | **200** |
 | `/api/producers/by-slug/ruach-hasadeh` | **404** (`בית עסק לא נמצא`) — 404 תקין, לא 500 |
 
-**והשלכה על הקוד:** `startup.py:174` כותב ללוג
+**והשלכה על הקוד:** `startup.py:174` כתב ללוג
 *"background DB init failed — /producers et al will 500 until fixed"*.
 **המדידה מפריכה את המשפט הזה במצב הנוכחי** — `/producers` מחזיר 200. הודעת
 השגיאה טוענת יותר מדי, וקורא שיאמין לה יחפש תקלה שאינה קיימת.
+
+> **✅ תוקן 05/08 (MEH-1905 §6.3).** השורה נכתבה מחדש ואומרת עכשיו מה שידוע ולא
+> מה שנשמע מדאיג:
+> *"background DB init failed — create_all/seed did not complete. /health/readiness
+> will report 503; endpoints may still serve normally if the schema was already
+> present (MEH-1905)."*
+>
+> הציטוט למעלה נשמר כפי שהוא — הוא הרשומה של מה שנמדד, ומחיקתו הייתה מוחקת את
+> הסיבה שבגללה השורה השתנתה. **מספר השורה זז** (הנימוק המלא נכנס כהערה מעל
+> ה-`log.error`), אז חפשו את המחרוזת ולא את `:174`.
 
 ---
 
