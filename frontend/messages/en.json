@@ -4722,6 +4722,8 @@
         "diet_vegan": "Vegan",
         "diet_vegetarian": "Vegetarian",
         "diet_lactose_free": "Lactose-free",
+        "diet_no_added_sugar": "No added sugar",
+        "diet_low_carb": "Low carb",
         "diet_helper": "Tagging a product lists your business under the matching filter on the search and map pages.",
         "image_label": "Product image",
         "image_alt": "Photo",
