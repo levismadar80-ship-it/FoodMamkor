@@ -3,7 +3,8 @@
 > As-of: 2026-08-08T21:30Z. Every claim below is measured at that time; re-derive
 > before acting on any of it.
 
-**0 merged, 0 parked, 2 hard blockers hit, 1 evidence deliverable produced.**
+**0 merged, 4 parked (one credential gate), 1 docs PR, 1 evidence deliverable —
+and 3 of my own claims retracted after adversarial review.**
 
 The headline: **the session's assigned first task was already done, its top queue
 item was already claimed by a live parallel session, and Linear died mid-run** —
@@ -77,10 +78,35 @@ Re-auth is via the claude.ai connector settings.
 
 ---
 
-## 4 · A documented environment claim is WRONG — backend tests DO run here
+## 4 · Backend tests run here — RECONFIRMED, not discovered
 
-`MEH-1904` records: *"`pytest` לא רץ (לא מותקן, `pip install` חסום)"*. That has
-been inherited as "CC cannot run pytest". **Measured today: false.**
+> ### ⚠️ DOWNGRADED after adversarial review. This section originally read
+> ### *"A documented environment claim is WRONG"*. That framing was overstated.
+>
+> `HANDOFF.md:4544`, dated **2026-07-18 — three weeks before this session** —
+> already records the exact distinction: *"`uv run` works in-sandbox (local pytest
+> now possible); `pip install` and `.env*` reads remain blocked."* The same entry
+> block reports a full local backend run (*"full `test_api.py` 218/218 verified
+> locally (`uv run` + local Postgres)"*).
+>
+> So this is a **reconfirmation of already-recorded knowledge**, not a correction of
+> a live wrong belief, and the claim I drafted — *"sessions have been recording
+> pytest as not run needlessly"* — does not survive HANDOFF's own history.
+>
+> **The irony is the point.** ORDERS §5 exists because sweeps keep re-deriving facts
+> already committed to this repository, and its worked example is a session that
+> checked the *repo* for staleness but never read `docs/overnight/`. I checked
+> neither: I read one Linear card, found a claim I could falsify, and reached for
+> "the docs are wrong" without grepping HANDOFF for the answer. **The rule I was
+> best placed to apply is the one I skipped.**
+>
+> What is still worth carrying: the measurement below is current, and the
+> `pip`≠`uv` distinction is the reason the block is narrower than it sounds.
+
+The narrower true statement: **`MEH-1904`'s PR-gap note** — *"`pytest` לא רץ (לא
+מותקן, `pip install` חסום)"* — describes **that session's own run**, not a durable
+repository-wide limitation. Read as the latter it is misleading; read as the former
+it is accurate. Measured today, from this sandbox:
 
 ```
 $ uv sync --frozen          # from backend/
@@ -108,9 +134,36 @@ and why*; that concession is no longer required.
 
 PR #2661 applies the pytest-xdist split. State as measured:
 
-- **All 32 checks green**, including `CI gate (required)`, `Deploy gate (required)`,
-  `Backend tests (pytest)` and `Repo guards` — completed 15:39–15:46Z.
-- **Idle 5.6h** at the time of reading, so adoptable under ORDERS §2.
+- **Both required gates green** — `CI gate (required)` and `Deploy gate (required)`,
+  plus `Backend tests (pytest)` and `Repo guards`, completed 15:39–15:46Z.
+- **One check is RED**, and it is not one of the required two:
+  `Adversarial review (calibration)`, job `93121553004`, `conclusion: failure`.
+  It is `continue-on-error: true` and absent from `ci-gate`'s `needs:`, so it blocks
+  nothing — but per workflow.md rule 5a step 6 the absence has to be *said*: **no
+  `claude[bot]` comment was posted on that PR**, which is the MEH-1844 intermittent
+  no-op, not a review that found nothing.
+- **Idle ~5h44m** at the time of reading (last check 15:46:05Z), so adoptable under
+  ORDERS §2.
+
+> ### ❌ I claimed "all 32 checks green". That was FALSE, and the way it went wrong
+> ### is the more useful half.
+>
+> The first `get_check_runs` call was made **without `perPage`**, so it returned the
+> default **30 of 32**. The failing job was entry **31**. Every check I could see was
+> green, so I wrote that every check was green — reading the end of a truncated
+> window as the end of the list.
+>
+> `CLAUDE.md` names this exact failure: *"Any paginated listing is evidence of
+> PRESENCE, never of ABSENCE … re-fetch the FULL set in ONE window — raise
+> `perPage`."* It is in the always-loaded rules, it was in context the whole time,
+> and it describes what happened with no adaptation needed. **Two prior incidents
+> (MEH-293, MEH-1797) are recorded under it; this is the third.**
+>
+> Caught by the different-model adversarial review, which pulled the list itself
+> rather than trusting the prose — and then by re-fetching with `perPage: 100` to
+> confirm rather than taking the reviewer's word for it. **The maker≠checker rule
+> earned its cost on this PR**; a same-model pass would have had the same blind spot
+> because it would have inherited the same truncated evidence.
 - It edits `.github/workflows/` (CC-deny, MEH-671) — CC can merge it but **cannot
   repair it**, which is why the previous session handed it back rather than merging.
 
@@ -201,10 +254,12 @@ run — which closes gaps 1 and 2 at once. That is the only version worth gating
 
 ## 7 · The xdist stability proof
 
-**As of this commit: 3 of 5 runs complete, all green. Runs 4 and 5 were still
-executing when this was written** — stated rather than rounded up, because a
-partial proof described as a finished one is the exact staleness class this repo
-keeps re-learning. The final two are appended in a follow-up commit.
+**COMPLETE — 5 of 5 runs, 10 of 10 passes, every one `exit=0`.**
+
+_(The first commit of this file recorded "3 of 5 complete, runs 4 and 5 still
+executing". That was accurate when written and is superseded here. It is mentioned
+rather than quietly overwritten because "I stated the partial state" is the
+behaviour worth keeping, not an embarrassment to tidy away.)_
 
 Five consecutive runs of the **exact two-pass split** the CI job applies, with
 `--timeout=60` matching the job:
@@ -219,12 +274,12 @@ pass 2:  pytest tests/ -m serial
 | 1 | `exit=0` — **2417 passed, 371 skipped, 1 xfailed** — 153.83s | `exit=0` — **1 passed, 2789 deselected** — 61.24s |
 | 2 | `exit=0` — 2417 / 371 / 1 — 151.57s | `exit=0` — 1 / 2789 — 61.68s |
 | 3 | `exit=0` — 2417 / 371 / 1 — 149.92s | `exit=0` — 1 / 2789 — 62.36s |
-| 4 | _in flight at commit time_ | _in flight_ |
-| 5 | _in flight at commit time_ | _in flight_ |
+| 4 | `exit=0` — 2417 / 371 / 1 — 158.49s | `exit=0` — 1 / 2789 — 61.59s |
+| 5 | `exit=0` — 2417 / 371 / 1 — 151.63s | `exit=0` — 1 / 2789 — 61.08s |
 
-**The counts are byte-identical across all three runs**, and the wall-clock spread
-is 4 seconds on a ~152s pass. `2417 + 371 + 1 = 2789` parallel, plus the 1 serial
-test = the 2790 collected. The arithmetic closes.
+**The counts are byte-identical across all five runs**, and the wall-clock spread is
+8.6s on a ~153s pass (149.92–158.49). `2417 + 371 + 1 = 2789` parallel, plus the 1
+serial test = the 2790 collected. The arithmetic closes on every run.
 
 **No test passed on retry.** `pytest-rerunfailures` is in the dev dependencies, so
 "passed" could have meant "passed on the second attempt" — a flake wearing a green
@@ -235,8 +290,19 @@ was passed (matching the job, which does not pass one either).
 ### What this does NOT establish
 
 - **4 cores here, 2 on the runner.** `-n auto` resolved to **4 workers**; CI gets 2.
-  More workers is the *more* hostile setting for a cross-worker collision, so this
-  is not a weaker test of isolation — but it is a different one.
+  An earlier draft argued more workers is strictly *more* hostile, so a 4-worker
+  green covers the 2-worker case. **That does not hold, and the adversarial review
+  was right to attack it:** xdist's load-balanced scheduling means worker count
+  changes *which tests are ever concurrent with which others*. Two tests that
+  collide only when they land on the same worker — likelier in a smaller pool —
+  could sit on separate workers at n=4 and never touch. n=4 is **not a proven
+  superset** of n=2's collision surface, only a different sample of it.
+- **Five runs, one machine.** Same host, same warm Postgres, same filesystem, same
+  scheduler. Repetition in a fixed environment demonstrates *within-environment
+  determinism*; it cannot surface a race that depends on the runner's disk I/O
+  timing, connection-pool warm-up, or CPU contention. By this repo's own "green with
+  two possible causes" standard, **five identical greens here and a green on CI are
+  different claims**, and only the second one is about CI.
 - **Wall-clock does not transfer.** ~2m30s per parallel pass on 4 cores says nothing
   about the 2-core runner. The ~7-minute estimate already on the PR stands until a
   real run measures it.
@@ -266,6 +332,31 @@ no PR opened, no merge performed. The ledger is empty by fact, not by omission.
 
 See PARKED.md — `MEH-999` / `MEH-215` / `MEH-217` / `MEH-1897`, all on the Linear
 credential gate.
+
+## 8 · Different-model adversarial review — findings and disposition
+
+Run per ORDERS §3.2 in an **isolated worktree** (`isolation: "worktree"`), on a
+different model from the one that wrote this. It was told explicitly not to
+`stash`/`checkout`/`reset` anywhere — the s3 incident — and did not.
+
+**It earned its cost. Three MUST FIX, two accepted outright, one downgraded.**
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | The PR #2661 comment was drafted in **completed past tense** ("no flake appeared in five runs") while only 3 of 5 runs existed, with an unfilled table placeholder | **ACCEPTED.** The comment was never posted; it is now posted only with all 5 runs complete and the table populated. |
+| 2 | *"All 32 checks green"* is **false** — `Adversarial review (calibration)` is `failure` | **ACCEPTED, verified independently** with `perPage: 100`. See the box in §5. |
+| 3 | §4's *"a documented claim is WRONG"* overstates novelty — `HANDOFF.md:4544` recorded the `uv`/`pip` distinction on 18/07 | **ACCEPTED, verified** by reading the line. §4 downgraded to a reconfirmation. |
+| 4 | The "more workers is strictly more hostile" claim is asserted, not defended | **ACCEPTED** — rewritten above as "a different sample, not a proven superset". |
+| 5 | Five runs on one machine is a fourth limit, distinct from worker count | **ACCEPTED** — added above. |
+| 6 | Verified §5's `serial`-marker reasoning independently and found **no defect**: no `[tool.pytest]` section, no `addopts`, no `strict-markers`, no warnings-as-errors anywhere in `backend/`, so an unregistered marker yields only a silent `PytestUnknownMarkWarning` | **No action** — corroboration, and it closes the one loose end in that argument. |
+| 9 | "Idle 5.6h" should be ~5h44m | **ACCEPTED** — corrected in §5. |
+
+**Findings 2 and 3 are the ones that matter**, and they share a shape: both are
+cases where I had the correct rule loaded and did not apply it. #2 is
+`CLAUDE.md`'s pagination rule; #3 is ORDERS §5's read-the-repo-before-re-deriving
+rule. Neither was a knowledge gap. **A checker that shares the maker's context
+shares the maker's blind spots** — which is the argument for maker≠checker stated
+better by evidence than by assertion.
 
 ## A rule-25 near-miss, caught — worth more than the PR it nearly spoiled
 
