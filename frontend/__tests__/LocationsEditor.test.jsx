@@ -38,7 +38,16 @@ const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi
 vi.mock("@/lib/toast", () => ({ showToast: toastMock }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key) => (scope ? `${scope}.${key}` : key),
+  // MEH-1940: the mock now echoes interpolation values, because the same-town
+  // message is chosen by param SHAPE (labelled / unlabelled / 2+) and a mock
+  // that dropped the values would render all three branches identically —
+  // a test that cannot tell apart the thing it exists to check.
+  useTranslations: (scope) => (key, values) => {
+    const base = scope ? `${scope}.${key}` : key;
+    if (!values) return base;
+    const parts = Object.entries(values).map(([k, v]) => `${k}=${v}`);
+    return `${base}(${parts.join(",")})`;
+  },
 }));
 
 // MEH-1936 — AddressSearch is stubbed so a test can drive BOTH paths
@@ -98,7 +107,12 @@ beforeEach(() => {
   apiMock.state.locations = [];
   apiMock.get.mockClear();
   apiMock.post.mockClear();
+  // MEH-1940: `delete` and `toast.error` were previously never reset, so the
+  // new "no bottom toast" assertions would have depended on execution order —
+  // green only because nothing earlier in the file happened to error.
+  apiMock.delete.mockClear();
   toastMock.info.mockClear();
+  toastMock.error.mockClear();
 });
 
 // CitySearch takes no testid prop (and is REUSE-only for this ticket), but it
@@ -139,7 +153,11 @@ describe("LocationsEditor (MEH-1421)", () => {
     fireEvent.change(screen.getByTestId("location-lat"), { target: { value: "200" } });
     fireEvent.click(screen.getByTestId("location-save"));
 
-    await waitFor(() => expect(toastMock.info).toHaveBeenCalled());
+    // MEH-1940: the Rule-19 message moved out of the bottom toast and into the
+    // form, same as the server-side save error. Asserting the destination, not
+    // merely that "something was reported".
+    await waitFor(() => screen.getByTestId("location-form-error"));
+    expect(toastMock.info).not.toHaveBeenCalled();
     expect(apiMock.post).not.toHaveBeenCalled();
   });
 
@@ -232,6 +250,9 @@ describe("geocoding (MEH-1936)", () => {
       ),
     );
     expect(toastMock.info).not.toHaveBeenCalled();
+    // MEH-1940: and nothing was reported in the form either — the old
+    // toast-only assertion could not have caught an inline error appearing.
+    expect(screen.queryByTestId("location-form-error")).toBeNull();
   });
 
   it("typing over a picked address retires the coordinates it belonged to", async () => {
@@ -363,5 +384,185 @@ describe("city is never clobbered by the geocoder (MEH-1936)", () => {
         expect.objectContaining({ city: "תל אביב" }),
       ),
     );
+  });
+});
+
+// MEH-1940 — the same-city 422 used to arrive as a bottom toast, in the strip
+// already occupied by the cookie banner, the chat widget and the BottomNav:
+// dimmed at 1440, clipped at 375, and gone on a timer while the owner was
+// still looking at the field that caused it.
+//
+// These assert the DESTINATION and the PERSISTENCE, which is what changed. A
+// test that only checked "the message text is somewhere on the page" would
+// pass on both the toast and the inline version and could not tell them
+// apart — which of the two it is IS the ticket.
+describe("save errors render in the form, not in the bottom strip (MEH-1940)", () => {
+  const SAME_CITY_422 = {
+    response: {
+      status: 422,
+      data: {
+        detail:
+          "כבר יש לך מיקום ביישוב זכרון יעקב. תני למיקום החדש תווית שתבדיל ביניהם — למשל 'הדוכן בשוק' או 'החנות'.",
+      },
+    },
+  };
+
+  async function submitAndFail(rejection = SAME_CITY_422) {
+    await openAddForm();
+    fireEvent.change(cityInput(), { target: { value: "זכרון יעקב" } });
+    apiMock.post.mockRejectedValueOnce(rejection);
+    fireEvent.click(screen.getByTestId("location-save"));
+    return waitFor(() => screen.getByTestId("location-form-error"));
+  }
+
+  it("puts the server's message inside the form", async () => {
+    const box = await submitAndFail();
+    expect(box.textContent).toContain("כבר יש לך מיקום ביישוב זכרון יעקב");
+    // Inside the form element — not a sibling floating at the page bottom.
+    expect(screen.getByTestId("location-form").contains(box)).toBe(true);
+  });
+
+  it("does NOT also fire a bottom toast", async () => {
+    await submitAndFail();
+    expect(toastMock.error).not.toHaveBeenCalled();
+    expect(toastMock.info).not.toHaveBeenCalled();
+  });
+
+  it("is announced without stealing focus", async () => {
+    const box = await submitAndFail();
+    expect(box.getAttribute("role")).toBe("alert");
+  });
+
+  it("does not disappear on its own", async () => {
+    // The toast auto-dismissed; this must not. Real elapsed time, because a
+    // dismissal timer is exactly what is being ruled out — faking timers here
+    // would hide the thing under test.
+    const box = await submitAndFail();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(screen.getByTestId("location-form-error")).toBe(box);
+  });
+
+  it("clears once she starts correcting it", async () => {
+    await submitAndFail();
+    fireEvent.change(screen.getByLabelText("settings.locations.form.label_label"), {
+      target: { value: "הדוכן בשוק" },
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId("location-form-error")).toBeNull(),
+    );
+  });
+
+  it("falls back to the generic string when the server sends no detail", async () => {
+    const box = await submitAndFail({ response: { status: 500, data: {} } });
+    expect(box.textContent).toBe("settings.locations.errors.save_failed");
+  });
+
+  it("row actions keep the toast — there is no open form to put them in", async () => {
+    apiMock.state.locations = [
+      { id: "a1", kind: "branch", city: "חדרה", label: null, is_primary: true },
+    ];
+    render(<LocationsEditor />);
+    await waitFor(() => screen.getByLabelText("settings.locations.delete_aria"));
+    apiMock.delete.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    fireEvent.click(screen.getByLabelText("settings.locations.delete_aria"));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
+    expect(screen.queryByTestId("location-form-error")).toBeNull();
+  });
+});
+
+// MEH-1940 (copy rework) — the message is now rendered from messages/*.json,
+// keyed on the backend's `code`, and describes the location she ALREADY has.
+//
+// The old copy invented label examples ('הדוכן בשוק', 'החנות'). Those are KIND
+// names, in a form that already has a kind selector, so an owner copying one
+// while kind=סניף writes contradictory data — and the label field's own
+// placeholder already carried an example, so the same hint appeared twice.
+//
+// These assert the BRANCH SELECTION by param shape. A test that only checked
+// "some message appeared" would pass on all three branches and on the old
+// Hebrew string too.
+describe("same-town error renders from code + params (MEH-1940)", () => {
+  const CODE = "location_same_city_needs_label";
+
+  const reject = (params) => ({
+    response: {
+      status: 422,
+      data: {
+        detail: {
+          code: CODE,
+          message: "כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה",
+          params,
+        },
+      },
+    },
+  });
+
+  async function submitAndFail(rejection) {
+    await openAddForm();
+    fireEvent.change(cityInput(), { target: { value: "זכרון יעקב" } });
+    apiMock.post.mockRejectedValueOnce(rejection);
+    fireEvent.click(screen.getByTestId("location-save"));
+    return waitFor(() => screen.getByTestId("location-form-error"));
+  }
+
+  it("names the existing location when it HAS a label", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: "החנות", existing_count: 1 }),
+    );
+    expect(box.textContent).toContain("errors.same_city.labelled(label=החנות,city=זכרון יעקב)");
+    expect(box.textContent).not.toContain("same_city.unlabelled");
+    expect(box.textContent).not.toContain("same_city.many");
+  });
+
+  it("names the KIND when the existing location has no label", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: null, existing_count: 1 }),
+    );
+    // Kind is translated in the frontend — the backend never sends Hebrew.
+    expect(box.textContent).toContain(
+      "errors.same_city.unlabelled(kind=settings.locations.kind.branch,city=זכרון יעקב)",
+    );
+    expect(box.textContent).not.toContain("same_city.labelled");
+  });
+
+  it("counts them when there is more than one", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: "החנות", existing_count: 2 }),
+    );
+    // The count branch wins even though a label is present.
+    expect(box.textContent).toContain("errors.same_city.many(count=2,city=זכרון יעקב)");
+    expect(box.textContent).not.toContain("same_city.labelled");
+  });
+
+  it("always states what to do, including the three-letter floor", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "pickup", existing_label: null, existing_count: 1 }),
+    );
+    expect(box.textContent).toContain("errors.same_city.action");
+  });
+
+  it("carries NO invented label examples", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: null, existing_count: 1 }),
+    );
+    for (const invented of ["הדוכן בשוק", "החנות"]) {
+      expect(box.textContent).not.toContain(invented);
+    }
+  });
+
+  it("degrades to the town-free sentence rather than throwing on an unknown kind", async () => {
+    const box = await submitAndFail(
+      reject({ city: null, existing_kind: "teleporter", existing_label: null, existing_count: 1 }),
+    );
+    expect(box.textContent).toContain("errors.same_city.generic");
+  });
+
+  it("falls back to the bare message string for a pre-code backend", async () => {
+    // Transition safety: the same 422 in its old string shape must still render.
+    const box = await submitAndFail({
+      response: { status: 422, data: { detail: "כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה" } },
+    });
+    expect(box.textContent).toBe("כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה");
   });
 });

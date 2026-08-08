@@ -1409,6 +1409,47 @@ def _get_owned_location(
     return loc
 
 
+SAME_CITY_NEEDS_LABEL_CODE = "location_same_city_needs_label"
+
+# Transition-safety string ONLY. Any client that still reads a bare-string
+# `detail` falls back to this; the rendered copy comes from messages/he.json
+# keyed on the code above. Deliberately generic — it carries no label examples,
+# because inventing one ("הדוכן בשוק") hands the owner a KIND name for a form
+# that already has a kind selector, and duplicates the label field's own
+# placeholder two centimetres away.
+SAME_CITY_NEEDS_LABEL_MESSAGE = "כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה"
+
+
+def _same_city_label_error_detail(
+    city: str | None,
+    existing_kind: str | None = None,
+    existing_label: str | None = None,
+    existing_count: int = 1,
+) -> dict[str, object]:
+    # MEH-1940: `{code, message, params}` rather than a Hebrew sentence.
+    # REUSES: backend/app/auth.py:374-382 (_EMAIL_UNVERIFIED_DETAIL, MEH-1164) —
+    # same shape, same reason: the client matches on a stable, locale-independent
+    # `code` and renders its own copy, and `message` stays for transition safety.
+    #
+    # `params` describes the location she ALREADY has, so the frontend can name
+    # it instead of inventing an example. NO Hebrew kind name is produced here:
+    # `existing_kind` is the raw enum ("branch" / "pickup" / "market_stand") and
+    # the translation lives in settings.locations.kind.* in he.json + en.json.
+    return {
+        "code": SAME_CITY_NEEDS_LABEL_CODE,
+        "message": SAME_CITY_NEEDS_LABEL_MESSAGE,
+        "params": {
+            # The city the OWNER typed, not the stored row's: the compare is
+            # case-insensitive, so the stored value can differ in case/spacing
+            # from what she is looking at in the form.
+            "city": city.strip() if city and city.strip() else None,
+            "existing_kind": existing_kind,
+            "existing_label": existing_label,
+            "existing_count": existing_count,
+        },
+    }
+
+
 def _reject_same_city_without_label(
     db: Session,
     producer_id: UUID,
@@ -1426,18 +1467,39 @@ def _reject_same_city_without_label(
         return
     target = city.strip().lower()
     rows = (
-        db.query(ProducerLocation.id, ProducerLocation.city)
+        db.query(
+            ProducerLocation.id,
+            ProducerLocation.city,
+            ProducerLocation.kind,
+            ProducerLocation.label,
+        )
         .filter(ProducerLocation.producer_id == producer_id)
         .all()
     )
-    for row in rows:
-        if exclude_id is not None and row.id == exclude_id:
-            continue
-        if row.city and row.city.strip().lower() == target:
-            raise HTTPException(
-                status_code=422,
-                detail="כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה",
-            )
+    # MEH-1940: collect ALL colliding rows rather than raising on the first.
+    # The message describes what she already has, and "2 מיקומים" versus naming
+    # a single one is a different sentence — which needs the count, so the loop
+    # can no longer short-circuit. The invariant is unchanged: a non-empty list
+    # blocks, exactly as the first match did.
+    clashes = [
+        row
+        for row in rows
+        if (exclude_id is None or row.id != exclude_id)
+        and row.city
+        and row.city.strip().lower() == target
+    ]
+    if not clashes:
+        return
+    first = clashes[0]
+    raise HTTPException(
+        status_code=422,
+        detail=_same_city_label_error_detail(
+            city,
+            existing_kind=first.kind,
+            existing_label=first.label,
+            existing_count=len(clashes),
+        ),
+    )
 
 
 def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> None:

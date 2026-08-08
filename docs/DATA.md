@@ -566,7 +566,15 @@ GET    /producers/me/locations                    producer  — MEH-1421 (MEH-13
                                                               ordered primary-first then created_at
 POST   /producers/me/locations                    producer  — create a location (60/hr). ProducerLocationCreate.
                                                               First location forced is_primary; is_primary=true clears others.
-                                                              same-city label rule → 422 "כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה"
+                                                              same-city label rule → 422 with a STRUCTURED detail (MEH-1940,
+                                                              same shape as auth.py's email_unverified / MEH-1164):
+                                                                {"code": "location_same_city_needs_label",
+                                                                 "message": <Hebrew, transition-safety only>,
+                                                                 "params": {"city", "existing_kind", "existing_label",
+                                                                            "existing_count"}}
+                                                              The rendered copy lives in messages/he.json + en.json under
+                                                              settings.locations.errors.same_city and is keyed on `code`;
+                                                              `existing_kind` is the RAW enum, translated client-side.
 PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
                                                               (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
                                                               same-city check only when city/label in the patch.
