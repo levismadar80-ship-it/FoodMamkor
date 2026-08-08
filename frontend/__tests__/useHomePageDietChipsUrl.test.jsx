@@ -5,7 +5,7 @@ import api from "@/lib/api";
 // MEH-1774: read-only import — the round-trip guard below asserts against the
 // SAME array ProducersClient.initChipsFromParams iterates, which is what makes
 // `?<chip.key>=1` correct for every key by construction rather than by luck.
-import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { CHIPS_CONFIG, GATED_DIET_KEYS } from "@/lib/producer-filters";
 import { trackEvent } from "@/lib/analytics";
 
 // MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders the CHIPS_CONFIG
@@ -74,7 +74,23 @@ describe("homepage attribute chips → /producers deep-link (MEH-1774)", () => {
       // with no error. Assert the VALUE, parsed the way the listing parses it.
       expect(new URL(href, "http://x").searchParams.get(chip.key)).toBe("1");
     }
-    expect(CHIPS_CONFIG).toHaveLength(7);
+    // MEH-1934: 7 → 9 (no_added_sugar + low_carb). This number is NOT here to
+    // be bumped — it is the leak detector, and it caught exactly this change
+    // putting two chips onto the home row, because CHIPS_CONFIG is shared with
+    // /producers. So the count is now asserted TOGETHER with the gate: every
+    // shared chip must be either a pre-MEH-1934 one or declared in
+    // GATED_DIET_KEYS. Bumping the number alone fails the second half.
+    expect(CHIPS_CONFIG).toHaveLength(9);
+    const UNGATED = [
+      "kosher", "vegan", "vegetarian", "gluten_free",
+      "lactose_free", "has_delivery", "verified",
+    ];
+    for (const chip of CHIPS_CONFIG) {
+      expect(
+        UNGATED.includes(chip.key) || GATED_DIET_KEYS.includes(chip.key),
+        `${chip.key} is on the shared home row but is neither a pre-MEH-1934 chip nor gated`,
+      ).toBe(true);
+    }
   });
 
   it("has_delivery deep-links as ?has_delivery=1, NOT home's legacy ?delivery=1", () => {
@@ -196,7 +212,7 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
     expect(href).toBe("/producers?has_delivery=1");
   });
 
-  it("context rides along for ALL 7 chip keys, not just משלוח", () => {
+  it("context rides along for ALL 9 chip keys, not just משלוח", () => {
     withContext("חיפה", "שלישי");
     const { result } = renderHook(() => useHomePage());
 
@@ -208,6 +224,6 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
       expect(params.get("city")).toBe("חיפה");
       expect(params.get("delivery_day")).toBe("שלישי");
     }
-    expect(CHIPS_CONFIG).toHaveLength(7);
+    expect(CHIPS_CONFIG).toHaveLength(9);  // MEH-1934
   });
 });

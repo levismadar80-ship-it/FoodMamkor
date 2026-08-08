@@ -25,6 +25,37 @@
  *
  *   TEST_URL=https://staging.mehamakor.online node e2e/qa-meh1858-fingerprint-proof.mjs
  *   TEST_URL=http://localhost:3000            node e2e/qa-meh1858-fingerprint-proof.mjs
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * ⚠️  THIS PROBE CANNOT ANSWER ENGINE-DIVERGENCE QUESTIONS (MEH-1788, 06/08)
+ *
+ * It has no browser and no engine parameter. `request.newContext()` is
+ * Playwright's STANDALONE APIRequestContext: its cookie jar is implemented in
+ * Node, not in WebKit/Chromium/Firefox. There is no way to "run this under
+ * webkit" — passing an engine is not an option the API offers.
+ *
+ * So it cannot tell you whether a given engine stores __Secure-Fgp, which is
+ * exactly the rfc6265bis#2605 question the paragraph above raises. MEH-1788
+ * previously claimed it could; that was wrong and is struck out on the ticket.
+ *
+ * Measured on 06/08, same hour, same credentials:
+ *
+ *   this probe,    localhost  →  A 200 / B 401   PASS   (jar is Node's)
+ *   real WebKit,   localhost  →  cookie NOT stored, every authed nav → /login
+ *   real Chromium, localhost  →  cookie stored, authed nav fine
+ *
+ * The probe returns green on precisely the cell that is broken — a green with
+ * two possible causes (.claude/rules/testing.md).
+ *
+ * WHAT THIS PROBE IS STILL GOOD FOR: the storageState pattern itself — that a
+ * token needs its fingerprint cookie travelling with it, and that its absence
+ * is detected (control B). That claim is engine-independent and still holds.
+ *
+ * TO ASK AN ENGINE QUESTION, drive a real browser context instead, so the
+ * engine's own network stack decides whether to accept the Set-Cookie:
+ * `<engine>.launch()` → `browser.newContext()` → `page.evaluate(fetch(...))`
+ * → read `context.cookies()`. Per-engine × per-target, with control B kept.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 import { request } from "@playwright/test";
 

@@ -169,8 +169,25 @@ async def _init_db_background(app: FastAPI) -> None:
         # logging call in the same except block can be dropped by Sentry event
         # deduplication (getsentry/sentry-python#1468).
         capture_background_exception(exc, task="db_init")
+        # MEH-1905 §6.3: this line used to read "/producers et al will 500 until
+        # fixed". That was MEASURED FALSE on production 04/08 — with
+        # db_init_status already "failed", /producers, /stats, /categories and
+        # /events/upcoming all returned 200 (docs/research/health-endpoint-db-init-phase0.md).
+        #
+        # It is false because of what _run_db_init_sync actually does: create_all
+        # with checkfirst (a no-op once the tables exist — prod builds its schema
+        # with Alembic) followed by seed(). The realistic failure is seed()
+        # raising against a schema that is already present and already serving,
+        # which breaks nothing a reader can see.
+        #
+        # A log line that predicts 5xx sends whoever finds it hunting an outage
+        # that is not happening, and — worse — makes the REAL consequence
+        # (readiness is 503 while the /health alias still hard-codes "ok") look
+        # like the lesser half. Say what is known, not what sounds alarming.
         log.error(
-            "background DB init failed — /producers et al will 500 until fixed",
+            "background DB init failed — create_all/seed did not complete. "
+            "/health/readiness will report 503; endpoints may still serve "
+            "normally if the schema was already present (MEH-1905).",
             exc_info=True,
         )
         app.state.db_init_status = "failed"

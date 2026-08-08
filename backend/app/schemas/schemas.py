@@ -1248,6 +1248,10 @@ class ProductCreate(BaseModel):
     # ?vegetarian filter also matches vegan products (is_vegetarian OR is_vegan).
     is_vegetarian: bool = False
     is_lactose_free: bool = False
+    # MEH-1934: no-added-sugar + low-carb axes. Owner-declared, any-product
+    # scope; no implication from any other flag, so no defaulting-from.
+    is_no_added_sugar: bool = False
+    is_low_carb: bool = False
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1280,6 +1284,8 @@ class ProductUpdate(BaseModel):
     is_vegan: bool | None = None
     is_vegetarian: bool | None = None  # MEH-1438
     is_lactose_free: bool | None = None
+    is_no_added_sugar: bool | None = None  # MEH-1934
+    is_low_carb: bool | None = None  # MEH-1934
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1316,6 +1322,8 @@ class ProductOut(BaseModel):
     is_vegan: bool = False
     is_vegetarian: bool = False  # MEH-1438
     is_lactose_free: bool = False
+    is_no_added_sugar: bool = False  # MEH-1934
+    is_low_carb: bool = False  # MEH-1934
 
     model_config = {"from_attributes": True}
 
@@ -1975,6 +1983,11 @@ class ProducerListOut(BaseModel):
     # (a vegan product is vegetarian by definition). Frontend badges.js reads it.
     has_vegetarian_products: bool = False
     has_lactose_free_products: bool = False
+    # MEH-1934: computed by attach_badge_fields like the four above. Plain
+    # single-flag aggregations — unlike has_vegetarian_products these fold in
+    # no other axis, because nothing implies them.
+    has_no_added_sugar_products: bool = False
+    has_low_carb_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
@@ -2811,6 +2824,17 @@ class ExperienceHostOut(BaseModel):
     name: str
 
     model_config = {"from_attributes": True}
+
+
+class ExperienceCountOut(BaseModel):
+    """MEH-1918 — how many experiences the public feed would show.
+
+    A number and nothing else, on purpose: the nav needs to know whether the
+    surface has real supply before it links to it, and any field beyond the
+    count would be a second, unaudited public read path.
+    """
+
+    count: int
 
 
 class ExperienceListOut(BaseModel):
