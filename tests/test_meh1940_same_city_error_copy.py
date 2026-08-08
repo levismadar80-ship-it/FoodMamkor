@@ -92,7 +92,23 @@ class TestTheMessageExplainsItself:
         _, detail = _collide(client, db)
         assert FIELD_TERM_CITY in detail
         assert FIELD_TERM_LABEL in detail
-        assert "עיר" not in detail, f"MEH-1937 term drift: {detail!r}"
+
+    def test_the_word_it_replaced_is_gone_from_the_TEMPLATE(self):
+        # Scoped to the template, NOT to a rendered message. "עיר" is a
+        # substring of real Israeli place names — מעלה עירון is a local council
+        # — so asserting it against interpolated output would make this guard
+        # depend on which town the fixture happens to use, and the natural
+        # "fix" for the resulting red would be to delete the assertion.
+        # The city-free rendering IS the template, so this reads the thing the
+        # guard is actually about.
+        assert "עיר" not in _same_city_label_error_detail(None)
+
+    def test_a_place_name_containing_the_old_word_does_not_break_the_guard(self):
+        # The other half of the same point, pinned so a future reader does not
+        # re-tighten the assertion above into the data-dependent form.
+        detail = _same_city_label_error_detail("מעלה עירון")
+        assert "מעלה עירון" in detail
+        assert FIELD_TERM_CITY in detail
 
 
 class TestTheFallbackIsNeverUndefined:
