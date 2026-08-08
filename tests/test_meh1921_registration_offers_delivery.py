@@ -20,32 +20,44 @@ business shows up under `?has_delivery=true`. Asserting `producer.offers_deliver
 is True` would instead assert that the prescribed *change was applied* — an
 inert fix (setting the column somewhere the filters do not read) would pass it.
 
-DISCRIMINATION (MEH-1619): the three subject cases below FAIL against the code
-as it stood before this ticket — the business is absent from the listing — and
-pass after. Verified by running this file against unfixed `auth.py` /
-`producer_queries.py`; the run is quoted in the PR body. The control case passes
-in BOTH worlds and is labelled as such: it is not evidence for the change, it
-guards against the opposite error of flipping the flag on for everyone.
+DISCRIMINATION (MEH-1619): all FIVE subject cases below FAIL against the code as
+it stood before this ticket — the business is absent from the listing — and pass
+after. Verified by running this file against the unfixed sources, and twice more
+in isolation: reverting ONLY the importer fix gives `1 failed, 4 passed`, and
+reverting ONLY the admin-create fix gives `1 failed, 6 passed`. Those two runs are
+what show each site is carried by its own fix rather than riding on the others.
 
-Sibling scan (`grep -rn "DeliveryArea(" backend/app`) found seven write sites,
-and splits them by whether the payload can state the flag itself:
+TWO cases here are NOT evidence for the change and say so where they sit: the
+control (registration without areas stays out) and the admin explicit-`false`
+carve-out. Both pass before AND after. They guard the opposite error — a fix that
+flipped the flag on for everyone, or one that overrode an admin's stated `false`.
 
-CREATE-from-payload — cannot, so the flag is DERIVED. All four are fixed and all
-four are covered below: `auth.py` upgrade + new-email branches,
-`producer_queries.create_producer_with_relations` (behind POST /producers), and
-`producer_import.py` (the admin CSV importer). The importer was NOT named in the
-ticket and is the sharpest of the four: its rows are created `status="approved"`,
-so they go live immediately, and its column K writes the legacy `has_delivery`
-column that no delivery predicate consults (MEH-1849).
+Sibling scan (`grep -rn "DeliveryArea(" backend/app`) found seven write sites.
+They split by whether the payload can state the flag itself — but the split has
+to be made per CALLER, not per call site, which is where the first version of
+this change went wrong (see below).
 
-EDIT — the owner or an admin sets `offers_delivery` explicitly
-(`producer_me.py:387-391`, `admin.py:197`, policed by
-`delivery_validation.py:68-74`), so `producer_me.py:97,145` and `admin.py:109`
-are deliberately untouched: deriving there would override a deliberate choice,
-which is the opposite bug.
+CREATE-from-payload, flag DERIVED — five sites, all fixed, all covered here:
+`auth.py` upgrade + new-email branches, `create_producer_with_relations` (behind
+`POST /producers`), `producer_import.import_rows` (admin CSV), and
+`admin_create_producer` (`POST /admin/producers`). The last two are the sharpest:
+their rows are born `status="approved"` and are live with no approval step, and
+the importer's sheet column K writes the legacy `has_delivery` column that no
+delivery predicate consults (MEH-1849).
+
+EDIT, flag left alone — `producer_me.py:97,145` and `admin.py:286`. The owner or
+an admin states `offers_delivery` explicitly there (`producer_me.py:387-391`,
+policed by `delivery_validation.py:68-74`); deriving would override a deliberate
+choice, the opposite bug.
+
+THE TRAP, recorded because it nearly shipped: `admin.py`'s `_apply_delivery_cities`
+is called by BOTH the PUT route (edit) and the create route. The first version of
+this file classified it as an edit path from its call site and therefore missed a
+whole create route; a second reviewer on a different model found it by hitting the
+endpoint. Admin-create is also the one create path whose schema DOES carry
+`offers_delivery`, so it derives only when the field is UNSTATED — `model_fields_set`,
+not a falsy check, since "omitted" and "explicitly false" both arrive as False.
 """
-
-import pytest
 
 from tests.conftest import (
     auth_header,
@@ -106,7 +118,7 @@ def test_new_email_registration_with_areas_is_discoverable(client, db):
 
 
 def test_upgrade_registration_with_areas_is_discoverable(client, db):
-    """POST /auth/register/producer — the authenticated upgrade branch (auth.py:552).
+    """POST /auth/register/producer — the authenticated upgrade branch (auth.py:557).
 
     A separate case, not a parametrisation: the two branches are independent
     code paths that each build their own `DeliveryArea` rows, so a fix applied
@@ -121,9 +133,7 @@ def test_upgrade_registration_with_areas_is_discoverable(client, db):
     for field in ("email", "name", "password"):
         body.pop(field, None)
 
-    resp = client.post(
-        "/auth/register/producer", json=body, headers=auth_header(user)
-    )
+    resp = client.post("/auth/register/producer", json=body, headers=auth_header(user))
     assert resp.status_code == 200, resp.text
 
     _approve(db, "משק השדרוג")
@@ -134,7 +144,7 @@ def test_upgrade_registration_with_areas_is_discoverable(client, db):
 
 
 def test_authenticated_create_producer_with_areas_is_discoverable(client, db):
-    """POST /producers — `create_producer_with_relations` (producer_queries.py:318).
+    """POST /producers — `create_producer_with_relations` (producer_queries.py:353).
 
     Found by the DoD's sibling scan, not named in the ticket: the same
     `for da in data.delivery_areas` loop, the same missing assignment. The
@@ -170,13 +180,32 @@ def test_csv_import_with_delivery_areas_is_discoverable(client, db):
     from app.models.models import Category
     from app.services.producer_import import import_rows
 
-    # Column layout per producer_import.py:158-171 — I=category (must exist,
+    # Column layout per producer_import.parse_row (:160-181) — I=category (must
     # MEH-1534), L=delivery areas (comma-split), K=has_delivery.
     row = [
-        "מאפיית הייבוא", "שרה כהן", "0541234567", None, None, None, None,
-        "חיפה", "מאפים", None,
-        "כן", "חיפה, קריית ביאליק",
-        None, "תיאור הבדיקה", None, None, None, None, None, None, None, None, None,
+        "מאפיית הייבוא",
+        "שרה כהן",
+        "0541234567",
+        None,
+        None,
+        None,
+        None,
+        "חיפה",
+        "מאפים",
+        None,
+        "כן",
+        "חיפה, קריית ביאליק",
+        None,
+        "תיאור הבדיקה",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     ]
     db.add(Category(name="מאפים", emoji="🥖"))
     db.commit()
@@ -187,6 +216,69 @@ def test_csv_import_with_delivery_areas_is_discoverable(client, db):
     listing = client.get("/producers", params=HAS_DELIVERY)
     assert listing.status_code == 200, listing.text
     assert "מאפיית הייבוא" in _names(listing)
+
+
+def test_admin_create_with_delivery_cities_is_discoverable(client, db):
+    """`POST /admin/producers` — the fifth create path, and the easiest to miss.
+
+    `_apply_delivery_cities` is shared between the PUT route (`admin.py:286`)
+    and this CREATE route (`admin.py:211`). Classifying the helper by its call
+    site reads "edit path, leave alone" and silently hides that one of its two
+    callers creates — which is exactly the mistake the first version of this
+    change made. Found by the different-model reviewer, not by the sibling scan.
+
+    Rows here are born `status="approved"`, same immediacy as the CSV importer.
+    """
+    from tests.conftest import make_category
+
+    admin = make_user(db, email="admin1921@test.com", role="admin")
+    cat = make_category(db, name="גבינות בדיקה")
+
+    body = {
+        "name": "משק האדמין",
+        "city": "חיפה",
+        "category_ids": [cat.id],
+        "delivery_area_cities": ["חיפה"],
+        # offers_delivery deliberately OMITTED — the case that gets derived.
+    }
+    resp = client.post("/admin/producers", json=body, headers=auth_header(admin))
+    assert resp.status_code == 201, resp.text
+
+    listing = client.get("/producers", params=HAS_DELIVERY)
+    assert listing.status_code == 200, listing.text
+    assert "משק האדמין" in _names(listing)
+
+
+def test_admin_create_explicit_false_is_not_overridden(client, db):
+    """CARVE-OUT — an admin who states `offers_delivery: false` is obeyed.
+
+    This is the boundary that separates the fix from the opposite bug. Unlike
+    the four signup schemas, `ProducerAdminCreate` carries the field, so an
+    explicit `false` beside delivery cities is a declaration, not an omission —
+    and MEH-1848's predicates are right to exclude it.
+
+    It also pins the mechanism: only `model_fields_set` can tell "omitted" from
+    "explicitly false" here, because both arrive as `False`. A fix written with
+    a plain falsy check would pass the test above and fail this one.
+    """
+    from tests.conftest import make_category
+
+    admin = make_user(db, email="admin1921b@test.com", role="admin")
+    cat = make_category(db, name="גבינות בדיקה ב")
+
+    body = {
+        "name": "משק האדמין המסרב",
+        "city": "חיפה",
+        "category_ids": [cat.id],
+        "delivery_area_cities": ["חיפה"],
+        "offers_delivery": False,
+    }
+    resp = client.post("/admin/producers", json=body, headers=auth_header(admin))
+    assert resp.status_code == 201, resp.text
+
+    listing = client.get("/producers", params=HAS_DELIVERY)
+    assert listing.status_code == 200, listing.text
+    assert "משק האדמין המסרב" not in _names(listing)
 
 
 # ── control: passes before AND after — not evidence for the change ─────────
