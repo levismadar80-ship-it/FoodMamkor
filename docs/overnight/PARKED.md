@@ -87,13 +87,40 @@ edit to PR metadata, no `force`. Rule 30 — a blocking gate is a STOP, and
 forbids. Waiting once and retrying once is the sanctioned remedy and it is what I
 did; it did not clear.
 
-**Failure class:** PERMANENT for this session — it needs a ruleset inspection
-(GitHub settings), which is Sapir's surface. Not transient, so no further retry.
+**Failure class:** ~~PERMANENT for this session — it needs a ruleset inspection
+(GitHub settings), which is Sapir's surface. Not transient, so no further retry.~~
 
-**Cost of leaving it: none.** Nothing is lost. The branch
-`feature/meh-1853-docs-overnight` is pushed and the PR is open; the entire session
-log lives in it. Merging is one click, or one API call from an account the ruleset
-accepts.
+> ## ❌ CORRECTED 2026-08-08 — that diagnosis was WRONG. It was TRANSIENT.
+>
+> **PR #2678 merged on night 2** (`e1c3af52`) with no ruleset change, no settings
+> change, and nothing done by Sapir. The remedy was simply **waiting longer for the
+> required gates to register.**
+>
+> What night 2 measured: immediately after pushing, `CI gate (required)` read
+> `status: queued` on the head SHA, and the merge API answered with the identical
+> *"2 of 2 required status checks are expected"*. After the gates completed
+> `success`, the very next merge attempt succeeded. That is the documented
+> transient — `.claude/rules/testing.md`, *"Transient 'waiting for status /
+> expected' right after push = the required gates are still registering"* — and it
+> was in the rules the whole time.
+>
+> **Why the night-1 call still looked defensible, and why that is the lesson.** On
+> night 1 both gates *did* read `success` when I queried them, which is what made
+> me rule out the transient. But a check-run reporting `success` and the **ruleset**
+> having ingested it are two different facts, and I treated the first as evidence of
+> the second. The correct next step was another wait, not a classification.
+>
+> **The concrete cost of getting it wrong:** it wrote "needs a ruleset inspection —
+> Sapir's surface" into the repo, pointing a human at a GitHub setting that was
+> never broken. A confident wrong cause in a log becomes someone's wasted hour. The
+> park itself cost nothing; **the diagnosis attached to it did.**
+>
+> **What to keep:** refusing the no-op re-trigger commit (below) was still right,
+> and is unaffected by this correction. The error was in the label, not the
+> restraint.
 
-**Not a circuit-breaker event** — one signature, one task. Nothing else tonight
-depends on it.
+**Cost of leaving it was none, and it was collected on night 2.** The branch stayed
+pushed with the PR open, and the whole log merged intact once the gates settled.
+
+**Not a circuit-breaker event** — one signature, one task, and it resolved on its
+own terms.
