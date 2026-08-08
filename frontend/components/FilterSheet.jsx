@@ -64,8 +64,16 @@ function chipSubtext(chip) {
 const GROUP_CHIP_ORDER = {
   service: ["verified", "has_delivery"],
 };
-function chipsForGroup(group) {
-  const chips = TOGGLE_CHIPS.filter((chip) => chip.group === group);
+// MEH-1862: the chip SET is now a parameter, so /producers can mount this sheet
+// with its own axes. `source` defaults to TOGGLE_CHIPS, which is what /map has
+// always passed implicitly — that surface is unchanged in behaviour and output.
+//
+// A key absent from GROUP_CHIP_ORDER keeps array order (indexOf → -1 for both
+// sides is a stable tie), so a surface-specific chip appended to a group it does
+// not enumerate — /producers' open_for_orders_now in `service` — lands last
+// rather than jumping the explicit verified → has_delivery order.
+function chipsForGroup(group, source) {
+  const chips = source.filter((chip) => chip.group === group);
   const order = GROUP_CHIP_ORDER[group];
   if (!order) return chips;
   return [...chips].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
@@ -83,6 +91,9 @@ export default function FilterSheet({
   onToggleChip,
   resultCount,
   onClearAll,
+  // MEH-1862: which axes this mount offers. Defaults to the /map set so the
+  // existing call site (FilterChipsBar.jsx:96) is unchanged.
+  chips = TOGGLE_CHIPS,
 }) {
   const t = useTranslations();
   const panelRef = useRef(null);
@@ -192,7 +203,16 @@ export default function FilterSheet({
           {t("filters.sheet.title")}
         </h2>
 
-        {GROUP_ORDER.map((group) => (
+        {GROUP_ORDER.map((group) => {
+          const groupChips = chipsForGroup(group, chips);
+          // MEH-1862 (5-state rule, 0 items): a group with no chips renders
+          // NOTHING — not a bare heading. This is reachable, not defensive
+          // padding: /producers has no grass_fed, and its diet axes are
+          // runtime-gated (DIET_CHIP_MIN, MEH-1934), so a group can empty out
+          // on real data. On /map every group is populated, so this branch
+          // never fires there and that surface is unchanged.
+          if (!groupChips.length) return null;
+          return (
           <div key={group}>
             {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
                 (mobile mt-4/mb-1 byte-identical). */}
@@ -214,7 +234,7 @@ export default function FilterSheet({
                 at start, role="switch" pill at end, knob start-1(off)→end-1(on)
                 via logical insets (RTL-safe). */}
             <div className="divide-y divide-border">
-              {chipsForGroup(group).map((chip) => {
+              {groupChips.map((chip) => {
                 const active = !!chipState[chip.key];
                 const icon = chipIcon(chip.key);
                 const subtext = chipSubtext(chip);
@@ -224,6 +244,12 @@ export default function FilterSheet({
                       type="button"
                       role="switch"
                       aria-checked={active}
+                      // MEH-1862: same locator ChipScrollRow's consumers already
+                      // query (docs/E2E-LOCATORS.md). A chip that moves from the
+                      // row into this sheet keeps its handle, so a spec asserting
+                      // on it only has to open the sheet — it does not have to be
+                      // rewritten around a different query.
+                      data-testid={`chip-${chip.key}`}
                       onClick={() => onToggleChip(chip.key)}
                       className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
@@ -252,7 +278,8 @@ export default function FilterSheet({
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* Apply = close (state is shared + already applied live); count is the
             live client-side visibleProducers.length passed by the caller.
