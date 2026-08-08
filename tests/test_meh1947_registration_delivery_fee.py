@@ -7,11 +7,12 @@ rendered the producer-level rate and a free-delivery city displayed a charge.
 With that closed, the pipe runs from the database to the screen — and the
 source is dry, because no registration path ever wrote the column.
 
-`DeliveryAreaCreate` accepts the field (`schemas.py:870-871`, "NULL = inherit")
-and `persist_registration_delivery_areas` built its `DeliveryArea` rows from
-four of the five keys. Five in, four written. The docstring on that helper said
-so out loud rather than leaving it silent, and deliberately did not fix it while
-the reading end was still open.
+`DeliveryAreaCreate` accepts the field (`schemas.py:870-873` — "None = not
+stated, 0 = משלוח חינם, positive = the fee") and
+`persist_registration_delivery_areas` built its `DeliveryArea` rows from three
+of the schema's four fields. The docstring on that helper said so out loud
+rather than leaving it silent, and deliberately did not fix it while the reading
+end was still open.
 
 WHY THE ASSERTIONS ARE BEHAVIOURAL (ADR-032 §3.6): each case drives the real
 registration endpoint and then reads the real public producer document — what a
@@ -23,7 +24,7 @@ read, or a serializer that coalesces it away) would pass that and ship the bug.
 `0` IS THE CASE THAT MATTERS, and it is not interchangeable with any other
 number. `0` means "delivery to this city is free" and is distinct from NULL
 ("the owner stated nothing, inherit the producer rate") —
-`DeliveryBlock.jsx:318` is built on exactly that distinction. A test written
+`DeliveryBlock.jsx:320` is built on exactly that distinction. A test written
 with `delivery_fee: 30` would go green against a fix that wrote `da.delivery_fee
 or None`, which silently converts every free city back into an inheriting one.
 Case 1 is the free city; case 2 exists so a fix that hardcoded 0 cannot pass.

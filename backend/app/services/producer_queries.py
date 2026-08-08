@@ -268,9 +268,10 @@ def persist_registration_delivery_areas(
     already covers the former.
 
     MEH-1947: `delivery_fee` IS persisted now. It was not, and neither did the
-    three inline loops this replaced — five keys on `DeliveryAreaCreate`, four
-    written — so a signup stating a per-area fee lost it silently and the area
-    inherited the producer-level rate. That was left open deliberately while the
+    three inline loops this replaced — `DeliveryAreaCreate` carries four fields
+    (`city`, `min_order`, `delivery_day`, `delivery_fee`) and three were written
+    — so a signup stating a per-area fee lost it silently and the area inherited
+    the producer-level rate. That was left open deliberately while the
     reading end was still broken (MEH-1942, Zod stripped the same field before it
     reached the page); fixing one side alone would have moved the bug rather than
     closed it. With #2693 merged the pipe runs to the screen, so the source is
@@ -280,8 +281,10 @@ def persist_registration_delivery_areas(
     `0` = "delivery to this city is free", `None` = "the owner stated nothing,
     inherit the producer rate". `da.delivery_fee or None` would look equivalent
     and would convert every free city back into an inheriting one — billing for
-    a delivery its owner declared free. The DeliveryAreaOut serializer and
-    `DeliveryBlock.jsx:318` are both built on that distinction.
+    a delivery its owner declared free. Both ends are built on that distinction:
+    `schemas.py:870-873` states the three values on the field itself, and
+    `DeliveryBlock.jsx:320` repeats them for the renderer, which resolves the
+    inheritance at `:417-430`.
     """
     wrote_any = False
     for da in areas or []:
