@@ -179,3 +179,58 @@ describe("FilterSheet (MEH-1075)", () => {
     expect(document.activeElement).toBe(glutenFree);
   });
 });
+
+// MEH-1945 — the apply footer is sticky on EVERY viewport, not just lg+.
+//
+// SCOPE OF THIS GUARD, stated because it is easy to over-read: jsdom resolves
+// no Tailwind, so nothing here proves the footer actually stays on screen. It
+// is a TRIPWIRE for one specific regression — someone re-gating the stickiness
+// behind `lg:`, which is the state MEH-1481 left and this ticket removed. The
+// behavioural proof is `e2e/qa-meh1945-sticky-apply.mjs`, which measures real
+// geometry in Chromium and fails when the footer leaves the viewport.
+//
+// Deliberately NOT asserted here: that the fix is non-inert. It can be — a
+// container `padding-bottom` regression would leave every class below intact
+// and still park the footer 32px up (measured). Only the harness sees that.
+// Per ADR-032 §3.6 that gap is named rather than papered over with a
+// className assertion pretending to be behavioural coverage.
+describe("FilterSheet apply footer stickiness (MEH-1945)", () => {
+  // Below lg the sheet is portaled to <body> (MEH-1075), so it is NOT inside
+  // render()'s container — look it up in the document, as the sibling specs do
+  // via screen queries.
+  const panelOf = () => document.getElementById("filter-sheet-panel");
+  const footerOf = () => panelOf().lastElementChild;
+
+  it("carries sticky + bottom-0 UNGATED, so mobile gets them too", () => {
+    renderSheet();
+    const cls = footerOf().className;
+
+    expect(cls).toMatch(/(^|\s)sticky(\s|$)/);
+    expect(cls).toMatch(/(^|\s)bottom-0(\s|$)/);
+    // The regression this exists to catch: the same utilities behind a
+    // breakpoint. `lg:sticky` would satisfy a naive `toContain("sticky")`,
+    // which is why both assertions are word-anchored above and negated here.
+    expect(cls).not.toMatch(/lg:sticky/);
+    expect(cls).not.toMatch(/lg:bottom-0/);
+  });
+
+  it("keeps an opaque background and a top hairline — content scrolls UNDER it", () => {
+    // Without these the footer is sticky and unreadable: rows slide through it.
+    // Ungated for the same reason as above; MEH-1481 had them lg:-only.
+    renderSheet();
+    const cls = footerOf().className;
+    expect(cls).toMatch(/(^|\s)bg-background(\s|$)/);
+    expect(cls).toMatch(/(^|\s)border-t(\s|$)/);
+  });
+
+  it("pays the safe-area inset on the footer, not on the scroll container", () => {
+    // `position: sticky; bottom: 0` resolves against the scrollport (the
+    // container's PADDING box), so a container pb pushes the footer up by that
+    // much and body content scrolls through the gap. Measured at 390x844:
+    // container pb 32px -> footer bottom 812 against an 844 panel edge; pb-0 ->
+    // 844, flush. So the inset belongs to the footer.
+    renderSheet();
+    expect(panelOf().className).toMatch(/(^|\s)pb-0(\s|$)/);
+    expect(footerOf().className).toMatch(/safe-area-inset-bottom/);
+  });
+});
