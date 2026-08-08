@@ -57,12 +57,6 @@ physical iPhone. Everything in the PR is Chromium emulation, and the change touc
 the two things emulation is least trustworthy about. The PR deliberately does **not**
 claim "נבדק בנייד".
 
-**What to check:** that the mobile footer really is reachable without scrolling on a
-physical iPhone. Everything in the PR is Chromium emulation, and the change touches
-`position: sticky` inside an overflow container plus `env(safe-area-inset-bottom)` —
-the two things emulation is least trustworthy about. The PR deliberately does **not**
-claim "נבדק בנייד".
-
 Measured before the fix at 390×844: `/producers` footer at y=924 (80px below the
 fold), `/map` at y=1143 (**299px** below). The footer is the sheet's only exit
 besides the backdrop.
