@@ -1,194 +1,203 @@
-# Session state — overnight autonomous sweep (2026-07-29)
+# Session state — overnight autonomous sweep v2, NIGHT 2 (2026-08-08)
 
-> Transient per workflow rule 14. Prior contents (MEH-1512 pickup UI + MEH-1510 verification,
-> 2026-07-23) superseded; that work stays tracked in Linear and shipped in PR #2115.
-
-> **0 merged by me, 1 draft, 0 parked, 1 new issue, staging GREEN.**
-> **The queue is empty by the rule merged tonight — that is why the night is short, not a failure.**
+> **0 merged, 2 PRs awaiting you, 1 blocked, 1 new ticket, 0 quarantined, staging GREEN.**
+> **The night's yield is a live user-facing bug nobody had a ticket for, and two of the
+> instructions I was given turned out to be wrong — one of which I was told to "fix".**
 
 ---
 
-## ⚠️ Read this first — the sweep stopped early, on purpose
+## ⚠️ Read this first — two tasks I did NOT do, on purpose
 
-Three independent findings, all discovered in pre-flight, point the same way: **there was no
-authorized work to take.**
+### 1 · The MapPane RTL fix (night-2 instruction §8) — **there is nothing to fix**
 
-### 1. The queue rule flipped to opt-in ~1h before this session, and nothing is labelled
+I was told: *"KNOWN GENUINE check.sh FAILURE: an existing RTL violation in MapPane.jsx fails
+the DoD script for real. Night task: open a quick issue + fix the property to start-/end-."*
 
-PR **#2414** landed on `staging` (`150f4927`) as this session was starting. It rewrote
-`.claude/rules/workflow.md` § *Working the queue*:
-
-```
-state = In Progress · team = Mehamakor · labeled `cc-queue`
-```
-
-> *"**An unlabeled card is not yours even if it looks actionable.**"*
-> *"**An empty queue is the expected steady state, not a failure.** Say so and stop."*
-
-I ran that query. **Zero cards.** Widened to every state, workspace-wide: **still zero — no
-issue in Mehamakor carries a `cc-queue` label at all.**
-
-The rule's own rationale describes exactly the list I was handed: on its first run the old
-opt-out query *"returned **28** cards — epics used as board state, work paused for Sapir, and
-one Urgent card explicitly marked HIGH-RISK with WAIT between chunks."* My brief pointed me at
-that same set, MEH-1698 included. **The rule merged tonight exists to prevent precisely the
-night I was asked to run.** I followed the rule.
-
-### 2. The merge authority named in my brief cannot be verified — filed as MEH-1761
-
-The brief grants auto-merge for GREEN + YELLOW per `.claude/autonomy-cache.json`. That file
-**tops out at MEH-545**:
+Measured instead:
 
 ```
-entries: 143 | min MEH-76 | max MEH-545 | above 1000: []
+$ bash .claude/scripts/rtl-scan.sh
+0
+exit 0
 ```
 
-Every In Progress card is **MEH-784 or higher**. Zero overlap — the cache classifies nothing,
-and it fails as a silent miss, not an error.
+**Zero violations.** Step 4/7 of `check.sh` delegates to that script and prints `pass` on `0`.
+`MapPane.jsx` **is** allowlisted (`.claude/hooks/rtl-allowlist.txt:9`) and `check.sh:85-88`
+records why the claim went stale: *"**MEH-1515:** `rtl-scan.sh` now honors the PATH EXCEPTIONS
+correctly (its filter uses `grep -vFf`, so `[locale]` paths match literally)"*. MEH-1511 §7
+was written 23/07 — before that fix.
 
-The fallback authority is worse. `workflow.md:43` cites **"ADR-017 (MEH-1741)"** — but
-`docs/decisions/ADR-017` is **"JWT access token in localStorage"** (Accepted 2026-05-23,
-MEH-686), indexed as such at `docs/decisions/README.md:40`. ADRs run 001–031; **no
-autonomous-remediation ADR exists in the repo.** `docs/audits/2026-07-full/remediation-log.md:3`
-repeats the same wrong number, which makes it drift rather than a typo.
+**And "fixing it anyway" would have been a regression, not diligence.** The physical props in
+that file are deliberate and say so in the code:
 
-The reference **resolves to a real file**, so a quick reader sees "ADR-017 exists ✅" and
-concludes the authority is verified. Filed as **MEH-1761** with a proposed fix (renumber to
-ADR-032, correct both citations, decide the cache's fate, add a guard).
+- `:149-150` — *"Physical `right-4` — **NOT** logical `end-`/`start-` — because the legend is
+  anchored with physical `left-4`; a logical prop would flip per…"*
+- `:176-177` — *"`rtl-ok`: the whole legend is physically anchored `left-4`"*
 
-### 3. `CI gate` cannot be trusted on a draft PR — patch shipped, Sapir applies
+Swapping to `start-`/`end-` **separates the GPS button from the legend** — exactly what the
+comment warns about. I would have shipped a clean, review-passing diff that breaks a
+deliberate layout, and no check in the repo would have caught it. (`left-1/2 -translate-x-1/2`
+at `:129`/`:138` isn't a violation at all — it's a centring idiom.)
 
-The brief said to distrust green gates until MEH-1582 merges. **MEH-1582 can never be merged by
-me** — the fix lives in `.github/workflows/`, which is CC-deny (MEH-671), and the ticket itself
-prescribes patch-file-only. So that compensating control was in force all night, and would be
-on any future night too.
+Evidence posted to MEH-1511. Recommended replacement for its §7 blocker line is in there.
 
-Root cause, `pr-checks.yml:697-702`: the aggregator's `ok()` accepts `skipped` as a pass. Six
-jobs are draft-gated (`:166 :217 :284 :436 :482 :608`), so a **draft** PR touching the frontend
-enters the *"enforcing frontend checks"* branch and passes it with **zero jobs having run**.
+### 2 · MEH-1511 itself (B2) — **blocked by a permission classifier**
+
+I wrote the full rule-23 amendment per your 08/08 ruling — the device-gate/merge-gate split,
+the evidence checklist, carve-out (e) intact — then the write to `.claude/rules/workflow.md`
+returned:
+
+```
+Permission for this action was denied by the Claude Code auto mode classifier.
+```
+
+The ticket's own stop condition (d) says *"if a permission classifier blocks the write, STOP
+and surface it — **do not route the same change through a different tool**"*. So I did not
+reach for python/sed. `workflow.md` is untouched.
+
+**This is not a repo deny, and that changes the fix.** `.claude/settings.json`'s
+`permissions.deny` has 105 entries; the only `.claude/` ones are `settings.json` and
+`hooks/**`. **`.claude/rules/**` is not listed at all.** The repo permits this edit — the
+*harness auto-mode classifier* blocked it. Three ways to unblock, all yours: run it from
+standalone CC, approve it interactively, or add an auto-mode exception for `.claude/rules/**`
+(which I'd think about carefully — rule 32, the only-add-constraints rule, lives in that
+directory).
 
 ---
 
-## 1 · MERGED
+## 3 · MERGED: nothing
 
-**None by me.** No card carried `cc-queue` and no tier was verifiable — every path led to
-Draft-only. Nothing was merged to `staging` or `main` this session.
+Per night-2 rule 2 (reviewer-down compensation), the auto-merge lane is LOW-RISK /
+tests-only / docs. Everything I completed tonight is either a docs PR awaiting the ruleset
+question below, or a Phase 0 report. **Nothing qualified for an unattended merge, so nothing
+was merged.**
 
-For context, `staging` advanced twice tonight from other sessions: **#2414** (queue rule →
-opt-in) and **#2411** (queue worked from Linear, not chat).
+The CI adversarial reviewer is still producing nothing — confirmed on **both** of last
+night's PRs (#2676, #2677): job `failure`, ~32s, zero comments. Reported on MEH-1844. So
+rule 5a step 6 remains unsatisfiable and everything below rests on self-review.
 
-## 2 · DRAFT PRs AWAITING SAPIR
+## 4 · PRs AWAITING YOU — with what to check, in order
 
-| PR | Ticket | Why draft | What to review |
+| # | PR | what to check | time |
 |---|---|---|---|
-| [#2415](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2415) | MEH-1582 | RED — `.github/workflows/**` is CC-deny (MEH-671); ticket prescribes patch-file only | Apply the diff in `docs/ci/ci-gate-skip-green.patch.md`, then verify per its §6 |
+| 1 | **[#2680](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2680)** — nested-stripping audit | §2 of the doc: the 7-link chain proving `delivery_areas[].delivery_fee` is stripped. If you accept it, the decision you owe is §5 — option (א)/(ב)/(ג). | ~5 min |
+| 2 | **[#2678](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2678)** — session log (nights 1+2) | Nothing to review — it's the log. **The question is why it won't merge**; see §6. | ~1 min |
+| 3 | [#2665](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2665) — diet landing pages | Unchanged from last night: copy approval (rule 22) is now the **only** gate — your 08/08 ruling waived the device check. | ~10 min |
 
-**Contents:** the patch doc + `scripts/ci-gate-selftest.sh`, a harness that reads the **real**
-workflow to report whether the fix is applied, then proves the two predicates discriminate:
+## 5 · 🔴 NEW TICKET — a live wrong price on the business page
 
-```
-SCENARIO                                 OLD        NEW
-A draft FE PR, all checks skipped        GREEN      RED     <- the bug
-B docs-only, stack untouched             GREEN      GREEN   <- must not regress
-C non-draft FE PR, everything ran        GREEN      GREEN   <- unchanged
-```
+**MEH-1942** (High, Bug). Found while doing MEH-1896's Phase 0; no existing ticket covered it
+(searched `delivery_fee`, and delivery/schema/stripping terms — MEH-1678 is about *displaying*
+a fee, MEH-903 is a different column).
 
-Per `.claude/rules/testing.md` (MEH-1619) both columns are reported: a construction only counts
-if the **old** predicate would have passed it. **B** is the legitimate docs-only skip; **C**
-mirrors real run PR #2412.
+`delivery_areas[].delivery_fee` is stripped by the nested Zod shape, so
+`DeliveryBlock.jsx:429`'s `da.delivery_fee ?? producerFee` fallback fires **for every area,
+always** — each city shows the business-level fee instead of its own.
 
-The harness is deliberately **not** in `scripts/checks/` — that directory is auto-discovered by
-the required *Repo guards* job (`run-all.sh:97-113`), and a guard reporting the not-yet-applied
-state would red every PR. Verified: `repo-guards OK — all 7 guard(s) passed`, unchanged.
+**The part that makes it serious:** `DeliveryBlock.jsx:320` documents that **`0` is a value,
+not an absence** — i.e. free delivery for that city. A stripped key is `undefined`, not `0`, so
+the `??` falls through and **a free-delivery city displays a charge.** It renders a plausible
+wrong number, never an error.
 
-**Also corrects the ticket's first hypothesis:** `ready_for_review` is **not** missing — it is at
-`pr-checks.yml:27`. The remaining candidate is the token-actor rule (MEH-1501), which I did
-**not** prove. The fix does not depend on it: after the patch a draft's gate is RED, so a ready
-flip that fires no run leaves a stale **red** that blocks merge instead of a stale green that
-waves it through. Fail-closed either way.
+Both guards were green on it: `.loose()` is top-level only, and the MEH-1891 parity guard is
+`Object.keys(zod.shape)` — one level, no array unwrapping (`backend-contract-parity.test.js:192`).
 
-## 3 · OPENED ISSUES
+## 6 · The #2678 merge block — new evidence, and it is not "docs-only"
 
-| Issue | Trigger |
-|---|---|
-| **MEH-1761** (High) | Pre-flight: `autonomy-cache.json` stale at MEH-545 **and** `workflow.md:43`'s "ADR-017" is an occupied number. Queue authority unverifiable from either direction. |
+Last night I parked this after the ruleset answered *"2 of 2 required status checks are
+expected"* while both gates reported `success`. I attributed it to the docs-only skip path.
 
-Searched first per rule 27 — MEH-1756 (*"סולם אוטונומיה מדורג"*, Backlog, `not-cc`) is the
-**missing decision**; MEH-1761 is the *evidence that it is missing*, not a duplicate. Cross-linked.
+**That attribution now looks wrong.** `#2679` — `feature/meh-1939-docs-backfill`, a docs-only
+PR — **merged cleanly** on 08/08 and is in `origin/staging` (`b50e4c82`). So docs-only PRs can
+merge, and whatever blocks #2678 is specific to it, not to its diff class.
 
-## 4 · PARKED
+I have **not** diagnosed it and did not retry past the sanctioned one-wait-one-retry. No no-op
+commit (rule 30). Recording the correction because a wrong cause in a log becomes a wrong fix
+later.
 
-**None.** No task hit a STOP condition. The night ended on the queue rule's own *"say so and
-stop"* — a clean stop, not a park.
+## 7 · STATUS-SYNCED — with evidence
 
-## 5 · SKIPPED
+> **Both Lane A cards are ARCHIVED, and Linear rejects comments on an archived issue**
+> (`Could not find referenced Issue`, tried on each). So neither could receive its evidence
+> as a card comment, and I did not unarchive them to work around it — that is a change to
+> your board. **The evidence for both lives here and in `docs/CHANGELOG.md` instead.**
+> Worth knowing generally: an archived card is a read-only surface for CC. Asking me to
+> "sync status with evidence" on one cannot be done in-place.
 
-| Card | Why |
-|---|---|
-| All 35 In Progress cards | **No `cc-queue` label** — per `workflow.md`, not mine to take |
-| MEH-1105 | `blocked-needs-sapir` — brief forbids |
-| MEH-1590, MEH-999, MEH-1283 | labelled `not-cc` |
-| MEH-1698 (Urgent) | HIGH-RISK `Header.jsx` → Draft-only by brief — **and already shipped**, see §6 |
-
-## 6 · Board reconciliation — four "In Progress" cards are already shipped
-
-Worth more than any fix I could have made tonight: **the board is behind the repo.** Each
-verified against `origin/staging` by file:line, not by reading the ticket.
-
-| Card | Actual state on `staging` | What is genuinely left |
+| issue | verified | action taken |
 |---|---|---|
-| **MEH-1527** | Chunk 1 shipped (#2122). `cd backend && uv lock --check` → **exit 0**, confirmed by running it | Chunk 2a/2b — both `.github/` or repo settings = yours |
-| **MEH-1698** | **All three chunks landed.** `Header.jsx:401` mounts `<LanguageToggle variant="default" />`; spec 14 rewritten with hard assertions and the `count()===0` self-skip **deleted**; docstrings corrected (`f9acc058`) | Your mobile QA on staging + CHANGELOG/HANDOFF |
-| **MEH-1608** | Copy unified (no `instagram.com` placeholder left in `cards.jsx`); server normalizer live at `schemas/schemas.py:203`, wired at 4 call sites | Only your read-only count query (ticket §6) |
-| **MEH-1583** | Code + fixture + **both baselines** on staging | Mobile QA + logs — see below |
+| **MEH-1911** | `#2633` merged 07/08 10:41Z by you; `tests/conftest.py:41` carries `PYTEST_XDIST_WORKER` on staging | **NOT synced to Done — see §8.** The proof does not reproduce. |
+| **MEH-1764** | `8d364ab2` (#2430) + `55de2263` (#2631) both on staging; `docs/ci/vrt-label-trigger.patch.md` = 19,131 bytes; cited at `.claude/rules/testing.md:149` | **NOT synced.** CC side is 4/7 of DoD; items 5–7 (apply YAML, create the `vrt-regen` label, live + negative verification) are yours and **causally blocked** on the apply. Could not comment — **the card is archived and Linear rejects comments on it.** I did not unarchive it. |
+| **MEH-1249** | rider (1) **done** — `#2621` merged 05/08, `scripts/local-backend.sh` present on staging | **Not started, correctly.** Rider (3) in your 05/08 ruling forbids the 1,074-item run before MEH-1909, which is still open. Description gate beats the seed's ordering. |
 
-### MEH-1583 — I closed its blocking DoD item
+## 8 · ⚠️ MEH-1911's stability proof does NOT reproduce — do not mark it Done
 
-The ticket required *"CC opens both PNGs and visually verifies before merge — full row, not a
-pill"* (the MEH-1552 candidate-baseline lesson). **Done, and posted to the card:**
+Ran the ×5 proof against the merged conftest on current staging. **The counts are not
+identical, and the ticket's acceptance criterion demands that they are** (*"identical collected
+count — assert equality with a serial collection"*).
 
-- `producer-detail-phone-revealed-*.png` (1 × open) — full-width row, `rounded-[10px]`, icon at
-  the logical start. **The poisoned baseline really was replaced.**
-- `producer-detail-two-channel-revealed-*.png` (many × open) — two full-width rows, one
-  geometry. **No pill beside a 44px circle.** The 26/07 bug is gone.
+| run | mode | passed | skipped | xfailed | wall |
+|---|---|---|---|---|---|
+| 1 | `-n auto` | **2376** | 371 | 1 | 249s |
+| 2 | `-n auto` | **2384** | 371 | 1 | 222s |
+| 3 | `-n auto` | **2384** | 371 | 1 | 218s |
+| 4 | `-n 2` | **2384** | 371 | 1 | **392s** |
+| 5 | `-n 4` | **2384** | 371 | 1 | 221s |
+| — | `-m serial` | 1 passed, 2756 deselected | | | 59s |
 
-One honest deviation, documented on the card: the AC predicted *"circle row + full-width number
-row"*, but with the phone removed only **one** channel remains, so it takes the `single` branch
-and renders as a labeled full-width row. More consistent than the AC described — but different,
-so it is recorded rather than left looking like a miss. **Consequence: the "3+ channels × open"
-cell is still uncovered by VRT.** No card opened (out of scope); a natural sibling if you want it.
+**Four of the five agree exactly. Run 1 alone is 8 short**, with identical skips and zero
+failures. **I have not established the cause and am not guessing one.**
 
-**Evidence limit (Skeptic Mode):** I verified the **PNG contents as committed** and the
-className in code. I did **not** run the VRT suite against a live build, so I have not shown
-these shots still match the current render — only that they themselves show the right geometry.
+**But the shape of the disagreement is itself the useful finding, and it points away from
+parallelism.** The three runs that differ in *worker count* — `auto`, `2`, `4` — return
+byte-identical results (2384 / 371 / 1). The only run that differs is the **first one against a
+freshly created database**. So worker count does not move the number; run order does. That is
+the opposite of what parallel instability looks like, and `2756 deselected` in the serial pass
+reconciles exactly with 2384 + 371 + 1.
 
-## 7 · Pipeline health
+**Why I still won't mark it Done:** the criterion says *identical*, one run wasn't, and
+"probably a first-run artifact" is a hypothesis I did not test. The cheap discriminator is one
+more `-n auto` run against a **fresh** database — if it also returns 2376, the first-run
+explanation is confirmed and the proof can be read as green with that caveat recorded.
 
-| Signal | State |
-|---|---|
-| `staging` tip | `150f4927` (#2414) |
-| `uv lock --check` on staging | **exit 0** — MEH-1527's blocker is genuinely closed |
-| `scripts/checks/run-all.sh` | **7/7 guards pass** |
-| Required gates | **GREEN — but see §3:** trustworthy only on non-draft PRs until #2415 is applied |
-| Sentry / Vercel delta | **Not measured.** No merge was made, so there is no post-merge delta to compare against a baseline. |
-| Open PRs | 20, unchanged by me (+1 draft = 21) |
+Two things this *does* establish:
 
-## 8 · What to do first
+- **The isolation works.** A shared-DB `-n 4` run errored on ~82% of `test_api.py` before this
+  landed; every run above is clean.
+- **The 2-core number, which is what CI actually has.** `-n 2` = **392s ≈ 6.5 min**, against a
+  ~12 min serial baseline. That lands inside the DoD's revised **≤7 min** target and confirms
+  night-1's extrapolation rather than the original ≤5 min claim.
 
-1. **Label 3–5 cards `cc-queue`** — nothing else unblocks an autonomous run. Everything below is
-   downstream of this.
-2. **Apply `docs/ci/ci-gate-skip-green.patch.md`** (PR #2415) — until then a draft PR's green
-   gate is meaningless, which is the hole that makes unattended merging unsafe in the first place.
-3. **Decide MEH-1761** — renumber the remediation ADR to **032**, and either refresh
-   `autonomy-cache.json` or delete it. Right now it is 143 lines of misleading tiers.
-4. **Close the four cards in §6** once their remaining human steps are done.
+> **Environmental note worth keeping:** the suite does not run from this sandbox without
+> `PYTHONPATH=<repo root>` — `tests/` has no `__init__.py` and there is no
+> `[tool.pytest.ini_options]`, so `from tests.conftest import …` raises `ModuleNotFoundError`.
+> Cost me two failed attempts; the first "green" was `no tests ran` with `EXIT=0`.
+
+## 9 · SKIPPED, with the reason
+
+- **Gated by their own description:** MEH-1249 (rider 3 → MEH-1909), MEH-1938 (per-chunk go),
+  MEH-1925 (your Console), MEH-1935 (rule-22 copy approval)
+- **RED / decision-first markers:** MEH-1907, MEH-1736, MEH-1868 (workflow half)
+- **`not-cc` / `needs-sapir` / `blocked-needs-sapir`:** MEH-1244, MEH-1590, MEH-999, MEH-1283,
+  MEH-1585, MEH-1754, MEH-1876
+- **Not reached** (budget went to the audit + the proof): B3 MEH-1855, B4 MEH-1854,
+  B5 MEH-1862, B6 MEH-1921, B7 MEH-1414, B8 MEH-1516, C1/C2/C4, D1 MEH-1501, E1 MEH-1934
+
+## 10 · Pipeline health
+
+- **staging GREEN** at `b50e4c82`. Nothing merged by me tonight, so nothing of mine to revert.
+- **E2E** still red for the documented Cloudinary reason (MEH-1925) — unchanged, blocks nothing
+  in the docs/tests lanes.
+- **Sentry / Vercel:** **not checked, and I can't from here** — no Sentry or Vercel MCP tools
+  exist in a harness session (CLAUDE.md says so). Their absence here is *not* evidence they're
+  down and *not* a verification. Relevant because MEH-1511's amendment is void if either is
+  disconnected.
+- **Cloudinary MCP needs re-authorisation** in this session. Untouched; surfaced at startup.
 
 ---
 
-### Footnote — a guard false-positive I hit, not filed
+## Next concrete step
 
-`.claude/hooks/check-rtl.sh` exempts `.md` (`:60`) but **not** `.sh`, and flags the literal
-string `pr-checks.yml` because it contains `pr-c`, read as a physical `padding-right` class. I
-used the documented `rtl-ok` escape rather than widening the hook mid-session. Low severity, but
-it will hit anyone writing a shell script that names that workflow. Not filed — say the word and
-I will.
+Decide §5's option (א)/(ב)/(ג) on MEH-1896 — that unblocks both the MEH-1942 fix and the
+guard extension. Then either unblock MEH-1511 (§2) or reassign it, since CC cannot execute it
+under auto-mode.
