@@ -215,10 +215,17 @@ wrong answer.
 
 ### 📅 2026-08-01 — three actions
 
-**Status as of 2026-08-03 (MEH-1861):** **(a) appears DONE** — the reviewer
-authenticates and posts reviews; see the corrected subsection below for the
-measurements. **(b) is OPEN**, staged on PR #2511. **(c) is OPEN** and blocked
-on (b).
+**Status as of 2026-08-08 (MEH-1844):** **(a) DONE** — the reviewer
+authenticates and posts reviews. **(b) DONE** — the action is pinned to a full
+SHA at `claude-review.yml:68`; the "staged on PR #2511" reading below is stale
+and PR #2511 is no longer where to look. **(c) is OPEN** and is now unblocked.
+The reviewer itself is **intermittent** — see the re-corrected subsection below
+for the five-head measurement, and do not read (a)+(b) DONE as "it fires on
+every push", because on 08/08 it did not.
+
+_(Superseded line, kept so the drift is visible: "**Status as of 2026-08-03
+(MEH-1861):** (a) appears DONE … **(b) is OPEN**, staged on PR #2511. **(c) is
+OPEN** and blocked on (b).")_
 
 **(a) Restore `CLAUDE_CODE_OAUTH_TOKEN` as a repository (or organization)
 secret.** ✅ *Satisfied — verified 2026-08-03 from posted reviews on PRs #2494
@@ -237,11 +244,18 @@ to empty and cannot work here; it must be repo- or org-scoped.
 > identically. Without that output you cannot tell which of the two causes below
 > you are actually looking at, nor confirm the fix took.
 
-**(b) Pin `anthropics/claude-code-action` to a full commit SHA.**
-`claude-review.yml:64` is on the floating **`@v1`** tag, so an upstream change
-lands unannounced and un-reviewed — in a job whose entire purpose is review.
-(`actions/checkout@v7` at `:59` floats too; out of scope here, worth the same
+**(b) Pin `anthropics/claude-code-action` to a full commit SHA.** ✅ **DONE —
+verified 2026-08-08.** `claude-review.yml:68` now reads
+`anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183`,
+and the file's own note at `:67` records the re-pin as deliberate. This
+paragraph previously said *"`claude-review.yml:64` is on the floating `@v1`
+tag"* — that citation is stale in both the line number and the fact.
+(`actions/checkout@v7` at `:59` still floats; out of scope here, worth the same
 treatment.)
+
+**Consequence worth carrying forward:** the 08/08 no-ops occurred **on the
+pinned SHA**, so whatever causes them, it is not an unreviewed upstream change
+arriving on a floating tag. That eliminates candidate 2 below.
 
 **(c) Delete this temporary policy** — this whole section, plus rule 5a's
 pointer to it.
@@ -252,51 +266,127 @@ has the empty MEH-487 calibration tally to show for that class.
 
 ### Why the substitution existed — and what is true now
 
-> ## ✅ CORRECTED 2026-08-03 (MEH-1861) — the reviewer works. It reads diffs.
+> ## ⚠️ RE-CORRECTED 2026-08-08 (MEH-1844) — the reviewer is **INTERMITTENT**. Neither fixed nor down.
 >
-> **This section previously asserted that the CI adversarial reviewer "has never
-> read a diff". That assertion is false as of 2026-08-02** and it was quoted as
-> fact into two PR bodies before anyone re-checked it. Measured, not inferred:
+> **Read this before quoting anything below it.** This block has now been wrong
+> in *both* directions, and the second error was caused by the first one's
+> wording. Sequence, dated:
+>
+> | Date | What the file said | What was true |
+> |---|---|---|
+> | ≤ 02/08 | "has never read a diff" | **false** — it was reviewing |
+> | 03/08 | "✅ the reviewer works. It reads diffs." | true *that day*, and it read as permanent |
+> | **08/08** | — | **both, on the same day, on the same pin** |
+>
+> ### Measured 2026-08-08 — five heads, one day, one action pin
+>
+> | Head | Result | Evidence |
+> |---|---|---|
+> | PR #2681 `0c497b54` | ✅ **real review** | comment `08:51:49Z`; run `31249203315`, action step `08:49:01Z → 08:52:03Z` = **3 m 02 s**; a genuine finding with file:line (`producer_me.py:1422–1429`) |
+> | PR #2685 (first head) | ✅ **real review** | comment `09:25:48Z`, all three sections `None.` — the `docs/CLAUDE-REVIEW.md` contract honoured on a clean diff |
+> | PR #2685 (later head `30c2c6d6`) | ❌ **no-op** | `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, **356 ms** |
+> | PR #2688 `450fb5a2` | ❌ **no-op** | job `93097369635`, **730 ms**, same four fields |
+> | PR #2690 `35b76717` | ❌ **no-op** | job `93116123580`, action step `failure` at `14:47` |
+>
+> **The sharpest datum is PR #2685: it reviewed one head and no-op'd the next,
+> on the same PR, hours apart.** So the variable is not the repo, not the
+> credential, and not the pin — all three were constant across every row. It
+> varies **per head**. That is what "intermittent" means here, and it is why
+> neither "works" nor "down" is a usable summary.
+>
+> ### What this means for rule 5a — the practical part
+>
+> - **You cannot assume a review will appear**, and you cannot assume one will
+>   not. **Check the PR before merging.** If a `claude[bot]` comment is there,
+>   read it; rule 5a §6 is satisfied.
+> - **Silence is not approval, and it is not a blocker either.** The job is
+>   `continue-on-error: true` (`claude-review.yml:56`) and outside `ci-gate`'s
+>   `needs:`, so its red blocks nothing. **State the absence in the PR body**
+>   rather than leaving it unmentioned — an unremarked silence is
+>   indistinguishable from a review that found nothing.
+> - **Do not write "the CI reviewer is down" or "uncredentialed" into a PR
+>   body.** Both were written this way before and both were false. Say what you
+>   measured on *your* PR, with the run id.
+> - The local `/adversarial-review` substitution below stays the baseline
+>   precisely *because* the CI one cannot be relied on to fire.
+>
+> **Open diagnosis: MEH-1844.** The cause of the per-head variance is not
+> established. Do not infer one from the shape — `show_full_output` was removed
+> on 05/08 (deliberately, it is a live exposure on a public repo), so no cause
+> string is available, and "no cause string" is exactly the condition that
+> produced the two previous wrong entries in the table above.
+>
+> ### Status of the three actions — (b) has LANDED
+>
+> - **(a) credential** — satisfied. The action authenticates; a rejected
+>   credential could not produce the 3 m 02 s review on #2681.
+> - **(b) SHA pin — DONE**, and this block previously said otherwise.
+>   `claude-review.yml:68` reads
+>   `anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183`.
+>   It is no longer on the floating `@v1` tag and PR #2511 is no longer the
+>   place to look. **Note what this rules out:** the no-ops above happened on a
+>   *pinned* action, so "a breaking change arrived on the floating tag" —
+>   candidate 2 in the table below — **cannot** explain them.
+> - **(c) delete this temporary section** — now unblocked by (b), still open,
+>   and still Sapir's call rather than a silent expiry.
+>
+> ### Preserved: what was measured on 2026-08-03 (MEH-1861)
+>
+> Still accurate *for its date*, and the reason the 02/08 "never read a diff"
+> claim was retired:
 >
 > | Evidence (verified 2026-08-03) | Value |
 > |---|---|
-> | `claude[bot]` review on PR #2494 | posted `2026-08-02T08:34:53Z` — all three sections `None.`, i.e. the "always post a comment" contract in `docs/CLAUDE-REVIEW.md` being honoured on a clean diff |
+> | `claude[bot]` review on PR #2494 | posted `2026-08-02T08:34:53Z` — all three sections `None.` |
 > | `claude[bot]` review on PR #2541 | posted `2026-08-02T21:20:02Z` — a **real, correct finding**: `scripts/checks/legacy-expiry-check.sh:102` called `grep -InE` without `-H`, so a single-file `xargs` batch drops the filename prefix and `cut -d: -f1` silently misparses every marker. Confirmed and fixed in `d369fe2d` |
-> | Job runtime, run `30767745811` | action step `21:22:55Z → 21:23:42Z` = **47 s**, not the ~500–600 ms of the old no-op symptom |
+> | Job runtime, run `30767745811` | action step `21:22:55Z → 21:23:42Z` = **47 s** |
 > | Recent run conclusions | `success` across the 02–03/08 runs of `claude-review.yml` |
 >
-> **So candidate 1 below (missing/expired credential) is resolved** — the
-> reviewer authenticates and runs. Action **(a)** appears satisfied; it was not
-> recorded as done, which is why this text outlived it.
+> **Why that evidence did not entitle the "✅ works" heading it carried.** Every
+> row is a *positive* observation, and no number of successes establishes that
+> failures stopped — the 03/08 sample simply contained no no-op. The heading
+> generalised a run of greens into a property, which is the same move as reading
+> a green check as "the code is correct" without asking what else produces it.
+> **A claim about a flaky system needs its negative cases counted, or it needs
+> an as-of date and no verb like "works".**
 >
-> **What has NOT changed:** the job is still `continue-on-error: true` and still
-> outside `ci-gate`'s `needs:`, so **its red still blocks nothing** and it is
-> still not a required check. Action **(b)** — pinning
-> `anthropics/claude-code-action` to a SHA — is still open and is staged on
-> **PR #2511** (`feature/meh-1844-restore-ci-reviewer`, draft). Action **(c)**
-> stays open until (b) lands.
->
-> **Practical consequence for rule 5a:** the CI reviewer is now a real second
-> pair of eyes. Read its comment before merging. The local `/adversarial-review`
-> substitution below remains useful — it runs earlier, before the PR exists —
-> but it is no longer the *only* review, and **no PR body should describe the CI
-> reviewer as "uncredentialed" any more.**
+> ⚠️ **`success` at the run level is not evidence the reviewer ran.**
+> `continue-on-error: true` means the *workflow run* reports `success` while the
+> *job* check-run reports `failure`. Measured on #2688: run `31255166729` =
+> `success`, job `93097369635` = `failure`, `is_error: true`. The "Recent run
+> conclusions" row above is this artefact and proves nothing on its own —
+> read the **job**, or better, look for the comment.
 
 **Historical record — the state that produced the substitution (observed up to
-2026-07-29, no longer true):** the reviewer exited before doing any work:
+2026-07-29).** _The parenthetical here used to read "no longer true"; as of
+2026-08-08 that is wrong — the identical four-field symptom recurs, just not on
+every commit. What has changed since 07/29 is the **frequency**, from
+"repo-wide, every commit" to "some heads and not others". The description below
+is still an accurate description of a no-op run._ The reviewer exited before
+doing any work:
 `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, ~500–600 ms, on **every
 commit**, repo-wide (reproduced on an unrelated PR, run `30358905937`). The
 cause was never established; two candidates produced that identical symptom:
 
-| # | Candidate | What pointed at it | Status (verified 2026-08-03) |
+| # | Candidate | What pointed at it | Status (re-verified 2026-08-08) |
 |---|---|---|---|
-| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call | **resolved** — the action now authenticates and posts reviews |
-| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two | **unresolved as a risk** — `:64` still floats, which is what (b)/PR #2511 addresses |
+| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call | **eliminated** — a rejected credential cannot produce the 3 m 02 s review posted on PR #2681 on 08/08, hours from the no-ops |
+| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two | **eliminated as the cause** — the 08/08 no-ops ran on the **pinned SHA** (`:68`). The pin was still worth doing; it just is not the explanation. _(This cell previously read "unresolved as a risk — `:64` still floats"; both halves are now stale.)_ |
 
-Which of the two actually broke it was never determined and now cannot be:
-the symptom cleared without an attributable change in this repo. Do (b) anyway,
-with `show_full_output: true` on — a floating tag on the review job is the same
-exposure regardless of what caused the outage.
+**Both original candidates are now eliminated, and no third one has been
+established.** That is a worse position than the table used to imply, not a
+better one: the symptom is live, both leading explanations are dead, and
+`show_full_output` was removed on 05/08 (deliberately — it is a live exposure on
+a public repo), so the action's own error text is unavailable to whoever picks
+this up.
+
+**What would actually discriminate**, for whoever takes MEH-1844: the two 08/08
+reviews and the three no-ops differ by *head*, not by repo, credential, pin, or
+workflow file — all five were constant. So the next probe belongs on what varies
+per head (diff size, changed paths, base-branch state, event payload), and it
+needs `show_full_output: true` turned on **for that run only** and off again in
+the same session. Do not infer a cause from the four-field shape alone; that
+shape is what produced the two wrong entries in the dated table above.
 
 It is `continue-on-error: true` (`claude-review.yml:56` — MEH-1734's body and
 the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`
@@ -341,14 +431,26 @@ section was asked to carry.
    opened"* — cite **this section**, not a ticket. MEH-1734/1735 are cancelled
    and a reader following them lands on nothing. **Do NOT write "CI reviewer
    uncredentialed"** — that was this file's wording until 2026-08-03 and it is
-   false (see the corrected subsection above).
+   false (see the re-corrected subsection above). **And do not write the
+   opposite** — "the CI reviewer reviewed this PR" — unless you looked and found
+   the comment on *this* PR. Both directions have already been asserted from the
+   file rather than from the PR, and both were wrong. Describe what you
+   observed, not what the rules file says the reviewer generally does.
 5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
    actually ran — `conclusion: success`, not `skipped`.
-6. **Read the `claude-review` comment before merging** (verified 2026-08-03: the
-   job posts one on every non-draft, non-docs-only PR). Its check result still
-   gates nothing — `continue-on-error: true`, absent from `ci-gate`'s `needs:` —
-   so a red there does not block, but the *comment* is now real review output
-   and is not to be skipped. **Never edit `claude-review.yml`** (CC-deny,
+6. **Look for the `claude-review` comment before merging, and say what you
+   found.** This step used to read *"(verified 2026-08-03: the job posts one on
+   every non-draft, non-docs-only PR)"* — **that is false as of 2026-08-08**: it
+   posted on two heads and no-op'd on three others the same day (see the
+   re-corrected subsection above). So:
+   - **Comment present** → read it, act on it, note it. It is real review output.
+   - **Comment absent** → **not** a pass and **not** a blocker. Write one line in
+     the PR body saying it did not appear, with the job id you checked. An
+     unremarked silence is indistinguishable from a clean review, and that
+     ambiguity is the whole reason this step exists.
+
+   Its check result gates nothing either way — `continue-on-error: true`, absent
+   from `ci-gate`'s `needs:`. **Never edit `claude-review.yml`** (CC-deny,
    MEH-671).
 
 > **State the limitation plainly in the PR — do not dress it up.** The maker and
