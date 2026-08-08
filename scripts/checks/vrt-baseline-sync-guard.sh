@@ -106,29 +106,59 @@ echo "vrt-baseline-sync-guard: mode WARN-ONLY (MEH-1928)"
 # to the tip" is not a fix at all in the one environment that matters: it
 # degrades straight back to the unsound two-dot answer, silently. When the base
 # is moving and no merge base exists, this guard says so LOUDLY instead.
+# `git rev-parse` is NOT enough in a shallow clone: it resolves a SHA whose
+# object was never fetched, and the diff then fails downstream.
+# (changelog-branch-guard.sh:196-201)
+have_commit() { git cat-file -e "${1}^{commit}" 2>/dev/null; }
+
+# Pull one commit into a shallow clone. Direct-SHA fetch works on GitHub;
+# a plain bare remote refuses it, so fall back to deepening the base branch.
+fetch_commit() {
+  sha="$1"
+  if git fetch --no-tags --quiet --depth=1 origin "$sha" 2>/dev/null && have_commit "$sha"; then
+    return 0
+  fi
+  [ -n "${GITHUB_BASE_REF:-}" ] || return 1
+  for depth in 50 250 1000; do
+    git fetch --no-tags --quiet --depth="$depth" origin "$GITHUB_BASE_REF" 2>/dev/null || return 1
+    have_commit "$sha" && return 0
+  done
+  return 1
+}
+
 resolve_base() {
   if [ -n "${VRT_BASELINE_GUARD_BASE:-}" ]; then
-    if git rev-parse --verify --quiet "${VRT_BASELINE_GUARD_BASE}^{commit}" >/dev/null; then
+    if have_commit "$VRT_BASELINE_GUARD_BASE"; then
       printf '%s\t%s\t%s\n' "$VRT_BASELINE_GUARD_BASE" "VRT_BASELINE_GUARD_BASE override" "frozen"
       return 0
     fi
-    echo "  base override VRT_BASELINE_GUARD_BASE is not a commit." >&2
+    echo "  base override VRT_BASELINE_GUARD_BASE is not a present commit." >&2
     return 1
   fi
   # A pull_request checkout puts HEAD at refs/pull/N/merge; that ref's FIRST
   # PARENT is the frozen base it was actually built on. Gated on GITHUB_REF so a
   # feature branch whose HEAD is a rule-25 sync merge cannot take this path —
   # there parent 1 is the branch's own previous tip, not a base.
+  #
+  # Parents are read from the RAW COMMIT OBJECT, not via `HEAD^1`: the raw
+  # object survives shallow grafting and `git rev-parse HEAD^` does not
+  # (changelog-branch-guard.sh:239-240). An earlier draft of this guard used
+  # `rev-parse HEAD^1` here, which fails in exactly the depth-1 CI checkout this
+  # path exists to serve.
   case "${GITHUB_REF:-}" in
     refs/pull/*/merge)
-      if _p="$(git rev-parse --verify --quiet 'HEAD^1' 2>/dev/null)" && [ -n "$_p" ]; then
-        printf '%s\t%s\t%s\n' "$_p" "refs/pull/N/merge first parent" "frozen"
-        return 0
+      _parents="$(git cat-file commit HEAD 2>/dev/null | sed -n '/^$/q; s/^parent //p')"
+      if [ "$(printf '%s\n' "$_parents" | grep -c .)" -ge 2 ]; then
+        _first="$(printf '%s\n' "$_parents" | head -n 1)"
+        if [ -n "$_first" ] && { have_commit "$_first" || fetch_commit "$_first"; }; then
+          printf '%s\t%s\t%s\n' "$_first" "refs/pull/N/merge first parent" "frozen"
+          return 0
+        fi
       fi
       ;;
   esac
   if [ -n "${GITHUB_BASE_REF:-}" ]; then
-    if git rev-parse --verify --quiet "origin/${GITHUB_BASE_REF}^{commit}" >/dev/null; then
+    if have_commit "origin/${GITHUB_BASE_REF}"; then
       printf '%s\t%s\t%s\n' "origin/${GITHUB_BASE_REF}" "GITHUB_BASE_REF tip" "moving"
       return 0
     fi
@@ -139,7 +169,7 @@ resolve_base() {
     fi
     return 1
   fi
-  if git rev-parse --verify --quiet origin/staging^{commit} >/dev/null; then
+  if have_commit origin/staging; then
     printf '%s\t%s\t%s\n' "origin/staging" "origin/staging fallback" "moving"
     return 0
   fi
