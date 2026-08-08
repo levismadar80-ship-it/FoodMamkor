@@ -41,6 +41,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href }) => <a href={href}>{children}</a>,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
@@ -74,6 +75,12 @@ vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-1862: ProducersClient now imports this to attach FilterSheet group
+  // metadata, and a partial vi.mock throws on any export it omits (same
+  // reason the MEH-1881 names above are stubbed). Identity is the right
+  // stub here: these specs never open the sheet, so the group a chip would
+  // be filed under is irrelevant, while dropping chips would not be.
+  withChipGroups: (chips = []) => chips,
   buildChipParams: () => ({}),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
