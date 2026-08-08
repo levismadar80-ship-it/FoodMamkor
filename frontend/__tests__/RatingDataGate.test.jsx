@@ -88,6 +88,9 @@ vi.mock("@/lib/producer-filters", () => ({
   // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
   PRODUCERS_CHIPS_CONFIG: [],
   PRODUCERS_CHIPS_DEFAULT: {},
+  // MEH-1934: a partial vi.mock throws on any export the component imports.
+  GATED_DIET_KEYS: [],
+  visibleGatedDietKeys: () => [],
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),
