@@ -29,9 +29,15 @@
 #     one of them — and the Footer renders on every single covered route. A
 #     closure walk over `useTranslations("ns")` reports `footer` as NOT covered,
 #     which is exactly backwards.
-#   * 157 call sites build the key with a template literal (`t(`a.${x}`)`), and
-#     others pass a bare variable (`t(status)`, `t(labelKey)`). Those keys do
-#     not exist until runtime.
+#   * 160 call sites build the key with a template literal, and others pass a
+#     bare variable (`t(status)`, `t(labelKey)`). Those keys do not exist until
+#     runtime. Reproduce:
+#       grep -rEc 't\(`[^`]*\$\{' --include=*.js --include=*.jsx \
+#         --include=*.ts --include=*.tsx app components lib | awk -F: '{s+=$2} END{print s}'
+#     (An earlier draft said 157 and named no method, so nobody could check it;
+#     adversarial review measured 101-121 under different scoping and could not
+#     reproduce it. The count is scope-dependent, which is the whole reason the
+#     command belongs here next to the number.)
 #
 # An allowlist built from the resolvable subset would be wrong in the UNSAFE
 # direction: it would stay silent on a key it could not see, which is the exact
@@ -45,13 +51,20 @@
 # ---------------------------------------------------------------------------
 # DUPLICATION, DECLARED (workflow.md Smell #1)
 # ---------------------------------------------------------------------------
-# The base-resolution ordering below mirrors changelog-branch-guard.sh's
-# `resolve_base`. There is no shared helper in scripts/checks/ to source, and
-# extracting one means editing a guard this ticket does not own. It is
-# deliberately the SIMPLER version: it omits that guard's refs/pull/N/merge
-# first-parent refinement (MEH-1634), which matters for a frozen base on a PR
-# whose branch has absorbed later staging merges. Reported rather than silently
-# copied; a shared helper is the right follow-up.
+# The base-resolution below mirrors changelog-branch-guard.sh's `resolve_base`,
+# including the refs/pull/N/merge first-parent path and the frozen/moving tag
+# (MEH-1634). There is no shared helper in scripts/checks/ to source, and
+# extracting one means editing a guard this ticket does not own.
+#
+# An earlier draft of this file copied only the ORDERING and skipped the
+# frozen/moving distinction, describing the omission here as a minor
+# simplification. It was not minor — it was the load-bearing half, and it
+# reintroduced MEH-1634 in both directions (see the base-resolution comment).
+# Two guards now carry the same ~50 lines of subtle reasoning, and the second
+# copy already drifted once before it shipped. **The shared helper is no longer
+# a nice-to-have follow-up; it is the fix for a demonstrated failure mode.**
+# Reported here rather than done, because it means editing a guard this ticket
+# does not own.
 set -uo pipefail
 
 # Every path below is repo-relative, and `git diff -- <pathspec>` resolves the
@@ -68,65 +81,107 @@ SNAP_DIR="frontend/e2e/visual/parity.spec.ts-snapshots"
 echo "vrt-baseline-sync-guard: mode WARN-ONLY (MEH-1928)"
 
 # --- base resolution -------------------------------------------------------
+# FROZEN vs MOVING — the distinction is load-bearing, and it is copied from
+# changelog-branch-guard.sh:57-88 rather than reinvented, because that guard
+# already paid for getting it wrong (MEH-1634: run 30248101409 reported 47 code
+# files on a docs-only PR — all of them staging's churn, in reverse).
+#
+#   frozen : the base is the exact commit HEAD was built against, so two-dot
+#            `git diff BASE HEAD` is exact.
+#   moving : the base is a branch TIP that has advanced since this branch
+#            forked. Two-dot then reports everything that landed on the base in
+#            between, in reverse, as though this branch deleted it. A merge base
+#            is required, and three-dot is the only sound comparison.
+#
+# Both directions of that error are live for THIS guard and both are silent:
+#   * another PR's he.json edits get reported against this PR, with correct-
+#     looking file:line pointers into lines nobody here touched;
+#   * another PR's baseline regen landing on the base makes SNAP_DIR look
+#     touched, so a genuine violation reports "the rule is satisfied".
+# The second is the dangerous one — it is exactly the quiet miss this guard
+# exists to prevent.
+#
+# ⚠️ The `repo-guards` job checks out at depth 1 (changelog-branch-guard.sh:42),
+# and a shallow clone HAS NO MERGE BASE. So "compute a merge base and fall back
+# to the tip" is not a fix at all in the one environment that matters: it
+# degrades straight back to the unsound two-dot answer, silently. When the base
+# is moving and no merge base exists, this guard says so LOUDLY instead.
 resolve_base() {
   if [ -n "${VRT_BASELINE_GUARD_BASE:-}" ]; then
     if git rev-parse --verify --quiet "${VRT_BASELINE_GUARD_BASE}^{commit}" >/dev/null; then
-      printf '%s\t%s\n' "$VRT_BASELINE_GUARD_BASE" "VRT_BASELINE_GUARD_BASE override"
+      printf '%s\t%s\t%s\n' "$VRT_BASELINE_GUARD_BASE" "VRT_BASELINE_GUARD_BASE override" "frozen"
       return 0
     fi
     echo "  base override VRT_BASELINE_GUARD_BASE is not a commit." >&2
     return 1
   fi
+  # A pull_request checkout puts HEAD at refs/pull/N/merge; that ref's FIRST
+  # PARENT is the frozen base it was actually built on. Gated on GITHUB_REF so a
+  # feature branch whose HEAD is a rule-25 sync merge cannot take this path —
+  # there parent 1 is the branch's own previous tip, not a base.
+  case "${GITHUB_REF:-}" in
+    refs/pull/*/merge)
+      if _p="$(git rev-parse --verify --quiet 'HEAD^1' 2>/dev/null)" && [ -n "$_p" ]; then
+        printf '%s\t%s\t%s\n' "$_p" "refs/pull/N/merge first parent" "frozen"
+        return 0
+      fi
+      ;;
+  esac
   if [ -n "${GITHUB_BASE_REF:-}" ]; then
     if git rev-parse --verify --quiet "origin/${GITHUB_BASE_REF}^{commit}" >/dev/null; then
-      printf '%s\t%s\n' "origin/${GITHUB_BASE_REF}" "GITHUB_BASE_REF"
+      printf '%s\t%s\t%s\n' "origin/${GITHUB_BASE_REF}" "GITHUB_BASE_REF tip" "moving"
       return 0
     fi
     if git fetch --no-tags --quiet --depth=1 origin "$GITHUB_BASE_REF" 2>/dev/null &&
        git rev-parse --verify --quiet FETCH_HEAD^{commit} >/dev/null; then
-      printf '%s\t%s\n' "$(git rev-parse FETCH_HEAD)" "GITHUB_BASE_REF (fetched)"
+      printf '%s\t%s\t%s\n' "$(git rev-parse FETCH_HEAD)" "GITHUB_BASE_REF tip (fetched)" "moving"
       return 0
     fi
     return 1
   fi
   if git rev-parse --verify --quiet origin/staging^{commit} >/dev/null; then
-    printf '%s\t%s\n' "origin/staging" "origin/staging fallback"
+    printf '%s\t%s\t%s\n' "origin/staging" "origin/staging fallback" "moving"
     return 0
   fi
   return 1
 }
 
-if ! BASE_INFO="$(resolve_base)"; then
-  # No base = nothing to compare. Silent on purpose: a local run with no origin
-  # is not a finding, and printing WARNING here would cry wolf on every laptop.
-  echo "  no base ref resolvable — nothing to compare, skipping."
+# Never report OK for a comparison that did not happen. changelog-branch-guard
+# exits non-zero here; this guard is warn-only by ticket mandate, so the
+# equivalent is to print the WARNING token — run-all.sh then echoes the output
+# and summarises WARN instead of a bare PASS (MEH-1715). A silent exit 0 would
+# be indistinguishable from "he.json untouched", which is the decorative-guard
+# shape scripts/checks/README.md:165 names outright.
+cannot_compare() {
+  cat <<EOF
+
+  WARNING — vrt-baseline-sync-guard could not compare anything: $1
+
+  This is NOT a pass. The guard did not read a diff, so it cannot tell you
+  whether $MSG_FILE changed without its baselines. Treat it as unknown.
+EOF
   exit 0
+}
+
+if ! BASE_INFO="$(resolve_base)"; then
+  cannot_compare "no base ref resolvable (tried VRT_BASELINE_GUARD_BASE, refs/pull/N/merge, GITHUB_BASE_REF, origin/staging)"
 fi
 BASE="$(printf '%s' "$BASE_INFO" | cut -f1)"
 BASE_HOW="$(printf '%s' "$BASE_INFO" | cut -f2)"
+BASE_KIND="$(printf '%s' "$BASE_INFO" | cut -f3)"
 
-# Diff against the MERGE BASE, not the base tip. `git diff BASE HEAD` is
-# two-dot: on a branch that has not yet merged a newer staging, every he.json
-# value someone else changed on staging shows up as though THIS branch reverted
-# it — a warning naming keys the author never touched. Measured: on a branch 30
-# commits behind staging that does not touch he.json at all, two-dot reports the
-# file as changed and three-dot reports it clean.
-#
-# changelog-branch-guard.sh:308 already resolves an explicit merge base for the
-# same reason; this matches that convention. Fall back to the base tip if the
-# merge base cannot be computed (unrelated histories, grafted clone) — a
-# degraded comparison beats no comparison, and the header line says which ran.
-if MB="$(git merge-base "$BASE" HEAD 2>/dev/null)" && [ -n "$MB" ]; then
-  DIFF_BASE="$MB"
-  echo "  base: $BASE ($BASE_HOW) — comparing against merge-base ${MB:0:12}"
-else
+if [ "$BASE_KIND" = "frozen" ]; then
   DIFF_BASE="$BASE"
-  echo "  base: $BASE ($BASE_HOW) — no merge-base, comparing against the base tip"
+  echo "  base: $BASE ($BASE_HOW) [frozen] — two-dot is exact"
+elif MB="$(git merge-base "$BASE" HEAD 2>/dev/null)" && [ -n "$MB" ]; then
+  DIFF_BASE="$MB"
+  echo "  base: $BASE ($BASE_HOW) [moving] — comparing against merge-base ${MB:0:12}"
+else
+  cannot_compare "base $BASE ($BASE_HOW) is moving and no merge base exists — a shallow clone cannot produce one, and two-dot against a moving base is unsound (MEH-1634). Re-run with fetch-depth 0, or set VRT_BASELINE_GUARD_BASE to the frozen base."
 fi
 
 CHANGED="$(git diff --name-only "$DIFF_BASE" HEAD 2>/dev/null)" || {
-  echo "  git diff against $DIFF_BASE failed — skipping."
-  exit 0
+  cannot_compare "git diff against $DIFF_BASE failed"
 }
 
 echo "$CHANGED" | grep -qx "$MSG_FILE" || {
@@ -146,9 +201,18 @@ echo "$CHANGED" | grep -qx "$MSG_FILE" || {
 #
 # Line numbers come from walking the -U0 hunk headers, NOT from grepping the
 # file for the key: grep cannot tell which of the dozen "cta" lines moved.
-# Within a hunk, a removed key that also appears added is a VALUE CHANGE and
-# reports the new-side line; a removed key with no added twin is a REMOVED key
-# and reports the base-side line, having no new-side line to point at.
+#
+# PAIRING IS POSITIONAL, NOT BY KEY NAME. An earlier draft kept `addline[key]`
+# and looked the removed key up in it. That is wrong on this file specifically:
+# `"title"` occurs ~150 times, `"heading"` ~81. Two different `"title"` values
+# edited on adjacent lines land in ONE -U0 hunk, the map keeps only the last
+# write, and the first edit is reported at the wrong line — or, when one edit's
+# old value happens to equal another's new value, dropped entirely by the
+# comma exemption below. Both were demonstrated in adversarial review.
+#
+# So within a hunk the k-th removed line pairs with the k-th added line: that is
+# what a -U0 hunk means. A removed line with a pair is a VALUE CHANGE reported
+# at the new-side line; one without is a REMOVAL reported at the base-side line.
 #
 # TRAILING-COMMA EXEMPTION — the reason this is not a plain key comparison.
 # Inserting a key into a JSON object makes the PREVIOUS sibling gain a comma,
@@ -160,10 +224,11 @@ echo "$CHANGED" | grep -qx "$MSG_FILE" || {
 #
 # A removed line is therefore NOT proof that a value changed, and the first
 # draft of this guard reported "cta" on every key addition — the exact case the
-# ticket scopes out, and the shape every real addition takes. So a removed line
-# whose text matches an added line in the same hunk **modulo trailing whitespace
-# and one trailing comma** is dropped. A line that both changed value AND gained
-# a comma still differs after normalisation, and still fires.
+# ticket scopes out, and the shape every real addition takes. So the k-th
+# removed line is dropped when it matches the k-th ADDED line **modulo trailing
+# whitespace and one trailing comma**. Comparing positionally rather than by set
+# membership is what keeps this narrow: a line that both changed value AND
+# gained a comma still differs from its pair, and still fires.
 DIFF="$(git diff -U0 "$DIFF_BASE" HEAD -- "$MSG_FILE" 2>/dev/null)"
 REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
   function keyof(s) {
@@ -180,12 +245,16 @@ REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
   }
   function flush(   i, k) {
     for (i = 1; i <= nrem; i++) {
-      if (remnorm[i] in addnorm) continue        # comma-only: a key was inserted below
+      # positional pair: the k-th removed line answers to the k-th added line
+      if (i <= nadd && remnorm[i] == addnorm[i]) continue   # comma-only
       k = remk[i]
-      if (k in addline) printf "%s:%d\t%s\tchanged\n", f, addline[k], k
-      else              printf "%s:%d\t%s\tremoved (base line)\n", f, remline[i], k
+      # structural lines (braces, brackets) still occupy a slot so the pairing
+      # above stays aligned, but they carry no key and are not a finding
+      if (k == "") continue
+      if (i <= nadd) printf "%s:%d\t%s\tchanged\n", f, addline[i], k
+      else           printf "%s:%d\t%s\tremoved (base line)\n", f, remline[i], k
     }
-    nrem = 0; delete addline; delete addnorm
+    nrem = 0; nadd = 0
   }
   /^@@/ {
     flush()
@@ -197,13 +266,11 @@ REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
   }
   /^\+\+\+/ || /^---/ { next }
   /^\+/ {
-    k = keyof($0); if (k != "") addline[k] = newno
-    addnorm[norm($0)] = newno
+    nadd++; addline[nadd] = newno; addnorm[nadd] = norm($0)
     newno++; next
   }
   /^-/ {
-    k = keyof($0)
-    if (k != "") { nrem++; remk[nrem] = k; remline[nrem] = oldno; remnorm[nrem] = norm($0) }
+    nrem++; remk[nrem] = keyof($0); remline[nrem] = oldno; remnorm[nrem] = norm($0)
     oldno++; next
   }
   END { flush() }
@@ -220,9 +287,29 @@ if echo "$CHANGED" | grep -q "^$SNAP_DIR/"; then
 fi
 
 # --- escape hatch ----------------------------------------------------------
-# `guard-ok: <reason>` in any commit message on the branch. A bare `guard-ok:`
-# with no reason does NOT count — same contract as builder-model-guard.
-HATCH="$(git log --format=%B "$DIFF_BASE"..HEAD 2>/dev/null | grep -E 'guard-ok:[[:space:]]*[^[:space:]]+' | head -1)"
+# `guard-ok: <reason>` in the TIP commit's message. A bare `guard-ok:` with no
+# reason does NOT count.
+#
+# Scoped to one commit, not to the whole branch range. scripts/checks/README.md
+# puts the marker on the offending line ±1; he.json is JSON and cannot carry a
+# comment, so the commit message is the nearest available carrier — but reading
+# the entire range recreates the problem the ±1 window exists to prevent. An
+# unrelated `guard-ok:` written three commits ago for a different guard would
+# silence a genuine, later violation, and a contributor could trip that by
+# accident rather than by intent. Demonstrated in adversarial review.
+#
+# Walks first parents past merge commits, exactly as builder-model-guard does:
+# rule 25 requires `git merge origin/staging` before every push, so the tip is
+# frequently a sync merge that carries no authored message.
+hatch_commit() {
+  c=HEAD
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ "$(git rev-list --count --merges "$c" -1 2>/dev/null)" = "1" ] || { echo "$c"; return 0; }
+    c="$c^1"
+  done
+  echo "$c"
+}
+HATCH="$(git log -1 --format=%B "$(hatch_commit)" 2>/dev/null | grep -E 'guard-ok:[[:space:]]*[^[:space:]]+' | head -1)"
 if [ -n "$HATCH" ]; then
   echo "  escape hatch honoured — $(printf '%s' "$HATCH" | sed 's/^[[:space:]]*//')"
   exit 0
