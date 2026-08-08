@@ -104,10 +104,28 @@ if ! BASE_INFO="$(resolve_base)"; then
 fi
 BASE="$(printf '%s' "$BASE_INFO" | cut -f1)"
 BASE_HOW="$(printf '%s' "$BASE_INFO" | cut -f2)"
-echo "  base: $BASE ($BASE_HOW)"
 
-CHANGED="$(git diff --name-only "$BASE" HEAD 2>/dev/null)" || {
-  echo "  git diff against $BASE failed — skipping."
+# Diff against the MERGE BASE, not the base tip. `git diff BASE HEAD` is
+# two-dot: on a branch that has not yet merged a newer staging, every he.json
+# value someone else changed on staging shows up as though THIS branch reverted
+# it — a warning naming keys the author never touched. Measured: on a branch 30
+# commits behind staging that does not touch he.json at all, two-dot reports the
+# file as changed and three-dot reports it clean.
+#
+# changelog-branch-guard.sh:308 already resolves an explicit merge base for the
+# same reason; this matches that convention. Fall back to the base tip if the
+# merge base cannot be computed (unrelated histories, grafted clone) — a
+# degraded comparison beats no comparison, and the header line says which ran.
+if MB="$(git merge-base "$BASE" HEAD 2>/dev/null)" && [ -n "$MB" ]; then
+  DIFF_BASE="$MB"
+  echo "  base: $BASE ($BASE_HOW) — comparing against merge-base ${MB:0:12}"
+else
+  DIFF_BASE="$BASE"
+  echo "  base: $BASE ($BASE_HOW) — no merge-base, comparing against the base tip"
+fi
+
+CHANGED="$(git diff --name-only "$DIFF_BASE" HEAD 2>/dev/null)" || {
+  echo "  git diff against $DIFF_BASE failed — skipping."
   exit 0
 }
 
@@ -146,7 +164,7 @@ echo "$CHANGED" | grep -qx "$MSG_FILE" || {
 # whose text matches an added line in the same hunk **modulo trailing whitespace
 # and one trailing comma** is dropped. A line that both changed value AND gained
 # a comma still differs after normalisation, and still fires.
-DIFF="$(git diff -U0 "$BASE" HEAD -- "$MSG_FILE" 2>/dev/null)"
+DIFF="$(git diff -U0 "$DIFF_BASE" HEAD -- "$MSG_FILE" 2>/dev/null)"
 REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
   function keyof(s) {
     if (match(s, /"([^"\\]|\\.)*"[[:space:]]*:/)) return substr(s, RSTART, RLENGTH - 1)
@@ -204,7 +222,7 @@ fi
 # --- escape hatch ----------------------------------------------------------
 # `guard-ok: <reason>` in any commit message on the branch. A bare `guard-ok:`
 # with no reason does NOT count — same contract as builder-model-guard.
-HATCH="$(git log --format=%B "$BASE"..HEAD 2>/dev/null | grep -E 'guard-ok:[[:space:]]*[^[:space:]]+' | head -1)"
+HATCH="$(git log --format=%B "$DIFF_BASE"..HEAD 2>/dev/null | grep -E 'guard-ok:[[:space:]]*[^[:space:]]+' | head -1)"
 if [ -n "$HATCH" ]; then
   echo "  escape hatch honoured — $(printf '%s' "$HATCH" | sed 's/^[[:space:]]*//')"
   exit 0
