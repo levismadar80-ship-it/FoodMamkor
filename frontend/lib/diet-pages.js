@@ -10,8 +10,9 @@
  *           Hebrew lives in messages/*.json under the `diet_pages` namespace).
  * Related:  MEH-1204 §B (hub-and-spoke internal linking), MEH-1881
  *           (OPEN_NOW_CHIP_MIN — the runtime-data-gate pattern this mirrors),
- *           MEH-1934 (ships the two `backed: false` attributes below).
- * History:  MEH-1935 (creation, 2026-08-07).
+ *           MEH-1934 (shipped the two attributes below).
+ * History:  MEH-1935 (creation, 2026-08-07); MEH-1941 (both attributes
+ *           flipped to `backed: true` once MEH-1934 landed, 2026-08-08).
  */
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 
@@ -44,31 +45,39 @@ export const DIET_PAGE_MIN = 5;
  * rejecting it, so `GET /producers?no_added_sugar=true` today returns the
  * ENTIRE approved catalog — which sails through a count-based gate and would
  * publish an indexable page whose grid contradicts its own H1. The count gate
- * cannot detect that; only this flag can. MEH-1934 ships the two columns and
- * their filters, and flips these to `true` in its chunk 3.
+ * cannot detect that; only this flag can. MEH-1934 shipped the two columns and
+ * their filters; MEH-1941 flipped these to `true`, so all six are backed today
+ * — the flag stays because it is what a NEW slug must declare before it can be
+ * served, and because the count gate still cannot detect an ignored param.
  */
 export const DIET_PAGES = [
   { slug: "vegan", attribute: "vegan", filterParam: "vegan", backed: true },
   { slug: "vegetarian", attribute: "vegetarian", filterParam: "vegetarian", backed: true },
   { slug: "gluten-free", attribute: "gluten_free", filterParam: "gluten_free", backed: true },
   { slug: "lactose-free", attribute: "lactose_free", filterParam: "lactose_free", backed: true },
-  // MEH-1934 pending. `pendingLabel` mirrors that ticket's locked hebrew_copy
-  // so the config is complete and reviewable now; once MEH-1934 adds the two
-  // ATTRIBUTE_LABELS entries, dietPageLabel() prefers those and the fallback
-  // goes unread. It is NOT a second label owner: it is only reachable while
-  // the page is un-servable and therefore never rendered.
+  // MEH-1934 has landed, and MEH-1941 flipped these to `backed: true`.
+  //
+  // `pendingLabel` is dead code — but NOT because of that flip, which is what
+  // an earlier draft of this comment claimed. It was unreachable from the day
+  // this file was written: dietPageLabel() only ever runs on a resolved entry,
+  // and both the route (page.js) and the sibling row filter un-backed entries
+  // out before reaching it, so the fallback had no live caller either way.
+  // What the flip changed is only that ATTRIBUTE_LABELS is now the sole
+  // resolver in fact as well as in principle (attribute-labels.js:112, :118;
+  // strings verified byte-identical to these, so no rendered copy moved).
+  // Kept because deleting it is a separate change from opening the pages.
   {
     slug: "no-added-sugar",
     attribute: "no_added_sugar",
     filterParam: "no_added_sugar",
-    backed: false,
+    backed: true,
     pendingLabel: "ללא סוכר מוסף",
   },
   {
     slug: "low-carb",
     attribute: "low_carb",
     filterParam: "low_carb",
-    backed: false,
+    backed: true,
     pendingLabel: "דל פחמימות",
   },
 ];

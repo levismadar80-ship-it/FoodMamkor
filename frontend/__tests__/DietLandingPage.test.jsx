@@ -28,6 +28,12 @@
  * before being observed green against the shipped code.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+// MEH-1941: the sitemap source-choice guard below reads the real file. Same
+// idiom as leaflet-attribution-default.test.js:44 — `import.meta.url` is not a
+// file: URL under vitest's transform, so resolve through fileURLToPath.
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 vi.mock("@/lib/env", () => ({
   SITE_URL: "https://mehamakor.co.il",
@@ -88,6 +94,7 @@ import {
   dietPagePath,
   dietPageLabel,
   getDietPage,
+  isDietPageBacked,
 } from "@/lib/diet-pages";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 
@@ -144,9 +151,18 @@ describe("MEH-1935 config — lib/diet-pages", () => {
     }
   });
 
-  it("marks exactly the two MEH-1934 attributes as not-yet-backed", () => {
+  // MEH-1941: the two MEH-1934 attributes flipped to `backed: true` once that
+  // ticket's columns landed, so the not-yet-backed set is now empty. This
+  // assertion is kept rather than deleted: it is what notices a slug being
+  // added to the config with no backend filter behind it, which is the state
+  // that publishes an indexable page whose grid contradicts its H1.
+  //
+  // It does NOT cover the `backed` gate itself — with the set empty it cannot.
+  // That coverage moved to the synthetic fixture below; do not read this as
+  // guarding the gate.
+  it("has no un-backed slug left in the config", () => {
     const pending = DIET_PAGES.filter((p) => !p.backed).map((p) => p.slug);
-    expect(pending).toEqual(["no-added-sugar", "low-carb"]);
+    expect(pending).toEqual([]);
   });
 });
 
@@ -170,14 +186,79 @@ describe("MEH-1935 data gate — generateMetadata", () => {
 
   /**
    * THE discriminating case for the `backed` flag. The API here reports a
-   * comfortably passing count — because FastAPI ignores `?no_added_sugar=true`
+   * comfortably passing count — because FastAPI ignores an unknown filter param
    * and returns the entire catalog. A count-only gate goes GREEN on this and
    * publishes a page whose grid does not match its own H1.
+   *
+   * MEH-1941: this used to point at `no-added-sugar` / `low-carb`, the only
+   * un-backed slugs in the config. They are `backed: true` now, so those
+   * arguments would make the test assert that a *backed* slug 404s — it would
+   * simply go red, and deleting it would leave the gate uncovered with nothing
+   * to notice (.claude/rules/testing.md — a guard that consults its own subject,
+   * and the subject is gone).
+   *
+   * The fixture is pushed onto the REAL `DIET_PAGES` for the duration of this
+   * one test rather than mocking `@/lib/diet-pages`. Mocking would force a
+   * reimplementation of `getDietPage` inside the mock — a copy free to drift
+   * from the function the page actually calls. This way `getDietPage` and
+   * `isDietPageBacked` under test are the shipped ones. `BACKED_DIET_PAGES` is
+   * computed at import, so it never sees the row, and the `finally` keeps the
+   * mutation from leaking into the exact-slug-list assertion elsewhere.
+   *
+   * ⚠️ This depends on tests in THIS FILE staying sequential — vitest.config.js
+   * uses the default (no `sequence.concurrent`, no `.concurrent` here). Adding
+   * a `.concurrent` test to this file would let the pushed row be visible to a
+   * neighbour mid-flight. Also note `finally` unwinds on assertion failure but
+   * NOT on a vitest timeout, which abandons the promise rather than cancelling
+   * it; safe today only because `serverFetch` is a resolved mock and nothing
+   * here can hang.
    */
   it("404s an unbacked slug even when the API reports a passing count", async () => {
-    serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN * 10));
-    await expect(meta("no-added-sugar")).rejects.toBeInstanceOf(NotFoundError);
-    await expect(meta("low-carb")).rejects.toBeInstanceOf(NotFoundError);
+    const UNBACKED = {
+      slug: "__fixture-unbacked",
+      attribute: "__fixture_unbacked",
+      filterParam: "__fixture_unbacked",
+      backed: false,
+      pendingLabel: "פיקסטורה",
+    };
+    DIET_PAGES.push(UNBACKED);
+    try {
+      // Sanity: the fixture is reachable through the real lookup, so a failure
+      // below is the gate rejecting it and not the slug being unknown (which
+      // 404s for an entirely different reason, asserted separately above).
+      expect(getDietPage(UNBACKED.slug)).toBe(UNBACKED);
+
+      serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN * 10));
+      await expect(meta(UNBACKED.slug)).rejects.toBeInstanceOf(NotFoundError);
+      expect(serverFetch).not.toHaveBeenCalled();
+    } finally {
+      DIET_PAGES.pop();
+    }
+  });
+
+  /**
+   * MEH-1941 — the flip's own acceptance check, and the one most likely to be
+   * misread. Both pages still 404 today, and that is CORRECT: the migration
+   * deliberately does no backfill, so zero products carry the flags and the
+   * count gate holds. What changed is WHICH gate rejects them. Asserting the
+   * count gate is now the one doing the work is what proves the flip landed;
+   * a bare "still 404s" assertion would pass identically before and after.
+   */
+  it("routes the two flipped slugs through the count gate, not the backed gate", async () => {
+    for (const slug of ["no-added-sugar", "low-carb"]) {
+      expect(isDietPageBacked(getDietPage(slug))).toBe(true);
+
+      serverFetch.mockClear();
+      serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN - 1));
+      await expect(meta(slug)).rejects.toBeInstanceOf(NotFoundError);
+      // The backed gate returns before any fetch; reaching the API is the
+      // evidence that it did not reject.
+      expect(serverFetch).toHaveBeenCalled();
+
+      serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN));
+      const m = await meta(slug);
+      expect(m.alternates.canonical).toContain(`/producers/diet/${slug}`);
+    }
   });
 
   /**
@@ -409,13 +490,46 @@ describe("MEH-1935 sitemap emission", () => {
     expect(urls).not.toContain("https://mehamakor.co.il/producers/diet/gluten-free");
   });
 
-  it("never lists a slug the backend cannot filter (MEH-1934 pending)", async () => {
-    serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN * 10));
-    const { default: sitemap } = await import("@/app/sitemap");
-    const urls = (await sitemap()).map((e) => e.url);
-    for (const slug of ["no-added-sugar", "low-carb"]) {
-      expect(urls).not.toContain(`https://mehamakor.co.il${dietPagePath(slug)}`);
-    }
+  /**
+   * MEH-1941. This asserted that `no-added-sugar` / `low-carb` never reach the
+   * sitemap, using them as the stand-in for "a slug the backend cannot filter".
+   * They are `backed: true` now, so that form would assert the opposite of the
+   * truth and go red.
+   *
+   * ⚠️ Read the limitation before trusting this. The property cannot currently
+   * be exercised against a real negative: `sitemap.js:142,148` emits from
+   * `BACKED_DIET_PAGES`, which `diet-pages.js` computes **at import** as
+   * `DIET_PAGES.filter(isDietPageBacked)`. Pushing a synthetic un-backed row at
+   * runtime (as the gate test above does) can never reach it, and
+   * `vi.resetModules()` rebuilds the array from a fresh config without the
+   * push. With zero un-backed slugs in the config, "an un-backed slug is
+   * excluded" is true by construction and unfalsifiable here — so a version of
+   * this test that still spoke of exclusion would be reporting the shape of the
+   * code back to itself.
+   *
+   * A runtime "emitted set === backed set" assertion was written first and
+   * thrown out: with every slug backed, `DIET_PAGES` and `BACKED_DIET_PAGES`
+   * are the same content, so BOTH sides of that equality move together and it
+   * stays green under every construction available — including swapping
+   * sitemap.js to the wrong array, the exact regression it claimed to catch.
+   * A disclaimer does not rescue an assertion that cannot go red (MEH-1619).
+   *
+   * So this guards the one thing that IS falsifiable today: the SOURCE choice.
+   * sitemap.js must read `BACKED_DIET_PAGES`, never bare `DIET_PAGES` — that
+   * identifier is the whole gate, and it is checkable by reading the file.
+   * Shown failing by construction: swapping the identifier in sitemap.js reds
+   * this test, while the runtime version above stayed green on it.
+   */
+  it("sitemap.js reads BACKED_DIET_PAGES and never the unfiltered config", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "..", "app", "sitemap.js"), "utf8");
+    // Every DIET_PAGES mention must be the BACKED_ one. Lookbehind so that
+    // "BACKED_DIET_PAGES" does not register as a bare hit.
+    const bare = [...src.matchAll(/(?<!BACKED_)\bDIET_PAGES\b/g)];
+    expect(bare.map((m) => src.slice(Math.max(0, m.index - 40), m.index + 20))).toEqual([]);
+    // …and it must still emit diet pages at all: an empty file would satisfy
+    // the assertion above for the wrong reason.
+    expect(src.match(/BACKED_DIET_PAGES/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
   });
 });
 
