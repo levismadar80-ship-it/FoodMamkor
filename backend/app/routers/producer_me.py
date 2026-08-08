@@ -1409,6 +1409,26 @@ def _get_owned_location(
     return loc
 
 
+def _same_city_label_error_detail(city: str | None) -> str:
+    # MEH-1940: the owner never SAW the location she is colliding with — since
+    # MEH-1939 registration writes her town's row for her, silently. A message
+    # that only restates the rule ("כשיש שני מיקומים באותה עיר…") therefore reads
+    # as arbitrary: from where she sits she has one location, not two. So the
+    # message names the row that exists, then says what to do about it.
+    #
+    # Two terminology alignments, both to what the form actually shows her:
+    #   • "יישוב", not "עיר"  — settings.locations.form.city_label (MEH-1937)
+    #   • "תווית", not "שם"   — settings.locations.form.label_label
+    # REUSES: frontend/messages/he.json:4792 (city_label), :4795 (label_label).
+    #
+    # DO NOT move this string to messages/he.json — LocationsEditor renders the
+    # 422 `detail` VERBATIM (frontend/lib/errors.js:82-85 → LocationsEditor.jsx:162);
+    # there is no error-code→i18n mapping to hang a key on.
+    example = "למשל 'הדוכן בשוק' או 'החנות'"
+    where = f"ביישוב {city.strip()}" if city and city.strip() else "ביישוב הזה"
+    return f"כבר יש לך מיקום {where}. תני למיקום החדש תווית שתבדיל ביניהם — {example}."
+
+
 def _reject_same_city_without_label(
     db: Session,
     producer_id: UUID,
@@ -1434,9 +1454,13 @@ def _reject_same_city_without_label(
         if exclude_id is not None and row.id == exclude_id:
             continue
         if row.city and row.city.strip().lower() == target:
+            # MEH-1940: copy only — the invariant, its inputs and the 422 are
+            # unchanged. Name the city the OWNER typed (`city`), not `row.city`:
+            # the compare is case-insensitive, so the stored row may differ in
+            # case/spacing from what she just entered.
             raise HTTPException(
                 status_code=422,
-                detail="כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה",
+                detail=_same_city_label_error_detail(city),
             )
 
 
