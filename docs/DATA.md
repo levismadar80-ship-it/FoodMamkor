@@ -183,7 +183,9 @@ products       (id, producer_id FK, name, description,
                 is_gluten_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: single source of truth post column drop. EXISTS subquery powers /producers?gluten_free=true
                 is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293/MEH-479: same
                 is_vegetarian Boolean NOT NULL DEFAULT FALSE,    -- MEH-1438: 4th dietary axis. ?vegetarian filter matches is_vegetarian OR is_vegan (a vegan product is vegetarian by definition); migration c5d9f3a1b2e8 seeded TRUE for existing vegan rows
-                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE (predicate extended with is_vegetarian in MEH-1438)
+                is_lactose_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: same
+                is_no_added_sugar Boolean NOT NULL DEFAULT FALSE, -- MEH-1934: 5th dietary axis ("ללא סוכר מוסף"). NO backfill — no existing flag implies it, so seeding would invent a nutrition claim on the business's behalf
+                is_low_carb Boolean NOT NULL DEFAULT FALSE)      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
 producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
                  threshold_value int nullable, threshold_unit text nullable,
                  headline text nullable, starts_at date nullable,
