@@ -4801,7 +4801,14 @@
       "edit_aria": "Edit location",
       "errors": {
         "save_failed": "Failed to save location",
-        "delete_failed": "Failed to delete location"
+        "delete_failed": "Failed to delete location",
+        "same_city": {
+          "labelled": "You already have '{label}' in {city}.",
+          "unlabelled": "You already have a {kind} in {city}.",
+          "many": "You already have {count} locations in {city}.",
+          "generic": "You already have a location in this town.",
+          "action": "So customers can tell them apart, give this one a name — at least three letters."
+        }
       }
     },
     "security": {

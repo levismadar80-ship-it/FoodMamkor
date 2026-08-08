@@ -38,7 +38,16 @@ const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi
 vi.mock("@/lib/toast", () => ({ showToast: toastMock }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key) => (scope ? `${scope}.${key}` : key),
+  // MEH-1940: the mock now echoes interpolation values, because the same-town
+  // message is chosen by param SHAPE (labelled / unlabelled / 2+) and a mock
+  // that dropped the values would render all three branches identically —
+  // a test that cannot tell apart the thing it exists to check.
+  useTranslations: (scope) => (key, values) => {
+    const base = scope ? `${scope}.${key}` : key;
+    if (!values) return base;
+    const parts = Object.entries(values).map(([k, v]) => `${k}=${v}`);
+    return `${base}(${parts.join(",")})`;
+  },
 }));
 
 // MEH-1936 — AddressSearch is stubbed so a test can drive BOTH paths
@@ -459,5 +468,101 @@ describe("save errors render in the form, not in the bottom strip (MEH-1940)", (
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
     expect(screen.queryByTestId("location-form-error")).toBeNull();
+  });
+});
+
+// MEH-1940 (copy rework) — the message is now rendered from messages/*.json,
+// keyed on the backend's `code`, and describes the location she ALREADY has.
+//
+// The old copy invented label examples ('הדוכן בשוק', 'החנות'). Those are KIND
+// names, in a form that already has a kind selector, so an owner copying one
+// while kind=סניף writes contradictory data — and the label field's own
+// placeholder already carried an example, so the same hint appeared twice.
+//
+// These assert the BRANCH SELECTION by param shape. A test that only checked
+// "some message appeared" would pass on all three branches and on the old
+// Hebrew string too.
+describe("same-town error renders from code + params (MEH-1940)", () => {
+  const CODE = "location_same_city_needs_label";
+
+  const reject = (params) => ({
+    response: {
+      status: 422,
+      data: {
+        detail: {
+          code: CODE,
+          message: "כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה",
+          params,
+        },
+      },
+    },
+  });
+
+  async function submitAndFail(rejection) {
+    await openAddForm();
+    fireEvent.change(cityInput(), { target: { value: "זכרון יעקב" } });
+    apiMock.post.mockRejectedValueOnce(rejection);
+    fireEvent.click(screen.getByTestId("location-save"));
+    return waitFor(() => screen.getByTestId("location-form-error"));
+  }
+
+  it("names the existing location when it HAS a label", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: "החנות", existing_count: 1 }),
+    );
+    expect(box.textContent).toContain("errors.same_city.labelled(label=החנות,city=זכרון יעקב)");
+    expect(box.textContent).not.toContain("same_city.unlabelled");
+    expect(box.textContent).not.toContain("same_city.many");
+  });
+
+  it("names the KIND when the existing location has no label", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: null, existing_count: 1 }),
+    );
+    // Kind is translated in the frontend — the backend never sends Hebrew.
+    expect(box.textContent).toContain(
+      "errors.same_city.unlabelled(kind=settings.locations.kind.branch,city=זכרון יעקב)",
+    );
+    expect(box.textContent).not.toContain("same_city.labelled");
+  });
+
+  it("counts them when there is more than one", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: "החנות", existing_count: 2 }),
+    );
+    // The count branch wins even though a label is present.
+    expect(box.textContent).toContain("errors.same_city.many(count=2,city=זכרון יעקב)");
+    expect(box.textContent).not.toContain("same_city.labelled");
+  });
+
+  it("always states what to do, including the three-letter floor", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "pickup", existing_label: null, existing_count: 1 }),
+    );
+    expect(box.textContent).toContain("errors.same_city.action");
+  });
+
+  it("carries NO invented label examples", async () => {
+    const box = await submitAndFail(
+      reject({ city: "זכרון יעקב", existing_kind: "branch", existing_label: null, existing_count: 1 }),
+    );
+    for (const invented of ["הדוכן בשוק", "החנות"]) {
+      expect(box.textContent).not.toContain(invented);
+    }
+  });
+
+  it("degrades to the town-free sentence rather than throwing on an unknown kind", async () => {
+    const box = await submitAndFail(
+      reject({ city: null, existing_kind: "teleporter", existing_label: null, existing_count: 1 }),
+    );
+    expect(box.textContent).toContain("errors.same_city.generic");
+  });
+
+  it("falls back to the bare message string for a pre-code backend", async () => {
+    // Transition safety: the same 422 in its old string shape must still render.
+    const box = await submitAndFail({
+      response: { status: 422, data: { detail: "כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה" } },
+    });
+    expect(box.textContent).toBe("כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה");
   });
 });

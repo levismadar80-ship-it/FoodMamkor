@@ -36,7 +36,7 @@ import {
 } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, sameCityLabelParams } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { LocationInputSchema } from "@/lib/schemas";
 import EmptyState from "@/components/ui/EmptyState";
@@ -143,6 +143,48 @@ export default function LocationsEditor() {
     [],
   );
 
+  // MEH-1940: render the same-town error from he.json, keyed on the backend's
+  // `code`. The old message invented label examples ("הדוכן בשוק") — which are
+  // KIND names, in a form that already has a kind selector, duplicating the
+  // label field's own placeholder two centimetres away. This names the location
+  // she ALREADY has instead, from `params`, and states the 3-letter floor
+  // (schemas.py:963 _optional_label_letters) UP FRONT rather than letting it
+  // arrive as a second, unannounced error.
+  const sameCityMessage = useCallback(
+    (params) => {
+      const city = params?.city;
+      const count = params?.existing_count ?? 1;
+      const kind = params?.existing_kind;
+      let head;
+      if (!city) {
+        head = t("errors.same_city.generic");
+      } else if (count > 1) {
+        head = t("errors.same_city.many", { count, city });
+      } else if (params?.existing_label) {
+        head = t("errors.same_city.labelled", { label: params.existing_label, city });
+      } else if (KINDS.includes(kind)) {
+        head = t("errors.same_city.unlabelled", { kind: tKind(kind), city });
+      } else {
+        // An unrecognised kind must not throw inside a catch branch and lose the
+        // error entirely — degrade to the town-only sentence.
+        head = t("errors.same_city.generic");
+      }
+      return `${head} ${t("errors.same_city.action")}`;
+    },
+    [t, tKind],
+  );
+
+  const saveErrorFrom = useCallback(
+    (err) => {
+      const detail = err?.response?.data?.detail;
+      const params = sameCityLabelParams(detail);
+      if (params) return sameCityMessage(params);
+      // Pre-`code` backend, or any other failure: the bare `message` string.
+      return detailToMessage(detail) || t("errors.save_failed");
+    },
+    [sameCityMessage, t],
+  );
+
   useEffect(() => {
     setLoadError(false);
     api
@@ -174,14 +216,12 @@ export default function LocationsEditor() {
         setAdding(false);
         reload();
       } catch (err) {
-        setSaveError(
-          detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
-        );
+        setSaveError(saveErrorFrom(err));
       } finally {
         setSaving(false);
       }
     },
-    [validate, reload, t],
+    [validate, reload, saveErrorFrom],
   );
 
   const handleUpdate = useCallback(
@@ -195,14 +235,12 @@ export default function LocationsEditor() {
         setEditingId(null);
         reload();
       } catch (err) {
-        setSaveError(
-          detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
-        );
+        setSaveError(saveErrorFrom(err));
       } finally {
         setSaving(false);
       }
     },
-    [validate, reload, t],
+    [validate, reload, saveErrorFrom],
   );
 
   const handleSetPrimary = useCallback(
