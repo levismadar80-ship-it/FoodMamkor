@@ -21,7 +21,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildDietPageJsonLd, serializeJsonLd, SITE_URL } from "@/lib/seo";
+import { buildDietPageJsonLd, serializeJsonLd } from "@/lib/seo";
 import {
   BACKED_DIET_PAGES,
   DIET_PAGE_MIN,
@@ -174,7 +174,13 @@ export default async function DietLandingPage({ params }) {
   const path = dietPagePath(entry.slug);
   const intro = t(`pages.${entry.attribute}.intro`);
   // t.raw: the FAQ is an ARRAY of {question, answer} in messages/*.json.
-  const faq = t.raw(`pages.${entry.attribute}.faq`) ?? [];
+  // MEH-1935: coerce non-arrays, matching the hardening in lib/seo.js. `??` is
+  // NOT enough — next-intl returns the KEY PATH (a string) for a missing
+  // message, not undefined, so it would sail past the nullish check and reach
+  // `.map` below as a string. lib/seo.js already defended its own copy of this
+  // value; the render site did not, which is the asymmetry this closes.
+  const rawFaq = t.raw(`pages.${entry.attribute}.faq`);
+  const faq = Array.isArray(rawFaq) ? rawFaq : [];
   const siblings = await fetchServableSiblings(entry.slug);
 
   const jsonLd = buildDietPageJsonLd({
