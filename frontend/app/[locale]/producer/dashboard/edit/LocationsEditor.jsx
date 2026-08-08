@@ -22,7 +22,7 @@
  */
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import {
@@ -126,6 +126,22 @@ export default function LocationsEditor() {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  // MEH-1940: save errors render INSIDE the form, not as a bottom toast. The
+  // toast sat in the same bottom strip as the cookie banner, the chat widget
+  // and the BottomNav — dimmed at 1440, clipped at 375 — and it auto-dismissed
+  // while the owner was still looking at the field that caused it. Crowding was
+  // the symptom; the position was the disease. Deliberately NOT fixed by
+  // raising a z-index: those three are global surfaces, so the message leaves
+  // the strip rather than competing for it.
+  // Scope: FORM submissions only. Row actions (delete, set-primary) keep the
+  // toast — there is no open form to put their message in.
+  const [saveError, setSaveError] = useState(null);
+  // Cheap to call on every keystroke: returns the identical value when already
+  // null, so React bails out of the re-render.
+  const clearSaveError = useCallback(
+    () => setSaveError((prev) => (prev ? null : prev)),
+    [],
+  );
 
   useEffect(() => {
     setLoadError(false);
@@ -137,28 +153,28 @@ export default function LocationsEditor() {
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  // Rule 19: safeParse before every write. Returns the validated payload or null
-  // (after toasting the first issue) so callers bail cleanly.
+  // Rule 19: safeParse before every write. Returns `{data}` or `{error}` so the
+  // caller decides where the message goes — MEH-1940 moved that destination
+  // from a toast to the in-form slot, and returning the string keeps this
+  // helper from knowing about either.
   const validate = useCallback((form) => {
     const parsed = LocationInputSchema.safeParse(buildPayload(form));
-    if (!parsed.success) {
-      showToast.info(parsed.error.issues[0].message);
-      return null;
-    }
-    return parsed.data;
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    return { data: parsed.data };
   }, []);
 
   const handleCreate = useCallback(
     async (form) => {
-      const body = validate(form);
-      if (!body) return;
+      const { data: body, error } = validate(form);
+      if (error) return setSaveError(error);
       setSaving(true);
       try {
         await api.post("/producers/me/locations", body);
+        setSaveError(null);
         setAdding(false);
         reload();
       } catch (err) {
-        showToast.error(
+        setSaveError(
           detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
         );
       } finally {
@@ -170,15 +186,16 @@ export default function LocationsEditor() {
 
   const handleUpdate = useCallback(
     async (id, form) => {
-      const body = validate(form);
-      if (!body) return;
+      const { data: body, error } = validate(form);
+      if (error) return setSaveError(error);
       setSaving(true);
       try {
         await api.put(`/producers/me/locations/${id}`, body);
+        setSaveError(null);
         setEditingId(null);
         reload();
       } catch (err) {
-        showToast.error(
+        setSaveError(
           detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
         );
       } finally {
@@ -248,7 +265,10 @@ export default function LocationsEditor() {
           icon={MapPin}
           title={t("empty_title")}
           ctaLabel={t("empty_cta")}
-          ctaOnClick={() => setAdding(true)}
+          ctaOnClick={() => {
+            clearSaveError();
+            setAdding(true);
+          }}
         />
       ) : null}
 
@@ -260,8 +280,13 @@ export default function LocationsEditor() {
                 heading={t("edit_heading")}
                 initial={toEditForm(loc)}
                 saving={saving}
+                error={saveError}
+                onDirty={clearSaveError}
                 onSubmit={(form) => handleUpdate(loc.id, form)}
-                onCancel={() => setEditingId(null)}
+                onCancel={() => {
+                  clearSaveError();
+                  setEditingId(null);
+                }}
               />
             </li>
           ) : (
@@ -271,6 +296,7 @@ export default function LocationsEditor() {
                 kindLabel={tKind(loc.kind)}
                 deleting={deletingId === loc.id}
                 onEdit={() => {
+                  clearSaveError();
                   setAdding(false);
                   setEditingId(loc.id);
                 }}
@@ -287,13 +313,19 @@ export default function LocationsEditor() {
           heading={t("add_heading")}
           initial={EMPTY_FORM}
           saving={saving}
+          error={saveError}
+          onDirty={clearSaveError}
           onSubmit={handleCreate}
-          onCancel={() => setAdding(false)}
+          onCancel={() => {
+            clearSaveError();
+            setAdding(false);
+          }}
         />
       ) : locations.length > 0 ? (
         <button
           type="button"
           onClick={() => {
+            clearSaveError();
             setEditingId(null);
             setAdding(true);
           }}
@@ -360,7 +392,15 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
   );
 }
 
-function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
+function LocationForm({
+  heading,
+  initial,
+  saving,
+  error,
+  onDirty,
+  onSubmit,
+  onCancel,
+}) {
   const t = useTranslations("settings.locations");
   const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
@@ -383,6 +423,25 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  // MEH-1940: the message must not vanish on a timer — it stays until she acts
+  // on it. `form` covers every input here (all of them write through
+  // `setForm`), so this fires the moment she starts correcting and not before.
+  // Firing on mount too is intentional: a freshly opened form never inherits a
+  // previous attempt's error.
+  const errorRef = useRef(null);
+  useEffect(() => {
+    onDirty?.();
+  }, [form, onDirty]);
+
+  // The form is taller than a 375px viewport, so an error rendered mid-form can
+  // land off-screen when she submits from the bottom — the same out-of-sight
+  // failure the toast had, reintroduced in a new place. Bring it into view.
+  // `block: "center"` and no smooth scrolling, so it is not an animation
+  // anyone needs to opt out of.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: "center" });
+  }, [error]);
 
   // MEH-1936: ids for the two composed comboboxes. `useId` rather than a
   // literal, because <label htmlFor> must resolve to exactly one input and this
@@ -546,6 +605,21 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             placeholder={tForm("label_placeholder")}
           />
         </Field>
+        {/* MEH-1940: sits directly under the תווית field — the field the
+            same-city 422 asks her to fill — instead of in the bottom strip
+            shared by the cookie banner, the chat widget and the BottomNav.
+            role="alert" so it is announced without moving focus off the input.
+            RTL: border-s-* / ps-* (logical), never border-l / pl. */}
+        {error ? (
+          <div
+            ref={errorRef}
+            role="alert"
+            data-testid="location-form-error"
+            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error"
+          >
+            {error}
+          </div>
+        ) : null}
         {/* MEH-1936: the two location fields are the canonical components the
             register flow uses, not free text. They are NOT wrapped in `Field`:
             each renders its own <label htmlFor>, and Field's implicit <label>
