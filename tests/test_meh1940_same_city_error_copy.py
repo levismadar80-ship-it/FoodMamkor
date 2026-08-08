@@ -1,30 +1,36 @@
-"""MEH-1940: the same-city 422 explains itself instead of restating the rule.
+"""MEH-1940: the same-town 422 returns {code, message, params}, not a sentence.
 
 Since MEH-1939 registration writes the owner's town into `producer_locations`
-for her, silently. She never saw that row, so the old message — "כשיש שני
-מיקומים באותה עיר יש להוסיף תווית מזהה" — read as arbitrary: from where she
-sits she has ONE location, not two.
+for her, silently. She never saw that row, so a message that only restates the
+rule reads as arbitrary.
 
-This file pins the copy, not the rule. `_reject_same_city_without_label`
-(producer_me.py:1429) is untouched: same inputs blocked, same inputs allowed,
-still a 422. `test_the_invariant_itself_is_unchanged` is the guard on that.
+The first fix put a Hebrew sentence in the router — including invented label
+examples ('הדוכן בשוק', 'החנות'). Those are KIND names, in a form that already
+has a kind selector, and the label field's own placeholder already carried an
+example. So the copy moved to messages/*.json and the router now returns a
+locale-independent `code` plus `params` describing the location that already
+exists.
 
-Every assertion here is discriminating against the OLD message — each one is
-false for "כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה". That is the
-property that makes the HEAD~ mutation run evidence rather than decoration
-(.claude/rules/testing.md — "the construction has to discriminate").
+REUSES the MEH-1164 shape: auth.py:374-382 (_EMAIL_UNVERIFIED_DETAIL).
+
+This file asserts the CONTRACT (shape, code, params, no Hebrew kind names) —
+the rendered sentences are the frontend's, covered in
+frontend/__tests__/LocationsEditor.test.jsx. `TestTheInvariantItselfIsUnchanged`
+is the guard that this stayed a copy change: MEH-1421's rule is untouched.
 """
 
 import pytest
 
-from app.routers.producer_me import _same_city_label_error_detail
+from app.routers.producer_me import (
+    SAME_CITY_NEEDS_LABEL_CODE,
+    _same_city_label_error_detail,
+)
 from tests.conftest import auth_header, make_producer, make_user
 
-# The two terms the OWNER sees in the form. Sourced from
-# frontend/messages/he.json settings.locations.form — city_label (:4792) and
-# label_label. If MEH-1937's alignment is ever reverted, this file goes red.
-FIELD_TERM_CITY = "יישוב"
-FIELD_TERM_LABEL = "תווית"
+# The three kind values the ORM CHECK constraint allows (models.py:536). The
+# backend must emit one of THESE, never a translated name.
+RAW_KINDS = {"branch", "pickup", "market_stand"}
+HEBREW_KIND_NAMES = ("סניף", "נקודת איסוף", "דוכן שוק")
 
 
 def _producer_user(db, *, name="חוות המיקומים"):
@@ -47,89 +53,100 @@ def _base_location(**overrides):
     return payload
 
 
-def _collide(client, db, *, city="זכרון יעקב"):
-    """Create a labelled row, then collide with an unlabelled one. Returns the 422."""
+def _seed_then_collide(client, db, *, existing, city="זכרון יעקב"):
+    """Create the `existing` rows, then collide with an unlabelled one."""
     user, _ = _producer_user(db)
-    first = client.post(
-        "/producers/me/locations",
-        json=_base_location(city=city, label="סניף א"),
-        headers=auth_header(user),
-    )
-    assert first.status_code == 201, first.text
-    second = client.post(
+    for row in existing:
+        created = client.post(
+            "/producers/me/locations",
+            json=_base_location(city=city, **row),
+            headers=auth_header(user),
+        )
+        assert created.status_code == 201, created.text
+    clash = client.post(
         "/producers/me/locations",
         json=_base_location(city=city, label=None),
         headers=auth_header(user),
     )
-    assert second.status_code == 422, second.text
-    return user, second.json()["detail"]
+    assert clash.status_code == 422, clash.text
+    return clash.json()["detail"]
 
 
-class TestTheMessageExplainsItself:
-    def test_it_names_the_location_that_already_exists(self, client, db):
-        # The whole point of the ticket: she is told a row exists, not just
-        # that a rule exists. The old message says neither of these.
-        _, detail = _collide(client, db)
-        assert "כבר יש לך מיקום" in detail
+class TestTheDetailShape:
+    def test_it_is_the_code_message_params_envelope(self, client, db):
+        detail = _seed_then_collide(client, db, existing=[{"label": "סניף א"}])
+        assert isinstance(detail, dict)
+        assert set(detail) == {"code", "message", "params"}
+        assert detail["code"] == SAME_CITY_NEEDS_LABEL_CODE
 
-    def test_it_interpolates_the_actual_city_not_generic_text(self, client, db):
-        # AC: "שם הישוב מושתל בפועל (לא טקסט גנרי)". A different town must
-        # produce a different sentence, which a hardcoded string cannot do.
-        _, detail = _collide(client, db, city="פרדס חנה")
-        assert "פרדס חנה" in detail
-        assert "undefined" not in detail
-        assert "None" not in detail
-        assert "{" not in detail and "}" not in detail
+    def test_params_describe_the_location_that_already_exists(self, client, db):
+        detail = _seed_then_collide(
+            client, db, existing=[{"label": "החנות", "kind": "market_stand"}]
+        )
+        params = detail["params"]
+        assert params["city"] == "זכרון יעקב"
+        assert params["existing_label"] == "החנות"
+        assert params["existing_kind"] == "market_stand"
+        assert params["existing_count"] == 1
 
-    def test_it_tells_her_what_to_do_with_an_example(self, client, db):
-        _, detail = _collide(client, db)
-        assert "למשל" in detail
-        assert "הדוכן בשוק" in detail
+    def test_an_unlabelled_neighbour_reports_a_null_label(self, client, db):
+        detail = _seed_then_collide(
+            client, db, existing=[{"label": None, "kind": "pickup"}]
+        )
+        assert detail["params"]["existing_label"] is None
+        assert detail["params"]["existing_kind"] == "pickup"
 
-    def test_it_uses_the_two_terms_the_form_shows_her(self, client, db):
-        # The MEH-1937 alignment, and the same-class defect one level down:
-        # the field is labelled "תווית", so the message must not ask for a "שם".
-        _, detail = _collide(client, db)
-        assert FIELD_TERM_CITY in detail
-        assert FIELD_TERM_LABEL in detail
-
-    def test_the_word_it_replaced_is_gone_from_the_TEMPLATE(self):
-        # Scoped to the template, NOT to a rendered message. "עיר" is a
-        # substring of real Israeli place names — מעלה עירון is a local council
-        # — so asserting it against interpolated output would make this guard
-        # depend on which town the fixture happens to use, and the natural
-        # "fix" for the resulting red would be to delete the assertion.
-        # The city-free rendering IS the template, so this reads the thing the
-        # guard is actually about.
-        assert "עיר" not in _same_city_label_error_detail(None)
-
-    def test_a_place_name_containing_the_old_word_does_not_break_the_guard(self):
-        # The other half of the same point, pinned so a future reader does not
-        # re-tighten the assertion above into the data-dependent form.
-        detail = _same_city_label_error_detail("מעלה עירון")
-        assert "מעלה עירון" in detail
-        assert FIELD_TERM_CITY in detail
+    def test_the_count_reflects_every_colliding_row(self, client, db):
+        # Two labelled rows in the town, then an unlabelled third.
+        detail = _seed_then_collide(
+            client, db, existing=[{"label": "סניף א"}, {"label": "סניף ב"}]
+        )
+        assert detail["params"]["existing_count"] == 2
 
 
-class TestTheFallbackIsNeverUndefined:
-    """AC: "אם הערך חסר — fallback לנוסח בלי השם, לא undefined".
+class TestTheBackendNeverEmitsRenderedCopy:
+    """The whole point of the rework: copy lives in messages/*.json."""
 
-    Unreachable through the endpoint — `_reject_same_city_without_label`
-    returns early on a blank city (producer_me.py:1440), so no request can
-    raise with one. Pinned at the helper instead, which is where a future
-    caller would hit it.
-    """
+    def test_the_kind_is_the_raw_enum_never_a_hebrew_name(self, client, db):
+        detail = _seed_then_collide(
+            client, db, existing=[{"label": None, "kind": "market_stand"}]
+        )
+        assert detail["params"]["existing_kind"] in RAW_KINDS
+        serialised = str(detail)
+        for hebrew in HEBREW_KIND_NAMES:
+            assert hebrew not in serialised, (
+                f"backend leaked a translated kind: {hebrew}"
+            )
 
+    def test_no_invented_label_examples_anywhere_in_the_payload(self, client, db):
+        # These were in the previous message and are exactly what this ticket
+        # removed — a kind name handed to her as if it were a label.
+        detail = _seed_then_collide(client, db, existing=[{"label": "סניף א"}])
+        serialised = str(detail)
+        for invented in ("הדוכן בשוק", "החנות"):
+            assert invented not in serialised
+
+    def test_the_transition_message_uses_the_form_s_term(self):
+        # MEH-1937 aligned the field label to "יישוב". The fallback string is
+        # the one a pre-`code` client renders, so it has to comply too.
+        message = _same_city_label_error_detail(None)["message"]
+        assert "יישוב" in message
+        assert "עיר" not in message
+
+
+class TestTheHelperIsSafeOnItsOwn:
     @pytest.mark.parametrize("blank", [None, "", "   "])
-    def test_blank_city_degrades_to_a_generic_place_not_a_hole(self, blank):
-        detail = _same_city_label_error_detail(blank)
-        assert "כבר יש לך מיקום" in detail
-        assert FIELD_TERM_LABEL in detail
-        for hole in ("undefined", "None", "null", "{}", "  "):
-            assert hole not in detail, f"{hole!r} leaked into {detail!r}"
+    def test_a_blank_city_becomes_null_not_a_hole(self, blank):
+        params = _same_city_label_error_detail(blank)["params"]
+        assert params["city"] is None
+        for hole in ("undefined", "None", "null"):
+            assert hole != params["city"]
 
-    def test_a_real_city_is_stripped_not_padded(self):
-        assert "ביישוב חדרה." in _same_city_label_error_detail("  חדרה  ")
+    def test_a_real_city_is_stripped(self):
+        assert _same_city_label_error_detail("  חדרה  ")["params"]["city"] == "חדרה"
+
+    def test_it_defaults_to_a_single_existing_location(self):
+        assert _same_city_label_error_detail("חדרה")["params"]["existing_count"] == 1
 
 
 class TestTheInvariantItselfIsUnchanged:
@@ -164,7 +181,7 @@ class TestTheInvariantItselfIsUnchanged:
         assert ok.status_code == 201, ok.text
 
     def test_the_collision_is_still_a_422(self, client, db):
-        # Status code pinned separately from the copy: a future copy edit must
-        # not be able to turn this into a 400 without a test going red.
-        _, detail = _collide(client, db)
-        assert isinstance(detail, str) and detail
+        # Pinned separately from the payload: a future copy edit must not be
+        # able to turn this into a 400 without a test going red.
+        detail = _seed_then_collide(client, db, existing=[{"label": "סניף א"}])
+        assert detail["code"] == SAME_CITY_NEEDS_LABEL_CODE
