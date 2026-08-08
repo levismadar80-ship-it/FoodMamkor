@@ -4820,7 +4820,14 @@
       "edit_aria": "ערכו מיקום",
       "errors": {
         "save_failed": "שגיאה בשמירת המיקום",
-        "delete_failed": "שגיאה במחיקת המיקום"
+        "delete_failed": "שגיאה במחיקת המיקום",
+        "same_city": {
+          "labelled": "יש לך כבר '{label}' ב{city}.",
+          "unlabelled": "יש לך כבר {kind} ב{city}.",
+          "many": "יש לך כבר {count} מיקומים ב{city}.",
+          "generic": "יש לך כבר מיקום ביישוב הזה.",
+          "action": "כדי שהלקוחות יבדילו ביניהם, תני למיקום הזה שם — לפחות שלוש אותיות."
+        }
       }
     },
     "security": {

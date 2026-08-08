@@ -255,7 +255,11 @@ class TestSameCityLabelInvariant:
             headers=auth_header(consumer),
         )
         assert resp.status_code == 422, resp.json()
-        assert "תווית" in resp.json()["detail"]
+        # MEH-1940: `detail` is now {code, message, params} rather than a Hebrew
+        # sentence, so this asserts the stable code. The point of this test is
+        # the BEHAVIOUR change (registration's row now occupies her town), not
+        # the wording — and matching on the code is what keeps it that way.
+        assert resp.json()["detail"]["code"] == "location_same_city_needs_label"
 
         # …and it succeeds the moment a label distinguishes the two.
         labelled = client.post(
