@@ -156,6 +156,15 @@ def attach_badge_fields(producer):
     producer.has_lactose_free_products = any(
         getattr(p, "is_lactose_free", False) for p in products
     )
+    # MEH-1934: plain single-flag aggregations. Deliberately NOT OR-ed with any
+    # other axis the way has_vegetarian_products folds in is_vegan — no existing
+    # flag implies "no added sugar" or "low carb".
+    producer.has_no_added_sugar_products = any(
+        getattr(p, "is_no_added_sugar", False) for p in products
+    )
+    producer.has_low_carb_products = any(
+        getattr(p, "is_low_carb", False) for p in products
+    )
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
@@ -214,6 +223,64 @@ def get_producer_or_404(db: Session, producer_id: UUID) -> Producer:
     return producer
 
 
+def create_primary_branch_location(
+    db: Session, producer: Producer
+) -> ProducerLocation | None:
+    """MEH-1939 (MEH-1938 chunk 1) — the registration half of the dual-write.
+
+    Every path that creates a producer from a signup payload also creates ONE
+    `producer_locations` row for it: `kind='branch'`, `is_primary=True`. The
+    `Producer.city/lat/lng` columns keep being written exactly as before — this
+    is Expand, not replacement, and nothing reads the new row yet.
+
+    Why this exists at all: `haversine_min_km` below already COALESCEs to
+    `Producer.lat/lng` and its comment (`:75-95`) says the fallback becomes
+    dead weight "once chunk 4 dual-writes a primary location on create".
+    MEH-1421 shipped only the dashboard write path, so that create never
+    happened and the fallback has been carrying the gap since.
+
+    Returns None — and adds nothing — when either coordinate is missing. That
+    is the CONDITION, not an edge case: a location row without coordinates is
+    invisible to `producerPoints()` and to the geo query alike, so it would be
+    a row that exists only to be skipped, while still counting as "this
+    producer has locations" for anything that tests the collection's length.
+    A delivery-only business legitimately has no point (MEH-213).
+
+    Does NOT commit. Callers add this to their own open transaction, the same
+    way they already do for ProducerCategory and DeliveryArea, so a failure
+    anywhere in registration rolls the location back with everything else.
+
+    Takes the flushed `Producer` rather than its five fields: the row this
+    writes is a MIRROR of those columns, so reading them off the instance is
+    what makes the two physically unable to drift. It also keeps the signature
+    at two parameters, which is the arity `PLR0913` / ESLint `max-params` are
+    both asking for (`.claude/rules/code-execution.md:53-55`). Callers must
+    have flushed — `producer.id` is read here.
+
+    # DO NOT add a backfill for existing producers here — that is chunk 2, and
+    # it is an Alembic data migration, not application code.
+    """
+    if producer.lat is None or producer.lng is None:
+        return None
+
+    location = ProducerLocation(
+        producer_id=producer.id,
+        kind="branch",
+        is_primary=True,
+        city=producer.city,
+        address=producer.address,
+        lat=producer.lat,
+        lng=producer.lng,
+        # Coordinates on a signup payload come from AddressSearch's geocode
+        # (MEH-1808), so the point is a real street-level fix. The
+        # `approximate` case is a town with no address, which by the guard
+        # above produces no row at all.
+        location_precision="exact",
+    )
+    db.add(location)
+    return location
+
+
 def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
     """Create a pending producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
@@ -257,6 +324,11 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
                 delivery_day=da.delivery_day,
             )
         )
+
+    # MEH-1939: the dual-write. `ProducerCreate` carries no `address` field
+    # (schemas.py:1324-1338), so `producer.address` is None here — the row gets
+    # city + coordinates only, and `ProducerLocation.address` is nullable.
+    create_primary_branch_location(db, producer)
 
     db.commit()
     db.refresh(producer)
