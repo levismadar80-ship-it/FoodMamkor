@@ -124,3 +124,75 @@ pushed with the PR open, and the whole log merged intact once the gates settled.
 
 **Not a circuit-breaker event** — one signature, one task, and it resolved on its
 own terms.
+
+---
+
+# Session s4-r5tl1v (2026-08-08 evening)
+
+## PARKED: MEH-1941 — flip `backed: true` on the two diet pages
+
+**Not blocked by anything in the ticket.** Parked on **session context budget**: I
+claimed it, verified its preconditions, and then did not have the room left to
+implement it to the standard the card asks for (test surgery + a
+failing-by-construction run + full suites + a different-model review). Stopping
+there beats a rushed job on a test whose whole purpose is to stay discriminating.
+
+**Failure class: NOT transient, NOT permanent — resource.** It will succeed on a
+fresh session with no changes to anything. Nothing needs fixing first.
+
+### What was verified (so the next session does not redo it)
+
+Both blocking preconditions are **met**, checked against `origin/staging` rather
+than assumed:
+
+- **1935 (frontend):** `frontend/lib/diet-pages.js` exists, `backed: false` at both
+  entries — `no-added-sugar` `:64`, `low-carb` `:71`, exactly as the card says.
+- **1934 (schema):** `backend/alembic/versions/20260807_1200_a2f7d4c8e153_meh1934_product_no_added_sugar_low_carb.py`,
+  plus `no_added_sugar` references in `models.py`, `schemas.py`,
+  `routers/producers.py`, `producer_contract_snapshot.json`.
+
+### ⚠️ The card's prediction about its second test is wrong
+
+It says `DietLandingPage.test.jsx:170-173` *"does not fail, but loses its subject"*.
+**It will fail.** That test mocks a passing count (`listing(DIET_PAGE_MIN * 10)`) and
+asserts `meta("no-added-sugar")` **rejects**; once the slug is backed both gates
+pass, nothing rejects, and `.rejects` goes red. The prescribed remedy (a synthetic
+unbacked fixture) is still right — the symptom description is not, and someone
+following it will think they broke something.
+
+### The route that avoids mocking the config module
+
+`vi.mock("@/lib/diet-pages")` forces a reimplementation of `getDietPage` inside the
+mock — a **copy**, which is what `.claude/rules/testing.md` warns against. Not
+needed: the page resolves through the real functions
+(`page.js:95-96` → `getDietPage()` → `isDietPageBacked()`), `DIET_PAGES` is a mutable
+array, and `BACKED_DIET_PAGES` is computed once at import. So `push` a synthetic
+`backed: false` row onto `DIET_PAGES` **inside the single `it`** with a `pop()` in
+`finally`: the real lookup finds it, the real gate rejects it, `BACKED_DIET_PAGES`
+is unaffected, and the exact-slug-list assertion at `:124` never sees it.
+
+Still unchecked: the loop at `:380` (sitemap exclusion), step 4 of the card's prompt.
+
+### Claim state — and one thing I could not do
+
+The card is **Backlog, no `cc-queue`** — genuinely unclaimed.
+
+**The branch `feature/meh-1941-flip-diet-backed` could NOT be deleted from this
+session**, and I said on the card that it had been before catching myself; corrected
+there. `check-branch-name.sh` (rule 3 / MEH-1141) blocks both delete forms because
+it parses the delete argument as a branch name:
+
+```
+git push origin --delete <branch>              → Blocked: push branch '--delete'
+git push origin +:refs/heads/<branch>          → Blocked: push branch 'refs/heads/…'
+git push origin :<branch>                      → not blocked, but "remote end hung up"
+```
+
+I did not work around the hook (rule 32). The branch holds **one empty claim commit**
+and no PR, so nothing is lost; it is adoptable under ORDERS §2 after ~21:19Z, or the
+next session can simply cut a differently-named branch off `origin/staging`.
+**Left for Sapir: delete the orphan branch.** One line, not urgent.
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. Nothing quarantined.
