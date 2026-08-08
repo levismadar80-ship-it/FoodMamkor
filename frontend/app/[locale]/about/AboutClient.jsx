@@ -165,10 +165,26 @@ export default function AboutPage() {
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
                   {/* IMG-01: founder portrait. Empty/failed state falls back
                       to a tonal background-alt plate (no leaf box). */}
-                  <div
-                    className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt"
-                    aria-label={t("story.image_aria")}
-                  >
+                  {/* MEH-1227: this wrapper carries NO aria-label and NO role.
+                      It used to carry aria-label={t("story.image_aria")}, which
+                      is `aria-prohibited-attr` (axe, serious) on a role-less
+                      div and fails 12-axe-a11y.spec.ts on /about.
+                      Naming the wrapper instead (role="img" + the label) was
+                      tried and rejected: this fallback renders `null` — a bare
+                      tonal plate, deliberately no Leaf box — so a name here
+                      announces "תמונה של ספיר" over an empty box, and that
+                      empty state is the live one while the Cloudinary images
+                      401. The name belongs on the Image's own alt, which is
+                      where the repo already puts it: ImageWithFallback.jsx:37-56
+                      and ProducerCard.jsx:288-310 both scope role="img" to the
+                      no-photo branch and leave the loaded branch a bare Image.
+                      This DOES drop a name Chrome was exposing — measured via
+                      CDP, the prohibited label produced `role=generic
+                      name="…" ignored=false`. That is the point, not a cost:
+                      a name on a generic container is what ARIA prohibits, and
+                      here it named an empty box. The loaded state keeps its
+                      name through the Image's alt. */}
+                  <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt">
                     {imgFailed ? null : (
                       <Image
                         src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
