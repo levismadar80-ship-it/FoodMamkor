@@ -205,19 +205,46 @@ model; a session that merges and moves on has not implemented it.
 | Vercel `Ignored` | Feature-branch previews are opt-in — no `[preview]` token in the commit message (MEH-1900). The configured behaviour, not a fault. |
 | Vercel rate-limited | `api-deployments-free-per-day`, an account quota. **No commit fixes it**; it resets daily. |
 
-**Why the Cloudinary attribution was retired (measured 08/08, s3).** This file
-used to say the E2E red *was* the documented Cloudinary-401 issue. Eight `e2e.yml`
-runs on `staging` pushes that day **alternate** pass and fail on commits touching
-neither UI nor E2E — `3fa86023` ✅ · `0e652c32` ❌ · `d5d05344` ✅ · `6c8186dc` ❌ ·
-`9764c45a` ✅ · `13c06c8f` ✅ · `bd9c9eea` ❌ · `0a65deaa` ✅ — and the Cloudinary
-401s are present in the **green** runs too. A constant cannot explain a variable,
-so whatever flips those runs, it is not that.
+**Why the Cloudinary attribution was retired — and why the first replacement for
+it was also wrong (measured 08/08, corrected same day).**
 
-The reason this is a rule and not a footnote: a standing excuse is
-self-perpetuating. Every red got read as "the known thing", so nobody looked, so
-it stayed unknown — while a genuinely flaky suite quietly destroyed the signal on
-every PR that passed through it. **An explanation that covers every observation
-equally well is not an explanation.**
+This file used to say the E2E red *was* the documented Cloudinary-401 issue. That
+was retired because the 401s appear in the green runs too, and a constant cannot
+explain a variable.
+
+**The replacement claim — "the suite is flaky, it alternates pass/fail" — lasted
+about twenty minutes and was also wrong.** Checking the paths-filter against all
+**30** `e2e.yml` staging runs on 07–08/08 gives a **30/30 perfect** split:
+
+| Run conclusion | e2e-relevant files in the push | Count |
+|---|---|---|
+| `success` | **0** — the Playwright job `skipped`, nothing ran | **16 / 16** |
+| `failure` | **≥1** — the job actually executed | **14 / 14** |
+
+There is no alternation. **The suite fails every single time it runs**, and
+"passes" only when the paths-filter (`frontend/**`, `public/**`, `package.json`,
+`package-lock.json`) skips it entirely. A skipped leg passes the aggregator, so
+the run reports `success`. Verified directly on `6a758f35`: `Playwright E2E
+(Vercel preview)` = `skipped`, run = `success`.
+
+So the honest statement is not "flaky" but **"a 100%-failing suite wearing a
+green mask"**, which is a considerably worse problem and a different fix.
+
+**Two lessons, and the second is the expensive one:**
+
+- A standing excuse is self-perpetuating. Every red read as "the known thing", so
+  nobody looked, so it stayed unknown. **An explanation that covers every
+  observation equally well is not an explanation.**
+- **The correction itself repeated the mistake it was correcting.** "Alternating
+  pass/fail" was inferred from run-level conclusions without asking what else
+  produces a green — the exact question `.claude/rules/testing.md` § *"A green
+  that has two possible causes is not a signal"* exists to force, and it was in
+  context the whole time. Before treating any run conclusion as a result, confirm
+  the job **ran**: `conclusion: success` on the aggregate is not `conclusion:
+  success` on the thing you care about.
+
+Full per-run matrix and the four-suspect correlation:
+[MEH-1948](https://linear.app/mehamakor/issue/MEH-1948).
 
 **A green that came from a skip is not a pass.** A skipped leg passes the
 aggregator, so both required gates can report `success` while nothing ran.
