@@ -1,6 +1,13 @@
 # Continuous sweep — session 3 (`s3-4j6llv`) — 2026-08-08
 
-1 merging (auto-merge armed, gates green bar pytest), 0 awaiting Sapir, 1 parked, 0 quarantined, 0 claimed-elsewhere, staging GREEN at `70c786b4`.
+**As of 11:40Z 08/08:** 1 merging (auto-merge armed by Sapir; every required gate green
+except Backend tests, still running), 0 awaiting Sapir, 1 parked, 0 quarantined,
+0 claimed-elsewhere, staging GREEN at `caadb1c6`.
+
+_The count above is an as-of, not a final tally — #2686 lands on its own once pytest
+completes, and a reader after that point should count it as merged. Stating the as-of
+because this file's own PIPELINE HEALTH section is about artifacts that kept their
+authority after losing their currency._
 
 > **Mid-run authority change.** The sweep prompt was superseded partway through this
 > session by Sapir's 08/08 ruling — *"תמזג לבד ותבדוק את עצמך על כל המשימות"*. Everything
