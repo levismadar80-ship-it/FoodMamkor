@@ -202,7 +202,18 @@ export default function FilterSheet({
         aria-modal="true"
         aria-labelledby="filter-sheet-title"
         dir="rtl"
-        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))]"
+        // MEH-1945: the panel's bottom padding moves ONTO the sticky footer
+        // below. `position: sticky; bottom-0` resolves against the scrollport —
+        // the container's PADDING box — so a padding-bottom here parks the
+        // footer that many px above the sheet's edge, with body content
+        // scrolling through the gap. Measured at 390×844 rather than reasoned:
+        // with the container's pb restored to 32px the footer's bottom lands at
+        // 812 against a 844 viewport and a 844 panel edge; at pb-0 it lands at
+        // 844, flush. The safe-area inset still has to be paid — it is paid by
+        // the footer's own pb, where it sits UNDER the footer instead of under
+        // a scrolling body. lg: restores the container pad: the anchored
+        // desktop panel has no safe-area to clear and no notch to sit in.
+        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4"
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -299,12 +310,20 @@ export default function FilterSheet({
         {/* Apply = close (state is shared + already applied live); count is the
             live client-side visibleProducers.length passed by the caller.
             Zero state keeps apply enabled — the clear link sits beside it.
-            MEH-1481: on lg+ the footer is STICKY to the bottom of this
-            overflow-y-auto panel so apply + ניקוי הכל stay visible when the
-            (capped) body scrolls — an opaque bg + top hairline hide the content
-            scrolling under it. No structural change: the panel div is already
-            the scroll container. Mobile footer (mt-6, non-sticky) unchanged. */}
-        <div className="mt-6 flex items-center gap-3 lg:sticky lg:bottom-0 lg:mt-4 lg:-mx-4 lg:px-4 lg:pt-3 lg:pb-1 lg:bg-background lg:border-t lg:border-border">
+            MEH-1481: the footer is STICKY to the bottom of this overflow-y-auto
+            panel so apply + ניקוי הכל stay visible when the (capped) body
+            scrolls — an opaque bg + top hairline hide the content scrolling
+            under it. No structural change: the panel div is already the scroll
+            container.
+            MEH-1481 gated all of that behind lg: because its card scoped it to
+            desktop — scope, not a product call. MEH-1945 un-gates it: mobile
+            has the same Apply-visibility bug and worse, measured on #2690 at
+            390×844 (scrollHeight 749 > clientHeight 674, footer at y=859 — off
+            the viewport, reachable only by scrolling). Only the density values
+            stay lg:-gated. `pb` carries the safe-area inset the panel gave up:
+            the footer is the bottommost painted element now, so the notch
+            clearance belongs to it. */}
+        <div className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+8px)] lg:mt-4 lg:pb-1">
           <button
             type="button"
             onClick={onClose}
