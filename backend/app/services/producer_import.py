@@ -19,7 +19,9 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models import Category, DeliveryArea, Producer, ProducerCategory
+from app.models import Category, Producer, ProducerCategory
+from app.schemas.schemas import DeliveryAreaCreate
+from app.services.producer_queries import persist_registration_delivery_areas
 from app.slug_utils import RESERVED_SLUGS
 
 # U+00D7 (×, multiplication sign) and U+00F8 (ø) appear when Hebrew UTF-8
@@ -300,8 +302,30 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
                 )
             )
 
-        for city in parsed.data["delivery_area_cities"]:
-            db.add(DeliveryArea(producer_id=producer.id, city=city))
+        # MEH-1921: the CSV importer had the same defect as the two registration
+        # branches — it wrote DeliveryArea rows and left `offers_delivery` at its
+        # False default, which the MEH-1848 conjunct then excludes from the
+        # משלוח chip. Sharper here than at signup, because these rows are created
+        # `status="approved"` (above) and so are live on the site immediately.
+        #
+        # Column K ("has_delivery", :163) does NOT cover it: that writes the
+        # legacy `has_delivery` column, which no delivery predicate consults
+        # (MEH-1849, and MEH-1850 exists to drop it). An admin marking a business
+        # as delivering in the sheet got a business that does not appear under
+        # the delivery filter.
+        #
+        # Routed through the one owner rather than assigning the flag inline —
+        # three inline copies is how this drifted in the first place. The cities
+        # are bare strings here, so each becomes a DeliveryAreaCreate carrying
+        # only `city`; every other field defaults to None, which is byte-identical
+        # to the `DeliveryArea(producer_id=…, city=city)` this replaces. The
+        # parser already strips and drops empties (:164-168), so no value here
+        # can fail the schema.
+        persist_registration_delivery_areas(
+            db,
+            producer,
+            [DeliveryAreaCreate(city=city) for city in parsed.data["delivery_area_cities"]],
+        )
 
         parsed.saved = True
         results.append(parsed)

@@ -27,14 +27,22 @@ pass after. Verified by running this file against unfixed `auth.py` /
 in BOTH worlds and is labelled as such: it is not evidence for the change, it
 guards against the opposite error of flipping the flag on for everyone.
 
-Sibling scan (`grep -rn "DeliveryArea(" backend/app`) found seven write sites.
-The three exercised here are the registration/creation paths, which derive the
-flag from the payload. The other four are EDIT paths — `producer_me.py:97,145`
-and `admin.py:109` replace areas on an existing business whose owner or an admin
-sets `offers_delivery` explicitly (`producer_me.py:387-391`, `admin.py:197`,
-guarded by `delivery_validation.py:68-74`), and `producer_import.py:304` is the
-admin CSV importer. Deriving the flag there would OVERRIDE an explicit choice,
-so they are deliberately untouched — see the PR body.
+Sibling scan (`grep -rn "DeliveryArea(" backend/app`) found seven write sites,
+and splits them by whether the payload can state the flag itself:
+
+CREATE-from-payload — cannot, so the flag is DERIVED. All four are fixed and all
+four are covered below: `auth.py` upgrade + new-email branches,
+`producer_queries.create_producer_with_relations` (behind POST /producers), and
+`producer_import.py` (the admin CSV importer). The importer was NOT named in the
+ticket and is the sharpest of the four: its rows are created `status="approved"`,
+so they go live immediately, and its column K writes the legacy `has_delivery`
+column that no delivery predicate consults (MEH-1849).
+
+EDIT — the owner or an admin sets `offers_delivery` explicitly
+(`producer_me.py:387-391`, `admin.py:197`, policed by
+`delivery_validation.py:68-74`), so `producer_me.py:97,145` and `admin.py:109`
+are deliberately untouched: deriving there would override a deliberate choice,
+which is the opposite bug.
 """
 
 import pytest
@@ -150,6 +158,35 @@ def test_authenticated_create_producer_with_areas_is_discoverable(client, db):
     listing = client.get("/producers", params=HAS_DELIVERY)
     assert listing.status_code == 200, listing.text
     assert "משק היצירה" in _names(listing)
+
+
+def test_csv_import_with_delivery_areas_is_discoverable(client, db):
+    """The admin CSV importer (`producer_import.py`) — the fourth create path.
+
+    Rows land `status="approved"`, so unlike the three signup paths this one puts
+    the contradictory business straight in front of consumers with no approval
+    step in between.
+    """
+    from app.models.models import Category
+    from app.services.producer_import import import_rows
+
+    # Column layout per producer_import.py:158-171 — I=category (must exist,
+    # MEH-1534), L=delivery areas (comma-split), K=has_delivery.
+    row = [
+        "מאפיית הייבוא", "שרה כהן", "0541234567", None, None, None, None,
+        "חיפה", "מאפים", None,
+        "כן", "חיפה, קריית ביאליק",
+        None, "תיאור הבדיקה", None, None, None, None, None, None, None, None, None,
+    ]
+    db.add(Category(name="מאפים", emoji="🥖"))
+    db.commit()
+
+    result = import_rows(db, [row], dry_run=False)
+    assert result["imported"] == 1, result
+
+    listing = client.get("/producers", params=HAS_DELIVERY)
+    assert listing.status_code == 200, listing.text
+    assert "מאפיית הייבוא" in _names(listing)
 
 
 # ── control: passes before AND after — not evidence for the change ─────────
