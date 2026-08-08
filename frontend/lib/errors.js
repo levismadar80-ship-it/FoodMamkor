@@ -61,6 +61,31 @@ export function isUnverifiedEmailError(err) {
   return detail === EMAIL_UNVERIFIED_MESSAGE;
 }
 
+// MEH-1940: the same-town location 422. Backend returns
+// {code, message, params} — the MEH-1164 shape above — so the copy can be
+// rendered from messages/*.json instead of shipping a Hebrew sentence from the
+// router. `params` describes the location that ALREADY exists, which is what
+// lets the message name it rather than invent a label example.
+export const LOCATION_SAME_CITY_CODE = "location_same_city_needs_label";
+
+/**
+ * Params for the same-town location error, or `null` for anything else.
+ *
+ * Same shape as `isUnverifiedEmailError`: match on the stable `code`, never on
+ * the Hebrew string. A caller that gets `null` keeps its existing path — which
+ * for a pre-`code` backend means falling through to `detailToMessage`, and that
+ * still yields the bare `message`. That fallback is the transition safety.
+ *
+ * @param {unknown} detail  `err.response.data.detail`
+ * @returns {{city: string|null, existing_kind: string|null,
+ *            existing_label: string|null, existing_count: number} | null}
+ */
+export function sameCityLabelParams(detail) {
+  if (!detail || typeof detail !== "object" || Array.isArray(detail)) return null;
+  if (detail.code !== LOCATION_SAME_CITY_CODE) return null;
+  return detail.params ?? {};
+}
+
 /**
  * MEH-957 — normalise a FastAPI `detail` payload to a single display string.
  *
