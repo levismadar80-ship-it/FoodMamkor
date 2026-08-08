@@ -10,3 +10,9 @@
 2026-08-07T22:12:00Z | MEH-1844 | 2nd data point: adversarial reviewer failed identically on PR #2677 (job failure, no comment). Pattern confirmed, not one-off | REPORTED
 2026-08-07T22:20:00Z | DOCS/#2678 | PARKED after 2 merge attempts: ruleset says "2 of 2 required checks expected" while BOTH report success (CI gate 93010793341, Deploy gate 93010760760). Docs-only PR. No no-op re-trigger (rule 30). Needs ruleset inspection = Sapir | PARKED
 2026-08-07T22:20:00Z | SWEEP | end of night: 1 merged, 2 PRs open for Sapir, 1 parked (merge-block only), 0 quarantined | STOP-CLEAN
+
+# ── NIGHT 2 (2026-08-08) ──
+2026-08-08T08:05:00Z | ANTI-STALE | A1 MEH-1911: #2633 merged 07/08 (verified). A2 MEH-1764: #2430 landed + #2631 RED follow-up; patch doc 19KB present. B1 MEH-1249: rider(1) done (#2621 merged, local-backend.sh on staging) but rider(3) GATES the conversion behind MEH-1909 (open) | VERIFIED
+2026-08-08T08:28:00Z | MEH-1511 | BLOCKED: auto-mode classifier denied the write to .claude/rules/workflow.md. Stop condition (d) -> surfaced, NOT routed via another tool. Repo does NOT deny the path (only settings.json + hooks/**) | BLOCKED-SURFACED
+2026-08-08T08:28:00Z | LESSON-8 | NOT DONE, deliberately: rtl-scan.sh returns 0 violations exit 0. MapPane.jsx is allowlisted (rtl-allowlist.txt:9) and its physical props are intentional+documented (:149,:176). MEH-1515 closed this. Fixing it would have been a regression | REFUTED
+2026-08-08T08:35:00Z | MEH-1896 | Phase 0 done -> PR #2680. Found a LIVE bug (delivery_areas[].delivery_fee stripped, DeliveryBlock.jsx:429 reads it) -> opened MEH-1942. Verdict: parity guard is 1-level, cannot see nested stripping | DONE
