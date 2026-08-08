@@ -190,3 +190,120 @@ the WebKit auth evidence → MEH-1590, the `/about` a11y bug → MEH-1227.
   `/producer/[id]`).
 - Scripts must live under `frontend/` to resolve its `node_modules` (ESM resolves
   from the file's location, not the cwd).
+
+---
+
+# SEGMENT 3 — 2026-08-08 evening (continuation of the same session)
+
+## MERGED
+
+| PR | What | Verified |
+| -- | -- | -- |
+| #2702 | ORDERS §4.1 — intra-session concurrency (Sapir's 08/08 amendment) | on staging |
+| #2703 | `scripts/checks/vrt-baseline-sync-guard.sh` — MEH-1928 | on staging: executable, `run-all.sh` reports **13 guards**, runs clean |
+
+## MEH-1928 — what actually mattered
+
+The ticket asked for a per-route namespace allowlist. **Rejected on measurement.** An
+import-closure walker reported `footer` as NOT covered by any VRT route, while the
+Footer renders on every one of them; `Footer.jsx:48` calls `useTranslations()` with no
+namespace and is one of **40** such files, plus **160** template-literal call sites.
+Caught only because `footer` was a key whose answer was already known. Shipped
+warn-only over the whole file with the gap in the header.
+
+**Three defects found by running it, not reading it**, and two of those came from
+building the test case the way reality forces rather than the way that is convenient:
+
+1. bare key name, no `file:line` — violates `scripts/checks/README.md`;
+2. fired on every pure key addition, because inserting a JSON key makes the previous
+   sibling gain a comma. My first synthetic case for this **silently no-op'd** and I
+   read the quiet as a pass;
+3. two-dot diff against a moving base.
+
+**The base-resolution block was wrong three times in a row, each time in the same
+shape: copying a sibling guard's structure without its shallow-clone handling.**
+
+- two-dot → false accusations and, worse, a genuine violation reporting *"the rule is
+  satisfied"* when an unrelated baseline regen landed on staging;
+- my own fix (compute a merge base) — **useless in CI**: `changelog-branch-guard.sh:42`
+  records that `repo-guards` checks out at **depth 1**, and a shallow clone has no
+  merge base, so it degraded silently back to two-dot. Looked fixed locally, broken
+  where it counts;
+- the merge-ref path used `git rev-parse HEAD^1`, the exact form
+  `changelog-branch-guard.sh:239-240` documents as not surviving shallow grafting.
+
+**Carry forward:** two guards now hold the same ~50 lines of base-resolution reasoning
+and the second copy drifted from the first three times *before shipping*. A shared
+helper in `scripts/checks/` is not tidying — it is the fix for a demonstrated failure
+mode. Not done here (it means editing a guard this ticket does not own).
+
+Final state: 20 constructions, all against the shipped commit, all in the PR body.
+
+## MEH-999 — the environment blocker is GONE
+
+The card has been stuck on "authenticated capture against staging", which this sandbox
+genuinely cannot do (`*.up.railway.app` is proxy-blocked). **A full local stack works
+and is the same code, schema and seed:**
+
+```
+service postgresql start
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mehamakor_dogfood
+uv run python -c "import app.models; from app.database import Base, engine; Base.metadata.create_all(bind=engine)"   # 39 tables — NOT alembic upgrade
+uv run python seed_data.py && uv run python scripts/seed_demo_business.py
+uv run uvicorn app.main:app --port 8000 ; npx next start -p 3100
+```
+
+`demo-owner@example.com` + `$DEMO_OWNER_PASSWORD` → `POST /auth/login` **200**.
+**All three `DEMO_*_PASSWORD` vars are present in the sandbox environment** — which
+contradicts the assumption on MEH-1528 that CC has no secrets.
+
+Findings posted to the card: four sub-44px controls, sharpest being the four
+availability chips at **38px** (`producer/dashboard/page.js:627`) while **line 858 of
+the same file already uses `min-h-[44px]`** — the idiom exists and is applied unevenly
+(`events`/`experiences` use it 5× each; four other dashboard files use it once).
+Full inventory: **16 distinct sub-44px controls** across 7 routes, smallest 16×16.
+
+Closed with evidence: **B8–B11** all merged (`f4509f8d`, `b4cf1f69`, `5c3d92d4`,
+`61061dd6`); **A6** obsolete (`ProducerCard.jsx:585-587` — MEH-1210 removed card
+prices, so the finding has no subject); **S1** not reproduced (8px clearance and
+`elementFromPoint` puts all four BottomNav items inside `<nav>`).
+
+**Measurement caveat, stated on the card too:** the proxy blocks Cloudinary and
+webfonts, so page-height and fold numbers are NOT trustworthy. Button geometry is
+(padding + font-size). Every reported finding is deliberately from the second class.
+
+## ⛔ BLOCKER AT SEGMENT END — Linear is unreachable
+
+The Linear MCP token **expired mid-session** (`requires re-authorization`). Two
+consequences, neither of which I can work around:
+
+1. **MEH-1928 could not be set Done** and its closing comment could not be posted,
+   although the PR carries `Closes MEH-1928` so the integration may do it.
+2. **The queue cannot be re-pulled**, so **QUEUE-EMPTY cannot be verified.** The last
+   good read (21:00Z) left Lane A with only MEH-999 open and Lane B with only
+   MEH-1249 eligible.
+
+Sapir must re-authorize the connector in an interactive session; a headless CC session
+cannot run the OAuth flow.
+
+## LANE STATE AT LAST GOOD READ
+
+- **Lane A** — MEH-1928 ✅ merged · MEH-1911 skipped (remaining item is Sapir's patch
+  application via PR #2661, all CC-deny files; B4 collision: branch
+  `feature/meh-1911-apply-pytest-parallel` already on origin) · **MEH-999 in progress**
+- **Lane B eligible** — **MEH-1249** only (MANUAL_TESTING → Playwright/pytest). Excluded:
+  MEH-1904/1283/1244 (`not-cc`), MEH-784 (`needs-sapir`), MEH-1938 (`HIGH-RISK` in
+  title), MEH-1925 (blocked on Sapir's Cloudinary console)
+
+## ENVIRONMENT NOTES (additions)
+
+- Postgres is installed but NOT running at session start: `service postgresql start`.
+- `Base` lives in `app.database`, not `app.models`; import `app.models` first so the
+  mappers register before `create_all`.
+- The branch-name hook fires on `git checkout -b` **even inside a throwaway scratch
+  repo under /tmp**. Use `feature/meh-NNNN-*` names for scratch branches too — do not
+  work around the hook (rule 32).
+- **`git reset --hard` in a proof loop silently discards an uncommitted edit to the
+  file under test.** This cost two full re-runs of the proof matrix, and the second
+  time it nearly produced a PR body citing runs made against a build that was not
+  shipping. Commit the change before building any harness that resets.
