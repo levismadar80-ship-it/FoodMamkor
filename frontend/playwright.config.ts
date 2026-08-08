@@ -43,6 +43,31 @@ export default defineConfig({
         // MEH-1604: ה-JSON reporter הוא מקור האמת ל"כמה טסטים באמת רצו".
         // ה-summary נקרא ע"י שלב "E2E coverage floor" ב-e2e.yml.
         ["json", { outputFile: "playwright-report/results.json" }],
+        // MEH-1904 — annotations דרך Checks API. ה-list reporter כבר מדפיס
+        // בלוק כשלונות מלא עם שמות, אבל הוא נקבר: שלב ה-diagnostics שאחריו
+        // שופך את /tmp/next-start.log (מאות שורות 401 של Cloudinary) לאותו
+        // job log, ולכן כל קריאה מסוג tail מפספסת אותו לגמרי. ה-github
+        // reporter מוציא את אותם שמות ל-annotations, שהם ערוץ ממוען — נקרא
+        // ב-Checks API לפי מיקום ולא לפי מיקום בלוג, ולכן חסין לשפיכה הזאת.
+        //
+        // מוחרג מ-job ה-WebKit (PW_WEBKIT=1): הוא shadow ולא חוסם
+        // (MEH-1788 step A), ו-annotations בדרגת `error` ממנו ייקראו כחוסמות.
+        // ההחרגה שומרת על ההבחנה בין השניים בלי לגעת ב-e2e.yml.
+        //
+        // בטוח מ-annotation multiplication מסוג matrix: אין matrix ואין
+        // sharding — e2e.yml:221 הוא `npx playwright test --fail-on-flaky-tests`
+        // בודד.
+        //
+        // ⚠️ ה-annotations הן מסלול מהיר, ולא הרשימה המלאה. GitHub מגביל
+        // ל-**10 annotations מסוג error per step** (50 per job), ו-`retries: 1`
+        // מייצר annotation לכל ניסיון — נמדד: 3 טסטים כושלים ⇒ 6 `::error`.
+        // לכן ריצה עם 9 כשלים (המצב ב-08/08) פולטת ~18 ונחתכת ב-10. אסור
+        // לקרוא את רשימת ה-annotations כרשימת הכשלונות המלאה: מקור האמת
+        // המלא נשאר בלוק ה-`N failed` של ה-list reporter בלוג, ו-
+        // `playwright-report/results.json` הוא המקור המכונתי.
+        ...(process.env.PW_WEBKIT === "1"
+          ? []
+          : [["github"] as ["github"]]),
       ]
     : [["list"]],
   // MEH-728: timing budgets raised for Vercel preview cold-start. The two
