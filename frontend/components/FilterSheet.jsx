@@ -323,7 +323,17 @@ export default function FilterSheet({
             stay lg:-gated. `pb` carries the safe-area inset the panel gave up:
             the footer is the bottommost painted element now, so the notch
             clearance belongs to it. */}
-        <div className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+8px)] lg:mt-4 lg:pb-1">
+        <div
+          // MEH-1945: the guards for this footer (the vitest tripwires and
+          // e2e/qa-meh1945-sticky-apply.mjs) used to reach it as the panel's
+          // lastElementChild. That is a POSITIONAL handle: append anything
+          // after this div and both silently start asserting about a different
+          // element — still green, no longer measuring the footer. Anchored to
+          // identity instead, per docs/E2E-LOCATORS.md. Raised by the CI
+          // adversarial reviewer on PR #2695.
+          data-testid="filter-sheet-apply-footer"
+          className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+8px)] lg:mt-4 lg:pb-1"
+        >
           <button
             type="button"
             onClick={onClose}
