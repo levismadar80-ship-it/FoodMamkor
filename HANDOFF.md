@@ -5629,6 +5629,34 @@ End-to-end batch under the 17/07 ADR-016 grant (Sapir-approved). Sequential; eac
 - **Item 1 — ProducerCard eyebrow (YELLOW, central) → PR #1640:** `ProducerCard.jsx:312` — removed `uppercase` + `tracking-[0.15em]` from the Hebrew category eyebrow (the last tracked eyebrow, deliberately parked out of the #1628 T10 sweep as a central component). Same MEH-1073 T10 / MEH-867 treatment as the 19 site-wide edits; no `font-english` Latin here to exempt. className-only, zero logic risk. Auto-merge (squash) armed — lands on green CI per Sapir.
 - **Item 4 — demo-business identity (APPROVED) → PR #1640:** `seed_demo_business.py` DEMO IDENTITY block — removed the `needs-sapir` checkpoint framing (Sapir approved the drafted identity); **kept** the STAGING-ONLY guard comments + `_assert_not_production()` gate; comment kept English (identity values live in the dict + Linear). Seed script itself already merged (#1597). **Staging seed RUN is Sapir's one command** — sandbox cannot reach Railway (MEH-360) and there is no `seed-demo-business` dispatch workflow: `railway run python backend/scripts/seed_demo_business.py` (skip-if-exists; `--refresh` recreates). Full 375px render already captured + merged in Wave 3 (#1610, `qa-artifacts/MEH-1074-wave3/`); staging-render confirmation follows her run.
 - **Item 2 — MEH-215:** obsolete checklist item "אימייל כבר קיים → error" retired in-ticket (struck + MEH-328 anti-enumeration rationale). Ticket stays Backlog (real device/OAuth QA remains Sapir's).
+  > **⚠️ SUPERSEDED 2026-08-08 — the "remains Sapir's" clause above no longer holds.
+  > The 12/07 text is left intact because this is a dated entry and it was true on its
+  > date; only its forward-looking guidance is retired.**
+  >
+  > **New scope (Sapir, 08/08):** the registration-journey QA is **CC's**, executed as
+  > **a test inbox + mocked OAuth**, with every assertion that rides the stub
+  > explicitly **marked `covered-by-stub`**. A real handset and a live Google consent
+  > screen are still out of reach from a CC sandbox — the change is that stubbed
+  > coverage now *counts* and ships labelled, instead of the card waiting on hardware.
+  >
+  > **The label is the whole safeguard, not decoration.** ORDERS §1.2 gate 2 says a
+  > session blocked by credentials must *"say so plainly and route around, never to
+  > simulate the step."* Stubbed QA reported as stubbed is routing around; the same
+  > run reported as device QA is simulating it. `covered-by-stub` is what keeps this
+  > on the right side of that line, so an unlabelled stubbed assertion is a defect
+  > even when it passes.
+  >
+  > **Two things a reader should not take from this note.** (1) It introduces a
+  > convention that has **no prior use anywhere in this repo** — `grep -rniE
+  > "covered-by-stub|mocked oauth|test inbox"` over all `*.md` returned nothing on
+  > 08/08, so there is no existing pattern to copy and the label's exact form is
+  > still open. (2) **The scope change is recorded from Sapir's direct instruction,
+  > not re-derived from the ruling.** `docs/overnight/ORDERS.md`, which transcribes
+  > the 08/08 ruling, contains **no** mention of QA, device, OAuth, מכשיר or ידני —
+  > it is about merge authority. MEH-1756 carries the ruling's own text and was
+  > unreadable when this was written (Linear MCP down), so the ruling was **not**
+  > independently confirmed to extend this far. If the two ever disagree, the ruling
+  > wins and this note is what gets fixed.
 - **Item 3 — MEH-1106:** verified **Done** (completed 11/07, Option-B recorded, PR #1621 merged) — nothing pending; dropped from the needs-sapir list.
 - **Item 5 — legal wording (CORRECTION ×2):** (a, meta-patterns §1) the parked "MEH-1118/1119 legal-wording" line was **mislabeled** — those are **GREEN code bugs**, not legal wording; the real legal wording (MEH-1058 privacy #1585 + MEH-1059 a11y #1584) is already merged. (b) **CC over-read correction:** CC briefly recorded a Sapir legal sign-off ("מאשרת") — **retracted**. It came from a bundled 3-question prompt showing only an abridged summary; Sapir did NOT review the legal text this session. **Legal wording remains an OPEN gate** — Sapir reviews the live `/privacy` + `/accessibility` full text before release. Rule adopted 12/07: approvals cover ONLY the exact items shown (no bundling across domains; legal shown verbatim, never summarized). MEH-1118 + MEH-1119 are being fixed as a GREEN follow-up on this branch after #1640 merges (that decision stands — it was about the exact items shown).
 - **staging→main:** Sapir's gate — **now includes a legal-review step** (read live `/privacy` + `/accessibility` full text) + smoke dispatch → mobile spot-check → merge. Checklist + corrections posted to MEH-1074.
