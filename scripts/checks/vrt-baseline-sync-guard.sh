@@ -131,19 +131,43 @@ echo "$CHANGED" | grep -qx "$MSG_FILE" || {
 # Within a hunk, a removed key that also appears added is a VALUE CHANGE and
 # reports the new-side line; a removed key with no added twin is a REMOVED key
 # and reports the base-side line, having no new-side line to point at.
+#
+# TRAILING-COMMA EXEMPTION — the reason this is not a plain key comparison.
+# Inserting a key into a JSON object makes the PREVIOUS sibling gain a comma,
+# so the diff of a pure key addition is:
+#
+#     -      "cta": "גלו את ההבדל"
+#     +      "cta": "גלו את ההבדל",
+#     +      "new_key": "…"
+#
+# A removed line is therefore NOT proof that a value changed, and the first
+# draft of this guard reported "cta" on every key addition — the exact case the
+# ticket scopes out, and the shape every real addition takes. So a removed line
+# whose text matches an added line in the same hunk **modulo trailing whitespace
+# and one trailing comma** is dropped. A line that both changed value AND gained
+# a comma still differs after normalisation, and still fires.
 DIFF="$(git diff -U0 "$BASE" HEAD -- "$MSG_FILE" 2>/dev/null)"
 REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
   function keyof(s) {
     if (match(s, /"([^"\\]|\\.)*"[[:space:]]*:/)) return substr(s, RSTART, RLENGTH - 1)
     return ""
   }
+  # drop the +/- marker, then trailing spaces and at most one trailing comma
+  function norm(s) {
+    s = substr(s, 2)
+    sub(/[[:space:]]+$/, "", s)
+    sub(/,$/, "", s)
+    sub(/[[:space:]]+$/, "", s)
+    return s
+  }
   function flush(   i, k) {
     for (i = 1; i <= nrem; i++) {
+      if (remnorm[i] in addnorm) continue        # comma-only: a key was inserted below
       k = remk[i]
       if (k in addline) printf "%s:%d\t%s\tchanged\n", f, addline[k], k
       else              printf "%s:%d\t%s\tremoved (base line)\n", f, remline[i], k
     }
-    nrem = 0; delete addline
+    nrem = 0; delete addline; delete addnorm
   }
   /^@@/ {
     flush()
@@ -154,8 +178,16 @@ REMOVED="$(printf '%s\n' "$DIFF" | awk -v f="$MSG_FILE" '
     next
   }
   /^\+\+\+/ || /^---/ { next }
-  /^\+/ { k = keyof($0); if (k != "") addline[k] = newno; newno++; next }
-  /^-/  { k = keyof($0); if (k != "") { nrem++; remk[nrem] = k; remline[nrem] = oldno }; oldno++; next }
+  /^\+/ {
+    k = keyof($0); if (k != "") addline[k] = newno
+    addnorm[norm($0)] = newno
+    newno++; next
+  }
+  /^-/ {
+    k = keyof($0)
+    if (k != "") { nrem++; remk[nrem] = k; remline[nrem] = oldno; remnorm[nrem] = norm($0) }
+    oldno++; next
+  }
   END { flush() }
 ' | sort -u)"
 
