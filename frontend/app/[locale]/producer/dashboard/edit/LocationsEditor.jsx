@@ -22,7 +22,7 @@
  */
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import {
@@ -36,7 +36,7 @@ import {
 } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, sameCityLabelParams } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { LocationInputSchema } from "@/lib/schemas";
 import EmptyState from "@/components/ui/EmptyState";
@@ -126,6 +126,64 @@ export default function LocationsEditor() {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  // MEH-1940: save errors render INSIDE the form, not as a bottom toast. The
+  // toast sat in the same bottom strip as the cookie banner, the chat widget
+  // and the BottomNav — dimmed at 1440, clipped at 375 — and it auto-dismissed
+  // while the owner was still looking at the field that caused it. Crowding was
+  // the symptom; the position was the disease. Deliberately NOT fixed by
+  // raising a z-index: those three are global surfaces, so the message leaves
+  // the strip rather than competing for it.
+  // Scope: FORM submissions only. Row actions (delete, set-primary) keep the
+  // toast — there is no open form to put their message in.
+  const [saveError, setSaveError] = useState(null);
+  // Cheap to call on every keystroke: returns the identical value when already
+  // null, so React bails out of the re-render.
+  const clearSaveError = useCallback(
+    () => setSaveError((prev) => (prev ? null : prev)),
+    [],
+  );
+
+  // MEH-1940: render the same-town error from he.json, keyed on the backend's
+  // `code`. The old message invented label examples ("הדוכן בשוק") — which are
+  // KIND names, in a form that already has a kind selector, duplicating the
+  // label field's own placeholder two centimetres away. This names the location
+  // she ALREADY has instead, from `params`, and states the 3-letter floor
+  // (schemas.py:963 _optional_label_letters) UP FRONT rather than letting it
+  // arrive as a second, unannounced error.
+  const sameCityMessage = useCallback(
+    (params) => {
+      const city = params?.city;
+      const count = params?.existing_count ?? 1;
+      const kind = params?.existing_kind;
+      let head;
+      if (!city) {
+        head = t("errors.same_city.generic");
+      } else if (count > 1) {
+        head = t("errors.same_city.many", { count, city });
+      } else if (params?.existing_label) {
+        head = t("errors.same_city.labelled", { label: params.existing_label, city });
+      } else if (KINDS.includes(kind)) {
+        head = t("errors.same_city.unlabelled", { kind: tKind(kind), city });
+      } else {
+        // An unrecognised kind must not throw inside a catch branch and lose the
+        // error entirely — degrade to the town-only sentence.
+        head = t("errors.same_city.generic");
+      }
+      return `${head} ${t("errors.same_city.action")}`;
+    },
+    [t, tKind],
+  );
+
+  const saveErrorFrom = useCallback(
+    (err) => {
+      const detail = err?.response?.data?.detail;
+      const params = sameCityLabelParams(detail);
+      if (params) return sameCityMessage(params);
+      // Pre-`code` backend, or any other failure: the bare `message` string.
+      return detailToMessage(detail) || t("errors.save_failed");
+    },
+    [sameCityMessage, t],
+  );
 
   useEffect(() => {
     setLoadError(false);
@@ -137,55 +195,52 @@ export default function LocationsEditor() {
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  // Rule 19: safeParse before every write. Returns the validated payload or null
-  // (after toasting the first issue) so callers bail cleanly.
+  // Rule 19: safeParse before every write. Returns `{data}` or `{error}` so the
+  // caller decides where the message goes — MEH-1940 moved that destination
+  // from a toast to the in-form slot, and returning the string keeps this
+  // helper from knowing about either.
   const validate = useCallback((form) => {
     const parsed = LocationInputSchema.safeParse(buildPayload(form));
-    if (!parsed.success) {
-      showToast.info(parsed.error.issues[0].message);
-      return null;
-    }
-    return parsed.data;
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    return { data: parsed.data };
   }, []);
 
   const handleCreate = useCallback(
     async (form) => {
-      const body = validate(form);
-      if (!body) return;
+      const { data: body, error } = validate(form);
+      if (error) return setSaveError(error);
       setSaving(true);
       try {
         await api.post("/producers/me/locations", body);
+        setSaveError(null);
         setAdding(false);
         reload();
       } catch (err) {
-        showToast.error(
-          detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
-        );
+        setSaveError(saveErrorFrom(err));
       } finally {
         setSaving(false);
       }
     },
-    [validate, reload, t],
+    [validate, reload, saveErrorFrom],
   );
 
   const handleUpdate = useCallback(
     async (id, form) => {
-      const body = validate(form);
-      if (!body) return;
+      const { data: body, error } = validate(form);
+      if (error) return setSaveError(error);
       setSaving(true);
       try {
         await api.put(`/producers/me/locations/${id}`, body);
+        setSaveError(null);
         setEditingId(null);
         reload();
       } catch (err) {
-        showToast.error(
-          detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
-        );
+        setSaveError(saveErrorFrom(err));
       } finally {
         setSaving(false);
       }
     },
-    [validate, reload, t],
+    [validate, reload, saveErrorFrom],
   );
 
   const handleSetPrimary = useCallback(
@@ -248,7 +303,10 @@ export default function LocationsEditor() {
           icon={MapPin}
           title={t("empty_title")}
           ctaLabel={t("empty_cta")}
-          ctaOnClick={() => setAdding(true)}
+          ctaOnClick={() => {
+            clearSaveError();
+            setAdding(true);
+          }}
         />
       ) : null}
 
@@ -260,8 +318,13 @@ export default function LocationsEditor() {
                 heading={t("edit_heading")}
                 initial={toEditForm(loc)}
                 saving={saving}
+                error={saveError}
+                onDirty={clearSaveError}
                 onSubmit={(form) => handleUpdate(loc.id, form)}
-                onCancel={() => setEditingId(null)}
+                onCancel={() => {
+                  clearSaveError();
+                  setEditingId(null);
+                }}
               />
             </li>
           ) : (
@@ -271,6 +334,7 @@ export default function LocationsEditor() {
                 kindLabel={tKind(loc.kind)}
                 deleting={deletingId === loc.id}
                 onEdit={() => {
+                  clearSaveError();
                   setAdding(false);
                   setEditingId(loc.id);
                 }}
@@ -287,13 +351,19 @@ export default function LocationsEditor() {
           heading={t("add_heading")}
           initial={EMPTY_FORM}
           saving={saving}
+          error={saveError}
+          onDirty={clearSaveError}
           onSubmit={handleCreate}
-          onCancel={() => setAdding(false)}
+          onCancel={() => {
+            clearSaveError();
+            setAdding(false);
+          }}
         />
       ) : locations.length > 0 ? (
         <button
           type="button"
           onClick={() => {
+            clearSaveError();
             setEditingId(null);
             setAdding(true);
           }}
@@ -360,7 +430,15 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
   );
 }
 
-function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
+function LocationForm({
+  heading,
+  initial,
+  saving,
+  error,
+  onDirty,
+  onSubmit,
+  onCancel,
+}) {
   const t = useTranslations("settings.locations");
   const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
@@ -383,6 +461,25 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
   );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  // MEH-1940: the message must not vanish on a timer — it stays until she acts
+  // on it. `form` covers every input here (all of them write through
+  // `setForm`), so this fires the moment she starts correcting and not before.
+  // Firing on mount too is intentional: a freshly opened form never inherits a
+  // previous attempt's error.
+  const errorRef = useRef(null);
+  useEffect(() => {
+    onDirty?.();
+  }, [form, onDirty]);
+
+  // The form is taller than a 375px viewport, so an error rendered mid-form can
+  // land off-screen when she submits from the bottom — the same out-of-sight
+  // failure the toast had, reintroduced in a new place. Bring it into view.
+  // `block: "center"` and no smooth scrolling, so it is not an animation
+  // anyone needs to opt out of.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: "center" });
+  }, [error]);
 
   // MEH-1936: ids for the two composed comboboxes. `useId` rather than a
   // literal, because <label htmlFor> must resolve to exactly one input and this
@@ -546,6 +643,24 @@ function LocationForm({ heading, initial, saving, onSubmit, onCancel }) {
             placeholder={tForm("label_placeholder")}
           />
         </Field>
+        {/* MEH-1940: sits directly under the תווית field — the field the
+            same-city 422 asks her to fill — instead of in the bottom strip
+            shared by the cookie banner, the chat widget and the BottomNav.
+            role="alert" so it is announced without moving focus off the input.
+            RTL: border-s-* (logical), never border-l.
+            sm:col-span-2 — this grid is 2-column above `sm` (:569), so without
+            it the message lands in the cell BESIDE תווית rather than beneath
+            it. Measured at 1440 before the span was added. */}
+        {error ? (
+          <div
+            ref={errorRef}
+            role="alert"
+            data-testid="location-form-error"
+            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
+          >
+            {error}
+          </div>
+        ) : null}
         {/* MEH-1936: the two location fields are the canonical components the
             register flow uses, not free text. They are NOT wrapped in `Field`:
             each renders its own <label htmlFor>, and Field's implicit <label>
