@@ -5049,5 +5049,99 @@
     "input_label": "Type a question",
     "input_placeholder": "Type a question...",
     "send_label": "Send question"
+  },
+  "diet_pages": {
+    "meta_title": "{label} — local food businesses | Mehamakor",
+    "breadcrumb_producers": "Businesses",
+    "faq_heading": "Frequently asked questions",
+    "siblings_aria": "More dietary pages",
+    "back_to_hub": "All businesses",
+    "honesty": "Marked according to the business's own declaration about products in its catalog.",
+    "pages": {
+      "vegan": {
+        "meta_description": "Local businesses that marked vegan products in their catalog — plant-based cheeses, baked goods, spreads and desserts. Marked by the business itself.",
+        "intro": "Almond cheeses, baked goods without butter or eggs, spreads and desserts that are entirely plant-based. Every business here marked at least one product in its catalog as vegan — some work fully vegan, others keep a vegan line alongside the rest.",
+        "faq": [
+          {
+            "question": "Are all products at these businesses vegan?",
+            "answer": "Not necessarily. The list shows businesses that marked at least one vegan product in their catalog. The business page shows which products were marked."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "vegetarian": {
+        "meta_description": "Local businesses that marked vegetarian products in their catalog — cheeses, baked goods, spreads and dishes without meat or fish. Marked by the business itself.",
+        "intro": "Cheeses, baked goods, spreads and dishes without meat or fish. Every business here marked at least one product in its catalog as vegetarian — and a vegan product counts as vegetarian too, so vegan businesses appear in this list as well.",
+        "faq": [
+          {
+            "question": "What is the difference between vegetarian and vegan here?",
+            "answer": "Vegetarian means no meat and no fish, and may include milk, eggs or honey. Vegan means no animal products at all. A product marked vegan is automatically included under vegetarian."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "gluten_free": {
+        "meta_description": "Local businesses that marked gluten-free products in their catalog — breads from alternative flours, cakes and spreads. Marked by the business itself.",
+        "intro": "Breads from alternative flours, cakes based on almonds or buckwheat, and spreads and sauces without wheat flour. Every business here marked at least one product in its catalog as gluten-free.",
+        "faq": [
+          {
+            "question": "Is the kitchen completely gluten-free?",
+            "answer": "The marking refers to the product itself, not to the kitchen. A business may prepare a gluten-free product in a place where wheat flour is also handled. If you are sensitive to traces of gluten, ask the business directly."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "lactose_free": {
+        "meta_description": "Local businesses that marked lactose-free products in their catalog — aged cheeses, plant-based desserts and spreads. Marked by the business itself.",
+        "intro": "Sheep's or goat's milk cheeses that have been aged, plant-based desserts, and spreads without cow's milk. Every business here marked at least one product in its catalog as lactose-free.",
+        "faq": [
+          {
+            "question": "What counts as lactose-free?",
+            "answer": "Products the business marked as containing no lactose — whether they are fully plant-based or the milk in them went through a process that breaks down lactose. If you are also sensitive to milk protein, check with the business."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "no_added_sugar": {
+        "meta_description": "Local businesses that marked products with no added sugar in their catalog — sweets, breads and spreads. Marked by the business itself.",
+        "intro": "Sweets without white sugar, sourdough breads with no sweetening, and spreads where the fruit does the work. Every business here marked at least one product in its catalog as having no added sugar — suitable both for those building a low-carb or ketogenic menu, and for anyone who simply wants less sugar at home.",
+        "faq": [
+          {
+            "question": "What counts as no added sugar?",
+            "answer": "Products the business marked as having no sugar, honey or syrups added during preparation. Natural sweetness from fruit or milk may still be present."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "low_carb": {
+        "meta_description": "Local businesses that marked low-carb products in their catalog — nut breads, flourless desserts and protein-rich dishes. Marked by the business itself.",
+        "intro": "Breads based on nuts and seeds, desserts without flour or sugar, and dishes where protein and fat do the work. Every business here marked at least one product in its catalog as low-carb — suitable for those building a ketogenic menu, and for anyone simply looking for fewer carbohydrates day to day.",
+        "faq": [
+          {
+            "question": "What counts as low-carb?",
+            "answer": "Products the business marked as low in carbohydrates — usually without wheat flour, sugar or added starch. Exact values vary between businesses, so ask about a specific product."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      }
+    }
   }
 }
