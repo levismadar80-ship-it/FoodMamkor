@@ -15,6 +15,11 @@
  * substituted. Against the pre-fix schema the free city renders the producer's
  * 25₪; against the fixed one it renders משלוח חינם.
  *
+ * EVERY `/api/` request is intercepted — see the single catch-all route below,
+ * and the assertion that nothing escaped it. That is not belt-and-braces: the
+ * first version routed three narrow patterns, believed it covered the surface,
+ * and leaked one.
+ *
  * Run: node e2e/qa-meh1942-delivery-fee.mjs [baseURL]
  */
 import { chromium, devices } from "@playwright/test";
@@ -82,16 +87,44 @@ const run = async () => {
       locale: "he-IL",
     });
 
-    // Only the producer document is substituted. The sibling feeds (events,
-    // similar, nearby) answer empty so the page settles instead of hanging.
-    await ctx.route("**/api/producers/**", (route) => {
+    // ONE route over the whole API surface, dispatching by path. Not three
+    // narrow ones — that was the first version and it leaked.
+    //
+    // `**/api/producers/**` looks like it covers the producer surface and does
+    // not: the glob requires a literal `/` after `producers`, so it matches
+    // `/api/producers/<id>` but NOT the sibling feeds, which axios builds as
+    // `/api/producers?city=…` and `/api/producers?category=…`
+    // (useProducerData.js:108, :123). This fixture sets `city`, so the nearby
+    // feed fired and reached the real network while the header claimed every
+    // sibling was answered empty. It did not break the run — those requests
+    // fail fast against an absent backend and `networkidle` still settles — but
+    // the capture was only deterministic by luck, and against a REACHABLE
+    // backend the screenshots would have carried live data.
+    //
+    // Caught by the different-model adversarial reviewer, not by the maker.
+    // A catch-all plus an escape assertion removes the whole class rather than
+    // patching the one pattern that was found.
+    const escaped = [];
+    await ctx.route("**/api/**", (route) => {
       const url = route.request().url();
-      if (/\/api\/producers\/[^?]+/.test(url) && !url.includes("?")) {
-        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PRODUCER) });
-      }
-      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      const json = (body) =>
+        route.fulfill({ status: 200, contentType: "application/json", body });
+      // The producer document: /api/producers/<id>, no query string.
+      if (/\/api\/producers\/[^/?]+$/.test(url)) return json(JSON.stringify(PRODUCER));
+      // Every list-shaped sibling answers empty: the producer feeds (similar,
+      // nearby), events, and the city list the delivery checker autocompletes
+      // against.
+      if (/\/api\/(producers|events|cities)\b/.test(url)) return json("[]");
+      // Shaped, not empty — `use-experiences-nav-gate.js:42` parses this with
+      // `z.object({ count: int })` and a bare `[]` would fail that parse. The
+      // gate is unrelated to delivery, so 0 keeps it closed and quiet.
+      if (/\/api\/experiences\/count\b/.test(url)) return json('{"count":0}');
+      // Anything else is a request this harness did not anticipate. Record it
+      // and answer empty rather than letting it reach the network silently —
+      // an unanticipated call is a finding, not something to swallow.
+      escaped.push(url);
+      return json("[]");
     });
-    await ctx.route("**/api/events**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 
     const page = await ctx.newPage();
     await page.goto(`${BASE}/he/producer/${PRODUCER.id}`, { waitUntil: "networkidle" });
@@ -130,7 +163,14 @@ const run = async () => {
     await target.scrollIntoViewIfNeeded().catch(() => {});
     await page.screenshot({ path: `${OUT}/${t.name}-delivery.png` });
 
-    console.log(`${t.name}: dir=${dir} · area fees=${JSON.stringify(texts)} · overflow=${overflow.doc}px`);
+    if (escaped.length) {
+      failures.push(`${t.name}: ${escaped.length} unanticipated API call(s): ${JSON.stringify(escaped)}`);
+    }
+
+    console.log(
+      `${t.name}: dir=${dir} · area fees=${JSON.stringify(texts)} · ` +
+        `overflow=${overflow.doc}px · unanticipated API calls=${escaped.length}`,
+    );
     await ctx.close();
   }
 

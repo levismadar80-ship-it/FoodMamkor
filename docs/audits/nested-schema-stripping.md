@@ -27,7 +27,7 @@ composition (`api-schemas.js:92`). Neither reaches a nested object.
 | # | Zod nested shape | file:line | Pydantic counterpart | keys STRIPPED |
 |---|---|---|---|---|
 | 1 | `categories[]` | `schemas.js:85-89` | `CategoryOut` `schemas.py:831-841` | `producer_count` |
-| 2 | `delivery_areas[]` | `schemas.js:104-109` | `DeliveryAreaOut` `schemas.py:~899-911` | ~~**`delivery_fee`**~~ — **none, fixed 08/08 (MEH-1942, §2)** |
+| 2 | `delivery_areas[]` | `schemas.js:113-119` (was `:104-109` — the MEH-1942 comment shifted it) | `DeliveryAreaOut` `schemas.py:~899-911` | ~~**`delivery_fee`**~~ — **none, fixed 08/08 (MEH-1942, §2)** |
 | 3 | `locations[]` | `schemas.js:117-125` | `ProducerLocationOut` `schemas.py:~936-951` | `opening_hours`, `phone` |
 | 4 | `active_offer` | `schemas.js:134-142` | `ProducerOfferOut` `schemas.py:1218-1224` | **none — complete** |
 | 5 | `CategorySchema` (top level) | `api-schemas.js:23-27` | `CategoryOut` | `producer_count` |
