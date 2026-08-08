@@ -117,6 +117,13 @@ later.
 
 ## 7 · STATUS-SYNCED — with evidence
 
+> **Both Lane A cards are ARCHIVED, and Linear rejects comments on an archived issue**
+> (`Could not find referenced Issue`, tried on each). So neither could receive its evidence
+> as a card comment, and I did not unarchive them to work around it — that is a change to
+> your board. **The evidence for both lives here and in `docs/CHANGELOG.md` instead.**
+> Worth knowing generally: an archived card is a read-only surface for CC. Asking me to
+> "sync status with evidence" on one cannot be done in-place.
+
 | issue | verified | action taken |
 |---|---|---|
 | **MEH-1911** | `#2633` merged 07/08 10:41Z by you; `tests/conftest.py:41` carries `PYTEST_XDIST_WORKER` on staging | **NOT synced to Done — see §8.** The proof does not reproduce. |
