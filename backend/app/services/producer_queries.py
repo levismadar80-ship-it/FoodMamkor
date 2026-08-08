@@ -223,6 +223,52 @@ def get_producer_or_404(db: Session, producer_id: UUID) -> Producer:
     return producer
 
 
+def persist_registration_delivery_areas(db: Session, producer: Producer, areas) -> None:
+    """MEH-1921 — write a signup payload's delivery areas AND the declaration.
+
+    Asking to be listed for these cities IS declaring that you deliver, so the
+    two are written together and by ONE owner. Every registration path used to
+    build the `DeliveryArea` rows inline and never touch `offers_delivery`,
+    leaving it at `default=False` (models.py:253) — and MEH-1848 conjoined that
+    flag into both delivery predicates (producer_listing.py:243,276), so the row
+    the owner had just created was precisely the one the filters exclude. She
+    typed her delivery cities in and the site answered "does not deliver".
+
+    The database cannot catch this and says so: models.py:463-466 records that
+    the pair "delivery_areas rows + offers_delivery=false" is enforced ONLY in
+    the query layer, the CHECK covering just `delivery_nationwide AND NOT
+    offers_delivery`.
+
+    This is the same semantics `tests/conftest.py:180-188` already gave the test
+    factory under MEH-1848 — "asking this factory for delivery areas means 'a
+    business that delivers to these cities', so it must also declare that it
+    delivers". The fixture was fixed then; the production write paths were not.
+
+    EDIT paths deliberately do NOT route through here. `producer_me.py:97,145`
+    and `admin.py:109` replace areas on an existing business whose owner or an
+    admin sets `offers_delivery` explicitly (producer_me.py:387-391,
+    admin.py:197), policed by `delivery_validation.py:68-74`. Deriving the flag
+    there would silently override a deliberate choice — the opposite bug.
+
+    Never writes `False`: an empty list means "this payload said nothing about
+    delivery", not "this business does not deliver", and the column default
+    already covers the former.
+    """
+    wrote_any = False
+    for da in areas or []:
+        db.add(
+            DeliveryArea(
+                producer_id=producer.id,
+                city=da.city,
+                min_order=da.min_order,
+                delivery_day=da.delivery_day,
+            )
+        )
+        wrote_any = True
+    if wrote_any:
+        producer.offers_delivery = True
+
+
 def create_primary_branch_location(
     db: Session, producer: Producer
 ) -> ProducerLocation | None:
@@ -315,15 +361,8 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
     for pos, cid in enumerate(data.category_ids):
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid, position=pos))
 
-    for da in data.delivery_areas:
-        db.add(
-            DeliveryArea(
-                producer_id=producer.id,
-                city=da.city,
-                min_order=da.min_order,
-                delivery_day=da.delivery_day,
-            )
-        )
+    # MEH-1921: areas + the offers_delivery declaration, written together.
+    persist_registration_delivery_areas(db, producer, data.delivery_areas)
 
     # MEH-1939: the dual-write. `ProducerCreate` carries no `address` field
     # (schemas.py:1324-1338), so `producer.address` is None here — the row gets
