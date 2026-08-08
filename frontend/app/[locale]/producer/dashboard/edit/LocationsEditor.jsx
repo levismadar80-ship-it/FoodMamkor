@@ -609,13 +609,16 @@ function LocationForm({
             same-city 422 asks her to fill — instead of in the bottom strip
             shared by the cookie banner, the chat widget and the BottomNav.
             role="alert" so it is announced without moving focus off the input.
-            RTL: border-s-* / ps-* (logical), never border-l / pl. */}
+            RTL: border-s-* (logical), never border-l.
+            sm:col-span-2 — this grid is 2-column above `sm` (:569), so without
+            it the message lands in the cell BESIDE תווית rather than beneath
+            it. Measured at 1440 before the span was added. */}
         {error ? (
           <div
             ref={errorRef}
             role="alert"
             data-testid="location-form-error"
-            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error"
+            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
           >
             {error}
           </div>
