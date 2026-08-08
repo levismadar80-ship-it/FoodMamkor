@@ -46,6 +46,12 @@ vi.mock("@/components/Skeleton", () => ({
   SkeletonProducerGrid: () => null,
 }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-1862: ProducersClient now imports this to attach FilterSheet group
+  // metadata, and a partial vi.mock throws on any export it omits (same
+  // reason the MEH-1881 names above are stubbed). Identity is the right
+  // stub here: these specs never open the sheet, so the group a chip would
+  // be filed under is irrelevant, while dropping chips would not be.
+  withChipGroups: (chips = []) => chips,
   buildChipParams: vi.fn(() => ({})),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
