@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, MapPin, Plant, Leaf, CaretDown } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -27,7 +27,13 @@ import {
   // surface this ticket does not touch.
   PRODUCERS_CHIPS_CONFIG as CHIPS_CONFIG,
   PRODUCERS_CHIPS_DEFAULT as CHIPS_DEFAULT,
+  withChipGroups,        // MEH-1862
 } from "@/lib/producer-filters";
+// MEH-1862: the same sheet /map mounts (FilterChipsBar.jsx:96), now given this
+// surface's own axes. A second copy would be the two-mechanisms smell the
+// workflow rules name — /map and /producers are both discovery surfaces and
+// their filter IA should not diverge again.
+import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
 import { trackEvent } from "@/lib/analytics";
@@ -131,6 +137,13 @@ export default function ProducersClient({
   const [baseItems, setBaseItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  // MEH-1862: the attribute sheet's open state. Per-instance, like /map's.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // Stable identity on purpose (PR #1565 review, carried over from /map): an
+  // inline arrow would be a new function every render, and `chips` changes on
+  // every toggle — that would tear down and re-arm FilterSheet's [open, onClose]
+  // keydown effect mid-interaction and yank focus back to the first row.
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
   // MEH-1503: read the saved city too (not just the setter) — the "בעיר שלי"
   // chip consults it (post-MEH-1485 it's seeded from the profile on login).
   const { city: savedUserCity, setCity: setUserCity } = useUserCity();
@@ -379,6 +392,19 @@ export default function ProducersClient({
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
+  // MEH-1862: "ניקוי הכל" INSIDE the attribute sheet clears the attribute axes
+  // only — never the category, city, day or search. Those are picked elsewhere
+  // on the page, and wiping them from a panel that does not show them would be
+  // a destructive surprise. The page-level `clearAll` (which does clear
+  // everything) is unchanged and still sits beside the results counter.
+  // Mirrors useMapFilters.js:208, where the sheet's clear resets the toggles only.
+  const clearAttributeChips = () => {
+    setChips(CHIPS_DEFAULT);
+    syncUrl(CHIPS_DEFAULT, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(CHIPS_DEFAULT, cityFilter, searchQ, categoryFilter);
+    trackEvent("producers_chips_clear");
+  };
+
   // MEH-1465: multi-select OR. "הכל" ("all") is ChipScrollRow's reset sentinel →
   // clears the whole set; re-tapping a selected category removes it; any other
   // category is added to the union.
@@ -541,7 +567,23 @@ export default function ProducersClient({
       ? CHIPS_CONFIG
       : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now")
   ).filter((c) => !hiddenDietKeys.includes(c.key));
-  const allChips = withChipIcons([...visibleChipDefs, cityChip]);
+  // MEH-1862: the row and the sheet split what used to be one array.
+  //
+  // The CITY chip stays INLINE and is deliberately not filed into the sheet. It
+  // is not an attribute: tapping it opens the LocationModal (or applies a saved
+  // city) rather than toggling a boolean, and "where do you deliver to me" is
+  // the common criterion the Baymard/Airbnb pattern keeps visible while the
+  // long tail moves behind a panel. Burying it would also strand the day row
+  // below, which is a ghost until a city is chosen (MEH-1825).
+  //
+  // `visibleChipDefs` is the ALREADY-GATED attribute list, so MEH-1881's
+  // open-now gate and MEH-1934's diet gates still decide what exists — this
+  // ticket changes WHERE a chip renders, never WHETHER it is offered.
+  const cityRowChips = withChipIcons([cityChip]);
+  const sheetChips = withChipGroups(visibleChipDefs);
+  // Attribute filters only — the badge must not count the city chip, which
+  // sits outside the sheet and carries its own visible active state.
+  const activeAttributeCount = activeChipDefs.length;
   const catalogFullyLoaded = !hasMore;
   const visibleCategories = categories.filter(
     (c) =>
@@ -662,15 +704,58 @@ export default function ProducersClient({
         </div>
       )}
 
-      {/* Toggle/attribute chip row — MEH-1186 micro-label "סינון". */}
-      <div className="mb-3">
-        <p className="text-xs text-fg-muted mb-1">{t("filters.filter_label")}</p>
+      {/* MEH-1862: the attribute chips moved into the FilterSheet behind a
+          "סינון" button — the IA /map has run since MEH-1368
+          (FilterChipsBar.jsx:60-100), now shared rather than diverging. What
+          stays on the surface is the city chip plus one button with a live
+          count; the ~8-chip attribute row is gone.
+
+          NO inventory threshold. The card specced hiding the row below 15
+          approved businesses, which would have deleted seven working filters at
+          today's catalog size and contradicted the decision recorded at
+          producer-filters.js:70-72 ("existing ones are never retro-gated").
+          Relocating achieves the card's §1 goal — fewer chips on the surface —
+          without removing a single capability. Full rationale on MEH-1862.
+
+          The MEH-1186 micro-label is retired here: it read "סינון" above the
+          row, and the button it now sits beside says "סינון" too. */}
+      <div className="mb-3 flex items-center gap-2 min-w-0">
         <ChipScrollRow
           variant="toggle"
-          chips={allChips}
+          chips={cityRowChips}
           activeKeys={activeKeys}
           onChipClick={handleChipClick}
+          className="flex-1"
         />
+        {/* Anchor wrapper — the sheet's lg+ panel positions off this `relative`
+            parent, exactly as on /map. */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setSheetOpen((v) => !v)}
+            aria-expanded={sheetOpen}
+            aria-controls="filter-sheet-panel"
+            data-testid="producers-filters-button"
+            // REUSES: frontend/app/[locale]/map/components/FilterChipsBar.jsx:80-96
+            // — same trigger, same inactive chip visuals, same inline count.
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+          >
+            <Faders size={16} aria-hidden="true" />
+            {t("filters.filter_label")}
+            {activeAttributeCount > 0 && (
+              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            )}
+          </button>
+          <FilterSheet
+            open={sheetOpen}
+            onClose={closeSheet}
+            chips={sheetChips}
+            chipState={chips}
+            onToggleChip={toggleChip}
+            resultCount={displayItems.length}
+            onClearAll={clearAttributeChips}
+          />
+        </div>
       </div>
 
       {/* MEH-1825: day refinement on the canonical listing surface. Same
