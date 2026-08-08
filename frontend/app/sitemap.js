@@ -11,6 +11,13 @@ import { routing } from "@/i18n/routing";
 // byte-identical copy of the same object — the exact two-owners drift class
 // lib/i18n-seo.js:18 warns about. Import it; never re-declare it here.
 import { HREFLANG_CODES } from "@/lib/i18n-seo";
+// MEH-1935: the diet-landing config is the single owner of the slug set, the
+// route path shape and the ≥5 threshold — never restate any of them here.
+import {
+  BACKED_DIET_PAGES,
+  DIET_PAGE_MIN,
+  dietPagePath,
+} from "@/lib/diet-pages";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -121,6 +128,36 @@ export default async function sitemap() {
     // API not available during build — skip dynamic pages
   }
 
+  // MEH-1935: diet landing pages (/producers/diet/[dietSlug]). Emitted ONLY for
+  // slugs that clear DIET_PAGE_MIN — the route returns a real 404 below the
+  // threshold, and listing a URL that 404s is a GSC error, the mirror of the
+  // MEH-803 noindex rule above. The count comes from the SAME filtered endpoint
+  // the page itself gates on, so sitemap and route cannot disagree.
+  //
+  // Fails OPEN (pages omitted) on any error: an absent sitemap entry costs
+  // discovery latency, whereas a listed-but-404 URL is an indexing fault.
+  let dietPages = [];
+  try {
+    const counts = await Promise.all(
+      BACKED_DIET_PAGES.map((p) =>
+        serverFetch(`${API_URL}/producers?${p.filterParam}=true&limit=1&offset=0`)
+          .then((r) => (r.ok ? Number(r.headers.get("x-total-count") || 0) : 0))
+          .catch(() => 0),
+      ),
+    );
+    dietPages = BACKED_DIET_PAGES.flatMap((p, i) =>
+      counts[i] >= DIET_PAGE_MIN
+        ? localizeEntry(dietPagePath(p.slug), {
+            lastModified: now,
+            priority: 0.8,
+            changeFrequency: "weekly",
+          })
+        : [],
+    );
+  } catch {
+    // API unavailable during build — skip the diet pages.
+  }
+
   // Event detail pages — only future events
   let eventPages = [];
   try {
@@ -142,6 +179,7 @@ export default async function sitemap() {
   return [
     ...staticPages,
     ...producerIndexPages,
+    ...dietPages,
     ...producerPages,
     ...recipePages,
     ...eventPages,

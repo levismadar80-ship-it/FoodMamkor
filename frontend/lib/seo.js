@@ -535,6 +535,100 @@ export function buildEventJsonLd(event, locale = "he") {
 }
 
 /**
+ * MEH-1935: JSON-LD for a diet landing page (/producers/diet/[dietSlug]).
+ *
+ * Emits a `@graph` of [ItemList, FAQPage, BreadcrumbList] from ONE
+ * <script type="application/ld+json">, mirroring the producer/event pattern.
+ * Callers must render it through serializeJsonLd() like every other site —
+ * this returns a plain object and never touches HTML itself.
+ *
+ * BreadcrumbList goes through the shared buildBreadcrumbList() owner (MEH-1062)
+ * rather than a fourth inline literal, per MEH-271's one-owner rule.
+ *
+ * The ItemList carries the businesses ACTUALLY rendered on the page (the SSR'd
+ * first page of the filtered grid), not the full filtered total — a structured
+ * -data list that claims items a crawler cannot see on the page is exactly the
+ * mismatch Google's Rich Results tests flag.
+ *
+ * @param {object}   args
+ * @param {string}   args.label     the diet label (H1) — from ATTRIBUTE_LABELS
+ * @param {string}   args.pageUrl   absolute, locale-correct page URL
+ * @param {string}   args.intro     the editorial intro paragraph
+ * @param {{question: string, answer: string}[]} args.faq
+ * @param {{name: string, url: string}[]} args.items rendered businesses
+ * @param {string}   args.locale
+ * @param {string}   args.producersUrl absolute URL of the /producers hub
+ * @param {string}   args.producersLabel breadcrumb label for the hub
+ */
+export function buildDietPageJsonLd({
+  label,
+  pageUrl,
+  intro,
+  faq = [],
+  items = [],
+  locale = "he",
+  producersUrl,
+  producersLabel,
+}) {
+  if (!label || !pageUrl) return null;
+
+  // next-intl's t.raw() returns the KEY PATH (a string) when a message is
+  // missing, not undefined — so a locale that lost its `faq` array would reach
+  // `.map` on a string and throw at render time. Coerce non-arrays to empty;
+  // the copy-contract test is what keeps a locale from silently losing it.
+  const questions = Array.isArray(faq) ? faq : [];
+  const entries = Array.isArray(items) ? items : [];
+
+  const itemList = {
+    "@type": "ItemList",
+    "@id": `${pageUrl}#itemlist`,
+    name: label,
+    description: intro || undefined,
+    numberOfItems: entries.length,
+    itemListElement: entries.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      url: it.url,
+    })),
+  };
+
+  // Google requires every FAQPage to carry at least one question; emitting an
+  // empty mainEntity is an invalid-structured-data error, so drop the entity
+  // entirely rather than shipping a hollow one.
+  const faqPage =
+    questions.length > 0
+      ? {
+          "@type": "FAQPage",
+          "@id": `${pageUrl}#faq`,
+          inLanguage: IN_LANGUAGE[locale] ?? IN_LANGUAGE.he,
+          mainEntity: questions.map((f) => ({
+            "@type": "Question",
+            name: f.question,
+            acceptedAnswer: { "@type": "Answer", text: f.answer },
+          })),
+        }
+      : null;
+
+  const crumbs = [
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+  ];
+  if (producersUrl && producersLabel) {
+    crumbs.push({ name: producersLabel, item: producersUrl });
+  }
+  crumbs.push({ name: label, item: pageUrl });
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      itemList,
+      ...(faqPage ? [faqPage] : []),
+      buildBreadcrumbList(crumbs, `${pageUrl}#breadcrumb`),
+    ],
+  };
+}
+
+/**
  * MEH-1062: standalone schema.org/BreadcrumbList for the recipe detail page
  * (/[slug]/recipes/[recipe_id]). RecipeJsonLd.jsx (MEH-591) still owns the
  * Recipe entity, untouched; this adds the missing breadcrumb trail as a
