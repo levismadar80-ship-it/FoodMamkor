@@ -267,15 +267,21 @@ def persist_registration_delivery_areas(
     delivery", not "this business does not deliver", and the column default
     already covers the former.
 
-    DOES NOT persist `DeliveryAreaCreate.delivery_fee`, and neither did the
-    three inline loops this replaced — so a signup that states a per-area fee
-    (including 0 = "משלוח חינם") silently loses it and the area inherits the
-    producer-level fee. Pre-existing and deliberately NOT fixed here: it is the
-    write-side twin of MEH-1942, which is under Sapir's decision on PR #2680,
-    and closing one side while that is open would confuse the measurement.
-    Named rather than left silent, because this function now reads as the owner
-    of "persist a signup payload's delivery areas" and a reader would otherwise
-    assume it persists all of them.
+    MEH-1947: `delivery_fee` IS persisted now. It was not, and neither did the
+    three inline loops this replaced — five keys on `DeliveryAreaCreate`, four
+    written — so a signup stating a per-area fee lost it silently and the area
+    inherited the producer-level rate. That was left open deliberately while the
+    reading end was still broken (MEH-1942, Zod stripped the same field before it
+    reached the page); fixing one side alone would have moved the bug rather than
+    closed it. With #2693 merged the pipe runs to the screen, so the source is
+    filled here.
+
+    Passed straight through, NOT coalesced. `0` and `None` are different facts:
+    `0` = "delivery to this city is free", `None` = "the owner stated nothing,
+    inherit the producer rate". `da.delivery_fee or None` would look equivalent
+    and would convert every free city back into an inheriting one — billing for
+    a delivery its owner declared free. The DeliveryAreaOut serializer and
+    `DeliveryBlock.jsx:318` are both built on that distinction.
     """
     wrote_any = False
     for da in areas or []:
@@ -285,6 +291,7 @@ def persist_registration_delivery_areas(
                 city=da.city,
                 min_order=da.min_order,
                 delivery_day=da.delivery_day,
+                delivery_fee=da.delivery_fee,
             )
         )
         wrote_any = True
