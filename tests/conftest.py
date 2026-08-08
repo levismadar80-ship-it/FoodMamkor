@@ -1,17 +1,122 @@
 """
 Shared pytest fixtures for מהמקור backend tests.
 
-Uses an isolated PostGIS-enabled test database (mehamakor_test).
-Each test gets a fresh schema via create_all/drop_all.
+Uses an isolated test database (mehamakor_test). Each test gets a fresh
+schema via create_all/drop_all.
+
+Under pytest-xdist every worker provisions its own database
+(mehamakor_test_gw0, mehamakor_test_gw1, …) — see MEH-1911 below.
 """
 import os
+import re
 import sys
 import uuid
 
 # Point the backend at the test database BEFORE importing app modules.
-os.environ["DATABASE_URL"] = os.environ.get(
+_BASE_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql://postgres:postgres@localhost:5432/mehamakor_test",
+)
+
+# MEH-1911: per-worker database isolation, so `pytest -n auto` is safe.
+#
+# Two autouse fixtures below are hostile to a *shared* database:
+# `_bootstrap_schema` (session-scoped drop_all/create_all) and
+# `_clean_tables` (per-test TRUNCATE of every table). Pointed at one
+# database from N workers they corrupt each other's runs — worker A
+# TRUNCATEs rows worker B just committed, and each worker runs its own
+# drop_all while the others are mid-test. The fix removes the shared
+# resource rather than trying to order access to it: one database per
+# worker, so both fixtures keep operating on data only their own worker
+# can see, unchanged.
+#
+# `PYTEST_XDIST_WORKER` is set by xdist inside each worker process before
+# conftest is imported ("gw0", "gw1", …). It is absent in a serial run and
+# absent in the xdist controller, so the serial path below is the exact
+# pre-MEH-1911 line: same database name, same fixtures, no CREATE/DROP.
+#
+# DO NOT move the provisioning after the `from app.database import …`
+# below — `app.database` builds the engine from DATABASE_URL at import
+# time, so the worker URL has to be in the environment before that runs.
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER")
+
+# xdist worker ids are "gw<N>"; anything else is not something we will
+# splice into a database identifier.
+_WORKER_ID_RE = re.compile(r"^gw\d+$")
+
+
+def _worker_db_name(base_url, worker: str) -> str:
+    """`mehamakor_test` + `gw3` -> `mehamakor_test_gw3`."""
+    if not _WORKER_ID_RE.match(worker):
+        raise RuntimeError(
+            f"PYTEST_XDIST_WORKER={worker!r} is not a recognised xdist worker "
+            "id (expected 'gw<N>'); refusing to build a database name from it."
+        )
+    return f"{base_url.database}_{worker}"
+
+
+def _maintenance_engine(base_url):
+    """Engine on the always-present `postgres` db, in AUTOCOMMIT.
+
+    CREATE/DROP DATABASE cannot run inside a transaction block (hence
+    AUTOCOMMIT) nor from inside the database being dropped (hence the
+    separate maintenance database).
+    """
+    from sqlalchemy import create_engine
+
+    return create_engine(
+        base_url.set(database="postgres"), isolation_level="AUTOCOMMIT"
+    )
+
+
+def _provision_worker_database(base_url_str: str, worker: str) -> str:
+    """Create this worker's own database and return its URL.
+
+    Drops a leftover of the same name first, so a previous run that was
+    killed before its teardown cannot leak schema or rows into this one.
+    """
+    from sqlalchemy import text
+    from sqlalchemy.engine import make_url
+
+    url = make_url(base_url_str)
+    worker_db = _worker_db_name(url, worker)
+
+    engine = _maintenance_engine(url)
+    try:
+        with engine.connect() as conn:
+            # WITH (FORCE) requires PG13+; CI pins postgres:15.
+            # rtl-ok — "pr-c" below is a workflow filename, not a CSS class.
+            # (.github/workflows/pr-checks.yml:296)
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{worker_db}" WITH (FORCE)'))
+            conn.execute(text(f'CREATE DATABASE "{worker_db}"'))
+    finally:
+        engine.dispose()
+
+    # hide_password=False: this string becomes DATABASE_URL and has to stay
+    # connectable — SQLAlchemy's default rendering masks the password to "***".
+    return url.set(database=worker_db).render_as_string(hide_password=False)
+
+
+def _drop_worker_database(base_url_str: str, worker: str) -> None:
+    """Drop this worker's database at session end."""
+    from sqlalchemy import text
+    from sqlalchemy.engine import make_url
+
+    url = make_url(base_url_str)
+    worker_db = _worker_db_name(url, worker)
+
+    engine = _maintenance_engine(url)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{worker_db}" WITH (FORCE)'))
+    finally:
+        engine.dispose()
+
+
+os.environ["DATABASE_URL"] = (
+    _provision_worker_database(_BASE_DATABASE_URL, _XDIST_WORKER)
+    if _XDIST_WORKER
+    else _BASE_DATABASE_URL
 )
 
 # Make `backend/` importable as the package root.
@@ -53,6 +158,35 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "fuzz: schemathesis property-based API fuzz tests (slow)"
     )
+    # MEH-1911: tests whose ASSERTION is about wall-clock time. Per-worker
+    # database isolation makes the suite safe to parallelise, but it cannot
+    # make a latency measurement meaningful on a machine where N-1 other
+    # workers are saturating the CPU. These run in their own serial pass —
+    # see docs/ci/meh-1911-pytest-parallel.patch.md.
+    config.addinivalue_line(
+        "markers",
+        "serial: must not run under pytest-xdist — asserts on measured "
+        "wall-clock timing, which parallel CPU contention invalidates",
+    )
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """MEH-1911: drop this xdist worker's database.
+
+    Runs in each worker process (every worker has its own session), after
+    all fixtures — including `_bootstrap_schema`'s drop_all — have torn
+    down. No-op in a serial run and in the xdist controller, neither of
+    which provisioned a database.
+
+    The engine is disposed first: DROP DATABASE fails while a connection
+    to it is open, and the pool holds some until told otherwise.
+    """
+    if not _XDIST_WORKER:
+        return
+    from app.database import engine as _engine
+
+    _engine.dispose()
+    _drop_worker_database(_BASE_DATABASE_URL, _XDIST_WORKER)
 
 
 @pytest.fixture(scope="session", autouse=True)

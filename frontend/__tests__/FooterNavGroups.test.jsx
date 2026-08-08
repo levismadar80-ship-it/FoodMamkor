@@ -25,7 +25,14 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));
-vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
+// MEH-1918: the footer now asks GET /experiences/count to decide whether the
+// data-gated "חוויות" link appears. A promise that never settles keeps the gate
+// in its fail-closed state for this spec, so the link counts below stay about
+// the MEH-1177 split and not about experience supply. The gate's own behaviour
+// is asserted in ExperiencesNavGate.test.jsx.
+vi.mock("@/lib/api", () => ({
+  default: { post: vi.fn(), get: vi.fn(() => new Promise(() => {})) },
+}));
 vi.mock("@/lib/errors", () => ({ detailToMessage: (e) => String(e) }));
 vi.mock("@/lib/constants", () => ({ BRAND_NAME: "מהמקור" }));
 

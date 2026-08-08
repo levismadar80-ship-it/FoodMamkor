@@ -101,4 +101,24 @@ export const ATTRIBUTE_LABELS = {
     evidence: "self-declared",
     subtext: "עסקים עם מוצרים ללא לקטוז בקטלוג",
   },
+  // MEH-1934: fifth + sixth diet axes. Same any-product / self-declared pair as
+  // the four above — an EXISTS subquery over products, never a whole-business
+  // property. Copy is Sapir-LOCKED (MEH-1934 §hebrew_copy): do not paraphrase.
+  //
+  // The label names the NEED, not a trend: "דל פחמימות", never "קטו". And
+  // "מתאים לסוכרתיים" is banned on every surface — it is a medical claim, and
+  // this label is a self-declaration about a product, which is the exact
+  // over-claim the MEH-1507 contract exists to prevent.
+  no_added_sugar: {
+    label: "ללא סוכר מוסף",
+    scope: "any-product",
+    evidence: "self-declared",
+    subtext: "עסקים עם מוצרים ללא סוכר מוסף בקטלוג",
+  },
+  low_carb: {
+    label: "דל פחמימות",
+    scope: "any-product",
+    evidence: "self-declared",
+    subtext: "עסקים עם מוצרים דלי פחמימות בקטלוג",
+  },
 };
