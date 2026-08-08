@@ -46,6 +46,12 @@ vi.mock("@/components/Skeleton", () => ({
   SkeletonProducerGrid: () => null,
 }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-1862: ProducersClient now imports this to attach FilterSheet group
+  // metadata, and a partial vi.mock throws on any export it omits (same
+  // reason the MEH-1881 names above are stubbed). Identity is the right
+  // stub here: these specs never open the sheet, so the group a chip would
+  // be filed under is irrelevant, while dropping chips would not be.
+  withChipGroups: (chips = []) => chips,
   buildChipParams: vi.fn(() => ({})),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
@@ -60,6 +66,11 @@ vi.mock("@/lib/producer-filters", () => ({
   // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
   PRODUCERS_CHIPS_CONFIG: [],
   PRODUCERS_CHIPS_DEFAULT: {},
+  // MEH-1934: same rule as OPEN_NOW_CHIP_MIN above — a partial vi.mock throws
+  // on any export the component imports. An empty GATED_DIET_KEYS keeps these
+  // specs chip-agnostic; the helper returns [] to match.
+  GATED_DIET_KEYS: [],
+  visibleGatedDietKeys: () => [],
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn() }),

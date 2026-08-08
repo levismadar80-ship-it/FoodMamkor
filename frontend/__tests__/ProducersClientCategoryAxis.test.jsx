@@ -33,6 +33,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
@@ -198,7 +199,12 @@ describe("/producers category axis (MEH-1081)", () => {
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
     fireEvent.click(within(row).getByText("דבש"));
-    fireEvent.click(within(screen.getByTestId("chip-row-toggle")).getByText("ללא גלוטן"));
+    // MEH-1862: the attribute axes moved off the toggle row into the FilterSheet,
+    // so reaching one now means opening the sheet first. The point of the case —
+    // that a category and an attribute COMPOSE into one URL and one fetch — is
+    // unchanged; only the path to the control is.
+    fireEvent.click(screen.getByTestId("producers-filters-button"));
+    fireEvent.click(screen.getByTestId("chip-gluten_free"));
     const url = lastReplaceUrl();
     expect(url).toContain("category=18");
     expect(url).toContain("gluten_free=1");

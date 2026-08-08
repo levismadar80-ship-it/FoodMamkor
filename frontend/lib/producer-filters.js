@@ -39,6 +39,17 @@ export const CHIPS_CONFIG = [
   { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian },
   { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free },
   { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free },
+  // MEH-1934: peers of the four diet chips above, so they live in the SHARED
+  // array like their siblings — and ATTRIBUTE_LABELS membership is precisely
+  // the promise that the shared row renders them (attributeLabels.test.js).
+  // Unlike open_for_orders_now (MEH-1881), which is a by-the-hour operational
+  // state its ticket scoped to /producers only, these are durable product
+  // attributes and belong wherever the other diet chips are.
+  //
+  // Because this array IS the home grid's row, both are gated at EVERY render
+  // site via visibleGatedDietKeys — see DIET_CHIP_MIN below.
+  { key: "no_added_sugar", ...ATTRIBUTE_LABELS.no_added_sugar },
+  { key: "low_carb",      ...ATTRIBUTE_LABELS.low_carb },
   { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery },
   { key: "verified",      ...ATTRIBUTE_LABELS.verified },
 ];
@@ -51,12 +62,47 @@ export const CHIPS_CONFIG = [
 // when the data arrives, with nobody remembering to flip anything.
 export const OPEN_NOW_CHIP_MIN = 5;
 
+// MEH-1934: same runtime-data-gate reasoning as OPEN_NOW_CHIP_MIN, applied to
+// the two NEW diet axes only. Until the catalog carries the markings, a chip
+// that returns an empty list looks broken and punishes the businesses that
+// joined first — so it stays OUT of the DOM rather than rendering disabled.
+//
+// Deliberately NOT applied to the four older axes: they already have data and
+// gating them now would REMOVE working filters. New axes start gated; existing
+// ones are never retro-gated.
+export const DIET_CHIP_MIN = 5;
+export const GATED_DIET_KEYS = ["no_added_sugar", "low_carb"];
+
+/**
+ * Which gated diet chips have earned their place, given the loaded producers.
+ *
+ * Counts businesses whose aggregate flag is true — the same has_X_products
+ * field the badge layer reads, so chip visibility and badge display cannot
+ * disagree. An ACTIVE filter always keeps its chip (`active`), or a
+ * deep-linked ?low_carb=1 would strand the visitor with a filter she can see
+ * the effect of and cannot switch off — the identical carve-out
+ * ProducersClient makes for open_for_orders_now.
+ */
+export function visibleGatedDietKeys(producers = [], chips = {}) {
+  const field = {
+    no_added_sugar: "has_no_added_sugar_products",
+    low_carb: "has_low_carb_products",
+  };
+  return GATED_DIET_KEYS.filter((key) => {
+    if (chips[key]) return true;
+    const n = producers.filter((p) => p && p[field[key]]).length;
+    return n >= DIET_CHIP_MIN;
+  });
+}
+
 export const CHIPS_DEFAULT = {
   kosher: false,
   vegan: false,
   vegetarian: false,
   gluten_free: false,
   lactose_free: false,
+  no_added_sugar: false,  // MEH-1934
+  low_carb: false,        // MEH-1934
   has_delivery: false,
   verified: false,
 };
@@ -82,6 +128,49 @@ export const PRODUCERS_CHIPS_DEFAULT = {
   open_for_orders_now: false,
 };
 
+// MEH-1862: which FilterSheet section each /producers axis belongs to.
+//
+// Kept as an explicit key→group map rather than a `group` field on
+// PRODUCERS_CHIPS_CONFIG, because that array spreads the SHARED CHIPS_CONFIG —
+// the same array the home grid renders (HomeProducersGrid.jsx:70) — and a field
+// added there travels to a surface this ticket does not touch. Same reasoning
+// MEH-1881 used to justify the PRODUCERS_* pair existing at all.
+//
+// It is NOT derived from TOGGLE_CHIPS at runtime: /producers importing a module
+// named for /map would invert the dependency for a handful of string constants.
+// The drift risk that buys is covered by a test instead — producerSheetChips
+// asserts every /producers key has a group AND that every key shared with
+// TOGGLE_CHIPS is filed under the SAME group on both surfaces, so the two
+// cannot disagree silently.
+const PRODUCERS_CHIP_GROUPS = {
+  kosher: "quality",
+  vegan: "diet",
+  vegetarian: "diet",
+  gluten_free: "diet",
+  lactose_free: "diet",
+  no_added_sugar: "diet",
+  low_carb: "diet",
+  has_delivery: "service",
+  verified: "service",
+  open_for_orders_now: "service",  // MEH-1881 — /producers-only
+};
+
+/**
+ * Attach FilterSheet group metadata to a /producers chip list (MEH-1862).
+ *
+ * Takes the ALREADY-GATED list, so the MEH-1881 open-now and MEH-1934 diet
+ * gates keep deciding what exists — moving the chips into a sheet changes where
+ * they render, never whether they are offered. A key with no group entry falls
+ * back to "service" so it stays reachable rather than vanishing; the test above
+ * is what stops that fallback from ever being the answer in practice.
+ */
+export function withChipGroups(chips = []) {
+  return chips.map((chip) => ({
+    ...chip,
+    group: PRODUCERS_CHIP_GROUPS[chip.key] ?? "service",
+  }));
+}
+
 export function buildChipParams(chips, overrides = {}) {
   const c = { ...chips, ...overrides };
   const p = {};
@@ -90,6 +179,8 @@ export function buildChipParams(chips, overrides = {}) {
   if (c.vegan) p.vegan = true;
   if (c.vegetarian) p.vegetarian = true;  // MEH-1438
   if (c.lactose_free) p.lactose_free = true;
+  if (c.no_added_sugar) p.no_added_sugar = true;  // MEH-1934
+  if (c.low_carb) p.low_carb = true;              // MEH-1934
   if (c.has_delivery) p.has_delivery = true;
   if (c.verified) p.verified = true;
   if (c.open_for_orders_now) p.open_for_orders_now = true;  // MEH-1881

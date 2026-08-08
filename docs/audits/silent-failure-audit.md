@@ -253,6 +253,66 @@ revert it", which would have been the wrong call for the right-looking reason.
 
 ---
 
+## 🥇 Tier 1 rule candidate — check the alternative world *before* publishing (07/08/2026)
+
+> **Before publishing a causal claim, name the world in which the evidence is green for a
+> different reason, and check that world first.**
+>
+> For run comparisons the mechanical form is: **confirm both runs executed.**
+
+This is the same family as *"every new guard test must be shown failing"* (MEH-1619) — a
+discipline that demonstrably produces good work and is **enforced by nothing**. The
+difference is where it sits in time: the failing-run rule governs how you build an
+assertion; this one governs when you are allowed to publish a *conclusion*.
+
+### The evidence — four retracted claims in one day, one root cause
+
+Diagnosing an E2E failure on PR #2641, four causal claims were published and then
+withdrawn:
+
+| # | published claim | control that would have killed it | cost to run |
+|---|---|---|---|
+| 1 | "Cloudinary 401s, repo-wide and external" | did the *passing* runs execute tests? | one API call |
+| 2 | "not Cloudinary — staging passed at the same time" | same call — **those runs were skips** | one API call |
+| 3 | "stale base" | which SHA did staging actually pass on? | one field |
+| 4 | "the outcome is not a function of the tree" | #1 and #3 together | — |
+
+Claim 1 was **correct** and was retracted on the strength of claim 2, which rested on two
+runs that executed **nothing**. The final verified position matched the first instinct:
+401s present ⇔ VRT red, absent ⇔ VRT green, with a genuine 199-passing run at 00:38 (zero
+401s) against 9 failures at 08:38 (log saturated).
+
+Not a knowledge gap — every control was available, cheap, and skipped in favour of a
+plausible mechanism that fit the visible evidence.
+
+### 🔴 Why this needs a rule and not more care: skip-green *manufactures* the false world
+
+`E2E gate` maps `skipped → success`. On a docs-only push, Playwright skips and the
+aggregator reports green. **That green is a machine emitting exactly the counter-evidence
+this discipline guards against** — a run that "passed" while executing nothing.
+
+That is what turned one wrong hypothesis into three. It is not a reasoning error a
+sufficiently careful person avoids; it is an artefact the system produces on demand, and
+the only defence is a mechanical pre-check.
+
+Compare with case 3 of *"a green that has two possible causes"* in
+`.claude/rules/testing.md`, which documents this exact mechanic — **and did not prevent
+it**, because the documented form is a caution and not a step anyone executes. Tracked as
+MEH-1590 / MEH-1582.
+
+### Why it could be a guard, not only prose
+
+`confirm both runs executed` is greppable. A comparison of two workflow runs can be
+checked mechanically before its conclusion is trusted: for each run id cited, assert the
+relevant job's `conclusion` is `success` **and** its steps are not `skipped`. That is the
+same shape as `audit-skills.sh --self-test` — a check that runs against the real
+implementation and fails loudly.
+
+Proposed as **Tier 1** precisely because the prose version already exists and demonstrably
+did not hold.
+
+---
+
 ## Related, deliberately out of scope
 
 - **MEH-324 (TS migration)** — class B strengthens the argument for it but is **not

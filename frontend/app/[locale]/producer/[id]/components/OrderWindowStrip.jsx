@@ -42,13 +42,32 @@
  *           "הכפתור עומד בפני עצמו" — so the note is gone rather than reworded
  *           a fourth time. The schedule this block renders is the honest half
  *           of what that line was reaching for, and it survives untouched.
+ *           MEH-1917 — the merged summary gained a second layer: the FULL week,
+ *           one row per open day, behind a quiet disclosure, with today marked.
+ *           The merged span ("ראשון–חמישי") is a compression that makes the
+ *           reader work out where Wednesday falls; this offers the uncompressed
+ *           list without spending the vertical space by default.
+ *           DO NOT add a live open/closed status line here — MEH-1917 asked for
+ *           one and it was NOT built, deliberately. The header already renders
+ *           that exact sentence (lib/order-status.js:84-97 →
+ *           `header.status.orders_closed` = "ההזמנות סגורות עכשיו · נפתחות …"),
+ *           so a second one is the duplicate MEH-1691 deleted, not a new
+ *           feature. The "Does NOT" clause above and its guard test in
+ *           __tests__/OrderWindowScheduleBlock.test.jsx still hold; reversing
+ *           them is Sapir's call, not a side effect of another ticket.
  */
 
-import { Fragment } from "react";
-import { CalendarCheck } from "@phosphor-icons/react";
+import { Fragment, useEffect, useState } from "react";
+import { CalendarCheck, CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { humanTime } from "@/lib/time-format";
 
-import { getOrderWindowRanges } from "@/lib/orderWindow";
+import {
+  ORDER_DAY_KEYS,
+  getOrderWindowRanges,
+  israelNowParts,
+  normalizeDayEntries,
+} from "@/lib/orderWindow";
 
 // MEH-1875: index-aligned with lib/orderWindow.js ORDER_DAY_KEYS, so index 0 is
 // Sunday on every axis. REUSES: components/DeliveryBlock.jsx:13 (same
@@ -79,12 +98,30 @@ function RangeList({ ranges }) {
   return ranges.map((r, i) => (
     <Fragment key={`${r.open}-${r.close}`}>
       <span className="whitespace-nowrap">
-        {r.open}–{r.close}
+        {humanTime(r.open)}–{humanTime(r.close)}
         {i < ranges.length - 1 ? "," : ""}
       </span>
       {i < ranges.length - 1 ? " " : ""}
     </Fragment>
   ));
+}
+
+
+/**
+ * Every OPEN day on its own row — the un-merged truth behind the summary.
+ *
+ * `getOrderWindowRanges` MERGES consecutive identical days ("ראשון–חמישי"),
+ * which is the compression this layer exists to undo: a merged range makes the
+ * reader locate a day inside a span instead of reading it off. So this iterates
+ * ORDER_DAY_KEYS directly and never touches the merged output.
+ */
+function openDaysOf(orderWindow) {
+  const out = [];
+  for (let i = 0; i < ORDER_DAY_KEYS.length; i += 1) {
+    const ranges = normalizeDayEntries(orderWindow?.[ORDER_DAY_KEYS[i]]);
+    if (ranges.length > 0) out.push({ dayIndex: i, ranges });
+  }
+  return out;
 }
 
 /**
@@ -109,7 +146,22 @@ function RangeList({ ranges }) {
 export function OrderWindowScheduleBlock({ orderWindow }) {
   const t = useTranslations("producer.detail.order_window");
   const tDays = useTranslations("producer.detail.order_window.days");
+  const [expanded, setExpanded] = useState(false);
+  // MEH-1917: "which day is today" is clock-derived, so it must not run on the
+  // server pass — the same reason ProducerHeader.jsx:118-120 gates its status.
+  // Deliberately NOT a guard around the whole block: the schedule itself stays
+  // SSR-rendered (it is clock-free) and only the highlight arrives after mount,
+  // so the server string is unchanged and there is nothing to mismatch.
+  const [todayIndex, setTodayIndex] = useState(-1);
+  useEffect(() => setTodayIndex(israelNowParts().dayIndex), []);
+
   const rows = getOrderWindowRanges(orderWindow);
+  const openDays = openDaysOf(orderWindow);
+  // The disclosure is offered ONLY when the summary is actually hiding
+  // something — i.e. some days merged. With no merging the summary IS the
+  // per-day list, and a control labelled "כל השבוע" that reveals a verbatim
+  // copy of the rows above it is noise wearing the costume of an affordance.
+  const hasMergedRows = openDays.length > rows.length;
   if (rows.length === 0) return null;
 
   return (
@@ -124,6 +176,12 @@ export function OrderWindowScheduleBlock({ orderWindow }) {
           <CalendarCheck size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
           <span>{t("schedule_subtitle")}</span>
         </div>
+        {/* MEH-1917: the summary is REPLACED by the full week, not stacked above
+            it. Caught by eye, not by a pin: the first build rendered both, so a
+            Sun–Thu producer showed "ראשון–שלישי" and then ראשון, שני, שלישי
+            again directly underneath — the same schedule twice in one card.
+            Two layers means one at a time. */}
+        {!expanded && (
         <div className="px-3.5 py-2">
           {rows.map((row) => (
             <div
@@ -149,6 +207,80 @@ export function OrderWindowScheduleBlock({ orderWindow }) {
             </div>
           ))}
         </div>
+        )}
+
+        {/* MEH-1917 layer 2 — the full week, per day, behind a quiet disclosure.
+            Yext/Mussi: a day-by-day list beats a compressed span, because a span
+            makes the reader work out where Wednesday falls. The summary above
+            stays as the fast answer; this is the precise one. */}
+        {hasMergedRows && (
+          <>
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              aria-controls="order-window-week"
+              data-testid="order-window-week-toggle"
+              // min-h-[44px]: measured at 41px with py-2.5 alone
+              // (qa-meh1917-order-window.mjs P6), which is under the tap target.
+              // The floor is explicit rather than tuned via padding so a future
+              // font-size change cannot quietly drop it back under.
+              className="flex min-h-[44px] w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-[13px] text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {expanded ? t("hide_week") : t("show_week")}
+              <CaretDown
+                size={12}
+                aria-hidden="true"
+                className={`transition-transform ${expanded ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {expanded && (
+              <div
+                id="order-window-week"
+                className="border-t border-border px-3.5 py-2"
+                data-testid="order-window-week"
+              >
+                {openDays.map((day) => {
+                  const isToday = day.dayIndex === todayIndex;
+                  return (
+                    <div
+                      key={day.dayIndex}
+                      className={`flex justify-between gap-4 py-1.5 text-[13px] ${
+                        isToday ? "font-medium text-text" : "text-fg-muted"
+                      }`}
+                      data-testid="order-window-week-row"
+                      data-day={day.dayIndex}
+                      data-today={isToday ? "true" : undefined}
+                    >
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {tDays(DAY_LABEL_KEYS[day.dayIndex])}
+                        {isToday && (
+                          <span
+                            data-testid="order-window-today-chip"
+                            className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary-dark"
+                          >
+                            {t("today")}
+                          </span>
+                        )}
+                      </span>
+                      {/* Split ranges stack rather than running on one line: a
+                          day with a break is two separate windows, and comma-
+                          joining them reads as one long one. */}
+                      <span dir="ltr" className="flex flex-col items-end text-end">
+                        {day.ranges.map((r) => (
+                          <span key={`${r.open}-${r.close}`} className="whitespace-nowrap">
+                            {humanTime(r.open)}–{humanTime(r.close)}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </section>
   );

@@ -398,6 +398,32 @@ self_test() {
   run_case ".ai/diagrams + CHANGELOG" PASS \
     "echo '- route' >> .ai/diagrams/api-routes.md; echo '- entry' >> docs/CHANGELOG.md"
 
+  # ── Release exemption (07/08/2026) ──────────────────────────────────────
+  # The PAIR is the point, not either half. "base=main is exempt" on its own
+  # proves nothing — an exemption that passed unconditionally would look
+  # identical. What discriminates is that the SAME shape still FAILS when the
+  # base is anything else. If a future edit widens the exemption, the first
+  # case below goes green and this self-test reds.
+  run_case "release-shaped diff, base != main — still FAILS" FAIL \
+    "echo 'export const a = 4;' > frontend/components/Thing.jsx; echo '- entry' >> docs/CHANGELOG.md; echo '- note' >> HANDOFF.md"
+
+  echo "-- is_release_pr() truth table"
+  cases=$(( cases + 1 ))
+  if is_release_pr main \
+     && is_release_pr refs/heads/main \
+     && ! is_release_pr staging \
+     && ! is_release_pr "" \
+     && ! is_release_pr mainline \
+     && ! is_release_pr feature/meh-1-main; then
+    echo "   [ok] exempt: main, refs/heads/main — NOT exempt: staging, empty,"
+    echo "        mainline, feature/meh-1-main (substring must not match)"
+  else
+    echo "   [XX] is_release_pr truth table is wrong — the exemption is either"
+    echo "        too narrow (releases still blocked) or too wide (rule 31 off)"
+    status=1
+  fi
+  echo
+
   # ...and this one proves the fix did not hollow the guard out: real code
   # (*.py) + CHANGELOG must still be a violation. A "fix" that greens the
   # case above by weakening classification would go red here.
@@ -515,9 +541,56 @@ mid_cycle_case() {
 }
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# is_release_pr <base-ref> — true when this PR targets `main`, i.e. it is a
+# `staging → main` RELEASE CUT rather than ordinary work.
+#
+# WHY THE EXEMPTION EXISTS (and why it is a scope fix, not a weakening)
+#   Rule 31 / MEH-1372 exists for exactly one reason: docs/CHANGELOG.md and
+#   HANDOFF.md are append-only, so two CONCURRENT FEATURE BRANCHES both editing
+#   them conflict on every merge to staging. That is the whole failure it
+#   prevents (PR #2207 absorbed 7 staging merges and produced two contradictory
+#   CHANGELOG entries).
+#
+#   A release cut has no concurrency to protect against. It is a single PR
+#   aggregating everything already merged to staging, and the logs it carries
+#   are the entries those merges already landed. There is no second branch to
+#   collide with, and no backfill PR that could carry them instead — a release
+#   that omitted its own changelog would simply be wrong.
+#
+#   So the guard was not being circumvented on release PRs; it was being ASKED
+#   THE WRONG QUESTION. Measured on the 2026-08-07 release (#2480): the range
+#   carries docs/CHANGELOG.md, HANDOFF.md, and 1,389 non-docs files — the exact
+#   failure condition. NO release diff can ever pass, so `repo-guards` failed,
+#   and because repo-guards sits in the ci-gate aggregator's needs list (see
+#   the workflow, line 698, read there as R_REPO_GUARDS at line 719), the
+#   required CI gate went red. Every release was structurally unmergeable.
+#   rtl-ok: the citation above names a workflow filename containing "pr-c",
+#   which the RTL hook reads as a padding-right class. Prose, not CSS.
+#
+# WHAT THIS DOES NOT DO
+#   It does not relax the rule for any feature branch. `base != main` is
+#   completely unchanged, which is what the paired self-test below proves: the
+#   SAME diff shape still FAILS against staging and is exempt only against main.
+# ---------------------------------------------------------------------------
+is_release_pr() {
+  case "${1:-}" in
+    main|refs/heads/main) return 0 ;;
+    *)                    return 1 ;;
+  esac
+}
+
 main() {
   echo "changelog-branch-guard (MEH-1602) — enforces MEH-1372"
   echo
+
+  if is_release_pr "${GITHUB_BASE_REF:-}"; then
+    echo "  base is 'main' — this is a staging→main RELEASE cut."
+    echo "  Rule 31 targets concurrent feature branches colliding on append-only"
+    echo "  logs; a release aggregates already-merged work and has no such"
+    echo "  concurrency. The logs belong in it. Not applicable — OK."
+    exit 0
+  fi
 
   local resolved base how kind rest files
   if ! resolved="$(resolve_base)"; then

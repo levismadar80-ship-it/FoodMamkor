@@ -5,6 +5,7 @@ import { CaretDown, CaretUp, Clock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 import { DAY_ABBR, DAY_KEYS, parseHours } from "@/lib/hours";
+import { humanTime } from "@/lib/time-format";
 
 // MEH-826: the parser + Israel-tz status were extracted to lib/hours so the
 // compact /map card shares one parser instead of duplicating it.
@@ -28,12 +29,19 @@ function todayIndex() {
 }
 
 /**
- * "09:00–13:00, 16:00–19:00" — an en-dash inside a range, a comma between
+ * "9:00–13:00, 16:00–19:00" — an en-dash inside a range, a comma between
  * ranges. The whole string renders inside a dir="ltr" span, so the reading
  * order of the numerals is preserved on the RTL page.
+ *
+ * MEH-1924: the hour is humanised through the shared `humanTime`, the same
+ * formatter the order-window card uses. Both cards sit on the producer page
+ * and are a deliberate visual family; before this they disagreed by one
+ * leading zero ("09:00" here, "9:00" there), which is the inconsistency
+ * NN/g's heuristic warns makes readers hunt for a meaning that isn't there.
+ * The stored value is untouched — only the ink changes.
  */
 function formatRanges(ranges) {
-  return ranges.map((r) => `${r.open}–${r.close}`).join(", ");
+  return ranges.map((r) => `${humanTime(r.open)}–${humanTime(r.close)}`).join(", ");
 }
 
 export default function OpeningHours({ opening_hours }) {

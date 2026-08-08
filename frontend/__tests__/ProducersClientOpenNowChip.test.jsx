@@ -34,6 +34,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
@@ -116,7 +117,34 @@ const props = (initialItems) => ({
   perPage: 12,
 });
 
-const CHIP = () => screen.queryByTestId("chip-open_for_orders_now");
+// MEH-1862: the attribute chips moved off the row and into the FilterSheet, so
+// every assertion below has to OPEN the sheet before it can see anything.
+//
+// This is not a mechanical query update, and skipping it would have been the
+// dangerous outcome rather than a red suite. With the sheet closed, EVERY
+// attribute chip is absent from the DOM — so `expect(CHIP()).toBeNull()` (the
+// case this file calls "the discriminating case") would have kept passing while
+// testing nothing at all: green because the gate works, and green because the
+// sheet is shut, with nothing in the output telling the two apart. That is the
+// "a green with two possible causes is not a signal" trap in
+// .claude/rules/testing.md, and relocating chips into a closed panel converts
+// every absence assertion about them into one by construction.
+//
+// openSheet() is therefore part of the assertion, not setup noise: it restores
+// the precondition that the chip COULD be visible, which is what makes its
+// absence mean the gate.
+// Idempotent on purpose: the trigger TOGGLES, and several cases below call
+// CHIP() twice in one test (truthy, then textContent). A blind click would shut
+// the sheet on the second call and the assertion would fail for a reason that
+// has nothing to do with the gate.
+const openSheet = () => {
+  const btn = screen.getByTestId("producers-filters-button");
+  if (btn.getAttribute("aria-expanded") !== "true") fireEvent.click(btn);
+};
+const CHIP = () => {
+  openSheet();
+  return screen.queryByTestId("chip-open_for_orders_now");
+};
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");

@@ -1,0 +1,120 @@
+/**
+ * Module:   diet-pages
+ * Purpose:  Single owner of the six indexable diet landing pages (MEH-1935) —
+ *           slug → attribute key → API filter param → page path. Consumed by
+ *           the route (app/[locale]/producers/diet/[dietSlug]), by sitemap.js,
+ *           and by the sibling-chip internal linking row.
+ * Touches:  nothing — pure data + pure helpers, no React, no fetch.
+ * Does NOT: own the chip LABELS (lib/attribute-labels.js is the SoT — the H1
+ *           reads from there, never a second copy) nor the page COPY (locked
+ *           Hebrew lives in messages/*.json under the `diet_pages` namespace).
+ * Related:  MEH-1204 §B (hub-and-spoke internal linking), MEH-1881
+ *           (OPEN_NOW_CHIP_MIN — the runtime-data-gate pattern this mirrors),
+ *           MEH-1934 (ships the two `backed: false` attributes below).
+ * History:  MEH-1935 (creation, 2026-08-07).
+ */
+import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+
+/**
+ * MEH-1935: a diet page needs at least this many matching businesses before it
+ * exists at all. Below the threshold the route returns a REAL 404 and the page
+ * is withheld from the sitemap.
+ *
+ * Same number and same reasoning as MEH-1204 decision 2 (≥5 per cell → thin
+ * content below it) and MEH-1881's OPEN_NOW_CHIP_MIN: a surface that renders
+ * one lonely result is a doorway page to Google and an insult to the business
+ * that happens to be the only one on it. Deliberately a RUNTIME data gate, not
+ * a feature flag — the page turns itself on when the catalog arrives, with
+ * nobody remembering to flip anything.
+ */
+export const DIET_PAGE_MIN = 5;
+
+/**
+ * The six pages, in the MEH-1438 chip order (טבעוני · צמחוני · ללא גלוטן ·
+ * ללא לקטוז) with the two MEH-1934 additions appended — that order is locked
+ * and must not be reshuffled here, because the sibling-chip row renders it.
+ *
+ *  - `slug`        URL segment. English, per the project-wide route rule.
+ *  - `attribute`   key into ATTRIBUTE_LABELS (the H1 / chip-label SoT).
+ *  - `filterParam` the existing /producers query param (MEH-293 EXISTS filter).
+ *  - `backed`      does the BACKEND actually implement `filterParam` today?
+ *
+ * `backed` is not redundant with the ≥5 data gate, and this is the whole
+ * reason the field exists. FastAPI IGNORES an unknown query param rather than
+ * rejecting it, so `GET /producers?no_added_sugar=true` today returns the
+ * ENTIRE approved catalog — which sails through a count-based gate and would
+ * publish an indexable page whose grid contradicts its own H1. The count gate
+ * cannot detect that; only this flag can. MEH-1934 ships the two columns and
+ * their filters, and flips these to `true` in its chunk 3.
+ */
+export const DIET_PAGES = [
+  { slug: "vegan", attribute: "vegan", filterParam: "vegan", backed: true },
+  { slug: "vegetarian", attribute: "vegetarian", filterParam: "vegetarian", backed: true },
+  { slug: "gluten-free", attribute: "gluten_free", filterParam: "gluten_free", backed: true },
+  { slug: "lactose-free", attribute: "lactose_free", filterParam: "lactose_free", backed: true },
+  // MEH-1934 pending. `pendingLabel` mirrors that ticket's locked hebrew_copy
+  // so the config is complete and reviewable now; once MEH-1934 adds the two
+  // ATTRIBUTE_LABELS entries, dietPageLabel() prefers those and the fallback
+  // goes unread. It is NOT a second label owner: it is only reachable while
+  // the page is un-servable and therefore never rendered.
+  {
+    slug: "no-added-sugar",
+    attribute: "no_added_sugar",
+    filterParam: "no_added_sugar",
+    backed: false,
+    pendingLabel: "ללא סוכר מוסף",
+  },
+  {
+    slug: "low-carb",
+    attribute: "low_carb",
+    filterParam: "low_carb",
+    backed: false,
+    pendingLabel: "דל פחמימות",
+  },
+];
+
+/**
+ * The route lives at /producers/diet/[dietSlug] — a STATIC `diet` segment,
+ * decided by Sapir on 2026-08-07 against the two alternatives.
+ *
+ * Why not the shorter /producers/[dietSlug]: MEH-1204 decision 3 (locked)
+ * reserves /producers/[category]/[region] for the category×region pages. Next
+ * refuses two different slug names under one parent —
+ * node_modules/next/dist/shared/lib/router/utils/sorted-routes.js: "You cannot
+ * use different slug names for the same dynamic path" — so taking the bare
+ * first segment here would force child B to rename these URLs AFTER Google had
+ * indexed them, the exact expensive-to-reverse move that EPIC warns about.
+ * The static segment sidesteps it entirely and keeps the pages under the
+ * /producers hub, which is what MEH-1204 §B's hub-and-spoke linking wants.
+ *
+ * Single owner of the shape: sitemap.js, the sibling chips and the breadcrumb
+ * all call this, so the route can move by editing one line.
+ */
+export function dietPagePath(slug) {
+  return `/producers/diet/${slug}`;
+}
+
+/** Config lookup. Returns null for an unknown slug — never throws. */
+export function getDietPage(slug) {
+  return DIET_PAGES.find((p) => p.slug === slug) ?? null;
+}
+
+/**
+ * Can this page be served at all, ignoring the catalog count? False for a slug
+ * whose backend filter does not exist yet (see `backed` above).
+ */
+export function isDietPageBacked(entry) {
+  return Boolean(entry?.backed);
+}
+
+/** The pages whose filter the backend actually implements. */
+export const BACKED_DIET_PAGES = DIET_PAGES.filter(isDietPageBacked);
+
+/**
+ * H1 / chip label. Reads ATTRIBUTE_LABELS first so the page and the filter
+ * chip can never disagree (MEH-1935: "H1 = label ה-chip, לא לנסח מחדש").
+ */
+export function dietPageLabel(entry) {
+  if (!entry) return null;
+  return ATTRIBUTE_LABELS[entry.attribute]?.label ?? entry.pendingLabel ?? null;
+}

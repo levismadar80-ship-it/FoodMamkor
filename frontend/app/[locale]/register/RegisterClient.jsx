@@ -38,7 +38,11 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           (OAuth success honors clamped ?redirect= — Suspense boundary
  *           added for useSearchParams, mirrors LoginClient).
  *           MEH-839 (de-box container + filled-green CTA → /login parity;
- *           OAuth render order FROZEN form-first, MEH-132 #3 untouched).
+ *           OAuth render order FROZEN form-first, MEH-132 #3 untouched);
+ *           MEH-1919 (success-affordance noise, two steps: name success
+ *           removed, then the email's border tint removed too — NEITHER
+ *           field carries a success state now, and re-adding one would
+ *           reintroduce the WCAG 1.4.1 colour-only failure).
  */
 
 export default function RegisterClient() {
@@ -179,9 +183,11 @@ function RegisterPageBody() {
   // input pass every required rule" check.
   const nameTrimmed = form.name.trim();
   const nameInvalid = nameTouched && !nameTrimmed;
-  const nameValid = nameTouched && !!nameTrimmed;
+  // MEH-1919: neither field carries a success affordance, so there is no
+  // nameValid/emailValid derivation. Name and email are simple fields —
+  // "you typed a non-empty name", "that parses as an address" is feedback
+  // the user already has. They speak only when something is wrong.
   const emailInvalid = emailTouched && form.email.length > 0 && !validateEmail(form.email);
-  const emailValid = emailTouched && validateEmail(form.email);
   // MEH-306: passwordOk comes from <PasswordInput>'s onValidityChange and
   // already covers length + (debounced) breach. Backend re-validates on
   // submit including deny-list, so the submit guard above is redundant
@@ -303,13 +309,21 @@ function RegisterPageBody() {
             referralCode state + /referral/claim call below stay live; copy only. */}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* MEH-1128 D2: name + email adopt ui/Input with the D1 success state —
-              this closes Wave A's "0 migrations" gap (the consumer valid-state
-              affordance the primitive couldn't express pre-D1). Same
-              nameTouched/emailTouched trigger logic + i18n keys; error wins over
-              success inside the primitive, mirroring the mutually-exclusive
-              invalid/valid derivations. text-end on the ltr email = right (its
-              own end), preserving the old physical text-right. */}
+          {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
+              = right (its own end), preserving the old physical text-right.
+              MEH-1919: NEITHER field passes ui/Input's D1 success props. Per
+              NN/g, success indicators belong on fields whose validity the user
+              cannot self-assess — password strength, username availability —
+              not on a name or an email. The password field keeps its checklist
+              (PasswordInput, MEH-306); these two say nothing unless wrong.
+              The first pass kept a border-primary tint on the email. It was
+              removed (Sapir, 06/08) because with no successText the primitive
+              renders no Check either — ui/Input.jsx:117-125 puts the icon
+              INSIDE the successText span — which left the state carried by
+              colour alone, a WCAG 1.4.1 failure. Removing it closes that
+              rather than working around the primitive, which stays untouched.
+              DO NOT re-add success/successText here — that is the decision,
+              not an oversight. */}
           <Input
             id="register-name"
             label={t("auth.register.consumer.fields.name")}
@@ -318,8 +332,6 @@ function RegisterPageBody() {
             onBlur={() => setNameTouched(true)}
             required
             error={nameInvalid ? t("auth.register.consumer.validation.name_required") : undefined}
-            success={nameValid}
-            successText={nameValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
             dir="rtl"
           />
           <Input
@@ -331,8 +343,6 @@ function RegisterPageBody() {
             onBlur={() => setEmailTouched(true)}
             required
             error={emailInvalid ? t("auth.register.consumer.validation.email_invalid") : undefined}
-            success={emailValid}
-            successText={emailValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
             className="text-end"
             dir="ltr"
           />

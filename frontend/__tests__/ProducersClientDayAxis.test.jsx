@@ -29,6 +29,7 @@ vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{c
 // Enumerated, not a Proxy: a Proxy's getter runs during ProducersClient's
 // import and dereferences the JSX runtime before vitest has initialised it.
 vi.mock("@phosphor-icons/react", () => ({
+  Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon
   MagnifyingGlass: (p) => <span {...p} />,
   MapPin: (p) => <span {...p} />,
   Plant: (p) => <span {...p} />,
@@ -71,6 +72,12 @@ vi.mock("@/components/LocationModal", () => ({
 }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-1862: ProducersClient now imports this to attach FilterSheet group
+  // metadata, and a partial vi.mock throws on any export it omits (same
+  // reason the MEH-1881 names above are stubbed). Identity is the right
+  // stub here: these specs never open the sheet, so the group a chip would
+  // be filed under is irrelevant, while dropping chips would not be.
+  withChipGroups: (chips = []) => chips,
   buildChipParams: () => ({}),
   CHIPS_CONFIG: [],
   CHIPS_DEFAULT: {},
@@ -85,6 +92,9 @@ vi.mock("@/lib/producer-filters", () => ({
   // chip-agnostic, exactly as CHIPS_CONFIG/CHIPS_DEFAULT did before.
   PRODUCERS_CHIPS_CONFIG: [],
   PRODUCERS_CHIPS_DEFAULT: {},
+  // MEH-1934: a partial vi.mock throws on any export the component imports.
+  GATED_DIET_KEYS: [],
+  visibleGatedDietKeys: () => [],
 }));
 vi.mock("@/lib/use-user-city", () => ({
   useUserCity: () => ({ city: null, setCity: vi.fn(), clearCity: vi.fn() }),
