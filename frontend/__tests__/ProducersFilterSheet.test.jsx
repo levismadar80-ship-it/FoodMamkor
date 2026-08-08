@@ -202,6 +202,44 @@ describe("MEH-1862 — the threshold that was dropped", () => {
   });
 });
 
+describe("MEH-1862 — intra-group order", () => {
+  it("puts open_for_orders_now LAST in the service group, not first", () => {
+    // Found by the different-model reviewer, not by the maker, and missed by the
+    // group guards below — those assert group MEMBERSHIP and say nothing about
+    // order, so the defect shipped green through a full suite.
+    //
+    // FilterSheet sorts the service group by an explicit verified → has_delivery
+    // list. `open_for_orders_now` is not on that list, and the original
+    // comparator used the raw `indexOf` difference: -1 for the untracked key
+    // minus 0 for `verified` is negative, so it sorted FIRST. That inverts
+    // producer-filters.js:118-120, which places the chip last deliberately —
+    // "it reads as a refinement of the durable attributes above rather than as
+    // a peer of them".
+    //
+    // Deep-linked so the MEH-1881 coverage gate's carve-out force-shows the chip
+    // with an empty catalog; without the param it is correctly absent and this
+    // case would assert nothing.
+    params = { open_for_orders_now: "1" };
+    render(<ProducersClient {...props(items(1))} />);
+    openSheet();
+    const service = ["verified", "has_delivery", "open_for_orders_now"]
+      .map((key) => ({ key, el: screen.queryByTestId(`chip-${key}`) }))
+      .filter((r) => r.el);
+    expect(service.map((r) => r.key)).toEqual([
+      "verified",
+      "has_delivery",
+      "open_for_orders_now",
+    ]);
+    // Order in the array above is only the lookup order — assert the DOM's.
+    const domOrder = service
+      .sort((a, b) =>
+        a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+      )
+      .map((r) => r.key);
+    expect(domOrder).toEqual(["verified", "has_delivery", "open_for_orders_now"]);
+  });
+});
+
 describe("MEH-1862 — the /map surface is not disturbed", () => {
   it("files every shared axis under the same group on both surfaces", () => {
     // The group metadata is duplicated by design (producer-filters.js explains

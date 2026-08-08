@@ -68,15 +68,30 @@ const GROUP_CHIP_ORDER = {
 // with its own axes. `source` defaults to TOGGLE_CHIPS, which is what /map has
 // always passed implicitly — that surface is unchanged in behaviour and output.
 //
-// A key absent from GROUP_CHIP_ORDER keeps array order (indexOf → -1 for both
-// sides is a stable tie), so a surface-specific chip appended to a group it does
-// not enumerate — /producers' open_for_orders_now in `service` — lands last
-// rather than jumping the explicit verified → has_delivery order.
+// A key absent from GROUP_CHIP_ORDER sorts AFTER every enumerated one, keeping
+// array order among themselves — so a surface-specific chip appended to a group
+// this map does not enumerate (/producers' open_for_orders_now in `service`)
+// lands last instead of jumping the explicit verified → has_delivery order.
+//
+// `order.length`, not a raw `indexOf`. The first version of this used the bare
+// difference and a comment asserting that -1 was "a stable tie": that is only
+// true when BOTH keys are missing. With one present, `-1 - 0 = -1` sorts the
+// UNTRACKED key FIRST — the exact inverse of the intent. Measured on the built
+// app before the fix: the service group rendered open_for_orders_now ahead of
+// verified and has_delivery, contradicting producer-filters.js:118-120, which
+// puts that chip last on purpose ("it reads as a refinement of the durable
+// attributes above rather than as a peer of them"). Infinity is not used
+// either — `Infinity - Infinity` is NaN, which is an invalid comparator the
+// moment a group has two untracked keys.
 function chipsForGroup(group, source) {
   const chips = source.filter((chip) => chip.group === group);
   const order = GROUP_CHIP_ORDER[group];
   if (!order) return chips;
-  return [...chips].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  const rank = (key) => {
+    const i = order.indexOf(key);
+    return i === -1 ? order.length : i;
+  };
+  return [...chips].sort((a, b) => rank(a.key) - rank(b.key));
 }
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
