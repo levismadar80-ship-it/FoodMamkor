@@ -246,12 +246,22 @@ def persist_registration_delivery_areas(
     business that delivers to these cities', so it must also declare that it
     delivers". The fixture was fixed then; the production write paths were not.
 
-    EDIT paths deliberately do NOT route through here. `producer_me.py:97,145`
-    and `admin.py:109` replace areas on an existing business whose owner or an
-    admin sets `offers_delivery` explicitly (producer_me.py:387-391,
-    admin.py:197), policed by `delivery_validation.py:68-74`. Deriving the flag
-    there would silently override a deliberate choice — the opposite bug. That
-    split — derive on CREATE, never on EDIT — is the whole rule.
+    EDIT paths deliberately do NOT route through here: `producer_me.py:97,145`
+    and `admin.py:286` replace areas on an existing business whose owner or an
+    admin sets `offers_delivery` explicitly (producer_me.py:387-391), policed by
+    `delivery_validation.py:68-74`. Deriving the flag there would silently
+    override a deliberate choice — the opposite bug. Derive on CREATE, never on
+    EDIT, is the whole rule.
+
+    CLASSIFY BY CALLER, NOT BY CALL SITE. `admin.py`'s `_apply_delivery_cities`
+    (:103) is invoked by BOTH the PUT route (:286, edit) and the CREATE route
+    (:211) — so reading the helper as "an edit path" hides a create. That is a
+    mistake this change actually made and a second reviewer caught: admin-create
+    is the fifth create-from-payload site, it produces `status="approved"` rows
+    that are live immediately, and it is handled at its own call site (:211)
+    rather than here, because `ProducerAdminCreate` carries `offers_delivery`
+    and an explicitly-stated `false` must survive. This helper's callers are the
+    four paths whose payload CANNOT state the flag.
 
     Never writes `False`: an empty list means "this payload said nothing about
     delivery", not "this business does not deliver", and the column default

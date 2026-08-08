@@ -324,7 +324,10 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
         persist_registration_delivery_areas(
             db,
             producer,
-            [DeliveryAreaCreate(city=city) for city in parsed.data["delivery_area_cities"]],
+            [
+                DeliveryAreaCreate(city=city)
+                for city in parsed.data["delivery_area_cities"]
+            ],
         )
 
         parsed.saved = True
