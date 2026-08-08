@@ -199,7 +199,11 @@ describe("FilterSheet apply footer stickiness (MEH-1945)", () => {
   // render()'s container — look it up in the document, as the sibling specs do
   // via screen queries.
   const panelOf = () => document.getElementById("filter-sheet-panel");
-  const footerOf = () => panelOf().lastElementChild;
+  // By testid, not by position. `lastElementChild` would keep passing while
+  // silently describing a different element the moment anything is appended
+  // after the footer (CI reviewer, PR #2695).
+  const footerOf = () =>
+    panelOf().querySelector('[data-testid="filter-sheet-apply-footer"]');
 
   it("carries sticky + bottom-0 UNGATED, so mobile gets them too", () => {
     renderSheet();

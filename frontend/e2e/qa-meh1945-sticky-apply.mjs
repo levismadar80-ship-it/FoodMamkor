@@ -88,8 +88,11 @@ const rows = [];
 async function readFooter(page) {
   return page.evaluate(() => {
     const panel = document.getElementById("filter-sheet-panel");
-    // The footer is the panel's last element child — the apply/clear row.
-    const footer = panel.lastElementChild;
+    // By testid, not by position. `lastElementChild` would keep reporting
+    // plausible numbers about the WRONG element the moment anything is
+    // appended after the footer (CI reviewer, PR #2695).
+    const footer = panel.querySelector('[data-testid="filter-sheet-apply-footer"]');
+    if (!footer) throw new Error("apply footer not found by testid — locator drifted");
     const f = footer.getBoundingClientRect();
     const p = panel.getBoundingClientRect();
     const apply = footer.querySelector("button");
@@ -209,7 +212,7 @@ const run = async () => {
       // assertion is not measuring the change.
       await scrollPanel(page, "top");
       await page.evaluate(() => {
-        const f = document.getElementById("filter-sheet-panel").lastElementChild;
+        const f = document.querySelector('[data-testid="filter-sheet-apply-footer"]');
         f.classList.remove("sticky", "bottom-0");
       });
       await page.waitForTimeout(120);
