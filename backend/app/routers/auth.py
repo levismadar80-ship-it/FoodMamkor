@@ -53,10 +53,13 @@ from app.services.oauth_verifiers import (
 )
 from app.constants import DECLARATION_VERSION
 from app.services.license_validation import ensure_license_for_categories
-from app.services.producer_queries import create_primary_branch_location
+from app.services.producer_queries import (
+    create_primary_branch_location,
+    persist_registration_delivery_areas,
+)
 from app.services.password_policy import validate_password
 from app.database import get_db
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product, User
+from app.models import Category, Producer, ProducerCategory, Product, User
 from app.models.models import (
     Favorite,
     HomeProduct,
@@ -547,15 +550,11 @@ async def register_producer(
                     )
                 )
                 _pos += 1
-        for da in data.delivery_areas:
-            db.add(
-                DeliveryArea(
-                    producer_id=producer.id,
-                    city=da.city,
-                    min_order=da.min_order,
-                    delivery_day=da.delivery_day,
-                )
-            )
+        # MEH-1921: the areas and the `offers_delivery` declaration are written
+        # by one owner — this loop used to omit the flag, so a business that
+        # registered WITH delivery areas was excluded from the משלוח chip by
+        # the MEH-1848 conjunct. Same call in the new-email branch below.
+        persist_registration_delivery_areas(db, producer, data.delivery_areas)
         # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
         # This is the UPGRADE branch, and it is the one every OAuth signup
         # lands on — `/auth/register/producer/oauth` creates a consumer and a
@@ -670,15 +669,10 @@ async def register_producer(
                     )
                 )
                 _pos += 1
-        for da in data.delivery_areas:
-            db.add(
-                DeliveryArea(
-                    producer_id=producer.id,
-                    city=da.city,
-                    min_order=da.min_order,
-                    delivery_day=da.delivery_day,
-                )
-            )
+        # MEH-1921: see the upgrade branch above — same call, same reason. The
+        # two branches are the only Producer writers on this route and each
+        # built its own rows, so fixing one would have left the other broken.
+        persist_registration_delivery_areas(db, producer, data.delivery_areas)
 
         # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
         # This is the NEW-EMAIL branch (password signup). Its twin is the
