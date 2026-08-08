@@ -19,6 +19,8 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
 import {
   buildChipParams,
   OPEN_NOW_CHIP_MIN,
+  visibleGatedDietKeys,  // MEH-1934
+  GATED_DIET_KEYS,       // MEH-1934
   // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
   // CHIPS_DEFAULT are SHARED with the home grid (HomeProducersGrid.jsx:70), so
   // importing those here and appending to them leaks the open-now chip onto a
@@ -507,7 +509,10 @@ export default function ProducersClient({
   // MEH-1483: derive from the same source as displayItems (baseItems is the SSR
   // page, or the sorted page 1 when a non-default sort is active) so the
   // MEH-1088 dead-end-category hiding stays consistent with what's rendered.
-  for (const p of [...baseItems, ...appendItems]) {
+  // MEH-1934: hoisted so the diet gate below counts from the SAME unfiltered
+  // source, for the same anti-circularity reason spelled out above.
+  const loadedCatalog = [...baseItems, ...appendItems];
+  for (const p of loadedCatalog) {
     for (const c of p?.categories ?? []) loadedCategoryIds.add(String(c.id));
     if (p?.order_window) openWindowCount += 1;
   }
@@ -523,9 +528,19 @@ export default function ProducersClient({
   // below for a URL-active category at zero results.
   const showOpenNowChip =
     openWindowCount >= OPEN_NOW_CHIP_MIN || chips.open_for_orders_now;
-  const visibleChipDefs = showOpenNowChip
-    ? CHIPS_CONFIG
-    : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now");
+  // MEH-1934: the two new diet chips are gated on the same principle — absent,
+  // not disabled, until DIET_CHIP_MIN businesses carry the marking. Computed
+  // over the loaded producers, so the chips turn themselves on when the
+  // catalog arrives with nobody flipping a flag.
+  const shownDietKeys = visibleGatedDietKeys(loadedCatalog, chips);
+  const hiddenDietKeys = GATED_DIET_KEYS.filter(
+    (k) => !shownDietKeys.includes(k),
+  );
+  const visibleChipDefs = (
+    showOpenNowChip
+      ? CHIPS_CONFIG
+      : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now")
+  ).filter((c) => !hiddenDietKeys.includes(c.key));
   const allChips = withChipIcons([...visibleChipDefs, cityChip]);
   const catalogFullyLoaded = !hasMore;
   const visibleCategories = categories.filter(
