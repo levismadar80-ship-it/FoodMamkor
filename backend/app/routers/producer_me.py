@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import and_, case, distinct, func
+from sqlalchemy import and_, case, distinct, func, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -748,10 +748,12 @@ class WindowFilter:
 
     days: int | None = None
     extra_filter: Any = None
-    # MEH-160: when set, count DISTINCT values of this column instead of rows.
-    # Rows where it IS NULL are still counted individually — they cannot be
-    # deduped against anything, and dropping them (which COUNT(DISTINCT) does
-    # silently) would trade over-counting for under-counting.
+    # MEH-160: when set, count DISTINCT (israel-day, value) pairs instead of
+    # rows — one count per visitor per 24h Israel calendar day (Sapir's 09/08
+    # ruling: the 24h window is the analytics norm). Rows where the column IS
+    # NULL are still counted individually — they cannot be deduped against
+    # anything, and dropping them (which COUNT(DISTINCT) does silently) would
+    # trade over-counting for under-counting.
     distinct_col: Any = None
 
 
@@ -760,16 +762,28 @@ def _count_in_window(
 ):
     """Count rows for the given model, optionally windowed to last N days.
 
-    MEH-160: with ``window.distinct_col`` set, counts DISTINCT non-NULL values
-    of that column PLUS the NULL rows one-by-one. `producer_page_views` writes
-    `viewer_ip_hash` on every row and nothing ever read it, so one visitor
-    refreshing N times counted as N profile views — the inflation the ticket
-    describes, reachable without any spoofed user-agent.
+    MEH-160: with ``window.distinct_col`` set, counts DISTINCT
+    (israel-day, value) pairs PLUS the NULL rows one-by-one — a visitor counts
+    once per 24h Israel calendar day (ruling 09/08), and a hit with no hash
+    counts individually. `producer_page_views` writes `viewer_ip_hash` on every
+    row and nothing ever read it, so one visitor refreshing N times counted as
+    N profile views — the inflation the ticket describes, reachable without
+    any spoofed user-agent. hash_ip's salt is settings.secret_key — stable per
+    deploy, not time-rotating — so the day grain comes from created_at, not
+    from the hash itself (a secret rotation resets uniques; acceptable, rare).
     """
     if window.distinct_col is not None:
-        counter = func.count(distinct(window.distinct_col)) + func.count(
-            case((window.distinct_col.is_(None), 1))
+        day = func.date(
+            func.timezone("Asia/Jerusalem", func.timezone("UTC", time_col))
         )
+        # FILTER keeps NULL-hash rows out of the tuple count: unlike a bare
+        # column, a (day, NULL) tuple is NOT NULL as a whole, so without the
+        # filter every NULL row would be counted twice — once as a tuple and
+        # once in the NULL arm. Measured, not theorized: the NULL tests came
+        # back +1 per NULL row before the filter.
+        counter = func.count(distinct(tuple_(day, window.distinct_col))).filter(
+            window.distinct_col.isnot(None)
+        ) + func.count(case((window.distinct_col.is_(None), 1)))
     else:
         counter = func.count(model.id)
     q = db.query(counter).filter(model.producer_id == producer_id)
@@ -804,21 +818,23 @@ def producer_analytics(
 
     # Time-windowed counts for the 3 main metrics.
     def windowed(model, time_col, *, extra=None, distinct_col=None):
-        def _w(days):
-            return WindowFilter(
-                days=days, extra_filter=extra, distinct_col=distinct_col
-            )
-
         return {
-            "last_7d": _count_in_window(db, model, time_col, pid, _w(7)),
-            "last_30d": _count_in_window(db, model, time_col, pid, _w(30)),
-            "total": _count_in_window(db, model, time_col, pid, _w(None)),
+            label: _count_in_window(
+                db,
+                model,
+                time_col,
+                pid,
+                WindowFilter(days=days, extra_filter=extra, distinct_col=distinct_col),
+            )
+            for label, days in (("last_7d", 7), ("last_30d", 30), ("total", None))
         }
 
-    # MEH-160: page views dedupe per window on viewer_ip_hash. "Unique inside a
-    # window" is what models.py's own docstring said the column was for; until
-    # now nothing read it. Each window dedupes independently, so a visitor
-    # returning after 8 days counts once in last_7d and once in last_30d.
+    # MEH-160: page views dedupe per (israel-day, viewer_ip_hash) — one count
+    # per visitor per 24h day (ruling 09/08). "Unique inside a window" is what
+    # models.py's own docstring said the column was for; until now nothing read
+    # it. The windowed counters therefore equal the SUM of their days' unique
+    # counts, so the headline numbers and the views_by_day chart agree by
+    # construction.
     profile_views = windowed(
         ProducerPageView,
         ProducerPageView.created_at,

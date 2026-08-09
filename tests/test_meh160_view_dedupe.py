@@ -21,6 +21,12 @@ happy path.
 implementation (plain `func.count(id)` → 3), so the pair covers both directions:
 the old code fails the dedupe test, a naive dedupe fails the NULL test, and only
 the shipped form passes both.
+
+THE GRAIN (ruling 09/08): dedupe is per (israel-day, hash) — a visitor counts
+once per 24h calendar day, so the windowed counters equal the sum of their
+days' uniques and always agree with the views_by_day chart.
+`test_dedupe_grain_is_the_24h_day_not_the_window` separates this from
+whole-window dedupe, which an earlier draft of this change shipped.
 """
 
 from datetime import datetime, timedelta
@@ -98,21 +104,32 @@ class TestProfileViewDedupe:
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["profile_views"]["last_7d"] == 3
 
-    def test_windows_dedupe_independently(self, client, db):
-        """Each window dedupes on its own rows.
+    def test_dedupe_grain_is_the_24h_day_not_the_window(self, client, db):
+        """THE discriminating case for the ruled 24h grain (Sapir 09/08).
 
-        The same visitor 20 days ago and today is one unique in `last_30d` and
-        one in `last_7d` — not one across both. This is what "unique inside a
-        window" means, and it is why the counters are not simply nested sums.
+        The same visitor on three different days inside the 7d window counts
+        THREE times — once per day. Under whole-window dedupe (the previous
+        draft of this change) this returns 1, so this test separates the two
+        dedupe semantics, not just deduped-vs-raw.
         """
         p, user = _setup(db, "dedupe5@test.com")
+        _seed(db, p.id, "a" * 64, days_ago=0)
+        _seed(db, p.id, "a" * 64, days_ago=2)
+        _seed(db, p.id, "a" * 64, days_ago=4)
+
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        assert body["profile_views"]["last_7d"] == 3
+
+    def test_windows_count_daily_uniques(self, client, db):
+        """A returning visitor is one count per day they visited, per window."""
+        p, user = _setup(db, "dedupe5b@test.com")
         _seed(db, p.id, "a" * 64, days_ago=0)
         _seed(db, p.id, "a" * 64, days_ago=20)
 
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["profile_views"]["last_7d"] == 1
-        assert body["profile_views"]["last_30d"] == 1
-        assert body["profile_views"]["total"] == 1
+        assert body["profile_views"]["last_30d"] == 2
+        assert body["profile_views"]["total"] == 2
 
     def test_search_appearances_dedupe_too(self, client, db):
         """Same table, same inflation — the referrer filter does not exempt it."""
