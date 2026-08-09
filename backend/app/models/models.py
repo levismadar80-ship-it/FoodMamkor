@@ -1459,13 +1459,22 @@ class ProducerPageView(Base):
     The row is the source of truth for:
       - Producer dashboard: profile_views (7d / 30d / total), views_by_day
         (30-day chart), top_cities aggregation, search_appearances (rows
-        with referrer='search').
+        with referrer='search'), rank_in_city, weekly_trend.
       - Admin dashboard: top cities across all producers.
 
-    Privacy: we store `viewer_ip_hash` (SHA-256 with a rotating salt from
-    settings) rather than the raw IP — lets us dedupe uniques inside a
-    window without keeping PII indefinitely. See docs/SECURITY.md for the
-    full rationale.
+    MEH-160: EVERY one of those readers counts through
+    `services/analytics.py::unique_views_count` — one view per visitor per
+    Israel calendar day. Rows stay raw here; the dedupe is entirely at read
+    time, so the change is reversible and no history is lost. A new reader
+    that calls `func.count(id)` on this table re-introduces the inflation
+    the column was added to prevent.
+
+    Privacy: we store `viewer_ip_hash` (SHA-256, salted from
+    `settings.secret_key`) rather than the raw IP — enough to dedupe uniques
+    without keeping PII indefinitely. The salt is deploy-scoped, NOT
+    time-rotating: it changes only when the deploy's secret changes, which
+    resets uniques (rare, accepted). See docs/SECURITY.md for the full
+    rationale.
     """
 
     __tablename__ = "producer_page_views"

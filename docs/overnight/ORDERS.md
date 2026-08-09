@@ -248,6 +248,33 @@ works"* (exec §9).
    check does not yet discriminate. This is the rule that catches the expensive
    mistakes; see `.claude/rules/testing.md` → *"A green that has two possible
    causes is not a signal"*.
+8. **Changing how a SHARED data source is read means enumerating EVERY reader
+   before the merge — by grep on the table or field name, not from memory.**
+   Then state, per reader, whether it changed and why. A partial conversion is
+   not a smaller version of the change; it is a **new inconsistency**, and it
+   ships looking finished.
+
+   The enumeration is the deliverable, so write it into the PR body as a table:
+   `file:line` · what it computes · converted / deliberately not · one line of
+   why. A reader you cannot classify is a reader you have not read.
+
+   _Source: MEH-160, 09/08. `producer_page_views` feeds **six** metrics that all
+   render on one dashboard screen. Round one deduped three. The result was not
+   "three fixed" — `weekly_trend` compared a deduped `last_7d` against a raw
+   `prev_7d_views` and read **"down" on perfectly flat traffic**, permanently;
+   `conversion_rate` divided raw clicks by deduped views and returned **200%**,
+   which MEH-1118's `clampPercent` silently rendered as a healthy-looking 100._
+
+   **What made it survive self-check is the part worth carrying:** the session
+   ran the two obviously-related test files, saw green, and read that as
+   coverage. Those files could not have failed — they exercise the readers that
+   *were* converted. **Running the probe that cannot fail is not evidence**, and
+   it is the same error as item 7 wearing work clothes: the green had a second
+   cause (the untouched readers were untested), and nobody asked what else would
+   produce it. The full suite caught it — after CI did, not before.
+
+   The grep is cheap and the failure is not. One command, before the diff is
+   final: `grep -rn "<TableOrColumnName>" --include=*.py --include=*.js .`
 
 ### 3.1 · Merge, then verify — immediately
 
@@ -347,6 +374,37 @@ run exists for the head SHA) → **wait**. An infra hang (job stuck in its own
 setup, no newer run) → **re-run**. Read the log before choosing; applying "wait"
 to a hang stalls forever.
 
+### 3.3 · A non-required gate that goes red on staging is fixed in the SAME stretch
+
+"Does not block a merge" is a statement about the ruleset, not a permission to
+leave it red. **If a non-required gate goes red on `staging` because of work you
+merged, you fix it before moving to the next card** — same stretch, not a
+follow-up ticket, not "someone will notice".
+
+The reason is the table two sections up. Every entry in the "does not block" list
+is one a session is entitled to merge past, and every one of them is also how the
+E2E suite reached **14 consecutive failing executions** while the file said "not
+required, carry on". A red that blocks nothing decays into a red nobody reads,
+and a red nobody reads is indistinguishable from no signal at all. The gate does
+not have to be required to be *informative* — it stops being informative the
+moment standing red is normal.
+
+**Worked example, 09/08 (MEH-1960 groom).** Merging the `backlog-groom` skill
+(PR #2717) turned the **Skills audit** job red on `staging`: the new skill
+directory had no `.claude/skills-allowlist.json` entry, which is a coverage-drift
+failure by design. Skills audit is not a required check, so #2717 merged green on
+both required gates with the audit red behind it. It was fixed the same stretch
+in PR #2718 rather than filed. That is the standard.
+
+**The one legitimate exception, and it is narrow:** the red reproduces on
+`staging` **without** your change — i.e. you inherited it. Then say so in one
+line with the run id, and either fix it anyway or file it; what you may not do is
+merge, notice, and move on silently.
+
+**Distinguish "red" from "warned".** `scripts/checks/run-all.sh` emits warnings
+that are deadlines with the date still ahead of them. A warning is not this rule;
+a red is.
+
 ---
 
 ## 4 · No-stall architecture
@@ -363,6 +421,13 @@ turn, not a failure.
 **An empty queue is a result, not an error.** Say so and run the verified-empty
 ritual in [LOOP-PROMPT.md](./LOOP-PROMPT.md) — never invent work to avoid
 reporting it.
+
+**Groom the backlog once a week** — or whenever Sapir asks — as an ordinary queue
+task, using the `backlog-groom` skill (`.claude/skills/backlog-groom/`). It carries
+the five verdicts, the house rules, the 30/90-day thresholds and the first run's
+lessons, so no session has to re-invent the method. A grooming pass is not optional
+maintenance: the first run found that roughly a quarter of open cards named a blocker
+that had already shipped, and that a card can be born stale on the day it is written.
 
 ---
 
@@ -498,6 +563,27 @@ Three points that are easy to lose and are worth the duplication:
   is to fetch #N's state, not to open it. Same for "run the ×5 proof on MEH-XX" —
   s3 skipped that one correctly because the card's own DoD already showed the
   proof complete and checked off.
+
+- **The anti-stale gate applies to a card's PREMISES, not only its status
+  (added 09/08, MEH-1973 — third occurrence in one day earned the codification).**
+  Before building anything a card asks for, check the **repo** for the
+  capability — grep/read the code the card describes — not just Linear for a
+  duplicate card. A card asserting "X is missing" is an empirical claim with an
+  as-of date, and the card's author typically searched for a *card*, never for
+  *code*. Three cards on 09/08 claimed "missing" for things already shipped:
+
+  | Card | Claimed missing | What the repo held |
+  |---|---|---|
+  | MEH-1955 | sitemap/robots "חסר לגמרי" | both existed; the real diff was a one-line robots fix (PR #2720) |
+  | MEH-1956 | JSON-LD + OG cards | richer than requested, since MEH-9/172/452/1062 (`seo.js:213`, `seo.js:412`) — closed with zero diff |
+  | MEH-160 | (blockers named as open) | the named blockers had shipped; the real work was elsewhere |
+
+  The cost of skipping this check is not wasted effort — it is **writing new
+  code on top of existing code**, a second parallel mechanism for one job
+  (workflow.md Smell #1) that then needs its own ticket to unwind. The
+  `file-preservation` §6 discipline ("prove the document is wrong before
+  correcting it") is the same rule pointed at cards: prove the capability is
+  absent before building it.
 
 ---
 

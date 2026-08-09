@@ -17,7 +17,6 @@ import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
-import { clampPercent } from "@/lib/percent";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
@@ -909,10 +908,15 @@ function OverviewStatsHero({ analytics }) {
           conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
           tinted, not a card. */}
       <p className="text-sm text-fg-muted text-center">
-        {/* MEH-1118: clamp to ≤100% — WhatsApp clicks aren't a strict subset of
-            page views (card/map CTAs count without a view), so the raw ratio
-            could read "133.3% מהצופות פנו אלייך". */}
-        {t("kpi.conversion_line", { rate: clampPercent(conversion_rate) })}
+        {/* MEH-160: the clamp is gone, and removing it is the fix rather than a
+            regression of MEH-1118. MEH-1118 clamped because a >100 value read
+            as broken under "% מהצופות". The denominator is now unique daily
+            visitors while producer_whatsapp_clicks carries no viewer hash, so
+            >100 is a real reading — one visitor clicking twice — and the copy
+            says "per 100 distinct visitors", which is true at any value.
+            Clamping here would hide a wrong contract behind a screen that
+            looked fine, which is exactly what it was doing before. */}
+        {t("kpi.conversion_line", { rate: conversion_rate })}
       </p>
 
       {/* "Business of the week" eligibility badge — kept on the Overview
