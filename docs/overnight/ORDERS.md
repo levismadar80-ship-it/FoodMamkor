@@ -374,6 +374,37 @@ run exists for the head SHA) → **wait**. An infra hang (job stuck in its own
 setup, no newer run) → **re-run**. Read the log before choosing; applying "wait"
 to a hang stalls forever.
 
+### 3.3 · A non-required gate that goes red on staging is fixed in the SAME stretch
+
+"Does not block a merge" is a statement about the ruleset, not a permission to
+leave it red. **If a non-required gate goes red on `staging` because of work you
+merged, you fix it before moving to the next card** — same stretch, not a
+follow-up ticket, not "someone will notice".
+
+The reason is the table two sections up. Every entry in the "does not block" list
+is one a session is entitled to merge past, and every one of them is also how the
+E2E suite reached **14 consecutive failing executions** while the file said "not
+required, carry on". A red that blocks nothing decays into a red nobody reads,
+and a red nobody reads is indistinguishable from no signal at all. The gate does
+not have to be required to be *informative* — it stops being informative the
+moment standing red is normal.
+
+**Worked example, 09/08 (MEH-1960 groom).** Merging the `backlog-groom` skill
+(PR #2717) turned the **Skills audit** job red on `staging`: the new skill
+directory had no `.claude/skills-allowlist.json` entry, which is a coverage-drift
+failure by design. Skills audit is not a required check, so #2717 merged green on
+both required gates with the audit red behind it. It was fixed the same stretch
+in PR #2718 rather than filed. That is the standard.
+
+**The one legitimate exception, and it is narrow:** the red reproduces on
+`staging` **without** your change — i.e. you inherited it. Then say so in one
+line with the run id, and either fix it anyway or file it; what you may not do is
+merge, notice, and move on silently.
+
+**Distinguish "red" from "warned".** `scripts/checks/run-all.sh` emits warnings
+that are deadlines with the date still ahead of them. A warning is not this rule;
+a red is.
+
 ---
 
 ## 4 · No-stall architecture
