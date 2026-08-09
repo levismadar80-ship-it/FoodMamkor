@@ -20,6 +20,53 @@
 
 ---
 
+## ⏳ TEMPORARY — Vercel deploy quota exhausted · added 2026-08-09 · DELETE ON SIGHT ONCE FALSIFIED
+
+**The account's Vercel deploy quota is spent.** Every deployment — including
+`staging`, which `frontend/vercel.json` builds *unconditionally* — returns:
+
+```
+Resource is limited - try again in 24 hours
+(more than 100, code: "api-deployments-free-per-day")
+```
+
+**So `staging.mehamakor.online` may silently lag `origin/staging`.** This is an
+account quota, not a repo or diff problem: **no commit can fix it**, and pushing
+again only burns more. It is also **not a required check** — `CI gate` and
+`Deploy gate` are unaffected, so a merge is not blocked by it.
+
+**For any UI-touching merge while this holds:**
+
+1. Write **"deploy pending quota"** in the PR body, naming this note.
+2. **Do not verify against the staging URL** — it may be serving pre-merge code,
+   and that is indistinguishable from your change not working. Verify with a
+   **local `next build` + emulation evidence** instead (the MEH-999 path:
+   local stack + Playwright at 390×844 and 1440×900).
+3. **Queue a one-line staging-visual recheck** on the card for after the reset.
+   A local build proves the code renders; it does not prove the deployed edge
+   serves it.
+
+**How to falsify this note — one command, no dashboard access needed:**
+
+```bash
+# Any Vercel status on a fresh push that is NOT the rate-limit string means
+# the quota reset. Or, directly:
+curl -sI https://staging.mehamakor.online | head -1     # expect HTTP 200
+git log -1 --format=%H origin/staging                    # compare to what staging serves
+```
+
+**Expiry: this note dies the moment a deployment succeeds — expected on or after
+2026-08-10.** Whoever observes that: **delete this whole section** and drop the
+queued rechecks that came back clean.
+
+> **Not machine-enforced, deliberately stated.** `scripts/checks/legacy-expiry-check.sh`
+> only scans `backend/` and `frontend/` (`SCAN_DIRS`), so a `LEGACY(…)` marker here
+> would be decoration, not a gate — and this file's §7 is the expiry mechanism it
+> actually has. The falsification command above is the substitute: it costs one
+> line and does not depend on anyone remembering a date.
+
+---
+
 ## 1 · Authority
 
 **Sapir's ruling, 08/08/2026** — *"תמזג לבד ותבדוק את עצמך על כל המשימות"*:
