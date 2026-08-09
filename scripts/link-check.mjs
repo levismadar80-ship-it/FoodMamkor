@@ -64,7 +64,16 @@ const NAME_RE = /<a\b[^>]*?\bname\s*=\s*["']([^"']+)["']/gi;
  */
 function parseRobots(text) {
   const rules = [];
-  let inStar = false;
+  // CONSECUTIVE `User-agent:` lines form ONE group that shares the directives
+  // below them — per Google's grouping rules, `User-agent: *` followed by
+  // `User-agent: Googlebot` followed by `Disallow: /private/` disallows that
+  // path for BOTH. The first version tracked a single boolean set by the *last*
+  // agent line, so that shape returned zero rules and every path read as
+  // allowed. Demonstrated by the reviewer, fixed under MEH-1970; it does not
+  // fire on this repo's robots.txt, which never stacks agent lines.
+  let groupAgents = [];
+  let starGroup = false;
+  let readingAgents = false;
   for (const raw of text.split("\n")) {
     const line = raw.replace(/#.*$/, "").trim();
     if (!line) continue;
@@ -72,12 +81,16 @@ function parseRobots(text) {
     const key = rawKey.trim().toLowerCase();
     const value = rest.join(":").trim();
     if (key === "user-agent") {
-      // A new group starts here. We are inside the relevant one only while the
-      // agent is `*` — any named agent ends our group.
-      inStar = value === "*";
+      // A directive line closes the previous group; an agent line right after
+      // another agent line extends it.
+      if (!readingAgents) groupAgents = [];
+      groupAgents.push(value);
+      starGroup = groupAgents.includes("*");
+      readingAgents = true;
       continue;
     }
-    if (!inStar) continue;
+    readingAgents = false;
+    if (!starGroup) continue;
     if (key === "allow" || key === "disallow") {
       if (value) rules.push({ type: key, path: value });
     }
@@ -94,11 +107,32 @@ function parseRobots(text) {
 function isAllowed(pathname, rules) {
   let best = null;
   for (const rule of rules) {
-    if (!pathname.startsWith(rule.path)) continue;
+    if (!matchesRobotsPath(pathname, rule.path)) continue;
     if (!best || rule.path.length > best.path.length) best = rule;
     else if (rule.path.length === best.path.length && rule.type === "allow") best = rule;
   }
   return !best || best.type === "allow";
+}
+
+/**
+ * robots paths are not plain prefixes: `*` is a wildcard and a trailing `$`
+ * anchors the end. A `startsWith` implementation treats both as literal
+ * characters, which makes a rule like `Disallow: /*.json$` **dead** — the
+ * literal string `/*.json$` never prefixes a real pathname, so the directive
+ * silently does nothing. (Review finding, MEH-1970. No such pattern is in this
+ * repo's robots.txt today; the point is that adding one would not work.)
+ */
+function matchesRobotsPath(pathname, rulePath) {
+  if (!rulePath.includes("*") && !rulePath.endsWith("$")) {
+    return pathname.startsWith(rulePath);
+  }
+  const anchored = rulePath.endsWith("$");
+  const body = anchored ? rulePath.slice(0, -1) : rulePath;
+  const source = body
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${source}${anchored ? "$" : ""}`).test(pathname);
 }
 
 // ------------------------------------------------------------------ self-test
@@ -138,6 +172,43 @@ if (args.includes("--self-test")) {
     { name: "REAL robots.txt: /settings blocked", got: () => isAllowed("/settings", real), want: false },
     { name: "href extraction finds a hyphenated attr", got: () => extractHrefs('<a data-x="1" href="/a">x</a>').join(), want: "/a" },
     { name: "anchor ids collected", got: () => extractAnchors('<div id="contact"></div>').has("contact"), want: true },
+    // MEH-1970 review findings — each fails on the pre-fix implementation.
+    // Consecutive User-agent lines share the group's directives (Google's
+    // grouping rules). The old single-boolean parser returned ZERO rules here,
+    // so the Disallow vanished and the path read as allowed.
+    {
+      name: "stacked User-agent lines share directives",
+      got: () =>
+        isAllowed(
+          "/private/x",
+          parseRobots("User-agent: *\nUser-agent: Googlebot\nDisallow: /private/\n")
+        ),
+      want: false,
+    },
+    // ...and the group must still CLOSE on a directive: an agent line appearing
+    // after directives starts a new group rather than extending the old one.
+    {
+      name: "a directive closes the group",
+      got: () =>
+        isAllowed(
+          "/x",
+          parseRobots("User-agent: *\nAllow: /\nUser-agent: GPTBot\nDisallow: /x\n")
+        ),
+      want: true,
+    },
+    // `*` and `$` are robots pattern syntax, not literal characters. Under
+    // startsWith the rule below is dead and this returns true.
+    {
+      name: "wildcard + $ anchor honoured",
+      got: () => isAllowed("/data/export.json", parseRobots("User-agent: *\nDisallow: /*.json$\n")),
+      want: false,
+    },
+    // ...without over-reaching: the $ anchor must not match a longer path.
+    {
+      name: "$ anchor does not over-match",
+      got: () => isAllowed("/data/export.json.bak", parseRobots("User-agent: *\nDisallow: /*.json$\n")),
+      want: true,
+    },
   ];
   let bad = 0;
   for (const c of cases) {
@@ -224,13 +295,40 @@ const rules = parseRobots(robotsText);
  *   /about/nope                  404
  *   /producers/nope              404
  *
- * So the blind spot is precise and partial: multi-segment breaks ARE detected,
- * single-segment ones are not. The run says so out loud instead of reporting a
- * confident green over a hole. Related: MEH-1521 (the fail-open itself).
+ * THE THIRD STATE, and the one this file previously got wrong (MEH-1970).
+ * An earlier version of this comment said "multi-segment breaks ARE detected",
+ * and the printed warning and docs/TESTING.md said the same. **That is false for
+ * the breakage class most likely to occur here.** Every dynamic detail route
+ * deliberately renders 200 for a missing entity rather than calling
+ * `notFound()` — `producer/[id]/page.js:14` states it outright ("`notFound()`
+ * is forbidden here (the MEH-1754 indexing-risk class)"), and `events/[id]`,
+ * `experiences/[id]` and `group-buys/[id]` carry the same comment. Measured:
+ *
+ *   /producer/999999999          200
+ *   /events/999999999            200
+ *   /experiences/999999999       200
+ *   /group-buys/999999999        200
+ *
+ * with the backend up or down, so no status-code crawler can ever flag a link
+ * to a deleted business, a past event or a closed group-buy. The old preflight
+ * could not see this: its multi-segment probe has **no matching route at all**,
+ * so it 404s through Next's ordinary router miss — a different mechanism from a
+ * *matched* dynamic route whose own component chooses to render 200. Proving
+ * "unmatched paths 404" says nothing about "matched, entity missing".
+ *
+ * So there are three states, and all three are probed and declared:
+ *   multi   — unmatched path. Must 404 or the run aborts: nothing is evidence.
+ *   single  — /<slug>. 200 under a down backend (fail-open, MEH-1899/1521).
+ *   entity  — matched dynamic route, missing id. 200 BY DESIGN, always.
+ *
+ * The blind spots are declared, not denied. Related: MEH-1521, MEH-1754.
  */
 const probes = {
   single: "/mm-link-check-probe-does-not-exist",
   multi: "/mm-link-check-probe/does-not-exist",
+  // A real, matched dynamic route with an id that cannot exist. Not a made-up
+  // path: the point is to exercise the route's OWN not-found rendering.
+  entity: "/producer/999999999",
 };
 const preflight = {};
 for (const [kind, path] of Object.entries(probes)) {
@@ -246,6 +344,7 @@ if (preflight.multi !== 404) {
   process.exit(1);
 }
 const slugBlind = preflight.single !== 404;
+const entityBlind = preflight.entity !== 404;
 
 const seen = new Map(); // url -> result
 const queue = ["/"];
@@ -261,7 +360,18 @@ const noteRef = (target, from) => {
   referrers.get(target).add(from);
 };
 
+// Defence in depth: nothing in the app can currently produce an unbounded
+// query-string space (pagination is clamped to a server-computed totalPages,
+// category ids are a fixed set), but a crawler with no ceiling turns a future
+// pagination bug into a hang with no message. Truncation is REPORTED, never
+// silent — an unannounced cap reads as "covered everything".
+const MAX_PAGES = 2000;
+let truncated = 0;
 while (queue.length) {
+  if (seen.size >= MAX_PAGES) {
+    truncated = queue.length;
+    break;
+  }
   const path = queue.shift();
   const result = await head(`${BASE}${path}`);
   seen.set(path, result);
@@ -306,14 +416,30 @@ while (queue.length) {
 }
 
 // Cross-page anchors: only checkable against a page we actually fetched.
+// Index pathname -> first crawled result WITH a body, built once. The first
+// version scanned the whole map per anchor (O(n·m) at a 2000-page ceiling);
+// cheap to remove.
+const pathIndex = new Map();
+for (const [key, value] of seen) {
+  if (!value.body) continue;
+  const bare = key.split("?")[0];
+  if (!pathIndex.has(bare)) pathIndex.set(bare, value);
+}
+
 const deadAnchors = [];
 for (const a of anchorTargets) {
   if (a.ok === false) {
     deadAnchors.push(a);
     continue;
   }
-  const target = seen.get(a.to);
-  if (!target || !target.body) continue; // not crawled (robots) — not a claim
+  // Look up by pathname first, then by ANY crawled key whose pathname matches.
+  // The queue key is `pathname + search` while `a.to` is the pathname alone, so
+  // a link like /about?topic=business#contact was validated against a DIFFERENT
+  // map entry than the one actually fetched — or, if the bare pathname was never
+  // linked anywhere, silently skipped as "not crawled" while it had been
+  // crawled under the query-string key (review finding, MEH-1970).
+  const target = seen.get(a.to)?.body ? seen.get(a.to) : pathIndex.get(a.to);
+  if (!target || !target.body) continue; // genuinely not crawled — not a claim
   if (!extractAnchors(target.body).has(a.hash)) deadAnchors.push(a);
 }
 
@@ -328,6 +454,8 @@ if (asJson) {
         base: BASE,
         preflight,
         slugBlind,
+        entityBlind,
+        truncated,
         crawled: seen.size,
         broken: broken.map(([u, r]) => ({ url: u, status: r.status, error: r.error, from: [...(referrers.get(u) || [])] })),
         redirects: redirects.map(([u, r]) => ({ url: u, hops: r.chain })),
@@ -341,18 +469,39 @@ if (asJson) {
   );
 } else {
   console.log(`link-check · base=${BASE}`);
-  console.log(`preflight:          multi-segment 404 ✓ · single-segment ${preflight.single}`);
+  console.log(
+    `preflight:          unmatched 404 ✓ · single-segment ${preflight.single} · ` +
+      `dynamic-entity ${preflight.entity}`
+  );
+  if (slugBlind || entityBlind) {
+    console.log(`\nWARNING — "0 broken" below is SCOPED. These classes are not validated:`);
+  }
   if (slugBlind) {
     console.log(
-      `\nWARNING — single-segment links are NOT validated in this run.\n` +
-        `  A known-nonexistent single-segment path returned ${preflight.single}, not 404.\n` +
-        `  Cause: middleware.js fails open on an unreachable backend (MEH-1899/1521),\n` +
-        `  so /<slug> misses render the not-found UI at 200. Multi-segment paths are\n` +
-        `  unaffected and ARE checked. Run against a target with a live backend to\n` +
-        `  close the gap. Treat "0 broken" below as scoped, not absolute.\n`
+      `\n  · single-segment /<slug> links — probe returned ${preflight.single}, not 404.\n` +
+        `    Cause: middleware.js fails open on an unreachable backend (MEH-1899/1521).\n` +
+        `    Closes by running against a target with a live backend.`
     );
   }
+  if (entityBlind) {
+    console.log(
+      `\n  · dynamic detail routes with a missing entity — /producer/<id>,\n` +
+        `    /events/<id>, /experiences/<id>, /group-buys/<id>. Probe returned\n` +
+        `    ${preflight.entity}, not 404. Cause: those pages render 200 BY DESIGN\n` +
+        `    rather than calling notFound() (MEH-1754 indexing-risk class), so no\n` +
+        `    status-code crawler can flag a link to a deleted business or a past\n` +
+        `    event. This does NOT close with a live backend — it is the routes'\n` +
+        `    intended behaviour. Checking it needs a content probe, not a status.`
+    );
+  }
+  if (slugBlind || entityBlind) console.log("");
   console.log(`crawled:            ${seen.size} internal URLs`);
+  if (truncated) {
+    console.log(
+      `TRUNCATED:          hit the ${MAX_PAGES}-page cap with ${truncated} URLs still queued — ` +
+        `results below are PARTIAL.`
+    );
+  }
   console.log(`skipped (robots):   ${skippedByRobots.size}`);
   console.log(`external origins:   ${external.size}`);
   console.log(`redirects:          ${redirects.length} (${chains.length} multi-hop)`);
