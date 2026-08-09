@@ -39,7 +39,20 @@ const MESSAGES = ["he", "en"].map((l) => ({
 
 /** The processors whose presence in code obliges a disclosure entry.
  *  Keyed by the id used in THIRD_PARTY_ITEMS; the probe is a source file plus a
- *  case-insensitive token that appears in it when the integration is wired. */
+ *  case-insensitive token that appears in it when the integration is wired.
+ *
+ *  KNOWN LIMIT — this probe degrades SILENTLY, and that is worth naming rather
+ *  than discovering. It matches a literal token in one file. If the import moves
+ *  to another module, becomes a computed string, or the package is aliased,
+ *  `wired` goes false, the check is skipped, and the test passes — which reads
+ *  identically to "correctly disclosed". That is the two-causes-for-one-green
+ *  shape .claude/rules/testing.md warns about.
+ *
+ *  It is left this way deliberately: the failure mode drops the guarantee back
+ *  to where it was before this guard existed (a manual grep), never below it, and
+ *  the alternative — resolving the import graph — is far more machinery than one
+ *  processor justifies. When adding a processor here, prefer a token that cannot
+ *  be refactored away silently, such as the package name in `package.json`. */
 const CODE_WIRED_PROCESSORS = [
   { id: "posthog", source: ANALYTICS, token: "posthog-js" },
 ];

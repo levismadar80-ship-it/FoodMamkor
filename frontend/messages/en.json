@@ -3474,7 +3474,7 @@
           "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",
           "sentry": "<b>Sentry</b> — technical error monitoring for fixing issues.",
           "clarity": "<b>Microsoft Clarity</b> — site usage analytics. Loaded only after analytics-cookie consent in the cookie banner.",
-          "posthog": "<b>PostHog</b> — product analytics (which screens were viewed, which registration steps were completed). Loaded only after analytics-cookie consent in the cookie banner, with data stored on EU servers.",
+          "posthog": "<b>PostHog</b> — product analytics (which screens were viewed, which registration steps were completed). Loaded only after analytics-cookie consent in the cookie banner, with data stored on EU servers by default.",
           "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
