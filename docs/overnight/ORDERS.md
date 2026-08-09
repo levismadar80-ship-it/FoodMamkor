@@ -564,6 +564,27 @@ Three points that are easy to lose and are worth the duplication:
   s3 skipped that one correctly because the card's own DoD already showed the
   proof complete and checked off.
 
+- **The anti-stale gate applies to a card's PREMISES, not only its status
+  (added 09/08, MEH-1973 — third occurrence in one day earned the codification).**
+  Before building anything a card asks for, check the **repo** for the
+  capability — grep/read the code the card describes — not just Linear for a
+  duplicate card. A card asserting "X is missing" is an empirical claim with an
+  as-of date, and the card's author typically searched for a *card*, never for
+  *code*. Three cards on 09/08 claimed "missing" for things already shipped:
+
+  | Card | Claimed missing | What the repo held |
+  |---|---|---|
+  | MEH-1955 | sitemap/robots "חסר לגמרי" | both existed; the real diff was a one-line robots fix (PR #2720) |
+  | MEH-1956 | JSON-LD + OG cards | richer than requested, since MEH-9/172/452/1062 (`seo.js:213`, `seo.js:412`) — closed with zero diff |
+  | MEH-160 | (blockers named as open) | the named blockers had shipped; the real work was elsewhere |
+
+  The cost of skipping this check is not wasted effort — it is **writing new
+  code on top of existing code**, a second parallel mechanism for one job
+  (workflow.md Smell #1) that then needs its own ticket to unwind. The
+  `file-preservation` §6 discipline ("prove the document is wrong before
+  correcting it") is the same rule pointed at cards: prove the capability is
+  absent before building it.
+
 ---
 
 ## 6 · Constraints that bite in practice
