@@ -1,0 +1,142 @@
+{
+  "measuredAt": "2026-08-09T15:38:23.384Z",
+  "tasks": {
+    "replyToReview": {
+      "affordancesOnOverview": 0,
+      "list": [],
+      "viewPageLinkPresent": true,
+      "viewPageHref": "/producer/00d4d3fb-63ef-4b98-a5d7-96a2b7cb225f",
+      "landedOn": "http://127.0.0.1:3000/producer/00d4d3fb-63ef-4b98-a5d7-96a2b7cb225f",
+      "replyAffordances": 3,
+      "replyList": [
+        {
+          "tag": "BUTTON",
+          "text": "הוספת תגובה",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "הוספת תגובה",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "הוספת תגובה",
+          "href": null
+        }
+      ],
+      "replyBoxOpens": true,
+      "afterSubmit": null,
+      "tapsFromOverview": 3,
+      "shot": "t7-reply-review.png"
+    },
+    "dashboardStats": {
+      "affordancesOnOverview": 1,
+      "list": [
+        {
+          "tag": "A",
+          "text": "תובנות",
+          "href": "/producer/dashboard/insights"
+        }
+      ],
+      "insights": {
+        "pageHeight": 2665,
+        "screensToScroll": 3.16,
+        "hScroll": false
+      },
+      "insightsUrl": "http://127.0.0.1:3000/producer/dashboard/insights",
+      "emptyStateText": "סקירה\nעריכה\nתובנות\nכלים\nצפייה בדף\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nצפיות בפרופיל\ni\n\n1\n/\n1\n/\n1\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nהופעות בחיפוש\ni\n\n0\n/\n0\n/\n0\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nלחיצות וואטסאפ\ni\n\n0\n/\n0\n/\n0\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nקליקים ליצירת קשר (בלי וואטסאפ)\ni\n\n0",
+      "shot": "t8-insights.png"
+    },
+    "editBusinessDetails": {
+      "url": "http://127.0.0.1:3000/producer/dashboard/edit",
+      "pageHeight": 1798,
+      "screensToScroll": 2.13,
+      "hScroll": false,
+      "fieldLabels": [
+        "הגלריה מלאה — להוספת תמונה חדשה הסירו קיימת",
+        "חיפוש קטגוריה",
+        "תיאור מלא",
+        "משפט תדמית",
+        "מוצר עיקרי",
+        "מחיר התחלתי",
+        "שם איש/אשת הקשר",
+        "שנת הקמה (אופציונלי)",
+        "העלאת תמונה",
+        "כמה מילים עלייך",
+        "מספר רישיון יצרן (משרד הבריאות)",
+        "סוג הכשרות",
+        "העלאת צילום",
+        "כן",
+        "לא",
+        "כן",
+        "לא",
+        "אין גלוטן במקום הייצור",
+        "יש גלוטן במקום הייצור",
+        "לא ידוע"
+      ],
+      "taglineFieldFound": false,
+      "shot": "t9-edit-save.png"
+    },
+    "vacationMode": {
+      "affordancesOnOverview": 4,
+      "list": [
+        {
+          "tag": "BUTTON",
+          "text": "פתוח להזמנות",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "זמין היום",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "עמוס השבוע",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "בהפסקה",
+          "href": null
+        }
+      ],
+      "vocabularyNote": "chip=בהפסקה, tooltip/badge=חופשה",
+      "afterTapUrl": "http://127.0.0.1:3000/producer/dashboard",
+      "dateInputRevealed": 1,
+      "visibleCopy": null,
+      "shot": "t10-vacation.png"
+    },
+    "recipeCreate": {
+      "listUrl": "http://127.0.0.1:3000/producer/dashboard/recipes",
+      "createControlPresent": true,
+      "formUrl": "http://127.0.0.1:3000/producer/dashboard/recipes",
+      "formInputs": 9,
+      "formOpened": true,
+      "moderationCopyOnForm": null,
+      "shotForm": "recipeCreate-form.png",
+      "submitPresent": true,
+      "afterSubmitUrl": "http://127.0.0.1:3000/producer/dashboard/recipes",
+      "afterSubmitCopy": "המתכון נשלח לאישור",
+      "validationErrors": [
+        "מחיקה"
+      ],
+      "shotAfterSubmit": "recipeCreate-after-submit.png"
+    },
+    "eventCreate": {
+      "listUrl": "http://127.0.0.1:3000/producer/dashboard/events",
+      "createControlPresent": true,
+      "formUrl": "http://127.0.0.1:3000/producer/dashboard/events/new",
+      "formInputs": 12,
+      "formOpened": true,
+      "moderationCopyOnForm": null,
+      "shotForm": "eventCreate-form.png",
+      "submitPresent": true,
+      "afterSubmitUrl": "http://127.0.0.1:3000/producer/dashboard/events/new",
+      "afterSubmitCopy": "האירוע נוצר בהצלחה\n\nהאירוע יוצג לציבור לאחר אישור העסק\n\nחזרה לניהול העסק",
+      "validationErrors": [],
+      "shotAfterSubmit": "eventCreate-after-submit.png"
+    }
+  }
+}
