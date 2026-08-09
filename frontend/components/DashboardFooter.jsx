@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { BRAND_NAME } from "@/lib/constants";
 
 /**
  * DashboardFooter (MEH-1954) — slim footer for the producer dashboard.
@@ -61,7 +60,12 @@ export default function DashboardFooter() {
           ))}
         </ul>
       </div>
-      <span className="sr-only">{BRAND_NAME}</span>
+      {/* MEH-1954: no sr-only brand name here. Footer.jsx:117 uses one as an
+          <h2> anchoring its brand COLUMN; this footer has no columns, and the
+          copyright line above already reads «© <year> מהמקור» — a second
+          announcement of the same word is noise to a screen reader, not a
+          label. The <footer> landmark needs no name to disambiguate either:
+          FooterSlot renders exactly one footer per route. */}
     </footer>
   );
 }
