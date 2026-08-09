@@ -68,8 +68,22 @@ fi
 
 # ── 3. Backend tests (pytest) ──────────────────────────────────────────────
 section "3/7 Backend tests (pytest tests/test_api.py)"
+# Check the DATABASE before blaming the CODE.
+#
+# Every test in this suite needs Postgres. When it is down, pytest reports 259
+# ERRORs and this gate said "backend pytest (see /tmp/dod-pytest.log)" — which
+# reads as "your change broke the tests" and points at the wrong remedy
+# entirely: start the server, do not debug the diff.
+#
+# Measured twice in one session (09/08): the cluster stopped mid-run and
+# produced two false all-red readings before anyone thought to run pg_isready.
+# Naming the real cause costs one branch here and saves the misdiagnosis every
+# time. Guarded on pg_isready existing, so a machine without the client tools
+# falls through to the old behaviour rather than hard-failing.
 if ! "$PY" -c "import pytest" >/dev/null 2>&1; then
   fail "pytest — not importable (activate backend venv / uv sync in backend/)"
+elif command -v pg_isready >/dev/null 2>&1 && ! pg_isready -q; then
+  fail "Postgres is NOT running — backend tests cannot pass. This is the environment, not the diff. Start your local cluster and re-run (Debian: pg_lsclusters; macOS: brew services list)."
 elif "$PY" -m pytest tests/test_api.py -q >/tmp/dod-pytest.log 2>&1; then
   pass "backend pytest"
 else
