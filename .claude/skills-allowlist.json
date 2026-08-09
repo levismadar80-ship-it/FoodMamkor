@@ -65,6 +65,15 @@
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed. Documents issues, doesn't fix. Suggests user-facing /<command> recommendations. Light chain to frontend-design. Author: Paul Bakaus."
     },
+    "backlog-groom": {
+      "source": "internal",
+      "author_verified": false,
+      "last_audit_date": "2026-08-09",
+      "audit_verdict": "approved",
+      "notes": "Authored internally (MEH-1960) from the first backlog-groom run. Prose only: SKILL.md + 3 files under references/ (verdicts, verification, lessons). No scripts, no executables, no network. The shell snippets it documents are read-only git invocations (show/grep/log/ls-tree/rev-parse) quoted as guidance for the operator, not auto-invoked, and it points at no tools/ path. Reads no env vars and no credentials. Its Linear writes go through the session's existing MCP tools under the operator's own permissions - the skill adds no capability, only method.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
     "bolder": {
       "source": "pbakaus/impeccable",
       "author_verified": false,
