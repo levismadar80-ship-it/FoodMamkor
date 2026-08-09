@@ -156,6 +156,46 @@ Playwright` sections **above** the ruling block that reverses them. The card is
 internally contradictory; the ruling block is the later text and governs. Cleaning
 the card is Sapir's.
 
+### 1.6 · An instruction carries premises — verify them before executing it
+
+**Editing a correct card, or a correct file, is a regression that looks like
+diligence.** It reads as thorough work in the diff, it passes review, and it
+replaces a true statement with whatever the mistaken reading was. It is strictly
+worse than doing nothing, and **nothing in CI can catch it.**
+
+A correction instruction — *"fix the wrong claim about X on card Y"* — asserts
+**two** things:
+
+1. the claim is wrong, and
+2. **the claim lives in Y.**
+
+The second is the one that goes unverified, because instructions arrive with
+their certainty already attached and only the first sounds like something to
+check. **Verify both before editing anything.**
+
+**The test:** `grep` for the **claim itself** — the actual wording — not for the
+topic. And when the search comes back empty, **that is the finding.** Say so and
+stop; do not proceed to edit the nearest plausible target.
+
+**This applies to instructions from the orchestrator exactly as it applies to
+cards and files.** `meta-patterns.md` §1 already establishes that orchestrator
+claims can be wrong and that Phase 0 evidence beats them; this is the same
+principle one step earlier — *before* running the instruction, not only when a
+contradiction surfaces mid-task.
+
+> **Worked example, 09/08.** The instruction was *"update MEH-1961: the '31 vulns
+> in 9 packages' premise is stale, correct it with the evidence."* The card was
+> read first: **MEH-1961 does not contain that claim.** It is in MEH-1585's title.
+> Executing the instruction literally would have written a "correction" into a
+> card that was not wrong, while leaving the card that *was* wrong untouched.
+> What shipped instead: the audit's own findings table on MEH-1961, the evidence
+> on MEH-1585 where the claim actually lives, and a sentence naming the mismatch.
+
+**Cross-refs, not duplicated here:** `file-preservation.md` §6 owns the file case
+and its MEH-1801 precedent; `meta-patterns.md` §1 owns orchestrator-claim
+verification. This section exists because neither is phrased about *instructions*
+or *cards*, and ORDERS is the file a sweep session actually reads.
+
 ---
 
 ## 2 · Ownership protocol
