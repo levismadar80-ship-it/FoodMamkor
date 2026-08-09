@@ -190,8 +190,14 @@ export default function BottomNav() {
   // var removed; consumers fall back to the static expanded-geometry value.
   // Deps [pathname]: the pill mounts/unmounts on navigation (the
   // isProducerDetail gate below), so re-grab the ref each route change.
-  // (Same expression as `isCompact` below — that const is declared after this
-  // effect, so depending on the raw state avoids a render-time TDZ read.)
+  // Same expression as `isCompact` below, mirrored into a ref on purpose: the
+  // publish effect must READ the compact state without DEPENDING on it. Putting
+  // `compact`/`sheetOpen` in that effect's dep array would tear down and
+  // reinstall the ResizeObserver and the resize listener on every scroll
+  // minimize/expand — the subscription churn this ref avoids.
+  // (An earlier version of this comment claimed a TDZ hazard. That was wrong:
+  // effects run after the render body, so `isCompact` would be initialized by
+  // then. Reviewer caught it; the reason is subscription churn, not TDZ.)
   const compactRef = useRef(false);
   useEffect(() => {
     compactRef.current = compact && !sheetOpen;
