@@ -403,3 +403,72 @@ card needs, so it should not be read as spent.
 
 No signature reached the 3-park threshold. One park, one failure class, nothing
 quarantined.
+
+---
+
+# Session s8-r9k3mt (2026-08-09, continuous drain)
+
+## ~~PARKED: MEH-160 — view dedupe~~ · **UNPARKED AND FINISHED 09/08 (s9). PR #2721.**
+
+> **Resolved.** All seven readers of `producer_page_views` now dedupe through one
+> expression in `services/analytics.py`; the CI red is closed; both Sapir-gated
+> questions are drafted on the card with the lexicon-safe default implemented, so
+> neither blocks. A different-model review found one more partial conversion — the
+> admin reader deduped cross-producer while its comment claimed otherwise — fixed
+> with `scope_col` plus the test that pins it. Full account: `session-s9-v3xq8w.md`.
+>
+> The park entry below is kept verbatim as the record of what was known at park time.
+
+### Original park entry (09/08, s8)
+
+
+**Failure class: NOT transient, NOT permanent — scope.** The mechanism works and is
+verified; what is unfinished is its blast radius. A fresh session finishes it from
+the PR comment alone.
+
+**The finding that defines the park, and it is mine:** `producer_page_views` feeds
+**six** dashboard metrics. I deduped **three** (`profile_views`, `search_appearances`,
+`views_by_day`) and left three raw — and all six render on the same screen. The
+reviewer (different model, isolated worktree, pinned `e1250a34`, everything executed
+against real Postgres) found four blockers:
+
+1. `test_analytics.py:305` fails — `_seed_view` defaults to one shared hash, so two
+   same-day search rows dedupe to 1. **This is the CI red.**
+2. `weekly_trend` compares deduped `last_7d` against raw `prev_7d_views` → reads
+   **"down" on perfectly flat traffic**. Permanent regression.
+3. `conversion_rate` = raw clicks ÷ deduped views → **200%**, hidden by MEH-1118's
+   `clampPercent`, so the API contract is wrong while the screen looks right.
+4. `profile_views_tooltip` in both locales now states the **inverse** of the code
+   ("including repeat visits"), and the MEH-1557 guard is one-directional so it
+   stays green.
+
+**Two need decisions, not patches:** (3) is a contract choice — dedupe the numerator
+or rename to "clicks per unique viewer" and stop clamping; (4) is approved copy in
+two locales plus inverting the guard.
+
+**What is already proven and must not be re-derived:** the SQL composes correctly on
+PG15 (the `FILTER` keeping `(day, NULL)` out of the tuple arm is load-bearing and
+measured); the two-directional discrimination claim **holds** under independent
+rebuild of both rival implementations (old impl 5 failed, naive `COUNT(DISTINCT)` 2
+failed, shipped 8 passed); `search_appearances ≤ profile_views` is preserved; and the
+rotating-salt hazard is **moot** under the day grain.
+
+**The lesson worth more than the ticket:** I ran the two obvious analytics test files,
+saw them pass, and treated that as coverage — an hour after writing on MEH-1952 that
+running the probe that cannot fail is the error to avoid. The full suite was the only
+probe that could have caught finding 1, and I ran it only after CI did.
+
+## Not parked, resolved this session
+
+- **MEH-1952** — ×10 full-suite matrix: `EventExperienceAddress` **0/10**. A different
+  file, `CityProfileBridge.test.jsx`, failed **1/10** with the same signature. Reported
+  on the card with both options (re-point vs close-and-open); neither taken — that is
+  Sapir's call.
+- **MEH-1925** — answered (`disabled customer` on three endpoints); Console is hers.
+- **MEH-1905** — Phase 0 closed; the staging `db_init` failure is **data drift, not
+  code** (seed unchanged 31/07, violations from 02/08), and Sentry's silence reduces to
+  one unfiltered dashboard query (`ENV` defaults to `development`, not `production`).
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. Nothing quarantined.

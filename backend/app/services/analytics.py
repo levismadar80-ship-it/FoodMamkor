@@ -37,12 +37,91 @@ from threading import Lock
 from typing import Optional
 from uuid import UUID
 
+from sqlalchemy import and_, case, distinct, func, tuple_
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models import ProducerPageView, User
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# Read grain — MEH-160
+# ============================================================
+
+
+def israel_day_of(time_col):
+    """The Israel calendar day a naive-UTC timestamp column falls in.
+
+    `created_at` is stored naive-UTC, so this needs the double `timezone()`:
+    label it UTC first, then convert. Israel is UTC+2/+3, so a plain
+    `func.date()` would bucket the 21:00–24:00 Israel window into the
+    previous day for a third of the year.
+    """
+    return func.date(func.timezone("Asia/Jerusalem", func.timezone("UTC", time_col)))
+
+
+def unique_views_count(
+    day_col,
+    *,
+    hash_col=ProducerPageView.viewer_ip_hash,
+    row_id_col=ProducerPageView.id,
+    scope_col=None,
+):
+    """MEH-160: one page view per visitor per Israel calendar day.
+
+    THE dedupe expression for `producer_page_views`, and the reason it is a
+    function in the module that writes the rows rather than a snippet in the
+    module that reads them: the first shape of this fix deduped three of the
+    table's readers and left three raw, and all six render on one dashboard
+    screen — so `profile_views` counted visitors while `top_cities` counted
+    refreshes, and the two disagreed by construction.
+
+    # DO NOT count `producer_page_views` rows with a bare `func.count(id)` —
+    # that is the inflated number MEH-160 exists to remove. Use this helper.
+
+    `day_col` is POSITIONAL AND REQUIRED, deliberately. It briefly had a
+    `None` shorthand meaning "the caller already GROUPs BY the day, so
+    DISTINCT(hash) is the same count" — true for the one caller that used
+    it, and a silent trap for the next: omit the shorthand's matching
+    `GROUP BY` and you get total uniques across the whole result set instead
+    of the sum of daily uniques, with no error and a plausible smaller
+    number. The tuple form is provably identical inside a day-grouped query
+    (the day is constant in the group), so the shorthand bought nothing but
+    a way to be wrong. Adversarial review, MEH-160 round 2.
+
+    `scope_col` joins the dedupe key. Pass it when the query spans MORE than
+    one producer and you want per-producer uniques SUMMED rather than
+    distinct people. That is not a style choice: the admin `top_cities`
+    aggregates every producer at once, so without it one visitor who opened
+    five businesses in Haifa on one day collapses to a single Haifa view,
+    and the admin figure stops being the sum of the per-producer figures.
+
+    NULL-hash rows (no usable client IP) are counted one-by-one: they cannot
+    be deduped against anything, and `COUNT(DISTINCT)` drops them silently,
+    which would trade over-counting for under-counting.
+
+    `row_id_col` gates that NULL arm on the row existing at all. Under the
+    LEFT JOIN in `rank_in_city`, a producer with zero views still produces
+    one all-NULL row — without the gate, `hash IS NULL` matches it and every
+    view-less producer scores 1 instead of 0.
+
+    The salt behind `hash_ip` is `settings.secret_key` — stable per deploy,
+    NOT time-rotating — so the day grain comes from `created_at`, not from
+    the hash. A secret rotation resets uniques; rare, acceptable, recorded.
+    """
+    null_arm = func.count(case((and_(row_id_col.isnot(None), hash_col.is_(None)), 1)))
+    key = (
+        tuple_(day_col, hash_col)
+        if scope_col is None
+        else tuple_(day_col, scope_col, hash_col)
+    )
+    # A (day, NULL) tuple is NOT NULL *as a whole*, so DISTINCT would count
+    # it and the NULL arm would count it again. Measured, not theorized: the
+    # NULL tests came back +1 per NULL row before this FILTER.
+    return func.count(distinct(key)).filter(hash_col.isnot(None)) + null_arm
+
 
 # ============================================================
 # View tracking

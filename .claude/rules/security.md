@@ -84,6 +84,38 @@ exit 2 = block).
 | `vercel --prod` / `vercel rm` | Direct production deploy / project deletion bypassing the `feature/* → staging → main` flow. |
 | Any command containing `$DATABASE_URL_PRODUCTION` | Production DB URL must never be touched from a Claude session — `psql`, `railway run`, `vercel env`, etc. Run from your terminal. |
 
+### `git reset --hard` is denied at L2 — use `git checkout -B` (MEH-514)
+
+`git reset --hard` is blocked by a `permissions.deny` entry in
+`.claude/settings.json`, **not** by `check-bash-safety.sh`. The hook cannot
+see it: a segment matching `^git[[:space:]]` is `continue`d before any
+pattern runs (`check-bash-safety.sh:58`), because git cannot execute its own
+arguments as shell. So there is nothing to add to the hook, and adding
+something would change nothing — the deny fires first either way.
+
+**The sanctioned alternative, which does exactly what the denied command
+does for the syncing case:**
+
+```bash
+git checkout -B <branch> origin/<branch>
+```
+
+`workflow.md` § *Branch-base verification* already uses this form, so it is
+the house pattern rather than a workaround. **Reach for it directly — do not
+ask for the denied command to be run on your behalf, and do not treat the
+block as something to route around.** A deny is a decision, not an obstacle
+(workflow rule 32: CC adds constraints, never removes one).
+
+**Why the deny was left broad rather than narrowed** (Sapir's default under
+MEH-514, option א): the friction is one documented case in 15 months, the
+alternative above is free, and narrowing the pattern would first require
+establishing whether Claude Code's deny syntax supports partial matching at
+that resolution — which is unknown and untested. Zero-cost beat unknown-cost.
+This paragraph exists so the next session does not rediscover the friction and
+re-open the question; that rediscovery is what MEH-514 was.
+
+---
+
 If you genuinely need one of these, run it yourself in Git Bash —
 the hook only governs Claude Code tool calls, not your own terminal.
 
