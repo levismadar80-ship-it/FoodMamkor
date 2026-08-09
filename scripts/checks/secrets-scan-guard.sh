@@ -122,7 +122,10 @@ if [ "${1:-}" = "--self-test" ]; then
   for l in "${must_pass[@]}"; do
     looks_like_secret "$l" && { echo "SELF-TEST: false positive -> $l"; fail=1; }
   done
-  [ "$fail" -eq 0 ] && echo "secrets-scan self-test OK — 6 positives, 7 negative controls"
+  # Counted from the arrays, never hardcoded — a literal drifts silently the
+  # first time a case is added, which is a small lie in the one line a reader
+  # uses to judge coverage.
+  [ "$fail" -eq 0 ] && echo "secrets-scan self-test OK — ${#must_flag[@]} positives, ${#must_pass[@]} negative controls"
   exit "$fail"
 fi
 
@@ -151,7 +154,11 @@ fi
 BASE="${GUARD_DIFF_BASE:-origin/staging}"
 git rev-parse --verify --quiet "$BASE" >/dev/null 2>&1 || BASE="HEAD~1"
 git rev-parse --verify --quiet "$BASE" >/dev/null 2>&1 || {
-  echo "secrets-scan: no usable diff base — skipping (nothing to compare)"
+  # WARNING: prefix is load-bearing — run-all.sh keys its WARN token on it.
+  # Without it this exit 0 records as a clean PASS, so "the scan found nothing"
+  # and "the scan never ran" look identical in CI. That is the two-causes-one-
+  # green pattern this repo has a rule about; caught by the CI reviewer on #2754.
+  echo "WARNING: secrets-scan — no usable diff base; ZERO lines scanned."
   exit 0
 }
 
