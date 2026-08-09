@@ -64,7 +64,7 @@ much is collapsed vs. present — neither is a defect on this evidence.
 
 ---
 
-## S1 — the cookie banner. Two parts settled, one explicitly NOT.
+## S1 — the cookie banner. CLOSED: all three parts settled with geometry.
 
 **Settled 1 — the "mid-page banner" in fullPage captures is a CAPTURE ARTIFACT.**
 The banner is `position: fixed` (`z-index: 1100`), and a fullPage screenshot renders
@@ -93,15 +93,38 @@ telling a first-time owner what to have ready. Visible in
 > S1 frame are the same frame**, which is itself the reason the S1 occlusion is
 > visible in the task-1 evidence at all.
 
-**NOT settled — whether it overlaps the BottomNav, which is S1's actual claim.**
-The probe reports `overlapsBottomNav: false`, and **that result must not be used.**
-Its `document.querySelector("nav")` matched the **header** nav (`top 16, bottom 74`),
-not the bottom navigation. The probe answered a question about the wrong element, and
-a `false` from it is not evidence of no overlap.
+**Settled 3 — it does NOT overlap the BottomNav, which is S1's actual claim.**
+Measured with a corrected selector:
 
-Fixing the selector is a one-line change and the next chunk should do it. Reported
-this way rather than quietly shipping the `false`, because a wrong negative in an
-audit doc becomes someone's closed ticket.
+```
+banner    : top 672, bottom 764   (z-1100)
+BottomNav : top 772, bottom 844   (z-1000)
+gap       : 8 px — no intersection
+```
+
+**So S1 as originally worded — «באנר cookies מעל BottomNav» — does not reproduce.**
+What is real is the *content* occlusion above: the banner covers the preparation
+checklist, not the navigation.
+
+> **The instructive part: the value never changed, its meaning did.** The first
+> version of this probe also printed `overlapsBottomNav: false` — but its
+> `document.querySelector("nav")` matched the **header** nav (`top 16, bottom 74`),
+> so it was answering about the wrong element and the `false` was worthless. The
+> corrected probe selects **by position** (a `fixed` element in the lower half of
+> the viewport with ≥3 links), needs no class name that can churn, and returns the
+> same word for a real reason.
+>
+> Two greens, identical text, one meaningless — which is exactly why
+> `.claude/rules/testing.md` asks what *else* could produce a result before
+> believing it. Had the first `false` been trusted, S1 would have been closed
+> correctly **by accident**, and the next selector-shaped bug would have been
+> trusted the same way.
+>
+> **It was nearly shipped broken.** The first commit of this chunk carried the
+> defective selector with a doc note saying "the next chunk should fix it". The CI
+> reviewer pointed out that shipping a known-broken probe means any re-run silently
+> re-emits the bad value and relies on someone re-reading the doc — correct, and
+> the reason it is fixed here rather than deferred.
 
 ---
 
@@ -128,4 +151,7 @@ testid; the capture script still uses the loose selector.
 - Tasks 4–10 (recipe, group buy, event, review reply, stats, edit details, vacation).
 - The 14-row Feature-Inspection Matrix and the top-10 friction list.
 - #1492's A4 / A6 / S2 and the A1/A2/A7 asset question — untouched.
-- S1's BottomNav half, per the correction above.
+
+**S1 is CLOSED** and is no longer in this list: the original claim (banner over
+BottomNav) does not reproduce — 8 px clearance — while a *different*, real defect was
+found in its place (the banner occludes the preparation checklist).
