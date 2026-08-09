@@ -190,7 +190,15 @@ export default function Header() {
   // you are already on. Both /register (consumer) and /register/producer
   // count: the producer wizard opens from /register, so offering "הרשמה"
   // mid-wizard would send an owner back to the top of her own flow.
-  const isRegisterPage = (pathname || "").startsWith("/register");
+  // MEH-1971: segment boundary, not a string prefix. A bare
+  // `startsWith("/register")` also matches a PRODUCER whose slug happens to
+  // begin with those letters — `lib/slug.js` reserves the exact word
+  // `register` (`RESERVED.has(s)`, not a prefix test), so `register-cafe` is a
+  // legal slug and a legal `/[slug]` match. On that business's own page the
+  // הרשמה link would silently vanish. Caught in review, before any such
+  // business existed.
+  const isRegisterPage =
+    pathname === "/register" || (pathname || "").startsWith("/register/");
   const transparent = isHomepage && !scrolled;
   // MEH-896: trust strip render gate (JS-level — desktop-only is enforced
   // by the strip's own `hidden md:flex` below; pill top-padding compensates
