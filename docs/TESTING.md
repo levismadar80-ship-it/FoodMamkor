@@ -309,6 +309,48 @@ test('no "יצרן" text anywhere visible', async ({ page }) => {
 
 ---
 
+## בודק לינקים פנימיים (MEH-1963)
+
+```
+bash scripts/link-check.sh              # build + start + crawl + stop
+bash scripts/link-check.sh --skip-build # אם כבר יש build
+node scripts/link-check.mjs --self-test # הקלסיפייר של robots בלבד
+```
+
+זוחל מ-`/` על לינקים פנימיים בלבד, מכבד את ה-`Disallow` של
+`frontend/public/robots.txt` (longest-match, כמו Google/Bing — כך
+ש-`Allow: /register/producer` גובר על ה-`Disallow: /register` הקצר), ומדווח
+**שבורים (4xx/5xx) · שרשראות redirect · עוגנים מתים**. יציאה 1 על כל שבור.
+
+**קראי את ה-WARNING שהוא מדפיס.** ה-preflight בודק **שלושה** מצבים, ומכריז על
+כל אחד. נמדד 09/08:
+
+| מחלקה | דוגמאות | סטטוס | נבדק? |
+|---|---|---|---|
+| נתיב ללא route תואם | `/foo/bar/baz` · `/about/nope` · `/producers/nope` | **404** | ✅ |
+| חד-מקטעי (`/<slug>`) | `/this-route-does-not-exist` · `/a` · `/UPPER_CASE` | **200** | ❌ מול backend מת |
+| route דינמי תואם, ישות חסרה | `/producer/999999999` · `/events/…` · `/experiences/…` · `/group-buys/…` | **200** | ❌ **תמיד** |
+
+- **החד-מקטעי** נסגר מול target עם backend חי: `middleware.js` נכשל-פתוח בכוונה
+  כשה-backend לא זמין (MEH-1899/1521).
+- **הישות החסרה אינה נסגרת לעולם.** עמודי הפירוט מרנדרים 200 **בכוונה** במקום
+  לקרוא ל-`notFound()` — `producer/[id]/page.js:14` אומר זאת מפורשות
+  (מחלקת סיכון-האינדוקס של MEH-1754), ואותה הערה מופיעה גם ב-`events/[id]`,
+  `experiences/[id]` ו-`group-buys/[id]`. לכן **שום** בודק מבוסס status לא יסמן
+  לינק לעסק שנמחק או לאירוע שעבר. לבדיקה כזו נדרש probe על **תוכן**, לא על
+  סטטוס.
+
+_שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נבדקים". **זה היה שגוי** בדיוק
+עבור המחלקה השלישית — תוקן ב-MEH-1970 אחרי סקירה אדוורסרית בלתי-תלויה. ה-probe
+הרב-מקטעי הישן היה נתיב **ללא route תואם**, ולכן הוכיח רק שה-router-miss של Next
+מחזיר 404 — ולא אמר דבר על route תואם שהקומפוננטה שלו בוחרת לרנדר 200._
+
+**לא ב-`scripts/checks/`** — התיקייה הזאת נסרקת אוטומטית ע"י
+`scripts/checks/run-all.sh` והופכת כל קובץ בה לרגל של שער **Repo guards**
+הנדרש; MEH-1963 הוציא חיווט ל-CI מהסקופ במפורש.
+
+---
+
 ## Agent Teams — בדיקה מתקדמת (מהתמונות)
 
 שלחי ל-Claude Code:
