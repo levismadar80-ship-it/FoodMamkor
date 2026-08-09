@@ -31,7 +31,7 @@ whole-window dedupe, which an earlier draft of this change shipped.
 
 from datetime import datetime, timedelta
 
-from app.models.models import ProducerPageView
+from app.models.models import ProducerPageView, ProducerWhatsAppClick
 from conftest import auth_header, make_producer, make_user
 
 
@@ -153,3 +153,110 @@ class TestProfileViewDedupe:
 
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert sum(e["count"] for e in body["views_by_day"]) == 1
+
+
+class TestTheOtherThreeReaders:
+    """MEH-160 round 2 — the three readers the first round left raw.
+
+    `producer_page_views` feeds SIX metrics on one dashboard screen. Round one
+    deduped `profile_views`, `search_appearances` and `views_by_day` and left
+    `top_cities`, `rank_in_city` and `weekly_trend`'s comparison arm counting
+    rows. Every one of these tests fails against that state, so together they
+    are the discrimination the first round did not have: the screen showed
+    visitors in one number and refreshes in the next.
+    """
+
+    def test_top_cities_counts_visitors_not_refreshes(self, client, db):
+        """One visitor refreshing 3× from Tel Aviv is ONE Tel Aviv viewer.
+
+        Fails at 3 against `func.count(id)`. The second city is the control:
+        two DIFFERENT visitors must still count 2, so this cannot be passed by
+        an implementation that simply collapses every group to 1.
+        """
+        p, user = _setup(db, "readers1@test.com")
+        for _ in range(3):
+            db.add(
+                ProducerPageView(
+                    producer_id=p.id, viewer_ip_hash="a" * 64, city="תל אביב"
+                )
+            )
+        for i in range(2):
+            db.add(
+                ProducerPageView(
+                    producer_id=p.id, viewer_ip_hash=f"{i:064d}", city="חיפה"
+                )
+            )
+        db.commit()
+
+        cities = {
+            row["city"]: row["count"]
+            for row in client.get(
+                "/producers/me/analytics", headers=auth_header(user)
+            ).json()["top_cities"]
+        }
+        assert cities["תל אביב"] == 1
+        assert cities["חיפה"] == 2
+
+    def test_rank_in_city_scores_a_viewless_rival_zero(self, client, db):
+        """The LEFT JOIN trap, made explicit.
+
+        A rival with no views at all still yields one all-NULL row under the
+        outer join. An ungated `hash IS NULL` arm counts that phantom as a
+        view, so the view-less rival scores 1 — and our producer, on a single
+        real view, ties or loses to a business nobody visited.
+
+        This is the case that would NOT have been caught by reusing the
+        windowed dedupe expression as-is; it needs the row-id gate.
+        """
+        p, user = _setup(db, "readers2@test.com")
+        p.city = "חיפה"
+        p.status = "approved"
+        rival = make_producer(db)
+        rival.city = "חיפה"
+        rival.status = "approved"
+        db.commit()
+        # Our producer: exactly one real view. The rival: none at all.
+        _seed(db, p.id, "b" * 64)
+
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        assert body["rank_in_city"] == 1
+
+    def test_weekly_trend_is_stable_on_flat_repeat_traffic(self, client, db):
+        """The permanent regression round one shipped.
+
+        Identical traffic in both weeks — one visitor, three hits, on one day
+        each side. Comparing a deduped `last_7d` (1) against a raw
+        `prev_7d_views` (3) reads "down" forever, on every producer with any
+        repeat visitor. It is not a rounding wobble: only one side of the
+        subtraction is deflated.
+        """
+        p, user = _setup(db, "readers3@test.com")
+        for _ in range(3):
+            _seed(db, p.id, "c" * 64, days_ago=2)
+        for _ in range(3):
+            _seed(db, p.id, "d" * 64, days_ago=9)
+
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        assert body["profile_views"]["last_7d"] == 1
+        assert body["weekly_trend"] == "stable"
+
+    def test_conversion_rate_denominator_is_the_deduped_view_count(self, client, db):
+        """Pins the contract decision so it cannot drift back silently.
+
+        `producer_whatsapp_clicks` has no viewer hash, so the numerator stays
+        raw and the ratio can legitimately exceed 100: here one visitor, one
+        counted view, two clicks → 200.0. The API returns the honest number;
+        the clamp that used to hide it in the UI is gone, and the copy says
+        "per 100 distinct visitors" rather than "% of viewers".
+        """
+        p, user = _setup(db, "readers4@test.com")
+        for _ in range(4):
+            _seed(db, p.id, "e" * 64)
+        for _ in range(2):
+            db.add(ProducerWhatsAppClick(producer_id=p.id))
+        db.commit()
+
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        assert body["profile_views"]["last_30d"] == 1
+        assert body["whatsapp_clicks"]["last_30d"] == 2
+        assert body["conversion_rate"] == 200.0

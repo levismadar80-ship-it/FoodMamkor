@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import and_, case, distinct, func, tuple_
+from sqlalchemy import and_, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -63,6 +63,7 @@ from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
 )
+from app.services.analytics import israel_day_of, unique_views_count
 from app.services.trust_tier import VALID_BADGE_CODES
 
 log = logging.getLogger(__name__)
@@ -739,6 +740,41 @@ def dashboard(
 # ============================================================
 
 
+def _rank_in_city(db: Session, producer, israel_day):
+    """MEH-57: 1-based rank among approved producers in the same city, by 30d
+    views descending. None when the producer has no city.
+
+    Extracted from `producer_analytics` under MEH-160 — inlining it pushed the
+    endpoint over PLR0915's 50-statement cap.
+
+    MEH-160: ranks on the same unit the dashboard displays. The LEFT JOIN here
+    is why `unique_views_count` gates its NULL arm on the row id — a producer
+    with zero views still yields one all-NULL row, and an ungated
+    `hash IS NULL` would score every view-less rival a 1.
+    """
+    if not producer.city:
+        return None
+    cutoff_30d = datetime.utcnow() - timedelta(days=30)
+    rank_views = unique_views_count(day_col=israel_day)
+    city_ranks = (
+        db.query(Producer.id, rank_views.label("views"))
+        .outerjoin(
+            ProducerPageView,
+            and_(
+                ProducerPageView.producer_id == Producer.id,
+                ProducerPageView.created_at >= cutoff_30d,
+            ),
+        )
+        .filter(Producer.city == producer.city, Producer.status == "approved")
+        .group_by(Producer.id)
+        .order_by(rank_views.desc())
+        .all()
+    )
+    return next(
+        (i + 1 for i, row in enumerate(city_ranks) if row.id == producer.id), None
+    )
+
+
 @dataclass
 class WindowFilter:
     """MEH-447: collapse the 2 optional kwargs of _count_in_window into a
@@ -773,15 +809,11 @@ def _count_in_window(
     from the hash itself (a secret rotation resets uniques; acceptable, rare).
     """
     if window.distinct_col is not None:
-        day = func.date(func.timezone("Asia/Jerusalem", func.timezone("UTC", time_col)))
-        # FILTER keeps NULL-hash rows out of the tuple count: unlike a bare
-        # column, a (day, NULL) tuple is NOT NULL as a whole, so without the
-        # filter every NULL row would be counted twice — once as a tuple and
-        # once in the NULL arm. Measured, not theorized: the NULL tests came
-        # back +1 per NULL row before the filter.
-        counter = func.count(distinct(tuple_(day, window.distinct_col))).filter(
-            window.distinct_col.isnot(None)
-        ) + func.count(case((window.distinct_col.is_(None), 1)))
+        counter = unique_views_count(
+            day_col=israel_day_of(time_col),
+            hash_col=window.distinct_col,
+            row_id_col=model.id,
+        )
     else:
         counter = func.count(model.id)
     q = db.query(counter).filter(model.producer_id == producer_id)
@@ -910,20 +942,14 @@ def producer_analytics(
         .astimezone(timezone.utc)
         .replace(tzinfo=None)
     )
-    israel_day = func.date(
-        func.timezone(
-            "Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at)
-        )
-    )
+    israel_day = israel_day_of(ProducerPageView.created_at)
     # MEH-160: the chart dedupes per DAY on the same column the windowed
     # counters use, so the series and the headline number cannot disagree.
+    # Grouped by the day already, so the day-less shape of the helper applies.
     daily_rows = (
         db.query(
             israel_day.label("day"),
-            (
-                func.count(distinct(ProducerPageView.viewer_ip_hash))
-                + func.count(case((ProducerPageView.viewer_ip_hash.is_(None), 1)))
-            ).label("count"),
+            unique_views_count().label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
@@ -941,50 +967,37 @@ def producer_analytics(
         )
 
     # Top cities (viewers who had a city attached — i.e. logged-in viewers).
+    # MEH-160: same unit as profile_views — one visitor per city per day.
+    # Grouped by city, not by day, so the day travels inside the DISTINCT.
+    city_views = unique_views_count(day_col=israel_day)
     top_city_rows = (
         db.query(
             ProducerPageView.city,
-            func.count(ProducerPageView.id).label("count"),
+            city_views.label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
             ProducerPageView.city.isnot(None),
         )
         .group_by(ProducerPageView.city)
-        .order_by(func.count(ProducerPageView.id).desc())
+        .order_by(city_views.desc())
         .limit(5)
         .all()
     )
     top_cities = [{"city": row.city, "count": int(row.count)} for row in top_city_rows]
 
-    # MEH-57 ── rank_in_city: 1-based rank among approved producers in same
-    # city ordered by 30d views descending. None when producer has no city.
-    cutoff_30d = datetime.utcnow() - timedelta(days=30)
-    if producer.city:
-        city_ranks = (
-            db.query(
-                Producer.id,
-                func.count(ProducerPageView.id).label("views"),
-            )
-            .outerjoin(
-                ProducerPageView,
-                and_(
-                    ProducerPageView.producer_id == Producer.id,
-                    ProducerPageView.created_at >= cutoff_30d,
-                ),
-            )
-            .filter(Producer.city == producer.city, Producer.status == "approved")
-            .group_by(Producer.id)
-            .order_by(func.count(ProducerPageView.id).desc())
-            .all()
-        )
-        rank_in_city = next(
-            (i + 1 for i, row in enumerate(city_ranks) if row.id == pid), None
-        )
-    else:
-        rank_in_city = None
+    rank_in_city = _rank_in_city(db, producer, israel_day)
 
     # MEH-57 ── conversion_rate: whatsapp clicks / profile views × 100 (30d).
+    # MEH-160 contract note: the denominator is now unique daily viewers,
+    # while `producer_whatsapp_clicks` carries NO viewer hash (models.py:1515
+    # — only a nullable user_id), so the numerator cannot be deduped to match
+    # without a schema change. The ratio is therefore "clicks per 100 unique
+    # daily viewers" and CAN exceed 100 legitimately: one viewer clicking
+    # twice in a day. The copy states that in both locales, and the display no
+    # longer clamps it — clamping hid a wrong contract behind a screen that
+    # looked fine. Alternative (Sapir's call, drafted on the card): add
+    # viewer_ip_hash to the clicks table and restore a bounded percentage.
     conversion_rate = (
         round(whatsapp_clicks["last_30d"] / profile_views["last_30d"] * 100, 1)
         if profile_views["last_30d"] > 0
@@ -1019,8 +1032,12 @@ def producer_analytics(
     now = datetime.utcnow()
     prev_start = now - timedelta(days=14)
     prev_end = now - timedelta(days=7)
+    # MEH-160: the comparison arm has to use the SAME unit as `last_7d`, which
+    # is deduped. Comparing deduped-now against raw-then reads "down" on
+    # perfectly flat traffic — a permanent regression, not a rounding wobble:
+    # any repeat visitor deflates only one side of the subtraction.
     prev_7d_views = int(
-        db.query(func.count(ProducerPageView.id))
+        db.query(unique_views_count(day_col=israel_day))
         .filter(
             ProducerPageView.producer_id == pid,
             ProducerPageView.created_at >= prev_start,

@@ -4077,7 +4077,7 @@
           "views": "Views",
           "window_7d": "Last 7 days",
           "rating_sub": "{count} reviews",
-          "conversion_line": "{rate}% of viewers clicked the WhatsApp button. A click is not necessarily a message sent."
+          "conversion_line": "{rate} WhatsApp clicks per 100 distinct visitors in the last 30 days. A click is not necessarily a message sent."
         },
         "hero": {
           "views_week_label": "Views this week",
@@ -4096,9 +4096,9 @@
         "eligible_weekly_sub": "First in your city + strong profile — well done!",
         "windowed": {
           "profile_views": "Profile views",
-          "profile_views_tooltip": "How many times your page was loaded. Every visit counts, including repeat visits.",
+          "profile_views_tooltip": "How many distinct visitors opened your page. A visitor who returns several times in the same day counts once.",
           "search_appearances": "Search appearances",
-          "search_appearances_tooltip": "How many times customers reached your page from search results. Appearances without a click are not counted.",
+          "search_appearances_tooltip": "How many distinct visitors reached your page from search results. The same visitor counts once per day. Appearances without a click are not counted.",
           "whatsapp_clicks": "WhatsApp clicks",
           "whatsapp_clicks_tooltip": "How many times the WhatsApp button was clicked. A click is not necessarily a message sent.",
           "contact_clicks": "Contact clicks (non-WhatsApp)",
