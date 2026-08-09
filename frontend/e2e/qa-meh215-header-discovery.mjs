@@ -45,7 +45,18 @@ for (const vp of VIEWPORTS) {
 
   for (const route of ROUTES) {
     await page.goto(BASE + route, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(1500);
+    // Condition, not a sleep. Waiting for the header to be VISIBLE also makes
+    // the failure mode loud: if it never renders, this throws instead of
+    // letting the counts below come back as a quiet, meaningless zero — which
+    // is the exact reading this probe exists to rule out.
+    // Deliberately not networkidle: Playwright discourages it, and this app
+    // currently serves 401s on Cloudinary images, so "no in-flight requests"
+    // is a poor proxy for "the header is painted".
+    await page.locator("header").first().waitFor({ state: "visible", timeout: 15_000 });
+    // Short settle for client-component hydration (BottomNav / AccountSheet
+    // mount after the server HTML). Bounded, and no longer load-bearing —
+    // the visibility wait above is what makes the measurement valid.
+    await page.waitForTimeout(300);
 
     const counts = await page.evaluate(() => {
       const header = document.querySelector("header");
