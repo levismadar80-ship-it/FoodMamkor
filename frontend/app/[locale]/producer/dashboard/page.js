@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -665,7 +666,10 @@ export default function ProducerDashboardPage() {
                 id="vacation-until"
                 type="date"
                 value={vacationUntil}
-                min={new Date().toISOString().slice(0, 10)}
+                // MEH-1983: Israel's today, not UTC's — the server validates
+                // vacation_until against israel_today(), so the UTC date
+                // offered a value the server would then reject.
+                min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
                 className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 dir="ltr"
