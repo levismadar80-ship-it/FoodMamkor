@@ -11,9 +11,14 @@
  */
 import { chromium } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { existsSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:3000";
-const CHROME = "/opt/pw-browsers/chromium";
+// The CC sandbox ships Chromium at a fixed path and Playwright cannot find it;
+// anywhere else, omitting executablePath lets Playwright use its own download.
+// `undefined` here means "use the bundled binary", so this runs on any machine.
+const CHROME = process.env.QA_CHROME_PATH
+  ?? (existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined);
 
 const scan = async (page) => {
   const r = await new AxeBuilder({ page })
@@ -29,8 +34,15 @@ const CASES = [
   {
     route: "/he/search",
     defect: "document-title (the serious that held /search out)",
-    // The original defect was a route with no document title.
-    inject: (page) => page.evaluate(() => { document.title = ""; }),
+    // The original defect was a route with no document title. Returns "ok"
+    // only after confirming the title is actually gone — the guard below
+    // treats anything else as "this script is stale", not as a gate verdict.
+    inject: (page) =>
+      page.evaluate(() => {
+        if (!document.title) return "TITLE ALREADY EMPTY — nothing to inject";
+        document.title = "";
+        return document.title === "" ? "ok" : "TITLE WOULD NOT CLEAR";
+      }),
   },
   {
     route: "/he/events",
@@ -40,8 +52,10 @@ const CASES = [
     inject: (page) =>
       page.evaluate(() => {
         const list = document.querySelector('[role="tablist"]');
-        if (!list) return "NO_TABLIST — injection did not apply";
-        list.querySelectorAll('[role="tab"]').forEach((t) => t.removeAttribute("role"));
+        if (!list) return "NO TABLIST FOUND — page restructured?";
+        const tabs = list.querySelectorAll('[role="tab"]');
+        if (!tabs.length) return "TABLIST HAS NO role=tab CHILDREN — nothing to strip";
+        tabs.forEach((t) => t.removeAttribute("role"));
         return "ok";
       }),
   },
@@ -57,6 +71,16 @@ try {
 
     const clean = await scan(page);
     const applied = await c.inject(page);
+    // An injection that did not apply produces a clean "broken" scan, which
+    // would print as "the gate does not discriminate" — a false verdict about
+    // the gate when the truth is that this script went stale (e.g. the tablist
+    // was restructured). Short-circuit so the failure names itself.
+    if (applied !== "ok") {
+      console.log(`\n=== ${c.route} — ${c.defect}`);
+      console.log(`  ⚠️  INJECTION FAILED — this script needs updating, no verdict on the gate.`);
+      console.log(`      reason: ${applied}`);
+      continue;
+    }
     const broken = await scan(page);
     // Reload to drop the injection — the restore half of the two-run control.
     await page.reload({ waitUntil: "domcontentloaded" });
