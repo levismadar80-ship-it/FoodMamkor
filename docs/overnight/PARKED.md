@@ -257,3 +257,66 @@ One signature (`Linear token expired`) across four cards. **This is one blocker
 counted once, not four parks toward the 3-park threshold** — the threshold exists
 to catch a repeating *failure mode*, and four cards sharing a single credential
 gate is one fact about the environment. Nothing quarantined.
+
+---
+
+# Session s6-t7w2nq (2026-08-09 morning)
+
+## PARKED: MEH-217 — admin panel suite. **Structural, not a blocker in the code.**
+
+**Failure class: PERMANENT for CC — ORDERS §1.2 gate 2 + MEH-671.** Not
+transient, not resource. No retry clears it and none was attempted.
+
+**Nothing in the repository blocks writing the specs.** What blocks *delivering
+the card's DoD* is that the specs could only ever `skip` in CI:
+
+`global-setup.ts:72-80` deliberately does not provision `e2e/.auth/*.json` when
+the target is localhost and no `DEMO_*_PASSWORD` is set. The default `e2e.yml`
+job is exactly that shape (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, no
+`DEMO_*` secret exported). Every admin spec therefore reports `skipped`, and a
+skipped leg **passes** the aggregator.
+
+The card's DoD asks for *"green locally **and registered in CI**"*. The second
+half needs either a repository secret or an `e2e.yml` edit — **both Sapir's**
+(secrets are gate 2; `.github/workflows/**` is CC-deny, MEH-671). Shipping six
+tabs of always-skipping specs would manufacture the exact "green with two
+possible causes" that `testing.md` documents at length, so it was not done.
+
+**Also established, and it removes work rather than adding it:** §1A
+(access control, all three roles + the guest round-trip) is **already covered in
+full** by `e2e/flows/25-role-reachability.spec.ts`. Re-verified independently
+against the live code — all 7 admin routes redirect anonymously with the return
+path preserved; a logged-in non-admin gets `data-testid="access-denied"` with
+**zero `/api/admin` calls**. Do not rewrite that chunk.
+
+**To unpark:** Sapir decides between (a) wire `DEMO_ADMIN_PASSWORD` into the E2E
+job, or (b) restate the DoD as local-only. A chunk breakdown for either path is
+on the card, including the two sub-sections that should stay out of CI entirely
+(§2F delete, §3C promote/delete — the card's own reasoning, never reversed by the
+08/08 ruling).
+
+**Not claimed.** No `cc-queue` label, no branch, no code.
+
+## PARKED: MEH-215 — registration journey suite. **Resource.**
+
+**Failure class: NOT transient, NOT permanent — resource (session context).** It
+will succeed on a fresh session with no changes to anything, and unlike MEH-217
+it needs **no credential fixture**: the whole wizard was walked today with none.
+
+**Not claimed.** No `cc-queue`, no branch (`git ls-remote` confirms), no PR.
+
+**The handoff is in `session-s6-t7w2nq.md` §6** and is the reason this park is
+cheap: the five step headings verbatim, the twelve field **`id`s** (they are
+`id`, not `name` — a `[name=...]` locator silently matches nothing), the
+`aria-pressed` category convention, the empty-submit alert string, and the fact
+that the final advance button is `הצטרפו ←` and not `הבא ←` so a `הבא`-only
+regex stalls without failing. Journey A is writable from that list alone.
+
+**Still open and worth settling first:** `covered-by-stub` has no defined form
+(ORDERS §1.5 records that `grep` found no existing pattern in any `*.md`). Settle
+it before assertions start carrying it, or it will drift into three spellings.
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. Two parks, two different failure
+classes, nothing quarantined.
