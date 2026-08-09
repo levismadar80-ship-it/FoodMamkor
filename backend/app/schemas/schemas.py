@@ -637,7 +637,7 @@ class ProducerRegister(BaseModel):
     # RegisterProducerClient.jsx:565-566 builds it from
     # `declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed)`
     # — the LICENSING declaration. `agreedToTerms` is the separate terms-of-
-    # service checkbox, enforced as its own submit gate at :1624, and the
+    # service checkbox, enforced as its own submit gate at :1630, and the
     # frontend says so in as many words at :563-564. Conflating the two hid the
     # fact that ToS consent reached no column at all; `terms_accepted` below is
     # its actual carrier.

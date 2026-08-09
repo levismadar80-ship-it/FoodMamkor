@@ -575,6 +575,27 @@ async def register_producer(
         user.producer_id = producer.id
         user.role = "producer"
         user.is_producer = True
+        # MEH-1995: the upgrade path collects ToS consent exactly like the two
+        # account-creation paths — the checkbox renders in the STORY step with
+        # no isUpgrade condition and hard-gates submit
+        # (RegisterProducerClient.jsx:1553-1566, :1630-1633), and the flag rides
+        # the shared body object above `if (!isUpgrade)` (:572, :575). Missing
+        # this stamp meant a consent event that provably happened, and was
+        # transmitted, recorded as NULL — i.e. the DB asserting "no record" about
+        # an acceptance the user was *forced* to give. That is the exact evidence
+        # gap this ticket exists to close, so leaving it here would have shipped
+        # the bug inside its own fix. The sibling licensing declaration already
+        # stamps both paths (declared_at at :543 upgrade / :662 new), which is
+        # the house precedent this now matches.
+        #
+        # Guarded on the flag and never nulled: this user may already carry a
+        # consumer-registration consent, and an absent/False flag must leave that
+        # record intact rather than erase it. A True flag overwrites with the
+        # newer acceptance — which is an evidentiary gain, since terms_version
+        # then names the wording actually agreed to most recently.
+        if data.terms_accepted:
+            user.terms_accepted_at = datetime.now(timezone.utc)
+            user.terms_version = TERMS_VERSION
         db.commit()
         db.refresh(user)
 
