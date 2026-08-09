@@ -1753,6 +1753,48 @@ class CategoryRequest(Base):
     producer = relationship("Producer", backref="category_requests")
 
 
+class ProducerNameChangeRequest(Base):
+    """MEH-1872: an owner's request to change her business name, held for
+    re-moderation instead of written straight onto ``producers.name``.
+
+    MEH-1851 removed `name` from `_PRODUCER_WRITABLE_FIELDS` because a plain
+    `setattr` let an approved business become a different business after
+    approval — a hole in the DNA-LOCK "every business is approved by hand".
+    Closing it left owners with no way to fix a typo at all. This table is the
+    sanctioned route back: the request waits, the public name does not move.
+
+    A separate table rather than a `pending_name` column (Sapir's ruling,
+    09/08) so the decision keeps an audit trail and a second request cannot
+    silently overwrite the first.
+
+    REUSES: the CategoryRequest shape directly above — same status/admin_notes/
+    reviewed_at triple, same admin-queue idiom.
+    """
+
+    __tablename__ = "producer_name_change_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # The name as it stood when the request was filed. Stored rather than read
+    # back from the producer at review time: the admin must judge the change
+    # she was actually asked to approve, and `producers.name` can move under
+    # her (another approved request, an admin edit) between filing and review.
+    current_name = Column(String(100), nullable=False)
+    requested_name = Column(String(100), nullable=False)
+    reason = Column(Text, nullable=True)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    admin_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
+
+    producer = relationship("Producer", backref="name_change_requests")
+
+
 class SearchQuery(Base):
     """Search telemetry — one row per /producers?search=... query.
 
