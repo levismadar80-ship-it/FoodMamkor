@@ -58,7 +58,9 @@ fi
 section "2/7 Frontend unit tests (vitest)"
 if [ ! -x "$ROOT/frontend/node_modules/.bin/vitest" ]; then
   fail "vitest — not installed (run 'npm ci' in frontend/)"
-elif ( cd "$ROOT/frontend" && ./node_modules/.bin/vitest run ) >/tmp/dod-vitest.log 2>&1; then
+elif ( cd "$ROOT/frontend" && node scripts/vitest-guard.mjs ) >/tmp/dod-vitest.log 2>&1; then
+  # MEH-1951: wrapper reds an exit-0 run that executed 0 tests (startup crash
+  # masquerading as green — measured twice on 08/08).
   pass "vitest unit suite"
 else
   fail "vitest unit suite (see /tmp/dod-vitest.log)"
@@ -140,7 +142,7 @@ fi
 section "7/7 en.json parity (MEH-978 en-parity-guard)"
 if [ ! -x "$ROOT/frontend/node_modules/.bin/vitest" ]; then
   fail "en-parity guard — vitest not installed (run 'npm ci' in frontend/)"
-elif ( cd "$ROOT/frontend" && ./node_modules/.bin/vitest run __tests__/en-parity-guard.test.js ) >/tmp/dod-parity.log 2>&1; then
+elif ( cd "$ROOT/frontend" && node scripts/vitest-guard.mjs __tests__/en-parity-guard.test.js ) >/tmp/dod-parity.log 2>&1; then
   pass "en.json key parity"
 else
   fail "en.json key parity — he-only key(s) missing from en.json (see /tmp/dod-parity.log)"
