@@ -100,7 +100,9 @@ try {
     await page.waitForLoadState("networkidle").catch(() => {});
     t7.landedOn = page.url();
     // Reviews lazy-load on an IntersectionObserver — an instant jump to the
-    // bottom never intersects it. Walk the page in viewport steps instead.
+    // bottom never intersects it. Walk the page in viewport steps; the 250ms
+    // ticks are scroll CADENCE (so the observer sees each step), not an app-state
+    // wait — the conditional waitFor below is what gates the measurement.
     await page.evaluate(async () => {
       const vh = window.innerHeight;
       for (let y = 0; y < document.body.scrollHeight; y += vh * 0.8) {
@@ -117,15 +119,18 @@ try {
     if (replyAff.length) {
       const replyBtn = page.locator("a,button").filter({ hasText: /תגובה|הגיבי|השיבי|מענה/ }).first();
       taps += 1; await replyBtn.click();
-      await page.waitForTimeout(800);
       const box = page.locator("textarea").first();
+      await box.waitFor({ timeout: 8000 }).catch(() => {});
       t7.replyBoxOpens = (await box.count()) > 0;
       if (t7.replyBoxOpens) {
         await box.fill("תודה רבה על המילים החמות! מחכות לראותך שוב בדוכן.");
         const send = page.locator("button").filter({ hasText: /שליחה|שלחי|פרסום|שמירה/ }).filter({ visible: true }).first();
         if (await send.count()) {
           taps += 1; await send.click();
-          await page.waitForTimeout(1500);
+          // Wait for a status region to APPEAR; a caught timeout means none did
+          // within 8s — which is the datum, not a race artifact.
+          await page.locator('[class*="toast" i], [role="status"], [role="alert"]')
+            .first().waitFor({ timeout: 8000 }).catch(() => {});
           // What does the owner see after submit? (toast / inline / nothing)
           t7.afterSubmit = await page.evaluate(() => {
             const toast = document.querySelector('[class*="toast" i], [role="status"], [role="alert"]');
@@ -174,7 +179,8 @@ try {
     t9.saveButtonFound = (await save.count()) > 0;
     if (t9.saveButtonFound) {
       await save.click();
-      await page.waitForTimeout(1800);
+      await page.locator('[class*="toast" i], [role="status"], [role="alert"]')
+        .first().waitFor({ timeout: 8000 }).catch(() => {});
       t9.afterSave = await page.evaluate(() => {
         const toast = document.querySelector('[class*="toast" i], [role="status"], [role="alert"]');
         return toast ? (toast.innerText || "").trim().slice(0, 120) : null;
@@ -199,7 +205,8 @@ try {
   if (t10Aff.length) {
     const vac = page.locator("button").filter({ hasText: /בהפסקה/ }).first();
     await vac.click();
-    await page.waitForTimeout(1200);
+    // The revealed return-date field is the condition this tap exists to test.
+    await page.locator('input[type="date"]').first().waitFor({ timeout: 8000 }).catch(() => {});
     t10.afterTapUrl = page.url();
     t10.dateInputRevealed = await page.locator('input[type="date"]').count();
     t10.visibleCopy = await page.evaluate(() => {
@@ -270,7 +277,11 @@ try {
         entry.submitPresent = (await submit.count()) > 0;
         if (entry.submitPresent) {
           await submit.click();
-          await p2.waitForTimeout(2000);
+          // Outcome condition: success/moderation/error copy or a status region.
+          await p2.waitForFunction(() => {
+            if (document.querySelector('[class*="toast" i], [role="status"], [role="alert"]')) return true;
+            return /נשלח לאישור|נוצר בהצלחה|שגיאה|חובה|לאחר אישור/.test(document.body.innerText || "");
+          }, { timeout: 10000 }).catch(() => {});
           entry.afterSubmitUrl = p2.url();
           entry.afterSubmitCopy = await p2.evaluate(() => {
             const toast = document.querySelector('[class*="toast" i], [role="status"], [role="alert"]');
@@ -290,7 +301,7 @@ try {
   }
 
   report.measuredAt = new Date().toISOString();
-  writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 2));
+  writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser.close();
