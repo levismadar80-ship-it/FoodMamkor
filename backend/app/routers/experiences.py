@@ -251,7 +251,9 @@ def list_my_experiences(
 
 
 @router.get("/{experience_id}", response_model=ExperienceDetailOut)
+@limiter.limit("120/minute")
 def get_experience(
+    request: Request,
     experience_id: UUID,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),

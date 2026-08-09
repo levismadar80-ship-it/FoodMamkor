@@ -34,7 +34,26 @@ MOUNTED = [
     ("/search/trending", 60),
     ("/categories", 60),
     ("/stats", 60),
+    # Six the ORIGINAL file-walking audit never saw. The app-introspecting
+    # inventory (scripts/audit_public_endpoints.py) found them: list and
+    # detail reads that were public and unlimited the whole time.
+    ("/events", 120),
+    (f"/events/{uuid.uuid4()}", 120),
+    (f"/experiences/{uuid.uuid4()}", 120),
+    (f"/group-buys/{uuid.uuid4()}", 120),
+    ("/producers/no-such-slug/recipes", 120),
+    (f"/producers/no-such-slug/recipes/{uuid.uuid4()}", 120),
 ]
+
+# The only public endpoints allowed to answer without a limit. Each is a
+# reasoned decision, not an omission — see TestNoNewUnlimitedPublicEndpoint.
+DELIBERATELY_UNLIMITED = {
+    ("GET", "/"),
+    ("GET", "/health"),
+    ("GET", "/health/liveness"),
+    ("GET", "/health/readiness"),
+    ("GET", "/push-vapid-key"),
+}
 
 # Needs a required query param; the value may be a miss — the limiter counts
 # the request either way, which is the property under test.
@@ -79,6 +98,32 @@ class TestLimiterEngagesOnEveryMountedEndpoint:
     def test_engages(self, client, path, budget):
         codes = _statuses(client, path, budget + 1)
         assert codes[budget] == 429, f"{path} never refused a request at budget+1"
+
+
+class TestWhatsAppWebhookIsLimited:
+    """`/webhook/whatsapp` — both verbs, and neither was covered until the CI
+    reviewer said so on PR #2752.
+
+    `MOUNTED` above is GET-only (`_statuses` calls `client.get`), so the POST
+    route had **no test at all** and the GET route was simply missing from the
+    list. Deleting either decorator would have left the whole file green —
+    which is the exact "a green with no discrimination" failure this file's
+    own docstring lectures about. Recorded rather than quietly patched.
+
+    Both verbs answer **403** unauthenticated (no `WHATSAPP_VERIFY_TOKEN`, no
+    `X-Hub-Signature-256`). That is the point: the limiter must count rejected
+    calls, or an attacker who never passes verification is unbounded.
+    """
+
+    def test_get_handshake_is_limited(self, client):
+        codes = _statuses(client, "/webhook/whatsapp", 61)
+        assert set(codes[:60]) == {403}, "expected unauthenticated rejections"
+        assert codes[60] == 429, "the GET handshake is not rate-limited"
+
+    def test_post_callback_is_limited(self, client):
+        codes = [client.post("/webhook/whatsapp", json={}).status_code for _ in range(121)]
+        assert set(codes[:120]) == {403}, "expected unauthenticated rejections"
+        assert codes[120] == 429, "the POST callback is not rate-limited"
 
 
 class TestHomeProductsIsNotMounted:
@@ -153,4 +198,49 @@ class TestHealthMustStayUnlimited:
         codes = _statuses(client, path, 150)
         assert 429 not in codes, (
             f"{path} is rate-limited — Railway's probe would fail and restart the service"
+        )
+
+
+class TestNoNewUnlimitedPublicEndpoint:
+    """The durable half of MEH-1979 — a ratchet, not a snapshot.
+
+    Every check above tests endpoints someone remembered to list. This one
+    asks the **app** what it currently exposes and requires that the set of
+    public-and-unlimited routes has not grown. A new public endpoint added
+    next month without a limit reds here, with no one having to remember this
+    ticket existed.
+
+    It reads the mounted routes, never the router files. That distinction is
+    the whole lesson of this ticket: the original audit's file-walking script
+    invented four endpoints that are not served (`home_products`, unregistered
+    under MEH-1406) **and missed six that are** — `/events`, `/events/{id}`,
+    `/experiences/{id}`, `/group-buys/{id}` and the two public recipe reads.
+    Wrong in both directions, which is what a source scan buys you.
+    """
+
+    def test_unlimited_public_set_has_not_grown(self):
+        import sys
+        from pathlib import Path
+
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+        from audit_public_endpoints import inventory  # noqa: PLC0415
+
+        exposed = {
+            (r["method"], r["path"])
+            for r in inventory()
+            if r["public"] and not r["limited"]
+        }
+        new = exposed - DELIBERATELY_UNLIMITED
+        assert not new, (
+            "public endpoint(s) with no rate limit: "
+            + ", ".join(f"{m} {p}" for m, p in sorted(new))
+            + " — add a limit, or add to DELIBERATELY_UNLIMITED with the reason."
+        )
+        # And the converse: if a deliberate green quietly gained a limit, the
+        # decision was reversed without anyone re-reading why. /health gaining
+        # one is a production restart loop.
+        gone = DELIBERATELY_UNLIMITED - exposed
+        assert not gone, (
+            "these were deliberately unlimited and no longer are: "
+            + ", ".join(f"{m} {p}" for m, p in sorted(gone))
         )

@@ -75,7 +75,9 @@ def list_group_buys(
 
 
 @router.get("/{group_buy_id}", response_model=GroupBuyDetail)
+@limiter.limit("120/minute")
 def get_group_buy(
+    request: Request,
     group_buy_id: UUID,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),

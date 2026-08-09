@@ -72,7 +72,9 @@ def _serialize(event: Event) -> EventOut:
 
 
 @router.get("/events", response_model=list[EventOut])
+@limiter.limit("120/minute")
 def list_events(
+    request: Request,
     filters: Annotated[EventFilters, Depends()],
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
@@ -162,7 +164,9 @@ def list_my_events(
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
+@limiter.limit("120/minute")
 def get_event(
+    request: Request,
     event_id: UUID,
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
