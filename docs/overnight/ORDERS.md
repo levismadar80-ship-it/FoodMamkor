@@ -416,6 +416,52 @@ Full per-run matrix and the four-suspect correlation:
 aggregator, so both required gates can report `success` while nothing ran.
 Confirm the jobs that matter show `conclusion: success`, not `skipped`.
 
+#### The duration tell — check it before citing ANY run as evidence (third bite, 09/08)
+
+This section has now been rewritten three times by three sessions, each of which
+read a run-level `conclusion` and inferred that a suite had **run**. The rule
+below is the cheap mechanical check that would have stopped all three:
+
+> **A run-level `success` is never evidence that a suite ran. Open the job.**
+> Cite `conclusion` **and duration** together, or do not cite the run at all.
+
+| What you see | What it means |
+|---|---|
+| e2e run, **~8–10 min** | actually executed — the conclusion is a real result |
+| e2e run, **~25–35 sec** | the Playwright job `skipped`; nothing ran, the green is the aggregator |
+
+Measured 09/08: skip-greens `31317914516` (32 s), `31318839637` (26 s),
+`31327629452` — all `success`, all with `Playwright E2E (Vercel preview):
+skipped`. Real runs the same day: 520 s, and red.
+
+**The duration is visible in the run list without opening anything**, which is
+what makes this the check to reach for first. Job-level `conclusion` is the
+authority; duration is the two-second screen that tells you whether to bother.
+
+**Applies to every gate, not just e2e** — the same aggregator shape (`skipped →
+pass`) is used by `CI gate` and `Deploy gate` for paths-filtered legs. Any
+sentence of the form "CI was green on X" needs the job behind it.
+
+_Third instance: 08/08 (the "alternating pass/fail" correction), 08/08 again (the
+Cloudinary refutation built on green runs that never ran), 09/08 (a session
+reporting "staging recovered, the VRT set passed" on three 30-second skips)._
+
+#### The CI reviewer: adopt its findings, verify its conventions (09/08)
+
+`claude[bot]`'s **specific, local findings are usually right** — verify, then
+adopt. Its claims about **this repo's conventions** have a measured track record
+of **0 for 2** and must be checked against the actual file before acting:
+
+| Claim | Reality |
+|---|---|
+| "the project avoids inline styles where Tailwind covers it" (on a `style={{fontSize:"11px"}}` copyright line) | `Footer.jsx:261` is byte-identical for the same line; `:203` too. MEH-1103/1281 converted **links and headings**, never the copyright. Complying would have made the new component *diverge* from its sibling. |
+| a proposed `applied !== "ok"` guard | correct in shape, but as written it would have skipped the very case it protected — the sibling injection returned `undefined`, not `"ok"`. |
+
+**Never re-litigate an answered finding.** The reviewer runs per-head with no
+memory and will re-raise the same Minor on your next push. Answering it once, in
+a comment with `file:line` evidence, is the whole obligation — a second reply is
+noise.
+
 **A `cancelled` leg maps to FAIL, and the remedy inverts.** Supersession (a newer
 run exists for the head SHA) → **wait**. An infra hang (job stuck in its own
 setup, no newer run) → **re-run**. Read the log before choosing; applying "wait"
