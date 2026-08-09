@@ -755,7 +755,7 @@ def _rank_in_city(db: Session, producer, israel_day):
     if not producer.city:
         return None
     cutoff_30d = datetime.utcnow() - timedelta(days=30)
-    rank_views = unique_views_count(day_col=israel_day)
+    rank_views = unique_views_count(israel_day)
     city_ranks = (
         db.query(Producer.id, rank_views.label("views"))
         .outerjoin(
@@ -810,7 +810,7 @@ def _count_in_window(
     """
     if window.distinct_col is not None:
         counter = unique_views_count(
-            day_col=israel_day_of(time_col),
+            israel_day_of(time_col),
             hash_col=window.distinct_col,
             row_id_col=model.id,
         )
@@ -949,7 +949,10 @@ def producer_analytics(
     daily_rows = (
         db.query(
             israel_day.label("day"),
-            unique_views_count().label("count"),
+            # `israel_day` is already the GROUP BY key, so the day inside
+            # the DISTINCT tuple is constant per group — the same count, and
+            # no shorthand to get wrong (adversarial review, round 2).
+            unique_views_count(israel_day).label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
@@ -969,7 +972,7 @@ def producer_analytics(
     # Top cities (viewers who had a city attached — i.e. logged-in viewers).
     # MEH-160: same unit as profile_views — one visitor per city per day.
     # Grouped by city, not by day, so the day travels inside the DISTINCT.
-    city_views = unique_views_count(day_col=israel_day)
+    city_views = unique_views_count(israel_day)
     top_city_rows = (
         db.query(
             ProducerPageView.city,
@@ -1037,7 +1040,7 @@ def producer_analytics(
     # perfectly flat traffic — a permanent regression, not a rounding wobble:
     # any repeat visitor deflates only one side of the subtraction.
     prev_7d_views = int(
-        db.query(unique_views_count(day_col=israel_day))
+        db.query(unique_views_count(israel_day))
         .filter(
             ProducerPageView.producer_id == pid,
             ProducerPageView.created_at >= prev_start,

@@ -63,10 +63,11 @@ def israel_day_of(time_col):
 
 
 def unique_views_count(
+    day_col,
     *,
-    day_col=None,
     hash_col=ProducerPageView.viewer_ip_hash,
     row_id_col=ProducerPageView.id,
+    scope_col=None,
 ):
     """MEH-160: one page view per visitor per Israel calendar day.
 
@@ -80,13 +81,22 @@ def unique_views_count(
     # DO NOT count `producer_page_views` rows with a bare `func.count(id)` —
     # that is the inflated number MEH-160 exists to remove. Use this helper.
 
-    Two shapes, and picking the wrong one is silent:
+    `day_col` is POSITIONAL AND REQUIRED, deliberately. It briefly had a
+    `None` shorthand meaning "the caller already GROUPs BY the day, so
+    DISTINCT(hash) is the same count" — true for the one caller that used
+    it, and a silent trap for the next: omit the shorthand's matching
+    `GROUP BY` and you get total uniques across the whole result set instead
+    of the sum of daily uniques, with no error and a plausible smaller
+    number. The tuple form is provably identical inside a day-grouped query
+    (the day is constant in the group), so the shorthand bought nothing but
+    a way to be wrong. Adversarial review, MEH-160 round 2.
 
-    - `day_col=None` — the caller already `GROUP BY`s the Israel day, so the
-      day is constant inside each group and `DISTINCT(hash)` *is* the tuple
-      count. (`views_by_day`.)
-    - `day_col=<expr>` — the caller groups by something else, or not at all,
-      so the day has to travel inside the DISTINCT as a tuple.
+    `scope_col` joins the dedupe key. Pass it when the query spans MORE than
+    one producer and you want per-producer uniques SUMMED rather than
+    distinct people. That is not a style choice: the admin `top_cities`
+    aggregates every producer at once, so without it one visitor who opened
+    five businesses in Haifa on one day collapses to a single Haifa view,
+    and the admin figure stops being the sum of the per-producer figures.
 
     NULL-hash rows (no usable client IP) are counted one-by-one: they cannot
     be deduped against anything, and `COUNT(DISTINCT)` drops them silently,
@@ -102,16 +112,15 @@ def unique_views_count(
     the hash. A secret rotation resets uniques; rare, acceptable, recorded.
     """
     null_arm = func.count(case((and_(row_id_col.isnot(None), hash_col.is_(None)), 1)))
-    if day_col is None:
-        # func.count(distinct(col)) already skips NULLs — no FILTER needed.
-        return func.count(distinct(hash_col)) + null_arm
+    key = (
+        tuple_(day_col, hash_col)
+        if scope_col is None
+        else tuple_(day_col, scope_col, hash_col)
+    )
     # A (day, NULL) tuple is NOT NULL *as a whole*, so DISTINCT would count
     # it and the NULL arm would count it again. Measured, not theorized: the
     # NULL tests came back +1 per NULL row before this FILTER.
-    return (
-        func.count(distinct(tuple_(day_col, hash_col))).filter(hash_col.isnot(None))
-        + null_arm
-    )
+    return func.count(distinct(key)).filter(hash_col.isnot(None)) + null_arm
 
 
 # ============================================================
