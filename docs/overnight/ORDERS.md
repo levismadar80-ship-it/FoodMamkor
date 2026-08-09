@@ -292,6 +292,53 @@ model; a session that merges and moves on has not implemented it.
 **Required (the only two contexts `protect-staging` gates on):**
 `CI gate (required)` · `Deploy gate (required)`.
 
+#### `unstable` is not `blocked` — read the field before you hold a merge
+
+GitHub already computes this distinction and hands it to you in
+`mergeable_state`. Use it instead of eyeballing a wall of red check marks:
+
+| `mergeable_state` | Means | What you do |
+|---|---|---|
+| `blocked` | **A required check is failing or missing.** | Do not merge. This is the only value that means "not yet". |
+| `unstable` | Mergeable. One or more **non-required** checks are red. | Merge, once the bar below is met. |
+| `behind` | Not blocked — the branch is behind the base. | `git fetch origin staging && git merge origin/staging`, push, let CI re-run (workflow rule 25). |
+| `clean` | Nothing red at all. | Merge. |
+| `dirty` | Real merge conflict. | Resolve it (§ resolve-conflicts skill), push. |
+
+**The bar, stated positively.** A PR is merge-ready when **both** hold:
+
+1. **Both required gates are `success`, and the jobs that matter actually
+   ran** — `conclusion: success`, not `skipped`. A skipped leg passes the
+   aggregator, so this half is what keeps the rule from being satisfied by a
+   green mask (see *"A green that came from a skip is not a pass"* below).
+2. **Every red non-required check has a named cause with evidence**, written
+   on the PR.
+
+**"Documented" is not "known".** A named cause states *which* fault, *what*
+evidence, and *whose* it is. `"it's the known Cloudinary thing"` is not a
+documented cause — it is the exact posture §3.2 retired, and it reads
+identically whether or not anyone checked. If you cannot name the cause, the
+red is undocumented and you do not merge past it; you investigate or you say
+plainly that it is unexplained.
+
+**How to actually establish that a red is inherited — run a control.**
+Arguing from mechanism ("a lockfile cannot reach a Cloudinary 401") is only as
+good as your imagination. The measurement is cheaper: find a **contemporaneous
+run on an unrelated branch** and compare the failure sets.
+
+> _Worked example, 09/08 (PR #2733, lockfile-only)._ E2E failed 13 specs. An
+> unrelated branch five minutes later failed **33** — a strict **superset**,
+> with nothing failing on the lockfile branch that passed on the other. The
+> fingerprint was tighter still: `register-mobile` reported the **identical
+> 60,379-pixel diff on both heads**. Diffs caused by a diff do not agree to
+> the pixel across unrelated branches; a shared missing asset does. That is a
+> measurement, and it is what "documented" means here.
+
+**This licenses merging past an *inherited or external* red — never your own.**
+§3.3 below is unchanged and takes precedence: if a non-required gate is red
+*because of what you merged*, you fix it in the same stretch. This rule is for
+reds you walked into, not reds you created.
+
 **Does not block, as of 2026-08-08 — verify before relying on any of these:**
 
 | Signal | Status |
