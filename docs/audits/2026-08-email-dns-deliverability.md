@@ -188,9 +188,22 @@ TTL:        3600
 ```
 Host/Name:  mehamakor.online._report._dmarc
 Type:       TXT
-Value:      v=DMARC1
+Value:      v=DMARC1;
 TTL:        3600
 ```
+
+> **הרשומה הזאת אומתה אמפירית, לא רק מול ה-RFC** — היא ההמלצה המסוכנת ביותר כאן
+> (ספיר מדביקה אותה ל-registrar חי), ולכן היא לא נשענת על קריאת תקן בלבד:
+>
+> | נמדד 09/08 | תוצאה |
+> |---|---|
+> | `bbc.co.uk._report._dmarc.dmarc.service.gov.uk` | `v=DMARC1;` |
+> | `*._report._dmarc.dmarc.postmarkapp.com` | `v=DMARC1;` (צורת wildcard שספקי DMARC מפרסמים) |
+>
+> המקרה של bbc.co.uk הוא **בדיוק** מבנה התווית שנקבע למעלה —
+> `<דומיין-המדיניות>._report._dmarc.<דומיין-המדווח>` — על זוג דומיינים אמיתי
+> בייצור. **הערך נכתב עם `;` בסוף** כי כך שתי הרשומות האמיתיות נראות; `v=DMARC1`
+> בלי הנקודה-פסיק תקף גם הוא לפי התקן, אבל אין סיבה לסטות ממה שנמדד.
 
 > שם המארח המלא יוצא `mehamakor.online._report._dmarc.mehamakor.co.il`. ב-Cloudflare
 > מזינים רק את החלק שלפני הדומיין, כפי שכתוב.
