@@ -159,11 +159,25 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
 // gated, #1327) + color-contrast (still ignored) + landmark (moderate, not
 // gated), so they pass the gate. /contact graduated in the ratchet — its label
 // crit (#1322) + link-in-text (#1327) are fixed (post-merge axe = 0).
-// Routes still red-gated by an open fix, added once it lands:
-//   /events  — `aria-required-children` critical (MEH-858 tablist follow-up)
-//   /search  — `document-title` serious (not in GATE_IGNORE_RULES)
+//
+// MEH-1957 — /events and /search GRADUATE into the gate. Both were held out by
+// a named open defect; both defects are gone, measured before adding them
+// rather than assumed:
+//   /events  — held out for `aria-required-children` (critical, MEH-858
+//              tablist follow-up). Scanned populated (3 seeded events, 4 tabs,
+//              2 tablists rendered): 0 violations, mobile + desktop. Scanning
+//              it EMPTY would have proved nothing — an unrendered tablist
+//              cannot trip a children rule — so the seeded state is the one
+//              that counts.
+//   /search  — held out for `document-title` (serious). The route now titles
+//              itself «תוצאות חיפוש | מהמקור»: 0 violations, both viewports.
+// Both were re-verified red-by-construction (inject the old defect → the gate
+// fails; remove it → passes), so this is a graduation on evidence and not a
+// lifted quarantine. Runs pasted in the PR body.
 const EXTENDED_PUBLIC_ROUTES = [
   "/contact",
+  "/events",
+  "/search",
   "/about",
   "/about/process",
   "/about/for-businesses",
