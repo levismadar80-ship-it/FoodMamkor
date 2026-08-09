@@ -352,6 +352,7 @@ function LoginPageBody() {
           {t("no_account")}{" "}
           <Link
             href="/register"
+            data-testid="login-register-link"
             className="font-medium text-accent underline underline-offset-4 decoration-accent/50 hover:decoration-accent transition"
           >
             {t("register_cta")}
