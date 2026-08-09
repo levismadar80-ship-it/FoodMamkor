@@ -773,9 +773,7 @@ def _count_in_window(
     from the hash itself (a secret rotation resets uniques; acceptable, rare).
     """
     if window.distinct_col is not None:
-        day = func.date(
-            func.timezone("Asia/Jerusalem", func.timezone("UTC", time_col))
-        )
+        day = func.date(func.timezone("Asia/Jerusalem", func.timezone("UTC", time_col)))
         # FILTER keeps NULL-hash rows out of the tuple count: unlike a bare
         # column, a (day, NULL) tuple is NOT NULL as a whole, so without the
         # filter every NULL row would be counted twice — once as a tuple and
