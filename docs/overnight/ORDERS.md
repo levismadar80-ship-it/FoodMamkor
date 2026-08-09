@@ -245,6 +245,55 @@ or *cards*, and ORDERS is the file a sweep session actually reads.
 
 ---
 
+### 1.7 · A DoD never justifies weakening a security control
+
+**Note the conflict, satisfy the intent another way.** A card's Definition of
+Done is a description of the desired end state, not a warrant to remove a
+guardrail standing between you and it. When the two collide, the guardrail wins
+and the DoD item is reported blocked — it is never quietly unblocked by lowering
+the control.
+
+This is workflow rule 32 (*CC adds constraints, never removes one*) applied at
+the moment it actually bites. Rule 32 is easy to honour in the abstract; the
+pressure arrives disguised as diligence, when the only thing between you and a
+green checkbox is a one-line allowlist edit that you could plausibly justify.
+
+**The move is to attack the intent, not the control.** Almost every guardrail
+blocks a *mechanism*, not a *goal*, and the goal usually has a second route:
+
+| Blocked mechanism | Route that satisfies the same intent |
+|---|---|
+| `WebFetch` on a non-allowlisted host | `WebSearch` — returns the page's content as snippets without fetching the host |
+| `git reset --hard` (denied at L2) | `git checkout -B <branch> origin/<branch>` — the house pattern, `security.md` |
+| applying an Alembic migration (§1.4) | write the revision **file**; verification of `upgrade`/`downgrade` is Sapir's |
+| reading a `.env` for a value | read the variable's *name* from `config.py` and state that the value is unavailable |
+
+**Proven 2026-08-09 (MEH-1981 §0).** The card required grounding an
+Amendment-13 audit in the Privacy Protection Authority's own guidance on
+`gov.il` — a host `check-webfetch-allowlist.sh` denies. The allowlist was left
+untouched and the requirement was met via `WebSearch` with
+`allowed_domains: ["gov.il"]`, which surfaced the Authority's wording without
+fetching the host. The limitation (snippets, not fetched primary text) was
+written into the deliverable rather than papered over.
+
+**Two failure modes this closes, both of which look responsible from inside:**
+
+1. **Widening the control "just for this run."** There is no such thing — the
+   allowlist has no scope, and the next session inherits the wider one with no
+   idea why it widened. Per rule 32's corollary, most of the guardrail layer is
+   hard-denied to CC in *both* directions anyway, so the honest response to a
+   deny is a proposal to Sapir, not an edit.
+2. **Silently dropping the DoD item.** The inverse error, and the more common
+   one. A requirement that cannot be met is a *reported* blocker with the
+   control named — never an unticked box nobody mentions.
+
+**State the conflict in the deliverable, every time.** "Blocked by <control>;
+satisfied instead via <route>; residual limitation: <what the route cannot
+give you>" is the whole shape. A reader who cannot see which control fired
+cannot judge whether the substitute was good enough.
+
+---
+
 ## 2 · Ownership protocol
 
 **CLAIM = BRANCH.** Pushing `feature/meh-<N>-<slug>` to `origin` is the claim.
@@ -362,6 +411,48 @@ works"* (exec §9).
 
    The grep is cheap and the failure is not. One command, before the diff is
    final: `grep -rn "<TableOrColumnName>" --include=*.py --include=*.js .`
+
+### 3.0 · Every probe runs a known-answer control BEFORE its output is believed
+
+**A probe is any throwaway thing you build to find something out** — a grep, a
+`python3 -` one-liner, a DNS lookup, a route inventory, an `ast` walk, a browser
+sampler. It is *not* the deliverable, which is exactly why nobody tests it, and
+why its output gets quoted into a report as fact.
+
+**The rule:** before you believe a single number a probe produces, run it against
+at least one input **whose answer you already know**, and check it returns that
+answer. If it does not, the probe is broken and everything it has already told
+you is withdrawn — including the parts that looked reasonable.
+
+**A self-test that passes on a broken parser is not a self-test.** This is the
+trap, and it is not hypothetical. The control has to be capable of *failing* on
+the specific defect you are worried about; a fixture you invented to match the
+shape you assumed will happily confirm the assumption. `testing.md` states the
+general form ("anchor at least one case to a real file from this repo") — §3.0
+is the same rule for the ad-hoc tooling that never reaches a test file.
+
+**Two liars in one session, 2026-08-09, both caught only by a known-answer run:**
+
+| Probe | What it reported | Why it was wrong |
+|---|---|---|
+| DNS/SPF checker | `mehamakor.online` has **no SPF record** | The control — `google.com TXT`, which certainly has one — also returned **zero** records. UDP truncation on large TXT responses. "No SPF" and "the resolver is broken" are the **same output**. |
+| Route/auth inventory | **74 public routes, 34 unauthenticated** | The auth-dependency list was *guessed* rather than read from the source, so every owner-dashboard route was classed public. The probe's own self-test passed — it was built from the same wrong assumption. |
+
+**What they share** is the shape to watch for: a probe whose failure mode
+produces a **plausible, alarming answer** rather than an error. Zero records
+looks like a finding. A high public-route count looks like a finding. Neither
+announced itself, and both were one step from a Linear card prescribing a fix
+for a problem that did not exist.
+
+**Applies symmetrically to reds and greens.** A red from an unvalidated probe is
+the same error with the opposite sign — `testing.md` records the malformed `grep`
+that reported every Tailwind class missing from the built CSS, including one used
+site-wide. **And retract out loud:** a withdrawn finding is evidence the probe was
+checked; a silently-dropped one is indistinguishable from never having looked.
+
+**The one question, before quoting any probe:** *what would this have printed if
+it were broken — and is that different from what it just printed?* If the answers
+match, you have measured nothing.
 
 ### 3.1 · Merge, then verify — immediately
 
