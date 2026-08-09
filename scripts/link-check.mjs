@@ -418,7 +418,7 @@ while (queue.length) {
 // Cross-page anchors: only checkable against a page we actually fetched.
 // Index pathname -> first crawled result WITH a body, built once. The first
 // version scanned the whole map per anchor (O(n·m) at a 2000-page ceiling);
-// flagged by the CI reviewer on PR #2728 and cheap to remove.
+// cheap to remove.
 const pathIndex = new Map();
 for (const [key, value] of seen) {
   if (!value.body) continue;
