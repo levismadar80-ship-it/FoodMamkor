@@ -193,6 +193,21 @@ describe("Header", () => {
       expect(screen.queryByRole("link", { name: "הרשמה" })).toBeNull();
     });
 
+    it("still shows the register link on a producer slug starting with 'register'", () => {
+      // MEH-1971 — the discriminating case. `lib/slug.js` reserves the exact
+      // word `register`, not the prefix, so `register-cafe` is a legal producer
+      // slug and a legal `/[slug]` match. Under a bare
+      // `startsWith("/register")` the הרשמה link disappears from that
+      // business's own page, which has nothing to do with registration.
+      // The two tests above pass on BOTH implementations; only this one
+      // separates them.
+      pathnameRef.current = "/register-cafe";
+      render(<Header />);
+      const reg = screen.getAllByRole("link", { name: "הרשמה" });
+      expect(reg.length).toBeGreaterThan(0);
+      expect(reg[0].getAttribute("href")).toBe("/register");
+    });
+
     it("still shows login on /register (the two gates are independent)", () => {
       pathnameRef.current = "/register";
       render(<Header />);
