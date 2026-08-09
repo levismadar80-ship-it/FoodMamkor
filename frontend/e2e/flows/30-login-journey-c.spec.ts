@@ -251,17 +251,30 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
 
     await expect(page.getByTestId("login-error")).toContainText("אימייל או סיסמה שגויים");
 
-    // Let any navigation the app was going to make actually happen before
-    // judging. This is a CONDITION, not a fixed pause — after a failed login
-    // nothing is in flight, so it settles immediately; with a stray push it
-    // settles on the new page. Reading the log synchronously here is what made
-    // the first version of this assertion order-dependent: it passed on one
-    // project and failed on the other against the SAME breakage.
-    await page.waitForLoadState("networkidle").catch(() => {});
+    // Give a stray navigation an explicit chance to happen, then assert it did
+    // not. Inverted wait: with the bug this resolves the moment the push lands;
+    // without it, it times out and reports false. Deterministic in both worlds
+    // and — the part that matters — it depends on NO network condition.
+    //
+    // It previously read `waitForLoadState("networkidle")`, which was wrong in a
+    // way that only CI could show: on the runner every Cloudinary image 401s and
+    // the optimizer retries, so the network need never go idle, and an unbounded
+    // wait burns the whole test timeout. Locally Cloudinary resolves and it
+    // settled instantly — green here, red there, for a reason that has nothing
+    // to do with what this test is about.
+    const strayed = await page
+      .waitForURL((u) => new URL(u).pathname.replace(/^\/he(?=\/|$)/, "") !== "/login", {
+        timeout: 3_000,
+      })
+      .then(() => true)
+      .catch(() => false);
 
     await expectPath(page, "/login");
-    const strayed = navigatedTo.filter((p) => p.replace(/^\/he(?=\/|$)/, "") !== "/login");
-    expect(strayed, "a failed login must not navigate anywhere").toEqual([]);
+    expect(strayed, "a failed login must not navigate anywhere").toBe(false);
+    expect(
+      navigatedTo.filter((p) => p.replace(/^\/he(?=\/|$)/, "") !== "/login"),
+      "the navigation log corroborates it",
+    ).toEqual([]);
     // And no session was created. This is the assertion that discriminates a
     // real rejection from a UI that merely renders a red string.
     expect(await page.evaluate(() => window.localStorage.getItem("token"))).toBeNull();
