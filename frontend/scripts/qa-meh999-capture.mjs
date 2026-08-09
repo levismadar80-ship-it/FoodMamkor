@@ -19,10 +19,15 @@
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.QA_BASE || "http://127.0.0.1:3000";
+// Overrides come from argv, never from the environment: `Env drift` (MEH-491)
+// blocks on any env var read in code that is absent from a .env.example, and
+// adding one is banned outright (regression rule 8). A capture script has no
+// business owning an env var anyway.
+//   node qa-meh999-capture.mjs [baseUrl] [outDir]
+const BASE = process.argv[2] || "http://127.0.0.1:3000";
+const OUT = process.argv[3] || "/tmp/meh999";
 const EMAIL = "ux-audit-meh999@example.com";
 const PASSWORD = "DogfoodAudit2026!x";
-const OUT = process.env.QA_OUT || "/tmp/meh999";
 
 // 390x844 is the card's primary viewport. Pixel-class is the second per ORDERS 3.3;
 // this run proves the path on the primary one first.
