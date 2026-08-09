@@ -741,6 +741,24 @@ Three points that are easy to lose and are worth the duplication:
   from this sandbox — say *"deferred to user (CC sandbox limitation)"*.
 - **Never run `playwright install`.** Chromium is preinstalled at
   `/opt/pw-browsers`.
+- **`networkidle` is BANNED in specs** (MEH-215). It couples the test outcome to
+  network conditions the test is not about: on the runner every Cloudinary image
+  401s and the Next image optimizer retries, so the network may never go idle and
+  an unbounded `waitForLoadState("networkidle")` burns the whole test timeout.
+  Locally Cloudinary resolves and it settles instantly — a latent
+  **green-local/red-CI** in every occurrence. Replacement, when you need to prove
+  something did *not* happen: **await the unwanted event with a timeout and
+  require the timeout**.
+  ```js
+  const strayed = await page
+    .waitForURL((u) => new URL(u).pathname !== "/login", { timeout: 3_000 })
+    .then(() => true).catch(() => false);
+  expect(strayed).toBe(false);
+  ```
+  With the bug it resolves the moment the event lands; without it, it reports
+  `false` after the bound. Deterministic in both worlds, network-independent.
+  Full rule: [.claude/rules/testing.md](../../.claude/rules/testing.md) §
+  *`networkidle` is banned in specs*.
 - **No Sentry or Vercel MCP tools exist** in harness sessions. Do not plan around
   them.
 - **RTL: logical properties only** — `start-` / `end-` / `ms-` / `me-` / `ps-` /
