@@ -12,6 +12,12 @@
  *           frontend/scripts/qa-meh999-walkthrough2.mjs (chunk 2, tasks 4-6).
  * History:  MEH-999 (creation).
  *
+ * NOTE on the filenames this writes: screenshots are captured as .png, and
+ * scripts/compress-qa-screenshots.mjs converts them to .webp before commit (the
+ * 2 MB qa-artifacts gate). The committed report.json therefore carries .webp
+ * paths while a fresh run emits .png — rewrite the extensions when committing,
+ * or the report points at files that are not in the directory.
+ *
  *   usage: node qa-meh999-walkthrough3.mjs [baseUrl] [outDir] <ownerPassword> <auditPassword> [chromePath]
  *   ownerPassword = demo-owner@example.com (approved business, seeded reviews)
  *   auditPassword = ux-audit-meh999@example.com (unapproved: pending_whatsapp)
