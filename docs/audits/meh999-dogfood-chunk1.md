@@ -82,8 +82,16 @@ element beneath the banner    : DIV «לפני שמתחילים / מה כדאי 
 
 So the banner covers the **preparation checklist** — the block whose entire job is
 telling a first-time owner what to have ready. Visible in
-`s1-banner-viewport.png`: the CTA «איך מתחיל התהליך עובד ←» is clipped at the
-banner's top edge.
+`qa-artifacts/MEH-999-chunk1/s1-banner-viewport.webp`: the CTA «איך מתחיל התהליך
+עובד ←» is clipped at the banner's top edge.
+
+> **One screenshot, not two.** The task-1 viewport capture and the S1 probe capture
+> were **byte-identical** (`md5 c3a2bae1…`) — both photograph `/register/producer`
+> at 390×844 with the banner up. The duplicate was removed rather than shipped
+> under a second name: two filenames imply two pieces of evidence, and a reader
+> counting captures would have over-credited the record. **The task-1 frame and the
+> S1 frame are the same frame**, which is itself the reason the S1 occlusion is
+> visible in the task-1 evidence at all.
 
 **NOT settled — whether it overlaps the BottomNav, which is S1's actual claim.**
 The probe reports `overlapsBottomNav: false`, and **that result must not be used.**
