@@ -408,7 +408,19 @@ quarantined.
 
 # Session s8-r9k3mt (2026-08-09, continuous drain)
 
-## PARKED: MEH-160 — view dedupe. **Scope, not blocker. PR #2721 open as DRAFT.**
+## ~~PARKED: MEH-160 — view dedupe~~ · **UNPARKED AND FINISHED 09/08 (s9). PR #2721.**
+
+> **Resolved.** All seven readers of `producer_page_views` now dedupe through one
+> expression in `services/analytics.py`; the CI red is closed; both Sapir-gated
+> questions are drafted on the card with the lexicon-safe default implemented, so
+> neither blocks. A different-model review found one more partial conversion — the
+> admin reader deduped cross-producer while its comment claimed otherwise — fixed
+> with `scope_col` plus the test that pins it. Full account: `session-s9-v3xq8w.md`.
+>
+> The park entry below is kept verbatim as the record of what was known at park time.
+
+### Original park entry (09/08, s8)
+
 
 **Failure class: NOT transient, NOT permanent — scope.** The mechanism works and is
 verified; what is unfinished is its blast radius. A fresh session finishes it from
