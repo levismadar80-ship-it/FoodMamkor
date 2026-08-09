@@ -28,7 +28,7 @@
       "replyBoxOpens": true,
       "afterSubmit": null,
       "tapsFromOverview": 3,
-      "shot": "t7-reply-review.png"
+      "shot": "t7-reply-review.webp"
     },
     "dashboardStats": {
       "affordancesOnOverview": 1,
@@ -46,7 +46,7 @@
       },
       "insightsUrl": "http://127.0.0.1:3000/producer/dashboard/insights",
       "emptyStateText": "סקירה\nעריכה\nתובנות\nכלים\nצפייה בדף\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nצפיות בפרופיל\ni\n\n1\n/\n1\n/\n1\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nהופעות בחיפוש\ni\n\n0\n/\n0\n/\n0\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nלחיצות וואטסאפ\ni\n\n0\n/\n0\n/\n0\n7 ימים / ב-30 הימים האחרונים / סה״כ\n\nקליקים ליצירת קשר (בלי וואטסאפ)\ni\n\n0",
-      "shot": "t8-insights.png"
+      "shot": "t8-insights.webp"
     },
     "editBusinessDetails": {
       "url": "http://127.0.0.1:3000/producer/dashboard/edit",
@@ -76,7 +76,7 @@
         "לא ידוע"
       ],
       "taglineFieldFound": false,
-      "shot": "t9-edit-save.png"
+      "shot": "t9-edit-save.webp"
     },
     "vacationMode": {
       "affordancesOnOverview": 4,
@@ -106,7 +106,7 @@
       "afterTapUrl": "http://127.0.0.1:3000/producer/dashboard",
       "dateInputRevealed": 1,
       "visibleCopy": null,
-      "shot": "t10-vacation.png"
+      "shot": "t10-vacation.webp"
     },
     "recipeCreate": {
       "listUrl": "http://127.0.0.1:3000/producer/dashboard/recipes",
@@ -115,14 +115,14 @@
       "formInputs": 9,
       "formOpened": true,
       "moderationCopyOnForm": null,
-      "shotForm": "recipeCreate-form.png",
+      "shotForm": "recipeCreate-form.webp",
       "submitPresent": true,
       "afterSubmitUrl": "http://127.0.0.1:3000/producer/dashboard/recipes",
       "afterSubmitCopy": "המתכון נשלח לאישור",
       "validationErrors": [
         "מחיקה"
       ],
-      "shotAfterSubmit": "recipeCreate-after-submit.png"
+      "shotAfterSubmit": "recipeCreate-after-submit.webp"
     },
     "eventCreate": {
       "listUrl": "http://127.0.0.1:3000/producer/dashboard/events",
@@ -131,12 +131,12 @@
       "formInputs": 12,
       "formOpened": true,
       "moderationCopyOnForm": null,
-      "shotForm": "eventCreate-form.png",
+      "shotForm": "eventCreate-form.webp",
       "submitPresent": true,
       "afterSubmitUrl": "http://127.0.0.1:3000/producer/dashboard/events/new",
       "afterSubmitCopy": "האירוע נוצר בהצלחה\n\nהאירוע יוצג לציבור לאחר אישור העסק\n\nחזרה לניהול העסק",
       "validationErrors": [],
-      "shotAfterSubmit": "eventCreate-after-submit.png"
+      "shotAfterSubmit": "eventCreate-after-submit.webp"
     }
   }
 }
