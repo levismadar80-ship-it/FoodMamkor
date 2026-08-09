@@ -54,7 +54,7 @@ client מינימלי ב-Python נטו.
 
 | מה | ערך | מקור |
 |---|---|---|
-| ספק | **Resend, HTTP API** (לא SMTP — Railway חוסם 25/465/587) | `backend/app/services/email.py:1-5` · `resend.Emails.send` ב-`:159` |
+| ספק | **Resend, HTTP API** (לא SMTP — Railway חוסם 25/465/587) | `backend/app/services/email.py:1-5` · `resend.Emails.send` ב-`:161` |
 | כתובת שולח | `מהמקור <noreply@mehamakor.online>` | `backend/app/config.py:81` |
 | ערך production מתועד | זהה — `@mehamakor.online` | `docs/DEPLOYMENT.md:1206` (וגם `:143`) |
 
@@ -182,6 +182,21 @@ Type:       TXT
 Value:      v=DMARC1; p=none; rua=mailto:dmarc@mehamakor.co.il; fo=1
 TTL:        3600
 ```
+
+> ### ⚠️ **ערכי (Edit) את הרשומה הקיימת — אל תוסיפי אחת חדשה לצידה**
+>
+> ב-`_dmarc.mehamakor.online` **כבר יושבת רשומת DMARC** (`v=DMARC1; p=none;
+> rua=mailto:dmarc@mehamakor.online` — נמדדה 09/08). הפעולה כאן היא **החלפת
+> הערך שלה**, לא הוספה.
+>
+> **למה זה קריטי:** לפי RFC 7489 §6.6.3, אם שם מחזיק **יותר מרשומת DMARC אחת**,
+> המקבל מתייחס לזה **כאילו אין אף רשומה**. כלומר "Add record" — פעולת ברירת
+> המחדל בכל ממשק DNS — **מבטלת את ה-DMARC לגמרי** במקום לתקן אותו.
+>
+> והכשל **שקט**: SPF ו-DKIM ימשיכו לעבור, שום דבר שעובד היום לא יישבר, ואף
+> הודעת שגיאה לא תופיע. הסימן היחיד יהיה שהדוחות — כל מטרת התיקון — פשוט לא
+> יגיעו, בדיוק כמו לפניו. זו אותה מחלקה של F1 עצמו: מנגנון שנראה מוגדר ואינו
+> פועל.
 
 **רשומה 2 — הרשאת הדיווח החוצה-דומיין (Cloudflare, `mehamakor.co.il`):**
 
