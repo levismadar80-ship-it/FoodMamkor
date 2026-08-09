@@ -14,11 +14,12 @@ import AxeBuilder from "@axe-core/playwright";
 import { existsSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:3000";
-// The CC sandbox ships Chromium at a fixed path and Playwright cannot find it;
-// anywhere else, omitting executablePath lets Playwright use its own download.
-// `undefined` here means "use the bundled binary", so this runs on any machine.
-const CHROME = process.env.QA_CHROME_PATH
-  ?? (existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined);
+// The CC sandbox ships Chromium at a fixed path Playwright cannot discover on
+// its own; everywhere else `undefined` means "use the bundled binary", so this
+// runs unmodified on any machine. Deliberately NOT an env var: a new one has to
+// be declared in .env.example and signed off (regression rule 8), and this
+// needs no configuration to be correct.
+const CHROME = existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined;
 
 const scan = async (page) => {
   const r = await new AxeBuilder({ page })
