@@ -69,12 +69,55 @@ Two are structural:
 6. **MEH-1189** — "חוות הגליל" עדיין מסווגת שגוי (אומת בשני מסמכי יולי): לתקן בפאנל
    האדמין? והאם `seed_demo_producers.py --reset` הורץ אי-פעם מול prod?
 
-### 1.4 · Chunks 5–7 — dispatched, results pending at write time
+### 1.4 · Chunks 5–10 — ran, and their per-chunk tables are NOT claimable
 
-54 cards (MEH-1681…MEH-1908 by updated-at). Their briefs carry the 09/08 amendments
-plus the three chunk-specific rulings: MEH-225 and MEH-130/125 are **Sapir planning
-cards the groom flags, never builds**; MEH-1736 + MEH-1949 + MEH-1615 are **one root
-family** (branch-name auto-link vs the branch-name gate) folded into a single fix.
+54+ cards (MEH-1681…MEH-1908 by updated-at). Their briefs carried the 09/08
+amendments plus the three chunk-specific rulings: MEH-225 and MEH-130/125 are
+**Sapir planning cards the groom flags, never builds**; MEH-1736 + MEH-1949 +
+MEH-1615 are **one root family** (branch-name auto-link vs the branch-name gate)
+folded into a single fix.
+
+> **These chunks completed and their verdicts were applied to Linear, but the
+> per-chunk verdict tables were never transcribed into this log and the agent
+> outputs did not survive the session's context boundary.** So the counts in the
+> table above cover **chunks 1–4 only (72 cards)** and that is the number this
+> log can support. The later chunks' effect is real but is now legible only from
+> Linear itself — the card descriptions, labels and states they wrote — not from
+> a report anyone can read here.
+>
+> **That is a process failure, not a rounding error**, and it is the same class
+> the rules file names for artifacts: a result whose provenance is unrecoverable
+> cannot be ratified, only re-derived. The fix is mechanical and belongs in the
+> next groom: **write each chunk's verdict row to this log as the chunk returns**,
+> not at the end of the sweep. A count held only in an agent's return value is one
+> compaction away from not existing.
+
+### 1.5 · The sweep is NOT complete — measured 2026-08-09T12:5xZ
+
+A fresh three-state `list_issues` over team Mehamakor returns:
+
+| State | Cards |
+|---|---|
+| In Progress | 12 |
+| Todo | 20 |
+| Backlog | ~190 |
+
+Applying the Lane A / Lane B filters from `.claude/rules/workflow.md`
+(Lane A = `In Progress` **and** `cc-queue`; Lane B = `Todo`/`Backlog` minus
+`not-cc` · `post-launch` · `needs-sapir` · `blocked-needs-sapir`, minus the B2
+title markers `HIGH-RISK` · `RED` · `decision-first` · `SIGNAL-GATED` · `[מגירה]` ·
+`ספיר מריצה` · `ידני`):
+
+- **Lane A — 4 open:** MEH-1952, MEH-1960, MEH-999, MEH-1911.
+- **Lane B, `Todo` — 13 eligible:** MEH-1249, 1953, 1954, 1956, 1957, 1958, 1959,
+  1961, 1962, 1963, 1965, 1966, 1967.
+- **Lane B, `Backlog` — dozens more** (the orchestrator's standing figure of ~78
+  total eligible is consistent with this sweep; this log does not re-derive it
+  card-by-card).
+
+**So the drain goal's completion condition — "a fresh sweep shows zero eligible
+unclaimed cards" — is NOT met, and nothing in this session should be read as
+claiming it is.** The evidence for that is the sweep itself, printed above.
 
 ---
 
@@ -176,6 +219,56 @@ unfiltered 90-day search tells Sapir which.
 | #2715 | MEH-1951 | 11:2xZ | **MERGED** 11:24Z · card Done (real `Closes`) | closed |
 | #2714 | MEH-1950 | 11:30Z (staging sync) | auto-merge armed; both reviews cleared | merge notification |
 | — | MEH-1969 | — | card opened (ANSI strip follow-up — the fix exists on the 1951 branch, pushed after auto-merge fired) | queued |
+| #2720 | MEH-1955 | 12:0xZ | **MERGED** — `Disallow: /register` prefix-blocked `/register/producer`, which the sitemap submits at priority 0.7 | closed |
+| #2721 | MEH-160 | 12:1xZ | **DRAFT, blocked** — reviewer FAIL, 4 blockers (see §6) | Sapir / next stretch |
+| #2722 | — | 12:2xZ | **MERGED** — PARKED.md entry for MEH-160 | closed |
+| #2723 | MEH-1964 | 12:5xZ | open, non-draft; different-model review in flight | CI + reviewer |
+
+---
+
+## 6 · MEH-160 — located, wired, and then blocked by its own review
+
+`viewer_ip_hash` was being **written and never read**: every analytics counter
+used `func.count(model.id)`, so one visitor refreshing ten times counted ten
+times. The reader now exists (`producer_me.py`, `WindowFilter.distinct_col` →
+`COUNT(DISTINCT (day, hash))` on the ruled **24h** grain) with 8 passing tests,
+including the two that discriminate: the grain test (a 7-day window must not
+collapse to one count per visitor) and the NULL test (rows with no hash each
+count once — a naive `COUNT(DISTINCT)` collapses them all to one).
+
+**PR #2721 is a draft on purpose.** The independent review returned FAIL with four
+blockers, two of which need a ruling rather than code:
+
+1. `tests/test_analytics.py:305` fails against the new counting — the CI red.
+2. `weekly_trend` compares a **raw** `prev_7d_views` against a **deduped**
+   `last_7d`, so flat traffic reads as "down". Mixing the two grains in one ratio
+   is wrong in either direction; which one wins is a product call.
+3. `conversion_rate` can exceed 100% (returns 200% behind `clampPercent`) once the
+   denominator dedupes and the numerator does not.
+4. `profile_views_tooltip` states the **inverse** of the code in both locales, and
+   the MEH-1557 guard that was supposed to catch exactly this is one-directional.
+
+Also found, not blocking: `top_cities` stays raw, so a card can read `total: 1`
+beside `חיפה: 3`; and the code comment claiming the two paths "agree by
+construction" is false.
+
+## 7 · MEH-1964 — the Header had no signup entry at all
+
+`grep -rn 'href="/register"'` over `frontend/` returned **one** hit before this
+change: `LoginClient.jsx:354`. A visitor who had never registered had to open a
+login page she could not use. PR #2723 adds a quiet `הרשמה` link beside `כניסה` —
+deliberately a link and not a pill, because MEH-907 removed the header CTA pill on
+purpose and that decision stands.
+
+Both new assertions were shown failing by construction, and the second
+construction is the one worth recording: swapping `startsWith("/register")` for
+`=== "/register"` reds **only** the `/register/producer` test — the plain
+`/register` assertion still passes. A suite carrying only the obvious case would
+have signed off on the wizard bug.
+
+**Known limitation stated rather than widened:** the link is desktop-only
+(`hidden md:`), matching `LoginAccount`, so on mobile the only path to consumer
+registration is still `/login`. The ruling scoped this to the Header.
 
 ---
 
