@@ -169,6 +169,48 @@ export default function BottomNav() {
     return () => ro.disconnect();
   }, [activeRouteIndex]);
 
+  // MEH-1950: publish the pill's live clearance (viewport bottom → pill top =
+  // safe-area + 16px gutter + current pill height, so compact 56→48 tracking is
+  // automatic) to the `--bottom-nav-clearance` CSS var on <html> — the MEH-850
+  // `--cookie-banner-h` precedent, inverted. CookieBanner derives its bottom
+  // offset from this var instead of carrying a hardcoded twin of the pill
+  // geometry, so a nav-height change can never silently eat the 8px gap.
+  // Height 0 (md:hidden desktop) or no pill rendered (producer-detail gate) →
+  // var removed; consumers fall back to the static expanded-geometry value.
+  // Deps [pathname]: the pill mounts/unmounts on navigation (line ~220 gate),
+  // so re-grab the ref each route change.
+  useEffect(() => {
+    const root = document.documentElement;
+    const nav = navRef.current;
+    if (!nav) {
+      root.style.removeProperty("--bottom-nav-clearance");
+      return;
+    }
+    const publish = () => {
+      const rect = nav.getBoundingClientRect();
+      if (rect.height === 0) {
+        root.style.removeProperty("--bottom-nav-clearance");
+        return;
+      }
+      root.style.setProperty(
+        "--bottom-nav-clearance",
+        `${Math.round(window.innerHeight - rect.top)}px`
+      );
+    };
+    publish();
+    window.addEventListener("resize", publish);
+    let ro;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(publish);
+      ro.observe(nav);
+    }
+    return () => {
+      window.removeEventListener("resize", publish);
+      if (ro) ro.disconnect();
+      root.style.removeProperty("--bottom-nav-clearance");
+    };
+  }, [pathname]);
+
   // MEH-1014: the sheet always renders the pill expanded (it must sit above its
   // own sheet at full size), so the render-time compact flag folds in sheetOpen.
   const isCompact = compact && !sheetOpen;

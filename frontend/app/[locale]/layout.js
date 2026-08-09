@@ -274,7 +274,8 @@ export default async function LocaleLayout({ children, params }) {
       </head>
       {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
           NOTHING else, so the cookie banner — which floats in its own band
-          starting ABOVE that one (CookieBanner.jsx:68, bottom = safe-area+80px)
+          starting ABOVE that one (CookieBanner.jsx — MEH-1950: bottom derives
+          from --bottom-nav-clearance + 8px, ≈ safe-area+80px at default height)
           — covered whatever in-flow content sat at the end of the scroll. On
           /register/producer step 2 that was the «הבא» button: a WCAG 2.2 AA
           failure (SC 2.4.11, W3C failure F110), not a cosmetic one.
