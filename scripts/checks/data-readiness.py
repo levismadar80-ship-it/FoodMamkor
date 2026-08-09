@@ -65,6 +65,16 @@ AVAILABILITY_STATES = (
 # The card's definition of a launch-ready page.
 MIN_DESCRIPTION_CHARS = 100
 
+# The API caps `limit` at 100 (`maximum: 100` on GET /producers). Requesting
+# exactly the cap is therefore the most a single call can return — which means
+# a full page is indistinguishable from a truncated one, and every query has to
+# page to exhaustion rather than assume one call saw everything.
+PAGE_SIZE = 100
+
+# Fail loudly instead of spinning if the server ever ignores `offset` and keeps
+# answering full pages. 100 pages = 10,000 producers.
+MAX_PAGES = 100
+
 TIMEOUT_S = 25
 
 
@@ -83,6 +93,33 @@ def _get(base_url: str, path: str, **params: Any) -> Any:
 # ---------------------------------------------------------------- enumeration
 
 
+def _page_slugs(base_url: str, **params: Any) -> list[str]:
+    """Every slug matching ``params``, paged to exhaustion.
+
+    Both call sites go through here. They did not always: the default listing
+    paged and the per-availability-state queries did not, so any state holding
+    more than ``PAGE_SIZE`` producers was under-enumerated — and because the
+    shortfall then surfaced only as an unexplained count mismatch, the report
+    would have named the gap without naming its cause. One paged helper is the
+    fix; the inconsistency was the bug.
+    """
+    slugs: list[str] = []
+    offset = 0
+    for _ in range(MAX_PAGES):
+        page = _get(base_url, "/producers", limit=PAGE_SIZE, offset=offset, **params)
+        if not page:
+            return slugs
+        slugs.extend(p["slug"] for p in page)
+        if len(page) < PAGE_SIZE:
+            return slugs
+        offset += PAGE_SIZE
+    raise RuntimeError(
+        f"/producers still returning full pages after {MAX_PAGES} of them "
+        f"({params or 'default listing'}) — the server is likely ignoring `offset`. "
+        "Refusing to page forever; fix the query before trusting any count."
+    )
+
+
 def enumerate_slugs(base_url: str) -> tuple[list[str], list[str], int]:
     """Return (all_slugs, listing_only_slugs, count_endpoint_total).
 
@@ -91,22 +128,13 @@ def enumerate_slugs(base_url: str) -> tuple[list[str], list[str], int]:
     The difference is the set of approved businesses a visitor cannot browse
     to, and it is reported rather than merged away.
     """
-    listing: list[str] = []
-    offset = 0
-    while True:
-        page = _get(base_url, "/producers", limit=100, offset=offset)
-        if not page:
-            break
-        listing.extend(p["slug"] for p in page)
-        if len(page) < 100:
-            break
-        offset += 100
+    listing = _page_slugs(base_url)
 
     every = list(listing)
     for state in AVAILABILITY_STATES:
-        for p in _get(base_url, "/producers", limit=100, availability_state=state):
-            if p["slug"] not in every:
-                every.append(p["slug"])
+        for slug in _page_slugs(base_url, availability_state=state):
+            if slug not in every:
+                every.append(slug)
 
     total = int(_get(base_url, "/producers/count").get("count", 0))
     return every, listing, total
@@ -391,7 +419,10 @@ def self_test() -> int:
     check("short-description/launch-ready", all(s[k] for k in LAUNCH_READY_KEYS), False)
 
     # 4 — REAL payload. Anchors every predicate to the shape the API actually
-    #     serves, not to the shape assumed above.
+    #     serves, not to the shape assumed above. "Real" describes the SHAPE,
+    #     not the contents: galil-farm is a seed fixture, and its `phone`
+    #     ("050-1234567") is the placeholder from backend/seed_data.py verbatim.
+    #     No real owner's number is committed here.
     if not FIXTURE.is_file():
         failures.append(f"missing real-payload fixture: {FIXTURE}")
     else:
@@ -408,7 +439,38 @@ def self_test() -> int:
         check("real/description", s["description"], False)
         check("real/launch-ready", all(s[k] for k in LAUNCH_READY_KEYS), False)
 
-    # 5 — seed detection reads the real repo file, not a fixture of it.
+    # 5 — pagination, offline. The bug this replaced could not be reproduced
+    #     against production (5 producers, one page), so the only way to show
+    #     the fix discriminates is to serve it more than one page. A stub _get
+    #     stands in for the API; nothing here touches the network.
+    global _get  # noqa: PLW0603
+    real_get = _get
+    try:
+        def paged_get(_base, _path, **params):
+            if params.get("availability_state") == "empty":
+                return []
+            offset = params.get("offset", 0)
+            return [{"slug": f"p{i}"} for i in range(offset, min(offset + PAGE_SIZE, 250))]
+
+        _get = paged_get
+        check("paging/exhausts-all-pages", len(_page_slugs("x")), 250)
+        check("paging/empty-result", _page_slugs("x", availability_state="empty"), [])
+
+        # The old single-call form would have stopped at PAGE_SIZE. Asserting
+        # the count is >PAGE_SIZE is what makes this case discriminate: it goes
+        # red against the code this replaced, and green against the code here.
+        check("paging/beats-single-call", len(_page_slugs("x")) > PAGE_SIZE, True)
+
+        _get = lambda _b, _p, **kw: [{"slug": "same"} for _ in range(PAGE_SIZE)]  # noqa: E731
+        try:
+            _page_slugs("x")
+            failures.append("paging/runaway: expected RuntimeError, got none")
+        except RuntimeError:
+            pass
+    finally:
+        _get = real_get
+
+    # 6 — seed detection reads the real repo file, not a fixture of it.
     seeds = seed_slugs()
     for slug in ("galil-farm", "golan-cheese", "dana-sourdough", "tases-ferments", "teva-pure"):
         if slug not in seeds:
@@ -418,7 +480,7 @@ def self_test() -> int:
         print(f"self-test FAIL — {f}", file=sys.stderr)
     if failures:
         return 1
-    print("self-test OK — 3 synthetic cases + 1 real payload + seed detection")
+    print("self-test OK — 3 synthetic cases + 1 real payload + pagination + seed detection")
     return 0
 
 

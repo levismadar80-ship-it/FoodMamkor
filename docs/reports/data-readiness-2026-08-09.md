@@ -1,6 +1,6 @@
 # דוח מוכנות דטה ל-launch — 2026-08-09
 
-> נמדד מול `https://mehamakor.co.il/api` ב-2026-08-09 17:35 UTC.
+> נמדד מול `https://mehamakor.co.il/api` ב-2026-08-09 17:43 UTC.
 > קריאה בלבד — GET בלבד, אפס כתיבות. להרצה חוזרת:
 > `python scripts/checks/data-readiness.py`
 
