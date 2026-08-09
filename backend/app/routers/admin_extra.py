@@ -800,13 +800,20 @@ def get_dashboard(
         )
 
     # Top 10 cities across ALL producer page views (where city is set).
-    # Uses the same producer_page_views table as the per-producer dashboard —
-    # MEH-160: and therefore the same unit. One visitor per city per Israel
-    # calendar day, via the single dedupe expression in producer_me.py. The
-    # admin screen is a different surface, but "views" has to mean one thing
-    # in this codebase or the two screens quietly disagree.
+    # MEH-160: same unit as the per-producer dashboard — one visitor per
+    # business per Israel calendar day — via the single dedupe expression in
+    # services/analytics.py.
+    #
+    # `scope_col` is what makes that claim true, and it is not decoration.
+    # This query spans EVERY producer, so without the producer in the dedupe
+    # key one visitor who opened five Haifa businesses on one day would
+    # collapse to a single Haifa view — "distinct people per city", a
+    # different metric wearing the same label, and no longer the sum of the
+    # per-producer figures. An earlier version of this comment claimed "the
+    # same unit" while computing exactly that; caught in adversarial review.
     admin_city_views = unique_views_count(
-        day_col=israel_day_of(ProducerPageView.created_at)
+        israel_day_of(ProducerPageView.created_at),
+        scope_col=ProducerPageView.producer_id,
     )
     top_city_rows = (
         db.query(

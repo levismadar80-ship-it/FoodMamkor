@@ -230,7 +230,7 @@ class TestTheOtherThreeReaders:
         coin flip dressed as a guard.
         """
         rival = make_producer(db)
-        expr = unique_views_count(day_col=israel_day_of(ProducerPageView.created_at))
+        expr = unique_views_count(israel_day_of(ProducerPageView.created_at))
         score = (
             db.query(expr)
             .select_from(Producer)
@@ -297,3 +297,37 @@ class TestTheOtherThreeReaders:
         assert body["profile_views"]["last_30d"] == 1
         assert body["whatsapp_clicks"]["last_30d"] == 2
         assert body["conversion_rate"] == 200.0
+
+    def test_admin_top_cities_sums_per_producer_uniques(self, client, db):
+        """The admin reader spans EVERY producer, so its dedupe key needs the
+        producer in it.
+
+        One visitor, one city, one day, two DIFFERENT businesses. The admin
+        figure must be 2 — the sum of what each producer's own dashboard
+        shows — not 1.
+
+        DISCRIMINATION: without `scope_col` this returns 1. That version
+        computes "distinct people per city", which is a defensible metric but
+        a different one, and it silently stops being the sum of the
+        per-producer numbers. `docs/qa/manual-testing-matrix.md` had already
+        flagged the cross-producer scope of this reader as unasserted; this
+        closes it in the PR that converts the code path rather than leaving
+        the gap open behind a green suite.
+        """
+        admin = make_user(db, email="admin-cities@test.com", role="admin")
+        a, b = make_producer(db), make_producer(db)
+        for pid in (a.id, b.id):
+            db.add(
+                ProducerPageView(
+                    producer_id=pid, viewer_ip_hash="f" * 64, city="חיפה"
+                )
+            )
+        db.commit()
+
+        cities = {
+            row["city"]: row["count"]
+            for row in client.get(
+                "/admin/dashboard", headers=auth_header(admin)
+            ).json()["top_cities"]
+        }
+        assert cities["חיפה"] == 2
