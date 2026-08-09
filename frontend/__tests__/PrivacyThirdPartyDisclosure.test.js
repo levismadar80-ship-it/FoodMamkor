@@ -69,7 +69,25 @@ function readThirdPartyItems() {
 
 function readDisclosureStrings(file) {
   const data = JSON.parse(readFileSync(file, "utf8"));
-  return data?.privacy?.sections?.third_parties?.items ?? {};
+  const items = data?.privacy?.sections?.third_parties?.items;
+  // THROW rather than default to {}. The earlier `?? {}` made the orphan test
+  // vacuously green whenever this JSON path moved: an empty object yields an
+  // empty loop, `orphans` stays `[]`, and the assertion passes while the thing
+  // it guards has silently stopped existing. That is the two-causes-for-one-
+  // green shape, and a guard exhibiting it is worse than no guard, because it
+  // reports coverage it no longer has.
+  //
+  // The "renders a disclosure string" test would still have caught a moved
+  // path (every id lands in `missing`), so the suite was never silently green
+  // overall — but the orphan assertion on its own was decoration. Failing loud
+  // costs nothing here: the path either exists or the file is broken.
+  if (!items || typeof items !== "object") {
+    throw new Error(
+      `${file}: privacy.sections.third_parties.items is missing or not an object — ` +
+        `the message-file structure moved and this guard can no longer see it.`,
+    );
+  }
+  return items;
 }
 
 describe("privacy policy — third-party disclosure", () => {
