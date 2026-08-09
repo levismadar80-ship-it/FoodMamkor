@@ -9,6 +9,7 @@ import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -1048,7 +1049,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             type="date"
             label={t("producers.form.fields.vacation_until")}
             value={form.vacation_until}
-            min={new Date().toISOString().slice(0, 10)}
+            // MEH-1983: Israel's today, not UTC's — the server validates
+            // vacation_until against israel_today().
+            min={israelToday()}
             onChange={(e) => update("vacation_until", e.target.value)}
             dir="ltr"
           />
