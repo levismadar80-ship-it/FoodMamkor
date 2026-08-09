@@ -60,6 +60,10 @@ export default function PasswordInput({
   required = true,
   autoComplete = "new-password",
   onValidityChange,
+  // MEH-215: opt-in E2E handle (docs/E2E-LOCATORS.md — testid + test land in
+  // the same commit, never sprinkled). Undefined at the two call sites that
+  // don't pass it, so React omits the attribute and their DOM is unchanged.
+  testId,
 }) {
   // MEH-628: scoped translator for password-policy failure copy.
   const tValidation = useTranslations("auth.passwordValidation");
@@ -141,6 +145,7 @@ export default function PasswordInput({
       <div className="relative">
         <input
           id={inputId}
+          data-testid={testId}
           name={name}
           type={show ? "text" : "password"}
           value={value}
@@ -154,6 +159,7 @@ export default function PasswordInput({
         />
         <button
           type="button"
+          data-testid={testId ? `${testId}-toggle` : undefined}
           onClick={() => setShow((v) => !v)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-3"
           aria-label={show ? tForm("toggle_hide") : tForm("toggle_show")}
