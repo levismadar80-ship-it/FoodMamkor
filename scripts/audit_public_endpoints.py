@@ -63,7 +63,8 @@ AUTH_DEPS = {
 def _auth_deps_of(route) -> list[str]:
     """Every dependency callable name attached to this route, at any depth."""
     names = []
-    for dep in getattr(route, "dependant", None).dependencies if getattr(route, "dependant", None) else []:
+    dependant = getattr(route, "dependant", None)
+    for dep in (dependant.dependencies if dependant else []):
         stack = [dep]
         while stack:
             d = stack.pop()
@@ -136,6 +137,25 @@ def inventory() -> list[dict]:
         else:
             _collect(entry)
 
+    # A probe that returns nothing must SAY SO, not report a clean sheet.
+    #
+    # `_IncludedRouter` is a private FastAPI internal. If upstream renames it,
+    # every branch above falls through and `rows` comes back empty — and an
+    # empty inventory reads as "no public unlimited endpoints", the most
+    # reassuring answer this script can give, at the exact moment it knows
+    # nothing. The ratchet test would then fail with "these were deliberately
+    # unlimited and no longer are": true-sounding, and pointing at the wrong
+    # culprit entirely.
+    #
+    # Same defect class as a downed Postgres reported as a failing test suite.
+    # Raised by the CI reviewer on PR #2752.
+    if not rows:
+        raise RuntimeError(
+            "endpoint inventory is EMPTY — the probe is broken, not the app. "
+            "FastAPI's private `_IncludedRouter` name has most likely drifted; "
+            "re-derive the route-walking in inventory(). Do NOT read this as "
+            "'no exposed endpoints'."
+        )
     return sorted(rows, key=lambda r: (r["path"], r["method"]))
 
 
