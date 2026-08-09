@@ -14,18 +14,26 @@
  * 2. Default pill (56px → 72px clearance): banner bottom edge sits a fixed
  *    8px gap above the pill's top. No overlap.
  * 3. Simulated taller nav (pill forced to 96px height): the published
- *    `--bottom-nav-clearance` var tracks it (ResizeObserver), the banner
- *    moves up, gap stays 8px. Under the old hardcoded 80px offset this exact
- *    case overlapped by ~48px — this run is the discriminating one.
+ *    `--bottom-nav-clearance` var tracks it (ResizeObserver, debounced), the
+ *    banner moves up, gap stays 8px. Under the old hardcoded 80px offset this
+ *    exact case overlapped by 32px (pill top safe+112 vs banner bottom
+ *    safe+80) — this run is the discriminating one.
+ * 4. THE COMPACT CELL (review F1 — the dynamic case that actually occurs):
+ *    scroll down so the MEH-1014 minimize fires (pill 56→48). The var must
+ *    STAY at the expanded value and the banner must NOT move — publishes are
+ *    frozen while compact, so the fixed overlay never rides the scroll.
  *
- * Usage: node e2e/qa-meh1950-cookie-clearance.mjs [baseURL]
+ * Usage: node e2e/qa-meh1950-cookie-clearance.mjs [baseURL] [chromiumPath]
  *   (default http://localhost:3000; screenshots → ../qa-artifacts/MEH-1950/)
  */
 import { chromium, devices } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const BASE = process.argv[2] || "http://localhost:3000";
-const OUT = new URL("../../qa-artifacts/MEH-1950/", import.meta.url).pathname;
+// fileURLToPath, not .pathname — the raw pathname is /C:/… on Windows and the
+// repo's local-verification convention is Git Bash on Windows.
+const OUT = fileURLToPath(new URL("../../qa-artifacts/MEH-1950/", import.meta.url));
 mkdirSync(OUT, { recursive: true });
 
 const GAP = 8; // the design gap the derivation encodes
@@ -113,8 +121,9 @@ async function runDevice(browser, name, contextOpts, shotSuffix) {
       const nav = document.querySelector("nav[aria-label=\"ניווט מובייל\"]");
       nav.style.height = "96px";
     });
-    // ResizeObserver publish + style recalc settle.
-    await page.waitForTimeout(400);
+    // height transition (~250ms, re-firing RO per frame) + 150ms debounce
+    // past the LAST event + margin — 400ms raced the publish (measured).
+    await page.waitForTimeout(900);
     const m = await rects(page);
     const gap = m.nav.top - m.banner.bottom;
     report(
@@ -129,6 +138,33 @@ async function runDevice(browser, name, contextOpts, shotSuffix) {
     await page.evaluate(() => {
       document.querySelector("nav[aria-label=\"ניווט מובייל\"]").style.height = "";
     });
+    // restore animates back through the same transition+debounce window.
+    await page.waitForTimeout(900);
+  }
+
+  // 4 · Compact cell — scroll-minimize must NOT move the banner (review F1).
+  {
+    const before = await rects(page);
+    await page.evaluate(() => window.scrollTo(0, 600));
+    // minimize transition (≈250ms) + debounce window (150ms) + margin.
+    await page.waitForTimeout(700);
+    const m = await rects(page);
+    const pillCompact = m.nav.height < before.nav.height - 4;
+    const bannerStill =
+      Math.abs(m.banner.bottom - before.banner.bottom) <= 0.5;
+    const varFrozen = m.varValue === before.varValue;
+    report(
+      `${name}: compact pill — banner frozen, var frozen`,
+      pillCompact && bannerStill && varFrozen,
+      `pill ${before.nav.height}→${m.nav.height}px, bannerΔ=${(
+        m.banner.bottom - before.banner.bottom
+      ).toFixed(1)}px, var ${before.varValue}→${m.varValue}`
+    );
+    await page.screenshot({
+      path: `${OUT}compact-${shotSuffix}.png`,
+      fullPage: false,
+    });
+    await page.evaluate(() => window.scrollTo(0, 0));
   }
 
   await ctx.close();

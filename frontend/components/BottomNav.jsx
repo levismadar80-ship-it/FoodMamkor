@@ -169,16 +169,33 @@ export default function BottomNav() {
     return () => ro.disconnect();
   }, [activeRouteIndex]);
 
-  // MEH-1950: publish the pill's live clearance (viewport bottom → pill top =
-  // safe-area + 16px gutter + current pill height, so compact 56→48 tracking is
-  // automatic) to the `--bottom-nav-clearance` CSS var on <html> — the MEH-850
-  // `--cookie-banner-h` precedent, inverted. CookieBanner derives its bottom
-  // offset from this var instead of carrying a hardcoded twin of the pill
-  // geometry, so a nav-height change can never silently eat the 8px gap.
+  // MEH-1950: publish the pill's EXPANDED clearance (viewport bottom → pill
+  // top = safe-area + 16px gutter + expanded pill height) to the
+  // `--bottom-nav-clearance` CSS var on <html> — the MEH-850 `--cookie-banner-h`
+  // precedent, inverted. CookieBanner derives its bottom offset from this var
+  // instead of carrying a hardcoded twin of the pill geometry, so a change to
+  // the PILL'S OWN height can never silently eat the banner's 8px gap. (The
+  // four other bottom reserves — globals.css --bottom-inset 5rem, MapClient
+  // 96px, ChatWidget/BackToTop 88px — still carry static copies; MEH-1703's
+  // registry is their home. This var covers the banner↔pill pair only.)
+  //
+  // Two deliberate non-features (review F1): publishes are SKIPPED while the
+  // MEH-1014 compact state is active, and DEBOUNCED 150ms past the last
+  // ResizeObserver/resize event — otherwise the 56→48 scroll minimize (and the
+  // height transition back) would slide the fixed banner with every scroll
+  // direction change. The var freezes at the expanded value; compact only
+  // WIDENS the real gap, so no-overlap holds while the banner stays still.
+  //
   // Height 0 (md:hidden desktop) or no pill rendered (producer-detail gate) →
   // var removed; consumers fall back to the static expanded-geometry value.
-  // Deps [pathname]: the pill mounts/unmounts on navigation (line ~220 gate),
-  // so re-grab the ref each route change.
+  // Deps [pathname]: the pill mounts/unmounts on navigation (the
+  // isProducerDetail gate below), so re-grab the ref each route change.
+  // (Same expression as `isCompact` below — that const is declared after this
+  // effect, so depending on the raw state avoids a render-time TDZ read.)
+  const compactRef = useRef(false);
+  useEffect(() => {
+    compactRef.current = compact && !sheetOpen;
+  }, [compact, sheetOpen]);
   useEffect(() => {
     const root = document.documentElement;
     const nav = navRef.current;
@@ -187,6 +204,8 @@ export default function BottomNav() {
       return;
     }
     const publish = () => {
+      // Frozen while compact — the last expanded value keeps applying.
+      if (compactRef.current) return;
       const rect = nav.getBoundingClientRect();
       if (rect.height === 0) {
         root.style.removeProperty("--bottom-nav-clearance");
@@ -197,15 +216,21 @@ export default function BottomNav() {
         `${Math.round(window.innerHeight - rect.top)}px`
       );
     };
+    let debounceId;
+    const schedule = () => {
+      clearTimeout(debounceId);
+      debounceId = setTimeout(publish, 150);
+    };
     publish();
-    window.addEventListener("resize", publish);
+    window.addEventListener("resize", schedule);
     let ro;
     if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(publish);
+      ro = new ResizeObserver(schedule);
       ro.observe(nav);
     }
     return () => {
-      window.removeEventListener("resize", publish);
+      clearTimeout(debounceId);
+      window.removeEventListener("resize", schedule);
       if (ro) ro.disconnect();
       root.style.removeProperty("--bottom-nav-clearance");
     };
