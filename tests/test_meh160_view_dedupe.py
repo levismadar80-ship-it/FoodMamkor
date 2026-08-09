@@ -31,7 +31,8 @@ whole-window dedupe, which an earlier draft of this change shipped.
 
 from datetime import datetime, timedelta
 
-from app.models.models import ProducerPageView, ProducerWhatsAppClick
+from app.models.models import Producer, ProducerPageView, ProducerWhatsAppClick
+from app.services.analytics import israel_day_of, unique_views_count
 from conftest import auth_header, make_producer, make_user
 
 
@@ -161,9 +162,21 @@ class TestTheOtherThreeReaders:
     `producer_page_views` feeds SIX metrics on one dashboard screen. Round one
     deduped `profile_views`, `search_appearances` and `views_by_day` and left
     `top_cities`, `rank_in_city` and `weekly_trend`'s comparison arm counting
-    rows. Every one of these tests fails against that state, so together they
-    are the discrimination the first round did not have: the screen showed
-    visitors in one number and refreshes in the next.
+    rows — a screen showing visitors in one number and refreshes in the next.
+
+    WHICH RIVAL EACH TEST SEPARATES — measured, not assumed. This docstring
+    first claimed "every one of these fails against round 1", and running the
+    construction disproved it for two of the four. They are kept, re-aimed and
+    labelled, because a test that cannot fail against the thing you changed is
+    not evidence for the change (ORDERS §3 item 6):
+
+    | Test | Separates the shipped code from |
+    |---|---|
+    | `top_cities_counts_visitors_not_refreshes` | round 1 — returns 3, fails |
+    | `weekly_trend_is_stable_on_flat_repeat_traffic` | round 1 — reads "down", fails |
+    | `unique_views_count_scores_a_viewless_producer_zero` | round 2 written WITHOUT `row_id_col` — returns 1, fails |
+    | `conversion_rate_denominator_is_the_deduped_view_count` | the rejected option B (raw denominator) — returns 50.0, fails |
+    | `rank_in_city_still_ranks_on_real_views` | nothing — a refactor anchor, and says so |
     """
 
     def test_top_cities_counts_visitors_not_refreshes(self, client, db):
@@ -197,17 +210,42 @@ class TestTheOtherThreeReaders:
         assert cities["תל אביב"] == 1
         assert cities["חיפה"] == 2
 
-    def test_rank_in_city_scores_a_viewless_rival_zero(self, client, db):
-        """The LEFT JOIN trap, made explicit.
+    def test_unique_views_count_scores_a_viewless_producer_zero(self, db):
+        """The LEFT JOIN trap, asserted where it is observable.
 
-        A rival with no views at all still yields one all-NULL row under the
+        A producer with no views at all still yields one all-NULL row under an
         outer join. An ungated `hash IS NULL` arm counts that phantom as a
-        view, so the view-less rival scores 1 — and our producer, on a single
-        real view, ties or loses to a business nobody visited.
+        view and the view-less producer scores 1.
 
-        This is the case that would NOT have been caught by reusing the
-        windowed dedupe expression as-is; it needs the row-id gate.
+        DISCRIMINATION — this test does NOT separate round 1 from round 2.
+        `func.count(id)` gets this right too. It separates the shipped
+        `unique_views_count` from the OBVIOUS way to write round 2: reusing
+        the windowed dedupe expression as-is, without `row_id_col`. Measured
+        against that rival, this returns 1 and fails.
+
+        It is asserted against the expression rather than through
+        `rank_in_city` on purpose: with the ungated arm the phantom scores 1
+        and TIES our single-view producer, and a tie in `ORDER BY … DESC` has
+        no defined winner — the endpoint-level assertion would have been a
+        coin flip dressed as a guard.
         """
+        rival = make_producer(db)
+        expr = unique_views_count(day_col=israel_day_of(ProducerPageView.created_at))
+        score = (
+            db.query(expr)
+            .select_from(Producer)
+            .outerjoin(
+                ProducerPageView, ProducerPageView.producer_id == Producer.id
+            )
+            .filter(Producer.id == rival.id)
+            .scalar()
+        )
+        assert score == 0
+
+    def test_rank_in_city_still_ranks_on_real_views(self, client, db):
+        """Regression anchor for the endpoint after the extraction to
+        `_rank_in_city`. Passes in round 1 too — it is here to catch the
+        refactor breaking the query, not to prove the dedupe."""
         p, user = _setup(db, "readers2@test.com")
         p.city = "חיפה"
         p.status = "approved"
@@ -215,7 +253,6 @@ class TestTheOtherThreeReaders:
         rival.city = "חיפה"
         rival.status = "approved"
         db.commit()
-        # Our producer: exactly one real view. The rival: none at all.
         _seed(db, p.id, "b" * 64)
 
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
