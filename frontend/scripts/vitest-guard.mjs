@@ -13,10 +13,14 @@
  * Related:  .claude/rules/testing.md ("A green that has two possible causes"),
  *           package.json "test" script (the wrapper's front door),
  *           .claude/skills/mehamakor-dod/check.sh (consumer).
+ * Note:     always `vitest run` — `npm test -- --watch` is not supported here
+ *           (the guard exists to audit a completed run's summary).
  * History:  MEH-1951 (creation; --self-test added on review — the classifier
  *           ships with proof it discriminates, MEH-1619).
  */
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // The classifier: does this captured output prove ≥1 test actually passed?
 // Strips ANSI color first so the regex sees plain text (the ESC byte itself
@@ -75,15 +79,26 @@ if (process.argv[2] === "--self-test") {
 }
 
 const args = process.argv.slice(2);
-const cwd = new URL("..", import.meta.url).pathname;
+// fileURLToPath, not .pathname: the raw pathname is percent-encoded (a space
+// in the checkout path → ENOENT reported as "is node_modules installed?") and
+// is /C:/… on Windows. Measured both by the reviewer.
+const cwd = fileURLToPath(new URL("..", import.meta.url));
 
-// Invoke the local binary directly — `npx vitest` is exactly the resolution
-// path that produced the foreign-vite incident this guard exists to catch.
-// A missing binary is then a loud spawn error, not a silent substitute.
-const child = spawn("./node_modules/.bin/vitest", ["run", ...args], {
+// Run vitest's own entry with THIS node — never `npx` (the resolution path
+// that produced the foreign-vite incident) and never the .bin shim (on
+// Windows that is a .cmd/.ps1 pair CreateProcess cannot exec without a shell,
+// which would hard-fail the DoD skill on the machine it is run from).
+const entry = fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url));
+if (!existsSync(entry)) {
+  console.error("\nvitest-guard: vitest is not installed at node_modules/vitest — run 'npm ci' in frontend/.");
+  process.exit(1);
+}
+const child = spawn(process.execPath, [entry, "run", ...args], {
   cwd,
   stdio: ["inherit", "pipe", "pipe"],
 });
+child.stdout.setEncoding("utf8");
+child.stderr.setEncoding("utf8");
 
 let captured = "";
 child.stdout.on("data", (chunk) => {
@@ -97,7 +112,6 @@ child.stderr.on("data", (chunk) => {
 
 child.on("error", (err) => {
   console.error(`\nvitest-guard: spawn failed — ${err.message}`);
-  console.error("vitest-guard: is node_modules installed? (npm ci in frontend/)");
   process.exit(1);
 });
 
@@ -108,9 +122,10 @@ child.on("close", (code) => {
   const { verified, passed } = classify(captured);
   if (!verified) {
     console.error(
-      "\nvitest-guard: vitest exited 0 but 0 tests were executed — " +
-        "startup failure? (missing node_modules, foreign vite via npx, bad flag). " +
-        "An empty green is a failure."
+      "\nvitest-guard: vitest exited 0 but 0 tests were executed. " +
+        "Candidates: startup failure (missing node_modules, foreign vite via " +
+        "npx, bad flag), a -t name filter matching nothing, or a custom " +
+        "reporter with no summary. An empty green is a failure either way."
     );
     process.exit(1);
   }
