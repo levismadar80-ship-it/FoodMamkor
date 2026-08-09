@@ -40,7 +40,6 @@
  * default-env server. Same shape as "validate a probe on a case whose answer
  * you already know before trusting its red".
  */
-import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
@@ -163,7 +162,13 @@ if (!chromium) {
   console.error("or set NODE_PATH, or `npm i -D playwright` in the cwd.");
   process.exit(1);
 }
-const launchOpts = { args: ["--ssl-version-max=tls1.2"] };
+// --ssl-version-max=tls1.2 is CC-sandbox-only (.claude/rules/testing.md): the
+// sandbox's Chromium offers a TLS-1.3 ClientHello that the Vercel edge drops.
+// Real browsers and CI runners do not need it, and forcing it would needlessly
+// downgrade TLS for anyone pointing this at a live https:// target — so it is
+// opt-in rather than default.
+const launchOpts = { args: [] };
+if (process.env.SWEEP_TLS_MAX_12) launchOpts.args.push("--ssl-version-max=tls1.2");
 if (process.env.SWEEP_CHROMIUM_PATH) launchOpts.executablePath = process.env.SWEEP_CHROMIUM_PATH;
 
 const ROUTES = DASHBOARD ? DASHBOARD_ROUTES : PUBLIC_ROUTES;
@@ -311,4 +316,3 @@ for (const [cls, list] of Object.entries(byCls).sort((a, b) => b[1].length - a[1
   }
 }
 if (events.length === 0) console.log("\nno console events recorded.");
-void spawnSync; // reserved for a future --control child run
