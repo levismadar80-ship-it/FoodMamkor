@@ -23,11 +23,37 @@ import { mkdirSync } from "node:fs";
 // blocks on any env var read in code that is absent from a .env.example, and
 // adding one is banned outright (regression rule 8). A capture script has no
 // business owning an env var anyway.
-//   node qa-meh999-capture.mjs [baseUrl] [outDir]
+//   node qa-meh999-capture.mjs [baseUrl] [outDir] <password> [chromePath]
 const BASE = process.argv[2] || "http://127.0.0.1:3000";
 const OUT = process.argv[3] || "/tmp/meh999";
 const EMAIL = "ux-audit-meh999@example.com";
-const PASSWORD = "DogfoodAudit2026!x";
+
+// The password is an ARGUMENT and has no default. It was hardcoded in the first
+// version; the CI reviewer flagged it and was right. A cleartext credential in a
+// committed file is readable by anyone with repo access, and the moment this
+// account exists on a reachable host the string is a working login — the fact
+// that it is "only" a dogfood account does not change either property.
+//
+// Fail loudly rather than proceeding: a silent empty password would submit the
+// form, fail to authenticate, and produce a capture of the LOGIN page that still
+// screenshots fine — a green-looking artifact of a broken run, which is the exact
+// failure class the hydration-health count below exists to prevent.
+const PASSWORD = process.argv[4] || "";
+if (!PASSWORD) {
+  console.error(
+    "usage: node qa-meh999-capture.mjs [baseUrl] [outDir] <password> [chromePath]\n" +
+      "the seeded producer password is required and is deliberately not stored in this file.",
+  );
+  process.exit(2);
+}
+
+// Chromium path is overridable but KEEPS the sandbox default. The reviewer
+// suggested omitting it so Playwright resolves its own bundled build; that would
+// break here, because @playwright/test is installed in this sandbox WITHOUT its
+// browser download (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD), and `playwright install`
+// is forbidden. An override argument gets the portability without losing the
+// only path that works in the environment this script was written for.
+const CHROME = process.argv[5] || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 // 390x844 is the card's primary viewport. Pixel-class is the second per ORDERS 3.3;
 // this run proves the path on the primary one first.
@@ -35,9 +61,7 @@ const VIEWPORT = { width: 390, height: 844 };
 
 mkdirSync(OUT, { recursive: true });
 
-const browser = await chromium.launch({
-  executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-});
+const browser = await chromium.launch({ executablePath: CHROME });
 const ctx = await browser.newContext({
   viewport: VIEWPORT,
   locale: "he-IL",
