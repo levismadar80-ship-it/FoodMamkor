@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import and_, func
+from sqlalchemy import and_, case, distinct, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -748,13 +748,31 @@ class WindowFilter:
 
     days: int | None = None
     extra_filter: Any = None
+    # MEH-160: when set, count DISTINCT values of this column instead of rows.
+    # Rows where it IS NULL are still counted individually — they cannot be
+    # deduped against anything, and dropping them (which COUNT(DISTINCT) does
+    # silently) would trade over-counting for under-counting.
+    distinct_col: Any = None
 
 
 def _count_in_window(
     db: Session, model, time_col, producer_id, window: WindowFilter = WindowFilter()
 ):
-    """Count rows for the given model, optionally windowed to last N days."""
-    q = db.query(func.count(model.id)).filter(model.producer_id == producer_id)
+    """Count rows for the given model, optionally windowed to last N days.
+
+    MEH-160: with ``window.distinct_col`` set, counts DISTINCT non-NULL values
+    of that column PLUS the NULL rows one-by-one. `producer_page_views` writes
+    `viewer_ip_hash` on every row and nothing ever read it, so one visitor
+    refreshing N times counted as N profile views — the inflation the ticket
+    describes, reachable without any spoofed user-agent.
+    """
+    if window.distinct_col is not None:
+        counter = func.count(distinct(window.distinct_col)) + func.count(
+            case((window.distinct_col.is_(None), 1))
+        )
+    else:
+        counter = func.count(model.id)
+    q = db.query(counter).filter(model.producer_id == producer_id)
     if window.days is not None:
         cutoff = datetime.utcnow() - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
@@ -785,24 +803,32 @@ def producer_analytics(
     pid = producer.id
 
     # Time-windowed counts for the 3 main metrics.
-    def windowed(model, time_col, *, extra=None):
+    def windowed(model, time_col, *, extra=None, distinct_col=None):
+        def _w(days):
+            return WindowFilter(
+                days=days, extra_filter=extra, distinct_col=distinct_col
+            )
+
         return {
-            "last_7d": _count_in_window(
-                db, model, time_col, pid, WindowFilter(days=7, extra_filter=extra)
-            ),
-            "last_30d": _count_in_window(
-                db, model, time_col, pid, WindowFilter(days=30, extra_filter=extra)
-            ),
-            "total": _count_in_window(
-                db, model, time_col, pid, WindowFilter(days=None, extra_filter=extra)
-            ),
+            "last_7d": _count_in_window(db, model, time_col, pid, _w(7)),
+            "last_30d": _count_in_window(db, model, time_col, pid, _w(30)),
+            "total": _count_in_window(db, model, time_col, pid, _w(None)),
         }
 
-    profile_views = windowed(ProducerPageView, ProducerPageView.created_at)
+    # MEH-160: page views dedupe per window on viewer_ip_hash. "Unique inside a
+    # window" is what models.py's own docstring said the column was for; until
+    # now nothing read it. Each window dedupes independently, so a visitor
+    # returning after 8 days counts once in last_7d and once in last_30d.
+    profile_views = windowed(
+        ProducerPageView,
+        ProducerPageView.created_at,
+        distinct_col=ProducerPageView.viewer_ip_hash,
+    )
     search_appearances = windowed(
         ProducerPageView,
         ProducerPageView.created_at,
         extra=(ProducerPageView.referrer == "search"),
+        distinct_col=ProducerPageView.viewer_ip_hash,
     )
     whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
     contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
@@ -875,10 +901,15 @@ def producer_analytics(
             "Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at)
         )
     )
+    # MEH-160: the chart dedupes per DAY on the same column the windowed
+    # counters use, so the series and the headline number cannot disagree.
     daily_rows = (
         db.query(
             israel_day.label("day"),
-            func.count(ProducerPageView.id).label("count"),
+            (
+                func.count(distinct(ProducerPageView.viewer_ip_hash))
+                + func.count(case((ProducerPageView.viewer_ip_hash.is_(None), 1)))
+            ).label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
