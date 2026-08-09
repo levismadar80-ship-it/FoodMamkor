@@ -191,7 +191,13 @@ export default function Footer() {
           </nav>
 
           {/* Column 3 — Newsletter */}
-          <div>
+          {/* MEH-1963: `id="newsletter"` is the scroll target for any "notify
+              me" CTA. It sits on the column, not on the <input>, so the jump
+              lands on the heading and the field together rather than on a bare
+              text box. The Footer renders site-wide, so `#newsletter` resolves
+              from every page — which is what lets ProducersClient link to it
+              in-page instead of navigating to /about. */}
+          <div id="newsletter">
             <h3
               className="font-headline-md text-white mb-4"
               style={{ fontSize: "16px" }}

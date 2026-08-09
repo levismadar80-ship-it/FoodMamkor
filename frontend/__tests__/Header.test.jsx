@@ -36,6 +36,8 @@ vi.mock("next-intl", () => {
     "nav.map": "מפה",
     "nav.about": "אודות",
     "nav.login": "כניסה",
+    // MEH-1964: he.json:nav.register — the guest signup entry.
+    "nav.register": "הרשמה",
     "nav.main_label": "ניווט ראשי",
     "nav.search_label": "חיפוש",
     "nav.trust_strip": "שיחה אישית עם כל בית עסק",
@@ -164,6 +166,54 @@ describe("Header", () => {
       pathnameRef.current = "/login";
       render(<Header />);
       expect(screen.queryByRole("link", { name: "כניסה" })).toBeNull();
+    });
+
+    // MEH-1964 — before this the header had NO path to /register at all: a
+    // visitor reached consumer signup only via /login or by typing the URL.
+    it("renders a register link for guests, pointing at /register", () => {
+      render(<Header />);
+      const reg = screen.getAllByRole("link", { name: "הרשמה" });
+      expect(reg.length).toBeGreaterThan(0);
+      expect(reg[0].getAttribute("href")).toBe("/register");
+    });
+
+    it("hides the register link on /register itself", () => {
+      pathnameRef.current = "/register";
+      render(<Header />);
+      expect(screen.queryByRole("link", { name: "הרשמה" })).toBeNull();
+    });
+
+    it("hides the register link inside the producer wizard (/register/producer)", () => {
+      // The producer wizard opens FROM /register, so a live "הרשמה" link
+      // mid-wizard would send an owner back to the start of her own flow.
+      // Prefix match, not equality — this is the case an === "/register"
+      // gate would miss.
+      pathnameRef.current = "/register/producer";
+      render(<Header />);
+      expect(screen.queryByRole("link", { name: "הרשמה" })).toBeNull();
+    });
+
+    it("still shows the register link on a producer slug starting with 'register'", () => {
+      // MEH-1971 — the discriminating case. `lib/slug.js` reserves the exact
+      // word `register`, not the prefix, so `register-cafe` is a legal producer
+      // slug and a legal `/[slug]` match. Under a bare
+      // `startsWith("/register")` the הרשמה link disappears from that
+      // business's own page, which has nothing to do with registration.
+      // The two tests above pass on BOTH implementations; only this one
+      // separates them.
+      pathnameRef.current = "/register-cafe";
+      render(<Header />);
+      const reg = screen.getAllByRole("link", { name: "הרשמה" });
+      expect(reg.length).toBeGreaterThan(0);
+      expect(reg[0].getAttribute("href")).toBe("/register");
+    });
+
+    it("still shows login on /register (the two gates are independent)", () => {
+      pathnameRef.current = "/register";
+      render(<Header />);
+      expect(
+        screen.getAllByRole("link", { name: "כניסה" }).length,
+      ).toBeGreaterThan(0);
     });
 
     it("does NOT show an add-business CTA in the header (removed by MEH-907)", () => {
