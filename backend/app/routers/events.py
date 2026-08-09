@@ -14,7 +14,8 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from app.rate_limit import limiter
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import (
@@ -118,7 +119,9 @@ def list_events(
 
 
 @router.get("/events/upcoming", response_model=list[EventOut])
+@limiter.limit("120/minute")
 def upcoming_events(
+    request: Request,
     limit: int = Query(3, ge=1, le=20),
     db: Session = Depends(get_db),
 ):

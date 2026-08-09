@@ -33,6 +33,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from app.rate_limit import limiter
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -128,6 +129,7 @@ def _enforce_content_length(request: Request) -> None:
 
 
 @router.get("/whatsapp")
+@limiter.limit("60/minute")
 async def webhook_challenge(request: Request) -> PlainTextResponse:
     """Respond to Meta's subscription challenge.
 
@@ -170,6 +172,7 @@ async def webhook_challenge(request: Request) -> PlainTextResponse:
 
 
 @router.post("/whatsapp")
+@limiter.limit("120/minute")
 async def webhook_receive(
     request: Request,
     db: Session = Depends(get_db),

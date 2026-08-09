@@ -3,7 +3,8 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from app.rate_limit import limiter
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -59,7 +60,9 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
 
 
 @router.get("", response_model=list[GroupBuyOut])
+@limiter.limit("120/minute")
 def list_group_buys(
+    request: Request,
     city: str | None = Query(None),
     status: str = Query("open"),
     db: Session = Depends(get_db),

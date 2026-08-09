@@ -147,7 +147,9 @@ def _serialize(review: ProducerReview) -> ReviewOut:
 
 
 @router.get("/producers/{producer_id}/reviews", response_model=ReviewsPage)
+@limiter.limit("60/minute")
 def list_reviews_nested(
+    request: Request,
     producer_id: UUID,
     page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
@@ -178,7 +180,9 @@ def list_reviews_nested(
 
 # Legacy flat route — kept for backwards compat with any existing clients.
 @router.get("/reviews", response_model=list[ReviewOut])
+@limiter.limit("60/minute")
 def list_reviews(
+    request: Request,
     producer_id: UUID,
     db: Session = Depends(get_db),
 ):
