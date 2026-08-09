@@ -78,7 +78,15 @@ const GEO_RADIUS_KM_RETRY = 30;
  *     does not need setFilters / setVisibleCount / loadProducers /
  *     buildChipParams / updateURL injected as separate props.
  */
-export function useHomePage() {
+/**
+ * MEH-1832 chunk 1: `initialData` is the server-fetched first paint. When it is
+ * present the hook seeds its state from it and SKIPS the first client fetch;
+ * when it is null (backend blip, or any caller that does not pass it) every
+ * path below behaves exactly as it did before this change.
+ *
+ * @param {{initialProducers?: object[]|null, initialCategories?: object[]|null}} [initialData]
+ */
+export function useHomePage({ initialProducers = null, initialCategories = null } = {}) {
   const { user } = useAuth();
   // MEH-1288: real navigation to a random producer page (a page change, unlike
   // the MEH-1293 same-URL History-API mirroring below — push is correct here).
@@ -90,12 +98,12 @@ export function useHomePage() {
   // this wrap is removed.
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
-  const [producers, setProducers] = useState([]);
+  const [producers, setProducers] = useState(initialProducers ?? []);
   // MEH-1487: region fallback — { regionName, producers } when a delivery_city
   // filter returned 0 AND the city belongs to a region in data/regions.js;
   // null otherwise. Drives the "בתי עסק שמגיעים לאזור" section in the empty state.
   const [regionFallback, setRegionFallback] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(initialCategories ?? []);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
   // sessionStorage) are read in the initial useEffect below to avoid React
   // #418 hydration mismatches caused by lazy initializers running on the client
@@ -116,7 +124,11 @@ export function useHomePage() {
   // skeleton (statsLoaded=false), counter (loaded + count >= threshold),
   // fallback/hidden (loaded + below threshold).
   const [stats, setStats] = useState(null);
-  const [producersLoading, setProducersLoading] = useState(true);
+  // MEH-1832: with a server-supplied feed there is nothing in flight, so the
+  // grid must NOT open on the skeleton — otherwise the server HTML contains
+  // skeletons where the cards should be and the whole SSR win is invisible.
+  // The skeleton still reserves the same space on the no-server-data path.
+  const [producersLoading, setProducersLoading] = useState(!initialProducers);
   // MEH-1269: geoLoading is now real — true while getCurrentPosition + the geo
   // fetch are in flight, so the HomeHero home.hero.searching ("בחיפוש...")
   // spinner actually shows (previously a dead const with no setter).
@@ -209,13 +221,16 @@ export function useHomePage() {
 
     // Rule-19: validate the shape before trusting it; on parse failure
     // keep categories empty (same as the network-error branch below).
-    api
-      .get("/categories")
-      .then((r) => {
-        const parsed = CategoriesResponseSchema.safeParse(r.data);
-        setCategories(parsed.success ? parsed.data : []);
-      })
-      .catch(() => {});
+    // MEH-1832: skipped when the server already supplied them.
+    if (!initialCategories) {
+      api
+        .get("/categories")
+        .then((r) => {
+          const parsed = CategoriesResponseSchema.safeParse(r.data);
+          setCategories(parsed.success ? parsed.data : []);
+        })
+        .catch(() => {});
+    }
     // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
     // Use local vars — state setters above are async and won't be reflected yet.
     const initParams = {};
@@ -224,7 +239,14 @@ export function useHomePage() {
     if (initFilters.delivery_day) initParams.delivery_day = initFilters.delivery_day;
     const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
-    loadProducers(initParams);
+    // MEH-1832: the server fetched the DEFAULT feed only. A bookmarked or
+    // shared URL carrying a category / city / day / chip needs a filtered
+    // fetch that the server never made, so the skip is conditional on there
+    // being no params — not merely on initialProducers being present.
+    const serverCoversThisLoad = Boolean(initialProducers) && Object.keys(initParams).length === 0;
+    if (!serverCoversThisLoad) {
+      loadProducers(initParams);
+    }
     // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
     // true and the skeleton dismisses (CLS-safe — skeleton bridged the gap).
     // MEH-879/881: with stats `{}` the trust band shows the verification
