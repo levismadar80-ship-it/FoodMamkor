@@ -53,6 +53,10 @@ if (!PASSWORD) {
 // browser download (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD), and `playwright install`
 // is forbidden. An override argument gets the portability without losing the
 // only path that works in the environment this script was written for.
+// NOTE: `chromium-1194` is a VERSIONED directory. It changes when @playwright/test
+// bumps its bundled browser, including on patch upgrades, and the failure mode is
+// an unhelpful launch error rather than anything naming this line. Update this
+// default in lockstep with any @playwright/test upgrade, or pass argv[5].
 const CHROME = process.argv[5] || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 // 390x844 is the card's primary viewport. Pixel-class is the second per ORDERS 3.3;
@@ -62,6 +66,13 @@ const VIEWPORT = { width: 390, height: 844 };
 mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({ executablePath: CHROME });
+
+// Everything after launch runs inside try/finally so the Chromium process is
+// closed even when a step throws. Without it, one failed navigation or a missed
+// selector leaks a browser, and this script is meant to be run many times in a
+// row across the audit's tasks -- so the leak accumulates exactly when the run is
+// going badly and you are least likely to notice.
+try {
 const ctx = await browser.newContext({
   viewport: VIEWPORT,
   locale: "he-IL",
@@ -122,4 +133,6 @@ report.dashboard = {
 };
 
 console.log(JSON.stringify(report, null, 2));
-await browser.close();
+} finally {
+  await browser.close();
+}
