@@ -416,6 +416,16 @@ while (queue.length) {
 }
 
 // Cross-page anchors: only checkable against a page we actually fetched.
+// Index pathname -> first crawled result WITH a body, built once. The first
+// version scanned the whole map per anchor (O(n·m) at a 2000-page ceiling);
+// flagged by the CI reviewer on PR #2728 and cheap to remove.
+const pathIndex = new Map();
+for (const [key, value] of seen) {
+  if (!value.body) continue;
+  const bare = key.split("?")[0];
+  if (!pathIndex.has(bare)) pathIndex.set(bare, value);
+}
+
 const deadAnchors = [];
 for (const a of anchorTargets) {
   if (a.ok === false) {
@@ -428,9 +438,7 @@ for (const a of anchorTargets) {
   // map entry than the one actually fetched — or, if the bare pathname was never
   // linked anywhere, silently skipped as "not crawled" while it had been
   // crawled under the query-string key (review finding, MEH-1970).
-  const target =
-    seen.get(a.to) ||
-    [...seen.entries()].find(([k, v]) => v.body && k.split("?")[0] === a.to)?.[1];
+  const target = seen.get(a.to)?.body ? seen.get(a.to) : pathIndex.get(a.to);
   if (!target || !target.body) continue; // genuinely not crawled — not a claim
   if (!extractAnchors(target.body).has(a.hash)) deadAnchors.push(a);
 }
