@@ -250,6 +250,26 @@ or *cards*, and ORDERS is the file a sweep session actually reads.
 **CLAIM = BRANCH.** Pushing `feature/meh-<N>-<slug>` to `origin` is the claim.
 There is no other signal, and no claim exists before the push.
 
+**CLAIM AT INTENT TIME, NOT BUILD TIME.** The moment a card enters your *next
+work* plan, push the claim branch — **before Phase 0, before reading the card
+deeply**. An empty branch pointing at `origin/staging` is a valid claim; you are
+not claiming a design, you are claiming the card. Everything else about the card
+can wait, because nothing else about it is visible to another session.
+
+**COROLLARY — a card named without a branch is UNCLAIMED and grabbable.** Naming
+it in a check-in note, a plan, or a session log confers nothing: another session
+that pushes a branch first has claimed it, correctly, and owes you no deference.
+So **do not list next work you have not claimed** — the listing is not a
+reservation and reads as one.
+
+_Source: MEH-1872, 09/08. At 19:39Z the frontend lane's check-in note listed it
+as next work; at 19:40Z — one minute later — another session opened PR #2745 on
+it. **Both sessions were following this section correctly**: no branch existed,
+so the card was unclaimed and takeable. What prevented a duplicate
+implementation was one session's courtesy comment, not any mechanism. The rule
+above closes the minute, and the corollary closes the expectation that produced
+it._
+
 **FOREIGN = READ-ONLY.** A branch or PR this session did not create is read-only.
 Read it, cite it, work around it — never push to it.
 
@@ -545,6 +565,20 @@ a red is.
 
 **Never idle on a gate.** When PR N is waiting on CI, arm a check-in and start
 task N+1 in parallel. Waiting is not work.
+
+**ONE CHECK-IN PER PR, EVER.** Arming a new check-in for a PR **requires deleting
+the existing one in the same action** — not afterwards, not once a duplicate is
+confirmed. `list_triggers` is the ledger; read it before arming, not instead of
+arming.
+
+The failure is quiet and self-inflicted: two live check-ins on one PR wake the
+session twice, produce two independent readings of the same state, and read like
+two events rather than one. Nothing goes red. _Source: 09/08 — PR #2745 carried
+check-ins at 21:05Z **and** 21:27Z, because one turn concluded "the old one is
+still live, nothing to do" and the next armed a second without deleting it. It
+surfaced only because `list_triggers` was called for an unrelated reason. The
+rule is written as *delete-and-arm is one action* precisely because the two-step
+version is what failed._
 
 **PARK after 30 minutes or 2 failed attempts on the same problem** — whichever
 comes first. Parking is: write what was learned to
