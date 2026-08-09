@@ -41,7 +41,7 @@ from app.schemas.schemas import (
     UserRoleUpdate,
     VacationModeState,
 )
-from app.services.analytics import server_health
+from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.vacation_state import read_vacation_state
 from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
@@ -800,15 +800,29 @@ def get_dashboard(
         )
 
     # Top 10 cities across ALL producer page views (where city is set).
-    # Uses the same producer_page_views table as the per-producer dashboard.
+    # MEH-160: same unit as the per-producer dashboard — one visitor per
+    # business per Israel calendar day — via the single dedupe expression in
+    # services/analytics.py.
+    #
+    # `scope_col` is what makes that claim true, and it is not decoration.
+    # This query spans EVERY producer, so without the producer in the dedupe
+    # key one visitor who opened five Haifa businesses on one day would
+    # collapse to a single Haifa view — "distinct people per city", a
+    # different metric wearing the same label, and no longer the sum of the
+    # per-producer figures. An earlier version of this comment claimed "the
+    # same unit" while computing exactly that; caught in adversarial review.
+    admin_city_views = unique_views_count(
+        israel_day_of(ProducerPageView.created_at),
+        scope_col=ProducerPageView.producer_id,
+    )
     top_city_rows = (
         db.query(
             ProducerPageView.city,
-            func.count(ProducerPageView.id).label("count"),
+            admin_city_views.label("count"),
         )
         .filter(ProducerPageView.city.isnot(None))
         .group_by(ProducerPageView.city)
-        .order_by(func.count(ProducerPageView.id).desc())
+        .order_by(admin_city_views.desc())
         .limit(10)
         .all()
     )
