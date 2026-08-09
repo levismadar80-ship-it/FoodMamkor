@@ -11,10 +11,21 @@ import { test, expect, type Page } from "@playwright/test";
  *           own chunking DoD. Also does NOT touch the PRODUCER registration
  *           wizard (`/register/producer`, 5 steps) — that is a different
  *           surface, already covered by flows/18, /22, /27 and /28.
- * Touches:  A1–A3 touch NO network at all (client-side form contract and
- *           validation only). A4/A5 route-mock exactly one endpoint,
- *           POST /api/auth/register — see "On mocking" below. No storageState
- *           fixture and no DEMO_* secret, so it runs on the default CI target.
+ * Touches:  two endpoints, both intercepted, never reached — POST
+ *           /api/auth/register (A4/A5) and POST /api/auth/check-password (every
+ *           test that types a password past the 12-char floor). See "On
+ *           mocking" below. No storageState fixture and no DEMO_* secret, so it
+ *           runs on the default CI target.
+ *
+ *           The check-password stub is NOT cosmetic. PasswordInput fires that
+ *           call on a 500ms debounce whenever the value clears the floor
+ *           (PasswordInput.jsx:82-124), so without the stub two tests would
+ *           issue a real request to whatever backend the target proxies to.
+ *           It hides well: `onValidityChange` recomputes from the STALE, still
+ *           empty `apiFailures` the instant `tooShort` goes false (:130-133), so
+ *           submit enables — and the assertions resolve — before the timer ever
+ *           fires. The suite was green either way, which is exactly why this is
+ *           pinned rather than left to timing.
  * Related:  app/[locale]/register/RegisterClient.jsx (the surface),
  *           components/PasswordInput.jsx (eye toggle + policy checklist),
  *           messages/he.json → auth.register.consumer.* (locked copy).
@@ -28,9 +39,12 @@ import { test, expect, type Page } from "@playwright/test";
  * ── On mocking, because this directory's CLAUDE.md says "no mocks" ──────────
  * `frontend/e2e/CLAUDE.md` states that functional specs under `e2e/flows/`
  * stay unmocked (MEH-417 — mocks hid real backend bugs for 8 CI cycles), with
- * a narrow exception for `e2e/visual/**`. This spec mocks ONE endpoint in TWO
- * of its seven tests, deliberately, and the reasoning is here rather than in a
- * commit message so the next reader can overrule it:
+ * a narrow exception for `e2e/visual/**`. This spec intercepts two endpoints,
+ * deliberately, and the reasoning is here rather than in a commit message so
+ * the next reader can overrule it. The second one cuts the OTHER way:
+ * intercepting check-password REMOVES an accidental live call rather than
+ * hiding an asserted one — nothing here asserts anything about breach checking,
+ * and an unstubbed run would put a real request on a timing race.
  *
  *  1. **Code precedent, already merged.** `flows/28-register-success-state`
  *     (MEH-1814) route-mocks POST /auth/register/producer, /auth/me and
@@ -43,10 +57,10 @@ import { test, expect, type Page } from "@playwright/test";
  *     rate-limit budget: shared GitHub Actions runner IPs burn the
  *     /auth/register limiter quota across PRs." A real registration on every
  *     PR spends that budget to re-assert a constant.
- *  3. **It is scoped, not blanket.** A1, A2 and A3 — the form contract and all
- *     client validation — run against the real page with no interception, so
- *     the MEH-417 failure mode (a backend bug hidden behind a mock) has no
- *     surface here: no backend behaviour is being asserted at all.
+ *  3. **It is scoped, not blanket.** The form contract and every client-side
+ *     validation rule are asserted against the real page, and no backend
+ *     behaviour is asserted anywhere in the file — so the MEH-417 failure mode
+ *     (a backend bug hidden behind a mock) has no surface here.
  *
  * The doc and the merged code disagree about `e2e/flows/`. This follows the
  * code and flags the disagreement rather than silently picking a side; if the
@@ -105,7 +119,7 @@ import { test, expect, type Page } from "@playwright/test";
  * A1 asks for a "הצטרפי / הרשמה" CTA visible in the Header. There is none: the
  * guest Header renders only a login link (Header.jsx:420 `LoginAccount`, itself
  * `hidden md:inline-flex` so it is desktop-only), and the mobile AccountSheet
- * offers only `nav.login` (AccountSheet.jsx:132). The register CTA pill was
+ * offers only `nav.login` (AccountSheet.jsx:134). The register CTA pill was
  * deliberately removed from the Header by MEH-907 — but nothing replaced it on
  * the consumer side, so /register is reachable only from /login, from the
  * footer, or by typing the URL. This spec therefore asserts the route that
@@ -127,16 +141,35 @@ const PASSWORD_MIN_LENGTH = 12;
 const VALID_PASSWORD = "Kishkashta-2026-בית";
 
 /**
+ * Pins PasswordInput's debounced breach check so no test can leak a live
+ * request. MUST be installed before any test types a password of
+ * PASSWORD_MIN_LENGTH or more — see the header note; the leak is invisible in a
+ * green run because submit enables off the stale `apiFailures`.
+ *
+ * `{failures: []}` is also what makes `passwordOk` a pure function of length,
+ * which is what A3's one-rule-at-a-time walk depends on.
+ */
+async function stubPasswordCheck(page: Page) {
+  await page.route("**/api/auth/check-password", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ failures: [] }),
+    }),
+  );
+}
+
+/**
  * Intercepts POST /api/auth/register with MEH-328's ack, so A4/A5 assert the
  * frontend's response to that contract without spending the shared
- * /auth/register rate-limit budget on every PR. Used by A4/A5 ONLY — A1–A3
- * never call this and touch no network.
+ * /auth/register rate-limit budget on every PR. Used by A4/A5 ONLY.
  *
  * `registerGate`, when supplied, is awaited before the route is fulfilled —
  * that is how the in-flight (spinner + disabled) state is observed without
  * racing a real network.
  */
 async function stubRegisterAck(page: Page, registerGate?: Promise<void>) {
+  await stubPasswordCheck(page);
   // MEH-328: the OWASP ack — 200 with a detail string, no token, no user.
   await page.route("**/api/auth/register", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
@@ -220,6 +253,7 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
   });
 
   test("A2 — the password eye toggle reveals and re-hides the value", async ({ page }) => {
+    await stubPasswordCheck(page); // types a 12+ char password — see the header note
     await page.goto("/register");
 
     const password = page.getByTestId("register-password");
@@ -263,6 +297,7 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
       'A3 "אימייל כבר קיים → המייל כבר רשום": removed by MEH-328 anti-enumeration; already struck through on the card',
     );
 
+    await stubPasswordCheck(page); // types a 12+ char password — see the header note
     await page.goto("/register");
 
     const submit = page.getByTestId("register-submit");
@@ -353,8 +388,13 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
     // a guest. This is the assertion the card's A5 becomes.
     expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
 
-    // The single affordance on the screen returns home.
+    // The single affordance on the screen returns home. Asserted on the
+    // PATHNAME, anchored at both ends: an unanchored /\/(he)?\/?$/ only
+    // constrains the tail, so it would also accept a regression landing on
+    // `/register/he`.
     await page.getByTestId("register-email-sent-home").click();
-    await expect(page).toHaveURL(/\/(he)?\/?$/);
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toMatch(/^\/(he\/?)?$/);
   });
 });
