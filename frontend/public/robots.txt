@@ -6,6 +6,13 @@ User-agent: *
 Allow: /
 
 # Authenticated-only surfaces — no SEO value, may leak PII in referer logs
+# MEH-1955 gap-check: /register/producer is an INDEXABLE acquisition landing
+# page the sitemap submits (sitemap.js, priority 0.7). `Disallow: /register`
+# below prefix-matches it, so without this Allow the sitemap advertised a URL
+# robots forbade — a GSC "submitted URL blocked by robots.txt" error and an
+# uncrawlable landing page. Longest-match wins (Google/Bing), so the more
+# specific Allow overrides the shorter Disallow.
+Allow: /register/producer
 Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
