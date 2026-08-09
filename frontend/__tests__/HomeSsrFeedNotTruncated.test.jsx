@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useHomePage } from "@/lib/use-home-page";
+import { useHomePage, LOAD_MORE_CAP } from "@/lib/use-home-page";
 
 /**
  * MEH-1832 regression guard.
@@ -43,8 +43,18 @@ vi.mock("@/lib/user-location", () => ({ getUserLocation: () => null, setUserLoca
 // happens it resolves empty and cannot manufacture a false pass.
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
 
-/** PAGE_SIZE is 8 (use-home-page.js:36) — the count the first viewport paints. */
-const PAGE_SIZE = 8;
+/**
+ * The count the first viewport paints. `PAGE_SIZE` itself is module-private
+ * (use-home-page.js:36), but `LOAD_MORE_CAP` is exported and is *defined* as
+ * `PAGE_SIZE * 2` on the next line — so deriving it here binds to the real
+ * constant and cannot drift. Reading it off a local `= 8` could: raise
+ * PAGE_SIZE to 12 and this file would still feed 10 rows, which is BELOW the
+ * new first viewport, so case 1 would go red for a reason that has nothing to
+ * do with the regression it guards. Adding an `export` for a test's benefit
+ * was the other option and is worse — Knip flags export-only-for-test, and a
+ * second exported name for one number is the drift this note is avoiding.
+ */
+const PAGE_SIZE = LOAD_MORE_CAP / 2;
 const rows = (n) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `עסק ${i}`, slug: `p${i}` }));
 
