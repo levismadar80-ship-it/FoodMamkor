@@ -364,6 +364,13 @@ turn, not a failure.
 ritual in [LOOP-PROMPT.md](./LOOP-PROMPT.md) — never invent work to avoid
 reporting it.
 
+**Groom the backlog once a week** — or whenever Sapir asks — as an ordinary queue
+task, using the `backlog-groom` skill (`.claude/skills/backlog-groom/`). It carries
+the five verdicts, the house rules, the 30/90-day thresholds and the first run's
+lessons, so no session has to re-invent the method. A grooming pass is not optional
+maintenance: the first run found that roughly a quarter of open cards named a blocker
+that had already shipped, and that a card can be born stale on the day it is written.
+
 ---
 
 ## 4.1 · Pipelined execution — intra-session concurrency
