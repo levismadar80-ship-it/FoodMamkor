@@ -246,7 +246,7 @@ for (const vp of VIEWPORTS) {
       record(route, vp.name, "requestfailed", r.failure()?.errorText || "failed", r.url()));
     page.on("response", (r) => {
       if (r.status() >= 400) {
-          record(route, vp.name, "httpstatus", `HTTP ${r.status()}`, r.url(), { status: r.status() });
+        record(route, vp.name, "httpstatus", `HTTP ${r.status()}`, r.url(), { status: r.status() });
       }
     });
 

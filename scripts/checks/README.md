@@ -201,7 +201,17 @@ cd frontend                                    # where playwright is installed
 node ../scripts/checks/console-sweep.mjs --self-test        # classifier only
 node ../scripts/checks/console-sweep.mjs --base http://localhost:3000
 SWEEP_PASSWORD=… node ../scripts/checks/console-sweep.mjs --dashboard --base http://localhost:3400
+
+# From a CC sandbox against a live https:// target, cap TLS at 1.2 — the
+# sandbox's Chromium offers a TLS-1.3 ClientHello the Vercel edge drops,
+# which surfaces as ERR_CONNECTION_CLOSED and looks like the site is down.
+# Opt-in, because real browsers and CI runners must NOT be downgraded.
+SWEEP_TLS_MAX_12=1 node ../scripts/checks/console-sweep.mjs --base https://staging.mehamakor.online
 ```
+
+Other env vars: `SWEEP_CHROMIUM_PATH` (point at an existing Chromium instead of
+downloading one), `SWEEP_EMAIL` / `SWEEP_PASSWORD` (the seeded owner for
+`--dashboard`), `SWEEP_OUT` (JSON output path, same as `--out`).
 
 It **refuses to report 404s** (exit 2) when a majority of routes 404 or when
 `NODE_ENV` is set in its own process, because that shape is environmental far
