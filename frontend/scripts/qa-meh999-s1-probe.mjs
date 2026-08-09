@@ -20,6 +20,13 @@ import { mkdirSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:3000";
 const OUT = process.argv[3] || "/tmp/meh999-walk";
+// NOTE: `chromium-1194` is a VERSIONED directory. It moves whenever
+// @playwright/test bumps its bundled browser, including on patch upgrades, and the
+// failure is an unhelpful launch error that names nothing in this file. Update this
+// default in lockstep with any @playwright/test upgrade, or pass argv[4].
+// Deliberately NOT read from the environment: env vars are banned (ORDERS 1.4) and
+// the `Env drift` gate reds on any undocumented read — that is what failed CI on
+// PR #2708.
 const CHROME = process.argv[4] || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 mkdirSync(OUT, { recursive: true });
