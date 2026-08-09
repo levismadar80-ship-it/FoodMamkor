@@ -49,6 +49,57 @@ class TestAuth:
         assert created.email_verified is False
         assert created.email_verify_token
 
+    def test_register_records_terms_consent_when_accepted(self, client, db):
+        # MEH-1995: the whole point of the column is EVIDENCE, so this asserts
+        # the stored consent record — not that a field was added to a schema.
+        # An inert implementation (field accepted, never persisted) passes the
+        # second kind of test and fails this one.
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "consent@test.com",
+                "name": "Consent",
+                "password": "Zx7Yp9Mq2Lr4",
+                "terms_accepted": True,
+            },
+        )
+        assert resp.status_code == 200
+        created = db.query(User).filter(User.email == "consent@test.com").first()
+        assert created is not None
+        # Both halves matter: a timestamp alone proves only THAT she agreed,
+        # the version proves WHAT she agreed to. Asserting one and not the
+        # other would let half the record silently go missing.
+        assert created.terms_accepted_at is not None
+        assert created.terms_version == TERMS_VERSION
+
+    def test_register_without_terms_flag_records_no_consent(self, client, db):
+        # MEH-1995: the discriminating half. Without this, a handler that
+        # stamped unconditionally would pass the test above — so the pair is
+        # what proves the stamp tracks the actual input rather than firing on
+        # every registration.
+        #
+        # NULL here is the intended state, not an oversight: it means "no
+        # record of consent", which is the truthful reading for a caller that
+        # never asserted acceptance. It must never read as "consent refused".
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "noconsent@test.com",
+                "name": "NoConsent",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        created = db.query(User).filter(User.email == "noconsent@test.com").first()
+        assert created is not None
+        assert created.terms_accepted_at is None
+        assert created.terms_version is None
+
     def test_register_duplicate_email_returns_identical_ack(self, client, db):
         # MEH-328: must NOT 400 (legacy behaviour leaked existence). Same
         # 200 + body as the new-email path. No second user row created.

@@ -515,6 +515,24 @@ class User(Base):
     # expires 1 hour after issue, cleared on redeem or re-issue.
     reset_token = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-1995: evidence that this user accepted the terms, and which version.
+    # Mirrors the Producer.declared_at / declaration_version pair (see ~:188) —
+    # same shape, same rationale, same Expand-only treatment (ADR-007).
+    #
+    # Both nullable with NO backfill, and that is deliberate rather than lazy:
+    # NULL means "we hold no record of acceptance", which is the truth for
+    # every user created before this column existed. Writing a retroactive
+    # timestamp would assert she agreed at a moment we cannot evidence — worse
+    # than an honest NULL, because it manufactures the very proof the column
+    # exists to provide.
+    #
+    # Stamped ONLY on the two password-registration paths (auth.py register /
+    # register_producer), because those are the only flows carrying a terms
+    # checkbox. The three OAuth account-creation paths present no checkbox at
+    # all, so there is no consent event to record there — see the OAuth gap
+    # noted on MEH-1995; closing it is a product decision, not a code gap.
+    terms_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    terms_version = Column(String(10), nullable=True)
     # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.
     # POST /auth/logout-all-devices increments this; old tokens with a
     # stale `tv` value are rejected. Fail-open: tokens without a `tv`
