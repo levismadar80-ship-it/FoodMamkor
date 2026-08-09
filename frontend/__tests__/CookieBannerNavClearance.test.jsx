@@ -110,6 +110,14 @@ describe("MEH-1950 — cookie banner offset derives from --bottom-nav-clearance"
   });
 
   it("a zero-height pill (hidden) removes the var instead of publishing a lie", () => {
+    // Review F2: seed a sentinel BEFORE render — without it this assertion is
+    // green both when the effect clears the var and when the effect does not
+    // exist at all (beforeEach already removed it). The sentinel discriminates:
+    // a BottomNav with the publish effect deleted leaves 999px standing.
+    document.documentElement.style.setProperty(
+      "--bottom-nav-clearance",
+      "999px"
+    );
     vi.spyOn(window, "innerHeight", "get").mockReturnValue(844);
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
       top: 0,
