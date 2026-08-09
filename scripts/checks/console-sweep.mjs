@@ -116,6 +116,11 @@ if (SELF_TEST) {
       "", "third-party"],
     ["console.warn", "[Fast Refresh] rebuilding", "http://x/_next/static/development/a.js",
       "env-artifact"],
+    // react-warning is only reachable when no earlier branch matches, so it
+    // needs its own case — every other "Warning:" input resolves as hydration,
+    // react-key or deprecation first, leaving this branch untested otherwise.
+    ["console.error", "validateDOMNesting(...): <div> cannot appear as a descendant of <p>",
+      "", "react-warning"],
     // Negative control: ordinary text must NOT be swept into a finding class.
     ["console.error", "Something ordinary happened", "", "other"],
   ];
@@ -241,14 +246,20 @@ for (const vp of VIEWPORTS) {
       record(route, vp.name, "requestfailed", r.failure()?.errorText || "failed", r.url()));
     page.on("response", (r) => {
       if (r.status() >= 400) {
-        if (r.status() === 404 && r.url().startsWith(BASE)) notFound.add(route);
-        record(route, vp.name, "httpstatus", `HTTP ${r.status()}`, r.url(), { status: r.status() });
+          record(route, vp.name, "httpstatus", `HTTP ${r.status()}`, r.url(), { status: r.status() });
       }
     });
 
     let finalPath = "";
     try {
-      await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 90000 });
+      // 404-ness is read from the NAVIGATION response only — never from the
+      // response listener. Any same-origin sub-resource can 404 (a missing
+      // favicon, one broken image, an API sub-call), and a single shared
+      // broken asset would mark every route "not found", cross the majority
+      // threshold, and exit 2 — suppressing every real finding in the report.
+      // That is the exact inversion this guard exists to prevent.
+      const nav = await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 90000 });
+      if (nav && nav.status() === 404) notFound.add(route);
       await page.waitForTimeout(2500);
       finalPath = new URL(page.url()).pathname;
     } catch (e) {
