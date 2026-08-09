@@ -248,6 +248,33 @@ works"* (exec §9).
    check does not yet discriminate. This is the rule that catches the expensive
    mistakes; see `.claude/rules/testing.md` → *"A green that has two possible
    causes is not a signal"*.
+8. **Changing how a SHARED data source is read means enumerating EVERY reader
+   before the merge — by grep on the table or field name, not from memory.**
+   Then state, per reader, whether it changed and why. A partial conversion is
+   not a smaller version of the change; it is a **new inconsistency**, and it
+   ships looking finished.
+
+   The enumeration is the deliverable, so write it into the PR body as a table:
+   `file:line` · what it computes · converted / deliberately not · one line of
+   why. A reader you cannot classify is a reader you have not read.
+
+   _Source: MEH-160, 09/08. `producer_page_views` feeds **six** metrics that all
+   render on one dashboard screen. Round one deduped three. The result was not
+   "three fixed" — `weekly_trend` compared a deduped `last_7d` against a raw
+   `prev_7d_views` and read **"down" on perfectly flat traffic**, permanently;
+   `conversion_rate` divided raw clicks by deduped views and returned **200%**,
+   which MEH-1118's `clampPercent` silently rendered as a healthy-looking 100._
+
+   **What made it survive self-check is the part worth carrying:** the session
+   ran the two obviously-related test files, saw green, and read that as
+   coverage. Those files could not have failed — they exercise the readers that
+   *were* converted. **Running the probe that cannot fail is not evidence**, and
+   it is the same error as item 7 wearing work clothes: the green had a second
+   cause (the untouched readers were untested), and nobody asked what else would
+   produce it. The full suite caught it — after CI did, not before.
+
+   The grep is cheap and the failure is not. One command, before the diff is
+   final: `grep -rn "<TableOrColumnName>" --include=*.py --include=*.js .`
 
 ### 3.1 · Merge, then verify — immediately
 
