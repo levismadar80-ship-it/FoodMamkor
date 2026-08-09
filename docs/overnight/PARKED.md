@@ -264,8 +264,49 @@ gate is one fact about the environment. Nothing quarantined.
 
 ## PARKED: MEH-217 — admin panel suite. **Structural, not a blocker in the code.**
 
-**Failure class: PERMANENT for CC — ORDERS §1.2 gate 2 + MEH-671.** Not
-transient, not resource. No retry clears it and none was attempted.
+> ## ❌ CORRECTED 2026-08-09 (session s7) — the premise below is FALSE. The secret IS wired.
+>
+> **Measured from the file, not remembered:**
+>
+> ```
+> .github/workflows/e2e.yml:231-233   (step "Run E2E tests")
+>   DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD / DEMO_ADMIN_PASSWORD
+> ```
+>
+> The park's load-bearing sentence — *"The default `e2e.yml` job is exactly that
+> shape (… **no `DEMO_*` secret exported**)"* — is wrong. Sapir applied
+> `docs/ci/e2e-auth-fixtures.patch.md` in `21ccecc` on **26/07**, and
+> `frontend/e2e/CLAUDE.md` says so outright: *"Authenticated coverage runs on
+> every PR"*, citing run `30220096957`, which wrote the `admin` storageState and
+> executed all 6 `25-role-reachability` tests. So an admin spec **runs** in CI;
+> it does not skip, and no `e2e.yml` edit is needed.
+>
+> **How the error was made, because it is the reusable part.** The park read
+> `global-setup.ts:72-80` — correctly — and concluded the localhost target means
+> no fixture. It never asked the second question: *does the job supply the
+> password anyway?* "The secret does not exist" and "I did not look where it
+> lives" produce identical evidence. That is the same class as s6's own three
+> retractions, made one day later, in a park written by the session that wrote
+> them.
+>
+> **The blocker inverted rather than vanished — CI yes, LOCAL no.** The CC
+> sandbox has no backend (Railway egress denied, MEH-360; a local Postgres was
+> blocked by the sandbox on 09/08), so the specs are CI-valid but cannot be shown
+> green before push. **Corrected failure class: `resource` (local evidence), NOT
+> `permanent`, NOT a credential gate.** Nothing needs Sapir.
+>
+> **To unpark:** a session that can reach a seeded target — `TEST_URL=<staging |
+> preview>` with `DEMO_ADMIN_PASSWORD` + `VERCEL_AUTOMATION_BYPASS_SECRET` (row 3
+> of the table in `frontend/e2e/CLAUDE.md`) — or a sandbox where a local stack
+> comes up. Full chunk plan is on the card.
+>
+> **What survives from the park below, unaffected:** the §1A finding (already
+> covered by `flows/25` — do not rewrite), and the ruling that 2F and 3C
+> delete/promote stay out of CI.
+
+**Failure class: ~~PERMANENT for CC — ORDERS §1.2 gate 2 + MEH-671~~ → see the
+correction above.** Not transient, not resource. No retry clears it and none was
+attempted.
 
 **Nothing in the repository blocks writing the specs.** What blocks *delivering
 the card's DoD* is that the specs could only ever `skip` in CI:
@@ -320,3 +361,45 @@ it before assertions start carrying it, or it will drift into three spellings.
 
 No signature reached the 3-park threshold. Two parks, two different failure
 classes, nothing quarantined.
+
+---
+
+# Session s7-q4n8vz (2026-08-09 midday)
+
+## PARKED: MEH-217 — re-parked with a **corrected** failure class.
+
+**Failure class: `resource` (local evidence), NOT permanent, NOT a credential
+gate.** See the correction block on the s6 entry above: `DEMO_ADMIN_PASSWORD` has
+been exported into the E2E job since `21ccecc` (26/07), so admin specs **run** in
+CI and no `e2e.yml` edit or new secret is needed. Nothing here is Sapir's.
+
+**What actually stopped the work:** this sandbox cannot produce a green local
+run. There is no backend — `*.up.railway.app` egress is denied (MEH-360) and a
+local Postgres start was blocked by the sandbox on 09/08 (s6 managed one the day
+before, so this is a per-session property, not a standing one — retry, don't
+assume). ORDERS §3 wants pasted evidence, and six tabs of specs that were never
+executed is the "green with two possible causes" this card has already paid for
+once.
+
+**Not claimed beyond a label.** `cc-queue` applied while investigating, no
+branch, no code (`git ls-remote` confirms). Chunk plan, run recipe and the
+CI-exclusion ruling for 2F / 3C are posted as a comment on the card.
+
+## NOT parked, and worth stating: MEH-215 is only 1/4 done
+
+Journey A shipped. **B (Google OAuth), C (login / forgot-password) and D
+(favorites) are unwritten** — stopped on session context, not on any blocker.
+C and D need a session, so they carry the same local-evidence constraint as
+MEH-217; B additionally needs the mocked-OAuth-callback convention, which is
+still undefined.
+
+**The s6 handoff in `session-s6-t7w2nq.md` §6 does not apply to journey A** — it
+documents the **producer** wizard (`/register/producer`, 5 steps), and journey A
+is the **consumer** form at `/register` (one page, 3 fields). Both are real; they
+are different surfaces. That handoff is still exactly what a producer-journey
+card needs, so it should not be read as spent.
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. One park, one failure class, nothing
+quarantined.
