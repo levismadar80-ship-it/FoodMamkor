@@ -35,11 +35,12 @@ cd "$ROOT" || exit 1
 # HIGH_CONFIDENCE: provider-issued prefixes. These are never false positives —
 # nothing legitimately contains a live `ghp_`+36 or an `AKIA`+16 — so the
 # placeholder allowlist must NOT apply to them. The self-test caught exactly
-# this: AWS's own documentation key `AKIAIOSFODNN7EXAMPLE` contains the word
+# this: AWS's own doc key `AKIAIOSFODNN7EXAMPLE` (guard-ok: documentation)
+# contains the word
 # "EXAMPLE", so an allowlist checked first swallowed a textbook AWS key id.
 HIGH_CONFIDENCE=(
   'AKIA[0-9A-Z]{16}'
-  'sk-[A-Za-z0-9]{20,}'
+  'sk-(proj-)?[A-Za-z0-9_-]{20,}'   # incl. sk-proj-*: a hyphen breaks a bare alnum run
   'sk_live_[A-Za-z0-9]{16,}'
   'ghp_[A-Za-z0-9]{36}'
   'xox[baprs]-[A-Za-z0-9-]{10,}'
@@ -91,10 +92,10 @@ if [ "${1:-}" = "--self-test" ]; then
   # discriminating and calls everything a secret, these fail it.
   fail=0
   must_flag=(
-    'password = "hunter2hunter2"'
-    'API_KEY: "abcdefghijklmnop1234"'
-    'aws = "AKIAIOSFODNN7EXAMPLE"'
-    'token="ghp_012345678901234567890123456789012345"'
+    'password = "hunter2hunter2"' # guard-ok: self-test fixture, not a live credential
+    'API_KEY: "abcdefghijklmnop1234"' # guard-ok: self-test fixture, not a live credential
+    'aws = "AKIAIOSFODNN7EXAMPLE"' # guard-ok: self-test fixture, not a live credential
+    'token="ghp_012345678901234567890123456789012345"' # guard-ok: self-test fixture, not a live credential
     # REAL-CORPUS ANCHOR (MEH-1909). Structure lifted verbatim from
     # frontend/e2e/screenshots.spec.ts:176 — the credential that motivated this
     # guard. Only the VALUE is substituted; the surrounding form is the repo's.
@@ -102,8 +103,8 @@ if [ "${1:-}" = "--self-test" ]; then
     # the missing method-call pattern was found. Do not delete it if that file
     # is later cleaned: re-anchor it to another real occurrence instead. A
     # synthetic-only suite proves the probe works on shapes I invented.
-    'await pwd.fill("s0me-real-looking-pw");'
-    'await email.fill("admin@somedomain.co.il");'
+    'await pwd.fill("s0me-real-looking-pw");' # guard-ok: self-test fixture, not a live credential
+    'await email.fill("admin@somedomain.co.il");' # guard-ok: self-test fixture, not a live credential
   )
   must_pass=(
     'password = os.environ["DEMO_ADMIN_PASSWORD"]'
@@ -155,38 +156,57 @@ BASE="${GUARD_DIFF_BASE:-origin/staging}"
 git rev-parse --verify --quiet "$BASE" >/dev/null 2>&1 || BASE="HEAD~1"
 git rev-parse --verify --quiet "$BASE" >/dev/null 2>&1 || {
   # WARNING: prefix is load-bearing — run-all.sh keys its WARN token on it.
-  # Without it this exit 0 records as a clean PASS, so "the scan found nothing"
-  # and "the scan never ran" look identical in CI. That is the two-causes-one-
-  # green pattern this repo has a rule about; caught by the CI reviewer on #2754.
   echo "WARNING: secrets-scan — no usable diff base; ZERO lines scanned."
   exit 0
 }
 
-# Added lines only. A removal of a secret must never fail the guard that
-# exists to encourage removals.
-ADDED="$(git diff "$BASE"...HEAD --unified=0 -- . \
-  | grep -E '^\+' | grep -vE '^\+\+\+' || true)"
+# Is `guard-ok:` on line N of FILE, or on N-1 / N+1?
+# REUSES: scripts/checks/ui-pattern-guard.sh:65 — README.md names it the
+# reference implementation; every guard honours the same marker so contributors
+# learn one idiom rather than one per guard.
+suppressed() {
+  local file="$1" line="$2" from to
+  from=$(( line > 1 ? line - 1 : 1 ))
+  to=$(( line + 1 ))
+  sed -n "${from},${to}p" "$file" 2>/dev/null | grep -q 'guard-ok:'
+}
 
-[ -z "$ADDED" ] && { echo "secrets-scan: no added lines"; exit 0; }
-
+# Walk the diff tracking `+++ b/<path>` and the `@@ … +N @@` hunk header so a
+# finding names file:line. README.md line 23 makes that a hard requirement, not
+# a nicety: a FAIL saying "a secret was found" without saying WHERE forces the
+# reader to re-derive the diff by hand. CI reviewer, #2754.
 hits=0
-while IFS= read -r line; do
-  [ -z "$line" ] && continue
-  if looks_like_secret "$line"; then
-    # Print the SHAPE, never the value — a guard that echoes the secret into a
-    # CI log has published it to a second place.
-    #
-    # The first version redacted only after `=`/`:`, which the CI reviewer
-    # caught on PR #2754: a bare `ghp_...` or `AKIA...` line has neither, so the
-    # whole token was printed verbatim. Now every quoted literal AND every long
-    # unquoted token run is masked unconditionally, so no line shape can leak.
-    safe="$(echo "$line" \
-      | sed -E 's/(["'"'"'])[^"'"'"']{4,}(["'"'"'])/\1***\2/g' \
-      | sed -E 's/[A-Za-z0-9_+\/-]{16,}/***/g')"
-    echo "  possible secret: $(echo "$safe" | cut -c1-90)"
-    hits=$((hits + 1))
-  fi
-done <<< "$ADDED"
+file=""
+lineno=0
+
+while IFS= read -r raw; do
+  case "$raw" in
+    '+++ b/'*) file="${raw#+++ b/}" ;;
+    '+++ '*|'--- '*|'diff '*|'index '*|'new file'*|'deleted file'*) : ;;
+    '@@'*)
+      newpart="${raw#*+}"
+      lineno="${newpart%%[, ]*}"
+      ;;
+    '+'*)
+      line="${raw#+}"
+      if looks_like_secret "$line"; then
+        if suppressed "$file" "$lineno"; then
+          echo "  suppressed $file:$lineno — guard-ok: present"
+        else
+          safe="$(echo "$line" \
+            | sed -E 's/(["'"'"'])[^"'"'"']{4,}(["'"'"'])/\1***\2/g' \
+            | sed -E 's/[A-Za-z0-9_+\/-]{16,}/***/g')"
+          echo "  VIOLATION $file:$lineno"
+          echo "      possible secret: $(echo "$safe" | cut -c1-80)"
+          hits=$(( hits + 1 ))
+        fi
+      fi
+      lineno=$(( lineno + 1 ))
+      ;;
+    '-'*) : ;;
+    *) lineno=$(( lineno + 1 )) ;;
+  esac
+done < <(git diff "$BASE"...HEAD --unified=1 -- .)
 
 if [ "$hits" -gt 0 ]; then
   echo "secrets-scan: FAIL — $hits added line(s) look like a credential."
