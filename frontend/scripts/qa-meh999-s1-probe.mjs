@@ -44,8 +44,18 @@ try {
     const banner = [...document.querySelectorAll("div,section,aside")].find(
       (e) => /עוגיות|cookie/i.test((e.innerText || "").slice(0, 200)) && getComputedStyle(e).position === "fixed",
     );
-    const nav = document.querySelector("nav") ||
-      [...document.querySelectorAll("div")].find((e) => getComputedStyle(e).position === "fixed" && e.querySelectorAll("a").length >= 3);
+    // BottomNav, not "the first nav on the page". The first version of this used
+    // document.querySelector("nav") and matched the HEADER nav at y=16..74, so it
+    // answered the overlap question about the wrong element and emitted a
+    // confident, useless `false`. Select by POSITION -- a fixed element sitting in
+    // the lower half of the viewport -- because that is what "bottom nav" actually
+    // means here, and it needs no knowledge of a class name that can churn.
+    const nav = [...document.querySelectorAll("nav,div")].find((e) => {
+      const cs = getComputedStyle(e);
+      if (cs.position !== "fixed") return false;
+      const r = e.getBoundingClientRect();
+      return r.top > window.innerHeight / 2 && r.height > 0 && e.querySelectorAll("a").length >= 3;
+    });
 
     if (!banner) return { bannerFound: false };
     const b = rect(banner);
