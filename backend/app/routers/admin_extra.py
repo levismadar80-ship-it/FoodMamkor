@@ -41,7 +41,7 @@ from app.schemas.schemas import (
     UserRoleUpdate,
     VacationModeState,
 )
-from app.services.analytics import server_health
+from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.vacation_state import read_vacation_state
 from app.utils.clock import ISRAEL_TZ, israel_today
 from app.utils.sql import LIKE_ESCAPE, escape_like
@@ -800,15 +800,22 @@ def get_dashboard(
         )
 
     # Top 10 cities across ALL producer page views (where city is set).
-    # Uses the same producer_page_views table as the per-producer dashboard.
+    # Uses the same producer_page_views table as the per-producer dashboard —
+    # MEH-160: and therefore the same unit. One visitor per city per Israel
+    # calendar day, via the single dedupe expression in producer_me.py. The
+    # admin screen is a different surface, but "views" has to mean one thing
+    # in this codebase or the two screens quietly disagree.
+    admin_city_views = unique_views_count(
+        day_col=israel_day_of(ProducerPageView.created_at)
+    )
     top_city_rows = (
         db.query(
             ProducerPageView.city,
-            func.count(ProducerPageView.id).label("count"),
+            admin_city_views.label("count"),
         )
         .filter(ProducerPageView.city.isnot(None))
         .group_by(ProducerPageView.city)
-        .order_by(func.count(ProducerPageView.id).desc())
+        .order_by(admin_city_views.desc())
         .limit(10)
         .all()
     )
