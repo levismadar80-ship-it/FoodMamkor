@@ -1007,8 +1007,14 @@ function CatalogEmptyState() {
             {t("add_cta")}
           </Link>
         )}
+        {/* MEH-1963: was `/about#newsletter` — a dead anchor. /about has no
+            element with that id (its sections are #contact / #editors-pick /
+            #verification), so the link navigated away and landed at the top of
+            an unrelated page. The newsletter signup this CTA promises lives in
+            the Footer, which renders on THIS page too, so the fix is a
+            same-page jump rather than a cross-page hop. */}
         <Link
-          href="/about#newsletter"
+          href="#newsletter"
           className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}

@@ -309,6 +309,36 @@ test('no "יצרן" text anywhere visible', async ({ page }) => {
 
 ---
 
+## בודק לינקים פנימיים (MEH-1963)
+
+```
+bash scripts/link-check.sh              # build + start + crawl + stop
+bash scripts/link-check.sh --skip-build # אם כבר יש build
+node scripts/link-check.mjs --self-test # הקלסיפייר של robots בלבד
+```
+
+זוחל מ-`/` על לינקים פנימיים בלבד, מכבד את ה-`Disallow` של
+`frontend/public/robots.txt` (longest-match, כמו Google/Bing — כך
+ש-`Allow: /register/producer` גובר על ה-`Disallow: /register` הקצר), ומדווח
+**שבורים (4xx/5xx) · שרשראות redirect · עוגנים מתים**. יציאה 1 על כל שבור.
+
+**קראי את ה-WARNING שהוא מדפיס.** מול target ללא backend, נתיב **חד-מקטעי**
+שאינו קיים מחזיר **200** ולא 404 — `middleware.js` נכשל-פתוח בכוונה
+(MEH-1899), כך שהלינקים האלה **אינם נבדקים**. הכלי מזהה את המצב בעצמו
+ב-preflight ומכריז עליו; ירוק כזה הוא ירוק **מוגבל**, לא מוחלט. נתיבים
+רב-מקטעיים כן נבדקים. נמדד 09/08:
+
+| נתיב | סטטוס |
+|---|---|
+| `/this-route-does-not-exist` · `/a` · `/UPPER_CASE` | **200** (fail-open) |
+| `/foo/bar/baz` · `/about/nope` · `/producers/nope` | **404** |
+
+**לא ב-`scripts/checks/`** — התיקייה הזאת נסרקת אוטומטית ע"י
+`scripts/checks/run-all.sh` והופכת כל קובץ בה לרגל של שער **Repo guards**
+הנדרש; MEH-1963 הוציא חיווט ל-CI מהסקופ במפורש.
+
+---
+
 ## Agent Teams — בדיקה מתקדמת (מהתמונות)
 
 שלחי ל-Claude Code:
