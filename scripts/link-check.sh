@@ -82,4 +82,9 @@ for _ in $(seq 1 30); do
 done
 
 echo "== crawl =="
-node scripts/link-check.mjs "http://localhost:$PORT" "${CRAWLER_ARGS[@]}"
+# `"${CRAWLER_ARGS[@]}"` on an EMPTY array under `set -u` aborts with "unbound
+# variable" on bash < 4.4 — which is the /bin/bash macOS still ships (3.2.57).
+# It would fail on the very last line, after the whole build+start dance had
+# already run. The `+` form expands to nothing at all when the array is unset
+# or empty and is portable back to bash 3. (Review finding, MEH-1970.)
+node scripts/link-check.mjs "http://localhost:$PORT" ${CRAWLER_ARGS[@]+"${CRAWLER_ARGS[@]}"}
