@@ -83,7 +83,7 @@ section "3/7 Backend tests (pytest tests/test_api.py)"
 if ! "$PY" -c "import pytest" >/dev/null 2>&1; then
   fail "pytest — not importable (activate backend venv / uv sync in backend/)"
 elif command -v pg_isready >/dev/null 2>&1 && ! pg_isready -q >/dev/null 2>&1; then
-  fail "Postgres is NOT running — backend tests cannot pass. This is the environment, not the diff. Start it (e.g. pg_ctlcluster 16 main start) and re-run."
+  fail "Postgres is NOT running — backend tests cannot pass. This is the environment, not the diff. Run pg_lsclusters to find your cluster, start it, and re-run."
 elif "$PY" -m pytest tests/test_api.py -q >/tmp/dod-pytest.log 2>&1; then
   pass "backend pytest"
 else
