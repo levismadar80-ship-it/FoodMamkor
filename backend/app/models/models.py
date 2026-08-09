@@ -531,6 +531,13 @@ class User(Base):
     # checkbox. The three OAuth account-creation paths present no checkbox at
     # all, so there is no consent event to record there — see the OAuth gap
     # noted on MEH-1995; closing it is a product decision, not a code gap.
+    # DO NOT expose in UserOut — audit-only (MEH-1995). Deliberately absent from
+    # every response schema, admin included, mirroring the sibling pair's
+    # admin-only treatment (docs/DATA.md). Both UserOut and UserAdminOut
+    # enumerate fields explicitly and Pydantic v2 from_attributes maps only
+    # declared fields, so these cannot surface by accident — this comment records
+    # the omission as intentional so a future ADR-006 R2 parity sweep does not
+    # "fix" it by publishing a consent timestamp on a public profile payload.
     terms_accepted_at = Column(DateTime(timezone=True), nullable=True)
     terms_version = Column(String(10), nullable=True)
     # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.

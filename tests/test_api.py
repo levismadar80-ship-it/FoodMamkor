@@ -100,6 +100,90 @@ class TestAuth:
         assert created.terms_accepted_at is None
         assert created.terms_version is None
 
+    def test_register_producer_records_terms_consent(self, client, db):
+        # MEH-1995: the producer password path stamps via a SECOND, hand-copied
+        # call site. The consumer tests above cannot see it — delete that site
+        # and they stay green — so it needs its own assertion or the stamp is
+        # unguarded on half the flows that write it.
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        payload = valid_producer_register_payload()
+        payload["email"] = "producer_consent@example.com"
+        payload["phone"] = "0521234567"  # required for the whatsapp contact method
+        payload["terms_accepted"] = True
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 200, resp.text
+        created = (
+            db.query(User)
+            .filter(User.email == "producer_consent@example.com")
+            .first()
+        )
+        assert created is not None
+        assert created.terms_accepted_at is not None
+        assert created.terms_version == TERMS_VERSION
+
+    def test_register_producer_upgrade_records_terms_consent(
+        self, client, db, monkeypatch
+    ):
+        # MEH-1995 (adversarial review R-1): the MEH-143 upgrade path does NOT
+        # construct a User — it mutates current_user — so it fell outside the
+        # "enumerate every User(...) site" sweep that produced the other stamps
+        # and shipped, briefly, with the consent discarded.
+        #
+        # This is the sharpest case in the ticket, not an edge: the checkbox is
+        # rendered for upgrade users with no isUpgrade condition and HARD-GATES
+        # their submit, and the flag rides the shared body object. So the consent
+        # provably happened and was transmitted, and NULL would be the database
+        # asserting "no record" about it.
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        user = make_user(db, email="upgrader@example.com")
+        assert user.terms_accepted_at is None  # precondition: nothing recorded
+
+        payload = valid_producer_register_payload()
+        payload.pop("email", None)
+        payload.pop("password", None)
+        payload.pop("name", None)
+        payload["phone"] = "0521234567"  # required for the whatsapp contact method
+        payload["terms_accepted"] = True
+        resp = client.post(
+            "/auth/register/producer",
+            json=payload,
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        upgraded = db.query(User).filter(User.email == "upgrader@example.com").first()
+        assert upgraded.role == "producer"  # the upgrade actually happened
+        assert upgraded.terms_accepted_at is not None
+        assert upgraded.terms_version == TERMS_VERSION
+
+    def test_register_stores_timezone_aware_consent_timestamp(self, client, db):
+        # MEH-1995 (adversarial review R-3): the column is DateTime(timezone=True)
+        # and naive utcnow() is in use 16 lines from the stamp, so "is not None"
+        # would pass just as happily on a naive value. For a column whose whole
+        # evidentiary worth is WHICH INSTANT, a silent offset is the failure that
+        # matters — a naive datetime lands in a TIMESTAMPTZ interpreted in the
+        # session TimeZone, not as UTC. This pins the one property nothing else did.
+        from datetime import timedelta
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "tzaware@test.com",
+                "name": "TZ",
+                "password": "Zx7Yp9Mq2Lr4",
+                "terms_accepted": True,
+            },
+        )
+        assert resp.status_code == 200
+        created = db.query(User).filter(User.email == "tzaware@test.com").first()
+        assert created.terms_accepted_at.tzinfo is not None
+        assert created.terms_accepted_at.utcoffset() == timedelta(0)
+
     def test_register_duplicate_email_returns_identical_ack(self, client, db):
         # MEH-328: must NOT 400 (legacy behaviour leaked existence). Same
         # 200 + body as the new-email path. No second user row created.
