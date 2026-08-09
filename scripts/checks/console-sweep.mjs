@@ -20,8 +20,10 @@
  *   node scripts/checks/console-sweep.mjs --dashboard --base http://localhost:3400
  *   node scripts/checks/console-sweep.mjs --self-test        # no browser needed
  *
- * Exit codes: 0 = swept (findings are data, not failure) · 1 = self-test or
- * control failed · 2 = refused to report (see the NODE_ENV guard below).
+ * Exit codes: 0 = swept (findings are data, not a failure) · 1 = classifier
+ * self-test failed, or setup could not proceed (no resolvable Chromium, no
+ * --dashboard password, login did not take) · 2 = refused to report 404s
+ * (see the guard below).
  *
  * ── The NODE_ENV guard, and why it is not optional ──────────────────────────
  * On the first MEH-1966 run this sweep reported 18 of 18 routes returning 404.
@@ -235,42 +237,48 @@ for (const vp of VIEWPORTS) {
       isMobile: vp.isMobile, hasTouch: vp.isMobile, locale: "he-IL",
       ...(storageState ? { storageState } : {}),
     });
-    const page = await ctx.newPage();
-    page.on("console", (m) => {
-      const t = m.type();
-      if (t === "error" || t === "warning")
-        record(route, vp.name, `console.${t}`, m.text(), m.location()?.url);
-    });
-    page.on("pageerror", (e) => record(route, vp.name, "pageerror", e.message, ""));
-    page.on("requestfailed", (r) =>
-      record(route, vp.name, "requestfailed", r.failure()?.errorText || "failed", r.url()));
-    page.on("response", (r) => {
-      if (r.status() >= 400) {
-        record(route, vp.name, "httpstatus", `HTTP ${r.status()}`, r.url(), { status: r.status() });
-      }
-    });
-
-    let finalPath = "";
+    // Everything from here to ctx.close() sits in try/finally: a throw from
+    // newPage() or a listener would otherwise leak the context and abort the
+    // whole sweep mid-matrix, losing the cells already measured.
     try {
-      // 404-ness is read from the NAVIGATION response only — never from the
-      // response listener. Any same-origin sub-resource can 404 (a missing
-      // favicon, one broken image, an API sub-call), and a single shared
-      // broken asset would mark every route "not found", cross the majority
-      // threshold, and exit 2 — suppressing every real finding in the report.
-      // That is the exact inversion this guard exists to prevent.
-      const nav = await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 90000 });
-      if (nav && nav.status() === 404) notFound.add(route);
-      await page.waitForTimeout(2500);
-      finalPath = new URL(page.url()).pathname;
-    } catch (e) {
-      record(route, vp.name, "navigation", `GOTO FAILED: ${e.message}`, BASE + route);
-    }
-    // A dashboard route that bounced to /login yields a clean console for the
-    // wrong page — recorded, never counted as a quiet pass.
-    if (DASHBOARD && finalPath.endsWith("/login"))
-      record(route, vp.name, "authbounce", "REDIRECTED TO /login — cell not measured", finalPath);
+      const page = await ctx.newPage();
+      page.on("console", (m) => {
+        const t = m.type();
+        if (t === "error" || t === "warning")
+          record(route, vp.name, `console.${t}`, m.text(), m.location()?.url);
+      });
+      page.on("pageerror", (e) => record(route, vp.name, "pageerror", e.message, ""));
+      page.on("requestfailed", (r) =>
+        record(route, vp.name, "requestfailed", r.failure()?.errorText || "failed", r.url()));
+      page.on("response", (r) => {
+        if (r.status() >= 400) {
+          record(route, vp.name, "httpstatus", `HTTP ${r.status()}`, r.url(), { status: r.status() });
+        }
+      });
 
-    await ctx.close();
+      let finalPath = "";
+      try {
+        // 404-ness is read from the NAVIGATION response only — never from the
+        // response listener. Any same-origin sub-resource can 404 (a missing
+        // favicon, one broken image, an API sub-call), and a single shared
+        // broken asset would mark every route "not found", cross the majority
+        // threshold, and exit 2 — suppressing every real finding in the report.
+        // That is the exact inversion this guard exists to prevent.
+        const nav = await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 90000 });
+        if (nav && nav.status() === 404) notFound.add(route);
+        await page.waitForTimeout(2500);
+        finalPath = new URL(page.url()).pathname;
+      } catch (e) {
+        record(route, vp.name, "navigation", `GOTO FAILED: ${e.message}`, BASE + route);
+      }
+      // A dashboard route that bounced to /login yields a clean console for the
+      // wrong page — recorded, never counted as a quiet pass.
+      if (DASHBOARD && finalPath.endsWith("/login"))
+        record(route, vp.name, "authbounce", "REDIRECTED TO /login — cell not measured", finalPath);
+
+    } finally {
+      await ctx.close();
+    }
     process.stderr.write(`  ${vp.name.padEnd(7)} ${route}\n`);
   }
 }
