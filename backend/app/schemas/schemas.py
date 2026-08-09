@@ -3226,6 +3226,56 @@ class CategoryRequestUpdate(BaseModel):
         return sanitize_text(v, max_length=1000)
 
 
+# --- Producer name-change request (MEH-1872) ---
+# The owner-writable path for `name` that MEH-1851 removed. Shapes mirror
+# CategoryRequest* directly above — same status/admin_notes/reviewed_at triple.
+
+
+class ProducerNameChangeRequestCreate(BaseModel):
+    # Same bounds as ProducerCreate.name, so a request can never encode a name
+    # the producers table would reject on approval.
+    requested_name: str = Field(..., min_length=2, max_length=100)
+    reason: str | None = Field(None, max_length=500)
+
+    @field_validator("requested_name")
+    @classmethod
+    def _validate_letters(cls, v: str) -> str:
+        # MEH-555: punctuation-only names ("???") reach an admin queue and a
+        # public surface. Same guard the sibling free-text fields carry.
+        return _min_letters_validator(v)
+
+    @field_validator("reason")
+    @classmethod
+    def _sanitize_reason(cls, v):
+        return sanitize_text(v, max_length=500)
+
+
+class ProducerNameChangeRequestOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    current_name: str
+    requested_name: str
+    reason: str | None = None
+    status: str
+    admin_notes: str | None = None
+    created_at: datetime
+    reviewed_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProducerNameChangeRequestUpdate(BaseModel):
+    # No "merged" here — unlike a category, a name request has no third
+    # disposition. Narrower on purpose rather than copied wholesale.
+    status: str = Field(..., pattern="^(approved|rejected)$")
+    admin_notes: str | None = None
+
+    @field_validator("admin_notes")
+    @classmethod
+    def _sanitize_admin_notes(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+
 # --- Event ---
 # MEH-458: relocated from routers/events.py per ADR-006 R1.
 # Pure relocation — fields, validators, model_config preserved verbatim.
