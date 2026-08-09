@@ -311,6 +311,7 @@ def render(
             f"{'fixture' if r['is_seed'] else 'אמיתי'} | "
             f"{'✅' if r['launch_ready'] else '❌'} | {r['gap_count']} | {missing} |"
         )
+    L.append("")
     L.append("## מה הדוח הזה **לא** אומר")
     L.append("")
     L.append(
@@ -428,7 +429,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL)
     ap.add_argument("--out", default=None, help="default: docs/reports/data-readiness-<today>.md")
-    ap.add_argument("--raw", default=None, help="optional path for the raw API payloads")
+    ap.add_argument(
+        "--raw",
+        default=None,
+        help="optional path for the raw API payloads. NOTE: these are verbatim API "
+        "responses and DO contain unmasked phone numbers — --with-contact does not "
+        "gate them. No default, so nothing is written unless you name a path; name "
+        "one outside git.",
+    )
     ap.add_argument(
         "--with-contact",
         action="store_true",
