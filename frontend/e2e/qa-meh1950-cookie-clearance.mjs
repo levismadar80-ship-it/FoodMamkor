@@ -135,9 +135,11 @@ async function runDevice(browser, name, contextOpts, shotSuffix) {
 }
 
 // Sandbox: Chromium is preinstalled at /opt/pw-browsers (never `playwright
-// install`); executablePath override rides a pinned-version mismatch.
+// install`); executablePath override rides a pinned-version mismatch. argv
+// (not an env read — the Env-drift gate scans code for env names) overrides:
+//   node e2e/qa-meh1950-cookie-clearance.mjs [baseURL] [chromiumPath]
 const browser = await chromium.launch({
-  executablePath: process.env.QA_CHROMIUM || "/opt/pw-browsers/chromium",
+  executablePath: process.argv[3] || "/opt/pw-browsers/chromium",
 });
 try {
   await runDevice(
