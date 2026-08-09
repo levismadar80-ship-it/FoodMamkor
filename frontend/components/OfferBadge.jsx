@@ -24,6 +24,8 @@
 import { Gift } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
+import { israelToday } from "@/lib/israel-date";
+
 // The typed vocabulary, mirrored from schemas.py OFFER_TYPES / THRESHOLD_UNITS.
 // An unknown value renders nothing rather than a raw key — a backend that grows
 // a sixth type must not leak "offer.text.new_type" onto a consumer surface.
@@ -64,42 +66,10 @@ const UNITS = new Set(["ils", "units", "liters", "kg"]);
 // textContent: the sentence is split ON it, so it is consumed.
 const AMOUNT_SLOT = "\u0001";
 
-// Length of an ISO calendar date ("2026-08-02") — the prefix of an ISO
-// timestamp, and the exact shape `expires_at` arrives in.
-const ISO_DATE_LEN = 10;
-
-/**
- * Today's date in Asia/Jerusalem, as the YYYY-MM-DD that `expires_at` uses.
- *
- * NOT `new Date().toISOString().slice(0, 10)` — that is the *UTC* date, and
- * Israel runs UTC+2/+3, so for the first two-to-three hours of an Israel day
- * UTC is still on yesterday and an offer that expired last night compares as
- * live. The server filters on `israel_today()` (backend/app/models/models.py
- * `Producer.active_offer`); this is the client half of that same clock, and
- * the two must not disagree about what day it is.
- * REUSES: frontend/lib/orderWindow.js:57 (same Asia/Jerusalem Intl idiom).
- */
-function israelToday(now = new Date()) {
-  try {
-    // formatToParts, not a formatted string: it is separator-agnostic, so an
-    // ICU build that renders the locale with "/" cannot silently produce a
-    // value that no longer compares against an ISO date.
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Jerusalem",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(now);
-    const get = (type) => parts.find((part) => part.type === type)?.value ?? "";
-    const [year, month, day] = [get("year"), get("month"), get("day")];
-    if (!year || !month || !day) return now.toISOString().slice(0, ISO_DATE_LEN);
-    return `${year}-${month}-${day}`;
-  } catch {
-    // Intl / tz data unavailable → best-effort UTC date, the same degradation
-    // established-year.js takes. Worse than Israel time, better than nothing.
-    return now.toISOString().slice(0, ISO_DATE_LEN);
-  }
-}
+// MEH-1983: `israelToday` used to live here as a private function. It moved to
+// lib/israel-date.js unchanged, because two vacation-date pickers needed the
+// same answer and were computing it from the UTC date instead — the exact
+// mistake this helper's docstring had been warning against. One owner now.
 
 export default function OfferBadge({ offer, variant = "badge", className = "" }) {
   const t = useTranslations("producer.offer");
