@@ -33,7 +33,6 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from app.rate_limit import limiter
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -45,6 +44,7 @@ from app.models import FavoriteAlert, InboundMessage, User
 # MEH-771 Chunk B — REUSES: app/services/whatsapp.py:185 — same direct path
 # (OutboundMessage is intentionally not in app.models.__init__.__all__).
 from app.models.models import OutboundMessage
+from app.rate_limit import limiter
 from app.services.whatsapp import send_text
 from app.utils.phone import canonical_il_msisdn
 
@@ -172,7 +172,13 @@ async def webhook_challenge(request: Request) -> PlainTextResponse:
 
 
 @router.post("/whatsapp")
-@limiter.limit("120/minute")
+# 300/min, not 120. The caller is Meta, not a user — and Meta treats 429 as
+# "retry later" with backoff, so a limit that bites AMPLIFIES load instead of
+# shedding it, while dropping real customer messages. The real gate on this
+# route is the X-Hub-Signature-256 check, not the counter; the counter exists
+# so an unsigned flood still costs the sender something. Per-IP keying means a
+# flooder exhausts only their own bucket. Raised on CI-reviewer input (#2752).
+@limiter.limit("300/minute")
 async def webhook_receive(
     request: Request,
     db: Session = Depends(get_db),

@@ -121,9 +121,11 @@ class TestWhatsAppWebhookIsLimited:
         assert codes[60] == 429, "the GET handshake is not rate-limited"
 
     def test_post_callback_is_limited(self, client):
-        codes = [client.post("/webhook/whatsapp", json={}).status_code for _ in range(121)]
-        assert set(codes[:120]) == {403}, "expected unauthenticated rejections"
-        assert codes[120] == 429, "the POST callback is not rate-limited"
+        # 300/min — deliberately high. Meta retries a 429 with backoff, so a
+        # limit that bites amplifies load rather than shedding it.
+        codes = [client.post("/webhook/whatsapp", json={}).status_code for _ in range(301)]
+        assert set(codes[:300]) == {403}, "expected unauthenticated rejections"
+        assert codes[300] == 429, "the POST callback is not rate-limited"
 
 
 class TestHomeProductsIsNotMounted:
