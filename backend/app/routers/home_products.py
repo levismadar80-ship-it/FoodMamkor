@@ -117,7 +117,9 @@ def validate_home_product_endpoint(
 
 @router.post("/rate/{token}")
 @limiter.limit("10/hour")
-def submit_rating(request: Request, token: str, data: RatingSubmit, db: Session = Depends(get_db)):
+def submit_rating(
+    request: Request, token: str, data: RatingSubmit, db: Session = Depends(get_db)
+):
     """Submit a rating via token (no login required)."""
     click = (
         db.query(HomeProductWhatsAppClick)

@@ -465,7 +465,9 @@ def create_producer(
 
 @router.get("/categories", response_model=list[CategoryOut])
 @limiter.limit("60/minute")
-def list_categories(request: Request, response: Response, db: Session = Depends(get_db)):
+def list_categories(
+    request: Request, response: Response, db: Session = Depends(get_db)
+):
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE

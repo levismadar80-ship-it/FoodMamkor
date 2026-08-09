@@ -98,6 +98,11 @@ class TestHomeProductsIsNotMounted:
     exposure being re-reasoned.
     """
 
+    _LIFTED = (
+        "home_products is mounted — MEH-1406's brand LOCK was lifted. "
+        "Re-check the MEH-1979 exposure table before deleting this test."
+    )
+
     @pytest.mark.parametrize(
         "path",
         [
@@ -106,11 +111,31 @@ class TestHomeProductsIsNotMounted:
             f"/home-products/{uuid.uuid4()}/ratings",
         ],
     )
-    def test_routes_are_absent(self, client, path):
-        assert client.get(path).status_code == 404, (
-            "home_products is mounted — MEH-1406's brand LOCK was lifted. "
-            "Re-check the MEH-1979 exposure table before deleting this test."
-        )
+    def test_get_routes_are_absent(self, client, path):
+        assert client.get(path).status_code == 404, self._LIFTED
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/home-products/rate/sometoken",
+            "/home-products/validate",
+            "/home-products",
+            f"/home-products/{uuid.uuid4()}/whatsapp-click",
+        ],
+    )
+    def test_post_routes_are_absent(self, client, path):
+        """The GET sweep alone is not enough, and the gap is the exact threat
+        this class describes.
+
+        The two 🔴 rows the audit flagged were **writes**. If the router were
+        ever partially re-registered — GET routes only, under a narrower
+        MEH-1406 re-scope — the GET assertion above would still pass while the
+        POST limiter decorators sat dormant on newly-live write routes. Then
+        this class would be reporting "dormant" about the half that mattered
+        least. Asserting the methods separately is what makes the guard match
+        its own docstring. (Raised by the CI reviewer on PR #2752.)
+        """
+        assert client.post(path, json={}).status_code == 404, self._LIFTED
 
 
 class TestHealthMustStayUnlimited:
