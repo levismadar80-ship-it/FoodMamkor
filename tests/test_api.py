@@ -60,14 +60,14 @@ class TestAuth:
         resp = client.post(
             "/auth/register",
             json={
-                "email": "consent@test.com",
+                "email": "consent@example.com",
                 "name": "Consent",
                 "password": "Zx7Yp9Mq2Lr4",
                 "terms_accepted": True,
             },
         )
         assert resp.status_code == 200
-        created = db.query(User).filter(User.email == "consent@test.com").first()
+        created = db.query(User).filter(User.email == "consent@example.com").first()
         assert created is not None
         # Both halves matter: a timestamp alone proves only THAT she agreed,
         # the version proves WHAT she agreed to. Asserting one and not the
@@ -89,13 +89,13 @@ class TestAuth:
         resp = client.post(
             "/auth/register",
             json={
-                "email": "noconsent@test.com",
+                "email": "noconsent@example.com",
                 "name": "NoConsent",
                 "password": "Zx7Yp9Mq2Lr4",
             },
         )
         assert resp.status_code == 200
-        created = db.query(User).filter(User.email == "noconsent@test.com").first()
+        created = db.query(User).filter(User.email == "noconsent@example.com").first()
         assert created is not None
         assert created.terms_accepted_at is None
         assert created.terms_version is None
@@ -204,6 +204,42 @@ class TestAuth:
         assert upgraded.terms_accepted_at.astimezone(timezone.utc) == earlier
         assert upgraded.terms_version == TERMS_VERSION
 
+    def test_consent_columns_are_exposed_by_no_endpoint(self, client, db):
+        # MEH-1995 (CI review): the audit-only exposure contract is the whole
+        # privacy posture of this feature, and until this test it was held up by
+        # a code comment plus the fact that Pydantic maps only declared fields.
+        # Neither is a check. This asserts the property BEHAVIOURALLY — the
+        # strings must not appear in the JSON — so a future "ADR-006 R2 parity
+        # sweep" that adds them to UserOut or UserAdminOut goes red here instead
+        # of quietly publishing a consent timestamp.
+        #
+        # Deliberately asserts on the raw response TEXT, not on parsed keys: a
+        # nested serializer that buried the field one level down would still
+        # leak it, and `not in resp.json()` only inspects top-level keys.
+        from datetime import datetime, timezone
+
+        from app.constants import TERMS_VERSION
+
+        user = make_user(db, email="exposure@example.com")
+        user.terms_accepted_at = datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc)
+        user.terms_version = TERMS_VERSION
+        db.commit()
+
+        # 1. The user's own profile payload (UserOut).
+        me = client.get("/auth/me", headers=auth_header(user))
+        assert me.status_code == 200
+        assert "terms_accepted_at" not in me.text
+        assert "terms_version" not in me.text
+
+        # 2. The admin listing (UserAdminOut) — stricter than the sibling
+        #    declared_at/declaration_version pair, which IS admin-visible.
+        admin = make_user(db, email="exposure-admin@example.com", role="admin")
+        listing = client.get("/admin/users", headers=auth_header(admin))
+        assert listing.status_code == 200, listing.text
+        assert "exposure@example.com" in listing.text  # the row IS returned…
+        assert "terms_accepted_at" not in listing.text  # …without the consent
+        assert "terms_version" not in listing.text  # columns on it
+
     def test_terms_version_fits_the_column(self):
         # MEH-1995 (CI review, Minor): terms_version is VARCHAR(10) and the
         # current value is EXACTLY 10 chars, so the column has zero headroom.
@@ -235,14 +271,14 @@ class TestAuth:
         resp = client.post(
             "/auth/register",
             json={
-                "email": "tzaware@test.com",
+                "email": "tzaware@example.com",
                 "name": "TZ",
                 "password": "Zx7Yp9Mq2Lr4",
                 "terms_accepted": True,
             },
         )
         assert resp.status_code == 200
-        created = db.query(User).filter(User.email == "tzaware@test.com").first()
+        created = db.query(User).filter(User.email == "tzaware@example.com").first()
         assert created.terms_accepted_at.tzinfo is not None
         assert created.terms_accepted_at.utcoffset() == timedelta(0)
 
