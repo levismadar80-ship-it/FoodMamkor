@@ -554,6 +554,19 @@ PUT    /producers/me                              producer — MEH-999: license 
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
+POST   /producers/me/name-change-requests        producer  — MEH-1872 file a business-name change for re-moderation (5/hr).
+                                               The public producers.name does NOT move here — only an admin approval moves it.
+                                               400 if the requested name equals the current one; 409 if a PENDING request
+                                               already exists (one open request per producer, so the admin never has to guess
+                                               which change was wanted). `name` remains ABSENT from producer_me's
+                                               _PRODUCER_WRITABLE_FIELDS — MEH-1851 removed it and this does not re-open it.
+GET    /producers/me/name-change-requests        producer  — own request history, newest first (60/min)
+GET    /admin/name-change-requests               admin     — the review queue; ?status=pending (default). Each row carries
+                                               current_name + requested_name side by side (60/min)
+PATCH  /admin/name-change-requests/{id}          admin     — {status: approved|rejected, admin_notes?}. approved writes
+                                               producers.name; rejected leaves it untouched. 409 on an already-reviewed
+                                               request — re-approving would move the public name from a decision already
+                                               taken. No "merged" status: unlike a category, a rename has no third outcome
 POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending/pending_whatsapp only (else 409), 3/hr; notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open) — NO DB write, requested_changes stays admin-owned
 POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
 POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
