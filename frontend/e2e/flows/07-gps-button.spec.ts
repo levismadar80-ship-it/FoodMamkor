@@ -6,10 +6,19 @@ import { test, expect } from "@playwright/test";
  */
 test.describe("GPS button on /map", () => {
   test("GPS button is visible on desktop and triggers geolocation API", async ({ page, context }, info) => {
-    // Desktop-only: the desktop GPS button (MapPane.jsx:124, "hidden lg:flex")
-    // doesn't render on mobile; mobile uses a separate filter-bar button
-    // with aria-label "קרוב אלי" (MapClient.jsx:273-275).
-    test.skip(info.project.name === "mobile", "GPS button is desktop-only");
+    // Desktop-only: the desktop GPS button (MapPane.jsx:160, "hidden lg:flex"
+    // — citation re-derived 2026-08-10, it read :124 and had drifted) doesn't
+    // render below Tailwind's `lg` (1024px); mobile uses a separate filter-bar
+    // button with aria-label "קרוב אלי" (MapClient.jsx:273-275).
+    // MEH-1590: assert what this test REQUIRES (`!== "desktop"`), never list
+    // what to exclude. The previous form was `=== "mobile"`, which stopped
+    // guarding the moment a third project appeared: `webkit-iphone13` (390px,
+    // playwright.config.ts:161) is a phone whose name is not "mobile", so the
+    // skip did not fire, the `hidden lg:flex` button was legitimately absent,
+    // and the spec reported "element(s) not found" as a failure. Every other
+    // project guard in this suite already uses the `!==` form (12 of the 13 —
+    // 14-language-toggle.spec.ts:36 explains why); this was the lone outlier.
+    test.skip(info.project.name !== "desktop", "GPS button is desktop-only");
 
     // Grant geolocation permission and set a fixed position (Tel Aviv)
     await context.grantPermissions(["geolocation"]);
