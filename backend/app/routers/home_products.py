@@ -80,7 +80,8 @@ def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
 
 
 @router.get("/rate/{token}")
-def get_rating_page(token: str, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def get_rating_page(request: Request, token: str, db: Session = Depends(get_db)):
     """Get info for the rating page (accessed via WhatsApp link)."""
     click = (
         db.query(HomeProductWhatsAppClick)
@@ -115,7 +116,10 @@ def validate_home_product_endpoint(
 
 
 @router.post("/rate/{token}")
-def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db)):
+@limiter.limit("10/hour")
+def submit_rating(
+    request: Request, token: str, data: RatingSubmit, db: Session = Depends(get_db)
+):
     """Submit a rating via token (no login required)."""
     click = (
         db.query(HomeProductWhatsAppClick)
@@ -164,7 +168,9 @@ def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db))
 
 
 @router.get("", response_model=list[HomeProductOut])
+@limiter.limit("120/minute")
 def list_home_products(
+    request: Request,
     city: str | None = None,
     db: Session = Depends(get_db),
 ):
@@ -352,7 +358,8 @@ def log_whatsapp_click(
 
 
 @router.get("/{product_id}/ratings", response_model=dict)
-def get_ratings(product_id: UUID, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_ratings(request: Request, product_id: UUID, db: Session = Depends(get_db)):
     avg = (
         db.query(func.avg(HomeProductRating.stars))
         .filter(HomeProductRating.home_product_id == product_id)
