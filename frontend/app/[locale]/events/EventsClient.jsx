@@ -530,7 +530,11 @@ function EmptyState({ tab, t, onReset }) {
 // on hydrate. Cream-toned (opacity-on-cream per ADR-019), not gray blocks.
 function SkeletonRows({ srLabel }) {
   return (
-    <div aria-busy="true" aria-label={srLabel}>
+    // MEH-1957: role="status" is what makes aria-label permitted here. Without
+    // a role this is a generic div, and aria-label on one is `aria-prohibited-attr`
+    // (serious) — only reachable while the skeleton is on screen, so warm loads
+    // never showed it. Mirrors app/[locale]/loading.js:8-12.
+    <div role="status" aria-busy="true" aria-label={srLabel}>
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border">
           <div className="py-5 grid justify-items-center content-start gap-2">

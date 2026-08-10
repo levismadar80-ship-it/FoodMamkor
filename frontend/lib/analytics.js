@@ -11,6 +11,15 @@ function loadPosthog(key) {
       posthog.init(key, {
         // EU ingestion host by default (data residency); override per-env
         // with NEXT_PUBLIC_POSTHOG_HOST.
+        //
+        // MEH-1981: this default is CITED IN THE PRIVACY POLICY
+        // (`messages/{he,en}.json` → privacy.sections.third_parties.items.posthog,
+        // "by default … EU servers"). Pointing NEXT_PUBLIC_POSTHOG_HOST at a
+        // non-EU region makes that sentence misleading, and nothing detects it —
+        // env values are not readable from a test. The copy says "by default"
+        // precisely because this line is a default and not an invariant; if the
+        // override is ever used in an environment, update the policy string in
+        // the same change.
         api_host:
           process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.posthog.com",
         // Consent is already enforced by the cookieConsent gate in

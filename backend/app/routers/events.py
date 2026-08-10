@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import (
@@ -25,6 +25,7 @@ from app.auth import (
 )
 from app.database import get_db
 from app.models import Event, Producer, User
+from app.rate_limit import limiter
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
 from app.utils.clock import israel_today
 
@@ -71,7 +72,9 @@ def _serialize(event: Event) -> EventOut:
 
 
 @router.get("/events", response_model=list[EventOut])
+@limiter.limit("120/minute")
 def list_events(
+    request: Request,
     filters: Annotated[EventFilters, Depends()],
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
@@ -118,7 +121,9 @@ def list_events(
 
 
 @router.get("/events/upcoming", response_model=list[EventOut])
+@limiter.limit("120/minute")
 def upcoming_events(
+    request: Request,
     limit: int = Query(3, ge=1, le=20),
     db: Session = Depends(get_db),
 ):
@@ -159,7 +164,9 @@ def list_my_events(
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
+@limiter.limit("120/minute")
 def get_event(
+    request: Request,
     event_id: UUID,
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
