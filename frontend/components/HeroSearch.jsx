@@ -2,9 +2,15 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-// Plain next/link, matching this file's existing next/navigation useRouter and
-// the precedent in ProducersClient.jsx:5 — not the i18n wrapper.
-import Link from "next/link";
+// MEH-1975: the LOCALE-AWARE Link, not plain next/link.
+// routing.js sets localePrefix "as-needed" with defaultLocale "he", so Hebrew
+// lives at /producers and English at /en/producers. A hardcoded "/producers"
+// href therefore works in Hebrew and silently drops an English visitor onto
+// the Hebrew route — the /en-stays-broken shape workflow.md cites from
+// MEH-1721. Caught by the CI reviewer on #2758; my first version used plain
+// next/link on the strength of a sibling file doing the same, which is
+// precedent, not verification.
+import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";

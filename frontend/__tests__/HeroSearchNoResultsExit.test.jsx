@@ -34,6 +34,24 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), prefetch: vi.fn() }),
 }));
 
+// The LOCALE-AWARE Link is stubbed, and the stub stamps `data-locale-aware`.
+//
+// That attribute is the whole point of the stub. routing.js uses
+// localePrefix "as-needed" with defaultLocale "he", so in Hebrew the
+// locale-aware Link and plain next/link emit the SAME href — meaning an
+// href-only assertion passes either way and could never catch a regression
+// back to plain next/link, which is exactly the bug this guards (an English
+// visitor would be dropped onto the Hebrew route). Asserting the stamp is
+// what makes the check discriminate; the prefixing itself is next-intl's job
+// and is tested upstream.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={href} data-locale-aware="true" {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 // The search endpoint returns nothing — the state under test.
 vi.mock("@/lib/api", () => ({
   default: {
@@ -45,9 +63,9 @@ vi.mock("@/lib/api", () => ({
 
 async function typeQuery(q) {
   render(<HeroSearch placeholder="חיפוש" srLabel="חיפוש" />);
-  // queryByRole, not getByRole: get* THROWS on a miss, so a  after it is
-  // dead code — the fallback could never run and the test would error instead
-  // of falling back. Flagged by the CI reviewer on #2758.
+  // queryByRole, not getByRole: get* THROWS on a miss, so a nullish-coalescing
+  // fallback after it is dead code — it could never run, and the test would
+  // error at the first call instead of falling back. Flagged on #2758.
   const input =
     screen.queryByRole("combobox", { hidden: true }) ?? screen.getByRole("textbox");
   await act(async () => {
@@ -77,6 +95,10 @@ describe("MEH-1975 — hero no-results offers an exit", () => {
     expect(exit).toBeTruthy();
     expect(exit.getAttribute("href")).toContain("/producers?q=");
     expect(decodeURIComponent(exit.getAttribute("href"))).toContain("קינואה סגולה");
+    // Must go through the locale-aware Link, or /en visitors land on the
+    // Hebrew route. See the mock comment for why the href alone cannot
+    // detect this.
+    expect(exit.getAttribute("data-locale-aware")).toBe("true");
   });
 
   it("still names what was searched for", async () => {
