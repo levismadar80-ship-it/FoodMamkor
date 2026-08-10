@@ -95,16 +95,27 @@ def _limits_of(route, registry) -> list[str]:
 def inventory() -> list[dict]:
     """Walk what the APP mounts.
 
-    Routers are included lazily: `app.routes` holds `_IncludedRouter` wrappers,
-    not `APIRoute`s, until something forces resolution. Reading `app.routes`
-    naively reports **zero** API routes — a silent empty answer. `app.openapi()`
-    forces it, and also populates slowapi's limit registry by importing the
-    decorated modules.
+    Routers are included lazily: `app.routes` holds `_IncludedRouter` wrappers
+    rather than `APIRoute`s, so a naive read reports **zero** API routes — a
+    silent empty answer. `_collect` below unwraps them recursively, which is
+    what makes the walk complete.
+
+    Router modules are imported by `from app.main import app`, and that import
+    is what runs the `@limiter.limit` decorators and fills slowapi's registry.
+
+    _This docstring previously credited `app.openapi()` with both jobs and the
+    call sat above. Both halves were wrong, and the measurement that "proved"
+    them was confounded: it compared a script importing only `app.rate_limit`
+    (registry empty) against one importing `app.main` **and** calling
+    `openapi()` (registry full), then attributed the difference to `openapi()`.
+    Two variables moved; one got the credit. Re-measured properly — 33 router
+    modules and 83 limits are already present after the plain import, and the
+    walk returns the same 181 routes with the call removed — so the call was
+    doing nothing and is gone. Raised by the CI reviewer on #2752._
     """
     from fastapi.routing import APIRoute  # noqa: PLC0415
 
     app = _load_app()
-    app.openapi()  # force lazy router inclusion + decorator registration
 
     from app.rate_limit import limiter  # noqa: PLC0415
 
@@ -128,10 +139,19 @@ def inventory() -> list[dict]:
         # because the table is not empty, just quietly short. A missing row in a
         # security audit reads as "no such endpoint".
         #
-        # router_registry.py is flat today, so this recursion is unreachable on
-        # current code. It is here so the walk does not depend on that staying
-        # true — the failure it prevents is silent by construction. Raised by
-        # the CI reviewer on #2752.
+        # NOT hypothetical — this recursion is reached on current code. The
+        # follows router IS nested, and without this branch the walk dropped
+        # four real routes (177 -> 181 when it was added):
+        #
+        #   POST   /producers/{producer_id}/follow
+        #   DELETE /producers/{producer_id}/follow
+        #   GET    /producers/{producer_id}/follow-status
+        #   GET    /users/me/following
+        #
+        # All four are behind get_current_user, so nothing public was missed —
+        # but the table was short and nothing said so, which is the failure the
+        # empty-rows guard below cannot catch. Raised by the CI reviewer on
+        # #2752 as a hypothetical; measurement showed it was already live.
         if type(route).__name__ == "_IncludedRouter":
             ctx = route.include_context
             for sub in route.original_router.routes:
