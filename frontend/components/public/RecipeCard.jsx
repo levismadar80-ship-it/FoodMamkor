@@ -20,6 +20,7 @@
  * RTL-safe: logical gap utilities only; no physical positional classes.
  */
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -33,6 +34,14 @@ export default function RecipeCard({ slug, recipe }) {
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
   // MEH-911: smart-crop through the central helper (mirrors ProducerCard:183).
   const imgSrc = optimizeCloudinary(recipe.image_url, { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-1976: `imgSrc ?` below only covers a MISSING url. A url that resolves
+  // but fails to load (the MEH-1925 Cloudinary 401) rendered a broken glyph
+  // instead of the no-photo cell two branches down. Failure now falls through
+  // to that same cell, so this surface's locked design owns both states.
+  // Derived during render: the state holds the src that failed, so a new
+  // `imgSrc` clears it with no effect and no reset.
+  const [failedSrc, setFailedSrc] = useState(null);
+  const imgError = failedSrc !== null && failedSrc === imgSrc;
 
   return (
     <Link
@@ -42,13 +51,14 @@ export default function RecipeCard({ slug, recipe }) {
       className="group block bg-surface-card border border-border rounded-none overflow-hidden transition-colors duration-base ease-quart hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
-        {imgSrc ? (
+        {imgSrc && !imgError ? (
           <Image
             src={imgSrc}
             alt={recipe.title}
             fill
             sizes="(max-width: 640px) 100vw, 33vw"
             className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
+            onError={() => setFailedSrc(imgSrc)}
           />
         ) : (
           // MEH-911: canonical no-photo state — green-50 tile + Leaf glyph +
