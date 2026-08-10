@@ -55,8 +55,13 @@ DELIBERATELY_UNLIMITED = {
     ("GET", "/push-vapid-key"),
 }
 
-# Needs a required query param; the value may be a miss — the limiter counts
-# the request either way, which is the property under test.
+# Deliberately NOT in MOUNTED: both need a query param or a path id, so the
+# plain `client.get(path)` sweep would 422 before reaching the limiter. They are
+# exercised by name in TestBoundaryPerDistinctLimit instead, which is where
+# their 60/min boundary is actually asserted.
+#
+# The value may be a miss — the limiter counts the request either way, which is
+# the property under test.
 REVIEWS = f"/reviews?producer_id={uuid.uuid4()}"
 PRODUCER_REVIEWS = f"/producers/{uuid.uuid4()}/reviews"
 
@@ -221,11 +226,19 @@ class TestNoNewUnlimitedPublicEndpoint:
     """
 
     def test_unlimited_public_set_has_not_grown(self):
-        import sys
-        from pathlib import Path
+        # Load the script by path rather than sys.path.insert: that mutates the
+        # interpreter for the REST of the pytest session, and re-collection
+        # appends the same entry again with no dedup. A test that leaves the
+        # import system dirtier than it found it can change how unrelated tests
+        # resolve modules. CI reviewer, #2752.
+        import importlib.util  # noqa: PLC0415
+        from pathlib import Path  # noqa: PLC0415
 
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-        from audit_public_endpoints import inventory  # noqa: PLC0415
+        script = Path(__file__).resolve().parent.parent / "scripts" / "audit_public_endpoints.py"
+        spec = importlib.util.spec_from_file_location("audit_public_endpoints", script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        inventory = module.inventory
 
         exposed = {
             (r["method"], r["path"])

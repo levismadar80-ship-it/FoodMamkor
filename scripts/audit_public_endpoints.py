@@ -64,7 +64,7 @@ def _auth_deps_of(route) -> list[str]:
     """Every dependency callable name attached to this route, at any depth."""
     names = []
     dependant = getattr(route, "dependant", None)
-    for dep in (dependant.dependencies if dependant else []):
+    for dep in dependant.dependencies if dependant else []:
         stack = [dep]
         while stack:
             d = stack.pop()
@@ -108,6 +108,15 @@ def inventory() -> list[dict]:
 
     from app.rate_limit import limiter  # noqa: PLC0415
 
+    # `_route_limits` is a private slowapi attribute. Assert it rather than
+    # letting an AttributeError surface: the traceback would point at this line
+    # while the actual cause is a slowapi upgrade that moved the registry, and
+    # the reader would go looking in the wrong place. CI reviewer, #2752.
+    assert hasattr(limiter, "_route_limits"), (
+        "slowapi no longer exposes `_route_limits` — the limit registry moved. "
+        "Re-derive _limits_of() against the new API; do NOT read the absence as "
+        "'no endpoint has a limit'."
+    )
     registry = limiter._route_limits
     rows = []
 
@@ -211,7 +220,9 @@ def self_test() -> int:
         r = rows.get((method, path))
         if r is None:
             if must_exist:
-                failures.append(f"{method} {path}: route not mounted (expected present)")
+                failures.append(
+                    f"{method} {path}: route not mounted (expected present)"
+                )
             return
         if not must_exist:
             failures.append(f"{method} {path}: route IS mounted (expected absent)")
@@ -219,7 +230,9 @@ def self_test() -> int:
         if public is not None and r["public"] != public:
             failures.append(f"{method} {path}: public={r['public']} expected {public}")
         if limited is not None and r["limited"] != limited:
-            failures.append(f"{method} {path}: limited={r['limited']} expected {limited}")
+            failures.append(
+                f"{method} {path}: limited={r['limited']} expected {limited}"
+            )
 
     # 1. Authed — the case the first script got wrong for 29 routes.
     expect("GET", "/producers/me", public=False)
