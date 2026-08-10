@@ -37,6 +37,8 @@ erDiagram
         boolean is_blocked
         timestamp created_at
         timestamp last_active_at "indexed, feeds DAU chart"
+        timestamp terms_accepted_at "nullable, tz-aware — MEH-1995 ToS consent; NULL = no record held, never 'refused'"
+        string terms_version "nullable VARCHAR(10) — which wording was accepted; audit-only, in no *Out schema"
     }
 
     producers {
