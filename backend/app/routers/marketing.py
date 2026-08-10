@@ -85,7 +85,8 @@ def decode_unsubscribe_token(token: str) -> str | None:
 
 
 @router.get("/stats", response_model=StatsOut)
-def get_stats(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_stats(request: Request, db: Session = Depends(get_db)):
     producers_count = (
         db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar()
         or 0

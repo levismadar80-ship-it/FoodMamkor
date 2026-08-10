@@ -184,7 +184,8 @@ def smart_search(
 
 
 @router.get("/search/trending", response_model=list[str])
-def trending_searches(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def trending_searches(request: Request, db: Session = Depends(get_db)):
     """Return top 5 queries that returned results, cached 1 hour."""
     now = time.monotonic()
     if (
