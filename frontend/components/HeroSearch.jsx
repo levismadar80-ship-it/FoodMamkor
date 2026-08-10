@@ -2,6 +2,9 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+// Plain next/link, matching this file's existing next/navigation useRouter and
+// the precedent in ProducersClient.jsx:5 — not the i18n wrapper.
+import Link from "next/link";
 import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -358,10 +361,26 @@ export default function HeroSearch({
           {loading && !hasAutoResults && (
             <p className="px-3 py-3 text-xs text-fg-muted">{t("loading")}</p>
           )}
+          {/* MEH-1975: a no-results state has to offer a way out, not just
+              report absence (NN/g: explain, then give one clear next action).
+              This block used to be the bare sentence below — the highest-traffic
+              search surface on the site, and a dead end. The same query typed
+              here and submitted lands on /producers, which already does this
+              well (FilterEmptyState: category chips + clear-all), so the way
+              out is simply a door to that surface rather than a new pattern. */}
           {!loading && !hasAutoResults && (
-            <p className="px-3 py-3 text-xs text-fg-muted">
-              {t("no_results_for")} &quot;{trimmed}&quot;
-            </p>
+            <div className="px-3 py-3">
+              <p className="text-xs text-fg-muted">
+                {t("no_results_for")} &quot;{trimmed}&quot;
+              </p>
+              <p className="mt-1 text-xs text-fg-muted">{t("no_results_hint")}</p>
+              <Link
+                href={`/producers?q=${encodeURIComponent(trimmed)}`}
+                className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+              >
+                {t("no_results_cta")}
+              </Link>
+            </div>
           )}
 
           {results.producers.length > 0 && (
