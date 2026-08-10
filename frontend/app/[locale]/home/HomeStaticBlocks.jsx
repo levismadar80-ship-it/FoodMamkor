@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Leaf, ArrowLeft } from "@phosphor-icons/react";
@@ -19,6 +20,12 @@ export function HomeRecentlyViewed({ items }) {
   const t = useTranslations();
   // Hook must run unconditionally (rules of hooks) — before the empty-list return.
   const affordance = useScrollAffordance();
+  // MEH-1976: producer id → the image src that failed to load. Keyed rather
+  // than a single boolean because these render inside a .map() — one shared
+  // flag would blank every sibling when a single image 401s (MEH-1925).
+  // Same rules-of-hooks constraint as `affordance` above: declared before the
+  // early return, not after it.
+  const [failedImgs, setFailedImgs] = useState({});
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
@@ -42,13 +49,14 @@ export function HomeRecentlyViewed({ items }) {
               className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
-                {imgSrc ? (
+                {imgSrc && failedImgs[p.id] !== imgSrc ? (
                   <Image
                     src={imgSrc}
                     alt={p.name}
                     fill
                     sizes="160px"
                     className="object-cover group-hover:scale-105 transition duration-300"
+                    onError={() => setFailedImgs((prev) => ({ ...prev, [p.id]: imgSrc }))}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-primary">
@@ -95,10 +103,17 @@ export function HomeRecentlyViewed({ items }) {
  */
 export function HomeFeaturedProducer({ featured }) {
   const t = useTranslations("home.featured");
+  // MEH-1976: above the `if (!featured)` early return — hooks cannot be
+  // conditional. Holds the src that failed so a new photo clears it on render.
+  const [failedSrc, setFailedSrc] = useState(null);
   if (!featured) return null;
   const photo = featured.photo
     ? optimizeCloudinary(featured.photo, { aspectRatio: IMAGE_RATIOS.featured, width: 900 })
     : null;
+  // The tonal-plate branch below is described as "never a broken <img>", which
+  // held only for a MISSING url. A url that 401s (MEH-1925) reached the <Image>
+  // and rendered the broken glyph on the homepage. Now it falls through here.
+  const photoFailed = failedSrc !== null && failedSrc === photo;
   const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
     .filter(Boolean)
     .join(" · ");
@@ -110,7 +125,7 @@ export function HomeFeaturedProducer({ featured }) {
           {/* MEH-991 (HOME-23): FREEZE §10 — framed 4:5, radius 16, --light loading
               fill, SOLID caption chip bottom/inline-start (blur dropped per FREEZE §10.4). */}
           <figure className="relative m-0 rounded-2xl bg-surface-card border border-border p-2">
-            {photo ? (
+            {photo && !photoFailed ? (
               <Image
                 src={photo}
                 alt={featured.name}
@@ -118,6 +133,7 @@ export function HomeFeaturedProducer({ featured }) {
                 height={625}
                 sizes="(max-width: 768px) 100vw, 42vw"
                 className="aspect-[4/5] w-full rounded-xl object-cover"
+                onError={() => setFailedSrc(photo)}
               />
             ) : (
               // tonal plate fallback — never a broken <img> (IMG-01 pattern)
