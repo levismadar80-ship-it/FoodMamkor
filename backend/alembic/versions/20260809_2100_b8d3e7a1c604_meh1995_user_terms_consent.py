@@ -24,11 +24,16 @@ this column exists to provide, and would be worse than holding nothing. The
 same reasoning is already recorded on the producers pair ("Both nullable,
 Expand-only (ADR-007, no backfill)", models.py).
 
-Scope note carried from the ticket: only the two PASSWORD registration paths
-write these columns. The three OAuth account-creation paths (Google consumer,
-Apple consumer, OAuth producer step-0) present no terms checkbox at all, so
-there is no consent event to record on them. Their rows stay NULL until that
-product gap is closed — see MEH-1995.
+Scope note: ALL THREE PASSWORD paths write these columns — consumer register,
+producer new-account register, and the MEH-143 producer UPGRADE. The upgrade is
+easy to miss (and was missed in this ticket's first pass) because it mutates an
+existing user row instead of constructing a User; it renders the terms checkbox
+unconditionally and hard-gates submit, so its consent event is as real as the
+other two. The right question is which routes COLLECT consent, not which build a
+User. The three OAuth account-creation paths (Google consumer, Apple consumer,
+OAuth producer step-0) present no terms checkbox at all, so there is no consent
+event to record on them. Their rows stay NULL until that product gap is closed
+— see MEH-1995.
 
 Reversibility: downgrade drops both columns. No other data is touched, so a
 re-upgrade lands on the same schema. Consent records captured between deploy
