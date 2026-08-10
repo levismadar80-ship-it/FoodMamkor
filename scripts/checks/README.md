@@ -188,6 +188,43 @@ spent; this directory is for guards that would otherwise need a new one.
 
 ---
 
+## Not every file here is a guard — `console-sweep.mjs` (MEH-1966)
+
+`console-sweep.mjs` is a **diagnostic tool**, not a guard, and the dispatcher
+will never run it: `run-all.sh` discovers executable `*.sh` at depth 1, and this
+is `.mjs`. That is deliberate rather than an oversight — it drives a real
+browser against a running app and takes minutes, which violates the *stay fast,
+no network* convention above. Run it by hand:
+
+```bash
+cd frontend                                    # where playwright is installed
+node ../scripts/checks/console-sweep.mjs --self-test        # classifier only
+node ../scripts/checks/console-sweep.mjs --base http://localhost:3000
+SWEEP_PASSWORD=… node ../scripts/checks/console-sweep.mjs --dashboard --base http://localhost:3400
+
+# From a CC sandbox against a live https:// target, cap TLS at 1.2 — the
+# sandbox's Chromium offers a TLS-1.3 ClientHello the Vercel edge drops,
+# which surfaces as ERR_CONNECTION_CLOSED and looks like the site is down.
+# Opt-in, because real browsers and CI runners must NOT be downgraded.
+SWEEP_TLS_MAX_12=1 node ../scripts/checks/console-sweep.mjs --base https://staging.mehamakor.online
+```
+
+Other env vars: `SWEEP_CHROMIUM_PATH` (point at an existing Chromium instead of
+downloading one), `SWEEP_EMAIL` / `SWEEP_PASSWORD` (the seeded owner for
+`--dashboard`), `SWEEP_OUT` (JSON output path, same as `--out`).
+
+It **refuses to report 404s** (exit 2) when a majority of routes 404 or when
+`NODE_ENV` is set in its own process, because that shape is environmental far
+more often than real — MEH-1966's first run called 18 of 18 routes broken, and
+the cause was an exported `NODE_ENV` on the dev server. `--control` lifts the
+refusal once you have re-run against a default-env server.
+
+If you later want a *guard* out of this (e.g. "no new console errors on `/`"),
+that is a separate `*.sh` that shells out to this tool — keep the tool
+non-blocking.
+
+---
+
 ## CI wiring
 
 One job, `repo-guards`, runs `bash scripts/checks/run-all.sh` and is wired into
