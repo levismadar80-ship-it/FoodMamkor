@@ -125,12 +125,26 @@ post-merge verification has been told these tools do not exist.
 **Not edited here** (findings are not self-authorised work, and this branch is a session
 log). Flagged for Sapir; it wants a one-line correction to ORDERS §6 with an as-of date.
 
-**Second, weaker observation on the same file:** the TEMPORARY Vercel-quota note says
-every deployment returns the rate-limit string. This PR's deployment reported
-**`Ignored`** (`Canceled by Ignored Build Step`) — the *configured* no-preview state,
-not the quota error. That is **not** enough to falsify the note (an ignored build is not
-a successful one), so it stays until someone observes a real success. Recorded so the
-next reader does not re-derive it.
+**Second finding on the same file — the TEMPORARY Vercel-quota note now meets its own
+falsification criterion.** The note (added 09/08) says *every* deployment returns
+`api-deployments-free-per-day`, and defines the test itself: *"Any Vercel status on a
+fresh push that is NOT the rate-limit string means the quota reset."*
+
+Measured on #2764 across two heads today: `b66ed0d0` → **`Ignored`**
+(`Canceled by Ignored Build Step`), and `b4b59686` → **`Building`**, then `Ignored`.
+A deployment that reaches the `ignoreCommand` has been **admitted past the quota
+check**, and `Building` is not a status a rate-limited account produces. **No
+rate-limit string appeared on either head.**
+
+By the note's own stated test that is a reset, and it says *"delete this whole
+section"* on sight. **I did not delete it** — context was nearly spent, and a half-done
+edit to the orders file is worse than an accurate report. Two-minute job for the next
+session: confirm one more deployment, delete the section, drop the queued
+staging-visual rechecks that came back clean.
+
+_(An earlier draft of this paragraph called the observation "not enough to falsify"
+because an `Ignored` build is not a *successful* one. That was me applying a stricter
+test than the note actually sets — and the `Building` status then settled it anyway.)_
 
 ---
 
