@@ -16,9 +16,22 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import RecipeCard from "@/components/public/RecipeCard";
+import { HomeRecentlyViewed } from "@/app/[locale]/home/HomeStaticBlocks";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
+}));
+
+vi.mock("@/hooks/useScrollAffordance", () => ({
+  default: () => ({ scrollRef: { current: null }, canScrollStart: false, canScrollEnd: false }),
+  ScrollArrows: () => null,
+}));
+
+// Siblings of the code under test that drag in next-intl's navigation stack.
+// Stubbed so this file exercises the image branch, not the router.
+vi.mock("@/components/BusinessCtaLink", () => ({ default: () => null }));
+vi.mock("@/components/FadeInSection", () => ({
+  default: ({ children }) => <div>{children}</div>,
 }));
 
 vi.mock("next/image", () => ({
@@ -53,5 +66,44 @@ describe("MEH-1976 — image fallback on load failure", () => {
   it("still renders the no-photo cell when there is no url at all (the case that always worked)", () => {
     render(<RecipeCard slug="bakery" recipe={{ ...recipe, image_url: null }} />);
     expect(screen.getByTestId("recipe-image-missing")).toBeTruthy();
+  });
+});
+
+/**
+ * The keyed-map surfaces are a genuinely different shape from RecipeCard, and the
+ * difference is the part worth testing. RecipeCard owns ONE image, so a boolean
+ * would have worked there. These render inside a .map(), where a single shared
+ * flag is the obvious implementation and is WRONG: one 401 would blank every
+ * sibling's photo too.
+ *
+ * That is the assertion below — not "the fallback appears" (which a shared flag
+ * also satisfies) but "the sibling is untouched", which only a keyed map passes.
+ * Swap `failedImgs[p.id]` for a single `useState(false)` and the second
+ * expectation fails while the first still passes.
+ */
+describe("MEH-1976 — a failed image must not blank its siblings", () => {
+  const items = [
+    { id: 1, name: "מאפיית רוח השדה", slug: "ruach", images: ["https://res.cloudinary.com/demo/a.jpg"] },
+    { id: 2, name: "גבינות תמר", slug: "tamar", images: ["https://res.cloudinary.com/demo/b.jpg"] },
+  ];
+
+  it("falls back only for the item whose image failed", () => {
+    render(<HomeRecentlyViewed items={items} />);
+
+    const first = screen.getByAltText("מאפיית רוח השדה");
+    expect(screen.getByAltText("גבינות תמר")).toBeTruthy();
+
+    fireEvent.error(first);
+
+    // The failed one is gone...
+    expect(screen.queryByAltText("מאפיית רוח השדה")).toBeNull();
+    // ...and the one that never failed is still rendering its photo.
+    expect(screen.getByAltText("גבינות תמר")).toBeTruthy();
+  });
+
+  it("renders every image when none fail (control)", () => {
+    render(<HomeRecentlyViewed items={items} />);
+    expect(screen.getByAltText("מאפיית רוח השדה")).toBeTruthy();
+    expect(screen.getByAltText("גבינות תמר")).toBeTruthy();
   });
 });
