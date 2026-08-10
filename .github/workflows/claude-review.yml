@@ -65,7 +65,7 @@ jobs:
       # upstream change land unannounced and un-reviewed in the one job whose
       # purpose IS review — the leading hypothesis for why this job has been
       # exiting at num_turns:1 repo-wide. Re-pin deliberately, never silently.
-      - uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
+      - uses: anthropics/claude-code-action@1623c36729ac1cd5895198cded705a287de7db79 # v1.0.187
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # MEH-1844: `show_full_output: true` lived here as a temporary
