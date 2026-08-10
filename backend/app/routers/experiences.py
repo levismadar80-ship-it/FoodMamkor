@@ -185,7 +185,9 @@ def _public_listing_query(db: Session):
 
 
 @router.get("", response_model=list[ExperienceListOut])
+@limiter.limit("120/minute")
 def list_experiences(
+    request: Request,
     category: str | None = None,
     city: str | None = None,
     db: Session = Depends(get_db),
@@ -209,7 +211,8 @@ def list_experiences(
 # declaration order, so a later `/count` would be swallowed by the catch-all
 # and arrive as an experience_id of "count", which then fails UUID parsing.
 @router.get("/count", response_model=ExperienceCountOut)
-def count_experiences(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def count_experiences(request: Request, db: Session = Depends(get_db)):
     """How many experiences the public feed would show right now.
 
     Exists so the nav can gate the "חוויות" link on real supply instead of
@@ -248,7 +251,9 @@ def list_my_experiences(
 
 
 @router.get("/{experience_id}", response_model=ExperienceDetailOut)
+@limiter.limit("120/minute")
 def get_experience(
+    request: Request,
     experience_id: UUID,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
