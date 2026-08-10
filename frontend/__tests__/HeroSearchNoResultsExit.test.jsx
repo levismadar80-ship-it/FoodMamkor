@@ -45,7 +45,11 @@ vi.mock("@/lib/api", () => ({
 
 async function typeQuery(q) {
   render(<HeroSearch placeholder="חיפוש" srLabel="חיפוש" />);
-  const input = screen.getByRole("combobox", { hidden: true }) ?? screen.getByRole("textbox");
+  // queryByRole, not getByRole: get* THROWS on a miss, so a  after it is
+  // dead code — the fallback could never run and the test would error instead
+  // of falling back. Flagged by the CI reviewer on #2758.
+  const input =
+    screen.queryByRole("combobox", { hidden: true }) ?? screen.getByRole("textbox");
   await act(async () => {
     fireEvent.change(input, { target: { value: q } });
   });
