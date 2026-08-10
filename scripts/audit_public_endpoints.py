@@ -112,6 +112,22 @@ def inventory() -> list[dict]:
     rows = []
 
     def _collect(route, prefix=""):
+        # Recurse into nested inclusions. A router that itself calls
+        # include_router() appears here as another _IncludedRouter, and simply
+        # returning on "not an APIRoute" would drop its whole subtree — leaving
+        # a PARTIAL inventory, which the empty-rows guard below cannot catch
+        # because the table is not empty, just quietly short. A missing row in a
+        # security audit reads as "no such endpoint".
+        #
+        # router_registry.py is flat today, so this recursion is unreachable on
+        # current code. It is here so the walk does not depend on that staying
+        # true — the failure it prevents is silent by construction. Raised by
+        # the CI reviewer on #2752.
+        if type(route).__name__ == "_IncludedRouter":
+            ctx = route.include_context
+            for sub in route.original_router.routes:
+                _collect(sub, prefix + (getattr(ctx, "prefix", "") or ""))
+            return
         if not isinstance(route, APIRoute):
             return
         deps = _auth_deps_of(route)

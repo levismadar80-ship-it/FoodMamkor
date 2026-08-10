@@ -15,7 +15,6 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from app.rate_limit import limiter
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import (
@@ -26,6 +25,7 @@ from app.auth import (
 )
 from app.database import get_db
 from app.models import Event, Producer, User
+from app.rate_limit import limiter
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
 from app.utils.clock import israel_today
 

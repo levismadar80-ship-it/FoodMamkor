@@ -4,7 +4,6 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from app.rate_limit import limiter
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -16,6 +15,7 @@ from app.auth import (
 )
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     GroupBuyCommitRequest,
     GroupBuyCreate,
