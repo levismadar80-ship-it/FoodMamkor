@@ -123,9 +123,7 @@ class TestAuth:
         assert created.terms_accepted_at is not None
         assert created.terms_version == TERMS_VERSION
 
-    def test_register_producer_upgrade_records_terms_consent(
-        self, client, db, monkeypatch
-    ):
+    def test_register_producer_upgrade_records_terms_consent(self, client, db):
         # MEH-1995 (adversarial review R-1): the MEH-143 upgrade path does NOT
         # construct a User — it mutates current_user — so it fell outside the
         # "enumerate every User(...) site" sweep that produced the other stamps
@@ -161,7 +159,7 @@ class TestAuth:
         assert upgraded.terms_version == TERMS_VERSION
 
     def test_producer_upgrade_without_flag_preserves_existing_consent(
-        self, client, db, monkeypatch
+        self, client, db
     ):
         # MEH-1995 (CI review): the stamp at auth.py is guarded on the flag
         # precisely so an upgrade CANNOT erase a consent this user already gave
