@@ -22,6 +22,7 @@ from app.routers import (
     holiday_mode,
     marketing,
     producer_me,
+    producer_name_requests,
     producer_recipes,
     producers,
     referrals,
@@ -112,6 +113,9 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_whatsapp.router)
     app.include_router(chat.router)
     app.include_router(category_requests.router)
+    # MEH-1872: the re-moderated name-change route. Deliberately NOT part of
+    # producer_me — that router's writable-field set is what MEH-1851 closed.
+    app.include_router(producer_name_requests.router)
     app.include_router(referrals.router)
     app.include_router(group_buys.router)
     app.include_router(group_buys.admin_router)

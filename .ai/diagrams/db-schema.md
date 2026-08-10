@@ -20,6 +20,7 @@ erDiagram
     producers ||--o{ products : "sells"
     producers ||--o{ delivery_areas : "delivers_to"
     producers ||--o{ producer_offers : "declares (max 1 ACTIVE)"
+    producers ||--o{ producer_name_change_requests : "requests rename (max 1 PENDING)"
     categories ||--o{ producer_categories : ""
 
     users {
@@ -126,6 +127,18 @@ erDiagram
         boolean is_active "default true; UNIQUE partial index on (producer_id) WHERE is_active = at most one active offer per business. Inactive rows persist as history"
         timestamp created_at
         timestamp updated_at
+    }
+
+    producer_name_change_requests {
+        uuid id PK
+        uuid producer_id FK "CASCADE, indexed"
+        string current_name "the name as it stood when filed — stored, not read back at review time, because producers.name can move under the admin between filing and review"
+        string requested_name "MEH-1872: the public producers.name does NOT move until an admin approves. This table is the whole reason a rename is re-moderated rather than a setattr (the hole MEH-1851 closed)"
+        text reason "nullable, owner's explanation"
+        string status "pending|approved|rejected, indexed; app enforces at most one PENDING per producer"
+        text admin_notes "nullable, sanitized"
+        timestamp created_at
+        timestamp reviewed_at "nullable until decided"
     }
 
     favorites {
