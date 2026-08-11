@@ -1167,12 +1167,19 @@ def confirm_phone_otp(
     # zero rows. Exactly one caller can win, per token.
     #
     # Chose the conditional UPDATE over `SELECT … FOR UPDATE` (the card's
-    # option (a)) for three reasons: it is one statement rather than a
-    # lock-then-mutate pair; it holds no row lock across the
-    # `_pending_and_approvable` query below; and `with_for_update()` is a
-    # silent no-op on backends that ignore it, which would make the guard
-    # disappear without any test going red — the failure mode this repo keeps
-    # getting caught by.
+    # option (a)) for two reasons: it is one statement rather than a
+    # lock-then-mutate pair, so there is no window between them to reason
+    # about; and `with_for_update()` is a silent no-op on backends that ignore
+    # it, which would make the guard disappear without any test going red —
+    # the failure mode this repo keeps getting caught by.
+    #
+    # NOT a reason, and stated here because the first draft of this comment
+    # claimed it was: the two forms hold the row lock for exactly the same
+    # span. A Postgres row-level write lock lives until the TRANSACTION ends,
+    # not until the statement returns, so the lock taken here is still held
+    # through `_pending_and_approvable` and the status flip below, right up to
+    # `db.commit()`. Anything slow added between here and that commit widens
+    # the window in which a concurrent confirm for the same token blocks.
     #
     # The loser gets the SAME 400 as a wrong or expired code. That is
     # deliberate: from the caller's side a lost race and a stale code are the
@@ -1199,6 +1206,15 @@ def confirm_phone_otp(
     # the threshold here, so a ping owned by one site alone gets swallowed.
     # The snapshot is also what keeps the already-pending path silent: such a
     # producer is approvable before the call, so the false→true edge is absent.
+    #
+    # MEH-1820 — REORDERING THIS LINE BREAKS A TEST IN A SILENT WAY. The
+    # concurrency guard in tests/test_otp_confirm_concurrency.py patches a
+    # barrier over `_pending_and_approvable` precisely because it is the one
+    # call between the token claim above and the commit below. If some other
+    # call moves into that gap, the barrier stops marking "inside the claim
+    # window" and the test degrades into either a no-op that passes on broken
+    # code or a five-second timeout — neither of which announces itself. Move
+    # this and re-read that test's docstring.
     was_approvable = _pending_and_approvable(db, producer)
     # MEH-745: self-registered producers wait in pending_whatsapp until the
     # business phone is verified; a successful OTP confirm is the gate that
