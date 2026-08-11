@@ -1234,7 +1234,13 @@
         "label": "Sort:",
         "nearest": "Distance",
         "top_rated": "Top rated",
-        "newest": "Recently joined"
+        "newest": "Recently joined",
+        "locating": "Finding your location…",
+        "geo_denied": "Location access was declined. You can pick a city to sort by distance.",
+        "geo_unavailable": "Location is unavailable right now. You can pick a city to sort by distance.",
+        "geo_timeout": "Finding your location took too long. Try again, or pick a city.",
+        "geo_unknown": "We could not get your location. You can pick a city to sort by distance.",
+        "clear_location": "Clear the saved location"
       }
     },
     "errors": {
