@@ -3063,6 +3063,8 @@
       "submit_aria": "חפש",
       "loading": "טעינת תוצאות...",
       "no_results_for": "אין תוצאות עבור",
+      "no_results_hint": "אפשר לחפש אחרת, או לעבור לכל בתי העסק ולסנן שם.",
+      "no_results_cta": "לכל בתי העסק ←",
       "section_producers": "בתי עסק",
       "section_categories": "קטגוריות",
       "section_cities": "ערים",
