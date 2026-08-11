@@ -515,6 +515,43 @@ class User(Base):
     # expires 1 hour after issue, cleared on redeem or re-issue.
     reset_token = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-1995: evidence that this user accepted the terms, and which version.
+    # Mirrors the Producer.declared_at / declaration_version pair (see ~:188) —
+    # same shape, same rationale, same Expand-only treatment (ADR-007).
+    #
+    # Both nullable with NO backfill, and that is deliberate rather than lazy:
+    # NULL means "we hold no record of acceptance", which is the truth for
+    # every user created before this column existed. Writing a retroactive
+    # timestamp would assert she agreed at a moment we cannot evidence — worse
+    # than an honest NULL, because it manufactures the very proof the column
+    # exists to provide.
+    #
+    # Stamped on ALL THREE password paths (auth.py): consumer register, producer
+    # register, and the MEH-143 producer UPGRADE — which mutates current_user
+    # instead of constructing a User, and so fell outside the "enumerate every
+    # User(...) site" sweep and shipped briefly with the consent discarded. The
+    # right question is which routes COLLECT consent, not which build a User.
+    # (This comment said "the two password-registration paths" until the upgrade
+    # stamp landed; a stale count here is the same enumeration error that caused
+    # the bug, so it is worth keeping exact.) The three OAuth account-creation
+    # paths present no checkbox at all, so there is no consent event to record
+    # there — see the OAuth gap noted on MEH-1995; a product decision, not a gap.
+    # DO NOT expose in UserOut — audit-only (MEH-1995). Deliberately absent from
+    # every response schema, admin included. This is STRICTER than the sibling
+    # pair, NOT a mirror of it: declared_at / declaration_version ARE admin-
+    # visible via ProducerAdminOut (schemas.py:2313-2314), while these two are
+    # exposed nowhere. Phrasing matters here — "mirroring the sibling's admin-
+    # only treatment" would invite a future ADR-006 R2 parity sweep to "restore
+    # parity" by publishing a consent timestamp on an admin payload, which is
+    # the exact outcome this comment exists to prevent (docs/DATA.md agrees:
+    # "stricter than the sibling pair, which is admin-visible").
+    # Both UserOut and UserAdminOut
+    # enumerate fields explicitly and Pydantic v2 from_attributes maps only
+    # declared fields, so these cannot surface by accident — this comment records
+    # the omission as intentional so a future ADR-006 R2 parity sweep does not
+    # "fix" it by publishing a consent timestamp on a public profile payload.
+    terms_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    terms_version = Column(String(10), nullable=True)
     # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.
     # POST /auth/logout-all-devices increments this; old tokens with a
     # stale `tv` value are rejected. Fail-open: tokens without a `tv`
