@@ -317,19 +317,34 @@ def test_a_non_slug_integrity_error_propagates_instead_of_being_retried(
     Shown failing by construction: drop the `_is_slug_collision` guard and this
     request returns 200 with the producer approved — the unrelated violation
     gone with no trace.
+
+    The arming flag is not defensive noise, it is the whole test. The first
+    version patched `Session.commit` to raise on call **1**, and call 1 turned
+    out to be `make_user` inside the `_admin` fixture — so the exception fired
+    in setup, `pytest.raises` caught it, the endpoint never ran, and the test
+    passed identically with the guard deleted. It took 1.05 s, which is what
+    gave it away. Arming inside `_mint_slug_if_absent` pins the raise to the
+    one commit inside `_persist_approval`.
     """
     producer = _pending(db, name="חוות הבדיקה הזרה")
     producer_id = producer.id
+    _admin(db)  # created BEFORE the patch — its own commit must not be the one caught
 
     real_commit = Session.commit
-    calls = {"n": 0}
+    real_mint = admin_module._mint_slug_if_absent
+    armed = {"yes": False}
+
+    def arming_mint(session, prod):
+        armed["yes"] = True
+        return real_mint(session, prod)
 
     def commit_raising_unrelated(self, *args, **kwargs):
-        calls["n"] += 1
-        if calls["n"] == 1:
+        if armed["yes"]:
+            armed["yes"] = False
             raise _integrity_error("users_email_key")
         return real_commit(self, *args, **kwargs)
 
+    monkeypatch.setattr(admin_module, "_mint_slug_if_absent", arming_mint)
     monkeypatch.setattr(Session, "commit", commit_raising_unrelated)
 
     with pytest.raises(IntegrityError):
