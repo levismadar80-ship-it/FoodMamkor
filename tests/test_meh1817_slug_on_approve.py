@@ -138,20 +138,42 @@ def test_a_name_that_slugifies_to_nothing_leaves_the_slug_null(client, db):
 # ---------- the NULL-slug census (report only, no backfill) ----------
 
 
-def test_census_query_shape_is_valid(client, db):
-    """The count the card asks for, as a runnable query rather than prose.
-
-    Backfill of existing NULL slugs is explicitly OUT OF SCOPE — this exists so
-    the number can be produced against any environment without re-deriving the
-    query, and so the shape is proven to execute.
-    """
-    _pending(db, name="חוות ללא סלאג")
-    approved_null = (
+def _approved_null_slug_count(db):
+    """The census the card asks for. Run this against any environment for the
+    figure — it is the query, not a number quoted from somewhere unreachable."""
+    return (
         db.query(Producer)
         .filter(Producer.status == "approved", Producer.slug.is_(None))
         .count()
     )
 
-    assert approved_null == 0, (
-        "a pending producer must not be counted as an approved NULL-slug row"
+
+def test_approving_leaves_no_approved_producer_without_a_slug(client, db):
+    """The census, pointed at code that can actually move it.
+
+    The first version of this test created a PENDING producer and asserted the
+    approved-NULL count was 0 — which it can never not be, since the filter
+    requires status="approved". It passed in every world, including one where
+    the entire mint is deleted. Zero discriminating power, dressed as a census.
+    That was the third vacuous assertion I wrote in this session; the CI
+    reviewer caught the first two and the adversarial reviewer caught this one.
+
+    Now it approves a real slug-less producer and asserts the count the census
+    would report afterwards. Fails pre-fix at 1 == 0.
+
+    Backfill of pre-existing NULL slugs stays OUT OF SCOPE — this asserts only
+    that no NEW approval adds to that population.
+    """
+    producer = _pending(db, name="חוות ללא סלאג")
+    assert producer.slug is None
+    before = _approved_null_slug_count(db)
+
+    assert _approve(client, db, producer).status_code == 200
+
+    db.refresh(producer)
+    assert producer.status == "approved"
+    assert _approved_null_slug_count(db) == before, (
+        "approving a slug-less producer must not grow the approved-NULL-slug "
+        f"population; it went from {before} to {_approved_null_slug_count(db)}"
     )
+    assert producer.slug == "חוות-ללא-סלאג"

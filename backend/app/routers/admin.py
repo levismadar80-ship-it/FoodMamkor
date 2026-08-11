@@ -6,6 +6,7 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
@@ -89,6 +90,72 @@ def _ensure_unique_slug(
                 return candidate
         candidate = f"{base_slug}-{counter}"
         counter += 1
+
+
+def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
+    """MEH-1817 — publish-time canonicalization of the producer's URL.
+
+    Self-registration (`auth.py`, both branches) builds `Producer(...)` with no
+    slug, and `_slugify` ran only on the admin-create / admin-update / import
+    paths — so a self-registered business stayed `slug=NULL` forever and its
+    public page fell back to `/producer/{uuid}`, losing the Hebrew URL the
+    catalog's SEO is built on.
+
+    Approval rather than registration: the name can still change during review,
+    and a slug minted from a name that then changes is worse than none — it is
+    a wrong URL that has to be redirected.
+
+    Guarded on `not producer.slug`, so re-approving a business never rewrites
+    an existing (possibly admin-chosen) slug.
+
+    `or None` is load-bearing: `_ensure_unique_slug` returns "" unchanged for an
+    empty base, so a name that slugifies to nothing must leave the column NULL.
+    An empty string is neither a slug nor NULL — it breaks the id-URL fallback's
+    NULL check AND satisfies the `not producer.slug` guard forever after, so no
+    later approval could repair it.
+    """
+    if not producer.slug:
+        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
+
+
+def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Producer:
+    """Mint the slug and commit, retrying once on a unique-slug collision.
+
+    `producers.slug` is UNIQUE (`models/models.py:112`) and `_ensure_unique_slug`
+    is SELECT-then-return with no lock, so two admins approving two same-named
+    businesses in one window both see the candidate free and both take it. The
+    second commit then violates the constraint.
+
+    That exposure is NEW and belongs to MEH-1817: before the mint, this handler
+    never wrote `slug`, so it could not reach the constraint at all. Left
+    uncaught it would be a raw 500 **and** roll back the entire transaction —
+    the approval, the status flip, the requested-changes clear — so the losing
+    admin's approval would fail silently with no notification sent.
+
+    Recovery follows the house pattern (`reviews.py:288`, `reports.py:62`,
+    `favorites.py:72`, `referrals.py:54`, `producer_me.py:228`): roll back and
+    retry once. The retry re-reads the row, so `_ensure_unique_slug` now sees
+    the winner's committed slug and suffixes past it.
+
+    Not retried twice. A second collision would mean a third admin approving
+    the same name in the same instant; letting that raise is more honest than
+    looping, and a 500 whose cause is one frame up beats one nobody can explain.
+    """
+    _mint_slug_if_absent(db, producer)
+    try:
+        db.commit()
+        return producer
+    except IntegrityError:
+        db.rollback()
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
+    producer.status = "approved"
+    producer.requested_changes = None
+    producer.changes_requested_at = None
+    _mint_slug_if_absent(db, producer)
+    db.commit()
+    return producer
 
 
 def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
@@ -526,34 +593,13 @@ def approve_producer(
             user.id,
         )
     producer.status = "approved"
-    # MEH-1817: mint the slug at APPROVAL time — publish-time canonicalization.
-    # Self-registration (auth.py, both branches) builds Producer(...) with no
-    # slug, and only the admin-create / admin-update / import paths ever ran
-    # _slugify, so a self-registered business stayed slug=NULL forever and its
-    # public page fell back to /producer/{uuid} — losing the Hebrew URL the
-    # catalog's SEO is built on.
-    #
-    # Approval is the right moment rather than registration: the name can still
-    # change during review, and a slug minted from a name that then changes is
-    # worse than no slug (it is a wrong URL that must be redirected).
-    #
-    # Guarded on `not producer.slug`, so re-approving a business that already
-    # has one — including an admin-chosen slug — never rewrites it. Reuses the
-    # existing helpers rather than adding slug logic: _ensure_unique_slug
-    # already rejects RESERVED_SLUGS and suffixes -2, -3 on collision.
-    #
-    # `or None` matters: _ensure_unique_slug returns "" unchanged for an empty
-    # base, and a name that slugifies to nothing (punctuation only) must leave
-    # the column NULL so the id-URL fallback keeps working. Without it the
-    # column would hold an empty string, which is neither a slug nor NULL and
-    # would satisfy the `not producer.slug` guard forever after.
-    if not producer.slug:
-        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
     # MEH-1011: clear the request-changes trail on approve — the completion
     # request (if any) is resolved once the business is approved.
     producer.requested_changes = None
     producer.changes_requested_at = None
-    db.commit()
+    # MEH-1817: slug mint + commit, extracted so this handler stays under the
+    # C901 ceiling. See _persist_approval for why the commit is retried.
+    producer = _persist_approval(db, producer_id, producer)
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
