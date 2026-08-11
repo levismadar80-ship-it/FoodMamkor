@@ -91,6 +91,7 @@ import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any, Iterator
@@ -226,7 +227,10 @@ def list_resources(
         limiter.wait()
         params = f"max_results={PAGE_SIZE}"
         if cursor:
-            params += f"&next_cursor={cursor}"
+            # Encoded rather than interpolated raw: Cloudinary cursors are
+            # base64-safe today, but a query param built by concatenation is
+            # one encoding change away from silently truncating.
+            params += f"&next_cursor={urllib.parse.quote_plus(cursor)}"
         url = f"{API_BASE}/{cloud}/resources/{resource_type}?{params}"
         req = urllib.request.Request(url, headers={"Authorization": auth})
         with urllib.request.urlopen(req, timeout=60) as resp:
@@ -279,8 +283,13 @@ def _self_test() -> int:
     invented (.claude/rules/testing.md).
     """
     failures: list[str] = []
+    # Names of every assertion actually executed. The summary line counts THIS,
+    # never a literal — a hardcoded tally goes stale the moment a case is added,
+    # and a passing run that misreports its own coverage is worse than silent.
+    ran: list[str] = []
 
     def check(name: str, got: Any, want: Any) -> None:
+        ran.append(name)
         if got != want:
             failures.append(f"  {name}: got {got!r}, want {want!r}")
 
@@ -355,6 +364,7 @@ def _self_test() -> int:
     # actually gives, and state the same number in the message — a threshold and
     # a description that disagree is a check nobody can act on.
     MIN_ELAPSED = 0.09
+    ran.append("ratelimit/spacing")
     if elapsed < MIN_ELAPSED:
         failures.append(
             f"  ratelimit: 3 calls at 20rps took {elapsed:.3f}s, expected >={MIN_ELAPSED:.2f}s"
@@ -365,7 +375,8 @@ def _self_test() -> int:
         for f in failures:
             _log(f)
         return 1
-    _log("self-test OK — 14 assertions, 7 of them against real account data")
+    real = sum(1 for n in ran if n.startswith("real"))
+    _log(f"self-test OK — {len(ran)} assertions, {real} of them against real account data")
     return EXIT_OK
 
 
