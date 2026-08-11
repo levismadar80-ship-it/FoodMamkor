@@ -132,6 +132,11 @@ describe("EventForm — submit validation (MEH-1809)", () => {
     fireEvent.change(document.getElementById("registration_url"), {
       target: { value: "https://example.com/signup" },
     });
+    // MEH-2013: city + category are required now. Fixture only — the subject
+    // of this test is unchanged. Their own coverage lives in
+    // EventFormRequiredFields.test.jsx.
+    fireEvent.change(document.getElementById("category"), { target: { value: "שוק" } });
+    fireEvent.change(document.getElementById("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByText(T.submit));
 
     expect(api.post).toHaveBeenCalled();
@@ -153,6 +158,11 @@ describe("EventForm — submit validation (MEH-1809)", () => {
 
     fireEvent.change(document.getElementById("title"), { target: { value: "יום פתוח" } });
     fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + category are required now. Fixture only — the subject
+    // of this test is unchanged. Their own coverage lives in
+    // EventFormRequiredFields.test.jsx.
+    fireEvent.change(document.getElementById("category"), { target: { value: "שוק" } });
+    fireEvent.change(document.getElementById("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByText(T.submit));
 
     expect(api.post).toHaveBeenCalledWith(
