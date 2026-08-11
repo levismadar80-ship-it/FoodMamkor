@@ -280,10 +280,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       event_date: form.event_date,
       event_time: form.event_time || null,
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
-      location_type: form.location_type,
-      // MEH-2013: required on both sides now — validateExperienceForm has
-      // already rejected an empty/whitespace value by the time we get here.
-      city: form.city.trim(),
+      // MEH-2013: `|| null` is defence in depth, not a live path.
+      // validateExperienceForm has already rejected an empty location_type
+      // and an empty/whitespace city by the time we get here, so neither can
+      // be "" — but building the payload so it does not DEPEND on that is
+      // free, and it mirrors the create-side `|| undefined` a few lines up.
+      // Without it, relaxing a client rule later would silently start sending
+      // `location_type: ""` (422 against ExperienceUpdate's pattern) and
+      // `city: ""` (accepted, quietly converting a legacy NULL to an empty
+      // string). Guarded by ExperienceFormLegacyRowEdit.test.jsx.
+      location_type: form.location_type || null,
+      city: form.city.trim() || null,
       address: form.address || null,
       lat: form.lat ?? null,
       lng: form.lng ?? null,
