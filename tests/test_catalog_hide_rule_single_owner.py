@@ -21,7 +21,9 @@ inline comparison and requires a hit, and the real-corpus case below anchors
 it to a committed file rather than to invented fixtures alone.
 """
 
+import io
 import re
+import tokenize
 from pathlib import Path
 
 APP_ROOT = Path(__file__).resolve().parents[1] / "backend" / "app"
@@ -75,12 +77,31 @@ def _strip_comments(source: str) -> str:
     `_call_sites` below already stripped comments for exactly this reason; the
     asymmetry between the two probes was the bug, and it produced a false RED
     rather than a false green — the rarer and more confusing direction.
+
+    Uses ``tokenize`` rather than ``line.split("#", 1)``. The naive split was
+    the first implementation and the CI reviewer caught it on PR #2778: a `#`
+    inside a **string literal** — a URL fragment, a colour, a regex — truncates
+    the rest of the line, and if a filter call sat after it on that line the
+    violation would vanish from the scan. That is a **false green** on a guard
+    whose entire purpose is not to fail silently, so it is worth the six extra
+    lines. `tokenize` blanks only real COMMENT tokens.
+
+    On a file that does not tokenize, this returns the source **unstripped**:
+    that can only produce a false RED (a comment read as code), which fails
+    loudly, and the file is broken Python anyway.
     """
-    out = []
-    for line in source.splitlines():
-        code = line.split("#", 1)[0]
-        out.append(code + " " * (len(line) - len(code)))
-    return "\n".join(out)
+    lines = source.splitlines()
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return source
+    for tok in tokens:
+        if tok.type != tokenize.COMMENT:
+            continue
+        row, col = tok.start
+        line = lines[row - 1]
+        lines[row - 1] = line[:col] + " " * (len(line) - col)
+    return "\n".join(lines)
 
 
 def _scan(root: Path) -> list[tuple[Path, int, str]]:
@@ -199,6 +220,32 @@ def test_probe_does_not_flag_a_comment_describing_the_banned_shape(tmp_path):
     )
 
     assert _scan(tmp_path) == []
+
+
+def test_probe_is_not_blinded_by_a_hash_inside_a_string_literal(tmp_path):
+    """The CI reviewer's finding on PR #2778, pinned.
+
+    A `#` in a string literal is not a comment. Splitting on it truncates the
+    rest of the line, and a violation sitting after it disappears from the
+    scan — a FALSE GREEN on the guard, which is the failure direction that
+    actually matters here. `tokenize` blanks only real COMMENT tokens.
+
+    The `#` and the violation must sit on the SAME line for this to
+    discriminate — with them on separate lines the naive split finds the
+    violation anyway and the control proves nothing. (First draft of this test
+    made exactly that mistake.)
+    """
+    tricky = tmp_path / "tricky.py"
+    tricky.write_text(
+        'ANCHOR = "docs#vacation"; '
+        "q = q.filter(Producer.availability_state != ON_VACATION)\n",
+        encoding="utf-8",
+    )
+
+    hits = _scan(tmp_path)
+
+    assert len(hits) == 1, "a '#' inside a string literal blinded the scan"
+    assert hits[0][1] == 1
 
 
 def test_call_site_counter_ignores_the_definition_and_prose(tmp_path):
