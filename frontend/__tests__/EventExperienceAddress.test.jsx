@@ -80,6 +80,10 @@ describe("MEH-1404 — event create form sends lat/lng", () => {
 
     fireEvent.change(container.querySelector("#title"), { target: { value: "סדנת אפייה" } });
     fireEvent.change(container.querySelector("#event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + category are required now. Fixture only — the subject
+    // here is still lat/lng.
+    fireEvent.change(container.querySelector("#category"), { target: { value: "שוק" } });
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("pick-location"));
     fireEvent.click(container.querySelector('button[type="submit"]'));
 
@@ -98,6 +102,10 @@ describe("MEH-1404 — event create form sends lat/lng", () => {
 
     fireEvent.change(container.querySelector("#title"), { target: { value: "סדנת אפייה" } });
     fireEvent.change(container.querySelector("#event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + category are required now. Fixture only — the subject
+    // here is still lat/lng.
+    fireEvent.change(container.querySelector("#category"), { target: { value: "שוק" } });
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
     fireEvent.click(container.querySelector('button[type="submit"]'));
 
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/events", expect.anything()));

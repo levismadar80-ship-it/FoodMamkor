@@ -4685,7 +4685,10 @@
       "field_price_label_full": "Price (0 = free)",
       "field_max_participants_label_full": "Max participants",
       "save": "Save",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "field_category_placeholder": "Choose a category",
+      "error_city_required": "A city is required",
+      "error_category_required": "A category is required"
     }
   },
   "settings": {

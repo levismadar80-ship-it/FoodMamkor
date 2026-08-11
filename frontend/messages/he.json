@@ -4702,7 +4702,10 @@
       "field_price_label_full": "מחיר (0 = חינם)",
       "field_max_participants_label_full": "מקסימום משתתפים",
       "save": "שמירה",
-      "saving": "שומרת…"
+      "saving": "שומרת…",
+      "field_category_placeholder": "בחרו קטגוריה",
+      "error_city_required": "חובה לבחור עיר",
+      "error_category_required": "חובה לבחור קטגוריה"
     }
   },
   "settings": {

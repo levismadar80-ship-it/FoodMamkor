@@ -30,6 +30,15 @@ const BASE = "http://localhost:3100";
 const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const USER = { id: 7, email: "demo-owner@example.com", role: "producer", name: "דנה" };
+const PRODUCER = {
+  id: 42,
+  name: "מאפיית שדה",
+  is_approved: true,
+  status: "approved",
+  categories: [],
+  products: [],
+  images: [],
+};
 const VIEWPORTS = [
   { tag: "375", width: 375, height: 812 },
   { tag: "1440", width: 1440, height: 900 },
@@ -63,9 +72,19 @@ async function newPage(browser, vp) {
         body: JSON.stringify({ id: "11111111-1111-1111-1111-111111111111" }),
       });
     }
+    if (req.method() === "POST" && path === "/events") {
+      posted.push(JSON.parse(req.postData() || "{}"));
+      return route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "22222222-2222-2222-2222-222222222222" }),
+      });
+    }
     const body =
       path === "/auth/me" ? USER
       : path === "/experiences/validate" ? { status: "APPROVED" }
+      : path === "/producers/me" ? PRODUCER
+      : path === "/producers/me/dashboard" ? { producer: PRODUCER }
       : path.startsWith("/cities") ? []
       : [];
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -154,10 +173,68 @@ async function run(browser, vp) {
   await ctx.close();
 }
 
+// MEH-2013 §2ד — the SAME class in the event form: "עיר *" enforced nowhere,
+// and "קטגוריה *" pre-filled with "אחר" so a required field was satisfied by a
+// catch-all nobody chose. The server DID require category, but the form is
+// noValidate, so the only failure path was a raw 422 with no message.
+async function runEvents(browser, vp) {
+  console.log(`\n== /he/producer/dashboard/events/new @ ${vp.width}px ==`);
+  const { ctx, page, pageErrors, posted } = await newPage(browser, vp);
+  await page.goto(`${BASE}/he/producer/dashboard/events/new`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+
+  const submit = () => page.locator('button[type="submit"]').first().click();
+  const errorTextsNow = () => errorTexts(page);
+
+  // ---- 1. fresh form: no category preselected ----------------------------
+  await shoot(page, vp.tag, "5-event-fresh-form");
+  const cat0 = await page.locator("#category").inputValue();
+  check(cat0 === "", 'fresh form has no category preselected (was "אחר")', `value=${JSON.stringify(cat0)}`);
+  const placeholderDisabled = await page.locator('#category option[value=""]').isDisabled();
+  check(placeholderDisabled, "placeholder option is disabled");
+
+  // ---- 2. submit with no category ----------------------------------------
+  await page.locator("#title").fill("יום פתוח במאפייה");
+  await page.locator("#event_date").fill("2026-09-01");
+  await page.locator("#city").fill("תל אביב");
+  await submit();
+  await page.waitForTimeout(300);
+  await shoot(page, vp.tag, "6-event-no-category-error");
+  let errs = await errorTextsNow();
+  check(errs.includes("חובה לבחור קטגוריה"), "category error shown", JSON.stringify(errs));
+  check(posted.length === 0, "form NOT submitted", `${posted.length} POST(s)`);
+  check(await focusedId(page) === "category", "focus moved to the category select", `#${await focusedId(page)}`);
+
+  // ---- 3. submit with an empty city --------------------------------------
+  await page.locator("#category").selectOption("שוק");
+  await page.locator("#city").fill("");
+  await submit();
+  await page.waitForTimeout(300);
+  await shoot(page, vp.tag, "7-event-empty-city-error");
+  errs = await errorTextsNow();
+  check(errs.includes("חובה לבחור עיר"), "city error shown", JSON.stringify(errs));
+  check(posted.length === 0, "form NOT submitted", `${posted.length} POST(s)`);
+
+  // ---- 4. valid fill ------------------------------------------------------
+  await page.locator("#city").fill("  תל אביב  ");
+  await shoot(page, vp.tag, "8-event-valid-fill");
+  await submit();
+  await page.waitForTimeout(700);
+  check(posted.length === 1, "POST /events fired", `${posted.length} POST(s)`);
+  if (posted.length) {
+    check(posted[0].city === "תל אביב", "city sent trimmed", JSON.stringify(posted[0].city));
+    check(posted[0].category === "שוק", "category sent", JSON.stringify(posted[0].category));
+  }
+
+  check(pageErrors.length === 0, "0 page errors across all states", JSON.stringify(pageErrors));
+  await ctx.close();
+}
+
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ executablePath: CHROME });
   for (const vp of VIEWPORTS) await run(browser, vp);
+  for (const vp of VIEWPORTS) await runEvents(browser, vp);
   await browser.close();
   console.log(`\nScreenshots in ${OUT}`);
   console.log(failures === 0 ? "ALL CHECKS PASSED" : `${failures} CHECK(S) FAILED`);

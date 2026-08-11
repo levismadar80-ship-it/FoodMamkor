@@ -3337,7 +3337,11 @@ class EventCreate(BaseModel):
     event_date: date
     event_time: time | None = None
     location: str | None = None
-    city: str | None = None
+    # MEH-2013: "עיר *" is labelled required on the event form too and was
+    # enforced in neither layer — the same class as ExperienceCreate.city
+    # above, found by sweeping for the sibling rather than fixing one symptom.
+    # max_length mirrors Event.city = Column(String(100)).
+    city: str = Field(..., min_length=1, max_length=100)
     lat: float | None = None
     lng: float | None = None
     image_url: str | None = None
@@ -3355,6 +3359,16 @@ class EventCreate(BaseModel):
     @classmethod
     def _sanitize_location(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-2013: twin of ExperienceCreate._require_city — min_length=1 alone
+    # accepts "   ", which is city-less by the only meaning that matters.
+    @field_validator("city")
+    @classmethod
+    def _require_city(cls, v: str) -> str:
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לבחור עיר")
+        return stripped
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
