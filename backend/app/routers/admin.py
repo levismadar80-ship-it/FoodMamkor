@@ -139,6 +139,37 @@ def _apply_approval_state(producer: Producer) -> None:
     producer.changes_requested_at = None
 
 
+SLUG_UNIQUE_CONSTRAINT = "producers_slug_key"
+
+
+def _is_slug_collision(exc: IntegrityError) -> bool:
+    """True only for a `producers.slug` unique violation.
+
+    `db.commit()` flushes the WHOLE session, so a bare `except IntegrityError`
+    around it catches any constraint violation on any pending row — not just
+    the one this function is recovering from. Retrying an unrelated violation
+    is the dangerous branch: the rollback discards it, the retry re-applies
+    only the approval columns, and the request commits a partially-applied
+    transaction and returns 200. A wrong row, silently, on the path nothing
+    exercises.
+
+    So the default is to **re-raise**. `producers_slug_key` is the only unique
+    constraint on `producers` today (verified against `pg_constraint`), but
+    that is a fact about today's schema, not an invariant — this check is what
+    makes a future second unique index surface as a 500 with its real cause
+    instead of being swallowed by a retry meant for slugs.
+
+    Falls back to the message text when the driver exposes no `diag` (psycopg2
+    populates it; SQLite and some wrappers do not), and re-raises when neither
+    source names the constraint. Unknown means raise, never retry.
+    """
+    orig = getattr(exc, "orig", None)
+    constraint = getattr(getattr(orig, "diag", None), "constraint_name", None)
+    if constraint:
+        return constraint == SLUG_UNIQUE_CONSTRAINT
+    return SLUG_UNIQUE_CONSTRAINT in str(orig or exc)
+
+
 def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Producer:
     """Mint the slug and commit, retrying once on a unique-slug collision.
 
@@ -161,13 +192,17 @@ def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Pro
     Not retried twice. A second collision would mean a third admin approving
     the same name in the same instant; letting that raise is more honest than
     looping, and a 500 whose cause is one frame up beats one nobody can explain.
+
+    Only a `producers_slug_key` violation is retried — see `_is_slug_collision`.
     """
     _mint_slug_if_absent(db, producer)
     try:
         db.commit()
         return producer
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
+        if not _is_slug_collision(exc):
+            raise
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None

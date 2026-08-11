@@ -18,6 +18,10 @@ route, a duplicate) or overwriting one that already existed.
 
 from datetime import datetime
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from app.models import Producer, User
 from app.routers import admin as admin_module
 from app.routers.admin import RESERVED_SLUGS
@@ -250,3 +254,90 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
     assert reread.changes_requested_at is None
     assert reread.slug == "חוות-התאומים-2"
     assert reread.slug != winner.slug
+
+
+# ---------- (f) the retry is scoped to the slug constraint ----------
+
+
+class _FakeDiag:
+    def __init__(self, constraint_name):
+        self.constraint_name = constraint_name
+
+
+class _FakeOrig(Exception):
+    def __init__(
+        self, constraint_name, text="duplicate key value violates unique constraint"
+    ):
+        super().__init__(text)
+        self.diag = _FakeDiag(constraint_name)
+
+
+def _integrity_error(constraint_name):
+    return IntegrityError("INSERT ...", {}, _FakeOrig(constraint_name))
+
+
+def test_is_slug_collision_sorts_the_three_cases_it_has_to_tell_apart():
+    """The classifier, run before anything that depends on it.
+
+    Three inputs with known answers: the slug constraint, a different
+    constraint, and a driver that exposes no `diag` at all. If this cannot
+    separate them, nothing the retry path reports afterwards is worth reading.
+    """
+    assert (
+        admin_module._is_slug_collision(_integrity_error("producers_slug_key")) is True
+    )
+    assert admin_module._is_slug_collision(_integrity_error("users_email_key")) is False
+
+    no_diag = IntegrityError("INSERT ...", {}, Exception("some other unique violation"))
+    assert admin_module._is_slug_collision(no_diag) is False, (
+        "unknown constraint must NOT be treated as a slug collision — unknown "
+        "means raise, never retry"
+    )
+
+    named_in_text = IntegrityError(
+        "INSERT ...",
+        {},
+        Exception(
+            'duplicate key value violates unique constraint "producers_slug_key"'
+        ),
+    )
+    assert admin_module._is_slug_collision(named_in_text) is True
+
+
+def test_a_non_slug_integrity_error_propagates_instead_of_being_retried(
+    client, db, monkeypatch
+):
+    """The dangerous branch: a violation the retry was never meant to handle.
+
+    `db.commit()` flushes the whole session, so a bare `except IntegrityError`
+    catches any constraint on any pending row. Swallowing one and retrying
+    would discard it in the rollback, re-apply only the approval columns, and
+    return 200 on a partially-applied transaction.
+
+    Shown failing by construction: drop the `_is_slug_collision` guard and this
+    request returns 200 with the producer approved — the unrelated violation
+    gone with no trace.
+    """
+    producer = _pending(db, name="חוות הבדיקה הזרה")
+    producer_id = producer.id
+
+    real_commit = Session.commit
+    calls = {"n": 0}
+
+    def commit_raising_unrelated(self, *args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _integrity_error("users_email_key")
+        return real_commit(self, *args, **kwargs)
+
+    monkeypatch.setattr(Session, "commit", commit_raising_unrelated)
+
+    with pytest.raises(IntegrityError):
+        _approve(client, db, producer)
+
+    monkeypatch.undo()
+    db.expire_all()
+    reread = db.query(Producer).filter(Producer.id == producer_id).first()
+    assert reread.status == "pending", (
+        "an unrelated constraint violation must not leave the producer approved"
+    )
