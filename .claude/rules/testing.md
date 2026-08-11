@@ -247,6 +247,39 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 > know.** A probe validated on a known case can be trusted in both directions; an
 > unvalidated one can be trusted in neither, and its *red* is worth exactly as little
 > as its green.
+>
+> ### Instance nine — the one where the answer was simply published
+>
+> **Before inferring a mechanism's rule from its observed behaviour, check whether the
+> mechanism documents its rule. An n=1 experiment against a documented system is a
+> slower and weaker instrument than reading the spec. This one was characterised from
+> five observations when the vendor states the condition outright.**
+>
+> The Linear auto-close condition (workflow.md rule 29 § *branch name*) was worked out
+> from five merges and their `stateHistory` timestamps, carefully excluding actor, date
+> and card state, and was written up as a **candidate hypothesis at n=1**. Linear
+> **documents** the answer: a class of non-closing magic words (`ref`, `references`,
+> `part of`, `related to`, `contributes to`, `towards`) that link without automating
+> status. One page of vendor documentation was strictly better evidence than the five
+> measurements, and it was available the entire time.
+>
+> **This one is different from the eight above, and that is why it is worth its own
+> heading.** Those were instruments that returned a *wrong* answer. Here the
+> measurements were all *correct* — and still the wrong instrument, because a
+> controlled experiment against a documented system buys a weaker conclusion at higher
+> cost than reading the spec. Being rigorous about the wrong instrument does not
+> upgrade it.
+>
+> **So the ordering is: read the spec, then measure — and measure to confirm the spec
+> or to find where the system departs from it.** Measurement stays essential where no
+> spec exists, where the spec is silent, or where behaviour contradicts it (this repo
+> has such cases: `vrt-update.yml:15`'s false claim about `actions: write`). What it
+> must not do is *substitute* for a documentation lookup nobody attempted.
+>
+> The residue is instructive too: the docs list `ref` and `references`, and this repo
+> writes **`Refs`** — a plural the published list does not contain. Reading the spec
+> did not just answer the question faster, it exposed a gap the five measurements had
+> silently papered over.
 
 > **A check that can be green for two opposite reasons is not a check.
 > Before trusting a green, ask what else would produce it.**
