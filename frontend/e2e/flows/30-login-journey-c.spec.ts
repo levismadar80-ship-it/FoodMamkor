@@ -98,7 +98,10 @@ async function expectPath(page: Page, expected: string) {
 }
 
 const VALID_EMAIL = "journey-c@example.com";
-const VALID_PASSWORD = "correct-horse-battery";
+// Both values are fixtures, not credentials — they authenticate nothing and are
+// spelled `example-*` so `scripts/checks/secrets-scan-guard.sh` can tell.
+const VALID_PASSWORD = "example-correct-horse-battery";
+const STUB_TOKEN = "example-journey-c-token";
 
 /** A signed-in backend: token minted, profile returned. */
 async function stubSuccessfulLogin(page: Page) {
@@ -106,7 +109,7 @@ async function stubSuccessfulLogin(page: Page) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ access_token: "e2e-journey-c-token", token_type: "bearer" }),
+      body: JSON.stringify({ access_token: STUB_TOKEN, token_type: "bearer" }),
     }),
   );
   await page.route("**/api/auth/me", (route) =>
@@ -218,7 +221,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // the URL would pass on a redirect that never authenticated.
     await expect
       .poll(() => page.evaluate(() => window.localStorage.getItem("token")))
-      .toBe("e2e-journey-c-token");
+      .toBe(STUB_TOKEN);
   });
 
   test("C2 — wrong credentials surface the Hebrew error and mint no token", async ({
