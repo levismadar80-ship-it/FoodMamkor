@@ -102,6 +102,31 @@ the assertion, so losing the other is undetectable — that is how a probe signs
 broken state. Prefer `&&`, or split into separate named checks so the failure message says
 which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
 
+**An assertion entailed by the lines above it is not a check.** A final-state assertion
+must be **falsifiable by the change under test** — assert the COUNT (exactly N, not N+1),
+never a sum of literals you just wrote. Same class as the presence-only failure below: a
+line that reads like a measurement while being derivable from its own surroundings.
+
+The cheap test, before adding any assertion: **is this entailed by what is already
+asserted, or by its own filter?** If yes, it is decoration that reads as coverage — delete
+it rather than reformulate it, because the reformulation tends to be entailed too.
+
+_Source: 2026-08-11, one session, **three** instances, none caught by their author:_
+
+```
+assert step_0 + 1 == 1        # `step_0 == 0` two lines above   ⇒  1 == 1
+assert step_0 + step_2 == 2   # both asserted above             ⇒  2 == 2
+census test                   # creates a PENDING producer, then counts
+                              # status=="approved" AND slug IS NULL  ⇒  always 0
+```
+
+The second is the instructive one: it was written **to replace the first**, carried a
+comment claiming the correction, and had the identical defect — in a file whose whole
+subject is numeric final-state assertions. The third is the worst: a "census" that never
+called the endpoint it censused, so it passed in a world where the entire fix was deleted,
+while being counted as one of six covering tests. The CI reviewer caught the first two, the
+adversarial reviewer the third.
+
 **Lifting a quarantine is not the fix.** A `count()===0` skip reports green against a
 control that does not exist — proven on MEH-1698, where the old spec skipped past a
 completely missing element with only `test.fixme` lifted.
