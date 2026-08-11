@@ -1232,7 +1232,13 @@
         "label": "מיון:",
         "nearest": "מרחק",
         "top_rated": "הכי מדורגות",
-        "newest": "הצטרפו לאחרונה"
+        "newest": "הצטרפו לאחרונה",
+        "locating": "מאתרים את המיקום שלכם...",
+        "geo_denied": "לא ניתן גישה למיקום. אפשר לבחור עיר כדי למיין לפי מרחק.",
+        "geo_unavailable": "המיקום לא זמין כרגע. אפשר לבחור עיר כדי למיין לפי מרחק.",
+        "geo_timeout": "לקח יותר מדי זמן לאתר את המיקום. נסו שוב, או בחרו עיר.",
+        "geo_unknown": "לא הצלחנו לקבל את המיקום. אפשר לבחור עיר כדי למיין לפי מרחק.",
+        "clear_location": "נקו את המיקום השמור"
       }
     },
     "errors": {
@@ -1518,10 +1524,8 @@
           "view": "צפה",
           "suspend": "השהה",
           "activate": "הפעל",
-          "remove_ambassador_title": "הסר תפקיד שגרירה",
-          "set_ambassador_title": "הגדר כשגרירה",
-          "ambassador_active": "שגרירה",
-          "ambassador_inactive": "☆ שגריר",
+          "remove_ambassador_title": "הסרת תפקיד שגרירה",
+          "set_ambassador_title": "הגדרה כשגרירה",
           "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "סטורי",
