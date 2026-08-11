@@ -1372,7 +1372,8 @@
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
         "settings": "Settings",
-        "help": "Help"
+        "help": "Help",
+        "name_change_requests": "Name changes"
       },
       "nav_sections": {
         "overview": "Overview",
@@ -2322,6 +2323,25 @@
       },
       "footer": "Daily/weekly/monthly checklist + emergency contacts — see <code>docs/ADMIN.md</code> (\"Handover checklist\" section).",
       "footer_back": "← Back to dashboard"
+    },
+    "name_change_requests": {
+      "title": "Name-change requests",
+      "subtitle": "{count} pending requests",
+      "empty": "No pending requests.",
+      "current_label": "Current name",
+      "requested_label": "Requested name",
+      "reason_label": "Reason from the owner",
+      "approve": "Approve",
+      "reject": "Reject",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "load_error": "Failed to load requests",
+      "update_error": "Failed to update the request",
+      "approved_toast": "Name approved and updated",
+      "rejected_toast": "Request rejected"
     }
   },
   "events": {
@@ -4536,6 +4556,28 @@
         "status_approved": "Approved",
         "status_rejected": "Rejected",
         "status_changes_requested": "Changes requested"
+      },
+      "name_change": {
+        "heading": "Change business name",
+        "accordion_summary": "Request a change to the name shown on the site",
+        "intro": "The new name appears on the site only after our team approves it. Until then the current name stays.",
+        "current_label": "Current name",
+        "requested_label": "Requested name",
+        "requested_where": "Will appear on the business page, card and search — after approval",
+        "requested_placeholder": "e.g. Lehem VeZman Bakery",
+        "reason_label": "Reason (optional)",
+        "reason_where": "Visible to the team only, never shown on the site",
+        "reason_placeholder": "e.g. fixing a typo from registration",
+        "same_name_hint": "The requested name is the same as the current one.",
+        "submit_cta": "Send name-change request",
+        "submitting": "Sending…",
+        "sent_confirmation": "Request sent. We'll let you know when the new name is approved.",
+        "sent_toast": "Request sent",
+        "pending_heading": "A name-change request is awaiting approval",
+        "pending_detail": "You asked to change the name to «{name}». The current name stays visible on the site until approval.",
+        "loading": "Loading…",
+        "load_error": "Couldn't load your request status. Please refresh.",
+        "submit_error": "Sending the request failed. Please try again."
       }
     }
   },
