@@ -106,6 +106,9 @@ Used when the current cloud must be abandoned.
    ```bash
    python - <<'PY'
    import json, cloudinary, cloudinary.uploader
+   # NOTE: 'media-export' below is the DEFAULT --out. If you exported to a
+   # different directory, change it in BOTH places or this silently uploads
+   # nothing (an empty/missing manifest is not an error here).
    cloudinary.config(cloud_name="NEW_CLOUD", api_key="...", api_secret="...")
    man = json.load(open('media-export/manifest.json'))
    for a in man['assets']:

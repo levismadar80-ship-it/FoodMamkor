@@ -196,14 +196,20 @@ def manifest_entry(resource: dict[str, Any], rel_path: str) -> dict[str, Any]:
 def local_path_for(resource: dict[str, Any]) -> str:
     """Mirror Cloudinary's public_id as a directory path, with the format as
     the extension. public_id already encodes folders ('mehamakor/avatars/x')."""
-    public_id = str(resource.get("public_id") or "unknown")
-    fmt = resource.get("format")
-    rtype = str(resource.get("resource_type") or "image")
-    # Guard against a public_id trying to escape the output directory.
-    parts = [p for p in public_id.split("/") if p not in ("", ".", "..")]
-    if not parts:
-        parts = ["unknown"]
-    name = "/".join(parts)
+    def _safe(raw: object, fallback: str) -> str:
+        """Strip anything that could climb out of --out.
+
+        Applied to EVERY component, not just public_id: resource_type and
+        format are equally attacker-reachable in --fixture mode, and they are
+        concatenated into the same path. Sanitising one of three inputs is not
+        a traversal guard, it is a traversal guard with two holes.
+        """
+        parts = [p for p in str(raw or "").split("/") if p not in ("", ".", "..")]
+        return "/".join(parts) or fallback
+
+    name = _safe(resource.get("public_id"), "unknown")
+    rtype = _safe(resource.get("resource_type"), "image")
+    fmt = _safe(resource.get("format"), "")
     return f"{rtype}/{name}.{fmt}" if fmt else f"{rtype}/{name}"
 
 
@@ -349,6 +355,16 @@ def _self_test() -> int:
         "image/etc/passwd.png",
     )
     check(
+        "traversal/resource_type",
+        local_path_for({"public_id": "a", "format": "png", "resource_type": "../../etc"}),
+        "etc/a.png",
+    )
+    check(
+        "traversal/format",
+        local_path_for({"public_id": "a", "format": "../passwd", "resource_type": "image"}),
+        "image/a.passwd",
+    )
+    check(
         "no_format",
         local_path_for({"public_id": "raw/thing", "resource_type": "raw"}),
         "raw/raw/thing",
@@ -360,9 +376,10 @@ def _self_test() -> int:
     for _ in range(3):
         limiter.wait()
     elapsed = time.monotonic() - t0
-    # 3 calls at 20 rps = 2 enforced gaps of 50 ms. Assert the floor the maths
-    # actually gives, and state the same number in the message — a threshold and
-    # a description that disagree is a check nobody can act on.
+    # 3 calls at 20 rps = 2 enforced gaps of 50 ms = 100 ms nominal. The floor is
+    # deliberately 90 ms, not 100, to absorb scheduler jitter — stated here
+    # because a comment and a constant that disagree is how the previous version
+    # of this assertion went wrong.
     MIN_ELAPSED = 0.09
     ran.append("ratelimit/spacing")
     if elapsed < MIN_ELAPSED:
