@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   WhatsappLogo,
@@ -124,6 +124,9 @@ export default function ProductSheet({ product, producer, onClose }) {
   const tChips = useTranslations("whatsapp.question_chips");
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
+  // MEH-1976: the src whose load failed (Cloudinary 401, MEH-1925). Must sit
+  // above the `if (!product) return null` below — hooks cannot be conditional.
+  const [failedSrc, setFailedSrc] = useState(null);
 
   useEffect(() => {
     // Focus moves to the close button on open and RETURNS to whatever opened
@@ -167,6 +170,11 @@ export default function ProductSheet({ product, producer, onClose }) {
         width: 640,
       })
     : null;
+  // MEH-1976: derived during render, NOT via an effect — the state holds the
+  // src that failed, so a new `img` makes this false with no reset needed.
+  // (The hook itself lives above the `if (!product)` early return; declaring
+  // it here would call it conditionally — react-hooks/rules-of-hooks.)
+  const imgError = failedSrc !== null && failedSrc === img;
 
   const dietKeys = DIET_FLAGS.filter((f) => product[f.field] === true).map((f) => f.key);
 
@@ -274,16 +282,17 @@ export default function ProductSheet({ product, producer, onClose }) {
               ~60% of the panel. It collapses to a short band instead. */}
           <div
             className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
-              img ? "aspect-square" : "h-28"
+              img && !imgError ? "aspect-square" : "h-28"
             }`}
           >
-            {img ? (
+            {img && !imgError ? (
               <Image
                 src={img}
                 alt={product.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 448px"
+                onError={() => setFailedSrc(img)}
               />
             ) : (
               // MEH-1305 E: the same typographic no-photo cell the grid uses —

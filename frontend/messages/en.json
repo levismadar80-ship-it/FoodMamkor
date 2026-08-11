@@ -3042,6 +3042,8 @@
       "submit_aria": "Search",
       "loading": "Loading results...",
       "no_results_for": "No results for",
+      "no_results_hint": "Try different words, or browse all businesses and filter there.",
+      "no_results_cta": "Browse all businesses →",
       "section_producers": "Businesses",
       "section_categories": "Categories",
       "section_cities": "Cities",
