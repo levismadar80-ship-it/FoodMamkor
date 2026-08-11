@@ -259,6 +259,9 @@ class TestExperienceSubmission:
             headers=auth_header(user),
         )
         assert resp.status_code == 422
+        # Stated, not implied: a 422 that still wrote a row would be the worse
+        # bug of the two, and only this line would catch it.
+        assert db.query(Experience).count() == 0
 
     def test_missing_location_type_rejected(self, client, db, monkeypatch):
         """Previously defaulted to "home" server-side, which silently framed

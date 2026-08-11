@@ -73,6 +73,9 @@ class TestEventCityRequired:
         )
 
         assert resp.status_code == 422, resp.text
+        # Stated, not implied: a 422 that still wrote a row would be the worse
+        # bug of the two, and only this line would catch it.
+        assert db.query(Event).count() == 0
 
     def test_city_is_stored_stripped(self, client, db):
         user = _approved_producer_user(db, email="meh2013-trim@example.com")
