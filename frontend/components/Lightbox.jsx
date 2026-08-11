@@ -3,6 +3,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, ImageBroken } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { optimizeCloudinary } from "@/lib/cloudinary";
+
+/**
+ * MEH-2001: the lightbox used to render `src={images[index]}` raw — it did not
+ * import the helper at all, so it shipped the untransformed original: no
+ * f_auto, no q_auto, no width. Cloudinary support measured one such delivery
+ * at 5886×3924 / 2.43MB displayed in a ~1437px box, and bandwidth was 99.6%
+ * of the overage that suspended the account.
+ *
+ * 1920 rather than the helper's 1200 DEFAULT_MAX_WIDTH because this is a
+ * click-to-enlarge surface — the user asked for detail, so the cap is set at
+ * the largest viewport we serve rather than at the grid default. `c_limit`
+ * still only ever scales DOWN, so a smaller original is untouched.
+ *
+ * Applied here, at the render site, rather than in ImageGallery: this is where
+ * the URL reaches the DOM, so no present or future caller can pass a raw array
+ * and reintroduce the bypass.
+ */
+const LIGHTBOX_MAX_WIDTH = 1920;
 
 /**
  * MEH-1931: shared class string for the three overlay controls (close, prev,
@@ -165,7 +184,9 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               key={index}
-              src={images[index]}
+              src={optimizeCloudinary(images[index], {
+                width: LIGHTBOX_MAX_WIDTH,
+              })}
               alt={t("image_alt", { current: index + 1, total: images.length })}
               className="max-w-[95vw] max-h-[90vh] object-contain"
               style={{ animation: "lightboxImgFade 150ms ease" }}
