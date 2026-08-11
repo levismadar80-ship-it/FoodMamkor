@@ -16,7 +16,10 @@ enough, because the interesting failures are minting the WRONG one (a reserved
 route, a duplicate) or overwriting one that already existed.
 """
 
+from datetime import datetime
+
 from app.models import Producer, User
+from app.routers import admin as admin_module
 from app.routers.admin import RESERVED_SLUGS
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -177,3 +180,73 @@ def test_approving_leaves_no_approved_producer_without_a_slug(client, db):
         f"population; it went from {before} to {_approved_null_slug_count(db)}"
     )
     assert producer.slug == "חוות-ללא-סלאג"
+
+
+# ---------- (e) the collision retry ----------
+
+
+def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
+    client, db, monkeypatch
+):
+    """The path the mint newly made reachable, and the one no ordinary test hits.
+
+    `_ensure_unique_slug` is SELECT-then-return with no lock, so two admins
+    approving two same-named businesses in one window both see the same
+    candidate free. The loser's commit violates `producers.slug` UNIQUE, and
+    `_persist_approval` rolls back and retries once.
+
+    A rollback discards the WHOLE transaction — including `status="approved"`
+    and the cleared request-changes trail, which were set before the commit.
+    So the retry has to re-apply them. This asserts it does, on every column
+    approval owns, not just the slug that caused the collision.
+
+    Why it exists (CI reviewer, PR #2785): the retry path used to carry its own
+    copy of those three writes. A fourth field added to the handler would have
+    been discarded by the rollback and silently missing from the retry — a bug
+    visible only under a race. `_apply_approval_state` made it one owner; this
+    test is what fails if a future edit splits it again.
+
+    Shown failing by construction: delete `_apply_approval_state(producer)` from
+    the retry path and the re-read row still reads `status="pending"`, so the
+    status assertion goes red. Note the honest limit — this does NOT fail
+    against the pre-refactor duplicated code, because that code was correct at
+    the time. It guards the drift, not the refactor.
+    """
+    winner = _pending(db, name="חוות התאומים", status="approved")
+    winner.slug = "חוות-התאומים"
+    db.commit()
+
+    loser = _pending(db, name="חוות התאומים")
+    loser.requested_changes = "חסרה תמונה"
+    loser.changes_requested_at = datetime.utcnow()
+    db.commit()
+    loser_id = loser.id
+
+    real_ensure = admin_module._ensure_unique_slug
+    calls = {"n": 0}
+
+    def racing_ensure(session, base_slug):
+        """First call hands back the slug the winner already committed —
+        i.e. the candidate looked free when this admin read it."""
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return "חוות-התאומים"
+        return real_ensure(session, base_slug)
+
+    monkeypatch.setattr(admin_module, "_ensure_unique_slug", racing_ensure)
+
+    resp = _approve(client, db, loser)
+
+    assert resp.status_code == 200, resp.text
+    assert calls["n"] == 2, (
+        "the retry must have re-derived the slug; a single call means the "
+        "collision never happened and this test proves nothing"
+    )
+
+    db.expire_all()
+    reread = db.query(Producer).filter(Producer.id == loser_id).first()
+    assert reread.status == "approved"
+    assert reread.requested_changes is None
+    assert reread.changes_requested_at is None
+    assert reread.slug == "חוות-התאומים-2"
+    assert reread.slug != winner.slug

@@ -118,6 +118,27 @@ def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
         producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
 
 
+def _apply_approval_state(producer: Producer) -> None:
+    """The complete set of column writes that "approved" means.
+
+    Single owner, because `_persist_approval`'s retry path must re-apply every
+    one of them after `db.rollback()` discards the first attempt. Two copies of
+    this list would drift the moment a fourth field joins approval: the handler
+    would set it, the rollback would discard it, and the retry would commit a
+    row missing it — silently, and only on the collision path, which is the one
+    path no ordinary test exercises.
+
+    The slug is deliberately NOT here. It is minted by `_mint_slug_if_absent`,
+    which needs the session (it queries for collisions) and must run *after*
+    the re-read on the retry path so it sees the winner's committed slug.
+    """
+    producer.status = "approved"
+    # MEH-1011: clear the request-changes trail on approve — the completion
+    # request (if any) is resolved once the business is approved.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
+
+
 def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Producer:
     """Mint the slug and commit, retrying once on a unique-slug collision.
 
@@ -150,9 +171,7 @@ def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Pro
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
-    producer.status = "approved"
-    producer.requested_changes = None
-    producer.changes_requested_at = None
+    _apply_approval_state(producer)
     _mint_slug_if_absent(db, producer)
     db.commit()
     return producer
@@ -592,11 +611,9 @@ def approve_producer(
             producer_id,
             user.id,
         )
-    producer.status = "approved"
-    # MEH-1011: clear the request-changes trail on approve — the completion
-    # request (if any) is resolved once the business is approved.
-    producer.requested_changes = None
-    producer.changes_requested_at = None
+    # MEH-1817: the approval column writes live in _apply_approval_state so the
+    # retry path below can re-apply exactly the same set after a rollback.
+    _apply_approval_state(producer)
     # MEH-1817: slug mint + commit, extracted so this handler stays under the
     # C901 ceiling. See _persist_approval for why the commit is retried.
     producer = _persist_approval(db, producer_id, producer)
