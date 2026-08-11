@@ -41,6 +41,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+import app.routers.producer_me as pm
 from app.models.models import PhoneOtpToken
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
@@ -122,8 +123,6 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
             json={"code": CODE},
             headers=auth_header(user),
         ).status_code
-
-    import app.routers.producer_me as pm
 
     real_approvable = pm._pending_and_approvable
 
