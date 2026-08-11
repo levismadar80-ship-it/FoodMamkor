@@ -102,6 +102,31 @@ the assertion, so losing the other is undetectable — that is how a probe signs
 broken state. Prefer `&&`, or split into separate named checks so the failure message says
 which cue went missing. A null-safe read (`(x || "")`) is not this pattern and is fine.
 
+**An assertion entailed by the lines above it is not a check.** A final-state assertion
+must be **falsifiable by the change under test** — assert the COUNT (exactly N, not N+1),
+never a sum of literals you just wrote. Same class as the presence-only failure below: a
+line that reads like a measurement while being derivable from its own surroundings.
+
+The cheap test, before adding any assertion: **is this entailed by what is already
+asserted, or by its own filter?** If yes, it is decoration that reads as coverage — delete
+it rather than reformulate it, because the reformulation tends to be entailed too.
+
+_Source: 2026-08-11, one session, **three** instances, none caught by their author:_
+
+```
+assert step_0 + 1 == 1        # `step_0 == 0` two lines above   ⇒  1 == 1
+assert step_0 + step_2 == 2   # both asserted above             ⇒  2 == 2
+census test                   # creates a PENDING producer, then counts
+                              # status=="approved" AND slug IS NULL  ⇒  always 0
+```
+
+The second is the instructive one: it was written **to replace the first**, carried a
+comment claiming the correction, and had the identical defect — in a file whose whole
+subject is numeric final-state assertions. The third is the worst: a "census" that never
+called the endpoint it censused, so it passed in a world where the entire fix was deleted,
+while being counted as one of six covering tests. The CI reviewer caught the first two, the
+adversarial reviewer the third.
+
 **Lifting a quarantine is not the fix.** A `count()===0` skip reports green against a
 control that does not exist — proven on MEH-1698, where the old spec skipped past a
 completely missing element with only `test.fixme` lifted.
@@ -229,6 +254,40 @@ every Tailwind class missing from the built CSS — including `w-16`, which is u
 The build was fine; the probe was broken. **Validate a probe on a case whose answer you
 already know before you trust either its red or its green** — and report the retraction, since
 a withdrawn finding is evidence the probe was checked and a silent one is not.
+
+**A probe whose corpus includes the searcher has a destructive twin, and it is worse than
+the miscount (MEH-2009).** `pkill -f "<pattern>"` matches every command line containing the
+pattern — **and the shell running the `pkill` is one of them**. Measured 2026-08-11 on
+`pkill -f "next start"`: the invoking shell was killed (**exit 144**) and the server it was
+aimed at **survived**. A self-matching *reporting* probe returns a wrong number you can
+sanity-check against something else; a self-matching *killing* probe destroys the observer
+mid-command and leaves the symptom exactly where it was, so the operator sees a failed
+command rather than a wrong answer.
+
+**Match the child's process name, not the command string.** The server's own process is
+`next-server (v16.3.0)`, which does not contain `next start` — and that is precisely what
+the CI runner's cleanup targets (`Terminate orphan process: pid (2523) (next-server …)`).
+If a command-line match is unavoidable, exclude `$$` and `$PPID` explicitly. **Better: do
+not reach for a kill at all** — start long-running processes through the harness's
+`run_in_background` so they carry a task id, instead of detaching with `&` and hunting them
+afterwards.
+
+**And check what the writer actually is before killing anything — the diagnosis that
+justified the `pkill` above was itself wrong.** The symptom was a generated file
+(`frontend/next-env.d.ts`) that kept reappearing as modified after `git checkout --`, which
+reads exactly like a live writer racing the revert. It was attributed to a detached
+`next start` left running from an earlier reproduction. Measured afterwards: **nothing was
+listening on the port and no `next` process existed at all**, yet the file was still being
+rewritten. The writer was `next build`, re-run by the Stop hook at the end of every turn
+(`.claude/settings.json`), which skips only when `node_modules` is absent — so installing
+dependencies silently armed it. Proven by running one build on a clean tree with no server
+up and watching the same one-line drift reappear.
+
+So the kill was aimed at a process that was never there, and the only thing its pattern
+could match was the shell that issued it. **The two failures compound:** an unverified
+cause produced a destructive remedy, and the remedy's self-match then destroyed the
+observer that would have disproved the cause. Either mistake alone is recoverable; together
+they read as "the cleanup didn't work" and send you round again.
 
 Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
 "Required status checks + docs-only merge" documents the skip-green mechanic for the
