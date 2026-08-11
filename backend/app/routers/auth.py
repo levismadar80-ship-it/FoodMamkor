@@ -611,12 +611,34 @@ async def register_producer(
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)
-        # MEH-1553: no verify/welcome email on the upgrade path. Verification
-        # is NOT enforced here — a logged-in but *unverified* consumer can still
-        # add producer capability (the guard above only requires a valid JWT).
+        # MEH-1553: no VERIFY email on the upgrade path. Verification is NOT
+        # enforced here — a logged-in but *unverified* consumer can still add
+        # producer capability (the guard above only requires a valid JWT).
         # That unverified state is covered downstream by the verify banner
         # (VerifyBanner.jsx) and the require_verified_producer dep (auth.py),
-        # not by this handler.
+        # not by this handler. That decision stands.
+        #
+        # MEH-1806 amendment: the WELCOME email was omitted with it, and that
+        # half was never argued. The comment above previously read "no
+        # verify/welcome email"; the commit that wrote it (d521ea5e) describes
+        # its own purpose as correcting a claim about *verification*, and
+        # nothing in it — or anywhere else — reasons about the welcome. So the
+        # omission was carried along by the wording, not decided.
+        #
+        # It has a real cost: this is the branch every OAuth business owner
+        # lands on (register_producer_oauth creates a consumer, Step 2 upgrades
+        # it), so she got no email setting the "up to 3 business days for admin
+        # approval" expectation and no dashboard link. The WhatsApp welcome is
+        # not a substitute — it fires only when a phone AND WhatsApp creds are
+        # configured, which is exactly the `whatsapp_expected` bool computed
+        # just below.
+        #
+        # Fires for consumer-upgrades too, not only OAuth ones: both just
+        # became producers, and the producer copy is correct for both.
+        # Fail-open, like every other send — signup must never block on email.
+        background_tasks.add_task(
+            _send_welcome_email, user.email, user.name, "producer"
+        )
 
         whatsapp_expected = bool(
             p_phone
