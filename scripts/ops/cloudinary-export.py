@@ -375,8 +375,11 @@ def _self_test() -> int:
         for f in failures:
             _log(f)
         return 1
-    real = sum(1 for n in ran if n.startswith("real"))
-    _log(f"self-test OK — {len(ran)} assertions, {real} of them against real account data")
+    real_count = sum(1 for n in ran if n.startswith("real"))
+    _log(
+        f"self-test OK — {len(ran)} assertions, "
+        f"{real_count} of them against real account data"
+    )
     return EXIT_OK
 
 
@@ -436,7 +439,7 @@ def main() -> int:
     skipped_derived = 0
     try:
         if args.fixture:
-            fixture = json.loads(Path(args.fixture).read_text())
+            fixture = json.loads(Path(args.fixture).read_text(encoding="utf-8"))
             _log(f"fixture mode — listing read from {args.fixture} (captured {fixture.get('captured_at', '?')})")
             source: Iterator[dict[str, Any]] = iter(fixture["resources"])
         else:
