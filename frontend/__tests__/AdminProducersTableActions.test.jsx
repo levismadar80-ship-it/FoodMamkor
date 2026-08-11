@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   ProducerActions,
   AwaitingCompletionBadge,
@@ -106,7 +106,14 @@ describe("approveGateReason — 422 detail → chip mapping (MEH-1011)", () => {
 const MENU_ARIA_KEY = "admin.producers.table.actions.menu_aria";
 const SUSPEND_KEY = "admin.producers.table.actions.suspend";
 const ACTIVATE_KEY = "admin.producers.table.actions.activate";
-const AMBASSADOR_OFF_KEY = "admin.producers.table.actions.ambassador_inactive";
+// MEH-1681: the kebab item names the ACTION, not the state. ambassador=false
+// offers "set", ambassador=true offers "remove". The two state keys this
+// replaced are retired from both locales and are deliberately not named here —
+// asserting their absence would be entailed by the two assertions below (a
+// reverted JSX cannot render set_ambassador_title), and the card's removal
+// spec requires zero references to them anywhere under frontend/.
+const AMBASSADOR_OFF_KEY = "admin.producers.table.actions.set_ambassador_title";
+const AMBASSADOR_ON_KEY = "admin.producers.table.actions.remove_ambassador_title";
 const STORY_KEY = "admin.producers.table.actions.story_card";
 const DELETE_KEY = "admin.common.delete";
 
@@ -169,6 +176,31 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: STORY_KEY }));
     expect(h.onToggleStoryCard).toHaveBeenCalledWith("p1");
+  });
+
+  // MEH-1681 — the label must name the action, not the state.
+  //
+  // Asserting only "the two labels differ" would NOT discriminate: the old
+  // state copy differed too ("שגרירה" vs "☆ שגריר"), so that assertion passed
+  // against the bug it is meant to catch. What separates the two
+  // implementations is WHICH key renders in each state — so this names the
+  // action keys explicitly. A revert to the state copy fails the very first
+  // expectation, because the retired state key is not set_ambassador_title.
+  it("ambassador=false offers set_ambassador_title; ambassador=true offers remove_ambassador_title", () => {
+    renderRow({ id: "p1", status: "approved", slug: "farm", ambassador: false, name: "חוה" });
+    openMenu();
+    expect(screen.getByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: AMBASSADOR_ON_KEY })).not.toBeInTheDocument();
+
+    cleanup();
+
+    renderRow({ id: "p2", status: "approved", slug: "farm", ambassador: true, name: "חוה" });
+    openMenu();
+    expect(screen.getByRole("menuitem", { name: AMBASSADOR_ON_KEY })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).not.toBeInTheDocument();
+
+    // The directional information now lives in the copy itself, not in a glyph.
+    expect(AMBASSADOR_ON_KEY).not.toBe(AMBASSADOR_OFF_KEY);
   });
 
   it("ambassador item fires onToggleAmbassador(id, current) — behavior unchanged", () => {

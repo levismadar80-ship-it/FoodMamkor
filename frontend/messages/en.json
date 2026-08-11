@@ -1518,8 +1518,6 @@
           "activate": "Activate",
           "remove_ambassador_title": "Remove ambassador role",
           "set_ambassador_title": "Set as ambassador",
-          "ambassador_active": "Ambassador",
-          "ambassador_inactive": "☆ Ambassador",
           "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
           "story_card": "Story",
