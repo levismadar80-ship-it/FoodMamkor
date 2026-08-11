@@ -230,6 +230,26 @@ The build was fine; the probe was broken. **Validate a probe on a case whose ans
 already know before you trust either its red or its green** — and report the retraction, since
 a withdrawn finding is evidence the probe was checked and a silent one is not.
 
+**A probe whose corpus includes the searcher has a destructive twin, and it is worse than
+the miscount (MEH-2009).** `pkill -f "<pattern>"` matches every command line containing the
+pattern — **and the shell running the `pkill` is one of them**. Measured 2026-08-11 on
+`pkill -f "next start"`: the invoking shell was killed (**exit 144**) and the server it was
+aimed at **survived**. A self-matching *reporting* probe returns a wrong number you can
+sanity-check against something else; a self-matching *killing* probe destroys the observer
+mid-command and leaves the symptom exactly where it was, so the operator sees a failed
+command rather than a wrong answer.
+
+**Match the child's process name, not the command string.** The server's own process is
+`next-server (v16.3.0)`, which does not contain `next start` — and that is precisely what
+the CI runner's cleanup targets (`Terminate orphan process: pid (2523) (next-server …)`).
+If a command-line match is unavoidable, exclude `$$` and `$PPID` explicitly. **Better: do
+not reach for a kill at all** — start long-running processes through the harness's
+`run_in_background` so they carry a task id, instead of detaching with `&` and hunting them
+afterwards. The recurring symptom that tempts the kill is a detached `next start` rewriting
+a generated file (`frontend/next-env.d.ts`), which makes `git status` read dirty and makes
+a `git checkout --` revert appear to fail — because it is racing a live writer, with nothing
+in the output saying so.
+
 Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
 "Required status checks + docs-only merge" documents the skip-green mechanic for the
 aggregators; MEH-1582 tracks the bypass itself. Recorded under MEH-1732's pipeline-reliability
