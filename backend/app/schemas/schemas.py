@@ -555,6 +555,11 @@ class UserRegister(BaseModel):
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
     # failure (a stored number no wa.me link can dial).
     phone: PhoneNumberField | None = None
+    # MEH-1995: terms-of-service acceptance. See the fuller note on
+    # ProducerRegister.terms_accepted — same field, same additive-default
+    # reasoning. The consumer form's checkbox (RegisterClient.jsx:76) gated the
+    # submit button and was then dropped on the floor; this is what carries it.
+    terms_accepted: bool = False
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -624,9 +629,33 @@ class ProducerRegister(BaseModel):
     # Default False so an ABSENT field doesn't change Pydantic-layer behaviour
     # for the existing contact-method negative tests; the handler 422s when
     # this is falsy (absent OR explicit False), so a producer row is only ever
-    # created with declared_at/declaration_version stamped. The frontend
-    # checkbox (agreedToTerms) feeds this value; declaration COPY is Chunk C.
+    # created with declared_at/declaration_version stamped; declaration COPY is
+    # Chunk C.
+    #
+    # MEH-1995 correction: this comment used to say "The frontend checkbox
+    # (agreedToTerms) feeds this value." It does not, and never did.
+    # RegisterProducerClient.jsx:565-566 builds it from
+    # `declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed)`
+    # — the LICENSING declaration. `agreedToTerms` is the separate terms-of-
+    # service checkbox, enforced as its own submit gate at :1630, and the
+    # frontend says so in as many words at :563-564. Conflating the two hid the
+    # fact that ToS consent reached no column at all; `terms_accepted` below is
+    # its actual carrier.
     declaration_accepted: bool = False
+    # MEH-1995: the terms-of-service checkbox (`agreedToTerms` on both register
+    # forms), which until now was a pure client-side gate — it disabled the
+    # submit button and was then discarded, leaving no evidence of consent.
+    #
+    # Optional with default False so this is additive: an existing caller that
+    # omits it behaves exactly as before and simply records nothing, rather
+    # than newly 422-ing. False therefore means "no consent recorded", never
+    # "consent refused" — the handler stamps only on True, so an omitted field
+    # leaves terms_accepted_at NULL, which is the honest state.
+    #
+    # Deliberately NOT enforced as required=True here: making it mandatory is a
+    # breaking API change and a separate hardening decision (noted on MEH-1995),
+    # not something to smuggle in under a column addition.
+    terms_accepted: bool = False
     # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
     # column) — when True the register-time ensure_license_for_categories 422 is
     # skipped, so a producer in a license-required category can submit with no
@@ -1248,6 +1277,10 @@ class ProductCreate(BaseModel):
     # ?vegetarian filter also matches vegan products (is_vegetarian OR is_vegan).
     is_vegetarian: bool = False
     is_lactose_free: bool = False
+    # MEH-1934: no-added-sugar + low-carb axes. Owner-declared, any-product
+    # scope; no implication from any other flag, so no defaulting-from.
+    is_no_added_sugar: bool = False
+    is_low_carb: bool = False
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1280,6 +1313,8 @@ class ProductUpdate(BaseModel):
     is_vegan: bool | None = None
     is_vegetarian: bool | None = None  # MEH-1438
     is_lactose_free: bool | None = None
+    is_no_added_sugar: bool | None = None  # MEH-1934
+    is_low_carb: bool | None = None  # MEH-1934
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1316,6 +1351,8 @@ class ProductOut(BaseModel):
     is_vegan: bool = False
     is_vegetarian: bool = False  # MEH-1438
     is_lactose_free: bool = False
+    is_no_added_sugar: bool = False  # MEH-1934
+    is_low_carb: bool = False  # MEH-1934
 
     model_config = {"from_attributes": True}
 
@@ -1975,6 +2012,11 @@ class ProducerListOut(BaseModel):
     # (a vegan product is vegetarian by definition). Frontend badges.js reads it.
     has_vegetarian_products: bool = False
     has_lactose_free_products: bool = False
+    # MEH-1934: computed by attach_badge_fields like the four above. Plain
+    # single-flag aggregations — unlike has_vegetarian_products these fold in
+    # no other axis, because nothing implies them.
+    has_no_added_sugar_products: bool = False
+    has_low_carb_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
@@ -2813,6 +2855,17 @@ class ExperienceHostOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ExperienceCountOut(BaseModel):
+    """MEH-1918 — how many experiences the public feed would show.
+
+    A number and nothing else, on purpose: the nav needs to know whether the
+    surface has real supply before it links to it, and any field beyond the
+    count would be a second, unaudited public read path.
+    """
+
+    count: int
+
+
 class ExperienceListOut(BaseModel):
     """Public listing — deliberately does NOT expose `address`.
     The full street address is private and only returned by the
@@ -3196,6 +3249,56 @@ class CategoryRequestUpdate(BaseModel):
     # (schemas.py:1077), which already bleaches the same column on the sibling
     # write path. Persisted at category_requests.py:118. Inline rather than a
     # domain type — it is the only field needing this exact rule.
+    @field_validator("admin_notes")
+    @classmethod
+    def _sanitize_admin_notes(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+
+# --- Producer name-change request (MEH-1872) ---
+# The owner-writable path for `name` that MEH-1851 removed. Shapes mirror
+# CategoryRequest* directly above — same status/admin_notes/reviewed_at triple.
+
+
+class ProducerNameChangeRequestCreate(BaseModel):
+    # Same bounds as ProducerCreate.name, so a request can never encode a name
+    # the producers table would reject on approval.
+    requested_name: str = Field(..., min_length=2, max_length=100)
+    reason: str | None = Field(None, max_length=500)
+
+    @field_validator("requested_name")
+    @classmethod
+    def _validate_letters(cls, v: str) -> str:
+        # MEH-555: punctuation-only names ("???") reach an admin queue and a
+        # public surface. Same guard the sibling free-text fields carry.
+        return _min_letters_validator(v)
+
+    @field_validator("reason")
+    @classmethod
+    def _sanitize_reason(cls, v):
+        return sanitize_text(v, max_length=500)
+
+
+class ProducerNameChangeRequestOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    current_name: str
+    requested_name: str
+    reason: str | None = None
+    status: str
+    admin_notes: str | None = None
+    created_at: datetime
+    reviewed_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProducerNameChangeRequestUpdate(BaseModel):
+    # No "merged" here — unlike a category, a name request has no third
+    # disposition. Narrower on purpose rather than copied wholesale.
+    status: str = Field(..., pattern="^(approved|rejected)$")
+    admin_notes: str | None = None
+
     @field_validator("admin_notes")
     @classmethod
     def _sanitize_admin_notes(cls, v):

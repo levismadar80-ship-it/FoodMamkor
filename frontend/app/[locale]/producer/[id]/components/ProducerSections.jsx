@@ -39,6 +39,23 @@ import ReviewsSection from "@/components/ReviewsSection";
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 
+// MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
+// WORSE, and the measurement is on the ticket. Reserving a 356px box that
+// matches the component to the pixel (proven: delta=0px at 390 and 1280)
+// did NOT remove the shift on the real page:
+//
+//     desktop-1440   0.8744  ->  1.0929   (+25%)
+//     mobile-375     1.3735  ->  1.3735   (unchanged)
+//
+// Both measured against staging with a verified-fresh deployment and an
+// observer-verified sampler (runs 31005749506 and 31105035597).
+//
+// DO NOT re-add a `loading:` here without re-measuring. The geometry argument
+// is not sufficient and has now been falsified once: `ssr: false` means the
+// placeholder is NOT in the server HTML and mounts at hydration, so it may add
+// a shift rather than replace one. That is a hypothesis, not a finding —
+// entries stayed at 4 on desktop before and after, which does not obviously
+// fit it. See MEH-1853.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 // MEH-1146 chunk C: the discovery loop ("עוד בתי עסק באזור") renders only when

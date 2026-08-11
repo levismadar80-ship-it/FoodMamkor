@@ -515,6 +515,43 @@ class User(Base):
     # expires 1 hour after issue, cleared on redeem or re-issue.
     reset_token = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-1995: evidence that this user accepted the terms, and which version.
+    # Mirrors the Producer.declared_at / declaration_version pair (see ~:188) —
+    # same shape, same rationale, same Expand-only treatment (ADR-007).
+    #
+    # Both nullable with NO backfill, and that is deliberate rather than lazy:
+    # NULL means "we hold no record of acceptance", which is the truth for
+    # every user created before this column existed. Writing a retroactive
+    # timestamp would assert she agreed at a moment we cannot evidence — worse
+    # than an honest NULL, because it manufactures the very proof the column
+    # exists to provide.
+    #
+    # Stamped on ALL THREE password paths (auth.py): consumer register, producer
+    # register, and the MEH-143 producer UPGRADE — which mutates current_user
+    # instead of constructing a User, and so fell outside the "enumerate every
+    # User(...) site" sweep and shipped briefly with the consent discarded. The
+    # right question is which routes COLLECT consent, not which build a User.
+    # (This comment said "the two password-registration paths" until the upgrade
+    # stamp landed; a stale count here is the same enumeration error that caused
+    # the bug, so it is worth keeping exact.) The three OAuth account-creation
+    # paths present no checkbox at all, so there is no consent event to record
+    # there — see the OAuth gap noted on MEH-1995; a product decision, not a gap.
+    # DO NOT expose in UserOut — audit-only (MEH-1995). Deliberately absent from
+    # every response schema, admin included. This is STRICTER than the sibling
+    # pair, NOT a mirror of it: declared_at / declaration_version ARE admin-
+    # visible via ProducerAdminOut (schemas.py:2313-2314), while these two are
+    # exposed nowhere. Phrasing matters here — "mirroring the sibling's admin-
+    # only treatment" would invite a future ADR-006 R2 parity sweep to "restore
+    # parity" by publishing a consent timestamp on an admin payload, which is
+    # the exact outcome this comment exists to prevent (docs/DATA.md agrees:
+    # "stricter than the sibling pair, which is admin-visible").
+    # Both UserOut and UserAdminOut
+    # enumerate fields explicitly and Pydantic v2 from_attributes maps only
+    # declared fields, so these cannot surface by accident — this comment records
+    # the omission as intentional so a future ADR-006 R2 parity sweep does not
+    # "fix" it by publishing a consent timestamp on a public profile payload.
+    terms_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    terms_version = Column(String(10), nullable=True)
     # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.
     # POST /auth/logout-all-devices increments this; old tokens with a
     # stale `tv` value are rejected. Fail-open: tokens without a `tv`
@@ -669,6 +706,18 @@ class Product(Base):
     is_lactose_free = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-1934: fifth + sixth dietary axes — "ללא סוכר מוסף" / "דל פחמימות".
+    # Same any-product, self-declared mechanic as the four above. Unlike
+    # MEH-1438's is_vegetarian these are NOT backfilled from any existing flag:
+    # nothing in the catalog implies "no added sugar" or "low carb", so seeding
+    # would invent a nutrition claim on the business's behalf. The owner's
+    # product form is the only writer.
+    is_no_added_sugar = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
+    is_low_carb = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
 
     producer = relationship("Producer", back_populates="products")
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
@@ -685,12 +734,17 @@ class Product(Base):
     # MEH-1438: predicate extended with is_vegetarian (the MEH-1438 migration
     # drops + recreates the index). Keep this text byte-identical to the
     # migration's create_index predicate so `alembic check` stays drift-free.
+    # MEH-1934: extended again with is_no_added_sugar + is_low_carb (revision
+    # a2f7d4c8e153 drops + recreates). Without them in the predicate, a product
+    # marked ONLY low-carb falls outside the partial index and the ?low_carb
+    # EXISTS subquery seq-scans products.
     __table_args__ = (
         Index(
             "idx_products_dietary",
             "producer_id",
             postgresql_where=text(
-                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free"
+                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free "
+                "OR is_no_added_sugar OR is_low_carb"
             ),
         ),
     )
@@ -1442,13 +1496,22 @@ class ProducerPageView(Base):
     The row is the source of truth for:
       - Producer dashboard: profile_views (7d / 30d / total), views_by_day
         (30-day chart), top_cities aggregation, search_appearances (rows
-        with referrer='search').
+        with referrer='search'), rank_in_city, weekly_trend.
       - Admin dashboard: top cities across all producers.
 
-    Privacy: we store `viewer_ip_hash` (SHA-256 with a rotating salt from
-    settings) rather than the raw IP — lets us dedupe uniques inside a
-    window without keeping PII indefinitely. See docs/SECURITY.md for the
-    full rationale.
+    MEH-160: EVERY one of those readers counts through
+    `services/analytics.py::unique_views_count` — one view per visitor per
+    Israel calendar day. Rows stay raw here; the dedupe is entirely at read
+    time, so the change is reversible and no history is lost. A new reader
+    that calls `func.count(id)` on this table re-introduces the inflation
+    the column was added to prevent.
+
+    Privacy: we store `viewer_ip_hash` (SHA-256, salted from
+    `settings.secret_key`) rather than the raw IP — enough to dedupe uniques
+    without keeping PII indefinitely. The salt is deploy-scoped, NOT
+    time-rotating: it changes only when the deploy's secret changes, which
+    resets uniques (rare, accepted). See docs/SECURITY.md for the full
+    rationale.
     """
 
     __tablename__ = "producer_page_views"
@@ -1725,6 +1788,48 @@ class CategoryRequest(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", backref="category_requests")
+
+
+class ProducerNameChangeRequest(Base):
+    """MEH-1872: an owner's request to change her business name, held for
+    re-moderation instead of written straight onto ``producers.name``.
+
+    MEH-1851 removed `name` from `_PRODUCER_WRITABLE_FIELDS` because a plain
+    `setattr` let an approved business become a different business after
+    approval — a hole in the DNA-LOCK "every business is approved by hand".
+    Closing it left owners with no way to fix a typo at all. This table is the
+    sanctioned route back: the request waits, the public name does not move.
+
+    A separate table rather than a `pending_name` column (Sapir's ruling,
+    09/08) so the decision keeps an audit trail and a second request cannot
+    silently overwrite the first.
+
+    REUSES: the CategoryRequest shape directly above — same status/admin_notes/
+    reviewed_at triple, same admin-queue idiom.
+    """
+
+    __tablename__ = "producer_name_change_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # The name as it stood when the request was filed. Stored rather than read
+    # back from the producer at review time: the admin must judge the change
+    # she was actually asked to approve, and `producers.name` can move under
+    # her (another approved request, an admin edit) between filing and review.
+    current_name = Column(String(100), nullable=False)
+    requested_name = Column(String(100), nullable=False)
+    reason = Column(Text, nullable=True)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    admin_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
+
+    producer = relationship("Producer", backref="name_change_requests")
 
 
 class SearchQuery(Base):

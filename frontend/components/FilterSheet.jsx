@@ -64,11 +64,34 @@ function chipSubtext(chip) {
 const GROUP_CHIP_ORDER = {
   service: ["verified", "has_delivery"],
 };
-function chipsForGroup(group) {
-  const chips = TOGGLE_CHIPS.filter((chip) => chip.group === group);
+// MEH-1862: the chip SET is now a parameter, so /producers can mount this sheet
+// with its own axes. `source` defaults to TOGGLE_CHIPS, which is what /map has
+// always passed implicitly — that surface is unchanged in behaviour and output.
+//
+// A key absent from GROUP_CHIP_ORDER sorts AFTER every enumerated one, keeping
+// array order among themselves — so a surface-specific chip appended to a group
+// this map does not enumerate (/producers' open_for_orders_now in `service`)
+// lands last instead of jumping the explicit verified → has_delivery order.
+//
+// `order.length`, not a raw `indexOf`. The first version of this used the bare
+// difference and a comment asserting that -1 was "a stable tie": that is only
+// true when BOTH keys are missing. With one present, `-1 - 0 = -1` sorts the
+// UNTRACKED key FIRST — the exact inverse of the intent. Measured on the built
+// app before the fix: the service group rendered open_for_orders_now ahead of
+// verified and has_delivery, contradicting producer-filters.js:118-120, which
+// puts that chip last on purpose ("it reads as a refinement of the durable
+// attributes above rather than as a peer of them"). Infinity is not used
+// either — `Infinity - Infinity` is NaN, which is an invalid comparator the
+// moment a group has two untracked keys.
+function chipsForGroup(group, source) {
+  const chips = source.filter((chip) => chip.group === group);
   const order = GROUP_CHIP_ORDER[group];
   if (!order) return chips;
-  return [...chips].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  const rank = (key) => {
+    const i = order.indexOf(key);
+    return i === -1 ? order.length : i;
+  };
+  return [...chips].sort((a, b) => rank(a.key) - rank(b.key));
 }
 
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
@@ -83,6 +106,9 @@ export default function FilterSheet({
   onToggleChip,
   resultCount,
   onClearAll,
+  // MEH-1862: which axes this mount offers. Defaults to the /map set so the
+  // existing call site (FilterChipsBar.jsx:96) is unchanged.
+  chips = TOGGLE_CHIPS,
 }) {
   const t = useTranslations();
   const panelRef = useRef(null);
@@ -176,7 +202,18 @@ export default function FilterSheet({
         aria-modal="true"
         aria-labelledby="filter-sheet-title"
         dir="rtl"
-        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))]"
+        // MEH-1945: the panel's bottom padding moves ONTO the sticky footer
+        // below. `position: sticky; bottom-0` resolves against the scrollport —
+        // the container's PADDING box — so a padding-bottom here parks the
+        // footer that many px above the sheet's edge, with body content
+        // scrolling through the gap. Measured at 390×844 rather than reasoned:
+        // with the container's pb restored to 32px the footer's bottom lands at
+        // 812 against a 844 viewport and a 844 panel edge; at pb-0 it lands at
+        // 844, flush. The safe-area inset still has to be paid — it is paid by
+        // the footer's own pb, where it sits UNDER the footer instead of under
+        // a scrolling body. lg: restores the container pad: the anchored
+        // desktop panel has no safe-area to clear and no notch to sit in.
+        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4"
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -192,7 +229,16 @@ export default function FilterSheet({
           {t("filters.sheet.title")}
         </h2>
 
-        {GROUP_ORDER.map((group) => (
+        {GROUP_ORDER.map((group) => {
+          const groupChips = chipsForGroup(group, chips);
+          // MEH-1862 (5-state rule, 0 items): a group with no chips renders
+          // NOTHING — not a bare heading. This is reachable, not defensive
+          // padding: /producers has no grass_fed, and its diet axes are
+          // runtime-gated (DIET_CHIP_MIN, MEH-1934), so a group can empty out
+          // on real data. On /map every group is populated, so this branch
+          // never fires there and that surface is unchanged.
+          if (!groupChips.length) return null;
+          return (
           <div key={group}>
             {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
                 (mobile mt-4/mb-1 byte-identical). */}
@@ -214,7 +260,7 @@ export default function FilterSheet({
                 at start, role="switch" pill at end, knob start-1(off)→end-1(on)
                 via logical insets (RTL-safe). */}
             <div className="divide-y divide-border">
-              {chipsForGroup(group).map((chip) => {
+              {groupChips.map((chip) => {
                 const active = !!chipState[chip.key];
                 const icon = chipIcon(chip.key);
                 const subtext = chipSubtext(chip);
@@ -224,6 +270,12 @@ export default function FilterSheet({
                       type="button"
                       role="switch"
                       aria-checked={active}
+                      // MEH-1862: same locator ChipScrollRow's consumers already
+                      // query (docs/E2E-LOCATORS.md). A chip that moves from the
+                      // row into this sheet keeps its handle, so a spec asserting
+                      // on it only has to open the sheet — it does not have to be
+                      // rewritten around a different query.
+                      data-testid={`chip-${chip.key}`}
                       onClick={() => onToggleChip(chip.key)}
                       className="flex w-full items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
@@ -252,17 +304,36 @@ export default function FilterSheet({
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* Apply = close (state is shared + already applied live); count is the
             live client-side visibleProducers.length passed by the caller.
             Zero state keeps apply enabled — the clear link sits beside it.
-            MEH-1481: on lg+ the footer is STICKY to the bottom of this
-            overflow-y-auto panel so apply + ניקוי הכל stay visible when the
-            (capped) body scrolls — an opaque bg + top hairline hide the content
-            scrolling under it. No structural change: the panel div is already
-            the scroll container. Mobile footer (mt-6, non-sticky) unchanged. */}
-        <div className="mt-6 flex items-center gap-3 lg:sticky lg:bottom-0 lg:mt-4 lg:-mx-4 lg:px-4 lg:pt-3 lg:pb-1 lg:bg-background lg:border-t lg:border-border">
+            MEH-1481: the footer is STICKY to the bottom of this overflow-y-auto
+            panel so apply + ניקוי הכל stay visible when the (capped) body
+            scrolls — an opaque bg + top hairline hide the content scrolling
+            under it. No structural change: the panel div is already the scroll
+            container.
+            MEH-1481 gated all of that behind lg: because its card scoped it to
+            desktop — scope, not a product call. MEH-1945 un-gates it: mobile
+            has the same Apply-visibility bug and worse, measured on #2690 at
+            390×844 (scrollHeight 749 > clientHeight 674, footer at y=859 — off
+            the viewport, reachable only by scrolling). Only the density values
+            stay lg:-gated. `pb` carries the safe-area inset the panel gave up:
+            the footer is the bottommost painted element now, so the notch
+            clearance belongs to it. */}
+        <div
+          // MEH-1945: the guards for this footer (the vitest tripwires and
+          // e2e/qa-meh1945-sticky-apply.mjs) used to reach it as the panel's
+          // lastElementChild. That is a POSITIONAL handle: append anything
+          // after this div and both silently start asserting about a different
+          // element — still green, no longer measuring the footer. Anchored to
+          // identity instead, per docs/E2E-LOCATORS.md. Raised by the CI
+          // adversarial reviewer on PR #2695.
+          data-testid="filter-sheet-apply-footer"
+          className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+8px)] lg:mt-4 lg:pb-1"
+        >
           <button
             type="button"
             onClick={onClose}

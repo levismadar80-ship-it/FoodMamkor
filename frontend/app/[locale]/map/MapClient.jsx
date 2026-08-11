@@ -583,7 +583,8 @@ export default function MapPage() {
             overlap regardless of the tags row appearing/disappearing (which also
             kills the documented ~10px spill the old 174 hack carried).
             MEH-945: while the cookie banner shows, reserve its footprint at the
-            bottom — its own offset (safe-area + 80px, mirroring CookieBanner.jsx:68)
+            bottom — its own offset (MEH-1950: derived nav-clearance + 8px gap,
+            ≈ safe-area + 80px at the default pill height — CookieBanner.jsx)
             plus its live --cookie-banner-h, plus a 16px clearance — so the banner
             no longer overlays the canvas. The map's own `min-h-[500px]`
             (MapComponent.jsx) would otherwise spill back under the banner on short

@@ -28,6 +28,8 @@ vi.mock("next-intl", () => ({
     if (full === "producer.detail.sections.products.diet.vegetarian") return "צמחוני";
     if (full === "producer.detail.sections.products.diet.lactose_free") return "ללא לקטוז";
     if (full === "producer.detail.sections.products.sheet_cta") return "שאלי על המוצר בוואטסאפ";
+    if (full === "producer.detail.sections.products.sheet_secondary_wa")
+      return "או שאלי על המוצר בוואטסאפ";
     if (full === "producer.detail.sections.products.sheet_close_aria") return "סגירת פרטי המוצר";
     if (full === "producer.card.aria.image_missing") return `${vars?.name ?? ""} — תמונה חסרה`;
     return full;
@@ -41,6 +43,13 @@ vi.mock("next/image", () => ({
 vi.mock("@phosphor-icons/react", () => ({
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
+  // MEH-1916: the CTA now renders one icon per primary_contact_method.
+  Phone: () => <span data-testid="icon-phone" />,
+  Globe: () => <span data-testid="icon-globe" />,
+  EnvelopeSimple: () => <span data-testid="icon-email" />,
+  InstagramLogo: () => <span data-testid="icon-instagram" />,
+  FacebookLogo: () => <span data-testid="icon-facebook" />,
+  Receipt: () => <span data-testid="icon-receipt" />,
 }));
 
 vi.mock("@/lib/contact-tracking", () => ({
@@ -49,6 +58,9 @@ vi.mock("@/lib/contact-tracking", () => ({
 }));
 
 import ProductSheet from "@/components/public/ProductSheet";
+// Real helpers (unmocked) — used to rebuild the expected WhatsApp href rather
+// than restating it as a literal.
+import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 
 const producer = { id: 7, name: "טבע פור", phone: "0501234567" };
 const baseProduct = { id: 11, name: "גרנולה ביתית" };
@@ -228,6 +240,119 @@ describe("ProductSheet — full description is reachable", () => {
   it("no description → no description node (not an empty paragraph)", () => {
     renderSheet({ ...baseProduct, description: null });
     expect(screen.queryByTestId("product-sheet-description")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProductSheet — CTA follows primary_contact_method (MEH-1916)", () => {
+  // The producer chose the web shop. Before MEH-1916 this sheet pushed
+  // WhatsApp at her customers regardless.
+  const websiteProducer = {
+    id: 7,
+    name: "טבע פור",
+    phone: "0501234567",
+    primary_contact_method: "website",
+    website: "tevapur.co.il",
+  };
+
+  it("website primary → 'להזמנה באתר' + UTM-tagged href in a new tab, rel keeps noopener and DROPS noreferrer", () => {
+    renderSheet(baseProduct, websiteProducer);
+    const cta = screen.getByTestId("product-sheet-cta");
+
+    expect(cta).toHaveAttribute("data-method", "website");
+    expect(cta).toHaveTextContent("להזמנה באתר");
+    expect(cta).toHaveAttribute("target", "_blank");
+    // MEH-1525: noreferrer would strip the Referer header the owner's
+    // analytics needs — website only.
+    expect(cta.getAttribute("rel")).toBe("noopener");
+
+    const href = cta.getAttribute("href");
+    expect(href).toContain("https://tevapur.co.il");
+    expect(href).toContain("utm_source=mehamakor");
+    expect(href).toContain("utm_medium=referral");
+
+    // The producer's channel is not WhatsApp, so the WA node is the quiet
+    // secondary — never the loud one.
+    expect(screen.queryByTestId("product-sheet-wa-cta")).not.toBeInTheDocument();
+  });
+
+  it("a non-WhatsApp primary fires NEITHER tracking call", () => {
+    renderSheet(baseProduct, websiteProducer);
+    fireEvent.click(screen.getByTestId("product-sheet-cta"));
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+    expect(markWhatsAppClickedLocal).not.toHaveBeenCalled();
+  });
+
+  it("secondary WA link carries the product prefill and fires both tracking calls", () => {
+    renderSheet(baseProduct, websiteProducer);
+    const secondary = screen.getByTestId("product-sheet-wa-secondary");
+    const href = secondary.getAttribute("href");
+    expect(href).toContain("972501234567");
+    expect(href).toContain(encodeURIComponent(baseProduct.name));
+    expect(href).toContain(encodeURIComponent("הגעתי דרך מהמקור"));
+
+    fireEvent.click(secondary);
+    expect(pingWhatsAppBeacon).toHaveBeenCalledWith(7);
+    expect(markWhatsAppClickedLocal).toHaveBeenCalledWith(7);
+  });
+
+  it("website + NO phone → the primary still renders, and there is no secondary", () => {
+    renderSheet(baseProduct, { ...websiteProducer, phone: null });
+    expect(screen.getByTestId("product-sheet-cta")).toHaveAttribute("data-method", "website");
+    expect(screen.queryByTestId("product-sheet-wa-secondary")).not.toBeInTheDocument();
+    expect(document.querySelector("a[href*='wa.me']")).toBeNull();
+  });
+
+  it("whatsapp primary → byte-identical href to the pre-MEH-1916 build, and no secondary", () => {
+    // Discriminating baseline: the string is rebuilt here from the same public
+    // helpers the component uses, so a change to the prefill, the source line,
+    // or the phone normalisation reds this test rather than passing silently.
+    const expected = getWhatsAppHref(
+      normalizePhone(producer.phone),
+      `היי, ראיתי את ״${baseProduct.name}״ בעמוד שלכם במהמקור ואשמח לשמוע פרטים\n\nהגעתי דרך מהמקור`,
+    );
+    renderSheet();
+    const cta = screen.getByTestId("product-sheet-wa-cta");
+    expect(cta.getAttribute("href")).toBe(expected);
+    expect(cta).toHaveAttribute("data-method", "whatsapp");
+    expect(cta.className).toContain("btn-whatsapp");
+    expect(screen.queryByTestId("product-sheet-wa-secondary")).not.toBeInTheDocument();
+  });
+
+  it("phone primary → tel: link, same tab, no WhatsApp tracking", () => {
+    renderSheet(baseProduct, {
+      id: 7,
+      name: "טבע פור",
+      phone: "0501234567",
+      primary_contact_method: "phone",
+    });
+    const cta = screen.getByTestId("product-sheet-cta");
+    expect(cta.getAttribute("href")).toBe("tel:0501234567");
+    expect(cta).toHaveTextContent("התקשרו");
+    expect(cta).not.toHaveAttribute("target");
+    // Phone is a channel of its own; the WA escape hatch is still offered.
+    expect(screen.getByTestId("product-sheet-wa-secondary")).toBeInTheDocument();
+  });
+
+  it("chosen channel with an EMPTY field + a phone → WhatsApp is promoted to primary, not duplicated", () => {
+    renderSheet(baseProduct, { ...websiteProducer, website: "" });
+    const cta = screen.getByTestId("product-sheet-wa-cta");
+    expect(cta).toHaveAttribute("data-method", "whatsapp");
+    expect(cta.getAttribute("href")).toContain("972501234567");
+    // Suppressed — it would be the identical href rendered twice.
+    expect(screen.queryByTestId("product-sheet-wa-secondary")).not.toBeInTheDocument();
+  });
+
+  it("no channel field AND no phone → no CTA node at all, never a dead link", () => {
+    renderSheet(baseProduct, {
+      id: 7,
+      name: "טבע פור",
+      phone: null,
+      primary_contact_method: "website",
+      website: "",
+    });
+    expect(screen.queryByTestId("product-sheet-cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("product-sheet-wa-cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("product-sheet-wa-secondary")).not.toBeInTheDocument();
   });
 });
 

@@ -3,6 +3,7 @@ Public + authenticated routes for the experiences (community workshops) feature.
 
   POST /experiences/validate   — real-time Claude check, no auth, no persistence
   GET  /experiences            — public: only approved + upcoming
+  GET  /experiences/count      — public: how many the listing would return
   GET  /experiences/mine       — current user's submissions (any status)
   GET  /experiences/{id}       — detail: approved public; owner+admin see any status
   POST /experiences            — submit → Claude pre-mod → pending (or HTTP 400)
@@ -25,6 +26,7 @@ from app.database import get_db
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
+    ExperienceCountOut,
     ExperienceCreate,
     ExperienceDetailOut,
     ExperienceListOut,
@@ -154,19 +156,21 @@ def _publicly_visible_query(db: Session):
     )
 
 
-# ---------- Public listing ----------
+def _public_listing_query(db: Session):
+    """``_publicly_visible_query`` plus the two filters that define the public
+    FEED specifically, as opposed to a directly-linked detail page.
 
+    MEH-1918 extracted this. The two filters below used to sit inline in
+    ``list_experiences``, which was fine while the listing was their only
+    caller; the nav-visibility count is a second caller, and a count that
+    disagrees with the list it advertises is worse than no count at all — the
+    nav would promise a page that renders empty.
 
-@router.get("", response_model=list[ExperienceListOut])
-def list_experiences(
-    category: str | None = None,
-    city: str | None = None,
-    db: Session = Depends(get_db),
-):
-    """Only approved + upcoming (event_date >= today), and only from an
-    approved business (MEH-1749). Past experiences drop out of the public
-    feed automatically."""
-    q = _publicly_visible_query(db).filter(
+    Same reasoning, one level down, as the ``DO NOT re-express this predicate
+    inline`` note on ``_publicly_visible_query`` above (MEH-1740): one
+    definition, two callers.
+    """
+    return _publicly_visible_query(db).filter(
         # MEH-1883: Israel calendar day — same reasoning as events.py. A UTC
         # "today" drops an experience from the public feed at 21:00 the
         # evening before it happens.
@@ -175,12 +179,53 @@ def list_experiences(
         # (mirrors events.py:73). It stays visible on GET /experiences/mine.
         Experience.is_active.is_(True),
     )
+
+
+# ---------- Public listing ----------
+
+
+@router.get("", response_model=list[ExperienceListOut])
+@limiter.limit("120/minute")
+def list_experiences(
+    request: Request,
+    category: str | None = None,
+    city: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Only approved + upcoming (event_date >= today), and only from an
+    approved business (MEH-1749). Past experiences drop out of the public
+    feed automatically."""
+    q = _public_listing_query(db)
     if category:
         q = q.filter(Experience.category == category)
     if city:
         q = q.filter(func.lower(Experience.city) == city.lower())
     rows = q.order_by(Experience.event_date.asc()).all()
     return [_serialize_list(ex) for ex in rows]
+
+
+# ---------- Public count (MEH-1918) ----------
+
+
+# DO NOT move this below the `/{experience_id}` route — FastAPI matches in
+# declaration order, so a later `/count` would be swallowed by the catch-all
+# and arrive as an experience_id of "count", which then fails UUID parsing.
+@router.get("/count", response_model=ExperienceCountOut)
+@limiter.limit("60/minute")
+def count_experiences(request: Request, db: Session = Depends(get_db)):
+    """How many experiences the public feed would show right now.
+
+    Exists so the nav can gate the "חוויות" link on real supply instead of
+    linking to a page that may be empty. Public, unauthenticated, and it
+    returns a number only — no titles, no ids, nothing that could leak a
+    non-public row.
+
+    It counts through ``_public_listing_query``, the SAME query
+    ``list_experiences`` returns rows from, so the two can never disagree. A
+    ``COUNT`` at the database, not ``len()`` over fetched rows: the caller
+    wants a number and the rows would be discarded.
+    """
+    return ExperienceCountOut(count=_public_listing_query(db).count())
 
 
 # ---------- Owner's submissions ----------
@@ -206,7 +251,9 @@ def list_my_experiences(
 
 
 @router.get("/{experience_id}", response_model=ExperienceDetailOut)
+@limiter.limit("120/minute")
 def get_experience(
+    request: Request,
     experience_id: UUID,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),

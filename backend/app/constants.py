@@ -73,6 +73,23 @@ PRODUCER_LICENSE_MAX_LENGTH: int = 20
 #     מופיע במהמקור…") + conditional farmer line. New wording = new version.
 DECLARATION_VERSION: str = "2026-06-v2"
 
+# MEH-1995: the version string stamped into users.terms_version when a user
+# ticks the terms checkbox at registration. Same reasoning as
+# DECLARATION_VERSION directly above — a timestamp alone proves *that* someone
+# agreed, not *to what*. Pairing it with the exact wording version is what
+# makes the record evidence rather than a bare assertion, and it is what lets
+# us answer "which text did she accept?" after the terms are edited.
+#
+# This is the Amendment-13 exposure made concrete (MEH-1981): the statutory
+# damages provision allows a claim without proof of damage, and the defence
+# against "no terms were ever shown to me" is a row in the database.
+#
+# Bump this whenever the terms text materially changes, so existing rows stay
+# attributable to the version actually accepted. Must stay within the
+# VARCHAR(10) users.terms_version column.
+#   v1 ("2026-08-v1") — the terms/privacy wording live at MEH-1995 (2026-08-09).
+TERMS_VERSION: str = "2026-08-v1"
+
 # MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
 # self-reported attribution captured at the final registration step). English
 # keys are stored in the DB; the Hebrew labels are rendered from i18n

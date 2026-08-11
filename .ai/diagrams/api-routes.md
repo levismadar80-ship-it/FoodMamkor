@@ -19,6 +19,7 @@ graph LR
     App[FastAPI app] --> Auth[auth.router<br/>/auth/*]
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router<br/>/producers/me/*]
+    App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
@@ -108,6 +109,7 @@ graph TD
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
+    Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
 ```
 
 ## 5. Admin surface (role=admin)

@@ -2,6 +2,15 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+// MEH-1975: the LOCALE-AWARE Link, not plain next/link.
+// routing.js sets localePrefix "as-needed" with defaultLocale "he", so Hebrew
+// lives at /producers and English at /en/producers. A hardcoded "/producers"
+// href therefore works in Hebrew and silently drops an English visitor onto
+// the Hebrew route — the /en-stays-broken shape workflow.md cites from
+// MEH-1721. Caught by the CI reviewer on #2758; my first version used plain
+// next/link on the strength of a sibling file doing the same, which is
+// precedent, not verification.
+import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -358,10 +367,26 @@ export default function HeroSearch({
           {loading && !hasAutoResults && (
             <p className="px-3 py-3 text-xs text-fg-muted">{t("loading")}</p>
           )}
+          {/* MEH-1975: a no-results state has to offer a way out, not just
+              report absence (NN/g: explain, then give one clear next action).
+              This block used to be the bare sentence below — the highest-traffic
+              search surface on the site, and a dead end. The same query typed
+              here and submitted lands on /producers, which already does this
+              well (FilterEmptyState: category chips + clear-all), so the way
+              out is simply a door to that surface rather than a new pattern. */}
           {!loading && !hasAutoResults && (
-            <p className="px-3 py-3 text-xs text-fg-muted">
-              {t("no_results_for")} &quot;{trimmed}&quot;
-            </p>
+            <div className="px-3 py-3">
+              <p className="text-xs text-fg-muted">
+                {t("no_results_for")} &quot;{trimmed}&quot;
+              </p>
+              <p className="mt-1 text-xs text-fg-muted">{t("no_results_hint")}</p>
+              <Link
+                href={`/producers?q=${encodeURIComponent(trimmed)}`}
+                className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+              >
+                {t("no_results_cta")}
+              </Link>
+            </div>
           )}
 
           {results.producers.length > 0 && (

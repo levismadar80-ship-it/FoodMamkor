@@ -58,7 +58,9 @@ fi
 section "2/7 Frontend unit tests (vitest)"
 if [ ! -x "$ROOT/frontend/node_modules/.bin/vitest" ]; then
   fail "vitest — not installed (run 'npm ci' in frontend/)"
-elif ( cd "$ROOT/frontend" && ./node_modules/.bin/vitest run ) >/tmp/dod-vitest.log 2>&1; then
+elif ( cd "$ROOT/frontend" && node scripts/vitest-guard.mjs ) >/tmp/dod-vitest.log 2>&1; then
+  # MEH-1951: wrapper reds an exit-0 run that executed 0 tests (startup crash
+  # masquerading as green — measured twice on 08/08).
   pass "vitest unit suite"
 else
   fail "vitest unit suite (see /tmp/dod-vitest.log)"
@@ -66,8 +68,22 @@ fi
 
 # ── 3. Backend tests (pytest) ──────────────────────────────────────────────
 section "3/7 Backend tests (pytest tests/test_api.py)"
+# Check the DATABASE before blaming the CODE.
+#
+# Every test in this suite needs Postgres. When it is down, pytest reports 259
+# ERRORs and this gate said "backend pytest (see /tmp/dod-pytest.log)" — which
+# reads as "your change broke the tests" and points at the wrong remedy
+# entirely: start the server, do not debug the diff.
+#
+# Measured twice in one session (09/08): the cluster stopped mid-run and
+# produced two false all-red readings before anyone thought to run pg_isready.
+# Naming the real cause costs one branch here and saves the misdiagnosis every
+# time. Guarded on pg_isready existing, so a machine without the client tools
+# falls through to the old behaviour rather than hard-failing.
 if ! "$PY" -c "import pytest" >/dev/null 2>&1; then
   fail "pytest — not importable (activate backend venv / uv sync in backend/)"
+elif command -v pg_isready >/dev/null 2>&1 && ! pg_isready -q; then
+  fail "Postgres is NOT running — backend tests cannot pass. This is the environment, not the diff. Start your local cluster and re-run (Debian: pg_lsclusters; macOS: brew services list)."
 elif "$PY" -m pytest tests/test_api.py -q >/tmp/dod-pytest.log 2>&1; then
   pass "backend pytest"
 else
@@ -140,7 +156,7 @@ fi
 section "7/7 en.json parity (MEH-978 en-parity-guard)"
 if [ ! -x "$ROOT/frontend/node_modules/.bin/vitest" ]; then
   fail "en-parity guard — vitest not installed (run 'npm ci' in frontend/)"
-elif ( cd "$ROOT/frontend" && ./node_modules/.bin/vitest run __tests__/en-parity-guard.test.js ) >/tmp/dod-parity.log 2>&1; then
+elif ( cd "$ROOT/frontend" && node scripts/vitest-guard.mjs __tests__/en-parity-guard.test.js ) >/tmp/dod-parity.log 2>&1; then
   pass "en.json key parity"
 else
   fail "en.json key parity — he-only key(s) missing from en.json (see /tmp/dod-parity.log)"

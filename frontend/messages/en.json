@@ -7,11 +7,13 @@
     "explore": "Explore",
     "add_business_short": "Add a business",
     "map": "Map",
+    "experiences": "Experiences",
     "events": "Events",
     "about": "About",
     "favorites": "Favorites",
     "admin": "Admin",
     "login": "Sign In",
+    "register": "Sign up",
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
@@ -32,6 +34,7 @@
     },
     "footer": {
       "events": "Events",
+      "experiences": "Experiences",
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
@@ -284,7 +287,7 @@
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
           "address_optional_hint": "No exact address? The town is enough.",
-          "address_confirmed": "✓ Location found: {location}",
+          "address_confirmed": "Location found: {location}",
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
           "multi_location_yes_copy": "Great — you'll be able to add all your points from the dashboard after signing up.",
@@ -784,6 +787,7 @@
           "sheet_open_aria": "Details about {name}",
           "sheet_close_aria": "Close product details",
           "sheet_cta": "Ask about this product on WhatsApp",
+          "sheet_secondary_wa": "Or ask about this product on WhatsApp",
           "sheet_wa_prefill": "Hi, I saw “{name}” on your Mehamakor page and would love to hear more"
         },
         "recipes": {
@@ -861,6 +865,9 @@
       "order_window": {
         "schedule_heading": "When orders are accepted",
         "schedule_subtitle": "The days and hours this business accepts orders",
+        "show_week": "Full week",
+        "hide_week": "Hide full week",
+        "today": "Today",
         "days": {
           "sun": "Sunday",
           "mon": "Monday",
@@ -2729,7 +2736,8 @@
       "close_aria": "Close viewer",
       "image_alt": "Image {current} of {total}",
       "prev_aria": "Previous image",
-      "next_aria": "Next image"
+      "next_aria": "Next image",
+      "image_error": "Image failed to load"
     },
     "onboarding_tip": {
       "cta_default": "Got it",
@@ -3034,6 +3042,8 @@
       "submit_aria": "Search",
       "loading": "Loading results...",
       "no_results_for": "No results for",
+      "no_results_hint": "Try different words, or browse all businesses and filter there.",
+      "no_results_cta": "Browse all businesses →",
       "section_producers": "Businesses",
       "section_categories": "Categories",
       "section_cities": "Cities",
@@ -3466,6 +3476,7 @@
           "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",
           "sentry": "<b>Sentry</b> — technical error monitoring for fixing issues.",
           "clarity": "<b>Microsoft Clarity</b> — site usage analytics. Loaded only after analytics-cookie consent in the cookie banner.",
+          "posthog": "<b>PostHog</b> — product analytics (which screens were viewed, which registration steps were completed). Loaded only after analytics-cookie consent in the cookie banner, with data stored on EU servers by default.",
           "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
@@ -4070,7 +4081,7 @@
           "views": "Views",
           "window_7d": "Last 7 days",
           "rating_sub": "{count} reviews",
-          "conversion_line": "{rate}% of viewers clicked the WhatsApp button. A click is not necessarily a message sent."
+          "conversion_line": "{rate} WhatsApp clicks per 100 distinct visitors in the last 30 days. A click is not necessarily a message sent."
         },
         "hero": {
           "views_week_label": "Views this week",
@@ -4089,9 +4100,9 @@
         "eligible_weekly_sub": "First in your city + strong profile — well done!",
         "windowed": {
           "profile_views": "Profile views",
-          "profile_views_tooltip": "How many times your page was loaded. Every visit counts, including repeat visits.",
+          "profile_views_tooltip": "How many distinct visitors opened your page. A visitor who returns several times in the same day counts once.",
           "search_appearances": "Search appearances",
-          "search_appearances_tooltip": "How many times customers reached your page from search results. Appearances without a click are not counted.",
+          "search_appearances_tooltip": "How many distinct visitors reached your page from search results. The same visitor counts once per day. Appearances without a click are not counted.",
           "whatsapp_clicks": "WhatsApp clicks",
           "whatsapp_clicks_tooltip": "How many times the WhatsApp button was clicked. A click is not necessarily a message sent.",
           "contact_clicks": "Contact clicks (non-WhatsApp)",
@@ -4715,6 +4726,8 @@
         "diet_vegan": "Vegan",
         "diet_vegetarian": "Vegetarian",
         "diet_lactose_free": "Lactose-free",
+        "diet_no_added_sugar": "No added sugar",
+        "diet_low_carb": "Low carb",
         "diet_helper": "Tagging a product lists your business under the matching filter on the search and map pages.",
         "image_label": "Product image",
         "image_alt": "Photo",
@@ -4769,6 +4782,8 @@
         "city_placeholder": "e.g. Haifa",
         "address_label": "Address",
         "address_placeholder": "e.g. 12 Ha'atzmaut St",
+        "address_confirmed": "Location found: {location}",
+        "address_unresolved": "We couldn't locate that address — you can enter coordinates manually below.",
         "place_hint_exact": "Your city and address appear on your page and in navigation.",
         "place_hint_approximate": "Only the city is shown. The full address won't appear on your page or in navigation.",
         "lat_label": "Latitude",
@@ -4792,7 +4807,14 @@
       "edit_aria": "Edit location",
       "errors": {
         "save_failed": "Failed to save location",
-        "delete_failed": "Failed to delete location"
+        "delete_failed": "Failed to delete location",
+        "same_city": {
+          "labelled": "You already have '{label}' in {city}.",
+          "unlabelled": "You already have a {kind} in {city}.",
+          "many": "You already have {count} locations in {city}.",
+          "generic": "You already have a location in this town.",
+          "action": "So customers can tell them apart, give this one a name — at least three letters."
+        }
       }
     },
     "security": {
@@ -5031,5 +5053,99 @@
     "input_label": "Type a question",
     "input_placeholder": "Type a question...",
     "send_label": "Send question"
+  },
+  "diet_pages": {
+    "meta_title": "{label} — local food businesses | Mehamakor",
+    "breadcrumb_producers": "Businesses",
+    "faq_heading": "Frequently asked questions",
+    "siblings_aria": "More dietary pages",
+    "back_to_hub": "All businesses",
+    "honesty": "Marked according to the business's own declaration about products in its catalog.",
+    "pages": {
+      "vegan": {
+        "meta_description": "Local businesses that marked vegan products in their catalog — plant-based cheeses, baked goods, spreads and desserts. Marked by the business itself.",
+        "intro": "Almond cheeses, baked goods without butter or eggs, spreads and desserts that are entirely plant-based. Every business here marked at least one product in its catalog as vegan — some work fully vegan, others keep a vegan line alongside the rest.",
+        "faq": [
+          {
+            "question": "Are all products at these businesses vegan?",
+            "answer": "Not necessarily. The list shows businesses that marked at least one vegan product in their catalog. The business page shows which products were marked."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "vegetarian": {
+        "meta_description": "Local businesses that marked vegetarian products in their catalog — cheeses, baked goods, spreads and dishes without meat or fish. Marked by the business itself.",
+        "intro": "Cheeses, baked goods, spreads and dishes without meat or fish. Every business here marked at least one product in its catalog as vegetarian — and a vegan product counts as vegetarian too, so vegan businesses appear in this list as well.",
+        "faq": [
+          {
+            "question": "What is the difference between vegetarian and vegan here?",
+            "answer": "Vegetarian means no meat and no fish, and may include milk, eggs or honey. Vegan means no animal products at all. A product marked vegan is automatically included under vegetarian."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "gluten_free": {
+        "meta_description": "Local businesses that marked gluten-free products in their catalog — breads from alternative flours, cakes and spreads. Marked by the business itself.",
+        "intro": "Breads from alternative flours, cakes based on almonds or buckwheat, and spreads and sauces without wheat flour. Every business here marked at least one product in its catalog as gluten-free.",
+        "faq": [
+          {
+            "question": "Is the kitchen completely gluten-free?",
+            "answer": "The marking refers to the product itself, not to the kitchen. A business may prepare a gluten-free product in a place where wheat flour is also handled. If you are sensitive to traces of gluten, ask the business directly."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "lactose_free": {
+        "meta_description": "Local businesses that marked lactose-free products in their catalog — aged cheeses, plant-based desserts and spreads. Marked by the business itself.",
+        "intro": "Sheep's or goat's milk cheeses that have been aged, plant-based desserts, and spreads without cow's milk. Every business here marked at least one product in its catalog as lactose-free.",
+        "faq": [
+          {
+            "question": "What counts as lactose-free?",
+            "answer": "Products the business marked as containing no lactose — whether they are fully plant-based or the milk in them went through a process that breaks down lactose. If you are also sensitive to milk protein, check with the business."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "no_added_sugar": {
+        "meta_description": "Local businesses that marked products with no added sugar in their catalog — sweets, breads and spreads. Marked by the business itself.",
+        "intro": "Sweets without white sugar, sourdough breads with no sweetening, and spreads where the fruit does the work. Every business here marked at least one product in its catalog as having no added sugar — suitable both for those building a low-carb or ketogenic menu, and for anyone who simply wants less sugar at home.",
+        "faq": [
+          {
+            "question": "What counts as no added sugar?",
+            "answer": "Products the business marked as having no sugar, honey or syrups added during preparation. Natural sweetness from fruit or milk may still be present."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      },
+      "low_carb": {
+        "meta_description": "Local businesses that marked low-carb products in their catalog — nut breads, flourless desserts and protein-rich dishes. Marked by the business itself.",
+        "intro": "Breads based on nuts and seeds, desserts without flour or sugar, and dishes where protein and fat do the work. Every business here marked at least one product in its catalog as low-carb — suitable for those building a ketogenic menu, and for anyone simply looking for fewer carbohydrates day to day.",
+        "faq": [
+          {
+            "question": "What counts as low-carb?",
+            "answer": "Products the business marked as low in carbohydrates — usually without wheat flour, sugar or added starch. Exact values vary between businesses, so ask about a specific product."
+          },
+          {
+            "question": "How do I find businesses that deliver?",
+            "answer": "Filter with the delivery chip, or open the map page."
+          }
+        ]
+      }
+    }
   }
 }
