@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-11 — batch sweep 11/08, משימה 4/5: MEH-1949 — שומר שם-ענף
+
+**שורה אחת:** ארגומנט שלישי אופציונלי ל-`check-linear-mentions.sh` · סמנטיקה **הפוכה** מכותרת/גוף · warn-only · ‏10 מקרי self-test · **MEH-1949 לא נסגר** (חיווט ל-`pr-checks.yml` = ספיר).
+
+- **⚠️ למה לא לאסור `meh-<N>` בשם ענף:** שער שם-הענף (MEH-1141) **דורש** אותו. שני שומרים על אותו token = התנגשות, והשער הנדרש מנצח. לכן זו בדיקת **עקביות** ולא איסור.
+- **🔴 הלקח החשוב מהסשן הזה: בקרת החיוב נכשלה מהסיבה הלא נכונה בניסיון הראשון.** ‏`ROOT` הצביע מחוץ לריפו → fixtures חסרים → `exit 2`. זה נראה כמו "הבדיקה מבחינה!" והוא לא היה. **הרצה מחוץ לריפו של סקריפט שמחשב את ה-fixtures מ-`git rev-parse --show-toplevel` היא בדיקה של כלום.** לרוץ מתוך הריפו.
+- **⚠️ ושני מקרי בדיקה אינם מבחינים בפני עצמם** — `dependabot/*` ו-`docs/no-ticket` עוברים **גם** על המימוש הישן (אפס אזהרות, כי אין מה שירוץ). רק שלושת המקרים שמצפים לאזהרה נושאים ראיה. מי שיוסיף מקרים — לשאול לגבי כל אחד אם הוא היה עובר על הגרסה הקודמת.
+- **הצעד הבא:** ה-diff ל-`pr-checks.yml` נמצא בגוף ה-PR. `.github/workflows/**` הוא CC-deny — ספיר מחילה.
 ## 2026-08-11 — batch sweep 11/08, משימה 1/5: MEH-1249 — שחרור קובץ ה-checkpoint
 
 **שורה אחת:** ‏`docs/qa/conversion-progress.md` הכריז wait-gate שנסגר ב-05/08 · שני checkboxes סומנו · הסטטוס `▶️ READY` · **MEH-1249 לא נסגר** — ההמרה עצמה (508 פריטי CONVERT-PW) לא התחילה.
