@@ -216,6 +216,9 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
     against the pre-refactor duplicated code, because that code was correct at
     the time. It guards the drift, not the refactor.
     """
+    # Seeded straight into the DB as already-approved, NOT approved through the
+    # API — `_pending` is just the row factory here, despite its name. This row
+    # only has to exist holding the slug; how it got there is not under test.
     winner = _pending(db, name="חוות התאומים", status="approved")
     winner.slug = "חוות-התאומים"
     db.commit()
