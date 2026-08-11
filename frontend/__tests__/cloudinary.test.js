@@ -46,6 +46,8 @@ describe("optimizeCloudinary", () => {
     }
   );
 
+  // A malformed ratio is dropped, so the call is width-less and lands on the
+  // c_limit path — it must still be capped, not delivered raw.
   it("ignores malformed aspectRatio (and falls to the capped width path)", () => {
     expect(optimizeCloudinary(BASE, { aspectRatio: "wide" })).toBe(CAPPED);
   });
@@ -116,12 +118,6 @@ describe("optimizeCloudinary — default width cap (MEH-2001)", () => {
     const out = optimizeCloudinary(BASE, { aspectRatio: "16:9", width: 800 });
     expect(out).not.toContain("c_limit");
     expect(out).toContain("w_800");
-  });
-
-  // A malformed aspectRatio is dropped, so the call is width-less and lands
-  // on the c_limit path — it must still be capped, not delivered raw.
-  it("caps when the aspectRatio is malformed and therefore dropped", () => {
-    expect(optimizeCloudinary(BASE, { aspectRatio: "wide" })).toBe(CAPPED);
   });
 
   it("does not leak the cap into non-Cloudinary or falsy inputs", () => {
