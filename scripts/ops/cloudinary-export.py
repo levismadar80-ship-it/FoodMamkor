@@ -62,10 +62,12 @@ Consequences, each of which shows up as a flag or a default:
     Admin API allows far more; the limit here is about bandwidth pacing
     and about not tripping any protective throttle while the account is
     over quota.
-  * RESUMABLE. A file already on disk whose size matches the manifest's
-    recorded byte count is skipped, so an interrupted run costs only what
-    it had not yet fetched. This is what makes a retry cheap enough to be
-    the normal response to a failure.
+  * RESUMABLE, with the DISK as the authority — not the manifest. A file
+    present at the byte count Cloudinary reports is skipped, whether or not
+    a manifest exists. That distinction is the whole feature: the manifest
+    is written once, at the END of a run, so an interrupted FIRST run leaves
+    none, and a manifest-keyed resume would re-pull everything it had just
+    fetched. The manifest is a checksum cache, nothing more.
   * IDEMPOTENT. Re-running against a complete export downloads nothing and
     rewrites an identical manifest.
 
@@ -447,15 +449,25 @@ def main() -> int:
     for i, e in enumerate(entries, 1):
         dest = out / e["path"]
         was = prior.get(e["public_id"])
+        # The DISK is the authority for "already fetched", not the manifest.
+        #
+        # This used to require a prior manifest entry (`and was`), which quietly
+        # broke the case resume exists for: the manifest is written once, at the
+        # END of a run, so an interrupted FIRST run leaves none — and every file
+        # it had already pulled was re-downloaded next time. On an account whose
+        # overage is bandwidth, that is the exact cost this script is built to
+        # avoid, and the docstring claimed the opposite.
+        #
+        # A complete file is one that exists at the byte count Cloudinary
+        # reports. The manifest is now only a checksum CACHE: reuse the recorded
+        # hash when we have it, otherwise compute it from the file on disk.
         if (
             dest.exists()
-            and was
-            and was.get("downloaded")
-            and was.get("checksum_sha256")
             and e["bytes"] is not None
             and dest.stat().st_size == e["bytes"]
         ):
-            e["checksum_sha256"] = was["checksum_sha256"]
+            cached = was.get("checksum_sha256") if was else None
+            e["checksum_sha256"] = cached or sha256_file(dest)
             e["downloaded"] = True
             _log(f"[{i}/{len(entries)}] skip (present) {e['path']}")
             continue

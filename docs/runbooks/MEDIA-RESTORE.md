@@ -48,8 +48,11 @@ python scripts/ops/cloudinary-export.py --dry-run --out ./media-export
 python scripts/ops/cloudinary-export.py --out ./media-export
 ```
 
-It is **resumable** — a file already on disk whose size matches the manifest is
-skipped, so an interrupt costs only what had not been fetched. Re-running a complete
+It is **resumable**, and the disk is what it trusts — a file present at the byte count
+Cloudinary reports is skipped **whether or not a manifest exists yet**. That matters for
+the first run specifically: the manifest is written at the end, so an interrupt before
+then leaves none, and a manifest-keyed resume would re-pull everything it had just
+fetched. Re-running a complete
 export downloads nothing. If it exits `1`, some downloads failed; just run it again.
 
 **Keep `manifest.json`.** It is the only thing that maps a local file back to its
