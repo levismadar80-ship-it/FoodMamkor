@@ -4,7 +4,6 @@ Covers argparse contract, missing-config exit, and the --batch-size cap.
 Pure unit tests — no DB, no Cloudinary network. Live Cloudinary calls
 arrive in I.3 / I.5; those tests will mock `cloudinary.api.*`.
 """
-
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -108,12 +107,14 @@ class TestMissingCloudinaryConfig:
         monkeypatch.setattr(
             cleanup_cloudinary_orphans.settings, "cloudinary_cloud_name", ""
         )
-        with caplog.at_level(logging.INFO, logger="scripts.cleanup_cloudinary_orphans"):
+        with caplog.at_level(
+            logging.INFO, logger="scripts.cleanup_cloudinary_orphans"
+        ):
             rc = main([])
         assert rc == 0
-        assert any("not configured" in record.message for record in caplog.records), (
-            f"expected 'not configured' log, saw: {[r.message for r in caplog.records]}"
-        )
+        assert any(
+            "not configured" in record.message for record in caplog.records
+        ), f"expected 'not configured' log, saw: {[r.message for r in caplog.records]}"
 
     def test_none_cloud_name_exits_zero(self, monkeypatch):
         from scripts import cleanup_cloudinary_orphans
@@ -126,7 +127,9 @@ class TestMissingCloudinaryConfig:
 
 
 class TestPrefixDefaultPostFill:
-    def test_main_fills_default_prefixes_when_none_provided(self, monkeypatch, caplog):
+    def test_main_fills_default_prefixes_when_none_provided(
+        self, monkeypatch, caplog
+    ):
         # main() emits a "Parsed args: ... prefix=[...]" INFO line after
         # post-filling, but only on the configured path. Stub the full
         # pipeline (settings + DB + cloudinary.api.resources) so main()
@@ -172,13 +175,15 @@ class TestPrefixDefaultPostFill:
             cloudinary_api, "resources", lambda **kwargs: {"resources": []}
         )
 
-        with caplog.at_level(logging.INFO, logger="scripts.cleanup_cloudinary_orphans"):
+        with caplog.at_level(
+            logging.INFO, logger="scripts.cleanup_cloudinary_orphans"
+        ):
             rc = main([])
         assert rc == 0
         msgs = [r.message for r in caplog.records]
-        assert any("prefix=['mehamakor', 'mehamakor/avatars']" in m for m in msgs), (
-            f"expected default prefixes in log, saw: {msgs}"
-        )
+        assert any(
+            "prefix=['mehamakor', 'mehamakor/avatars']" in m for m in msgs
+        ), f"expected default prefixes in log, saw: {msgs}"
 
 
 # ---------- I.2: referenced-set DB query ----------
@@ -357,7 +362,6 @@ class TestBuildReferencedUrlSet:
 
     def test_none_and_empty_filtered_across_all_sources(self):
         table = self._empty_table()
-
         # Build a URL keyed on (model, column) — multiple columns share
         # the simple name `image_url` (Product/Event/Experience) and
         # `images` (Producer/HomeProduct), so model-qualified URLs are
@@ -398,14 +402,14 @@ class TestPassesDepthFilter:
 
     def test_subprefix_scan_no_depth_filter(self):
         # Operator opted into mehamakor/avatars explicitly; depth filter disabled.
-        assert (
-            _passes_depth_filter("mehamakor/avatars/abc", "mehamakor/avatars") is True
-        )
+        assert _passes_depth_filter(
+            "mehamakor/avatars/abc", "mehamakor/avatars"
+        ) is True
 
     def test_subprefix_scan_deep_path_kept(self):
-        assert (
-            _passes_depth_filter("mehamakor/avatars/x/y", "mehamakor/avatars") is True
-        )
+        assert _passes_depth_filter(
+            "mehamakor/avatars/x/y", "mehamakor/avatars"
+        ) is True
 
     def test_just_root_token_dropped(self):
         # `mehamakor` with no leaf doesn't match `^mehamakor/[^/]+$`.
@@ -423,7 +427,9 @@ class TestPassesRejectFilter:
         # The constant comes from app.cloudinary_utils — proves the script
         # uses the single-source-of-truth, not a duplicated literal.
         for reserved in RESERVED_PUBLIC_ID_PREFIXES:
-            assert _passes_reject_filter(reserved + "some-uuid/story-card") is False
+            assert (
+                _passes_reject_filter(reserved + "some-uuid/story-card") is False
+            )
 
     def test_placeholder_substring_dropped(self):
         # `/placeholder` anywhere in the public_id, not just as a prefix.
@@ -444,9 +450,9 @@ class TestPassesAgeFilter:
 
     def test_younger_than_cutoff_dropped(self):
         # Asset created "now + 1 hour" can't be older than any past cutoff.
-        future = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        )
+        future = (
+            datetime.now(timezone.utc) + timedelta(hours=1)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
         assert _passes_age_filter(future, self._cutoff(24)) is False
 
     def test_z_suffix_iso_handled(self):
@@ -455,7 +461,10 @@ class TestPassesAgeFilter:
 
     def test_offset_iso_handled(self):
         # ISO format with explicit +00:00 offset (also valid).
-        assert _passes_age_filter("2020-01-01T00:00:00+00:00", self._cutoff(1)) is True
+        assert (
+            _passes_age_filter("2020-01-01T00:00:00+00:00", self._cutoff(1))
+            is True
+        )
 
     def test_strict_less_than_boundary(self):
         # Asset created exactly at the cutoff is treated as too young.
@@ -531,7 +540,9 @@ class TestListCloudinaryAssets:
             "mehamakor/c",
         }
 
-    def test_pagination_two_pages_terminates_on_missing_cursor(self, monkeypatch):
+    def test_pagination_two_pages_terminates_on_missing_cursor(
+        self, monkeypatch
+    ):
         fake = self._patch_resources(
             monkeypatch,
             [
@@ -548,7 +559,9 @@ class TestListCloudinaryAssets:
         assert "next_cursor" not in fake.calls[0]
         assert fake.calls[1].get("next_cursor") == "cursor-1"
 
-    def test_pagination_three_pages_terminates_on_empty_cursor(self, monkeypatch):
+    def test_pagination_three_pages_terminates_on_empty_cursor(
+        self, monkeypatch
+    ):
         # Defensive termination: empty string `next_cursor` (not just absent).
         fake = self._patch_resources(
             monkeypatch,
@@ -599,7 +612,9 @@ class TestListCloudinaryAssets:
                 }
             ],
         )
-        result = list_cloudinary_assets(["mehamakor/avatars"], min_age_hours=24)
+        result = list_cloudinary_assets(
+            ["mehamakor/avatars"], min_age_hours=24
+        )
         assert {pid for pid, _, _ in result} == {
             "mehamakor/avatars/abc",
             "mehamakor/avatars/x/y",
@@ -641,9 +656,9 @@ class TestListCloudinaryAssets:
         assert {pid for pid, _, _ in result} == {"mehamakor/keep_me"}
 
     def test_young_asset_filtered_out(self, monkeypatch):
-        future = (datetime.now(timezone.utc) + timedelta(hours=1)).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        )
+        future = (
+            datetime.now(timezone.utc) + timedelta(hours=1)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
         self._patch_resources(
             monkeypatch,
             [
@@ -669,7 +684,8 @@ class TestListCloudinaryAssets:
             with pytest.raises(RuntimeError, match="api broke"):
                 list_cloudinary_assets(["mehamakor"], min_age_hours=24)
         assert any(
-            "cloudinary.api.resources failed" in r.message for r in caplog.records
+            "cloudinary.api.resources failed" in r.message
+            for r in caplog.records
         )
 
     def test_kwargs_to_resources_match_spec(self, monkeypatch):
@@ -1032,7 +1048,9 @@ class TestBatchDeleteOrphans:
         self._patch_delete(monkeypatch, [{"deleted": per_id}])
         assert _batch_delete_orphans(orphans, 100) == (2, 2, 0)
 
-    def test_other_status_counted_as_error_with_warning(self, monkeypatch, caplog):
+    def test_other_status_counted_as_error_with_warning(
+        self, monkeypatch, caplog
+    ):
         orphans = [self._orphan(0), self._orphan(1)]
         per_id = {
             "mehamakor/p0": "deleted",
@@ -1043,7 +1061,9 @@ class TestBatchDeleteOrphans:
             logging.WARNING, logger="scripts.cleanup_cloudinary_orphans"
         ):
             assert _batch_delete_orphans(orphans, 100) == (1, 0, 1)
-        assert any("unexpected status 'blocked'" in r.message for r in caplog.records)
+        assert any(
+            "unexpected status 'blocked'" in r.message for r in caplog.records
+        )
 
     def test_sdk_exception_counts_batch_as_errors_continues_next(
         self, monkeypatch, caplog
@@ -1067,7 +1087,9 @@ class TestBatchDeleteOrphans:
         assert deleted == 4
         assert not_found == 0
         assert errors == 2
-        assert any("delete_resources failed" in r.message for r in caplog.records)
+        assert any(
+            "delete_resources failed" in r.message for r in caplog.records
+        )
 
     def test_kwargs_match_phase_1_spec(self, monkeypatch):
         orphans = [self._orphan(0)]
@@ -1137,20 +1159,20 @@ class TestApplyMainPath:
         )
         delete_calls: list[dict] = []
         if cloudinary_delete_response is not None:
-
             def fake_delete(**kwargs):
                 delete_calls.append(kwargs)
                 return cloudinary_delete_response
-
-            monkeypatch.setattr(cloudinary_api, "delete_resources", fake_delete)
+            monkeypatch.setattr(
+                cloudinary_api, "delete_resources", fake_delete
+            )
         else:
-
             def forbidden_delete(**kwargs):
                 raise AssertionError(
                     "delete_resources called when test expected no delete"
                 )
-
-            monkeypatch.setattr(cloudinary_api, "delete_resources", forbidden_delete)
+            monkeypatch.setattr(
+                cloudinary_api, "delete_resources", forbidden_delete
+            )
         return delete_calls
 
     def _orphan_resource(self, n: int):
@@ -1180,7 +1202,9 @@ class TestApplyMainPath:
         # below in test_apply_no_orphans which uses real semantics.)
         assert len(delete_calls) >= 1
 
-    def test_apply_yes_emits_summary_block_to_stdout(self, monkeypatch, capsys):
+    def test_apply_yes_emits_summary_block_to_stdout(
+        self, monkeypatch, capsys
+    ):
         # UX symmetry with dry-run: `--apply --yes 2>cleanup.log` must still
         # show the final result on stdout. Operational logs stay on stderr;
         # the summary box mirrors the dry-run block's aesthetic.

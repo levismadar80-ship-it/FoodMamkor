@@ -19,7 +19,6 @@ capture-BEFORE-log ordering required by getsentry/sentry-python#1468.
 No real events are sent: ``sentry_sdk.capture_exception`` and the scope factory
 are monkeypatched, and no DSN is configured under pytest.
 """
-
 import asyncio
 import contextlib
 from types import SimpleNamespace
@@ -141,9 +140,7 @@ def test_capture_happens_before_the_log_call(monkeypatch):
         ),
     )
 
-    asyncio.run(
-        startup_mod._init_db_background(SimpleNamespace(state=SimpleNamespace()))
-    )
+    asyncio.run(startup_mod._init_db_background(SimpleNamespace(state=SimpleNamespace())))
 
     assert calls == ["capture", "log"], f"expected capture before log, got {calls}"
 

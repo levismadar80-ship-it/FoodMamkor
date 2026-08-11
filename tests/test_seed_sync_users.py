@@ -11,7 +11,6 @@ CC sandbox); this file is the real ORM execution — CI runs it via `pytest test
 against the Postgres service. Lives at repo-root tests/ (NOT backend/tests/) so
 it inherits the conftest fixtures and is collected by CI (tests/CLAUDE.md).
 """
-
 import pytest
 
 from app.auth import hash_password, verify_password
@@ -87,13 +86,7 @@ def test_sync_users_updates_owner_and_creates_consumer(db, monkeypatch):
     owner_old_hash = owner.password_hash
     reviewer_old_hash = reviewer.password_hash
     product_snap = (product.id, product.producer_id, product.name)
-    review_snap = (
-        review.id,
-        review.producer_id,
-        review.user_id,
-        review.stars,
-        review.body,
-    )
+    review_snap = (review.id, review.producer_id, review.user_id, review.stars, review.body)
 
     _sync_users(db)
     db.expire_all()
@@ -134,9 +127,7 @@ def test_sync_users_updates_owner_and_creates_consumer(db, monkeypatch):
         review2.body,
     ) == review_snap
     reviewer2 = db.query(User).filter_by(email=REVIEWER_EMAIL).one()
-    assert (
-        reviewer2.password_hash == reviewer_old_hash
-    )  # display-only reviewer untouched
+    assert reviewer2.password_hash == reviewer_old_hash  # display-only reviewer untouched
 
 
 def test_sync_users_aborts_when_owner_password_unset(db, monkeypatch):

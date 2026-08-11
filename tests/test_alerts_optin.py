@@ -5,7 +5,6 @@ The fan-out at alerts.py:194 already guards WhatsApp delivery on
 upsert now rejects whatsapp_opt_in=true with 422 when the user has no phone,
 so the UI can collect one just-in-time instead of promising undelivered alerts.
 """
-
 from conftest import auth_header, make_producer, make_user
 
 

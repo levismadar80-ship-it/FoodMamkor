@@ -8,18 +8,8 @@ Coverage:
   settings, analytics, page editing
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
-
 import pytest
-from app.models.models import (
-    AdminSetting,
-    ContactClick,
-    ContactMessage,
-    Producer,
-    ProducerReview,
-    ProducerWhatsAppClick,
-    StaticPage,
-    User,
-)
+from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage, User
 from conftest import (
     auth_header,
     make_category,
@@ -44,11 +34,7 @@ class TestAuth:
         # is verified out-of-band via the DB query below.
         resp = client.post(
             "/auth/register",
-            json={
-                "email": "alice@test.com",
-                "name": "Alice",
-                "password": "Zx7Yp9Mq2Lr4",
-            },
+            json={"email": "alice@test.com", "name": "Alice", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 200
         body = resp.json()
@@ -57,7 +43,6 @@ class TestAuth:
         # User row was actually created (only signal the legitimate caller
         # has is the verify email they receive).
         from app.models.models import User
-
         created = db.query(User).filter(User.email == "alice@test.com").first()
         assert created is not None
         assert created.password_hash  # password actually hashed + stored
@@ -130,7 +115,9 @@ class TestAuth:
         resp = client.post("/auth/register/producer", json=payload)
         assert resp.status_code == 200, resp.text
         created = (
-            db.query(User).filter(User.email == "producer_consent@example.com").first()
+            db.query(User)
+            .filter(User.email == "producer_consent@example.com")
+            .first()
         )
         assert created is not None
         assert created.terms_accepted_at is not None
@@ -171,7 +158,9 @@ class TestAuth:
         assert upgraded.terms_accepted_at is not None
         assert upgraded.terms_version == TERMS_VERSION
 
-    def test_producer_upgrade_without_flag_preserves_existing_consent(self, client, db):
+    def test_producer_upgrade_without_flag_preserves_existing_consent(
+        self, client, db
+    ):
         # MEH-1995 (CI review): the stamp at auth.py is guarded on the flag
         # precisely so an upgrade CANNOT erase a consent this user already gave
         # at consumer registration. That invariant is asserted in the handler's
@@ -298,7 +287,6 @@ class TestAuth:
         # 200 + body as the new-email path. No second user row created.
         make_user(db, email="dup@test.com")
         from app.models.models import User
-
         before = db.query(User).filter(User.email == "dup@test.com").count()
         resp = client.post(
             "/auth/register",
@@ -320,7 +308,9 @@ class TestAuth:
             captured["name"] = name
             captured["provider"] = provider
 
-        monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", fake_dup)
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email", fake_dup
+        )
         # Also stub the verify-mail so a hypothetical regression that
         # treats the existing email as "new" would still not send the
         # wrong notification (would fail captured["provider"] assertion).
@@ -347,7 +337,6 @@ class TestAuth:
     ):
         # Existing Google-only account: no password_hash, has google_id.
         from app.models.models import User
-
         u = User(
             email="dup_g@test.com",
             name="Galya",
@@ -417,7 +406,6 @@ class TestAuth:
         # Seed an existing password-user and an existing google-user.
         make_user(db, email="ident_pw@test.com")
         from app.models.models import User
-
         db.add(
             User(
                 email="ident_g@test.com",
@@ -486,9 +474,7 @@ class TestAuth:
         assert resp.status_code == 401
 
     def test_login_blocked_user_returns_403(self, client, db):
-        make_user(
-            db, email="blocked@test.com", password="Zx7Yp9Mq2Lr4", is_blocked=True
-        )
+        make_user(db, email="blocked@test.com", password="Zx7Yp9Mq2Lr4", is_blocked=True)
         resp = client.post(
             "/auth/login",
             json={"email": "blocked@test.com", "password": "Zx7Yp9Mq2Lr4"},
@@ -538,13 +524,10 @@ class TestAuth:
         assert "access_token" not in body
         assert "whatsapp_sent" not in body
         from app.models.models import User, Producer
-
         user = db.query(User).filter(User.email == "producer@test.com").first()
         assert user is not None
         assert user.role == "producer"
-        assert (
-            user.is_producer is True
-        )  # MEH-143: durable flag set on new registration too
+        assert user.is_producer is True  # MEH-143: durable flag set on new registration too
         producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
         assert producer is not None
         assert producer.status == "pending_whatsapp"
@@ -555,7 +538,6 @@ class TestAuth:
         no new user row, no new producer row."""
         make_user(db, email="producer@test.com")
         from app.models.models import User, Producer
-
         users_before = db.query(User).filter(User.email == "producer@test.com").count()
         producers_before = db.query(Producer).count()
         resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
@@ -568,29 +550,23 @@ class TestAuth:
         )
         assert db.query(Producer).count() == producers_before
 
-    def test_register_producer_email_failure_still_succeeds(
-        self, client, db, monkeypatch
-    ):
+    def test_register_producer_email_failure_still_succeeds(self, client, db, monkeypatch):
         """Email delivery failure must never block the 200 response
         (fire-and-forget). Same invariant as before MEH-328 — only the
         body shape changes from token to ack."""
         from unittest.mock import patch
         from app import config
-
         # Activate resend so send_email attempts a real send, then simulate Resend
         # being down. The exception is caught INSIDE send_email's try/except so
         # the background task completes without raising — registration must still
         # return 200.
         monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
         with patch("resend.Emails.send", side_effect=Exception("Resend down")):
-            resp = client.post(
-                "/auth/register/producer",
-                json={
-                    **self.VALID_PRODUCER_REG,
-                    "email": "producer2@test.com",
-                    "producer_name": "חוות שרה 2",
-                },
-            )
+            resp = client.post("/auth/register/producer", json={
+                **self.VALID_PRODUCER_REG,
+                "email": "producer2@test.com",
+                "producer_name": "חוות שרה 2",
+            })
         assert resp.status_code == 200
         assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
 
@@ -629,7 +605,6 @@ class TestAuth:
         """MEH-328 Chunk B: collision against a google-only user surfaces
         via send_duplicate_attempt_email(provider="google")."""
         from app.models.models import User
-
         u = User(
             email="producer_g@test.com",
             name="Galya",
@@ -701,7 +676,6 @@ class TestAuth:
         )
         make_user(db, email="prod_ident_pw@test.com")
         from app.models.models import User
-
         db.add(
             User(
                 email="prod_ident_g@test.com",
@@ -774,7 +748,6 @@ class TestAuth:
             ProducerCategory,
             User,
         )
-
         make_user(db, email="prod_collision@test.com")
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
@@ -807,7 +780,6 @@ class TestAuth:
     def test_logged_in_user_can_upgrade_to_producer(self, client, db):
         """Authenticated consumer → POST without email/name/password → 200 + producer created."""
         from app.models.models import User
-
         user = make_user(db, email="consumer@upgrade.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
@@ -827,7 +799,6 @@ class TestAuth:
         user = make_user(db, email="already@producer.com", role="producer")
         # Give the user a linked producer
         from app.models.models import Producer
-
         producer = Producer(name="קיים", status="pending_whatsapp")
         db.add(producer)
         db.flush()
@@ -892,7 +863,8 @@ class TestRegisterPerEmailRateLimit:
             "password": "Zx7Yp9Mq2Lr4",
         }
         statuses = [
-            client.post("/auth/register", json=payload).status_code for _ in range(6)
+            client.post("/auth/register", json=payload).status_code
+            for _ in range(6)
         ]
         assert statuses[:5] == [200] * 5
         assert statuses[5] == 429
@@ -1148,7 +1120,9 @@ class TestRegistrationCoverageGaps:
 
     # --- gap 8: score_producer dispatch ----------------------------------
 
-    def test_register_producer_dispatches_score_producer(self, client, db, monkeypatch):
+    def test_register_producer_dispatches_score_producer(
+        self, client, db, monkeypatch
+    ):
         """auth.py:680. The service has thorough unit coverage but nothing
         asserted the register handler actually schedules it — deleting the
         add_task line would have kept the whole suite green."""
@@ -1209,7 +1183,9 @@ class TestRegistrationCoverageGaps:
 
     # --- gap 9: welcome-email dispatch, both role variants ---------------
 
-    def test_register_consumer_dispatches_consumer_welcome(self, client, monkeypatch):
+    def test_register_consumer_dispatches_consumer_welcome(
+        self, client, monkeypatch
+    ):
         """auth.py:326-328 — the role argument is what selects the template,
         so it is the part worth pinning."""
         from unittest.mock import Mock
@@ -1228,9 +1204,13 @@ class TestRegistrationCoverageGaps:
             },
         )
         assert resp.status_code == 200
-        welcome.assert_called_once_with("welcome_c@example.com", "צרכנית", "consumer")
+        welcome.assert_called_once_with(
+            "welcome_c@example.com", "צרכנית", "consumer"
+        )
 
-    def test_register_producer_dispatches_producer_welcome(self, client, monkeypatch):
+    def test_register_producer_dispatches_producer_welcome(
+        self, client, monkeypatch
+    ):
         """auth.py:684-686 — the "producer" variant. A copy-paste that left
         "consumer" here would have sent producers the wrong onboarding mail
         with nothing failing."""
@@ -1246,9 +1226,13 @@ class TestRegistrationCoverageGaps:
             json=self._producer_reg(email="welcome_p@example.com", name="יצרנית"),
         )
         assert resp.status_code == 200
-        welcome.assert_called_once_with("welcome_p@example.com", "יצרנית", "producer")
+        welcome.assert_called_once_with(
+            "welcome_p@example.com", "יצרנית", "producer"
+        )
 
-    def test_register_collision_dispatches_no_welcome(self, client, db, monkeypatch):
+    def test_register_collision_dispatches_no_welcome(
+        self, client, db, monkeypatch
+    ):
         """Absence half of gap 9."""
         from unittest.mock import Mock
 
@@ -1371,7 +1355,9 @@ class TestRegisterPerIpRateLimit:
             "notify_producer_registered",
             "score_producer",
         ):
-            monkeypatch.setattr(f"app.routers.auth.{target}", lambda *a, **kw: None)
+            monkeypatch.setattr(
+                f"app.routers.auth.{target}", lambda *a, **kw: None
+            )
 
     def test_register_per_ip_limit_trips_on_11th(self, client, monkeypatch):
         self._stub_side_effects(monkeypatch)
@@ -1389,7 +1375,9 @@ class TestRegisterPerIpRateLimit:
         assert statuses[:10] == [200] * 10
         assert statuses[10] == 429
 
-    def test_register_producer_per_ip_limit_trips_on_11th(self, client, monkeypatch):
+    def test_register_producer_per_ip_limit_trips_on_11th(
+        self, client, monkeypatch
+    ):
         # MEH-1635: widened 3/hour -> 10/hour (auth.py:378). Keying
         # registration abuse on IP punished shared-IP users (CGNAT), and the
         # allowance was further eaten by the MEH-1627 refresh-retry
@@ -1495,13 +1483,16 @@ class TestLoginTimingEqualization:
             for i in range(WARMUP + N):
                 payload = {"email": email_for(i), "password": password_for(i)}
                 headers = {
-                    "X-Real-IP": (f"10.{branch_id}.{(i >> 8) & 0xFF}.{i & 0xFF}")
+                    "X-Real-IP": (
+                        f"10.{branch_id}.{(i >> 8) & 0xFF}.{i & 0xFF}"
+                    )
                 }
                 start = time.perf_counter()
                 resp = client.post("/auth/login", json=payload, headers=headers)
                 elapsed = time.perf_counter() - start
                 assert resp.status_code == 401, (
-                    f"branch {branch_id} iter {i}: expected 401, got {resp.status_code}"
+                    f"branch {branch_id} iter {i}: "
+                    f"expected 401, got {resp.status_code}"
                 )
                 if i >= WARMUP:
                     times.append(elapsed)
@@ -1547,7 +1538,6 @@ class TestLoginTimingEqualization:
 
 
 # ---------- Producers ----------
-
 
 class TestProducers:
     def test_list_producers_returns_only_approved(self, client, db):
@@ -1684,7 +1674,6 @@ class TestProducers:
 
 # ---------- Admin guard ----------
 
-
 class TestAdminGuard:
     def test_unauthenticated_admin_returns_401(self, client):
         # FastAPI returns 401 for missing token, not 403
@@ -1702,7 +1691,6 @@ class TestAdminGuard:
 
 
 # ---------- Admin functionality ----------
-
 
 class TestAdminFlows:
     def test_approve_pending_producer(self, client, db):
@@ -1791,7 +1779,9 @@ class TestAdminFlows:
         )
         assert resp.status_code == 200
         # Delete
-        resp = client.delete(f"/admin/categories/{cat_id}", headers=auth_header(admin))
+        resp = client.delete(
+            f"/admin/categories/{cat_id}", headers=auth_header(admin)
+        )
         assert resp.status_code == 200
 
     def test_categories_producer_count(self, client, db):
@@ -1862,33 +1852,24 @@ class TestAdminFlows:
 
 # ---------- MEH-56: WhatsApp onboarding + bio ----------
 
-
 class TestMeh56WhatsAppOnboarding:
     """Registration produces pending_whatsapp status; admin sees it as pending."""
 
     def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
         # Stub out Twilio and email so no network calls
         import app.routers.auth as auth_mod
-
         monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
-        monkeypatch.setattr(
-            auth_mod, "notify_producer_registered", lambda *a, **k: None
-        )
+        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
-        resp = client.post(
-            "/auth/register/producer",
-            json=valid_producer_register_payload()
-            | {
-                "email": "farm56@test.com",
-                "name": "Farmer",
-                "producer_name": "חוות הבדיקה",
-                "phone": "0501234567",
-            },
-        )
+        resp = client.post("/auth/register/producer", json=valid_producer_register_payload() | {
+            "email": "farm56@test.com",
+            "name": "Farmer",
+            "producer_name": "חוות הבדיקה",
+            "phone": "0501234567",
+        })
         assert resp.status_code == 200
         from app.models.models import Producer
-
         p = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
         assert p is not None
         assert p.status == "pending_whatsapp"
@@ -1897,7 +1878,6 @@ class TestMeh56WhatsAppOnboarding:
         make_producer(db, name="Classic Pending", status="pending")
         make_producer(db, name="WA Pending", status="pending_whatsapp")
         from conftest import make_user
-
         admin = make_user(db, email="admin56@test.com", role="admin")
         resp = client.get("/admin/producers/pending", headers=auth_header(admin))
         assert resp.status_code == 200
@@ -1908,9 +1888,7 @@ class TestMeh56WhatsAppOnboarding:
     def test_admin_list_pending_filter_includes_pending_whatsapp(self, client, db):
         make_producer(db, name="WA2", status="pending_whatsapp")
         admin = make_user(db, email="admin56b@test.com", role="admin")
-        resp = client.get(
-            "/admin/producers", params={"status": "pending"}, headers=auth_header(admin)
-        )
+        resp = client.get("/admin/producers", params={"status": "pending"}, headers=auth_header(admin))
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "WA2" in names
@@ -1921,15 +1899,12 @@ class TestMeh56BioGenerator:
 
     def test_bio_generate_returns_empty_without_api_key(self, client, db, monkeypatch):
         from app import config
-
         monkeypatch.setattr(config.settings, "anthropic_api_key", "")
         # Also reset the cached client in bio_generator
         import app.services.bio_generator as bg
-
         bg._client = None
 
         from conftest import make_user, auth_header
-
         p = make_producer(db, name="ביו חוות")
         user = make_user(db, email="biouser@test.com", role="producer")
         user.producer_id = p.id
@@ -1950,7 +1925,6 @@ class TestMeh56BioGenerator:
     def test_bio_generate_rejects_missing_sells(self, client, db):
         # MEH-1173: sells is the one required structured field.
         from conftest import make_user
-
         p = make_producer(db, name="ביו2")
         user = make_user(db, email="biouser2@test.com", role="producer")
         user.producer_id = p.id
@@ -1970,13 +1944,9 @@ class TestMeh56BioGenerator:
         # is covered on both branches. generate_bio is imported inside the
         # handler, so patch it at its source module.
         import app.services.bio_generator as bg
-
-        monkeypatch.setattr(
-            bg, "generate_bio", lambda *a, **k: "ריבות בעבודת יד מהגליל"
-        )
+        monkeypatch.setattr(bg, "generate_bio", lambda *a, **k: "ריבות בעבודת יד מהגליל")
 
         from conftest import make_user
-
         p = make_producer(db, name="ביו3")
         user = make_user(db, email="biouser3@test.com", role="producer")
         user.producer_id = p.id
@@ -2001,7 +1971,6 @@ class TestMeh1236RequestReview:
 
     def _producer_owner(self, db, status, email):
         from conftest import make_user
-
         p = make_producer(db, name="עסק בהמתנה", status=status)
         user = make_user(db, email=email, role="producer")
         user.producer_id = p.id
@@ -2038,7 +2007,6 @@ class TestMeh1236RequestReview:
 
     def test_non_producer_forbidden(self, client, db):
         from conftest import make_user
-
         consumer = make_user(db, email="resubcons@example.com", role="consumer")
         resp = client.post(
             "/producers/me/request-review", headers=auth_header(consumer)
@@ -2061,7 +2029,6 @@ class TestMeh1236RequestReview:
 
 
 # ---------- Contact ----------
-
 
 class TestContact:
     """POST /contact — public contact form.
@@ -2197,7 +2164,9 @@ class TestContact:
 
     # ----- Email delivery (Resend) -----
 
-    def test_submit_contact_sends_email_to_contact_email(self, client, db, monkeypatch):
+    def test_submit_contact_sends_email_to_contact_email(
+        self, client, db, monkeypatch
+    ):
         """When CONTACT_EMAIL is set, email routes to it with correct body."""
         from app import config
         from unittest.mock import patch
@@ -2219,7 +2188,9 @@ class TestContact:
         assert "להוסיף יצרן חדש" in body
         assert db.query(ContactMessage).count() == 1
 
-    def test_submit_contact_falls_back_to_admin_email(self, client, db, monkeypatch):
+    def test_submit_contact_falls_back_to_admin_email(
+        self, client, db, monkeypatch
+    ):
         """If CONTACT_EMAIL is empty but ADMIN_EMAIL is set, email routes to ADMIN_EMAIL."""
         from app import config
         from unittest.mock import patch
@@ -2237,7 +2208,9 @@ class TestContact:
 
     # ----- Fail-open -----
 
-    def test_submit_contact_fail_open_when_no_recipient(self, client, db, monkeypatch):
+    def test_submit_contact_fail_open_when_no_recipient(
+        self, client, db, monkeypatch
+    ):
         """No recipient configured → 200, DB row still saved, no crash."""
         from app import config
 
@@ -2248,7 +2221,9 @@ class TestContact:
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
 
-    def test_submit_contact_fail_open_on_send_error(self, client, db, monkeypatch):
+    def test_submit_contact_fail_open_on_send_error(
+        self, client, db, monkeypatch
+    ):
         """Resend API raises → 200, DB row still saved (fail-open inside send_email)."""
         from app import config
         from unittest.mock import patch
@@ -2266,7 +2241,6 @@ class TestContact:
 
 
 # ---------- WhatsApp Click Tracking ----------
-
 
 class TestWhatsAppClickTracking:
     """POST /producers/{id}/whatsapp-click — anonymous + optional-auth tracking.
@@ -2322,7 +2296,6 @@ class TestWhatsAppClickTracking:
 
 
 # ---------- Producer Reviews ----------
-
 
 class TestProducerReviews:
     """POST /producers/{id}/reviews — WhatsApp gate, moderation, pagination.
@@ -2386,14 +2359,12 @@ class TestProducerReviews:
         p = make_producer(db)
         user = make_user(db, email="updater@test.com")
         # Create a review directly in DB (as if they had clicked before)
-        db.add(
-            ProducerReview(
-                producer_id=p.id,
-                user_id=user.id,
-                stars=3,
-                body="OK",
-            )
-        )
+        db.add(ProducerReview(
+            producer_id=p.id,
+            user_id=user.id,
+            stars=3,
+            body="OK",
+        ))
         db.commit()
 
         # No click row but can still update existing review
@@ -2431,7 +2402,6 @@ class TestProducerReviews:
 
         from app.routers.reviews import _recompute_producer_rating
         from app.database import SessionLocal
-
         with SessionLocal() as s:
             _recompute_producer_rating(p.id, s)
 
@@ -2448,28 +2418,21 @@ class TestProducerReviews:
 
 # ---------- Avatar upload ----------
 
-
 class TestAvatarUpload:
     def test_patch_profile_saves_avatar_url(self, client, db):
         """PATCH /users/me with avatar_url persists it and returns it in UserOut."""
         user = make_user(db, email="avatar@test.com")
         resp = client.patch(
             "/users/me",
-            json={
-                "avatar_url": "https://res.cloudinary.com/test/image/upload/avatars/abc.jpg"
-            },
+            json={"avatar_url": "https://res.cloudinary.com/test/image/upload/avatars/abc.jpg"},
             headers=auth_header(user),
         )
         assert resp.status_code == 200
-        assert (
-            resp.json()["avatar_url"]
-            == "https://res.cloudinary.com/test/image/upload/avatars/abc.jpg"
-        )
+        assert resp.json()["avatar_url"] == "https://res.cloudinary.com/test/image/upload/avatars/abc.jpg"
 
     def test_upload_avatar_requires_auth(self, client, db):
         """POST /upload/avatar without JWT → 401."""
         import io
-
         fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
         resp = client.post(
             "/upload/avatar",
@@ -2479,7 +2442,6 @@ class TestAvatarUpload:
 
 
 # ---------- MEH-1190: Profile phone field ----------
-
 
 class TestProfilePhone:
     """PATCH /users/me phone — editable, optional, length-bounded (MEH-1190).
@@ -2502,9 +2464,7 @@ class TestProfilePhone:
 
     def test_patch_empty_phone_clears_to_none(self, client, db):
         user = make_user(db, email="phone-clear@example.com")
-        client.patch(
-            "/users/me", json={"phone": "0501234567"}, headers=auth_header(user)
-        )
+        client.patch("/users/me", json={"phone": "0501234567"}, headers=auth_header(user))
         resp = client.patch("/users/me", json={"phone": ""}, headers=auth_header(user))
         assert resp.status_code == 200
         assert resp.json()["phone"] is None
@@ -2522,7 +2482,6 @@ class TestProfilePhone:
 
 
 # ---------- MEH-148: Reserved slug protection ----------
-
 
 class TestReservedSlugs:
     """Producer slugs must not collide with app routes (MEH-148)."""
@@ -2574,11 +2533,7 @@ class TestReservedSlugs:
         admin = make_user(db, role="admin")
         resp = client.post(
             "/admin/producers",
-            json={
-                "name": "עסק טוב",
-                "city": "חיפה",
-                "primary_contact_method": "garbage",
-            },
+            json={"name": "עסק טוב", "city": "חיפה", "primary_contact_method": "garbage"},
             headers=auth_header(admin),
         )
         assert resp.status_code == 422, resp.text
@@ -2675,28 +2630,16 @@ class TestReservedSlugs:
     def test_reserved_slug_set_contains_key_routes(self, client, db):
         """Smoke-test the RESERVED_SLUGS constant itself."""
         from app.slug_utils import RESERVED_SLUGS
-
         for route in ("about", "map", "login", "admin", "search", "api"):
             assert route in RESERVED_SLUGS
 
     def test_reserved_slug_set_contains_meh_1324_live_routes(self, client, db):
         """MEH-1324 §3 (dirs B+C): 13 live routes must be claim-blocked."""
         from app.slug_utils import RESERVED_SLUGS
-
         for route in (
-            "p",
-            "rate",
-            "upgrade",
-            "messages",
-            "discover",
-            "publish",
-            "share",
-            "join",
-            "ref",
-            "verify-email",
-            "accessibility",
-            "dev",
-            "newsletter",
+            "p", "rate", "upgrade", "messages", "discover", "publish",
+            "share", "join", "ref", "verify-email", "accessibility",
+            "dev", "newsletter",
         ):
             assert route in RESERVED_SLUGS, f"{route!r} missing from RESERVED_SLUGS"
 
@@ -2704,19 +2647,9 @@ class TestReservedSlugs:
         """A producer cannot claim any of the MEH-1324 live-route slugs."""
         admin = make_user(db, role="admin")
         for reserved in (
-            "p",
-            "rate",
-            "upgrade",
-            "messages",
-            "discover",
-            "publish",
-            "share",
-            "join",
-            "ref",
-            "verify-email",
-            "accessibility",
-            "dev",
-            "newsletter",
+            "p", "rate", "upgrade", "messages", "discover", "publish",
+            "share", "join", "ref", "verify-email", "accessibility",
+            "dev", "newsletter",
         ):
             resp = client.post(
                 "/admin/producers",
@@ -2727,7 +2660,6 @@ class TestReservedSlugs:
 
 
 # ---------- MEH-146: double-submit idempotency ----------
-
 
 class TestDoubleSubmitIdempotency:
     """MEH-146 — duplicate POST on favorites and reviews must return 200, not 500."""
@@ -2741,9 +2673,7 @@ class TestDoubleSubmitIdempotency:
         assert r1.status_code in (200, 201)
 
         r2 = client.post(f"/users/me/favorites/{producer.id}", headers=headers)
-        assert r2.status_code in (200, 201), (
-            f"Second POST returned {r2.status_code}: {r2.text}"
-        )
+        assert r2.status_code in (200, 201), f"Second POST returned {r2.status_code}: {r2.text}"
 
     def test_review_double_submit_is_idempotent(self, client, db):
         user = make_user(db, email="rev_double@test.com")
@@ -2752,27 +2682,19 @@ class TestDoubleSubmitIdempotency:
 
         # Satisfy the WhatsApp-click gate
         from app.models.models import ProducerWhatsAppClick
-
         click = ProducerWhatsAppClick(producer_id=producer.id, user_id=user.id)
         db.add(click)
         db.commit()
 
         payload = {"stars": 4, "body": "מוצר מאוד טרי ואיכותי, ממליצה!"}
-        r1 = client.post(
-            f"/producers/{producer.id}/reviews", json=payload, headers=headers
-        )
+        r1 = client.post(f"/producers/{producer.id}/reviews", json=payload, headers=headers)
         assert r1.status_code in (200, 201)
 
-        r2 = client.post(
-            f"/producers/{producer.id}/reviews", json=payload, headers=headers
-        )
-        assert r2.status_code in (200, 201), (
-            f"Second POST returned {r2.status_code}: {r2.text}"
-        )
+        r2 = client.post(f"/producers/{producer.id}/reviews", json=payload, headers=headers)
+        assert r2.status_code in (200, 201), f"Second POST returned {r2.status_code}: {r2.text}"
 
 
 # ---------- MEH-153: Cloudinary Hebrew error messages ----------
-
 
 class TestCloudinaryHebrewErrors:
     """Upload error responses must be Hebrew (MEH-153)."""
@@ -2811,7 +2733,6 @@ class TestCloudinaryHebrewErrors:
     def test_oversized_image_returns_hebrew(self, client, db):
         """Files over 5 MB return a Hebrew 400 error."""
         import io
-
         user = make_user(db, email="upload_size@test.com")
         big_content = b"\xff\xd8\xff" + b"\x00" * (5 * 1024 * 1024 + 1)
         resp = client.post(
@@ -2827,7 +2748,6 @@ class TestCloudinaryHebrewErrors:
     def test_invalid_file_type_returns_hebrew(self, client, db):
         """Non-image binary returns a Hebrew 400 error."""
         import io
-
         user = make_user(db, email="upload_type@test.com")
         fake_pdf = b"%PDF-1.4 not an image"
         resp = client.post(
@@ -2843,15 +2763,12 @@ class TestCloudinaryHebrewErrors:
 
 # ---------- MEH-1335: owner story fields (owner_bio + owner_photo_url) ----------
 
-
 class TestOwnerStoryFields:
     """MEH-1335: owner story data path — owner write, PUBLIC read, dedicated
     upload endpoint. The fields feed the OwnerCard "מאחורי העסק" variants
     (dormant in PR #1936 / MEH-1334); absence must change nothing."""
 
-    def _producer_user(
-        self, db, *, plan="free", images=None, email="owner_story@test.com"
-    ):
+    def _producer_user(self, db, *, plan="free", images=None, email="owner_story@test.com"):
         user = make_user(db, role="producer", email=email)
         producer = make_producer(db, images=images)
         producer.plan = plan
@@ -3011,9 +2928,7 @@ class TestOwnerStoryFields:
         user, _ = self._producer_user(db, email="owner_bad_file@test.com")
         resp = client.post(
             "/upload/owner-photo",
-            files={
-                "file": ("doc.pdf", io.BytesIO(b"%PDF-1.4 nope"), "application/pdf")
-            },
+            files={"file": ("doc.pdf", io.BytesIO(b"%PDF-1.4 nope"), "application/pdf")},
             headers=auth_header(user),
         )
         assert resp.status_code == 400
@@ -3021,14 +2936,12 @@ class TestOwnerStoryFields:
 
 # ---------- MEH-155: Vacation badge auto-clear after return_date ----------
 
-
 class TestVacationBadgeClear:
     """vacation_until field auto-clears expired vacation at serialization time (MEH-155)."""
 
     def test_set_vacation_with_future_date(self, client, db):
         """POST availability-status with vacation + future vacation_until persists both."""
         from datetime import date, timedelta
-
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
@@ -3048,7 +2961,6 @@ class TestVacationBadgeClear:
     def test_expired_vacation_clears_in_api_response(self, client, db):
         """A producer with vacation_until in the past should appear as 'available' in GET /producers."""
         from datetime import date, timedelta
-
         producer = make_producer(db)
         producer.availability_status = "vacation"
         producer.vacation_until = date.today() - timedelta(days=1)
@@ -3065,7 +2977,6 @@ class TestVacationBadgeClear:
     def test_active_vacation_stays_in_api_response(self, client, db):
         """A producer with vacation_until in the future stays as 'vacation'."""
         from datetime import date, timedelta
-
         producer = make_producer(db)
         producer.availability_status = "vacation"
         producer.vacation_until = date.today() + timedelta(days=3)
@@ -3079,7 +2990,6 @@ class TestVacationBadgeClear:
     def test_switching_away_from_vacation_clears_date(self, client, db):
         """Setting status to 'available' must clear vacation_until."""
         from datetime import date, timedelta
-
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
@@ -3098,7 +3008,6 @@ class TestVacationBadgeClear:
 
 # ---------- MEH-291: availability_state consolidation (Phase 2) ----------
 
-
 class TestAvailabilityState:
     """4-value enum that consolidates is_available_today + availability_status.
 
@@ -3113,7 +3022,6 @@ class TestAvailabilityState:
     @staticmethod
     def _setup(db):
         from app.models import User
-
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
@@ -3174,7 +3082,6 @@ class TestAvailabilityState:
 
     def test_new_endpoint_on_vacation_with_date_dual_writes(self, client, db):
         from datetime import date, timedelta
-
         user, producer = self._setup(db)
         future = (date.today() + timedelta(days=10)).isoformat()
         resp = client.post(
@@ -3221,7 +3128,6 @@ class TestAvailabilityState:
 
     def test_auto_clear_past_vacation_normalizes_both_fields(self, client, db):
         from datetime import date, timedelta
-
         producer = make_producer(db)
         producer.availability_status = "vacation"
         producer.availability_state = "on_vacation"
@@ -3237,7 +3143,6 @@ class TestAvailabilityState:
 
     def test_vacation_until_preserved_through_state_round_trip(self, client, db):
         from datetime import date, timedelta
-
         user, producer = self._setup(db)
         future = (date.today() + timedelta(days=14)).isoformat()
         # Set on_vacation with a date.
@@ -3290,70 +3195,22 @@ class TestMojibakeDetection:
     # Helpers — raw rows as openpyxl would deliver them (cells already extracted).
     # Columns: name, contact, phone, instagram, website, wa_group, _unused, city, cat, ...
     def _good_row(self, name="חוות הגליל"):
-        return [
-            name,
-            "שרה כהן",
-            "0521234567",
-            None,
-            None,
-            None,
-            None,
-            "חיפה",
-            "בשר",
-            None,
-            None,
-            None,
-            None,
-            "תיאור",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        ]
+        return [name, "שרה כהן", "0521234567", None, None, None, None, "חיפה", "בשר", None,
+                None, None, None, "תיאור", None, None, None, None, None, None, None, None, None]
 
     def _mojibake_row(self, name="×©×××"):
         # × (U+00D7) is the Latin-1 misread of the UTF-8 lead byte 0xD7 for Hebrew.
-        return [
-            name,
-            None,
-            "0521111111",
-            None,
-            None,
-            None,
-            None,
-            "×××",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        ]
+        return [name, None, "0521111111", None, None, None, None, "×××", None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None]
 
     def test_good_hebrew_passes_parse(self):
         from app.services.producer_import import parse_row
-
         result = parse_row(self._good_row(), row_number=2)
         assert not result.mojibake
         assert not any("קידוד" in e for e in result.errors)
 
     def test_mojibake_name_flagged(self):
         from app.services.producer_import import parse_row
-
         # U+00D7 in the name should be detected as mojibake.
         result = parse_row(self._mojibake_row(name="ס×××ø"), row_number=2)
         assert result.mojibake
@@ -3361,7 +3218,6 @@ class TestMojibakeDetection:
 
     def test_mojibake_in_city_field_flagged(self):
         from app.services.producer_import import parse_row
-
         row = self._good_row()
         row[7] = "×××"  # city column with mojibake
         result = parse_row(row, row_number=2)
@@ -3369,7 +3225,6 @@ class TestMojibakeDetection:
 
     def test_import_rows_batch_rejected_on_mojibake(self, db):
         from app.services.producer_import import import_rows
-
         rows = [self._good_row(), self._mojibake_row(name="ס××ø")]
         result = import_rows(db, rows, dry_run=False)
         assert result.get("batch_rejected") is True
@@ -3379,7 +3234,6 @@ class TestMojibakeDetection:
     def test_import_rows_clean_batch_succeeds(self, db):
         from app.services.producer_import import import_rows
         from app.models.models import Category
-
         # MEH-1534: import no longer auto-creates categories, and _clean_tables
         # truncates `categories` before every test — so the name in _good_row
         # (column I) must exist or the row is now (correctly) rejected. Read the
@@ -3565,7 +3419,6 @@ class TestFavoritesCount:
         # add a favorite
         u = make_user(db)
         from app.models.models import Favorite
-
         fav = Favorite(user_id=u.id, producer_id=p.id)
         db.add(fav)
         db.commit()
@@ -3624,12 +3477,8 @@ class TestContactClickTracking:
     def test_all_valid_methods_accepted(self, client, db):
         p = make_producer(db, status="approved")
         for method in ("phone", "instagram", "website", "email"):
-            resp = client.post(
-                f"/producers/{p.id}/contact-click", json={"method": method}
-            )
-            assert resp.status_code == 204, (
-                f"method={method} returned {resp.status_code}"
-            )
+            resp = client.post(f"/producers/{p.id}/contact-click", json={"method": method})
+            assert resp.status_code == 204, f"method={method} returned {resp.status_code}"
 
     def test_invalid_method_returns_422(self, client, db):
         p = make_producer(db, status="approved")
@@ -3638,7 +3487,6 @@ class TestContactClickTracking:
 
     def test_unknown_producer_returns_404(self, client, db):
         import uuid
-
         resp = client.post(
             f"/producers/{uuid.uuid4()}/contact-click",
             json={"method": "phone"},
@@ -3732,7 +3580,6 @@ class TestGetProducersMeRouteOrder:
         # (conftest.py:151-159) forces description="Test producer" + non-null
         # lat/lng, which would mask the NULL-field shape this test guards.
         from app.models.models import Producer
-
         producer = Producer(
             name="חוות מה-321",
             description=None,
@@ -3762,15 +3609,11 @@ class TestGetProducersMeRouteOrder:
     def test_get_me_with_null_created_at_returns_200(self, client, db):
         """MEH-321: created_at is nullable=True in DB — NULL must not crash serialization."""
         from sqlalchemy import text as sa_text
-
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
         db.commit()
-        db.execute(
-            sa_text("UPDATE producers SET created_at = NULL WHERE id = :pid"),
-            {"pid": str(producer.id)},
-        )
+        db.execute(sa_text("UPDATE producers SET created_at = NULL WHERE id = :pid"), {"pid": str(producer.id)})
         db.commit()
 
         resp = client.get("/producers/me", headers=auth_header(user))
@@ -3786,18 +3629,15 @@ class TestUploadGoogleAvatarOrNone:
 
     def test_none_input_returns_none(self):
         from app.routers.auth import _upload_google_avatar_or_none
-
         assert _upload_google_avatar_or_none(None) is None
 
     def test_empty_string_returns_none(self):
         from app.routers.auth import _upload_google_avatar_or_none
-
         assert _upload_google_avatar_or_none("") is None
 
     def test_no_cloudinary_config_returns_url_unchanged(self, monkeypatch):
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
-
         monkeypatch.setattr(settings, "cloudinary_cloud_name", None)
         url = "https://lh3.googleusercontent.com/photo.jpg"
         assert _upload_google_avatar_or_none(url) == url
@@ -3812,7 +3652,6 @@ class TestUploadGoogleAvatarOrNone:
         the requested chunks from iter_bytes(...).
         """
         from unittest.mock import MagicMock
-
         resp = MagicMock()
         resp.raise_for_status.return_value = None
         resp.iter_bytes.return_value = iter(chunks)
@@ -3825,40 +3664,31 @@ class TestUploadGoogleAvatarOrNone:
         from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
-
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
         with patch("httpx.stream", side_effect=Exception("network error")):
-            result = _upload_google_avatar_or_none(
-                "https://lh3.googleusercontent.com/photo.jpg"
-            )
+            result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result is None
 
     def test_cloudinary_error_is_fail_open(self, monkeypatch):
         from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
-
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
         cm = self._fake_stream_cm([b"\xff\xd8\xff" + b"\x00" * 100])
         with patch("httpx.stream", return_value=cm):
-            with patch(
-                "cloudinary.uploader.upload", side_effect=Exception("Cloudinary down")
-            ):
+            with patch("cloudinary.uploader.upload", side_effect=Exception("Cloudinary down")):
                 with patch("cloudinary.config"):
-                    result = _upload_google_avatar_or_none(
-                        "https://lh3.googleusercontent.com/photo.jpg"
-                    )
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result is None
 
     def test_success_returns_cloudinary_url(self, monkeypatch):
         from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
-
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
@@ -3866,12 +3696,8 @@ class TestUploadGoogleAvatarOrNone:
         expected = "https://res.cloudinary.com/test-cloud/image/upload/mehamakor/avatars/abc.jpg"
         with patch("httpx.stream", return_value=cm):
             with patch("cloudinary.config"):
-                with patch(
-                    "cloudinary.uploader.upload", return_value={"secure_url": expected}
-                ):
-                    result = _upload_google_avatar_or_none(
-                        "https://lh3.googleusercontent.com/photo.jpg"
-                    )
+                with patch("cloudinary.uploader.upload", return_value={"secure_url": expected}):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result == expected
 
     def test_avatar_aborts_oversized_stream(self, monkeypatch):
@@ -3882,7 +3708,6 @@ class TestUploadGoogleAvatarOrNone:
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
         from app.services.oauth_verifiers import MAX_AVATAR_BYTES
-
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
@@ -3898,18 +3723,10 @@ class TestUploadGoogleAvatarOrNone:
 
         with patch("httpx.stream", return_value=cm):
             with patch("cloudinary.config"):
-                with patch(
-                    "cloudinary.uploader.upload", side_effect=_upload_should_not_run
-                ):
-                    result = _upload_google_avatar_or_none(
-                        "https://lh3.googleusercontent.com/photo.jpg"
-                    )
-        assert result is None, (
-            f"oversized stream must short-circuit (cap = {MAX_AVATAR_BYTES})"
-        )
-        assert upload_called["n"] == 0, (
-            "Cloudinary upload must not run after size-cap abort"
-        )
+                with patch("cloudinary.uploader.upload", side_effect=_upload_should_not_run):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None, f"oversized stream must short-circuit (cap = {MAX_AVATAR_BYTES})"
+        assert upload_called["n"] == 0, "Cloudinary upload must not run after size-cap abort"
 
 
 class TestAuthEmailHtmlEscape:
@@ -3929,23 +3746,19 @@ class TestAuthEmailHtmlEscape:
         # MEH-301: send_verify_email now pre-flights resend_api_key; patch it
         # so the early-return guard doesn't short-circuit before send_email.
         from app.services import auth_emails as _ae
-
         monkeypatch.setattr(_ae.settings, "resend_api_key", "test-key")
 
         from app.services.auth_emails import send_verify_email
-
         hostile = "<script>alert(1)</script>"
         send_verify_email("u@example.com", hostile, "tok123")
 
         # Plain-text body keeps the raw name.
         assert hostile in captured["body"], "plain text must keep raw name"
         # HTML body has the escaped form, never the raw markup.
-        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in captured["html"], (
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in captured["html"], \
             "HTML body must contain the escaped name"
-        )
-        assert hostile not in captured["html"], (
+        assert hostile not in captured["html"], \
             "HTML body must not contain the unescaped name"
-        )
 
 
 class TestResetPasswordFlow:
@@ -3954,54 +3767,39 @@ class TestResetPasswordFlow:
     def test_happy_path(self, client, db):
         import secrets
         from datetime import datetime, timedelta
-
         user = make_user(db, password="OldPass1!")
         token = secrets.token_urlsafe(32)
         user.reset_token = token
         user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
         db.commit()
 
-        res = client.post(
-            "/auth/reset-password",
-            json={"token": token, "new_password": "NewPass1!Long"},
-        )
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
         assert res.status_code == 200
         db.refresh(user)
         assert user.reset_token is None
 
         # old password must no longer work
-        login_old = client.post(
-            "/auth/login", json={"email": user.email, "password": "OldPass1!"}
-        )
+        login_old = client.post("/auth/login", json={"email": user.email, "password": "OldPass1!"})
         assert login_old.status_code == 401
 
         # new password must work
-        login_new = client.post(
-            "/auth/login", json={"email": user.email, "password": "NewPass1!Long"}
-        )
+        login_new = client.post("/auth/login", json={"email": user.email, "password": "NewPass1!Long"})
         assert login_new.status_code == 200
 
     def test_unknown_token_returns_404(self, client, db):
-        res = client.post(
-            "/auth/reset-password",
-            json={"token": "nonexistent_token_abc", "new_password": "NewPass1!Long"},
-        )
+        res = client.post("/auth/reset-password", json={"token": "nonexistent_token_abc", "new_password": "NewPass1!Long"})
         assert res.status_code == 404
 
     def test_expired_token_returns_410(self, client, db):
         import secrets
         from datetime import datetime, timedelta
-
         user = make_user(db)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
         user.reset_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
         db.commit()
 
-        res = client.post(
-            "/auth/reset-password",
-            json={"token": token, "new_password": "NewPass1!Long"},
-        )
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
         assert res.status_code == 410
 
     def test_invalid_body_returns_422(self, client, db):
@@ -4011,20 +3809,16 @@ class TestResetPasswordFlow:
     def test_short_password_returns_422(self, client, db):
         import secrets
         from datetime import datetime, timedelta
-
         user = make_user(db)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
         user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
         db.commit()
-        res = client.post(
-            "/auth/reset-password", json={"token": token, "new_password": "short"}
-        )
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "short"})
         assert res.status_code == 422
 
 
 # ---------- MEH-326: JWT Refresh Token flow ----------
-
 
 class TestRefreshTokenFlow:
     """Regression tests for the HttpOnly refresh-token cookie flow.
@@ -4101,7 +3895,6 @@ class TestRefreshTokenFlow:
 
     def test_refresh_rejects_access_token_in_cookie(self, client, db):
         from app.auth import create_access_token
-
         user = make_user(db, email="t4@test.com")
         access_token = create_access_token(user.id, user.token_version)
         res = client.post("/auth/refresh", cookies={"refresh_token": access_token})
@@ -4114,7 +3907,6 @@ class TestRefreshTokenFlow:
 
         # Fetch the user and bump token_version directly
         from app.models.models import User
-
         user = db.query(User).filter(User.email == "t5@test.com").first()
         user.token_version = (user.token_version or 1) + 1
         db.commit()
@@ -4128,7 +3920,6 @@ class TestRefreshTokenFlow:
         refresh_cookie = login_res.cookies.get("refresh_token")
 
         from app.models.models import User
-
         user = db.query(User).filter(User.email == "t6@test.com").first()
         user.is_blocked = True
         db.commit()
@@ -4196,9 +3987,7 @@ class TestRefreshTokenFlow:
         )
         assert res.status_code == 200
         new_refresh = res.cookies.get("refresh_token")
-        assert new_refresh is not None, (
-            "logout-all-devices did not set a new refresh cookie"
-        )
+        assert new_refresh is not None, "logout-all-devices did not set a new refresh cookie"
         assert new_refresh != old_refresh, "refresh cookie was not rotated"
 
         # Old cookie must now be rejected (token_version was bumped).
@@ -4208,11 +3997,8 @@ class TestRefreshTokenFlow:
         # A new TestClient(app) has no stored cookies, so only old_refresh travels.
         from fastapi.testclient import TestClient
         from app.main import app as _app
-
         fresh_client = TestClient(_app)
-        res2 = fresh_client.post(
-            "/auth/refresh", cookies={"refresh_token": old_refresh}
-        )
+        res2 = fresh_client.post("/auth/refresh", cookies={"refresh_token": old_refresh})
         assert res2.status_code == 401
 
 
@@ -4265,11 +4051,7 @@ class TestFingerprintCookie:
         # Identical-bytes invariant in TestAuth depends on this being absent.
         res = client.post(
             "/auth/register",
-            json={
-                "email": "fp2@test.com",
-                "name": "FP Test",
-                "password": "Zx7Yp9Mq2Lr4",
-            },
+            json={"email": "fp2@test.com", "name": "FP Test", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert res.status_code == 200
         assert self._fp_cookie_header(res) is None
@@ -4300,7 +4082,6 @@ class TestFingerprintCookie:
         # Fresh client — empty cookie jar — so only the wrong fp is sent.
         from fastapi.testclient import TestClient
         from app.main import app as _app
-
         attack_client = TestClient(_app)
         res = attack_client.get(
             "/auth/me",
@@ -4390,7 +4171,6 @@ class TestSanitizationIntegration:
 
     def test_producer_description_sanitized(self, client, db):
         from app.models.models import Producer
-
         payload = valid_producer_register_payload() | {
             "email": "xss-producer@test.com",
             "name": "ניסוי",
@@ -4409,7 +4189,6 @@ class TestSanitizationIntegration:
     @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_home_product_description_sanitized(self, client, db, monkeypatch):
         from app.models.models import HomeProduct
-
         # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
         monkeypatch.setattr(
             "app.routers.home_products.validate_home_product",
@@ -4442,11 +4221,9 @@ class TestSanitizationIntegration:
             },
         )
         assert resp.status_code == 200, resp.text
-        row = (
-            db.query(ContactMessage)
-            .filter(ContactMessage.email == "ruth-xss@example.com")
-            .first()
-        )
+        row = db.query(ContactMessage).filter(
+            ContactMessage.email == "ruth-xss@example.com"
+        ).first()
         assert row is not None
         assert "<script>" not in row.message
         assert "</script>" not in row.message
@@ -4480,22 +4257,13 @@ class TestAppleTokenVerification:
         """MEH-440-followup: clear the module-level JWKS cache between
         tests so order-dependent state doesn't leak across cases."""
         from app.services.oauth_verifiers import _APPLE_JWKS_CACHE
-
         _APPLE_JWKS_CACHE["keys"] = None
         _APPLE_JWKS_CACHE["fetched_at"] = None
         yield
         _APPLE_JWKS_CACHE["keys"] = None
         _APPLE_JWKS_CACHE["fetched_at"] = None
 
-    def _setup_mocks(
-        self,
-        monkeypatch,
-        *,
-        decoded_payload=None,
-        decode_exc=None,
-        jwks=None,
-        header=None,
-    ):
+    def _setup_mocks(self, monkeypatch, *, decoded_payload=None, decode_exc=None, jwks=None, header=None):
         from app import config
         import jwt as pyjwt
         import requests as req_mod
@@ -4513,9 +4281,7 @@ class TestAppleTokenVerification:
                 return self._p
 
         keys_payload = jwks if jwks is not None else [self.APPLE_JWK]
-        monkeypatch.setattr(
-            req_mod, "get", lambda url, **kw: _FakeResp({"keys": keys_payload})
-        )
+        monkeypatch.setattr(req_mod, "get", lambda url, **kw: _FakeResp({"keys": keys_payload}))
         monkeypatch.setattr(
             pyjwt,
             "get_unverified_header",
@@ -4527,7 +4293,6 @@ class TestAppleTokenVerification:
             lambda *a, **kw: object(),
         )
         if decode_exc is not None:
-
             def _decode(*a, **kw):
                 raise decode_exc
         else:
@@ -4535,7 +4300,6 @@ class TestAppleTokenVerification:
 
             def _decode(*a, **kw):
                 return payload
-
         monkeypatch.setattr(pyjwt, "decode", _decode)
 
     def test_returns_payload_on_valid_token(self, monkeypatch):
@@ -4602,11 +4366,8 @@ class TestAppleTokenVerification:
         monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
 
         class _BadKeysResp:
-            def raise_for_status(self):
-                pass
-
-            def json(self):
-                return {}
+            def raise_for_status(self): pass
+            def json(self): return {}
 
         monkeypatch.setattr(req_mod, "get", lambda url, **kw: _BadKeysResp())
         assert _verify_apple_token("dummy.token.value") is None
@@ -4620,11 +4381,8 @@ class TestAppleTokenVerification:
         monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
 
         class _BadKeysResp:
-            def raise_for_status(self):
-                pass
-
-            def json(self):
-                return {"keys": []}
+            def raise_for_status(self): pass
+            def json(self): return {"keys": []}
 
         monkeypatch.setattr(req_mod, "get", lambda url, **kw: _BadKeysResp())
         assert _verify_apple_token("dummy.token.value") is None
@@ -4775,7 +4533,6 @@ class TestAppleTokenVerification:
 # MEH-386: BOLA regression tests
 # ---------------------------------------------------------------------------
 
-
 class TestHomeProductsKillSwitch:
     """MEH-1406: the home-products feature is unmounted (router not included,
     admin endpoints removed). These POSITIVE assertions prove the public +
@@ -4819,12 +4576,9 @@ class TestBOLA:
     """
 
     @pytest.mark.skip(reason="feature disabled MEH-1406")
-    def test_hidden_home_product_returns_404_to_anonymous(
-        self, client, db, monkeypatch
-    ):
+    def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
         from app.models.models import HomeProduct
-
         monkeypatch.setattr(
             "app.routers.home_products.validate_home_product",
             lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
@@ -4851,7 +4605,6 @@ class TestBOLA:
     def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
         """Owner of a hidden listing can still view it."""
         from app.models.models import HomeProduct
-
         monkeypatch.setattr(
             "app.routers.home_products.validate_home_product",
             lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
@@ -4874,9 +4627,7 @@ class TestBOLA:
         assert resp.status_code == 200
 
     @pytest.mark.skip(reason="feature disabled MEH-1406")
-    def test_deactivated_home_product_returns_404_to_anonymous(
-        self, client, db, monkeypatch
-    ):
+    def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A deactivated listing (is_active=False) must 404 for anonymous callers."""
         monkeypatch.setattr(
             "app.routers.home_products.validate_home_product",
@@ -4901,7 +4652,6 @@ class TestBOLA:
     def test_category_request_producer_id_not_spoofable_anonymous(self, client, db):
         """An anonymous caller cannot spoof a producer_id on a category request."""
         import uuid as uuid_mod
-
         fake_id = str(uuid_mod.uuid4())
         resp = client.post(
             "/category-requests",
@@ -4914,7 +4664,6 @@ class TestBOLA:
     def test_category_request_uses_authenticated_producer_id(self, client, db):
         """An authenticated producer's own producer_id is used, not one from the body."""
         import uuid as uuid_mod
-
         producer = make_producer(db, name="בית קפה בודהה")
         user = make_user(db, email="bola-producer@test.com")
         user.producer_id = producer.id
@@ -5004,7 +4753,9 @@ class TestMeh1167KashrutCard:
         user, producer = self._producer_owner(db, email="kr_happy@test.com")
         self._seed_request(db, producer, "rabanut")
         self._seed_request(db, producer, "badatz", status="rejected")
-        resp = client.get("/producers/me/kashrut-requests", headers=auth_header(user))
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(user)
+        )
         assert resp.status_code == 200
         body = resp.json()
         assert len(body) == 2
@@ -5014,7 +4765,9 @@ class TestMeh1167KashrutCard:
 
     def test_own_requests_empty(self, client, db):
         user, _ = self._producer_owner(db, email="kr_empty@test.com")
-        resp = client.get("/producers/me/kashrut-requests", headers=auth_header(user))
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(user)
+        )
         assert resp.status_code == 200
         assert resp.json() == []
 
@@ -5023,7 +4776,9 @@ class TestMeh1167KashrutCard:
         mine, _ = self._producer_owner(db, email="kr_mine@test.com")
         _, other_producer = self._producer_owner(db, email="kr_other@test.com")
         self._seed_request(db, other_producer, "mehadrin")
-        resp = client.get("/producers/me/kashrut-requests", headers=auth_header(mine))
+        resp = client.get(
+            "/producers/me/kashrut-requests", headers=auth_header(mine)
+        )
         assert resp.status_code == 200
         assert resp.json() == []
 
@@ -5113,11 +4868,7 @@ class TestMeh1167KashrutCard:
         resp = client.post(
             "/upload/kashrut-cert",
             files={
-                "file": (
-                    "c.jpg",
-                    io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100),
-                    "image/jpeg",
-                )
+                "file": ("c.jpg", io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100), "image/jpeg")
             },
         )
         assert resp.status_code == 401

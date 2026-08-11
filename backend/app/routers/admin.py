@@ -206,6 +206,19 @@ def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Pro
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
+    # KNOWN LIMIT, stated rather than left for the next reader to find: the
+    # re-read below does NOT re-run the MEH-799 no-image gate or the MEH-971
+    # license gate. Those ran in `approve_producer` against the object fetched
+    # before the collision; this row is fresh from the DB. If another
+    # transaction stripped the images or the license number inside the rollback
+    # window, the retry approves without re-validating.
+    #
+    # Not closed here, and the reason is scope rather than dismissal: this is a
+    # compound race — two admins approving same-named businesses in the same
+    # instant AND a third mutation landing between them — on an admin-only
+    # endpoint. Re-checking would put a second copy of both gates in this
+    # function, which is the duplication `_apply_approval_state` exists to
+    # avoid. The gates belong in one place; moving them there is its own change.
     _apply_approval_state(producer)
     _mint_slug_if_absent(db, producer)
     db.commit()

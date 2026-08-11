@@ -11,7 +11,6 @@ Covers:
 - Zero-result queries are logged to search_queries table
 - /search?q= autocomplete still works (regression)
 """
-
 import uuid
 
 import pytest
@@ -53,9 +52,7 @@ class TestProducerSearch:
         assert "חוות הגדי" in names
         assert "מאפיית השחר" not in names
 
-    @pytest.mark.skip(
-        reason="product-name search not implemented on GET /producers — tracked in MEH-394"
-    )
+    @pytest.mark.skip(reason="product-name search not implemented on GET /producers — tracked in MEH-394")
     def test_matches_product_name(self, client, db):
         producer = make_producer(db, name="חקלאי הצפון", city="קריית שמונה")
         product = Product(
@@ -133,7 +130,9 @@ class TestSearchMatchesDeliveryCity:
     Producer.city differs."""
 
     def test_matches_delivery_city_when_own_city_differs(self, client, db):
-        make_producer(db, name="מאפיית הבוקר", city="חיפה", delivery_cities=["אשדוד"])
+        make_producer(
+            db, name="מאפיית הבוקר", city="חיפה", delivery_cities=["אשדוד"]
+        )
         make_producer(db, name="עסק ללא כיסוי", city="נהריה")
 
         resp = client.get("/producers?q=אשדוד")
@@ -176,7 +175,9 @@ def _make_cheese_fixture(db):
     Control:     מאפיית הבוקר (חיפה) — matches "חיפה" and nothing else.
     """
     cat = make_category(db, name="גבינות עיזים")
-    producer = make_producer(db, name="מחלבת השרון", city="תל אביב", category=cat)
+    producer = make_producer(
+        db, name="מחלבת השרון", city="תל אביב", category=cat
+    )
     db.add(
         Product(
             id=uuid.uuid4(),
@@ -204,7 +205,7 @@ class TestHebrewTokenSearch:
     """
 
     def test_1_smichut_product_found_by_feminine_singular(self, client, db):
-        """ "גבינה עיזים" finds the product "גבינת עיזים".
+        """"גבינה עיזים" finds the product "גבינת עיזים".
 
         Neither word is a substring of the stored name in that form — the
         ה-stem takes "גבינה" to "גבינ", which is. Pre-MEH-1664 this returned
@@ -219,7 +220,7 @@ class TestHebrewTokenSearch:
         assert "מארז מתנה" not in names
 
     def test_2_reversed_word_order_finds_the_same_product(self, client, db):
-        """ "עיזים גבינת" — reversed — finds it too. Word order is free
+        """"עיזים גבינת" — reversed — finds it too. Word order is free
         because the tokens are AND-ed independently, not matched as a run."""
         _make_cheese_fixture(db)
 
@@ -229,7 +230,7 @@ class TestHebrewTokenSearch:
         assert "גבינת עיזים" in names
 
     def test_3_definite_article_finds_producer_on_producers_path(self, client, db):
-        """ "הגבינה" on /producers?q= — prefix strip + stem, applied on the
+        """"הגבינה" on /producers?q= — prefix strip + stem, applied on the
         listing path for the first time (MEH-252 only ever touched /search)."""
         _make_cheese_fixture(db)
 
@@ -240,7 +241,7 @@ class TestHebrewTokenSearch:
         assert "מאפיית הבוקר" not in names
 
     def test_4_plural_query_finds_producer(self, client, db):
-        """ "גבינות" finds the business through its category "גבינות עיזים".
+        """"גבינות" finds the business through its category "גבינות עיזים".
 
         Honest scope note: this passes on the literal variant, not the stem —
         the ה/ת rule takes "גבינות" to "גבינו", which does NOT reach the
@@ -295,7 +296,7 @@ class TestHebrewTokenSearch:
             assert body["categories"] == [], wildcard
 
     def test_7_product_description_only_match_surfaces_producer(self, client, db):
-        """ "יוגורט" appears ONLY in a product description.
+        """"יוגורט" appears ONLY in a product description.
 
         Pre-MEH-1664 the /producers has_product EXISTS covered Product.name
         alone, so this producer was reachable from /search but not from

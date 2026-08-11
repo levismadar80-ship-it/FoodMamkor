@@ -5,7 +5,6 @@ consumes from already-loaded ORM collections. These tests exercise it
 against lightweight stand-ins (no DB) to lock the dietary-flag
 aggregation, license boolean, and counts.
 """
-
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
@@ -39,7 +38,9 @@ class TestAttachBadgeFields:
         assert p.delivery_count == 3
 
     def test_dietary_flags_aggregate_any(self):
-        p = _producer(products=[_product(is_vegan=True), _product(is_gluten_free=True)])
+        p = _producer(
+            products=[_product(is_vegan=True), _product(is_gluten_free=True)]
+        )
         attach_badge_fields(p)
         assert p.has_vegan_products is True
         assert p.has_gluten_free_products is True

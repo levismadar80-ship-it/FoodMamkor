@@ -19,7 +19,6 @@ Expected matrix:
 The OAuth verifier helpers are monkey-patched at the router level (same
 pattern as tests/test_producer_oauth.py) — no real network call is made.
 """
-
 import importlib.util
 import os
 import sys

@@ -13,7 +13,6 @@ looked at (the old ``import_rows`` early-return preceded the lookup), so a bad
 sheet passed the preview clean and only surfaced on the real run — by silently
 creating the row. The check now runs as a pre-pass, so dry_run reports it too.
 """
-
 from seed_data import CATEGORIES
 
 from app.models.models import Category
@@ -26,29 +25,9 @@ UNKNOWN_CATEGORY = "קטגוריה שלא קיימת בטקסונומיה"
 def _row(name="חוות הגליל", category=KNOWN_CATEGORY):
     """A row shaped as openpyxl delivers it. Column I (index 8) = category."""
     return [
-        name,
-        "שרה כהן",
-        "0521234567",
-        None,
-        None,
-        None,
-        None,
-        "חיפה",
-        category,
-        None,
-        None,
-        None,
-        None,
-        "תיאור",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
+        name, "שרה כהן", "0521234567", None, None, None, None, "חיפה", category,
+        None, None, None, None, "תיאור", None, None, None, None, None, None,
+        None, None, None,
     ]
 
 

@@ -25,7 +25,6 @@ so there is deliberately no Alembic revision in that PR.
 REUSES: tests/test_producer_me_delivery_fields.py:19 (_producer_user owner-
 wiring pattern — make_producer + make_user(role="producer") + producer_id link).
 """
-
 from tests.conftest import auth_header, make_producer, make_user
 
 # The pre-MEH-1869 shape. Still a legal INPUT; it is normalised on write.
@@ -44,10 +43,7 @@ LEGACY_NORMALIZED = {
 
 # The canonical shape: a split day (lunch break) beside single-range days.
 VALID_WINDOW = {
-    "sunday": [
-        {"open": "09:00", "close": "13:00"},
-        {"open": "16:00", "close": "20:00"},
-    ],
+    "sunday": [{"open": "09:00", "close": "13:00"}, {"open": "16:00", "close": "20:00"}],
     "monday": [{"open": "08:30", "close": "18:00"}],
     "friday": [
         {"open": "08:00", "close": "11:00"},
@@ -108,14 +104,10 @@ def test_adjacent_ranges_are_allowed(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={
-            "order_window": {
-                "sunday": [
-                    {"open": "09:00", "close": "13:00"},
-                    {"open": "13:00", "close": "17:00"},
-                ]
-            }
-        },
+        json={"order_window": {"sunday": [
+            {"open": "09:00", "close": "13:00"},
+            {"open": "13:00", "close": "17:00"},
+        ]}},
         headers=auth_header(user),
     )
     assert resp.status_code == 200, resp.text
@@ -125,14 +117,10 @@ def test_overlapping_ranges_rejected_422(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={
-            "order_window": {
-                "sunday": [
-                    {"open": "09:00", "close": "13:00"},
-                    {"open": "12:00", "close": "17:00"},
-                ]
-            }
-        },
+        json={"order_window": {"sunday": [
+            {"open": "09:00", "close": "13:00"},
+            {"open": "12:00", "close": "17:00"},
+        ]}},
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
@@ -144,14 +132,10 @@ def test_unsorted_ranges_rejected_422(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={
-            "order_window": {
-                "sunday": [
-                    {"open": "16:00", "close": "20:00"},
-                    {"open": "09:00", "close": "13:00"},
-                ]
-            }
-        },
+        json={"order_window": {"sunday": [
+            {"open": "16:00", "close": "20:00"},
+            {"open": "09:00", "close": "13:00"},
+        ]}},
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
@@ -161,16 +145,12 @@ def test_more_than_three_ranges_rejected_422(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={
-            "order_window": {
-                "sunday": [
-                    {"open": "06:00", "close": "07:00"},
-                    {"open": "08:00", "close": "09:00"},
-                    {"open": "10:00", "close": "11:00"},
-                    {"open": "12:00", "close": "13:00"},
-                ]
-            }
-        },
+        json={"order_window": {"sunday": [
+            {"open": "06:00", "close": "07:00"},
+            {"open": "08:00", "close": "09:00"},
+            {"open": "10:00", "close": "11:00"},
+            {"open": "12:00", "close": "13:00"},
+        ]}},
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
@@ -193,14 +173,10 @@ def test_bad_time_inside_second_range_rejected_422(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
         "/producers/me",
-        json={
-            "order_window": {
-                "sunday": [
-                    {"open": "09:00", "close": "13:00"},
-                    {"open": "16:00", "close": "16:00"},
-                ]
-            }
-        },
+        json={"order_window": {"sunday": [
+            {"open": "09:00", "close": "13:00"},
+            {"open": "16:00", "close": "16:00"},
+        ]}},
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text

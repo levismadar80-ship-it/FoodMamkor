@@ -12,7 +12,6 @@ Two surfaces:
 
 Pure construction + monkeypatch; no DB, no network.
 """
-
 from __future__ import annotations
 
 import pytest
@@ -23,7 +22,6 @@ from app.services.whatsapp_templates import OtpCodeV1, WhatsAppTemplate
 
 # ---- ClassVar contract ----------------------------------------------------
 
-
 def test_otp_template_name_and_language():
     assert OtpCodeV1.name == "producer_otp_v1"
     assert OtpCodeV1.language == "he"
@@ -31,7 +29,6 @@ def test_otp_template_name_and_language():
 
 
 # ---- Field validation (extra="forbid" inherited from base) ----------------
-
 
 def test_otp_missing_code_raises():
     with pytest.raises(ValidationError):
@@ -44,7 +41,6 @@ def test_otp_extra_field_raises():
 
 
 # ---- to_components() — code appears in BOTH body and button ----------------
-
 
 def test_otp_components_code_appears_twice():
     comps = OtpCodeV1(code="123456").to_components()
@@ -67,7 +63,10 @@ def test_otp_components_body_and_button_both_carry_same_code():
     # exact same code string must surface in two distinct components.
     comps = OtpCodeV1(code="987654").to_components()
     occurrences = [
-        p["text"] for comp in comps for p in comp["parameters"] if p["text"] == "987654"
+        p["text"]
+        for comp in comps
+        for p in comp["parameters"]
+        if p["text"] == "987654"
     ]
     assert len(occurrences) == 2
     kinds = {comp["type"] for comp in comps}
@@ -75,7 +74,6 @@ def test_otp_components_body_and_button_both_carry_same_code():
 
 
 # ---- _send_whatsapp_otp wrapper -------------------------------------------
-
 
 def test_send_whatsapp_otp_uses_send_template(monkeypatch):
     """Wrapper sends the OTP as a template (not free-form text)."""

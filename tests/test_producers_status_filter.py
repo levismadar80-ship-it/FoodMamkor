@@ -4,7 +4,6 @@ Pending/rejected producers must not be exposed to anonymous or non-owner
 callers. Only admins and the producer's owner may fetch by UUID; everyone
 else gets a 404 so the UUID can't be used to enumerate queue state.
 """
-
 from tests.conftest import auth_header, make_producer, make_user
 
 

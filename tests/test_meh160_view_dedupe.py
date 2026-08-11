@@ -234,7 +234,9 @@ class TestTheOtherThreeReaders:
         score = (
             db.query(expr)
             .select_from(Producer)
-            .outerjoin(ProducerPageView, ProducerPageView.producer_id == Producer.id)
+            .outerjoin(
+                ProducerPageView, ProducerPageView.producer_id == Producer.id
+            )
             .filter(Producer.id == rival.id)
             .scalar()
         )
@@ -316,7 +318,9 @@ class TestTheOtherThreeReaders:
         a, b = make_producer(db), make_producer(db)
         for pid in (a.id, b.id):
             db.add(
-                ProducerPageView(producer_id=pid, viewer_ip_hash="f" * 64, city="חיפה")
+                ProducerPageView(
+                    producer_id=pid, viewer_ip_hash="f" * 64, city="חיפה"
+                )
             )
         db.commit()
 

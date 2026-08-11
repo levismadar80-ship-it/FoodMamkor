@@ -12,7 +12,6 @@ Related: tests/test_meh1626_domain_types.py (chunk 1) · backend/app/schemas/
 schemas.py (the 7 types) · backend/app/routers/users_me.py (the ProfileUpdate
 gate this chunk fixes alongside the schema).
 """
-
 import pytest
 from app.schemas.schemas import (
     AppleAuthRequest,
@@ -89,9 +88,7 @@ REJECT_CASES = [
 
 
 @pytest.mark.parametrize(
-    "model,field,bad",
-    REJECT_CASES,
-    ids=[f"{m.__name__}.{f}" for m, f, _ in REJECT_CASES],
+    "model,field,bad", REJECT_CASES, ids=[f"{m.__name__}.{f}" for m, f, _ in REJECT_CASES]
 )
 def test_bad_input_is_rejected(model, field, bad):
     with pytest.raises(ValidationError):

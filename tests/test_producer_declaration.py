@@ -12,7 +12,6 @@ Covers the backend half of gate 2:
 Pure HTTP/DB tests — no Anthropic/email assertions (those layers fail-open
 in the test config, same as the existing register tests in test_api.py).
 """
-
 from datetime import datetime, timedelta, timezone
 
 from app.constants import DECLARATION_VERSION

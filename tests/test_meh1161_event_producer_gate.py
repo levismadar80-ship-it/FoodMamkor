@@ -68,7 +68,9 @@ class TestListEventsProducerGate:
         assert resp.status_code == 200
         assert any(e["id"] == str(event.id) for e in resp.json())
 
-    def test_owner_still_sees_own_pending_events_via_producer_filter(self, client, db):
+    def test_owner_still_sees_own_pending_events_via_producer_filter(
+        self, client, db
+    ):
         pending, owner = _make_producer_user(
             db, email="owner@example.com", status="pending"
         )

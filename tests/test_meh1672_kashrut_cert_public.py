@@ -21,9 +21,7 @@ import app.routers.producers as producers_module
 from app.models.models import KashrutBadgeRequest
 from conftest import make_producer, make_user
 
-CERT_URL = (
-    "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/kashrut/abc123.jpg"
-)
+CERT_URL = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/kashrut/abc123.jpg"
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 
 
@@ -33,13 +31,7 @@ class _FakeStream:
     must support the same `with ... as upstream: upstream.iter_bytes()`
     shape rather than a plain response object."""
 
-    def __init__(
-        self,
-        status_code=200,
-        content=PNG_BYTES,
-        content_type="image/jpeg",
-        chunk_size=32,
-    ):
+    def __init__(self, status_code=200, content=PNG_BYTES, content_type="image/jpeg", chunk_size=32):
         self.status_code = status_code
         self.headers = {"content-type": content_type}
         self._content = content
@@ -86,9 +78,7 @@ def _certified(
     producer.kashrut_badges = [badge_code]
     producer.kashrut_verified_at = datetime.utcnow()
     producer.kashrut_expires_at = (
-        None
-        if expires_in_days is None
-        else datetime.utcnow() + timedelta(days=expires_in_days)
+        None if expires_in_days is None else datetime.utcnow() + timedelta(days=expires_in_days)
     )
     db.add(
         KashrutBadgeRequest(

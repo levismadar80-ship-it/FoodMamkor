@@ -5,7 +5,6 @@ inputs we care about. If a future bleach upgrade changes any output,
 verify the new output is still XSS-safe (no execution path) before
 updating the assertion.
 """
-
 from app.services.sanitization import sanitize_text
 
 
@@ -17,7 +16,7 @@ def test_strips_script_tags():
 
 
 def test_strips_img_onerror():
-    assert sanitize_text("<img src=x onerror=alert(1)>") is None
+    assert sanitize_text('<img src=x onerror=alert(1)>') is None
 
 
 def test_preserves_hebrew():

@@ -11,7 +11,6 @@ the SAME row (single EXISTS): a producer whose חיפה row is day-less and whos
 REUSES: tests/test_delivery_cities_filter.py (approved-producer + delivery
 area fixture pattern) · tests/test_meh1644_delivery_day.py (vocabulary pins).
 """
-
 from datetime import datetime
 
 from app.models import DeliveryArea
@@ -96,6 +95,8 @@ def test_day_filter_composes_with_other_filters(client, db):
     p.verified_at = datetime.utcnow()
     db.commit()
     _approved(db, "לא מאומת עם יום", areas=[{"city": "חיפה", "delivery_day": "רביעי"}])
-    resp = client.get("/producers", params={"delivery_day": "רביעי", "verified": True})
+    resp = client.get(
+        "/producers", params={"delivery_day": "רביעי", "verified": True}
+    )
     assert resp.status_code == 200, resp.text
     assert _ids(resp) == {"מאומת עם יום"}

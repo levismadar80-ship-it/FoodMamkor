@@ -27,7 +27,6 @@ upgrade payload carries no email (routers/auth.py:575-580). A 422 is not a
 401, so the frontend's refresh interceptor never fired: the user was stuck
 with "אימייל, שם וסיסמה הם שדות חובה" and no way forward.
 """
-
 from datetime import datetime, timedelta, timezone
 
 import pytest

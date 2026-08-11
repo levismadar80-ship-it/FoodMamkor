@@ -1,5 +1,4 @@
 """MEH-483: /health/{liveness,readiness} + X-Request-ID round-trip."""
-
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient

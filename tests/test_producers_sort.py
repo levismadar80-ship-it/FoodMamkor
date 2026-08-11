@@ -63,21 +63,9 @@ class TestSortRating:
         many = make_producer(db, name="ManyReviews")
         new = make_producer(db, name="FewNew")
         old = make_producer(db, name="FewOld")
-        _set(
-            db,
-            many,
-            avg_rating=4.0,
-            reviews_count=50,
-            created_at=BASE - timedelta(days=5),
-        )
+        _set(db, many, avg_rating=4.0, reviews_count=50, created_at=BASE - timedelta(days=5))
         _set(db, new, avg_rating=4.0, reviews_count=5, created_at=BASE)
-        _set(
-            db,
-            old,
-            avg_rating=4.0,
-            reviews_count=5,
-            created_at=BASE - timedelta(days=10),
-        )
+        _set(db, old, avg_rating=4.0, reviews_count=5, created_at=BASE - timedelta(days=10))
 
         resp = client.get("/producers", params={"sort": "rating"})
         assert resp.status_code == 200
@@ -109,20 +97,8 @@ class TestSortDefault:
         third = make_producer(db, name="Third")
         # Deliberately give the OLDEST row the highest rating so a default sort
         # can't accidentally look rating-ordered.
-        _set(
-            db,
-            first,
-            avg_rating=5.0,
-            reviews_count=9,
-            created_at=BASE - timedelta(days=2),
-        )
-        _set(
-            db,
-            second,
-            avg_rating=1.0,
-            reviews_count=1,
-            created_at=BASE - timedelta(days=1),
-        )
+        _set(db, first, avg_rating=5.0, reviews_count=9, created_at=BASE - timedelta(days=2))
+        _set(db, second, avg_rating=1.0, reviews_count=1, created_at=BASE - timedelta(days=1))
         _set(db, third, avg_rating=1.0, reviews_count=1, created_at=BASE)
 
         default = client.get("/producers")

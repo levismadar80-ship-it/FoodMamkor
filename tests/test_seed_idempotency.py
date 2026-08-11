@@ -15,7 +15,6 @@ observability line, neither of which exists any more. Renames are Alembic's
 responsibility now — see `tests/test_seed_categories_idempotent.py`
 (`test_seed_issues_no_update_so_renames_are_a_noop`) for the inverted guard.
 """
-
 from seed_data import CATEGORIES, seed_categories
 
 from app.models.models import Category

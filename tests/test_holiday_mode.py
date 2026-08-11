@@ -9,7 +9,6 @@ Prior to MEH-247 the endpoint read `holiday_mode_active` +
 banner never lit up even after an admin toggled the flag. These tests
 lock in the corrected contract.
 """
-
 from app.models.models import AdminSetting
 
 

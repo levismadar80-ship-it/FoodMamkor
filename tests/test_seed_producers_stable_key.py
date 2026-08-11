@@ -17,7 +17,6 @@ its OWN ``SessionLocal`` against the same database, so every assertion here
 calls ``db.expire_all()`` first — otherwise the fixture session serves rows
 from its identity map and would not see the seed's writes.
 """
-
 from seed_data import PRODUCERS, seed
 
 from app.models.models import Producer
@@ -102,6 +101,6 @@ def test_reseed_after_rename_leaves_exactly_one_row_per_seed_slug(db):
 
     db.expire_all()
     for entry in PRODUCERS:
-        assert db.query(Producer).filter(Producer.slug == entry["slug"]).count() == 1, (
-            f"slug {entry['slug']} is no longer unique after a re-seed"
-        )
+        assert (
+            db.query(Producer).filter(Producer.slug == entry["slug"]).count() == 1
+        ), f"slug {entry['slug']} is no longer unique after a re-seed"

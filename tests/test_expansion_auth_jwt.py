@@ -11,7 +11,6 @@ Auth/JWT gaps the audit found uncovered around an otherwise strong suite:
 
 Backend tests — CI Postgres is the healer.
 """
-
 from app.auth import create_access_token, create_refresh_token
 from app.config import settings
 from tests.conftest import auth_header, make_producer, make_user
@@ -22,7 +21,6 @@ def _bearer(token):
 
 
 # ---------- JW-2 — blocked user via optional auth must 403, not None ----------
-
 
 def test_blocked_user_gets_403_on_optional_auth_route(client, db):
     """GET /producers/{id} uses get_current_user_optional. A blocked user's
@@ -48,7 +46,6 @@ def test_active_user_optional_auth_still_works(client, db):
 
 # ---------- JW-1 — require_producer guard ----------
 
-
 def test_require_producer_rejects_consumer(client, db):
     """A consumer hitting a producer-only route → 403 (require_producer).
 
@@ -60,7 +57,6 @@ def test_require_producer_rejects_consumer(client, db):
 
 
 # ---------- JW-3 — expired access token ----------
-
 
 def test_expired_access_token_rejected(client, db, monkeypatch):
     """A token whose exp is in the past → 401.
@@ -84,7 +80,6 @@ def test_fresh_access_token_accepted(client, db):
 
 
 # ---------- JW-4 — refresh token rejected as access token ----------
-
 
 def test_refresh_token_rejected_as_bearer_access(client, db):
     """Presenting a scope=refresh token as a Bearer access token → 401.

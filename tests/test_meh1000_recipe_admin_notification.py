@@ -192,7 +192,9 @@ class TestCreateFiresNotification:
         assert resp.status_code == 400
         notify.assert_not_called()
 
-    def test_notify_failure_does_not_fail_submission(self, client, db, monkeypatch):
+    def test_notify_failure_does_not_fail_submission(
+        self, client, db, monkeypatch
+    ):
         """The task itself raising must not break the 201 — the response
         is already sent when BackgroundTasks run; the service also
         swallows-and-logs internally (tested above), so the REAL function

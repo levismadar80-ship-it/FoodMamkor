@@ -45,9 +45,9 @@ class TestDashboardCountsPendingRecipes:
         _make_recipe(db, producer, moderation_status="approved", published=True)
         _make_recipe(db, producer, moderation_status="rejected")
 
-        stats = client.get("/admin/dashboard", headers=auth_header(admin)).json()[
-            "stats"
-        ]
+        stats = client.get(
+            "/admin/dashboard", headers=auth_header(admin)
+        ).json()["stats"]
 
         assert stats["pending_recipes"] == 2
         # The sidebar badge sum includes the recipe queue.
@@ -55,7 +55,7 @@ class TestDashboardCountsPendingRecipes:
 
     def test_no_recipes_contributes_zero(self, client, db):
         admin = make_user(db, role="admin", email=f"a{uuid4().hex[:6]}@t.com")
-        stats = client.get("/admin/dashboard", headers=auth_header(admin)).json()[
-            "stats"
-        ]
+        stats = client.get(
+            "/admin/dashboard", headers=auth_header(admin)
+        ).json()["stats"]
         assert stats["pending_recipes"] == 0

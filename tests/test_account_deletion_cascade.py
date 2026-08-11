@@ -11,7 +11,6 @@ Cloudinary asset with bypass_reserved=True (the asset lives under
 mehamakor/producers/*, which is in RESERVED_PUBLIC_ID_PREFIXES; a plain
 destroy call would be silently rejected).
 """
-
 from datetime import datetime, timedelta
 
 from app import cloudinary_utils
@@ -60,18 +59,8 @@ def test_delete_account_cascades_producer_children(client, db):
     r = client.delete("/auth/me", headers=auth_header(user))
     assert r.status_code == 200
 
-    assert (
-        db.query(ProducerReview)
-        .filter(ProducerReview.producer_id == producer_id)
-        .count()
-        == 0
-    )
-    assert (
-        db.query(ProducerFollower)
-        .filter(ProducerFollower.producer_id == producer_id)
-        .count()
-        == 0
-    )
+    assert db.query(ProducerReview).filter(ProducerReview.producer_id == producer_id).count() == 0
+    assert db.query(ProducerFollower).filter(ProducerFollower.producer_id == producer_id).count() == 0
     assert db.query(Favorite).filter(Favorite.producer_id == producer_id).count() == 0
 
 
@@ -176,11 +165,14 @@ def test_delete_account_cascades_story_card_destroy(client, db, monkeypatch):
         f"{len(story_card_calls)}; full call list: {calls}"
     )
     assert story_card_calls[0]["bypass_reserved"] is True, (
-        f"story-card destroy MUST pass bypass_reserved=True; got: {story_card_calls[0]}"
+        f"story-card destroy MUST pass bypass_reserved=True; got: "
+        f"{story_card_calls[0]}"
     )
 
 
-def test_delete_account_with_no_story_card_still_calls_destroy(client, db, monkeypatch):
+def test_delete_account_with_no_story_card_still_calls_destroy(
+    client, db, monkeypatch
+):
     """MEH-513: no story_card_url — destroy(None, bypass_reserved=True) fires."""
     user, producer = _make_producer_user(db)
     # story_card_url defaults to None — don't set it.
@@ -237,7 +229,9 @@ def test_delete_account_with_otp_tokens(client, db):
     producer_id = producer.id
     _add_otp_tokens(db, producer_id)
     assert (
-        db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer_id).count()
+        db.query(PhoneOtpToken)
+        .filter(PhoneOtpToken.producer_id == producer_id)
+        .count()
         == 3
     )
 
@@ -246,7 +240,9 @@ def test_delete_account_with_otp_tokens(client, db):
 
     assert db.query(Producer).filter(Producer.id == producer_id).first() is None
     assert (
-        db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer_id).count()
+        db.query(PhoneOtpToken)
+        .filter(PhoneOtpToken.producer_id == producer_id)
+        .count()
         == 0
     )
 
@@ -258,11 +254,15 @@ def test_admin_delete_producer_with_otp_tokens(client, db):
     _add_otp_tokens(db, producer_id)
 
     admin = make_user(db, role="admin")
-    r = client.delete(f"/admin/producers/{producer_id}", headers=auth_header(admin))
+    r = client.delete(
+        f"/admin/producers/{producer_id}", headers=auth_header(admin)
+    )
     assert r.status_code == 200
 
     assert db.query(Producer).filter(Producer.id == producer_id).first() is None
     assert (
-        db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer_id).count()
+        db.query(PhoneOtpToken)
+        .filter(PhoneOtpToken.producer_id == producer_id)
+        .count()
         == 0
     )

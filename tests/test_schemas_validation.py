@@ -6,7 +6,6 @@ ExperienceCreate.title — all must reject strings with fewer than
 
 Pure Pydantic tests: no HTTP, no DB, no auth fixtures required.
 """
-
 import pytest
 from datetime import date
 

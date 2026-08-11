@@ -20,7 +20,6 @@ legacy-shaped row directly).
 REUSES: tests/test_producer_me_delivery_fields.py (_producer_user pattern) ·
 tests/test_meh1626_domain_types.py (pure-Pydantic schema pins).
 """
-
 import pytest
 from pydantic import ValidationError
 
@@ -51,9 +50,7 @@ def test_none_and_blank_mean_arranged():
     assert DeliveryAreaCreate(city="חיפה", delivery_day="  ").delivery_day is None
 
 
-@pytest.mark.parametrize(
-    "bad", ["ימי שישי", "יום שישי", "friday", "Friday", "א", "ששי"]
-)
+@pytest.mark.parametrize("bad", ["ימי שישי", "יום שישי", "friday", "Friday", "א", "ששי"])
 def test_free_text_variants_rejected(bad):
     with pytest.raises(ValidationError):
         DeliveryAreaCreate(city="חיפה", delivery_day=bad)
@@ -155,7 +152,9 @@ def test_owner_put_rows_nationwide_xor_422(client, db):
 def test_legacy_free_text_day_still_serializes(client, db):
     _, producer = _producer_user(db)
     producer.status = "approved"
-    db.add(DeliveryArea(producer_id=producer.id, city="חיפה", delivery_day="ימי שישי"))
+    db.add(
+        DeliveryArea(producer_id=producer.id, city="חיפה", delivery_day="ימי שישי")
+    )
     db.commit()
     resp = client.get(f"/producers/{producer.id}")
     assert resp.status_code == 200, resp.text

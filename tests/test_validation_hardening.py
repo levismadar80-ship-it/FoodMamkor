@@ -4,7 +4,6 @@
 2. POST /auth/register/producer — same, when password is supplied
 3. GET /users/me/favorites — must not 500 on orphaned Favorite rows
 """
-
 from tests.conftest import (
     auth_header,
     make_producer,
@@ -72,7 +71,9 @@ def test_register_producer_rejects_punctuation_only_short_description(client):
         json=_producer_payload(short_description="???"),
     )
     assert r.status_code == 422
-    assert any("short_description" in str(e.get("loc", "")) for e in r.json()["detail"])
+    assert any(
+        "short_description" in str(e.get("loc", "")) for e in r.json()["detail"]
+    )
 
 
 def test_register_producer_rejects_punctuation_only_address(client):
@@ -191,14 +192,9 @@ def _validated_fields(model):
     def has_after_validator(tp, depth=0):
         if depth > 4:
             return False
-        if any(
-            type(m).__name__ == "AfterValidator"
-            for m in getattr(tp, "__metadata__", ())
-        ):
+        if any(type(m).__name__ == "AfterValidator" for m in getattr(tp, "__metadata__", ())):
             return True
-        return any(
-            has_after_validator(a, depth + 1) for a in getattr(tp, "__args__", ())
-        )
+        return any(has_after_validator(a, depth + 1) for a in getattr(tp, "__args__", ()))
 
     decorated = {
         name

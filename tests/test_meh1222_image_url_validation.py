@@ -11,7 +11,6 @@ rejects a bare filename pasted as the host (netloc ending in an image
 extension) — the "https://bread.jpg" class the scheme check alone lets
 through — while a real Cloudinary URL (extension in the PATH) passes.
 """
-
 from datetime import date
 from decimal import Decimal
 

@@ -31,12 +31,7 @@ from tests.conftest import auth_header, make_category, make_user
 SAFE_PASSWORD = "Zx7Yp9Mq2Lr4"
 
 # זכרון יעקב — the town the register flow's own example uses.
-GEOCODED = {
-    "city": "זכרון יעקב",
-    "address": "דרך שרה 5",
-    "lat": 32.5731,
-    "lng": 34.9512,
-}
+GEOCODED = {"city": "זכרון יעקב", "address": "דרך שרה 5", "lat": 32.5731, "lng": 34.9512}
 
 
 def _body(db, **overrides) -> dict:
@@ -122,9 +117,7 @@ class TestNewEmailBranch:
         email = "newemail@example.com"
         resp = client.post(
             "/auth/register/producer",
-            json=_body(
-                db, email=email, name="יצרנית", password=SAFE_PASSWORD, **GEOCODED
-            ),
+            json=_body(db, email=email, name="יצרנית", password=SAFE_PASSWORD, **GEOCODED),
         )
         assert resp.status_code == 200, resp.json()
 

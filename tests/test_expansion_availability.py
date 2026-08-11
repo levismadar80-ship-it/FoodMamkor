@@ -12,7 +12,6 @@ Backend tests — kill logic explained per mutant in
 docs/testing/2026-06-mutation-test-plan.md (domain B1). CI Postgres is the
 healer (no sandbox DB).
 """
-
 from datetime import date, timedelta
 
 from app.utils.clock import israel_today
@@ -27,7 +26,6 @@ def _set_state(db, producer, state, vacation_until=None):
 
 
 # ---------- AV-1 / AV-2 — default-listing exclusion ----------
-
 
 def test_on_vacation_excluded_from_default_listing(client, db):
     """GET /producers with no availability_state filter hides on_vacation.
@@ -70,7 +68,6 @@ def test_on_vacation_still_reachable_by_id(client, db):
 
 # ---------- AV-3 / AV-4 — auto-clear date boundary ----------
 
-
 def test_vacation_ending_today_is_not_auto_cleared(client, db):
     """vacation_until == today → still on_vacation (boundary is `<`, not `<=`).
 
@@ -111,7 +108,6 @@ def test_past_vacation_is_auto_cleared(client, db):
 
 
 # ---------- AV-5 / AV-6 / AV-7 — POST /availability-state guards ----------
-
 
 def _producer_user(db):
     producer = make_producer(db, name="חוות בעלים")

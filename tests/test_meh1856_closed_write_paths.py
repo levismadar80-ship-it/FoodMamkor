@@ -102,9 +102,7 @@ def test_all_closed_fields_sent_together_are_ignored(client, db, owner_and_produ
     user, producer = owner_and_producer
     before = {f: getattr(producer, f) for f in CLOSED_FIELDS}
 
-    resp = client.put(
-        "/producers/me", json=dict(CLOSED_FIELDS), headers=auth_header(user)
-    )
+    resp = client.put("/producers/me", json=dict(CLOSED_FIELDS), headers=auth_header(user))
 
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
@@ -155,8 +153,7 @@ def _read_whitelist() -> set[str]:
             continue
         assert isinstance(node.value, ast.Set), "whitelist is no longer a set literal"
         return {
-            e.value
-            for e in node.value.elts
+            e.value for e in node.value.elts
             if isinstance(e, ast.Constant) and isinstance(e.value, str)
         }
     raise AssertionError("could not find _PRODUCER_WRITABLE_FIELDS in the source")

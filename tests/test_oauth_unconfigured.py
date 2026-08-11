@@ -7,7 +7,6 @@ environment, misconfigured staging) would see "אסימון Google לא
 תקין" — suggesting the user did something wrong, when really the
 server can't accept Google logins at all right now.
 """
-
 from app.config import settings
 
 

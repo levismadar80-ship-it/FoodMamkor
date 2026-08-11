@@ -6,7 +6,6 @@ Coverage:
 - POST /auth/reset-password: valid token updates password, invalid/expired token = 400,
   token is cleared after use (single-use), rate-limited
 """
-
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -19,18 +18,14 @@ class TestForgotPassword:
     def test_returns_200_for_existing_email(self, client, db):
         make_user(db, email="alice@test.com")
         with patch("app.routers.auth._send_reset_email") as mock_send:
-            resp = client.post(
-                "/auth/forgot-password", json={"email": "alice@test.com"}
-            )
+            resp = client.post("/auth/forgot-password", json={"email": "alice@test.com"})
         assert resp.status_code == 200
         mock_send.assert_called_once()
 
     def test_returns_200_for_unknown_email_no_leak(self, client):
         """Email enumeration: same 200 even if address doesn't exist."""
         with patch("app.routers.auth._send_reset_email") as mock_send:
-            resp = client.post(
-                "/auth/forgot-password", json={"email": "ghost@test.com"}
-            )
+            resp = client.post("/auth/forgot-password", json={"email": "ghost@test.com"})
         assert resp.status_code == 200
         mock_send.assert_not_called()
 
@@ -92,20 +87,14 @@ class TestResetPassword:
     def test_old_password_no_longer_works(self, client, db):
         user = make_user(db, email="frank@test.com", password="OldPass1!")
         token = self._plant_token(db, user)
-        client.post(
-            "/auth/reset-password",
-            json={"token": token, "new_password": "SecurePass123!"},
-        )
+        client.post("/auth/reset-password", json={"token": token, "new_password": "SecurePass123!"})
         db.refresh(user)
         assert not verify_password("OldPass1!", user.password_hash)
 
     def test_token_cleared_after_use(self, client, db):
         user = make_user(db, email="grace@test.com")
         token = self._plant_token(db, user)
-        client.post(
-            "/auth/reset-password",
-            json={"token": token, "new_password": "SecurePass123!"},
-        )
+        client.post("/auth/reset-password", json={"token": token, "new_password": "SecurePass123!"})
         db.refresh(user)
         assert user.reset_token is None
         assert user.reset_token_expires_at is None
@@ -113,14 +102,8 @@ class TestResetPassword:
     def test_token_is_single_use(self, client, db):
         user = make_user(db, email="henry@test.com")
         token = self._plant_token(db, user)
-        client.post(
-            "/auth/reset-password",
-            json={"token": token, "new_password": "SecurePass123!"},
-        )
-        resp2 = client.post(
-            "/auth/reset-password",
-            json={"token": token, "new_password": "AnotherPass1!"},
-        )
+        client.post("/auth/reset-password", json={"token": token, "new_password": "SecurePass123!"})
+        resp2 = client.post("/auth/reset-password", json={"token": token, "new_password": "AnotherPass1!"})
         assert resp2.status_code == 404
 
     def test_expired_token_rejected(self, client, db):

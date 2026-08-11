@@ -9,7 +9,6 @@ is_within_business_hours() is intentionally pure (accepts a `now`
 parameter) so we don't need freezegun: tests pass a frozen tz-aware
 datetime directly.
 """
-
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
@@ -50,10 +49,10 @@ def _require_inbound_messages_table(db):
 @pytest.mark.parametrize(
     "moment,expected",
     [
-        (datetime(2026, 5, 24, 10, 0, tzinfo=IL), True),  # Sunday 10:00
+        (datetime(2026, 5, 24, 10, 0, tzinfo=IL), True),   # Sunday 10:00
         (datetime(2026, 5, 28, 18, 59, tzinfo=IL), True),  # Thursday 18:59
         (datetime(2026, 5, 28, 19, 0, tzinfo=IL), False),  # Thursday 19:00 (half-open)
-        (datetime(2026, 5, 29, 12, 0, tzinfo=IL), True),  # Friday 12:00
+        (datetime(2026, 5, 29, 12, 0, tzinfo=IL), True),   # Friday 12:00
         (datetime(2026, 5, 29, 13, 0, tzinfo=IL), False),  # Friday 13:00 (half-open)
         (datetime(2026, 5, 30, 11, 0, tzinfo=IL), False),  # Saturday closed
         (datetime(2026, 5, 24, 8, 59, tzinfo=IL), False),  # Sunday 08:59 pre-open
@@ -112,8 +111,8 @@ def test_decide_template_within_hours_returns_none():
 # Both anchors are naive UTC because that's what InboundMessage.received_at
 # stores; the watchdog only converts to Asia/Jerusalem for the business-
 # hours check.
-NOW_WITHIN_HOURS_UTC = datetime(2026, 5, 24, 7, 0)  # Sun 10:00 IL (UTC+3 IDT)
-NOW_AFTER_HOURS_UTC = datetime(2026, 5, 24, 19, 0)  # Sun 22:00 IL
+NOW_WITHIN_HOURS_UTC = datetime(2026, 5, 24, 7, 0)   # Sun 10:00 IL (UTC+3 IDT)
+NOW_AFTER_HOURS_UTC = datetime(2026, 5, 24, 19, 0)   # Sun 22:00 IL
 
 
 def _make_inbound(

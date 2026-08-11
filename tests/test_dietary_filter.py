@@ -14,7 +14,6 @@ Also pins the aggregated output field `has_vegan_products` on
 ProducerListOut, which the frontend reads for badge display during the
 7-day overlap.
 """
-
 from __future__ import annotations
 
 from app.models.models import Product
@@ -147,9 +146,7 @@ def test_vegan_product_implies_vegetarian(client, db):
     migration-backfill scenario: is_vegan=TRUE, is_vegetarian never set) still
     surfaces under ?vegetarian=true without the owner marking both."""
     p_vegan_only = make_producer(db, name="חוות הטופו")
-    _add_product(
-        db, p_vegan_only, name="טופו מעושן", is_vegan=True, is_vegetarian=False
-    )
+    _add_product(db, p_vegan_only, name="טופו מעושן", is_vegan=True, is_vegetarian=False)
 
     r = client.get("/producers", params={"vegetarian": "true"})
     assert r.status_code == 200
@@ -271,13 +268,8 @@ def test_the_two_new_axes_do_not_leak_into_each_other(client, db):
     carb_only = make_producer(db, name="רק דל פחמימות")
     _add_product(db, carb_only, name="קרקר", is_low_carb=True)
 
-    sugar_names = [
-        r["name"]
-        for r in client.get("/producers", params={"no_added_sugar": "true"}).json()
-    ]
-    carb_names = [
-        r["name"] for r in client.get("/producers", params={"low_carb": "true"}).json()
-    ]
+    sugar_names = [r["name"] for r in client.get("/producers", params={"no_added_sugar": "true"}).json()]
+    carb_names = [r["name"] for r in client.get("/producers", params={"low_carb": "true"}).json()]
 
     assert "רק ללא סוכר" in sugar_names and "רק דל פחמימות" not in sugar_names
     assert "רק דל פחמימות" in carb_names and "רק ללא סוכר" not in carb_names
@@ -289,10 +281,7 @@ def test_new_axes_do_not_leak_into_the_older_four(client, db):
     _add_product(db, p, name="ממרח פרי", is_no_added_sugar=True, is_low_carb=True)
 
     for axis in ("vegan", "vegetarian", "gluten_free", "lactose_free"):
-        names = [
-            row["name"]
-            for row in client.get("/producers", params={axis: "true"}).json()
-        ]
+        names = [row["name"] for row in client.get("/producers", params={axis: "true"}).json()]
         assert "עסק סוכר בלבד" not in names, f"leaked into ?{axis}=true"
 
 

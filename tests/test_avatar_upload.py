@@ -9,7 +9,6 @@ Coverage:
 - Oversized file → 400
 - Unauthenticated → 401
 """
-
 import io
 from unittest.mock import patch
 
@@ -25,9 +24,7 @@ HEIF_MIF1_HEADER = b"\x00\x00\x00\x18ftypmif1" + b"\x00" * 20
 NOT_IMAGE = b"hello, this is not an image at all"
 
 
-def _upload(
-    client, headers, data=None, filename="photo.jpg", content_type="image/jpeg"
-):
+def _upload(client, headers, data=None, filename="photo.jpg", content_type="image/jpeg"):
     if data is None:
         data = JPEG_HEADER
     return client.post(
@@ -60,13 +57,7 @@ class TestAvatarUpload:
         user = make_user(db)
         with patch("app.routers.upload.settings") as mock_settings:
             mock_settings.cloudinary_cloud_name = None
-            resp = _upload(
-                client,
-                auth_header(user),
-                data=PNG_HEADER,
-                filename="photo.png",
-                content_type="image/png",
-            )
+            resp = _upload(client, auth_header(user), data=PNG_HEADER, filename="photo.png", content_type="image/png")
         assert resp.status_code == 200
 
     def test_heic_upload_accepted(self, client, db):
@@ -100,13 +91,7 @@ class TestAvatarUpload:
 
     def test_non_image_rejected_400(self, client, db):
         user = make_user(db)
-        resp = _upload(
-            client,
-            auth_header(user),
-            data=NOT_IMAGE,
-            filename="evil.txt",
-            content_type="text/plain",
-        )
+        resp = _upload(client, auth_header(user), data=NOT_IMAGE, filename="evil.txt", content_type="text/plain")
         assert resp.status_code == 400
         assert "JPG" in resp.json()["detail"] or "PNG" in resp.json()["detail"]
 
@@ -121,9 +106,7 @@ class TestAvatarUpload:
 
     def test_cloudinary_upload_saves_real_url(self, client, db):
         user = make_user(db)
-        fake_result = {
-            "secure_url": "https://res.cloudinary.com/demo/image/upload/avatars/abc123.jpg"
-        }
+        fake_result = {"secure_url": "https://res.cloudinary.com/demo/image/upload/avatars/abc123.jpg"}
         captured: dict = {}
 
         def fake_upload(*args, **kwargs):
@@ -131,11 +114,9 @@ class TestAvatarUpload:
             captured["kwargs"] = kwargs
             return fake_result
 
-        with (
-            patch("app.routers.upload.settings") as mock_settings,
-            patch("cloudinary.uploader.upload", side_effect=fake_upload),
-            patch("cloudinary.config"),
-        ):
+        with patch("app.routers.upload.settings") as mock_settings, \
+             patch("cloudinary.uploader.upload", side_effect=fake_upload), \
+             patch("cloudinary.config"):
             mock_settings.cloudinary_cloud_name = "demo"
             mock_settings.cloudinary_api_key = "key"
             mock_settings.cloudinary_api_secret = "secret"

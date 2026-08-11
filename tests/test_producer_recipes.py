@@ -31,7 +31,10 @@ def _payload(**overrides) -> dict:
         "title": "חלת מחמצת קלאסית",
         "description": "מתכון פשוט לחלה ביתית עם הקמח שלנו",
         "ingredients": (
-            "500 גרם קמח חיטה מלאה\n10 גרם מלח\n350 מל מים פושרים\n100 גרם מחמצת פעילה"
+            "500 גרם קמח חיטה מלאה\n"
+            "10 גרם מלח\n"
+            "350 מל מים פושרים\n"
+            "100 גרם מחמצת פעילה"
         ),
         "instructions": (
             "ערבבי את הקמח עם המלח, הוסיפי את המים והמחמצת, "
@@ -88,7 +91,10 @@ def _mock_moderation(monkeypatch, status="APPROVED", reason=None, suggestion=Non
 
 class TestProducerCreate:
     def test_requires_auth(self, client):
-        assert client.post("/producers/me/recipes", json=_payload()).status_code == 401
+        assert (
+            client.post("/producers/me/recipes", json=_payload()).status_code
+            == 401
+        )
 
     def test_consumer_blocked(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
@@ -101,7 +107,9 @@ class TestProducerCreate:
         # require_producer rejects with 403 before any business logic.
         assert resp.status_code == 403
 
-    def test_producer_creates_recipe_approved_pre_check(self, client, db, monkeypatch):
+    def test_producer_creates_recipe_approved_pre_check(
+        self, client, db, monkeypatch
+    ):
         _mock_moderation(monkeypatch, status="APPROVED")
         producer, user = _make_producer_user(db)
         resp = client.post(
@@ -118,7 +126,9 @@ class TestProducerCreate:
         assert body["product_ids"] == []
 
     def test_flagged_recipe_persists_with_notes(self, client, db, monkeypatch):
-        _mock_moderation(monkeypatch, status="FLAGGED", reason="הוראות הכנה קצרות")
+        _mock_moderation(
+            monkeypatch, status="FLAGGED", reason="הוראות הכנה קצרות"
+        )
         _, user = _make_producer_user(db)
         resp = client.post(
             "/producers/me/recipes",
@@ -196,7 +206,9 @@ class TestProducerListGet:
                 )
             )
         db.commit()
-        resp = client.get("/producers/me/recipes", headers=auth_header(user_a))
+        resp = client.get(
+            "/producers/me/recipes", headers=auth_header(user_a)
+        )
         assert resp.status_code == 200
         titles = [r["title"] for r in resp.json()]
         assert titles == ["רק שלי"]
@@ -324,7 +336,9 @@ class TestProducerDelete:
         )
         assert resp.status_code == 200
         assert (
-            db.query(ProducerRecipe).filter(ProducerRecipe.id == recipe.id).first()
+            db.query(ProducerRecipe)
+            .filter(ProducerRecipe.id == recipe.id)
+            .first()
             is None
         )
 
@@ -436,7 +450,9 @@ class TestAdminModeration:
     def test_pending_queue(self, client, db):
         self._make_pending_recipe(db)
         admin = make_user(db, role="admin", email="adm@test.com")
-        resp = client.get("/admin/recipes/pending", headers=auth_header(admin))
+        resp = client.get(
+            "/admin/recipes/pending", headers=auth_header(admin)
+        )
         assert resp.status_code == 200
         body = resp.json()
         assert len(body) == 1

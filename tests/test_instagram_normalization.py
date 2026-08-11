@@ -14,7 +14,6 @@ MEH-1616 extends the same helper to the outreach_leads table: the admin list
 (admin/outreach/page.jsx:223) composes the profile link from the stored value
 exactly as the public card does, so it carried the identical defect.
 """
-
 from __future__ import annotations
 
 import pytest

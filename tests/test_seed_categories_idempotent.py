@@ -15,7 +15,6 @@ mapping. Renames/deletions now belong exclusively to Alembic migrations.
 Uses the shared Postgres test DB via the `db` fixture; `_clean_tables`
 (conftest) TRUNCATEs with RESTART IDENTITY before each test.
 """
-
 from sqlalchemy import text
 
 from seed_data import CATEGORIES, seed_categories
@@ -49,7 +48,9 @@ def _seed_staging_shaped(db):
     """
     for idx, (name, emoji) in enumerate(CATEGORIES):
         position = idx + 1
-        row_id = _HIGH_ID_BASE + position if position in HOLE_POSITIONS else position
+        row_id = (
+            _HIGH_ID_BASE + position if position in HOLE_POSITIONS else position
+        )
         db.add(Category(id=row_id, name=name, emoji=emoji))
     db.commit()
     # Inserting with EXPLICIT ids does not advance the SERIAL sequence, but every

@@ -22,7 +22,6 @@ Layers, mirroring tests/test_meh1644_delivery_day.py:
 REUSES: tests/test_meh1644_delivery_day.py (_producer_user + rows-PUT pattern) ·
 tests/test_producer_me_delivery_fields.py (MEH-1577 producer-level fee bounds).
 """
-
 import pytest
 from pydantic import ValidationError
 
@@ -149,7 +148,9 @@ def test_owner_put_fee_above_cap_422(client, db):
     resp = client.put(
         "/producers/me",
         json={
-            "delivery_areas": [{"city": "חיפה", "delivery_fee": MAX_DELIVERY_MONEY + 1}]
+            "delivery_areas": [
+                {"city": "חיפה", "delivery_fee": MAX_DELIVERY_MONEY + 1}
+            ]
         },
         headers=auth_header(user),
     )

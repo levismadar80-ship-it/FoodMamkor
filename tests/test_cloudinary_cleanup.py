@@ -238,9 +238,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(
-            cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url)
-        )
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(None, None)
         destroy_removed_images([], [])
         assert calls == []
@@ -249,9 +247,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(
-            cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url)
-        )
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(["a", "b", "c"], [])
         # Order is unspecified (set iteration); compare as sets.
         assert set(calls) == {"a", "b", "c"}
@@ -261,9 +257,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(
-            cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url)
-        )
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(["a", "b", "c"], ["a", "c", "d"])
         assert calls == ["b"]
 
@@ -274,9 +268,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(
-            cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url)
-        )
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(["a", "a", "b"], [])
         assert set(calls) == {"a", "b"}
         assert len(calls) == 2

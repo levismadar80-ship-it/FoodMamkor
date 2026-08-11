@@ -11,7 +11,6 @@ Tests the public entry point app.services.onboarding_followup.send_due_followups
 send_email is monkeypatched at the onboarding_followup module surface to a
 list-append spy, so no Resend HTTP calls are attempted from the test process.
 """
-
 from __future__ import annotations
 
 import uuid
@@ -128,11 +127,13 @@ def test_step5_variant_a_for_licensed_approved(db, sent_log):
     # The point of this test is the Email-5 subject, not the count shape.
     assert counts[5] == 1
     # Pull the step-5 send out of the log (any send whose subject matches).
-    step5_sends = [s for s in sent_log if s[1] == onboarding_followup._EMAIL_5A_SUBJECT]
+    step5_sends = [
+        s for s in sent_log if s[1] == onboarding_followup._EMAIL_5A_SUBJECT
+    ]
     assert len(step5_sends) == 1, "expected exactly one variant-A send"
-    assert not [s for s in sent_log if s[1] == onboarding_followup._EMAIL_5B_SUBJECT], (
-        "variant B must not fire for an approved+licensed producer"
-    )
+    assert not [
+        s for s in sent_log if s[1] == onboarding_followup._EMAIL_5B_SUBJECT
+    ], "variant B must not fire for an approved+licensed producer"
 
     db.refresh(producer)
     assert producer.email_followup_5_sent_at is not None

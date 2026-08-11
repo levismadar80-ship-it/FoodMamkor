@@ -12,7 +12,6 @@ The autouse `_mock_hibp_clean` fixture in conftest stubs HIBP to
 "no match" by default — tests that exercise the breach path patch
 _check_hibp directly to return True.
 """
-
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
@@ -30,9 +29,7 @@ from conftest import auth_header, make_user, valid_producer_register_payload
 # HIBP mocked to false for these tests.
 SAFE_PASSWORD = "Zx7Yp9Mq2Lr4"
 ANOTHER_SAFE_PASSWORD = "Yz8Wq0Nr3Ms5"
-DENY_LISTED_AT_LENGTH = (
-    "unbelievable"  # 12 chars, in deny_list_10k (matches test_password_policy)
-)
+DENY_LISTED_AT_LENGTH = "unbelievable"  # 12 chars, in deny_list_10k (matches test_password_policy)
 
 
 def _decode_token(token: str) -> dict:
@@ -61,7 +58,6 @@ def _extract_set_cookie(response, name: str) -> str | None:
 
 # ---------- Signup ----------
 
-
 class TestSignupPolicy:
     def test_signup_short_password_rejected_422(self, client):
         # 11 chars — Pydantic short-circuits at PasswordField, deny-list /
@@ -74,9 +70,7 @@ class TestSignupPolicy:
 
     def test_signup_breached_password_rejected(self, client):
         # Override the autouse HIBP=False stub to simulate a breach hit.
-        with patch.object(
-            password_policy, "_check_hibp", new=AsyncMock(return_value=True)
-        ):
+        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
             resp = client.post(
                 "/auth/register",
                 json={"email": "b@x.com", "name": "B", "password": SAFE_PASSWORD},
@@ -94,9 +88,7 @@ class TestSignupPolicy:
         assert resp.status_code == 422
         assert "too_common" in resp.json()["detail"]["failures"]
 
-    def test_signup_valid_password_succeeds_and_sets_password_changed_at(
-        self, client, db
-    ):
+    def test_signup_valid_password_succeeds_and_sets_password_changed_at(self, client, db):
         from app.models import User
 
         before = datetime.now(timezone.utc) - timedelta(seconds=1)
@@ -113,7 +105,6 @@ class TestSignupPolicy:
 
 # ---------- Reset password ----------
 
-
 class TestResetPasswordPolicy:
     def _seed_token(self, db, user, ttl_minutes=30):
         token = secrets.token_urlsafe(32)
@@ -123,9 +114,7 @@ class TestResetPasswordPolicy:
         return token
 
     def test_reset_password_short_rejected_422(self, client, db):
-        user = make_user(
-            db, password="OldPass1!"
-        )  # legacy length acceptable as current
+        user = make_user(db, password="OldPass1!")  # legacy length acceptable as current
         token = self._seed_token(db, user)
         resp = client.post(
             "/auth/reset-password",
@@ -152,17 +141,10 @@ class TestResetPasswordPolicy:
         old_token = auth_header(user)["Authorization"].split()[1]
         old_claims = _decode_token(old_token)
         # Sanity: old token authenticates today.
-        assert (
-            client.get(
-                "/auth/me", headers={"Authorization": f"Bearer {old_token}"}
-            ).status_code
-            == 200
-        )
+        assert client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"}).status_code == 200
 
         # Force reset to bump password_changed_at well past the token iat.
-        time.sleep(
-            1.1
-        )  # ensure new password_changed_at > old iat (whole-second granularity)
+        time.sleep(1.1)  # ensure new password_changed_at > old iat (whole-second granularity)
         token = self._seed_token(db, user)
         resp = client.post(
             "/auth/reset-password",
@@ -172,15 +154,12 @@ class TestResetPasswordPolicy:
         # password_changed_at moved forward → MEH-305 iat gate now rejects old_token.
         db.refresh(user)
         assert int(user.password_changed_at.timestamp()) > old_claims["iat"]
-        me_after = client.get(
-            "/auth/me", headers={"Authorization": f"Bearer {old_token}"}
-        )
+        me_after = client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"})
         assert me_after.status_code == 401
         assert me_after.json()["detail"] == "session_invalidated_by_password_change"
 
 
 # ---------- Change password ----------
-
 
 class TestChangePasswordPolicy:
     def test_change_password_wrong_current_returns_403(self, client, db):
@@ -188,10 +167,7 @@ class TestChangePasswordPolicy:
         resp = client.patch(
             "/users/me/password",
             headers=auth_header(user),
-            json={
-                "current_password": "wrong-old",
-                "new_password": ANOTHER_SAFE_PASSWORD,
-            },
+            json={"current_password": "wrong-old", "new_password": ANOTHER_SAFE_PASSWORD},
         )
         # 403 — verify_password runs before validate_password (workflow rule 6).
         assert resp.status_code == 403
@@ -243,10 +219,7 @@ class TestChangePasswordPolicy:
             "/users/me/password",
             headers={"Authorization": f"Bearer {access_token}"},
             cookies={"__Secure-Fgp": login_fp},
-            json={
-                "current_password": SAFE_PASSWORD,
-                "new_password": ANOTHER_SAFE_PASSWORD,
-            },
+            json={"current_password": SAFE_PASSWORD, "new_password": ANOTHER_SAFE_PASSWORD},
         )
         assert change_resp.status_code == 204
         # Body must be empty (auth-context.js:145 contract).
@@ -285,12 +258,7 @@ class TestChangePasswordPolicy:
         # Token A — represents the "other device" session. auth_header()
         # mints a fingerprint-less token (fail-open accepted on /auth/me).
         token_a = auth_header(user)["Authorization"].split()[1]
-        assert (
-            client.get(
-                "/auth/me", headers={"Authorization": f"Bearer {token_a}"}
-            ).status_code
-            == 200
-        )
+        assert client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"}).status_code == 200
 
         # Sleep past the int-second boundary so password_changed_at > token_a.iat.
         time.sleep(1.1)
@@ -299,10 +267,7 @@ class TestChangePasswordPolicy:
         change_resp = client.patch(
             "/users/me/password",
             headers=auth_header(user),
-            json={
-                "current_password": SAFE_PASSWORD,
-                "new_password": ANOTHER_SAFE_PASSWORD,
-            },
+            json={"current_password": SAFE_PASSWORD, "new_password": ANOTHER_SAFE_PASSWORD},
         )
         assert change_resp.status_code == 204
 
@@ -313,7 +278,6 @@ class TestChangePasswordPolicy:
 
 
 # ---------- /auth/check-password ----------
-
 
 class TestCheckPasswordEndpoint:
     def test_short_returns_422(self, client):
@@ -333,7 +297,6 @@ class TestCheckPasswordEndpoint:
 
 # ---------- Rate limits ----------
 
-
 class TestForgotPasswordRateLimits:
     def test_per_email_limit_5_per_15min(self, client, db):
         """Six requests targeting the same email — sixth → 429 even from
@@ -346,9 +309,7 @@ class TestForgotPasswordRateLimits:
         # so 6 requests stay under it. Per-email cap of 5 trips on the 6th.
         with patch("app.routers.auth._send_reset_email"):
             statuses = [
-                client.post(
-                    "/auth/forgot-password", json={"email": "victim@test.com"}
-                ).status_code
+                client.post("/auth/forgot-password", json={"email": "victim@test.com"}).status_code
                 for _ in range(6)
             ]
         # First 5 succeed, 6th is rate-limited.
@@ -376,7 +337,6 @@ class TestForgotPasswordRateLimits:
 
 
 # ---------- Producer signup policy (MEH-457) ----------
-
 
 class TestProducerSignupPolicy:
     """MEH-457 — close MEH-306 sibling gap on /auth/register/producer.
@@ -418,9 +378,7 @@ class TestProducerSignupPolicy:
 
     def test_producer_signup_breached_password_rejected(self, client):
         # Override the autouse HIBP=False stub to simulate a breach hit.
-        with patch.object(
-            password_policy, "_check_hibp", new=AsyncMock(return_value=True)
-        ):
+        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
             resp = client.post("/auth/register/producer", json=self._valid_reg())
         assert resp.status_code == 422
         body = resp.json()

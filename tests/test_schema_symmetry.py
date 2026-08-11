@@ -51,7 +51,6 @@ invisible to a comparison. Those were migrated in this same PR rather than
 allowlisted: an allowlist entry for an unprotected field documents a hole
 instead of closing it.
 """
-
 import pytest
 from app.schemas import schemas as S
 from pydantic import BaseModel
@@ -96,7 +95,9 @@ def _has_domain_type(tp, depth=0):
 
 
 def _is_family_field(field_name):
-    return any(field_name == fam or field_name.endswith("_" + fam) for fam in FAMILIES)
+    return any(
+        field_name == fam or field_name.endswith("_" + fam) for fam in FAMILIES
+    )
 
 
 def classify(model):
@@ -204,7 +205,9 @@ def test_allowlist_has_no_wildcards_and_every_entry_is_live():
     permission — it must be deleted, not left to rot."""
     assert all("*" not in e and e.count(".") == 1 for e in ALLOWLIST), ALLOWLIST
     live = {
-        f"{name}.{f}" for name, model in input_schemas() for f in classify(model)[2]
+        f"{name}.{f}"
+        for name, model in input_schemas()
+        for f in classify(model)[2]
     }
     stale = ALLOWLIST - live
     assert not stale, f"stale allowlist entries (field now validated, or gone): {stale}"

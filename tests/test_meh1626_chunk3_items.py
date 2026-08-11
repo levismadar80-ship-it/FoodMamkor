@@ -12,7 +12,6 @@ followed by contact_email / phone / whatsapp_group.
 Both are deliberate behaviour changes, so each gets an explicit pin rather
 than riding on the guard.
 """
-
 import pytest
 from app.schemas.schemas import (
     OutreachLeadCreate,
@@ -139,9 +138,7 @@ def test_guard_surfaced_fields_are_now_validated():
     nothing to compare. The family-based guard is what found them."""
     assert ProducerUpdate(contact_name="<b>שרה לוי</b>").contact_name == "שרה לוי"
     assert (
-        ProducerAdminCreate(
-            name="מאפיית שקד", top_product_name="<b>חלה</b>"
-        ).top_product_name
+        ProducerAdminCreate(name="מאפיית שקד", top_product_name="<b>חלה</b>").top_product_name
         == "חלה"
     )
     with pytest.raises(ValidationError):

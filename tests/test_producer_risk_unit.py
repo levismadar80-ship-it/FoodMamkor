@@ -5,7 +5,6 @@ _build_profile_payload (PII-safe), and _build_prompt (prompt-injection
 wrapper + per-request canary). No network, no DB — these are the
 parser/formatter helpers around the Anthropic call.
 """
-
 from types import SimpleNamespace
 
 from app.services import producer_risk as mod
@@ -59,7 +58,9 @@ class TestExtractJsonObject:
         assert mod._extract_json_object(None) is None
 
     def test_markdown_fence(self):
-        assert mod._extract_json_object('```json\n{"score": 5}\n```') == {"score": 5}
+        assert mod._extract_json_object('```json\n{"score": 5}\n```') == {
+            "score": 5
+        }
 
     def test_leading_prose_sliced(self):
         raw = 'Here is the result: {"score": 80, "reasoning": "x"}'

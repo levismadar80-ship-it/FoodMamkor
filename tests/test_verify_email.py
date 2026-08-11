@@ -9,7 +9,6 @@ Coverage:
 Modeled after tests/test_forgot_password.py — reset-password got the same
 404/410 split + structured logging treatment in MEH-304.
 """
-
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -66,9 +65,8 @@ class TestVerifyEmail:
 
 class TestRegisterFiresVerifyEmail:
     def test_register_stores_token_and_sends_email(self, client, db):
-        with (
-            patch("app.routers.auth._send_verify_email") as mock_send,
-            patch("app.routers.auth._send_welcome_email"),
+        with patch("app.routers.auth._send_verify_email") as mock_send, patch(
+            "app.routers.auth._send_welcome_email"
         ):
             resp = client.post(
                 "/auth/register",
