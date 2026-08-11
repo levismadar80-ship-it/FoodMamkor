@@ -281,7 +281,7 @@ firing during the check for the destructive one.
 ```
 WRONG (any pattern):  pgrep -f "…"    ·    pkill -f "…"
 RIGHT:                ps -eo pid,comm | grep -iE "node|next"
-RIGHT:                pgrep -x next-server
+RIGHT (≤15 chars):    pgrep -x next-server        # safe HERE because "next-server" is 11
 CONTROL:              ps -eo pid,comm | wc -l
 ```
 
@@ -289,16 +289,25 @@ CONTROL:              ps -eo pid,comm | wc -l
 precise the pattern is; `-x` matches the process *name* exactly, and `comm` is the name
 column. The fix is the flag, not a better string.
 
-**One ceiling on `-x`, measured while writing this — and it fails in the family's own
-shape.** `comm` caps the process name at **15 characters**, so `pgrep -x` against anything
-longer returns **zero matches**: a 24-char binary reports as `next-server-pro`, and
-`pgrep -x next-server-probe-canary` found nothing while `ps -eo pid,comm | grep -i next`
-found it at pid 6265. Zero-matches is indistinguishable from *no such process* at the exit
-code, which is why `ps … | grep` is listed first — a substring match against the capped
-name has no ceiling to trip over. `next-server` is 11 characters, so the recommendation
-above is safe as written; the limit only bites on longer names. (This `pgrep` warns on
-stderr about the 15-char limit, but that is version-dependent and stdout is empty either
-way — do not build on the warning.)
+**`pgrep -x` is not generally safe, and the second RIGHT line above carries a condition
+rather than a caveat.** `comm` caps the process name at **15 characters**, so `pgrep -x`
+against any longer name returns **zero matches** — and zero-matches is indistinguishable
+from *no such process* at the exit code. That is this section's own failure mode: a null
+that is also the reassuring answer. Measured 2026-08-11, a 24-char binary:
+
+| Probe | Result |
+|---|---|
+| `ps -eo pid,comm \| grep -i next` | found it — `6265 next-server-pro` (name capped at 15) |
+| `pgrep -x next-server-probe-canary` | **zero matches** |
+| `pgrep -x next-server-pro` (15 chars) | `6265` |
+
+So `pgrep -x next-server` is safe **because `next-server` is 11 characters**, not because
+the idiom is sound. Applied to a longer name it fails silently, in the exact shape this
+file spends two sections warning about. **`ps -eo pid,comm | grep` is listed first for that
+reason** — a substring match against the already-capped name has no ceiling to trip over,
+so it is the form to reach for by default and `-x` is the special case. (This `pgrep`
+happens to warn on stderr about the limit, but that is version-dependent and stdout is
+empty either way — do not build on the warning.)
 
 **Run the control first, and read it.** `ps -eo pid,comm | wc -l` on any live system is a
 number in the tens — if it comes back empty or `0`, `ps` itself is not reporting and every
