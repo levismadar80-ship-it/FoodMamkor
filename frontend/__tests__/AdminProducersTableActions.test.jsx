@@ -198,9 +198,10 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     openMenu();
     expect(screen.getByRole("menuitem", { name: AMBASSADOR_ON_KEY })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).not.toBeInTheDocument();
-
-    // The directional information now lives in the copy itself, not in a glyph.
-    expect(AMBASSADOR_ON_KEY).not.toBe(AMBASSADOR_OFF_KEY);
+    // No "the two constants differ" assertion here: both are string literals
+    // declared above, so it could never fail whatever the JSX does. The four
+    // getByRole/queryByRole pairs are the discrimination — the directional
+    // information living in the copy rather than in a glyph is what they check.
   });
 
   it("ambassador item fires onToggleAmbassador(id, current) — behavior unchanged", () => {

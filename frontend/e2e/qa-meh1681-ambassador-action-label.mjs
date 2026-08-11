@@ -129,7 +129,9 @@ assert("ambassador=true renders the REMOVE action label", onLabel, REMOVE_LABEL)
 assert("the two states render different labels", offLabel !== onLabel, true);
 
 // Retired state copy must not reappear in either state.
-const retiredHits = [...offItems, ...onItems].filter((t) => RETIRED.some((r) => t === r || t.includes("☆")));
+const retiredHits = [...offItems, ...onItems].filter(
+  (t) => RETIRED.some((r) => t === r) || t.includes("☆"),
+);
 assert("no retired state string (☆ / שגרירה / ☆ שגריר) in the menu", retiredHits, []);
 
 // A missing key renders the key string, silently.
