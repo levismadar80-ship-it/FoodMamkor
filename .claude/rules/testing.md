@@ -230,6 +230,29 @@ The build was fine; the probe was broken. **Validate a probe on a case whose ans
 already know before you trust either its red or its green** — and report the retraction, since
 a withdrawn finding is evidence the probe was checked and a silent one is not.
 
+### A probe whose null output is also its reassuring output is not evidence
+
+`(none)`, `0 findings`, and `no rows` are produced by **two** different worlds: *nothing to
+report*, and *the probe never ran*. Nothing in the output distinguishes them, and one of the
+two is the answer everybody wants — which is why this survives review. A probe is not the
+deliverable, so nobody checks the probe; its output gets quoted as fact.
+
+**Such a probe ships with a control that exercises a path known to produce output, and the
+control fails loudly — with a message stating that every null elsewhere in the run is void if
+the control is silent.** Run the control first. If the probe cannot see the thing it is aimed
+at, nothing it reports afterwards is worth reading.
+
+**Three instances, so this reads as a family rather than one session's lesson:**
+
+| Instance | The null that lied |
+|---|---|
+| **Presence-only tests** | A suite that only asserts things are present cannot detect a removal that never happened — the assertion passes identically whether the guard works or the case was never constructed. Same shape as the `count()===0 → skip` quarantine above, one level up. |
+| **MEH-1844** — the CI reviewer's no-op | `num_turns: 1` / `total_cost_usd: 0` / sub-second is produced by **three distinct causes** (missing credential, upstream breaking change, and whatever is actually happening now — the first two are eliminated). **The shape never distinguished them**, and this file asserted a cause from that shape twice, in opposite directions, and was wrong both times. |
+| **The nav-event recorder** (`2f36666`, MEH-215 chunk C) | An empty event log means either "the client issued no navigation" — the finding — or "the listener never attached". It ships with a control that drives a navigation the suite already proves works, and whose failure message says every `(none)` elsewhere is worthless. Precedent it was built from: an `addInitScript` sampler that reported clean zeros because `document.documentElement` is `null` there, so `observe()` threw and the sampler died silently. |
+
+**The review question:** if this probe were completely dead, what would it print? If the answer
+is the same thing it prints on success, it needs a control before anyone acts on it.
+
 Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
 "Required status checks + docs-only merge" documents the skip-green mechanic for the
 aggregators; MEH-1582 tracks the bypass itself. Recorded under MEH-1732's pipeline-reliability
