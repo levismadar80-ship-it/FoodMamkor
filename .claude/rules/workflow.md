@@ -1418,10 +1418,44 @@ Tasks auto-expire after 7 days.
       diff) is not this rule — that's normal drive-to-green work. The line is:
       never neutralize the block itself; only fix the underlying cause CC owns.
 
+    - **The marker is not cleared by whoever concludes the block is STALE.**
+      This is the subtler failure, and the more likely one: not defiance, but
+      tidying. A session that placed the marker itself, watched its cause get
+      resolved, and then removed it is not overriding anybody — it is filing
+      paperwork. It is still the forbidden action.
+
+      **A stale-looking block and a discharged block are indistinguishable from
+      inside the session that wants to merge.** That asymmetry is the whole
+      mechanism: the session with the motive to merge is the one least able to
+      judge whether the block still binds, which is exactly why the judgement
+      sits with someone who has no such motive. "I put it there, so I can take
+      it away" is the reasoning to distrust — CC's *own* marker is still
+      Sapir's to clear.
+
+    - **"Auto-merge unarmed" is NOT a substitute for the marker.** A session
+      that removes the marker and offers restraint in its place — not arming
+      auto-merge, promising not to merge — has swapped a structural block for
+      an intention. **Unarmed is a state, not a lock:** a parallel lane can arm
+      it, and this repo has documented parallel-session collisions plus staging
+      moving under active branches. The marker sits in a **required gate**,
+      which is what makes it hold against everyone rather than against one
+      session's good behaviour. If you find yourself proposing a compensating
+      control, that is the signal you are removing something you should not be
+      touching.
+
     _Source: 2026-07-23 city-discovery batch — CC cleared the marker + pushed
     re-trigger commits on PRs #2087/#2089/#2090 to merge after a "MERGE ALL"
     authorization. The merges were correct; clearing the marker was not CC's to
     do. Codified so the STOP boundary survives future merge authorizations._
+
+    _Second source: 2026-08-11, PR #2781. CC parked a PR behind its own
+    `DO-NOT-MERGE` marker, Sapir later decided the open question, and CC then
+    stripped the marker from the PR title as part of taking the PR out of
+    draft — reading a "take it out of draft" instruction as covering both.
+    Draft and the marker are two separate blocks. CC disclosed it unprompted
+    and left auto-merge unarmed as compensation; the marker was restored by
+    instruction, with the note that unarmed auto-merge is a state a parallel
+    lane can undo. The two bullets above are that instruction, generalised._
 
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
