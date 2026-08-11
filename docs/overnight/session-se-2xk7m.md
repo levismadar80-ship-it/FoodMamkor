@@ -14,11 +14,11 @@ day with nobody finishing them.
 |---|---|---|
 | **#2767** | MEH-2002 | Deleted the expired Vercel-quota section from ORDERS under its own falsification test; replaced §6's false "no Sentry/Vercel MCP tools" line with two measured tool calls. Both required gates green, guards ran. |
 
-## In flight at write time
+## Blocked, deliberately
 
 | PR | Card | State |
 |---|---|---|
-| **#2747** | MEH-215 chunk C | Adopted, synced, two fixes pushed, different-model review **APPROVE WITH NITS** (finding adopted). Awaiting gates on `57288e5c4`. |
+| **#2747** | MEH-215 chunk C | **Converted to DRAFT — must not merge.** Its E2E suite finally ran for real and failed on its own specs. See §8. |
 
 ## Opened
 
@@ -198,11 +198,53 @@ rather than silently remove the wrong span.
   wrong order, that is a defect in the reviewer, and MEH-1844 is where its per-head
   behaviour is already being tracked.
 
+## 8 · The E2E suite finally ran — and every failure in it was ours
+
+This is the finding that mattered most, and it arrived last. On `57288e5c4` the build
+succeeded and the suite executed for **4.7 minutes** (against the 62-second
+build-failure signature of the earlier reds):
+
+```
+1 failed   [mobile]  30-login-journey-c.spec.ts:286  C2 — session survives a new tab
+1 flaky    [desktop] 30-login-journey-c.spec.ts:209  C2 — correct credentials … redirect
+29 skipped, 231 passed
+executed=233 (expected=231 unexpected=1 flaky=1 skipped=29 specs=262)
+```
+
+**Of 233 executed tests, every non-passing one is in the file this PR adds.** Not one
+unrelated spec is red — so the environmental explanation that covers most E2E reds on
+this repo does not cover these. ORDERS is explicit about that case: a failing spec that
+covers the surface you changed is yours.
+
+The flake's message is readable — `Expected "/" Received "/login"`, a 20 s poll timeout
+at `expectPath` (`:97`) called from `:219`: the post-login redirect had not landed. Both
+non-passing tests are C2 and probably share a cause. **Not diagnosed further, and not
+guessed at from a stack trace.**
+
+**Three things worth carrying:**
+
+1. **`E2E gate` is not required, so nothing mechanical stopped this merging.** What
+   stopped it was reading the per-spec result. Had the PR merged, a flaky spec would
+   have entered the shared suite — the exact MEH-1792 precedent where a spec merged
+   flaky "poisoned the E2E signal on an unrelated PR."
+2. **Something outside this session re-armed auto-merge on #2747 twice** (attributed to
+   `levismadar80-ship-it`), after I disabled it. With a known-bad spec in the diff,
+   "disable it again when it reappears" is not a control. The PR was converted to
+   **draft**, which reds the required gate and holds regardless of who arms what — and
+   which the fixing session can reverse itself. A `DO-NOT-MERGE` marker was deliberately
+   *not* used: it would strand the PR behind a clearance only Sapir can give, which is a
+   heavier block than the situation needs.
+3. **The PR body reports this spec 16/16 green locally.** Green-local / red-CI is the
+   precise class the branch's own new rule is about. The rule named `networkidle` as the
+   mechanism; these failures survive its removal, so **the class is wider than the one
+   call that was fixed.** That is the most useful thing this session learned and it is
+   not yet written into any rule — one instance, so reported rather than codified.
+
 ## In-flight ledger
 
 | PR | Card | pushed | gate state | next revisit |
 |---|---|---|---|---|
-| **#2747** | MEH-215 chunk C | 11/08 12:37Z (`57288e5c4`) | run in progress; prior head's reds diagnosed as supersession + a non-deterministic build | on run completion |
+| **#2747** | MEH-215 chunk C | 11/08 12:37Z (`57288e5c4`) | **DRAFT — blocked on its own two C2 failures (§8). Do not merge or un-draft until they are fixed with a measured failure rate.** | fix, then re-gate |
 | **#2767** | MEH-2002 | — | **MERGED**, verified off `origin/staging` | resolved |
 | this log | MEH-2003 | — | docs-only, separate branch (rule 31) | — |
 
