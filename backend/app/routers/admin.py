@@ -526,6 +526,29 @@ def approve_producer(
             user.id,
         )
     producer.status = "approved"
+    # MEH-1817: mint the slug at APPROVAL time — publish-time canonicalization.
+    # Self-registration (auth.py, both branches) builds Producer(...) with no
+    # slug, and only the admin-create / admin-update / import paths ever ran
+    # _slugify, so a self-registered business stayed slug=NULL forever and its
+    # public page fell back to /producer/{uuid} — losing the Hebrew URL the
+    # catalog's SEO is built on.
+    #
+    # Approval is the right moment rather than registration: the name can still
+    # change during review, and a slug minted from a name that then changes is
+    # worse than no slug (it is a wrong URL that must be redirected).
+    #
+    # Guarded on `not producer.slug`, so re-approving a business that already
+    # has one — including an admin-chosen slug — never rewrites it. Reuses the
+    # existing helpers rather than adding slug logic: _ensure_unique_slug
+    # already rejects RESERVED_SLUGS and suffixes -2, -3 on collision.
+    #
+    # `or None` matters: _ensure_unique_slug returns "" unchanged for an empty
+    # base, and a name that slugifies to nothing (punctuation only) must leave
+    # the column NULL so the id-URL fallback keeps working. Without it the
+    # column would hold an empty string, which is neither a slug nor NULL and
+    # would satisfy the `not producer.slug` guard forever after.
+    if not producer.slug:
+        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
     # MEH-1011: clear the request-changes trail on approve — the completion
     # request (if any) is resolved once the business is approved.
     producer.requested_changes = None
