@@ -104,6 +104,10 @@ check_branch_consistency() {
       ;;
   esac
 
+  # Read the body ONCE, before the loop. This used to sit inside it, re-reading
+  # the file for every `meh-<N>` token in the branch name — CI reviewer, PR #2782.
+  body="$(cat "$body_file" 2>/dev/null || true)"
+
   # Case-insensitive: branch names are lowercase by the MEH-1141 gate, but do
   # not depend on that here — a guard that only works on well-formed input is
   # not a guard.
@@ -113,7 +117,6 @@ check_branch_consistency() {
     # The body is authoritative for the closing declaration. Match
     # `Closes|Fixes|Resolves MEH-<num>` with a trailing boundary so that
     # `Closes MEH-19` does not satisfy a branch carrying `meh-1949`.
-    body="$(cat "$body_file" 2>/dev/null || true)"
     if printf '%s' "$body" | grep -qE "${CLOSING}MEH-${num}([^0-9]|$)"; then
       continue
     fi
