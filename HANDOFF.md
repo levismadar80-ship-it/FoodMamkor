@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-11 — batch sweep 11/08, משימה 1/5: MEH-1249 — שחרור קובץ ה-checkpoint
+
+**שורה אחת:** ‏`docs/qa/conversion-progress.md` הכריז wait-gate שנסגר ב-05/08 · שני checkboxes סומנו · הסטטוס `▶️ READY` · **MEH-1249 לא נסגר** — ההמרה עצמה (508 פריטי CONVERT-PW) לא התחילה.
+
+- **⚠️ שם הענף סוגר את הכרטיס במיזוג, בלי מילת סגירה.** `feature/meh-1249-*` מקשר אוטומטית; ה-PR נושא `DOES NOT CLOSE MEH-1249` ו**צריך פתיחה מחדש ידנית מיד אחרי המיזוג**. אותו מנגנון בדיוק שכלל 29 מתאר, רק מכיוון הענף ולא מכיוון ה-body — וזה בדיוק הפער ש-MEH-1949 (משימה 4 בסוויפ) בא לכסות.
+- **מה שלא נגעתי בו, בכוונה:** השורה *"Conversion has NOT started"* **נכונה** — `frontend/e2e/flows/manual/` הוא אפס קבצים ב-staging. ‏13 ה-specs המומרים חיים רק על הענף הנטוש `feature/meh-1171-manual-testing-conversion`, ולכן `git log --all` נותן רושם מטעה שההמרה התקדמה. לבדוק מול `git ls-tree origin/staging`, לא מול `--all`.
+- **הצעד הבא בכרטיס:** לחתוך `feature/meh-1249-manual-testing-conversion` מ-staging, להעתיק 17 קבצים **בלי** `HANDOFF.md` (כלל 31), ולהתחיל section-by-section. רק אחרי MEH-1909 ופריטי launch-blocking.
+
 ## 2026-08-10 17:45Z — MEH-1995 (הסכמה לתקנון) + ORDERS §1.7/§3.0: שניהם מוזגו. שני כמעט-כשלים שווים יותר מהעבודה.
 
 **שורה אחת:** ‏**2 מוזגו** — PR #2751 (`e480cfa7`) + PR #2750 (`6b7943e4`) · staging ירוק · MEH-1995 ל-Done · **3 פריטים פתוחים לספיר** (למטה) · MEH-2000 = ה-PR הזה (backfill docs).
