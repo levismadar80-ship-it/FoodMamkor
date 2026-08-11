@@ -33,8 +33,17 @@ import { detailToMessage } from "@/lib/errors";
 // guideline #1). CONTACT_EMAIL = NEXT_PUBLIC_CONTACT_EMAIL w/ fallback (MEH-653).
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+
+// MEH-2001: the story portrait. Raw asset URL — every transform is applied by
+// optimizeCloudinary at the call site, never baked into this string.
+const STORY_PORTRAIT =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg";
+// 360px (the `sizes` cap on this image) at DPR 2. The source is 1200px wide,
+// so this only ever downscales.
+const STORY_PORTRAIT_WIDTH = 720;
 
 // MEH-1112: testimonials section render-gated OFF until real testimonials
 // exist (NN/g: real social proof or nothing — no empty-shelf placeholder).
@@ -186,22 +195,24 @@ export default function AboutPage() {
                       name through the Image's alt. */}
                   <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt">
                     {imgFailed ? null : (
-                      // MEH-2001: the `w_720` below is the one DoD item the
-                      // helper's new default cannot reach — this URL is
-                      // hardcoded, so it never passes through
-                      // optimizeCloudinary at all. Measured from the Cloudinary
-                      // Admin API rather than assumed: the original is
-                      // 1200x1600 / 186KB jpg, and with no `w_` Cloudinary was
-                      // delivering all 1200px into a box `sizes` caps at 360px.
-                      // 720 = 360 at DPR 2.
+                      // MEH-2001: this src used to be a hardcoded transform
+                      // string, which frontend.md forbids ("never hardcode
+                      // transform params in component code") and which meant
+                      // the helper's new default width could not reach it —
+                      // it delivered the full original. Routed through the
+                      // helper, so future transform policy lands here too.
                       //
-                      // Explicit number, not the helper's 1200 default: on a
-                      // c_fill path that default is deliberately NOT applied,
-                      // because c_fill + w_ CAN upscale a narrower original.
-                      // It cannot here (1200 > 720) — which is exactly why the
-                      // number had to be measured before being written.
+                      // width is explicit because on the c_fill path the helper
+                      // deliberately does NOT apply DEFAULT_MAX_WIDTH: c_fill +
+                      // w_ can upscale a narrower original. It cannot here —
+                      // measured via the Cloudinary Admin API, the source is
+                      // 1200x1600 / 186KB, and `sizes` below caps display at
+                      // 360px, so 720 is that at DPR 2.
                       <Image
-                        src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4,w_720/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
+                        src={optimizeCloudinary(STORY_PORTRAIT, {
+                          aspectRatio: "3:4",
+                          width: STORY_PORTRAIT_WIDTH,
+                        })}
                         alt={t("story.image_alt")}
                         fill
                         sizes="(min-width: 768px) 360px, 280px"
