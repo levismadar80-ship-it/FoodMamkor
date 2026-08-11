@@ -145,7 +145,11 @@ def write_manifest_atomically(path: Path, payload: dict[str, Any]) -> None:
     # existing suffix means a multi-dot argument, whose handling has shifted
     # across Python versions. This form has no version dependency.
     tmp = path.parent / (path.name + ".tmp")
-    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+    # encoding is explicit because ensure_ascii=False emits real non-ASCII
+    # bytes, and the runbook has this running from Git Bash on Windows where
+    # the platform default is not UTF-8. Locale-dependent I/O here would
+    # corrupt any non-Latin public_id.
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(path)
 
 
@@ -409,7 +413,10 @@ def main() -> int:
     prior: dict[str, dict[str, Any]] = {}
     if manifest_path.exists():
         try:
-            prior = {e["public_id"]: e for e in json.loads(manifest_path.read_text())["assets"]}
+            prior = {
+                e["public_id"]: e
+                for e in json.loads(manifest_path.read_text(encoding="utf-8"))["assets"]
+            }
             _log(f"resuming — prior manifest has {len(prior)} entries")
         except (json.JSONDecodeError, KeyError, TypeError) as exc:
             _log(f"warning: prior manifest unreadable ({exc}); starting fresh")
