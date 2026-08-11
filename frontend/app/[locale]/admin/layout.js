@@ -88,6 +88,9 @@ const NAV_SECTIONS = [
       { href: "/admin/kashrut", key: "kashrut", Icon: Seal },
       { href: "/admin/reports", key: "reports", Icon: Warning },
       { href: "/admin/category-requests", key: "category_requests", Icon: Tag },
+      // MEH-1872: business-name change requests — the moderation queue for the
+      // only path that moves producers.name.
+      { href: "/admin/name-change-requests", key: "name_change_requests", Icon: Tag },
       // MEH-771 Chunk C — admin view of undelivered outbound WhatsApp.
       { href: "/admin/whatsapp-failures", key: "whatsapp_failures", Icon: ChatCircleSlash },
     ],
