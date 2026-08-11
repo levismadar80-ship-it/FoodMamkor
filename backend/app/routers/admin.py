@@ -51,7 +51,30 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _slugify(text: str) -> str:
-    """Generate URL-safe slug from text. Hebrew → transliterate-ish fallback."""
+    """Lower-case, hyphenate, and strip a name down to URL-safe characters.
+
+    MEH-1813 — this line previously read "Hebrew → transliterate-ish fallback".
+    **There is no transliteration**, here or anywhere in the repo: no
+    `unidecode`, no `any-ascii`, no PyICU, no character map. Hebrew is kept
+    verbatim — "חוות הדגן" → "חוות-הדגן". That sentence was the only thing in
+    the codebase that looked like transliteration existed, and MEH-1812 costed
+    an `/en` search option against it before measuring that it did not.
+
+    **Not Hebrew-specific either** (measured 2026-08-11). `\\w` is Unicode-aware
+    in Python 3, so every script survives, not just Hebrew: "мосты", "مزرعة" and
+    "農場" pass through unchanged, and "Café Crème" → "café-crème". The explicit
+    `\\u0590-\\u05FF` range is therefore redundant — `\\w` alone returns the
+    identical string on Hebrew input. It is left in place on purpose: this
+    change is comment-only, and the range still records the intent.
+
+    **Returns "" when nothing survives** — "!!!" → "". The empty string is not a
+    slug and must not be stored: `_ensure_unique_slug` passes an empty base
+    straight through, which is why the approval path coerces it with `or None`
+    (MEH-1817) rather than writing "" into a column whose NULL is load-bearing
+    for the `/producer/{uuid}` fallback.
+
+    Output is capped at 100 characters.
+    """
     if not text:
         return ""
     # Keep ASCII letters/numbers/hyphens; replace whitespace with hyphens
