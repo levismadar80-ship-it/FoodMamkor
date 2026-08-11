@@ -912,7 +912,9 @@ Three points that are easy to lose and are worth the duplication:
   from this sandbox — say *"deferred to user (CC sandbox limitation)"*.
 - **Never run `playwright install`.** Chromium is preinstalled at
   `/opt/pw-browsers`.
-- **`networkidle` is BANNED in specs** (MEH-215). It couples the test outcome to
+- **Unbounded `networkidle` is BANNED in specs** (MEH-215) — a bounded, caught wait
+  is the sanctioned form, and `e2e/visual/parity.spec.ts:246` is a deliberate one.
+  It couples the test outcome to
   network conditions the test is not about: on the runner every Cloudinary image
   401s and the Next image optimizer retries, so the network may never go idle and
   an unbounded `waitForLoadState("networkidle")` burns the whole test timeout.
