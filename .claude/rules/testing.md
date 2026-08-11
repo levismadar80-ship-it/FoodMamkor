@@ -267,10 +267,57 @@ command rather than a wrong answer.
 **Match the child's process name, not the command string.** The server's own process is
 `next-server (v16.3.0)`, which does not contain `next start` — and that is precisely what
 the CI runner's cleanup targets (`Terminate orphan process: pid (2523) (next-server …)`).
-If a command-line match is unavoidable, exclude `$$` and `$PPID` explicitly. **Better: do
-not reach for a kill at all** — start long-running processes through the harness's
-`run_in_background` so they carry a task id, instead of detaching with `&` and hunting them
-afterwards.
+**Better still: do not reach for a kill at all** — start long-running processes through the
+harness's `run_in_background` so they carry a task id, instead of detaching with `&` and
+hunting them afterwards.
+
+**The commands, because naming the target without them ships a principle and leaves the
+reflex implementation intact — and the reflex implementation of *this* principle is the
+bug.** A reader who takes "match the process name" and reaches for the tool they already
+know writes `pgrep -f "next-server"`, which is still a command-line match and still
+self-matches. Measured 2026-08-11: it returned the invoking shell — the *reporting* twin
+firing during the check for the destructive one.
+
+```
+WRONG (any pattern):  pgrep -f "…"    ·    pkill -f "…"
+RIGHT:                ps -eo pid,comm | grep -iE "node|next"
+RIGHT (≤15 chars):    pgrep -x next-server        # safe HERE because "next-server" is 11
+CONTROL:              ps -eo pid,comm | wc -l
+```
+
+`-f` matches the whole command line, so the searcher is inside the corpus no matter how
+precise the pattern is; `-x` matches the process *name* exactly, and `comm` is the name
+column. The fix is the flag, not a better string.
+
+**`pgrep -x` is not generally safe, and the second RIGHT line above carries a condition
+rather than a caveat.** `comm` caps the process name at **15 characters**, so `pgrep -x`
+against any longer name returns **zero matches** — and zero-matches is indistinguishable
+from *no such process* at the exit code. That is this section's own failure mode: a null
+that is also the reassuring answer. Measured 2026-08-11, a 24-char binary:
+
+| Probe | Result |
+|---|---|
+| `ps -eo pid,comm \| grep -i next` | found it — `6265 next-server-pro` (name capped at 15) |
+| `pgrep -x next-server-probe-canary` | **zero matches** |
+| `pgrep -x next-server-pro` (15 chars) | `6265` |
+
+So `pgrep -x next-server` is safe **because `next-server` is 11 characters**, not because
+the idiom is sound. Applied to a longer name it fails silently, in the exact shape this
+file spends two sections warning about. **`ps -eo pid,comm | grep` is listed first for that
+reason** — a substring match against the already-capped name has no ceiling to trip over,
+so it is the form to reach for by default and `-x` is the special case. (This `pgrep`
+happens to warn on stderr about the limit, but that is version-dependent and stdout is
+empty either way — do not build on the warning.)
+
+**Run the control first, and read it.** `ps -eo pid,comm | wc -l` on any live system is a
+number in the tens — if it comes back empty or `0`, `ps` itself is not reporting and every
+null in that run is void, including the reassuring one. This is the rule in the next
+section applied to its own worked example: an empty process list is exactly a null that is
+also the answer you were hoping for.
+
+Excluding `$$` and `$PPID` from a `-f` match is a **last resort, not the recommendation**:
+it is fragile (it leaves every other shell in the tree matchable, and a subshell changes
+`$$` under you) and it treats the symptom rather than the flag that caused it.
 
 **And check what the writer actually is before killing anything — the diagnosis that
 justified the `pkill` above was itself wrong.** The symptom was a generated file
@@ -288,6 +335,29 @@ could match was the shell that issued it. **The two failures compound:** an unve
 cause produced a destructive remedy, and the remedy's self-match then destroyed the
 observer that would have disproved the cause. Either mistake alone is recoverable; together
 they read as "the cleanup didn't work" and send you round again.
+
+### A probe whose null output is also its reassuring output is not evidence
+
+`(none)`, `0 findings`, and `no rows` are produced by **two** different worlds: *nothing to
+report*, and *the probe never ran*. Nothing in the output distinguishes them, and one of the
+two is the answer everybody wants — which is why this survives review. A probe is not the
+deliverable, so nobody checks the probe; its output gets quoted as fact.
+
+**Such a probe ships with a control that exercises a path known to produce output, and the
+control fails loudly — with a message stating that every null elsewhere in the run is void if
+the control is silent.** Run the control first. If the probe cannot see the thing it is aimed
+at, nothing it reports afterwards is worth reading.
+
+**Three instances, so this reads as a family rather than one session's lesson:**
+
+| Instance | The null that lied |
+|---|---|
+| **Presence-only tests** | A suite that only asserts things are present cannot detect a removal that never happened — the assertion passes identically whether the guard works or the case was never constructed. Same shape as the `count()===0 → skip` quarantine above, one level up. |
+| **MEH-1844** — the CI reviewer's no-op | `num_turns: 1` / `total_cost_usd: 0` / sub-second is produced by **three distinct causes** (missing credential, upstream breaking change, and whatever is actually happening now — the first two are eliminated). **The shape never distinguished them**, and this file asserted a cause from that shape twice, in opposite directions, and was wrong both times. |
+| **The nav-event recorder** (`2f36666`, MEH-215 chunk C) | An empty event log means either "the client issued no navigation" — the finding — or "the listener never attached". It ships with a control that drives a navigation the suite already proves works, and whose failure message says every `(none)` elsewhere is worthless. Precedent it was built from: an `addInitScript` sampler that reported clean zeros because `document.documentElement` is `null` there, so `observe()` threw and the sampler died silently. |
+
+**The review question:** if this probe were completely dead, what would it print? If the answer
+is the same thing it prints on success, it needs a control before anyone acts on it.
 
 Cross-refs: the discrimination rule above (MEH-1619) is the red-side half of this pair;
 "Required status checks + docs-only merge" documents the skip-green mechanic for the
