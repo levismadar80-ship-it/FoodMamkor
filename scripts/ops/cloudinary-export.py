@@ -141,7 +141,10 @@ def write_manifest_atomically(path: Path, payload: dict[str, Any]) -> None:
     re-download the whole library — on an account whose overage is bandwidth.
     Same tmp-then-rename shape `download()` uses for its .part files.
     """
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    # `path.parent / (name + ext)` rather than with_suffix(): appending to an
+    # existing suffix means a multi-dot argument, whose handling has shifted
+    # across Python versions. This form has no version dependency.
+    tmp = path.parent / (path.name + ".tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     tmp.replace(path)
 
@@ -239,7 +242,7 @@ def download(url: str, dest: Path, limiter: RateLimiter) -> tuple[bool, str]:
     mistaken for a complete one on the next resume — that is the whole point
     of the temp name."""
     dest.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dest.with_suffix(dest.suffix + ".part")
+    tmp = dest.parent / (dest.name + ".part")
     last_err = ""
     for attempt in range(1, DOWNLOAD_RETRIES + 1):
         limiter.wait()
@@ -470,6 +473,17 @@ def main() -> int:
             e["checksum_sha256"] = cached or sha256_file(dest)
             e["downloaded"] = True
             _log(f"[{i}/{len(entries)}] skip (present) {e['path']}")
+            continue
+
+        # A missing URL must not escape as an uncaught exception: manifest_entry
+        # falls back to None when neither secure_url nor url is present, and
+        # urllib.request.Request(None) raises ValueError — which is outside
+        # download()'s (URLError, OSError) handler. That would abort the loop
+        # mid-run and skip the manifest write entirely, losing the record of
+        # everything already fetched. Treat it as a per-asset failure instead.
+        if not e["url"]:
+            failed += 1
+            _log(f"[{i}/{len(entries)}] FAIL {e['path']} — no URL on the resource")
             continue
 
         ok, err = download(e["url"], dest, limiter)
