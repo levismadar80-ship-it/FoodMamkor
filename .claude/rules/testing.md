@@ -267,10 +267,48 @@ command rather than a wrong answer.
 **Match the child's process name, not the command string.** The server's own process is
 `next-server (v16.3.0)`, which does not contain `next start` — and that is precisely what
 the CI runner's cleanup targets (`Terminate orphan process: pid (2523) (next-server …)`).
-If a command-line match is unavoidable, exclude `$$` and `$PPID` explicitly. **Better: do
-not reach for a kill at all** — start long-running processes through the harness's
-`run_in_background` so they carry a task id, instead of detaching with `&` and hunting them
-afterwards.
+**Better still: do not reach for a kill at all** — start long-running processes through the
+harness's `run_in_background` so they carry a task id, instead of detaching with `&` and
+hunting them afterwards.
+
+**The commands, because naming the target without them ships a principle and leaves the
+reflex implementation intact — and the reflex implementation of *this* principle is the
+bug.** A reader who takes "match the process name" and reaches for the tool they already
+know writes `pgrep -f "next-server"`, which is still a command-line match and still
+self-matches. Measured 2026-08-11: it returned the invoking shell — the *reporting* twin
+firing during the check for the destructive one.
+
+```
+WRONG (any pattern):  pgrep -f "…"    ·    pkill -f "…"
+RIGHT:                ps -eo pid,comm | grep -iE "node|next"
+RIGHT:                pgrep -x next-server
+CONTROL:              ps -eo pid,comm | wc -l
+```
+
+`-f` matches the whole command line, so the searcher is inside the corpus no matter how
+precise the pattern is; `-x` matches the process *name* exactly, and `comm` is the name
+column. The fix is the flag, not a better string.
+
+**One ceiling on `-x`, measured while writing this — and it fails in the family's own
+shape.** `comm` caps the process name at **15 characters**, so `pgrep -x` against anything
+longer returns **zero matches**: a 24-char binary reports as `next-server-pro`, and
+`pgrep -x next-server-probe-canary` found nothing while `ps -eo pid,comm | grep -i next`
+found it at pid 6265. Zero-matches is indistinguishable from *no such process* at the exit
+code, which is why `ps … | grep` is listed first — a substring match against the capped
+name has no ceiling to trip over. `next-server` is 11 characters, so the recommendation
+above is safe as written; the limit only bites on longer names. (This `pgrep` warns on
+stderr about the 15-char limit, but that is version-dependent and stdout is empty either
+way — do not build on the warning.)
+
+**Run the control first, and read it.** `ps -eo pid,comm | wc -l` on any live system is a
+number in the tens — if it comes back empty or `0`, `ps` itself is not reporting and every
+null in that run is void, including the reassuring one. This is the rule in the next
+section applied to its own worked example: an empty process list is exactly a null that is
+also the answer you were hoping for.
+
+Excluding `$$` and `$PPID` from a `-f` match is a **last resort, not the recommendation**:
+it is fragile (it leaves every other shell in the tree matchable, and a subshell changes
+`$$` under you) and it treats the symptom rather than the flag that caused it.
 
 **And check what the writer actually is before killing anything — the diagnosis that
 justified the `pkill` above was itself wrong.** The symptom was a generated file
