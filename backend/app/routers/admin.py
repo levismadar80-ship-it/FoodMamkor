@@ -6,6 +6,7 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
@@ -89,6 +90,139 @@ def _ensure_unique_slug(
                 return candidate
         candidate = f"{base_slug}-{counter}"
         counter += 1
+
+
+def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
+    """MEH-1817 — publish-time canonicalization of the producer's URL.
+
+    Self-registration (`auth.py`, both branches) builds `Producer(...)` with no
+    slug, and `_slugify` ran only on the admin-create / admin-update / import
+    paths — so a self-registered business stayed `slug=NULL` forever and its
+    public page fell back to `/producer/{uuid}`, losing the Hebrew URL the
+    catalog's SEO is built on.
+
+    Approval rather than registration: the name can still change during review,
+    and a slug minted from a name that then changes is worse than none — it is
+    a wrong URL that has to be redirected.
+
+    Guarded on `not producer.slug`, so re-approving a business never rewrites
+    an existing (possibly admin-chosen) slug.
+
+    `or None` is load-bearing: `_ensure_unique_slug` returns "" unchanged for an
+    empty base, so a name that slugifies to nothing must leave the column NULL.
+    An empty string is neither a slug nor NULL — it breaks the id-URL fallback's
+    NULL check AND satisfies the `not producer.slug` guard forever after, so no
+    later approval could repair it.
+    """
+    if not producer.slug:
+        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
+
+
+def _apply_approval_state(producer: Producer) -> None:
+    """The complete set of column writes that "approved" means.
+
+    Single owner, because `_persist_approval`'s retry path must re-apply every
+    one of them after `db.rollback()` discards the first attempt. Two copies of
+    this list would drift the moment a fourth field joins approval: the handler
+    would set it, the rollback would discard it, and the retry would commit a
+    row missing it — silently, and only on the collision path, which is the one
+    path no ordinary test exercises.
+
+    The slug is deliberately NOT here. It is minted by `_mint_slug_if_absent`,
+    which needs the session (it queries for collisions) and must run *after*
+    the re-read on the retry path so it sees the winner's committed slug.
+    """
+    producer.status = "approved"
+    # MEH-1011: clear the request-changes trail on approve — the completion
+    # request (if any) is resolved once the business is approved.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
+
+
+SLUG_UNIQUE_CONSTRAINT = "producers_slug_key"
+
+
+def _is_slug_collision(exc: IntegrityError) -> bool:
+    """True only for a `producers.slug` unique violation.
+
+    `db.commit()` flushes the WHOLE session, so a bare `except IntegrityError`
+    around it catches any constraint violation on any pending row — not just
+    the one this function is recovering from. Retrying an unrelated violation
+    is the dangerous branch: the rollback discards it, the retry re-applies
+    only the approval columns, and the request commits a partially-applied
+    transaction and returns 200. A wrong row, silently, on the path nothing
+    exercises.
+
+    So the default is to **re-raise**. `producers_slug_key` is the only unique
+    constraint on `producers` today (verified against `pg_constraint`), but
+    that is a fact about today's schema, not an invariant — this check is what
+    makes a future second unique index surface as a 500 with its real cause
+    instead of being swallowed by a retry meant for slugs.
+
+    Falls back to the message text when the driver exposes no `diag` (psycopg2
+    populates it; SQLite and some wrappers do not), and re-raises when neither
+    source names the constraint. Unknown means raise, never retry.
+    """
+    orig = getattr(exc, "orig", None)
+    constraint = getattr(getattr(orig, "diag", None), "constraint_name", None)
+    if constraint:
+        return constraint == SLUG_UNIQUE_CONSTRAINT
+    return SLUG_UNIQUE_CONSTRAINT in str(orig or exc)
+
+
+def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Producer:
+    """Mint the slug and commit, retrying once on a unique-slug collision.
+
+    `producers.slug` is UNIQUE (`models/models.py:112`) and `_ensure_unique_slug`
+    is SELECT-then-return with no lock, so two admins approving two same-named
+    businesses in one window both see the candidate free and both take it. The
+    second commit then violates the constraint.
+
+    That exposure is NEW and belongs to MEH-1817: before the mint, this handler
+    never wrote `slug`, so it could not reach the constraint at all. Left
+    uncaught it would be a raw 500 **and** roll back the entire transaction —
+    the approval, the status flip, the requested-changes clear — so the losing
+    admin's approval would fail silently with no notification sent.
+
+    Recovery follows the house pattern (`reviews.py:288`, `reports.py:62`,
+    `favorites.py:72`, `referrals.py:54`, `producer_me.py:228`): roll back and
+    retry once. The retry re-reads the row, so `_ensure_unique_slug` now sees
+    the winner's committed slug and suffixes past it.
+
+    Not retried twice. A second collision would mean a third admin approving
+    the same name in the same instant; letting that raise is more honest than
+    looping, and a 500 whose cause is one frame up beats one nobody can explain.
+
+    Only a `producers_slug_key` violation is retried — see `_is_slug_collision`.
+    """
+    _mint_slug_if_absent(db, producer)
+    try:
+        db.commit()
+        return producer
+    except IntegrityError as exc:
+        db.rollback()
+        if not _is_slug_collision(exc):
+            raise
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
+    # KNOWN LIMIT, stated rather than left for the next reader to find: the
+    # re-read below does NOT re-run the MEH-799 no-image gate or the MEH-971
+    # license gate. Those ran in `approve_producer` against the object fetched
+    # before the collision; this row is fresh from the DB. If another
+    # transaction stripped the images or the license number inside the rollback
+    # window, the retry approves without re-validating.
+    #
+    # Not closed here, and the reason is scope rather than dismissal: this is a
+    # compound race — two admins approving same-named businesses in the same
+    # instant AND a third mutation landing between them — on an admin-only
+    # endpoint. Re-checking would put a second copy of both gates in this
+    # function, which is the duplication `_apply_approval_state` exists to
+    # avoid. The gates belong in one place; moving them there is its own change.
+    _apply_approval_state(producer)
+    _mint_slug_if_absent(db, producer)
+    db.commit()
+    return producer
 
 
 def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
@@ -525,12 +659,12 @@ def approve_producer(
             producer_id,
             user.id,
         )
-    producer.status = "approved"
-    # MEH-1011: clear the request-changes trail on approve — the completion
-    # request (if any) is resolved once the business is approved.
-    producer.requested_changes = None
-    producer.changes_requested_at = None
-    db.commit()
+    # MEH-1817: the approval column writes live in _apply_approval_state so the
+    # retry path below can re-apply exactly the same set after a rollback.
+    _apply_approval_state(producer)
+    # MEH-1817: slug mint + commit, extracted so this handler stays under the
+    # C901 ceiling. See _persist_approval for why the commit is retried.
+    producer = _persist_approval(db, producer_id, producer)
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
