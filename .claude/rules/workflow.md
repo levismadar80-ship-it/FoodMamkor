@@ -734,6 +734,26 @@ section was asked to carry.
       detect* that a parallel actor armed something. Nothing notifies you, and
       the arming state does not appear in `pull_request_read get` — the
       disable/enable round-trip is the only read available.
+    - **Opening a docs-only PR as a draft can strand it red, and marking it
+      ready may not clear it.** `pr-checks.yml` lists `ready_for_review` in its
+      trigger types precisely so the draft→ready flip fires a real run — but
+      if you flip it within the `opened` run's window, the concurrency group
+      can swallow the second run and no fresh one appears. The PR then sits on
+      the draft run's result forever.
+
+      On a `.claude/`-only or docs-only diff that result is **red**, not the
+      usual skip-green: the gate takes its `Neither stack touched` branch,
+      where the only enforced job is `Env drift` — and `Env drift` is
+      draft-skipped, so the gate demands a job the draft guaranteed would not
+      run. Measured 2026-08-11 on PR #2794: `Stack touched -> frontend=false
+      backend=false`, then `FAIL Env drift (.env.example): skipped (required
+      job did not run — 'skipped' is not a pass)`.
+
+      **Open docs PRs non-draft** (rule 5a's substitution already says this for
+      code PRs; it applies here for a different reason). If one is already
+      stranded, a re-run does not help — a re-run replays the original event
+      payload, `draft: true` included — so the only fix is a genuine push that
+      fires `synchronize`.
 
 ---
 
