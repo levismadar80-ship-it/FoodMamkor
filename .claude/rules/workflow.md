@@ -1409,8 +1409,20 @@ Tasks auto-expire after 7 days.
     mandates the input that triggers the behaviour — this is not a mistake
     avoidable by care.
 
-    **It was treated here as an unconditional law. It is not.** Measured
-    2026-08-11: a merge that should have closed by that rule did not.
+    **It was treated here as an unconditional law. It is not — and the
+    condition is documented by Linear, not inferred by us.** Linear defines a
+    class of **non-closing magic words** — `ref`, `references`, `part of`,
+    `related to`, `contributes to`, `towards` — which **link** a PR to an issue
+    but explicitly do **not** automate its status on merge. That is the whole
+    mechanism: a non-closing reference in the body suppresses the close the
+    branch name would otherwise fire.
+
+    Read against that spec, every row below is ordinary behaviour rather than a
+    puzzle. A **bare identifier with no magic word links only**; the branch name
+    then closes on merge **to the default branch** — which in this repo is
+    `staging`, not `main`.
+
+    Measured 2026-08-11, and now explained rather than merely tabulated:
 
     | # | PR / branch | Body reference | Card state before | Result at merge |
     |---|---|---|---|---|
@@ -1420,22 +1432,33 @@ Tasks auto-expire after 7 days.
     | 4 | #2782 `feature/meh-1949-branch-name-guard` | `Closes MEH-1949` | Backlog | **closed** — but the keyword explains it, so this row says nothing about branch names |
     | 5 | #2784 `feature/meh-2009-pkill-self-match` | **`Refs MEH-2009`** | Backlog | **DID NOT CLOSE** — still Backlog |
 
-    **What the data excludes.** Rows 4 and 5 merged the same day, by the same
-    actor, from the same card state — so **actor, date and start-state cannot
-    be the variable**. Rows 1 and 2 already excluded start-state on their own
-    (Backlog and In Progress both closed).
+    The observations corroborate the spec; they are not what establishes it.
+    (Rows 4 and 5 merged the same day, same actor, same start state, opposite
+    outcomes — which independently excludes actor, date and card state. Rows 1–2
+    had already excluded start-state, Backlog and In Progress both closing.)
 
-    **Candidate condition, stated as a hypothesis and not as a rule:** the only
-    body carrying an *explicit non-closing* reference (`Refs MEH-N`) is the only
-    one that did not close. Every closing case had either **no** body reference
-    (1–3) or a real closing keyword (4). A plausible reading is that an explicit
-    `Refs` link takes precedence over the branch-derived one and suppresses the
-    close.
+    ### ⚠️ ONE OPEN CHECK — `Refs` is not literally in the documented list
 
-    **Do not act on that as settled — it rests on a single suppressing
-    observation (n=1), and nothing here was checked against Linear's own
-    configuration or documentation.** Whoever verifies the Linear↔GitHub app
-    settings should run rows 4 and 5 against them; they are the controlled pair.
+    The published non-closing words are `ref` and `references`. **`Refs` — the
+    plural this repo actually writes — is not among them.** Two possibilities,
+    and they are not equivalent:
+
+    1. Linear normalises the plural, so `Refs` behaves as `ref`; or
+    2. `Refs` is *not* recognised, and row 5's suppression came from something
+       else entirely — in which case the mechanism above is right in general and
+       wrong about this repo's habit.
+
+    **Resolve this against Linear's settings or documentation — do NOT resolve it
+    by merging another PR to see what happens.** An experiment here is the slower
+    and weaker instrument, and running one would repeat the mistake this whole
+    entry records.
+
+    **Until it is resolved: keep writing `Refs`, and do not rely on it.** Those
+    are compatible — write it because it is the repo's convention and, if
+    recognised, it is the correct suppressor; do not lean on it, because an
+    unrecognised `Refs` degrades silently to a bare identifier, which closes.
+    The `get_issue`-after-merge step below covers both branches of the
+    uncertainty and costs one call.
 
     **The operative rule, which holds regardless of which hypothesis is right:**
 
@@ -1454,10 +1477,23 @@ Tasks auto-expire after 7 days.
     `Closes` in the body) and is therefore unaffected by any of this; it does not
     depend on the mechanism being understood.
 
-    _Sources: MEH-1949 (measured cases 1–3, 08–09/08, with `stateHistory`
-    timestamps); MEH-1872 (10/08 — closed, reopened and re-closed within five
-    seconds by a branch that had borrowed its number); case 5 measured 11/08 in
-    session `se-2xk7m`. Related open cards: MEH-1615, MEH-1736._
+    **Structural option, recorded for Sapir and deliberately NOT acted on.**
+    Linear supports **per-target-branch automation rules**, including regex
+    matching and a **"no action"** override. Closing-on-merge-to-`staging` can
+    therefore be switched off outright, leaving *only* explicit closing magic
+    words to close anything. That would convert this entire class from a rule
+    people must remember into a configuration that cannot be forgotten — the
+    exact upgrade Smell #2 asks for. **It is a Linear settings change, not a repo
+    change, so it is Sapir's call and not CC's.**
+
+    _Sources: **Linear's own documentation** for the magic-word classes and the
+    per-branch automation rules — the mechanism above is quoted from the vendor,
+    not derived here. Corroborating measurements: MEH-1949 (cases 1–3, 08–09/08,
+    with `stateHistory` timestamps); MEH-1872 (10/08 — closed, reopened and
+    re-closed within five seconds by a branch that had borrowed its number); case
+    5 measured 11/08 in session `se-2xk7m`. PR #2795 carried a pre-registered
+    prediction of row 5's behaviour; it is **confirmation, not evidence** — the
+    docs settled it first. Related open cards: MEH-1615, MEH-1736._
 
 30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
     never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
