@@ -20,53 +20,6 @@
 
 ---
 
-## ⏳ TEMPORARY — Vercel deploy quota exhausted · added 2026-08-09 · DELETE ON SIGHT ONCE FALSIFIED
-
-**The account's Vercel deploy quota is spent.** Every deployment — including
-`staging`, which `frontend/vercel.json` builds *unconditionally* — returns:
-
-```
-Resource is limited - try again in 24 hours
-(more than 100, code: "api-deployments-free-per-day")
-```
-
-**So `staging.mehamakor.online` may silently lag `origin/staging`.** This is an
-account quota, not a repo or diff problem: **no commit can fix it**, and pushing
-again only burns more. It is also **not a required check** — `CI gate` and
-`Deploy gate` are unaffected, so a merge is not blocked by it.
-
-**For any UI-touching merge while this holds:**
-
-1. Write **"deploy pending quota"** in the PR body, naming this note.
-2. **Do not verify against the staging URL** — it may be serving pre-merge code,
-   and that is indistinguishable from your change not working. Verify with a
-   **local `next build` + emulation evidence** instead (the MEH-999 path:
-   local stack + Playwright at 390×844 and 1440×900).
-3. **Queue a one-line staging-visual recheck** on the card for after the reset.
-   A local build proves the code renders; it does not prove the deployed edge
-   serves it.
-
-**How to falsify this note — one command, no dashboard access needed:**
-
-```bash
-# Any Vercel status on a fresh push that is NOT the rate-limit string means
-# the quota reset. Or, directly:
-curl -sI https://staging.mehamakor.online | head -1     # expect HTTP 200
-git log -1 --format=%H origin/staging                    # compare to what staging serves
-```
-
-**Expiry: this note dies the moment a deployment succeeds — expected on or after
-2026-08-10.** Whoever observes that: **delete this whole section** and drop the
-queued rechecks that came back clean.
-
-> **Not machine-enforced, deliberately stated.** `scripts/checks/legacy-expiry-check.sh`
-> only scans `backend/` and `frontend/` (`SCAN_DIRS`), so a `LEGACY(…)` marker here
-> would be decoration, not a gate — and this file's §7 is the expiry mechanism it
-> actually has. The falsification command above is the substitute: it costs one
-> line and does not depend on anyone remembering a date.
-
----
-
 ## 1 · Authority
 
 **Sapir's ruling, 08/08/2026** — *"תמזג לבד ותבדוק את עצמך על כל המשימות"*:
@@ -914,7 +867,7 @@ Three points that are easy to lose and are worth the duplication:
   `/opt/pw-browsers`.
 - **Unbounded `networkidle` is BANNED in specs** (MEH-215) — a bounded, caught wait
   is the sanctioned form, and `e2e/visual/parity.spec.ts:246` is a deliberate one.
-  It couples the test outcome to
+  The unbounded form couples the test outcome to
   network conditions the test is not about: on the runner every Cloudinary image
   401s and the Next image optimizer retries, so the network may never go idle and
   an unbounded `waitForLoadState("networkidle")` burns the whole test timeout.
@@ -932,8 +885,19 @@ Three points that are easy to lose and are worth the duplication:
   `false` after the bound. Deterministic in both worlds, network-independent.
   Full rule: [.claude/rules/testing.md](../../.claude/rules/testing.md) §
   *`networkidle` is banned in specs*.
-- **No Sentry or Vercel MCP tools exist** in harness sessions. Do not plan around
-  them.
+- **Sentry and Vercel MCP tools DO exist here — measured 2026-08-11.** This line
+  read *"No Sentry or Vercel MCP tools exist in harness sessions. Do not plan
+  around them"*, and that was false: `mcp__Sentry__find_organizations` returns org
+  `df7d71a2ad7a` (the same org MEH-1511 cites as verified on 23/07) and
+  `mcp__Vercel__list_teams` returns `team_QOQUotEaO2TFqPyPnNI3aFyz`. Both were
+  called in-session before this edit, not inferred from a tool listing.
+  **Availability is per-session, so call the tool rather than quoting this line** —
+  a deferred-tool roster is a claim with an as-of date like any other. The cost of
+  the old wording was not tidiness: MEH-1511's stop condition (a) is *"Vercel or
+  Sentry MCP not connected → STOP"*, so a session trusting it would have halted a
+  card on a false premise, and every session doing post-merge verification — the
+  compensating control for §3.1's detect-and-revert — was told its instruments
+  did not exist.
 - **RTL: logical properties only** — `start-` / `end-` / `ms-` / `me-` / `ps-` /
   `pe-`. In RTL, `start` is the **right**.
 - Brand primary `#2e6853`, background `#F5F0E8`.
