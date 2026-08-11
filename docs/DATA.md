@@ -53,6 +53,8 @@
 
 > **MEH-759 (ADR-022 gate 2, 2026-06-06):** `producers.declared_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `a7f3e9c14d28`, Chunk A) + `producers.declaration_version` (VARCHAR(10), nullable) record the binding tier-2 licensing declaration. Chunk B stamps them in `POST /auth/register/producer` (both new-account and MEH-143 upgrade paths) when the new **required** `declaration_accepted: bool` body field is truthy — the handler 422s (`יש לאשר את הצהרת הרישוי כדי להמשיך`) when it is falsy/absent, so a producer row is only ever created with both columns set. Constant `DECLARATION_VERSION` lives in `app/constants.py`. Admin-create / Excel-import paths leave both NULL (no owner declaration). Admin-only exposure — `ProducerAdminOut` surfaces them; `ProducerDetailOut`/`ProducerListOut` (public) intentionally do not.
 
+> **MEH-1995 (Amendment-13 consent evidence, 2026-08-09):** `users.terms_accepted_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `b8d3e7a1c604`) + `users.terms_version` (VARCHAR(10), nullable) record acceptance of the terms of service. Deliberately shaped after the `producers.declared_at` / `declaration_version` pair above — a timestamp proves *that* someone agreed, the version proves *what* they agreed to once the wording changes. Constant `TERMS_VERSION` lives in `app/constants.py`. Stamped from the new **optional** `terms_accepted: bool` body field on `UserRegister` / `ProducerRegister` when truthy, at **all three** password paths: consumer registration, producer registration, and the MEH-143 producer **upgrade** (which mutates `current_user` rather than constructing a `User` — the upgrade renders the checkbox and hard-gates submit, so its consent event is as real as the other two). Optional rather than required so the field is additive: an omitted flag leaves both columns NULL and 422s nothing. **NULL means "no record of acceptance held", never "consent refused"** — there is deliberately NO backfill (Expand-only, ADR-007), because a retroactive timestamp would assert consent at a moment we cannot evidence, manufacturing the very proof the columns exist to provide. **The three OAuth account-creation paths (`/auth/google`, `/auth/apple`, `/auth/register/producer/oauth` step-0) leave both NULL** — those buttons are not gated by the checkbox, so no consent event occurs there; closing that is a product decision, not a code gap. **Exposed nowhere** — neither `UserOut` nor `UserAdminOut` declares them (audit-only; stricter than the sibling pair, which is admin-visible).
+
 > **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; the legacy `is_verified` column was fully retired and DROPPED in MEH-766 (writers ch3 #1420, contract ch5 #1578, column ch6 revision `d4e7a92c81b5`). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
 > **MEH-1011 (2026-07-03):** producer **request-changes** (completion request) flow — the non-terminal twin of reject. Two nullable `producers` columns (migration `a1b2c3d4e5f6`): `requested_changes` (TEXT — the admin's free-text feedback) + `changes_requested_at` (TIMESTAMPTZ, tz-aware). `POST /admin/producers/{id}/request-changes` (`{feedback}`, empty → 400) records the feedback, KEEPS status `pending`, emails the producer, WhatsApps the producer (**MEH-1051** — Meta-approved `producer_changes_requested_v1`, 2 body params `{name, missing}`, fail-open post-commit), and WhatsApps admin; `approve_producer` clears both columns on success. Admin-only exposure via `ProducerAdminOut` (both fields), never public `ProducerListOut`/`ProducerDetailOut`.
@@ -183,7 +185,9 @@ products       (id, producer_id FK, name, description,
                 is_gluten_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: single source of truth post column drop. EXISTS subquery powers /producers?gluten_free=true
                 is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293/MEH-479: same
                 is_vegetarian Boolean NOT NULL DEFAULT FALSE,    -- MEH-1438: 4th dietary axis. ?vegetarian filter matches is_vegetarian OR is_vegan (a vegan product is vegetarian by definition); migration c5d9f3a1b2e8 seeded TRUE for existing vegan rows
-                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293/MEH-479: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE (predicate extended with is_vegetarian in MEH-1438)
+                is_lactose_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: same
+                is_no_added_sugar Boolean NOT NULL DEFAULT FALSE, -- MEH-1934: 5th dietary axis ("ללא סוכר מוסף"). NO backfill — no existing flag implies it, so seeding would invent a nutrition claim on the business's behalf
+                is_low_carb Boolean NOT NULL DEFAULT FALSE)      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
 producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
                  threshold_value int nullable, threshold_unit text nullable,
                  headline text nullable, starts_at date nullable,
@@ -550,6 +554,19 @@ PUT    /producers/me                              producer — MEH-999: license 
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
+POST   /producers/me/name-change-requests        producer  — MEH-1872 file a business-name change for re-moderation (5/hr).
+                                               The public producers.name does NOT move here — only an admin approval moves it.
+                                               400 if the requested name equals the current one; 409 if a PENDING request
+                                               already exists (one open request per producer, so the admin never has to guess
+                                               which change was wanted). `name` remains ABSENT from producer_me's
+                                               _PRODUCER_WRITABLE_FIELDS — MEH-1851 removed it and this does not re-open it.
+GET    /producers/me/name-change-requests        producer  — own request history, newest first (60/min)
+GET    /admin/name-change-requests               admin     — the review queue; ?status=pending (default). Each row carries
+                                               current_name + requested_name side by side (60/min)
+PATCH  /admin/name-change-requests/{id}          admin     — {status: approved|rejected, admin_notes?}. approved writes
+                                               producers.name; rejected leaves it untouched. 409 on an already-reviewed
+                                               request — re-approving would move the public name from a decision already
+                                               taken. No "merged" status: unlike a category, a rename has no third outcome
 POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending/pending_whatsapp only (else 409), 3/hr; notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open) — NO DB write, requested_changes stays admin-owned
 POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
 POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
@@ -564,7 +581,15 @@ GET    /producers/me/locations                    producer  — MEH-1421 (MEH-13
                                                               ordered primary-first then created_at
 POST   /producers/me/locations                    producer  — create a location (60/hr). ProducerLocationCreate.
                                                               First location forced is_primary; is_primary=true clears others.
-                                                              same-city label rule → 422 "כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה"
+                                                              same-city label rule → 422 with a STRUCTURED detail (MEH-1940,
+                                                              same shape as auth.py's email_unverified / MEH-1164):
+                                                                {"code": "location_same_city_needs_label",
+                                                                 "message": <Hebrew, transition-safety only>,
+                                                                 "params": {"city", "existing_kind", "existing_label",
+                                                                            "existing_count"}}
+                                                              The rendered copy lives in messages/he.json + en.json under
+                                                              settings.locations.errors.same_city and is keyed on `code`;
+                                                              `existing_kind` is the RAW enum, translated client-side.
 PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
                                                               (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
                                                               same-city check only when city/label in the patch.
@@ -651,6 +676,7 @@ its admin-override, so an admin still deletes (→ 200).
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
 GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
 POST   /experiences                    auth    — require_verified_email (already gated pre-MEH-1164 — left unchanged by Chunk 2A). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.

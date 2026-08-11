@@ -52,6 +52,21 @@ vi.mock("framer-motion", () => {
   };
 });
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
+// MEH-1975: HeroSearch's no-results exit uses the locale-aware Link from
+// @/i18n/navigation (routing.js is localePrefix "as-needed", so a hardcoded
+// href would drop /en visitors onto the Hebrew route). next-intl's
+// createNavigation imports next/navigation for real, which the partial mock
+// above does not satisfy — same reason EnSearchNotice is stubbed at the top of
+// this file rather than dragging the i18n navigation stack into a spec about
+// the hero's own layout.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 // HeroSearch fetches /search/trending on focus and /search while typing.
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => new Promise(() => {})) },

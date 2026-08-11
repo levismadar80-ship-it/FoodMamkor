@@ -63,6 +63,7 @@ from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
 )
+from app.services.analytics import israel_day_of, unique_views_count
 from app.services.trust_tier import VALID_BADGE_CODES
 
 log = logging.getLogger(__name__)
@@ -739,6 +740,41 @@ def dashboard(
 # ============================================================
 
 
+def _rank_in_city(db: Session, producer, israel_day):
+    """MEH-57: 1-based rank among approved producers in the same city, by 30d
+    views descending. None when the producer has no city.
+
+    Extracted from `producer_analytics` under MEH-160 — inlining it pushed the
+    endpoint over PLR0915's 50-statement cap.
+
+    MEH-160: ranks on the same unit the dashboard displays. The LEFT JOIN here
+    is why `unique_views_count` gates its NULL arm on the row id — a producer
+    with zero views still yields one all-NULL row, and an ungated
+    `hash IS NULL` would score every view-less rival a 1.
+    """
+    if not producer.city:
+        return None
+    cutoff_30d = datetime.utcnow() - timedelta(days=30)
+    rank_views = unique_views_count(israel_day)
+    city_ranks = (
+        db.query(Producer.id, rank_views.label("views"))
+        .outerjoin(
+            ProducerPageView,
+            and_(
+                ProducerPageView.producer_id == Producer.id,
+                ProducerPageView.created_at >= cutoff_30d,
+            ),
+        )
+        .filter(Producer.city == producer.city, Producer.status == "approved")
+        .group_by(Producer.id)
+        .order_by(rank_views.desc())
+        .all()
+    )
+    return next(
+        (i + 1 for i, row in enumerate(city_ranks) if row.id == producer.id), None
+    )
+
+
 @dataclass
 class WindowFilter:
     """MEH-447: collapse the 2 optional kwargs of _count_in_window into a
@@ -748,13 +784,39 @@ class WindowFilter:
 
     days: int | None = None
     extra_filter: Any = None
+    # MEH-160: when set, count DISTINCT (israel-day, value) pairs instead of
+    # rows — one count per visitor per 24h Israel calendar day (Sapir's 09/08
+    # ruling: the 24h window is the analytics norm). Rows where the column IS
+    # NULL are still counted individually — they cannot be deduped against
+    # anything, and dropping them (which COUNT(DISTINCT) does silently) would
+    # trade over-counting for under-counting.
+    distinct_col: Any = None
 
 
 def _count_in_window(
     db: Session, model, time_col, producer_id, window: WindowFilter = WindowFilter()
 ):
-    """Count rows for the given model, optionally windowed to last N days."""
-    q = db.query(func.count(model.id)).filter(model.producer_id == producer_id)
+    """Count rows for the given model, optionally windowed to last N days.
+
+    MEH-160: with ``window.distinct_col`` set, counts DISTINCT
+    (israel-day, value) pairs PLUS the NULL rows one-by-one — a visitor counts
+    once per 24h Israel calendar day (ruling 09/08), and a hit with no hash
+    counts individually. `producer_page_views` writes `viewer_ip_hash` on every
+    row and nothing ever read it, so one visitor refreshing N times counted as
+    N profile views — the inflation the ticket describes, reachable without
+    any spoofed user-agent. hash_ip's salt is settings.secret_key — stable per
+    deploy, not time-rotating — so the day grain comes from created_at, not
+    from the hash itself (a secret rotation resets uniques; acceptable, rare).
+    """
+    if window.distinct_col is not None:
+        counter = unique_views_count(
+            israel_day_of(time_col),
+            hash_col=window.distinct_col,
+            row_id_col=model.id,
+        )
+    else:
+        counter = func.count(model.id)
+    q = db.query(counter).filter(model.producer_id == producer_id)
     if window.days is not None:
         cutoff = datetime.utcnow() - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
@@ -785,24 +847,34 @@ def producer_analytics(
     pid = producer.id
 
     # Time-windowed counts for the 3 main metrics.
-    def windowed(model, time_col, *, extra=None):
+    def windowed(model, time_col, *, extra=None, distinct_col=None):
         return {
-            "last_7d": _count_in_window(
-                db, model, time_col, pid, WindowFilter(days=7, extra_filter=extra)
-            ),
-            "last_30d": _count_in_window(
-                db, model, time_col, pid, WindowFilter(days=30, extra_filter=extra)
-            ),
-            "total": _count_in_window(
-                db, model, time_col, pid, WindowFilter(days=None, extra_filter=extra)
-            ),
+            label: _count_in_window(
+                db,
+                model,
+                time_col,
+                pid,
+                WindowFilter(days=days, extra_filter=extra, distinct_col=distinct_col),
+            )
+            for label, days in (("last_7d", 7), ("last_30d", 30), ("total", None))
         }
 
-    profile_views = windowed(ProducerPageView, ProducerPageView.created_at)
+    # MEH-160: page views dedupe per (israel-day, viewer_ip_hash) — one count
+    # per visitor per 24h day (ruling 09/08). "Unique inside a window" is what
+    # models.py's own docstring said the column was for; until now nothing read
+    # it. The windowed counters therefore equal the SUM of their days' unique
+    # counts, so the headline numbers and the views_by_day chart agree by
+    # construction.
+    profile_views = windowed(
+        ProducerPageView,
+        ProducerPageView.created_at,
+        distinct_col=ProducerPageView.viewer_ip_hash,
+    )
     search_appearances = windowed(
         ProducerPageView,
         ProducerPageView.created_at,
         extra=(ProducerPageView.referrer == "search"),
+        distinct_col=ProducerPageView.viewer_ip_hash,
     )
     whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
     contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
@@ -870,15 +942,17 @@ def producer_analytics(
         .astimezone(timezone.utc)
         .replace(tzinfo=None)
     )
-    israel_day = func.date(
-        func.timezone(
-            "Asia/Jerusalem", func.timezone("UTC", ProducerPageView.created_at)
-        )
-    )
+    israel_day = israel_day_of(ProducerPageView.created_at)
+    # MEH-160: the chart dedupes per DAY on the same column the windowed
+    # counters use, so the series and the headline number cannot disagree.
+    # Grouped by the day already, so the day-less shape of the helper applies.
     daily_rows = (
         db.query(
             israel_day.label("day"),
-            func.count(ProducerPageView.id).label("count"),
+            # `israel_day` is already the GROUP BY key, so the day inside
+            # the DISTINCT tuple is constant per group — the same count, and
+            # no shorthand to get wrong (adversarial review, round 2).
+            unique_views_count(israel_day).label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
@@ -896,50 +970,37 @@ def producer_analytics(
         )
 
     # Top cities (viewers who had a city attached — i.e. logged-in viewers).
+    # MEH-160: same unit as profile_views — one visitor per city per day.
+    # Grouped by city, not by day, so the day travels inside the DISTINCT.
+    city_views = unique_views_count(israel_day)
     top_city_rows = (
         db.query(
             ProducerPageView.city,
-            func.count(ProducerPageView.id).label("count"),
+            city_views.label("count"),
         )
         .filter(
             ProducerPageView.producer_id == pid,
             ProducerPageView.city.isnot(None),
         )
         .group_by(ProducerPageView.city)
-        .order_by(func.count(ProducerPageView.id).desc())
+        .order_by(city_views.desc())
         .limit(5)
         .all()
     )
     top_cities = [{"city": row.city, "count": int(row.count)} for row in top_city_rows]
 
-    # MEH-57 ── rank_in_city: 1-based rank among approved producers in same
-    # city ordered by 30d views descending. None when producer has no city.
-    cutoff_30d = datetime.utcnow() - timedelta(days=30)
-    if producer.city:
-        city_ranks = (
-            db.query(
-                Producer.id,
-                func.count(ProducerPageView.id).label("views"),
-            )
-            .outerjoin(
-                ProducerPageView,
-                and_(
-                    ProducerPageView.producer_id == Producer.id,
-                    ProducerPageView.created_at >= cutoff_30d,
-                ),
-            )
-            .filter(Producer.city == producer.city, Producer.status == "approved")
-            .group_by(Producer.id)
-            .order_by(func.count(ProducerPageView.id).desc())
-            .all()
-        )
-        rank_in_city = next(
-            (i + 1 for i, row in enumerate(city_ranks) if row.id == pid), None
-        )
-    else:
-        rank_in_city = None
+    rank_in_city = _rank_in_city(db, producer, israel_day)
 
     # MEH-57 ── conversion_rate: whatsapp clicks / profile views × 100 (30d).
+    # MEH-160 contract note: the denominator is now unique daily viewers,
+    # while `producer_whatsapp_clicks` carries NO viewer hash (models.py:1515
+    # — only a nullable user_id), so the numerator cannot be deduped to match
+    # without a schema change. The ratio is therefore "clicks per 100 unique
+    # daily viewers" and CAN exceed 100 legitimately: one viewer clicking
+    # twice in a day. The copy states that in both locales, and the display no
+    # longer clamps it — clamping hid a wrong contract behind a screen that
+    # looked fine. Alternative (Sapir's call, drafted on the card): add
+    # viewer_ip_hash to the clicks table and restore a bounded percentage.
     conversion_rate = (
         round(whatsapp_clicks["last_30d"] / profile_views["last_30d"] * 100, 1)
         if profile_views["last_30d"] > 0
@@ -974,8 +1035,12 @@ def producer_analytics(
     now = datetime.utcnow()
     prev_start = now - timedelta(days=14)
     prev_end = now - timedelta(days=7)
+    # MEH-160: the comparison arm has to use the SAME unit as `last_7d`, which
+    # is deduped. Comparing deduped-now against raw-then reads "down" on
+    # perfectly flat traffic — a permanent regression, not a rounding wobble:
+    # any repeat visitor deflates only one side of the subtraction.
     prev_7d_views = int(
-        db.query(func.count(ProducerPageView.id))
+        db.query(unique_views_count(israel_day))
         .filter(
             ProducerPageView.producer_id == pid,
             ProducerPageView.created_at >= prev_start,
@@ -1409,6 +1474,47 @@ def _get_owned_location(
     return loc
 
 
+SAME_CITY_NEEDS_LABEL_CODE = "location_same_city_needs_label"
+
+# Transition-safety string ONLY. Any client that still reads a bare-string
+# `detail` falls back to this; the rendered copy comes from messages/he.json
+# keyed on the code above. Deliberately generic — it carries no label examples,
+# because inventing one ("הדוכן בשוק") hands the owner a KIND name for a form
+# that already has a kind selector, and duplicates the label field's own
+# placeholder two centimetres away.
+SAME_CITY_NEEDS_LABEL_MESSAGE = "כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה"
+
+
+def _same_city_label_error_detail(
+    city: str | None,
+    existing_kind: str | None = None,
+    existing_label: str | None = None,
+    existing_count: int = 1,
+) -> dict[str, object]:
+    # MEH-1940: `{code, message, params}` rather than a Hebrew sentence.
+    # REUSES: backend/app/auth.py:374-382 (_EMAIL_UNVERIFIED_DETAIL, MEH-1164) —
+    # same shape, same reason: the client matches on a stable, locale-independent
+    # `code` and renders its own copy, and `message` stays for transition safety.
+    #
+    # `params` describes the location she ALREADY has, so the frontend can name
+    # it instead of inventing an example. NO Hebrew kind name is produced here:
+    # `existing_kind` is the raw enum ("branch" / "pickup" / "market_stand") and
+    # the translation lives in settings.locations.kind.* in he.json + en.json.
+    return {
+        "code": SAME_CITY_NEEDS_LABEL_CODE,
+        "message": SAME_CITY_NEEDS_LABEL_MESSAGE,
+        "params": {
+            # The city the OWNER typed, not the stored row's: the compare is
+            # case-insensitive, so the stored value can differ in case/spacing
+            # from what she is looking at in the form.
+            "city": city.strip() if city and city.strip() else None,
+            "existing_kind": existing_kind,
+            "existing_label": existing_label,
+            "existing_count": existing_count,
+        },
+    }
+
+
 def _reject_same_city_without_label(
     db: Session,
     producer_id: UUID,
@@ -1426,18 +1532,39 @@ def _reject_same_city_without_label(
         return
     target = city.strip().lower()
     rows = (
-        db.query(ProducerLocation.id, ProducerLocation.city)
+        db.query(
+            ProducerLocation.id,
+            ProducerLocation.city,
+            ProducerLocation.kind,
+            ProducerLocation.label,
+        )
         .filter(ProducerLocation.producer_id == producer_id)
         .all()
     )
-    for row in rows:
-        if exclude_id is not None and row.id == exclude_id:
-            continue
-        if row.city and row.city.strip().lower() == target:
-            raise HTTPException(
-                status_code=422,
-                detail="כשיש שני מיקומים באותה עיר יש להוסיף תווית מזהה",
-            )
+    # MEH-1940: collect ALL colliding rows rather than raising on the first.
+    # The message describes what she already has, and "2 מיקומים" versus naming
+    # a single one is a different sentence — which needs the count, so the loop
+    # can no longer short-circuit. The invariant is unchanged: a non-empty list
+    # blocks, exactly as the first match did.
+    clashes = [
+        row
+        for row in rows
+        if (exclude_id is None or row.id != exclude_id)
+        and row.city
+        and row.city.strip().lower() == target
+    ]
+    if not clashes:
+        return
+    first = clashes[0]
+    raise HTTPException(
+        status_code=422,
+        detail=_same_city_label_error_detail(
+            city,
+            existing_kind=first.kind,
+            existing_label=first.label,
+            existing_count=len(clashes),
+        ),
+    )
 
 
 def _clear_other_primaries(db: Session, producer_id: UUID, keep_id: UUID) -> None:

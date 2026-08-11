@@ -91,21 +91,72 @@ describe("MEH-1557 — analytics label duplicates", () => {
   });
 });
 
-// MEH-1557 C1/C2 — the two retired claims must never come back. A tooltip that
-// states the inverse of what the code measures is worse than no tooltip.
+// MEH-1557 C1 — the retired impression claim must never come back. A tooltip
+// that states the inverse of what the code measures is worse than no tooltip.
 describe("MEH-1557 — retired over-claims stay retired", () => {
   it.each([
     ["he", he],
     ["en", en],
-  ])("%s: no impression-counting or per-day-dedup claim", (_locale, messages) => {
+  ])("%s: no impression-counting claim", (_locale, messages) => {
     const { windowed } = messages.dashboard.producer.analytics;
     const blob = JSON.stringify(messages);
     // C1: search_appearances counts click-throughs only (referrer='search' rows
     // are written on page entry — services/analytics.py track_producer_view).
     expect(blob).not.toContain("גם אם הלקוחה לא לחצה");
     expect(windowed.search_appearances_tooltip).not.toMatch(/even if/i);
-    // C2: profile_views is func.count(ProducerPageView.id) — raw, no dedup.
-    expect(blob).not.toContain("צפייה אחת ללקוחה ביום");
-    expect(windowed.profile_views_tooltip).not.toMatch(/one view per/i);
+  });
+});
+
+// MEH-160 — C2 INVERTED, and the inversion is the point.
+//
+// C2 used to assert that no tooltip claims per-visitor-per-day dedup, because
+// `profile_views` was `func.count(ProducerPageView.id)` — raw. MEH-160 made the
+// dedup real across all six readers of `producer_page_views`, so the assertion
+// now forbids the truth and permits the lie. It was one-directional: it could
+// only catch copy running ahead of the code, never copy left behind by it, so
+// it stayed green through a change that inverted its own premise.
+//
+// A guard whose direction is tied to an implementation detail has to be
+// re-pointed when that detail changes, not deleted. Both directions live here
+// now: the tooltip must SAY dedup, and must not say the old raw-count claim.
+describe("MEH-160 — the view tooltips state the dedup the code performs", () => {
+  it("he: profile_views tooltip states one count per visitor per day", () => {
+    const { windowed } = he.dashboard.producer.analytics;
+    expect(windowed.profile_views_tooltip).toContain("מבקרות שונות");
+    expect(windowed.profile_views_tooltip).toContain("נספרת פעם אחת");
+    // The retired raw-count claim, verbatim from before this change.
+    expect(windowed.profile_views_tooltip).not.toContain("כולל ביקורים חוזרים");
+  });
+
+  it("en: profile_views tooltip states one count per visitor per day", () => {
+    const { windowed } = en.dashboard.producer.analytics;
+    expect(windowed.profile_views_tooltip).toMatch(/distinct visitors/i);
+    expect(windowed.profile_views_tooltip).toMatch(/counts once/i);
+    expect(windowed.profile_views_tooltip).not.toMatch(/including repeat visits/i);
+  });
+
+  it.each([
+    ["he", he],
+    ["en", en],
+  ])("%s: search_appearances tooltip is deduped too", (_locale, messages) => {
+    const { windowed } = messages.dashboard.producer.analytics;
+    // Same table, same dedup — a tooltip saying "how many times" here would be
+    // as wrong as the profile_views one was.
+    expect(windowed.search_appearances_tooltip).toMatch(
+      /מבקרות שונות|distinct visitors/i,
+    );
+  });
+
+  it.each([
+    ["he", he],
+    ["en", en],
+  ])("%s: the conversion line does not claim a bounded percentage", (_locale, messages) => {
+    const { kpi } = messages.dashboard.producer.analytics;
+    // producer_whatsapp_clicks carries no viewer hash (models.py), so the
+    // numerator stays raw against a deduped denominator and the ratio can
+    // legitimately exceed 100. "% of viewers clicked" cannot express that;
+    // "per 100 distinct visitors" can, at any value.
+    expect(kpi.conversion_line).not.toMatch(/^\{rate\}%/);
+    expect(kpi.conversion_line).toMatch(/100 מבקרות שונות|per 100 distinct visitors/i);
   });
 });

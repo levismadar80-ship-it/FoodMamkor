@@ -1,12 +1,32 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { WhatsappLogo, X } from "@phosphor-icons/react";
+import {
+  WhatsappLogo,
+  Phone,
+  Globe,
+  EnvelopeSimple,
+  InstagramLogo,
+  FacebookLogo,
+  Receipt,
+  X,
+} from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import { formatPriceRange, getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import {
+  formatPriceRange,
+  getWhatsAppHref,
+  normalizePhone,
+  withReferralParams,
+} from "@/lib/utils";
+import {
+  getPrimaryContactHref,
+  getPrimaryContactLabel,
+  getPrimaryMethod,
+  isPrimaryExternal,
+} from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 /**
@@ -18,6 +38,10 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  *           from nowhere; the per-product diet flags (ProductOut.is_vegan &
  *           friends, MEH-293/1438) were collected and never rendered publicly
  *           at all. This is the surface that shows both.
+ *           MEH-1916 replaced the hardcoded WhatsApp CTA with the producer's
+ *           chosen primary_contact_method (lib/contact-method.js), so the sheet
+ *           routes where she asked to be reached — and a producer with no phone
+ *           no longer gets a sheet that ends in nothing.
  * Does NOT: own a route ("מגזין, לא marketplace" — overlay only, no
  *           /product/[id]), fetch anything (the product object arrives from
  *           the already-loaded producer payload), or render a gallery /
@@ -56,6 +80,42 @@ const DIET_FLAGS = [
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+// MEH-1916: the sheet's CTA follows the channel the producer actually chose
+// (primary_contact_method) instead of hardcoding WhatsApp. Icon + surface class
+// per method, mirroring the inline primary button so the two read as one system.
+// REUSES: components/PrimaryContactButton.jsx VARIANTS (icon + className), the
+// same way StickyContactBar.jsx:24-32 mirrors it — there is no shared CTA
+// component and MEH-1901 recorded that duplication as deliberate.
+const METHOD_CTA = {
+  whatsapp: { Icon: WhatsappLogo, className: "btn-whatsapp" },
+  phone: {
+    Icon: Phone,
+    className: "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+  },
+  website: {
+    Icon: Globe,
+    className:
+      "bg-white text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40",
+  },
+  email: {
+    Icon: EnvelopeSimple,
+    className:
+      "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary-dark/40",
+  },
+  instagram: {
+    Icon: InstagramLogo,
+    className: "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+  },
+  facebook: {
+    Icon: FacebookLogo,
+    className: "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+  },
+  external_order: {
+    Icon: Receipt,
+    className: "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+  },
+};
+
 export default function ProductSheet({ product, producer, onClose }) {
   const t = useTranslations();
   // MEH-1524: the source line is defined once, under whatsapp.question_chips,
@@ -64,6 +124,9 @@ export default function ProductSheet({ product, producer, onClose }) {
   const tChips = useTranslations("whatsapp.question_chips");
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
+  // MEH-1976: the src whose load failed (Cloudinary 401, MEH-1925). Must sit
+  // above the `if (!product) return null` below — hooks cannot be conditional.
+  const [failedSrc, setFailedSrc] = useState(null);
 
   useEffect(() => {
     // Focus moves to the close button on open and RETURNS to whatever opened
@@ -107,6 +170,11 @@ export default function ProductSheet({ product, producer, onClose }) {
         width: 640,
       })
     : null;
+  // MEH-1976: derived during render, NOT via an effect — the state holds the
+  // src that failed, so a new `img` makes this false with no reset needed.
+  // (The hook itself lives above the `if (!product)` early return; declaring
+  // it here would call it conditionally — react-hooks/rules-of-hooks.)
+  const imgError = failedSrc !== null && failedSrc === img;
 
   const dietKeys = DIET_FLAGS.filter((f) => product[f.field] === true).map((f) => f.key);
 
@@ -123,7 +191,9 @@ export default function ProductSheet({ product, producer, onClose }) {
 
   // The WhatsApp channel is the producer's phone, normalised exactly as every
   // other WA surface does it (lib/utils normalizePhone → getWhatsAppHref).
-  // No phone → no CTA node at all, never a dead link.
+  // This href keeps the PRODUCT-name prefill — deliberately not
+  // getPrimaryContactHref's generic business prefill (contact-method.js:46),
+  // which knows nothing about which product is open.
   const digits = normalizePhone(producer?.phone);
   const waHref = digits
     ? getWhatsAppHref(
@@ -133,6 +203,41 @@ export default function ProductSheet({ product, producer, onClose }) {
         })}\n\n${tChips("source_line")}`,
       )
     : null;
+
+  // MEH-1916. The primary CTA is the producer's chosen channel; WhatsApp is the
+  // fallback, not the default. Two separate misses used to collapse into the
+  // same "no CTA" state:
+  //   - a producer whose channel is website/phone/email got a WhatsApp button
+  //     in spite of her choice;
+  //   - a producer with no phone got a sheet with no action at all.
+  const method = getPrimaryMethod(producer);
+  const methodHref = method === "whatsapp" ? waHref : getPrimaryContactHref(producer);
+  // The chosen channel's own field is empty (backend validation should prevent
+  // this — defense in depth, same posture as contact-method.js:31-33). Rather
+  // than end the sheet on a dead end, fall back to WhatsApp AS THE PRIMARY when
+  // a phone exists. The secondary link is suppressed in that case: it would be
+  // the identical href rendered twice.
+  const waIsPrimary = Boolean(!methodHref && waHref) || method === "whatsapp";
+  const primaryHref = methodHref || waHref;
+  const primaryMethod = waIsPrimary ? "whatsapp" : method;
+  const variant = METHOD_CTA[primaryMethod] || METHOD_CTA.whatsapp;
+  const PrimaryIcon = variant.Icon;
+  // MEH-1525, mirroring PrimaryContactButton.jsx:78-79 and
+  // StickyContactBar.jsx:58-63: a business-website CTA carries referral UTM and
+  // drops `noreferrer` (keeps `noopener`) so the owner's analytics can attribute
+  // the visit. Website only — social / external_order hrefs and rel untouched.
+  const isWebsite = primaryMethod === "website";
+  const primaryFinalHref = isWebsite ? withReferralParams(primaryHref) : primaryHref;
+  const primaryExternal = !waIsPrimary && isPrimaryExternal(producer);
+  // Quiet escape hatch: when the producer routes elsewhere but still has a
+  // phone, WhatsApp stays reachable as a TEXT link — one loud CTA per sheet, so
+  // the chosen channel is not visually contested (MEH-1901 layout invariant).
+  const showSecondaryWa = !waIsPrimary && Boolean(waHref);
+
+  const fireWaTracking = () => {
+    pingWhatsAppBeacon(producer?.id);
+    markWhatsAppClickedLocal(producer?.id);
+  };
 
   return (
     <div
@@ -177,16 +282,17 @@ export default function ProductSheet({ product, producer, onClose }) {
               ~60% of the panel. It collapses to a short band instead. */}
           <div
             className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
-              img ? "aspect-square" : "h-28"
+              img && !imgError ? "aspect-square" : "h-28"
             }`}
           >
-            {img ? (
+            {img && !imgError ? (
               <Image
                 src={img}
                 alt={product.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 448px"
+                onError={() => setFailedSrc(img)}
               />
             ) : (
               // MEH-1305 E: the same typographic no-photo cell the grid uses —
@@ -253,29 +359,53 @@ export default function ProductSheet({ product, producer, onClose }) {
           </div>
         </div>
 
-        {waHref && (
+        {/* No footer at all only when BOTH the chosen channel's field and the
+            phone are missing — the one state with genuinely nothing to offer. */}
+        {primaryHref && (
           <div className="border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
             <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="product-sheet-wa-cta"
-              // MEH-1426 invariant, unchanged and extended to this surface:
-              // every WhatsApp click both attributes (pingWhatsAppBeacon) and
-              // unlocks the review form (markWhatsAppClickedLocal). Fired at
-              // the call site exactly as ContactCard.jsx:228-239 and
-              // StickyContactBar.jsx:123-128 do — there is no shared CTA
-              // component wrapping the two, so this reuses the helpers rather
-              // than forking or editing them.
-              onClick={() => {
-                pingWhatsAppBeacon(producer?.id);
-                markWhatsAppClickedLocal(producer?.id);
-              }}
-              className="btn-whatsapp flex min-h-[44px] items-center justify-center gap-2 rounded-md px-4 py-3 font-medium transition focus-visible:ring-2"
+              href={primaryFinalHref}
+              {...(waIsPrimary || primaryExternal
+                ? {
+                    target: "_blank",
+                    rel: isWebsite ? "noopener" : "noopener noreferrer",
+                  }
+                : {})}
+              // The WhatsApp testid is load-bearing outside this ticket's scope
+              // (frontend/e2e/qa-meh1901-sheet.mjs:87 queries it), so a WA
+              // primary keeps it byte-for-byte; other channels get the neutral
+              // id. `data-method` is the stable discriminator either way.
+              data-testid={waIsPrimary ? "product-sheet-wa-cta" : "product-sheet-cta"}
+              data-method={primaryMethod}
+              // MEH-1426 invariant, unchanged: every WhatsApp click both
+              // attributes (pingWhatsAppBeacon) and unlocks the review form
+              // (markWhatsAppClickedLocal) — and a non-WhatsApp primary fires
+              // NEITHER, exactly as StickyContactBar.jsx:123-128 gates it.
+              // Fired at the call site as ContactCard.jsx:228-239 does; there is
+              // no shared CTA component, so this reuses the helpers rather than
+              // forking or editing them.
+              {...(waIsPrimary ? { onClick: fireWaTracking } : {})}
+              className={`${variant.className} flex min-h-[44px] items-center justify-center gap-2 rounded-md px-4 py-3 font-medium transition focus-visible:ring-2`}
             >
-              <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
-              {t("producer.detail.sections.products.sheet_cta")}
+              <PrimaryIcon size={20} weight="fill" aria-hidden="true" />
+              {waIsPrimary
+                ? t("producer.detail.sections.products.sheet_cta")
+                : getPrimaryContactLabel(producer)}
             </a>
+
+            {showSecondaryWa && (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="product-sheet-wa-secondary"
+                onClick={fireWaTracking}
+                className="mt-3 flex min-h-[44px] items-center justify-center gap-1.5 text-sm text-fg-muted underline underline-offset-4 transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <WhatsappLogo size={16} weight="fill" aria-hidden="true" />
+                {t("producer.detail.sections.products.sheet_secondary_wa")}
+              </a>
+            )}
           </div>
         )}
       </div>

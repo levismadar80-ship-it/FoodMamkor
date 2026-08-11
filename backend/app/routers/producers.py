@@ -119,6 +119,10 @@ def list_producers(
     vegan: bool | None = None,
     vegetarian: bool | None = None,  # MEH-1438 — matches is_vegetarian OR is_vegan
     lactose_free: bool | None = None,
+    # MEH-1934 — EXISTS over products.is_no_added_sugar / is_low_carb, same
+    # mechanic as the four axes above (_DIETARY_FILTERS in producer_listing).
+    no_added_sugar: bool | None = None,
+    low_carb: bool | None = None,
     # MEH-1483: sort axis for non-geo results. "newest" (default) or "rating".
     # Validated below — an unknown value 422s rather than silently defaulting.
     sort: str | None = None,
@@ -177,6 +181,8 @@ def list_producers(
         vegan=vegan,
         vegetarian=vegetarian,  # MEH-1438
         lactose_free=lactose_free,
+        no_added_sugar=no_added_sugar,  # MEH-1934
+        low_carb=low_carb,  # MEH-1934
         sort=sort,
         search_q=search_q,
         limit=limit,
@@ -458,7 +464,10 @@ def create_producer(
 
 
 @router.get("/categories", response_model=list[CategoryOut])
-def list_categories(response: Response, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def list_categories(
+    request: Request, response: Response, db: Session = Depends(get_db)
+):
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE

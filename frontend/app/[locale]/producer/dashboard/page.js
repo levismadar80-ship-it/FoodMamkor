@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -17,7 +18,6 @@ import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
-import { clampPercent } from "@/lib/percent";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
@@ -666,7 +666,10 @@ export default function ProducerDashboardPage() {
                 id="vacation-until"
                 type="date"
                 value={vacationUntil}
-                min={new Date().toISOString().slice(0, 10)}
+                // MEH-1983: Israel's today, not UTC's — the server validates
+                // vacation_until against israel_today(), so the UTC date
+                // offered a value the server would then reject.
+                min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
                 className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 dir="ltr"
@@ -909,10 +912,15 @@ function OverviewStatsHero({ analytics }) {
           conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
           tinted, not a card. */}
       <p className="text-sm text-fg-muted text-center">
-        {/* MEH-1118: clamp to ≤100% — WhatsApp clicks aren't a strict subset of
-            page views (card/map CTAs count without a view), so the raw ratio
-            could read "133.3% מהצופות פנו אלייך". */}
-        {t("kpi.conversion_line", { rate: clampPercent(conversion_rate) })}
+        {/* MEH-160: the clamp is gone, and removing it is the fix rather than a
+            regression of MEH-1118. MEH-1118 clamped because a >100 value read
+            as broken under "% מהצופות". The denominator is now unique daily
+            visitors while producer_whatsapp_clicks carries no viewer hash, so
+            >100 is a real reading — one visitor clicking twice — and the copy
+            says "per 100 distinct visitors", which is true at any value.
+            Clamping here would hide a wrong contract behind a screen that
+            looked fine, which is exactly what it was doing before. */}
+        {t("kpi.conversion_line", { rate: conversion_rate })}
       </p>
 
       {/* "Business of the week" eligibility badge — kept on the Overview

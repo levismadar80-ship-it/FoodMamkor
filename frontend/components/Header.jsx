@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
+import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import LanguageToggle from "@/components/LanguageToggle";
 
 /**
@@ -170,15 +171,34 @@ export default function Header() {
   // MEH-643: navbar uses nav.explore (not nav.discover). MEH-732: both keys
   // de-masculinized to "גלו" (ADR-014 plural-voice for nav chrome) — nav.explore
   // here, nav.discover on the BottomNav home tab.
+  // MEH-1918: the experiences link is data-gated — it joins the desktop nav
+  // only once /experiences has real supply, and is absent (not disabled, not
+  // greyed) below the threshold. Mirrors the existing items exactly; no
+  // redesign, no count badge.
+  const showExperiences = useExperiencesNavGate();
   const NAV_ITEMS = [
     { href: "/", label: t("nav.explore") },
     { href: "/map", label: t("nav.map") },
+    ...(showExperiences ? [{ href: "/experiences", label: t("nav.experiences") }] : []),
     { href: "/about", label: t("nav.about") },
   ];
 
   const isHomepage = pathname === "/";
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
   const isLoginPage = pathname === "/login";
+  // MEH-1964: same idea for the register link — no CTA pointing at the page
+  // you are already on. Both /register (consumer) and /register/producer
+  // count: the producer wizard opens from /register, so offering "הרשמה"
+  // mid-wizard would send an owner back to the top of her own flow.
+  // MEH-1971: segment boundary, not a string prefix. A bare
+  // `startsWith("/register")` also matches a PRODUCER whose slug happens to
+  // begin with those letters — `lib/slug.js` reserves the exact word
+  // `register` (`RESERVED.has(s)`, not a prefix test), so `register-cafe` is a
+  // legal slug and a legal `/[slug]` match. On that business's own page the
+  // הרשמה link would silently vanish. Caught in review, before any such
+  // business existed.
+  const isRegisterPage =
+    pathname === "/register" || (pathname || "").startsWith("/register/");
   const transparent = isHomepage && !scrolled;
   // MEH-896: trust strip render gate (JS-level — desktop-only is enforced
   // by the strip's own `hidden md:flex` below; pill top-padding compensates
@@ -411,9 +431,21 @@ export default function Header() {
               />
             ) : (
               // MEH-732: quiet text link, hidden on /login.
-              !isLoginPage && (
-                <LoginAccount label={t("nav.login")} />
-              )
+              // MEH-1964: registration now has a header entry too. Before this
+              // there was NO path to /register from any chrome — a visitor
+              // reached it only through /login or by typing the URL, which is
+              // the one thing a marketplace header must never do (Baymard:
+              // the primary signup action stays reachable from every page).
+              // Deliberately a quiet text link and NOT a pill: MEH-907 removed
+              // the header CTA pill on purpose to leave search as the single
+              // bold action, and that decision stands — this restores
+              // reachability without re-opening the real estate it freed.
+              <>
+                {!isLoginPage && <LoginAccount label={t("nav.login")} />}
+                {!isRegisterPage && (
+                  <RegisterAccount label={t("nav.register")} />
+                )}
+              </>
             )}
 
             {/* MEH-907: add-business CTA pill removed from the Header. The
@@ -480,6 +512,26 @@ function LoginAccount({ label }) {
   return (
     <Link
       href="/login"
+      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
+    >
+      {label}
+    </Link>
+  );
+}
+
+/**
+ * MEH-1964 — quiet "הרשמה" link for guests, the twin of LoginAccount above.
+ * Same geometry and the same quiet treatment (no fill, no border, ink shift on
+ * hover) so the pair reads as one unit rather than as a CTA competing with
+ * search. Hidden on /register* (gated at the call site via isRegisterPage).
+ * Desktop-only, matching LoginAccount: on mobile the AccountSheet owns the
+ * account entries and the BottomNav owns navigation.
+ */
+function RegisterAccount({ label }) {
+  return (
+    <Link
+      href="/register"
+      data-testid="header-register-link"
       className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}

@@ -40,6 +40,14 @@ vi.mock("@phosphor-icons/react", () => ({
   MapPin: () => <span data-testid="map-pin" />,
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
+  // MEH-1916: the sheet's CTA is now per-channel, so its whole icon set loads
+  // through this mock too. Routing itself is asserted in ProductSheet.test.jsx.
+  Phone: () => <span data-testid="icon-phone" />,
+  Globe: () => <span data-testid="icon-globe" />,
+  EnvelopeSimple: () => <span data-testid="icon-email" />,
+  InstagramLogo: () => <span data-testid="icon-instagram" />,
+  FacebookLogo: () => <span data-testid="icon-facebook" />,
+  Receipt: () => <span data-testid="icon-receipt" />,
 }));
 
 // MEH-1901: the sheet's beacon helpers — asserted in ProductSheet.test.jsx;
