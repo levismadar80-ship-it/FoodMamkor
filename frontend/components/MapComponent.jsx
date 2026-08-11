@@ -104,6 +104,30 @@ function escapeHtmlAttr(str) {
     .replace(/>/g, "&gt;");
 }
 
+// MEH-1998: the category colour is interpolated into the divIcon's raw HTML —
+// including into a JS string literal inside the `onerror` handler below. That
+// nesting (HTML attribute → JS source) is why this is a VALIDATOR and not an
+// escape: the browser decodes character references BEFORE the handler is
+// parsed as JS, so `&#39;` arrives at the JS parser as a bare `'` and closes
+// the string exactly as an unescaped quote would. Measured, not assumed —
+// `escapeHtmlAttr("#fff';alert(1);'")` produces a handler byte-identical to
+// the unescaped one. HTML-escaping cannot defend this position; only refusing
+// the value can.
+//
+// A colour is a closed vocabulary, so an allowlist costs nothing: every value
+// in category-registry.js CATEGORY_STYLES is #rrggbb and passes through
+// untouched. Anything else degrades to the primary token. Dormant today (the
+// palette is hardcoded); load-bearing the day the colour becomes DB-driven,
+// which is the scenario this ticket was filed for.
+// 3/4/6/8 digits are the only lengths CSS recognises. A lazier `{3,8}` would
+// also admit 5 and 7 — not a security hole (the browser drops an unparseable
+// declaration) but it would render the pin unstyled, a visual regression in
+// exactly the DB-driven future this validator exists for.
+const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+function safeCssColor(value) {
+  return SAFE_HEX_COLOR.test(String(value ?? "")) ? String(value) : "#2e6853";
+}
+
 // MEH-1611: focus-on-select. When one business is selected, every OTHER
 // business's pin is DEMOTED (faded + desaturated) rather than removed — the
 // Airbnb map-search pattern: the surrounding supply stays legible as context,
@@ -154,7 +178,8 @@ function createCategoryMarker(
   const imgUrl = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.square })
     : null;
-  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const categoryColor = safeCssColor(rawCategoryColor);
   // raw img: this is an HTML *string* handed to Leaflet's divIcon, not JSX.
   // next/image is a React component and cannot be serialised into it — there
   // is no React tree here to render into. Structural, not a preference.
@@ -259,7 +284,8 @@ function createSecondaryMarker(
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.7 : 1;
   const grayscale = dimmed ? "filter:grayscale(1);" : "";
-  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const categoryColor = safeCssColor(rawCategoryColor);
   const borderWidth = active ? 3 : 2;
   // Preserved: dashed border still carries `approximate` on the secondary pin —
   // only the halo shrinks (MEH-1569), so the precision signal survives at 24px.
@@ -312,7 +338,8 @@ function createSecondaryMarker(
 // logical props) — same exception as createCategoryMarker's verified badge.
 function createSingleBusinessClusterIcon(producer, markerCount) {
   const size = 36;
-  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const categoryColor = safeCssColor(rawCategoryColor);
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
       <div style="
