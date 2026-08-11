@@ -39,6 +39,8 @@ import threading
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+from fastapi.testclient import TestClient
+
 from app.models.models import PhoneOtpToken
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
@@ -105,7 +107,17 @@ def test_two_concurrent_confirms_claim_the_token_once(client, db):
         return real_approvable(db_, producer_)
 
     def confirm(tag):
-        results[tag] = client.post(
+        # One TestClient PER THREAD, not the shared fixture. `httpx.Client`
+        # — which TestClient subclasses — is documented as not thread-safe.
+        # Two threads calling `.post()` on one instance happens to work today
+        # under CPython, but that is an implementation detail rather than an
+        # API contract, and a test built to detect non-determinism is the last
+        # place to rest on one. Each request already gets its own anyio portal
+        # (the fixture never enters `with client:`), so the concurrency is
+        # real either way — this removes the shared *object*, not the shared
+        # event loop. Same app instance, so dependency wiring is identical.
+        thread_client = TestClient(client.app)
+        results[tag] = thread_client.post(
             "/producers/me/verify-phone/confirm",
             json={"code": CODE},
             headers=auth_header(user),
