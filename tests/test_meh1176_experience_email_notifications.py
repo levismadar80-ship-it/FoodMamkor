@@ -19,7 +19,9 @@ from test_experiences import _make_experience, _mock_moderation, _payload
 
 
 class TestSubmissionAdminNotification:
-    def test_submit_fires_admin_notification_with_verdict(self, client, db, monkeypatch):
+    def test_submit_fires_admin_notification_with_verdict(
+        self, client, db, monkeypatch
+    ):
         _mock_moderation(monkeypatch, status="APPROVED")
         calls = []
         import app.routers.experiences as router_mod
@@ -41,7 +43,9 @@ class TestSubmissionAdminNotification:
         assert calls[0]["city"] == payload["city"]
         assert calls[0]["moderation_status"] == "APPROVED"
 
-    def test_flagged_verdict_is_forwarded_to_the_admin_email(self, client, db, monkeypatch):
+    def test_flagged_verdict_is_forwarded_to_the_admin_email(
+        self, client, db, monkeypatch
+    ):
         _mock_moderation(monkeypatch, status="FLAGGED", reason="בדיקה")
         calls = []
         import app.routers.experiences as router_mod

@@ -12,6 +12,7 @@ Related:  backend/app/schemas/schemas.py (ProducerRegister validators),
           backend/app/routers/auth.py (Producer creation sites).
 History:  MEH-1471 (creation, 2026-07-22).
 """
+
 from app.models.models import Producer
 from conftest import valid_producer_register_payload
 
@@ -50,9 +51,7 @@ def test_invalid_referral_source_is_422(client, db):
     row is created."""
     resp = client.post(
         REGISTER_URL,
-        json=_new_registration(
-            email="ref-bad@example.com", referral_source="tiktok"
-        ),
+        json=_new_registration(email="ref-bad@example.com", referral_source="tiktok"),
     )
     assert resp.status_code == 422, resp.text
     assert db.query(Producer).count() == 0

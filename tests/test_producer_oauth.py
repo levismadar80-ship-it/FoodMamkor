@@ -7,6 +7,7 @@ has a producer linked (the UI redirects to /login in that case).
 The verify helpers are monkey-patched at the router level; no real
 network call is made.
 """
+
 import pytest
 
 from app.config import settings

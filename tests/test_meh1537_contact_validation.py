@@ -17,6 +17,7 @@ Phone validity mirrors the ticket's Railway audit SQL exactly
 (`regexp_replace(phone,'[^0-9]','') ~ '^(972)?0?[0-9]{8,9}$'`), so a row the
 audit flags is a row the validator rejects, and vice-versa.
 """
+
 from decimal import Decimal
 
 import pytest
@@ -55,7 +56,13 @@ def _admin_create(**overrides):
     return ProducerAdminCreate(**base)
 
 
-VALID_PHONES = ["0501234567", "050-123-4567", "+972 50 123 4567", "972501234567", "0812345678"]
+VALID_PHONES = [
+    "0501234567",
+    "050-123-4567",
+    "+972 50 123 4567",
+    "972501234567",
+    "0812345678",
+]
 INVALID_PHONES = ["12345", "0", "abc", "0" * 21, "+972-50", "555"]
 
 
@@ -80,7 +87,9 @@ def test_phone_invalid_rejected_producer_create(bad):
 def test_phone_valid_accepted_and_separators_stripped(good):
     obj = ProducerUpdate(phone=good)
     # separators removed, +/digits kept as typed (wa.me builders re-normalise).
-    assert obj.phone == good.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    assert obj.phone == good.replace(" ", "").replace("-", "").replace("(", "").replace(
+        ")", ""
+    )
 
 
 def test_phone_empty_and_whitespace_become_none():
@@ -115,7 +124,10 @@ def test_contact_email_empty_becomes_none(schema_factory):
 
 @pytest.mark.parametrize("schema_factory", [ProducerUpdate, _register, _admin_create])
 def test_contact_email_valid_accepted(schema_factory):
-    assert schema_factory(contact_email="owner@example.com").contact_email == "owner@example.com"
+    assert (
+        schema_factory(contact_email="owner@example.com").contact_email
+        == "owner@example.com"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -161,7 +173,9 @@ def _detail_text(resp):
 def test_put_me_invalid_email_returns_422_hebrew(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
-        "/producers/me", json={"contact_email": "not-an-email"}, headers=auth_header(user)
+        "/producers/me",
+        json={"contact_email": "not-an-email"},
+        headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
     assert "כתובת אימייל לא תקינה" in _detail_text(resp)
@@ -169,7 +183,9 @@ def test_put_me_invalid_email_returns_422_hebrew(client, db):
 
 def test_put_me_invalid_phone_returns_422_hebrew(client, db):
     user, _ = _producer_user(db)
-    resp = client.put("/producers/me", json={"phone": "12345"}, headers=auth_header(user))
+    resp = client.put(
+        "/producers/me", json={"phone": "12345"}, headers=auth_header(user)
+    )
     assert resp.status_code == 422, resp.text
     assert "מספר טלפון לא תקין" in _detail_text(resp)
 
@@ -177,7 +193,9 @@ def test_put_me_invalid_phone_returns_422_hebrew(client, db):
 def test_put_me_invalid_whatsapp_group_returns_422_hebrew(client, db):
     user, _ = _producer_user(db)
     resp = client.put(
-        "/producers/me", json={"whatsapp_group": "https://wa.me/123"}, headers=auth_header(user)
+        "/producers/me",
+        json={"whatsapp_group": "https://wa.me/123"},
+        headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
     assert "chat.whatsapp.com" in _detail_text(resp)

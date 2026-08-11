@@ -5,6 +5,7 @@ happy / truncation branches. The Anthropic call is stubbed, so no network
 traffic occurs. MEH-1173 deleted the Instagram-scrape path — its handle
 helpers and scrape test are gone with it.
 """
+
 import pytest
 
 from app.services import bio_generator as mod
@@ -68,7 +69,9 @@ class TestGenerateBio:
         assert mod.generate_bio("מאפייה ביתית") == ""
 
     def test_happy_path_returns_bio(self, monkeypatch):
-        monkeypatch.setattr(mod, "_get_client", lambda: _FakeClient([_FakeBlock("ביו נחמד")]))
+        monkeypatch.setattr(
+            mod, "_get_client", lambda: _FakeClient([_FakeBlock("ביו נחמד")])
+        )
         assert mod.generate_bio("מאפייה ביתית טרייה") == "ביו נחמד"
 
     def test_only_sells_reaches_prompt_when_optionals_blank(self, monkeypatch):
@@ -87,9 +90,7 @@ class TestGenerateBio:
 
     def test_blank_sells_returns_empty(self, monkeypatch):
         # client present but sells strips to empty → early return ""
-        monkeypatch.setattr(
-            mod, "_get_client", lambda: _FakeClient([_FakeBlock("x")])
-        )
+        monkeypatch.setattr(mod, "_get_client", lambda: _FakeClient([_FakeBlock("x")]))
         assert mod.generate_bio("   ") == ""
 
     def test_client_raises_returns_empty(self, monkeypatch):

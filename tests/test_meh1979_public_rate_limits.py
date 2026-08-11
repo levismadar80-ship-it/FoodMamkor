@@ -128,7 +128,9 @@ class TestWhatsAppWebhookIsLimited:
     def test_post_callback_is_limited(self, client):
         # 300/min — deliberately high. Meta retries a 429 with backoff, so a
         # limit that bites amplifies load rather than shedding it.
-        codes = [client.post("/webhook/whatsapp", json={}).status_code for _ in range(301)]
+        codes = [
+            client.post("/webhook/whatsapp", json={}).status_code for _ in range(301)
+        ]
         assert set(codes[:300]) == {403}, "expected unauthenticated rejections"
         assert codes[300] == 429, "the POST callback is not rate-limited"
 
@@ -200,7 +202,9 @@ class TestHealthMustStayUnlimited:
     MEH-1979 would have done exactly that.
     """
 
-    @pytest.mark.parametrize("path", ["/health", "/health/liveness", "/health/readiness"])
+    @pytest.mark.parametrize(
+        "path", ["/health", "/health/liveness", "/health/readiness"]
+    )
     def test_probe_endpoints_never_429(self, client, path):
         codes = _statuses(client, path, 150)
         assert 429 not in codes, (
@@ -234,7 +238,11 @@ class TestNoNewUnlimitedPublicEndpoint:
         import importlib.util  # noqa: PLC0415
         from pathlib import Path  # noqa: PLC0415
 
-        script = Path(__file__).resolve().parent.parent / "scripts" / "audit_public_endpoints.py"
+        script = (
+            Path(__file__).resolve().parent.parent
+            / "scripts"
+            / "audit_public_endpoints.py"
+        )
         spec = importlib.util.spec_from_file_location("audit_public_endpoints", script)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)

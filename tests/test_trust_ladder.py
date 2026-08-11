@@ -1,4 +1,5 @@
 """MEH-51: tests for trust tier computation + kashrut badge endpoints."""
+
 from datetime import datetime, timedelta, timezone
 
 
@@ -11,6 +12,7 @@ from tests.conftest import make_producer, make_user, auth_header
 # ---------------------------------------------------------------------------
 # Unit tests: compute_trust_tier
 # ---------------------------------------------------------------------------
+
 
 class _FakeProducer:
     def __init__(self, **kwargs):
@@ -32,7 +34,9 @@ def test_tier2_phone_verified():
 
 def test_tier3_verified_at():
     # MEH-766: Tier 3 now sourced from verified_at (document-verified), not is_verified.
-    assert compute_trust_tier(_FakeProducer(verified_at=datetime.now(timezone.utc))) == 3
+    assert (
+        compute_trust_tier(_FakeProducer(verified_at=datetime.now(timezone.utc))) == 3
+    )
 
 
 def test_tier3_supersedes_tier2():
@@ -66,8 +70,10 @@ def test_tier5_ambassador():
 
 def test_tier5_supersedes_all():
     p = _FakeProducer(
-        ambassador=True, phone_verified=True,
-        reviews_count=10, avg_rating=4.9,
+        ambassador=True,
+        phone_verified=True,
+        reviews_count=10,
+        avg_rating=4.9,
     )
     assert compute_trust_tier(p) == 5
 
@@ -84,6 +90,7 @@ def test_valid_badge_codes_not_empty():
 # ---------------------------------------------------------------------------
 # Integration tests: phone verification endpoints
 # ---------------------------------------------------------------------------
+
 
 def test_send_otp_no_phone(client, db):
     producer = make_producer(db, name="חוות א")
@@ -107,9 +114,9 @@ def test_send_otp_success(client, db):
     r = client.post("/producers/me/verify-phone", headers=auth_header(user))
     assert r.status_code == 200
     # OTP row created
-    token = db.query(PhoneOtpToken).filter(
-        PhoneOtpToken.producer_id == producer.id
-    ).first()
+    token = (
+        db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer.id).first()
+    )
     assert token is not None
     assert token.used is False
 
@@ -141,12 +148,14 @@ def test_confirm_otp_success(client, db):
 
     # Manually create a valid token
     code = "123456"
-    db.add(PhoneOtpToken(
-        producer_id=producer.id,
-        phone=producer.phone,
-        code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=10),
-    ))
+    db.add(
+        PhoneOtpToken(
+            producer_id=producer.id,
+            phone=producer.phone,
+            code=code,
+            expires_at=datetime.utcnow() + timedelta(minutes=10),
+        )
+    )
     db.commit()
 
     r = client.post(
@@ -168,12 +177,14 @@ def test_confirm_otp_expired(client, db):
     db.commit()
 
     code = "654321"
-    db.add(PhoneOtpToken(
-        producer_id=producer.id,
-        phone=producer.phone,
-        code=code,
-        expires_at=datetime.utcnow() - timedelta(minutes=1),  # expired
-    ))
+    db.add(
+        PhoneOtpToken(
+            producer_id=producer.id,
+            phone=producer.phone,
+            code=code,
+            expires_at=datetime.utcnow() - timedelta(minutes=1),  # expired
+        )
+    )
     db.commit()
 
     r = client.post(
@@ -187,6 +198,7 @@ def test_confirm_otp_expired(client, db):
 # ---------------------------------------------------------------------------
 # Integration tests: kashrut badge requests
 # ---------------------------------------------------------------------------
+
 
 def test_kashrut_request_invalid_code(client, db):
     producer = make_producer(db, name="חוות ו")
@@ -226,8 +238,12 @@ def test_kashrut_request_duplicate_pending(client, db):
     db.commit()
 
     payload = {"badge_code": "rabanut"}
-    client.post("/producers/me/kashrut-request", json=payload, headers=auth_header(user))
-    r = client.post("/producers/me/kashrut-request", json=payload, headers=auth_header(user))
+    client.post(
+        "/producers/me/kashrut-request", json=payload, headers=auth_header(user)
+    )
+    r = client.post(
+        "/producers/me/kashrut-request", json=payload, headers=auth_header(user)
+    )
     assert r.status_code == 409
 
 
@@ -235,13 +251,16 @@ def test_kashrut_request_duplicate_pending(client, db):
 # Integration tests: admin kashrut review
 # ---------------------------------------------------------------------------
 
+
 def test_list_kashrut_requests(client, db):
     producer = make_producer(db, name="חוות בדיקה")
     admin = make_user(db, role="admin")
     db.commit()
 
     pending = KashrutBadgeRequest(producer_id=producer.id, badge_code="rabanut")
-    approved = KashrutBadgeRequest(producer_id=producer.id, badge_code="badatz", status="approved")
+    approved = KashrutBadgeRequest(
+        producer_id=producer.id, badge_code="badatz", status="approved"
+    )
     db.add_all([pending, approved])
     db.commit()
 

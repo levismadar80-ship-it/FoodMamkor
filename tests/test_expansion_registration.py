@@ -10,6 +10,7 @@ isolation):
 
 Backend tests — CI Postgres is the healer.
 """
+
 from tests.conftest import make_category
 
 BAKERY = "לחמים ואפייה"  # license-required category
@@ -17,8 +18,13 @@ LICENSE_REQUIRED_HE = "מספר רישיון יצרן חובה לקטגוריה 
 DECLARATION_REQUIRED_HE = "יש לאשר את הצהרת הרישוי כדי להמשיך"
 
 
-def _payload(category_ids, *, license_number=None, declaration_accepted=True,
-             email="exp@example.com"):
+def _payload(
+    category_ids,
+    *,
+    license_number=None,
+    declaration_accepted=True,
+    email="exp@example.com",
+):
     body = {
         "email": email,
         "name": "יצרנית",
@@ -43,8 +49,9 @@ def test_whitespace_only_license_treated_as_missing(client, db):
     bakery = make_category(db, name=BAKERY, emoji="🍞")
     resp = client.post(
         "/auth/register/producer",
-        json=_payload([bakery.id], license_number="   ",
-                      email="ws-license@example.com"),
+        json=_payload(
+            [bakery.id], license_number="   ", email="ws-license@example.com"
+        ),
     )
     assert resp.status_code == 422, resp.text
     assert resp.json()["detail"] == LICENSE_REQUIRED_HE
@@ -61,9 +68,12 @@ def test_declaration_guard_fires_even_with_valid_license(client, db):
     bakery = make_category(db, name=BAKERY, emoji="🍞")
     resp = client.post(
         "/auth/register/producer",
-        json=_payload([bakery.id], license_number="1234567",
-                      declaration_accepted=False,
-                      email="decl-first@example.com"),
+        json=_payload(
+            [bakery.id],
+            license_number="1234567",
+            declaration_accepted=False,
+            email="decl-first@example.com",
+        ),
     )
     assert resp.status_code == 422, resp.text
     assert resp.json()["detail"] == DECLARATION_REQUIRED_HE

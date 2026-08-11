@@ -11,6 +11,7 @@ Related:  backend/app/routers/favorites.py (get_favorites),
           backend/app/services/producer_listing.py:476-479 (the idiom).
 History:  MEH-1660 (creation).
 """
+
 from __future__ import annotations
 
 from app.models.models import Product
@@ -33,9 +34,7 @@ ENRICHMENT_FIELDS = [
 
 def _make_enriched_producer(db):
     """Producer that earns badges: license + gluten-free product + delivery."""
-    producer = make_producer(
-        db, name="חוות הפריטי", delivery_cities=["תל אביב"]
-    )
+    producer = make_producer(db, name="חוות הפריטי", delivery_cities=["תל אביב"])
     producer.producer_license_number = "12345"
     db.add(
         Product(

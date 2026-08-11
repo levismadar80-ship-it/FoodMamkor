@@ -191,7 +191,5 @@ class TestNameChangeAuth:
 
     def test_a_consumer_cannot_read_the_admin_queue(self, client, db):
         consumer = make_user(db, role="consumer")
-        resp = client.get(
-            "/admin/name-change-requests", headers=auth_header(consumer)
-        )
+        resp = client.get("/admin/name-change-requests", headers=auth_header(consumer))
         assert resp.status_code == 403

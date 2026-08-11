@@ -77,8 +77,6 @@ def test_admin_delete_admin_created_producer_no_regression(client, db, monkeypat
     producer = make_producer(db)
     producer_id = str(producer.id)
 
-    resp = client.delete(
-        f"/admin/producers/{producer_id}", headers=auth_header(admin)
-    )
+    resp = client.delete(f"/admin/producers/{producer_id}", headers=auth_header(admin))
     assert resp.status_code == 200, resp.json()
     assert resp.json() == {"detail": "Producer deleted"}

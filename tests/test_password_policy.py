@@ -45,7 +45,9 @@ def _mock_hibp_response(text: str, status_code: int = 200) -> MagicMock:
 class TestPasswordPolicyService:
     def test_too_short_returns_failure(self):
         # 11 chars — under MIN_LENGTH=12.
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password("a" * 11))
         assert isinstance(result, PolicyResult)
         assert result.ok is False
@@ -53,7 +55,9 @@ class TestPasswordPolicyService:
 
     def test_minimum_length_passes(self):
         # Exactly 12 chars, not in deny list, HIBP mocked clean.
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password(SAFE_PASSWORD))
         assert result.ok is True
         assert result.failures == []
@@ -62,7 +66,9 @@ class TestPasswordPolicyService:
         # Sentinel is in the local deny-list; HIBP must NOT be called
         # (deny-list short-circuits) — patching it would mask a real bug
         # if that contract changes.
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)) as m:
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ) as m:
             result = _run(validate_password(DENY_LIST_SENTINEL))
         assert "too_common" in result.failures
         assert result.ok is False
@@ -112,7 +118,9 @@ class TestPasswordPolicyService:
 
         ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
         current_hash = ctx.hash(SAFE_PASSWORD)
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password(SAFE_PASSWORD, current_hash=current_hash))
         assert "same_as_current" in result.failures
         assert result.ok is False
@@ -122,7 +130,9 @@ class TestPasswordPolicyService:
 
         ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
         current_hash = ctx.hash("AnotherPwd99X")  # different from SAFE_PASSWORD
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password(SAFE_PASSWORD, current_hash=current_hash))
         assert "same_as_current" not in result.failures
         assert result.ok is True
@@ -135,10 +145,10 @@ class TestPasswordPolicyService:
         short_common = "password"  # 8 chars, in deny list
         ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
         current_hash = ctx.hash(short_common)
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
-            result = _run(
-                validate_password(short_common, current_hash=current_hash)
-            )
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
+            result = _run(validate_password(short_common, current_hash=current_hash))
         assert "too_short" in result.failures
         assert "too_common" in result.failures
         assert "same_as_current" in result.failures
@@ -153,7 +163,9 @@ class TestPasswordPolicyService:
         """
         padded = "password    "  # 12 chars, deny-listed when stripped
         assert len(padded) >= 12
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password(padded))
         assert "too_common" in result.failures
         assert result.ok is False
@@ -171,7 +183,9 @@ class TestPasswordPolicyService:
         """
         whitespace_only = "            "  # 12 spaces
         assert len(whitespace_only) == 12
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password(whitespace_only))
         assert "too_short" in result.failures
         assert result.ok is False
@@ -184,7 +198,9 @@ class TestPasswordPolicyService:
         """
         padded_short = "          aa"  # 12 raw, 2 after strip
         assert len(padded_short) == 12
-        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+        with patch.object(
+            password_policy, "_check_hibp", new=AsyncMock(return_value=False)
+        ):
             result = _run(validate_password(padded_short))
         assert "too_short" in result.failures
         assert result.ok is False
@@ -244,8 +260,11 @@ def _decode(token):
 
     from app.config import settings
 
-    return _jwt.decode(token, OctKey.import_key(settings.secret_key.encode()),
-                       algorithms=[settings.algorithm]).claims
+    return _jwt.decode(
+        token,
+        OctKey.import_key(settings.secret_key.encode()),
+        algorithms=[settings.algorithm],
+    ).claims
 
 
 def _make_request(fingerprint_cookie=None):

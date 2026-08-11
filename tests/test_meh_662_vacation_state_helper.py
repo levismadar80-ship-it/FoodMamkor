@@ -10,6 +10,7 @@ defense paths through their consumers. This file adds direct unit
 coverage of the helper itself so a future change to the str↔bool/date
 contract surfaces here first, not via a downstream consumer regression.
 """
+
 from __future__ import annotations
 
 from datetime import date

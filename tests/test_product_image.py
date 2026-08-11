@@ -9,6 +9,7 @@ Coverage:
 - IDOR: cannot modify another producer's product
 - ProductOut includes image_url field
 """
+
 import uuid
 
 import pytest
@@ -44,7 +45,12 @@ class TestProductCRUD:
         user, _ = _make_producer_user(db)
         resp = client.post(
             "/producers/me/products",
-            json={"name": "לחם שיפון", "description": "מחמצת", "price_range": "₪25", "price_min": 25},
+            json={
+                "name": "לחם שיפון",
+                "description": "מחמצת",
+                "price_range": "₪25",
+                "price_min": 25,
+            },
             headers=auth_header(user),
         )
         assert resp.status_code == 201

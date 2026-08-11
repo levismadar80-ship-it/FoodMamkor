@@ -12,6 +12,7 @@ caller yields a clean 403, never a 422 from body validation first
 (regression rule 6). Path params are typed correctly (UUID / int) so the
 guard — not path coercion — is what's exercised.
 """
+
 import pytest
 
 from tests.conftest import auth_header, make_user
@@ -70,7 +71,5 @@ def test_producer_role_also_blocked_from_admin(client, db):
     """A producer (also role != admin) is blocked. Documents that the guard
     keys on role == 'admin', not merely on "is authenticated"."""
     producer = make_user(db, role="producer")
-    resp = client.post(
-        f"/admin/producers/{_U}/approve", headers=auth_header(producer)
-    )
+    resp = client.post(f"/admin/producers/{_U}/approve", headers=auth_header(producer))
     assert resp.status_code == 403

@@ -17,6 +17,7 @@ Coverage:
 Claude calls are mocked via monkeypatch so tests are deterministic
 and don't need ANTHROPIC_API_KEY.
 """
+
 from datetime import date, time, timedelta
 from decimal import Decimal
 
@@ -140,9 +141,7 @@ class TestExperienceSubmission:
     def test_consumer_can_submit(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="APPROVED")
         user = make_user(db, role="consumer", email="c@test.com")
-        resp = client.post(
-            "/experiences", json=_payload(), headers=auth_header(user)
-        )
+        resp = client.post("/experiences", json=_payload(), headers=auth_header(user))
         assert resp.status_code == 201, resp.text
         body = resp.json()
         assert body["status"] == "pending"
@@ -155,17 +154,13 @@ class TestExperienceSubmission:
     def test_producer_can_also_submit(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="APPROVED")
         user = make_user(db, role="producer", email="p@test.com")
-        resp = client.post(
-            "/experiences", json=_payload(), headers=auth_header(user)
-        )
+        resp = client.post("/experiences", json=_payload(), headers=auth_header(user))
         assert resp.status_code == 201
 
     def test_persisted_as_pending(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="APPROVED")
         user = make_user(db)
-        resp = client.post(
-            "/experiences", json=_payload(), headers=auth_header(user)
-        )
+        resp = client.post("/experiences", json=_payload(), headers=auth_header(user))
         exp_id = resp.json()["id"]
         row = db.query(Experience).filter(Experience.id == exp_id).first()
         assert row is not None
@@ -180,9 +175,7 @@ class TestExperienceSubmission:
             suggestion="הוסיפי פרטים על מה שיהיה בסדנה",
         )
         user = make_user(db)
-        resp = client.post(
-            "/experiences", json=_payload(), headers=auth_header(user)
-        )
+        resp = client.post("/experiences", json=_payload(), headers=auth_header(user))
         assert resp.status_code == 201
         body = resp.json()
         assert body["status"] == "pending"
@@ -196,9 +189,7 @@ class TestExperienceSubmission:
             reason="תוכן לא רלוונטי לפלטפורמה",
         )
         user = make_user(db)
-        resp = client.post(
-            "/experiences", json=_payload(), headers=auth_header(user)
-        )
+        resp = client.post("/experiences", json=_payload(), headers=auth_header(user))
         assert resp.status_code == 400
         # Nothing persisted
         assert db.query(Experience).count() == 0
@@ -238,9 +229,7 @@ class TestExperienceSubmission:
 
 
 class TestExperienceValidate:
-    def test_validate_is_public_and_returns_verdict(
-        self, client, db, monkeypatch
-    ):
+    def test_validate_is_public_and_returns_verdict(self, client, db, monkeypatch):
         _mock_moderation(
             monkeypatch,
             status="FLAGGED",
@@ -340,7 +329,9 @@ class TestExperienceCount:
 
     def test_unapproved_business_is_not_counted(self, client, db):
         """MEH-1749's gate: approved experience, unapproved host business."""
-        pending_host = _make_host(db, producer_status="pending", email="pend@example.com")
+        pending_host = _make_host(
+            db, producer_status="pending", email="pend@example.com"
+        )
         _make_experience(db, pending_host, title="Hidden", status="approved")
         assert client.get("/experiences/count").json() == {"count": 0}
 
@@ -399,9 +390,7 @@ class TestExperienceListing:
         _make_experience(db, host, title="Live", status="approved")
         _make_experience(db, host, title="Wait", status="pending")
         _make_experience(db, host, title="Dead", status="rejected")
-        _make_experience(
-            db, host, title="Edit", status="changes_requested"
-        )
+        _make_experience(db, host, title="Edit", status="changes_requested")
         resp = client.get("/experiences")
         assert resp.status_code == 200
         titles = [e["title"] for e in resp.json()]
@@ -409,9 +398,7 @@ class TestExperienceListing:
 
     def test_filter_by_category(self, client, db):
         host = _make_host(db)
-        _make_experience(
-            db, host, title="Cook", category="בישול", status="approved"
-        )
+        _make_experience(db, host, title="Cook", category="בישול", status="approved")
         _make_experience(
             db, host, title="Tour", category="סיור אוכל", status="approved"
         )
@@ -480,9 +467,7 @@ class TestExperienceListing:
 
 class TestExperienceDetail:
     def test_404_for_unknown(self, client):
-        resp = client.get(
-            "/experiences/00000000-0000-0000-0000-000000000000"
-        )
+        resp = client.get("/experiences/00000000-0000-0000-0000-000000000000")
         assert resp.status_code == 404
 
     def test_stranger_cannot_see_pending(self, client, db):
@@ -494,9 +479,7 @@ class TestExperienceDetail:
     def test_owner_can_see_own_pending(self, client, db):
         host = make_user(db)
         ex = _make_experience(db, host, status="pending")
-        resp = client.get(
-            f"/experiences/{ex.id}", headers=auth_header(host)
-        )
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(host))
         assert resp.status_code == 200
         assert resp.json()["status"] == "pending"
 
@@ -504,9 +487,7 @@ class TestExperienceDetail:
         host = make_user(db, email="h@t.com")
         admin = make_user(db, role="admin", email="a@t.com")
         ex = _make_experience(db, host, status="pending")
-        resp = client.get(
-            f"/experiences/{ex.id}", headers=auth_header(admin)
-        )
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(admin))
         assert resp.status_code == 200
 
     def test_approved_visible_publicly(self, client, db):
@@ -518,12 +499,8 @@ class TestExperienceDetail:
     def test_owner_detail_exposes_address(self, client, db):
         """The host submitted the address and should see it back."""
         host = make_user(db)
-        ex = _make_experience(
-            db, host, status="pending", address="רחוב הגפן 5"
-        )
-        resp = client.get(
-            f"/experiences/{ex.id}", headers=auth_header(host)
-        )
+        ex = _make_experience(db, host, status="pending", address="רחוב הגפן 5")
+        resp = client.get(f"/experiences/{ex.id}", headers=auth_header(host))
         assert resp.json().get("address") == "רחוב הגפן 5"
 
 
@@ -741,9 +718,7 @@ class TestAdminExperienceFlows:
         db.refresh(ex)
         assert ex.status == "approved"
 
-    def test_approved_becomes_public_after_approval(
-        self, client, db, monkeypatch
-    ):
+    def test_approved_becomes_public_after_approval(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch)
         host = _make_host(db, email="host@t.com")
         admin = make_user(db, role="admin")
@@ -784,18 +759,14 @@ class TestExperienceEdit:
         other = make_user(db, email="b@t.com")
         ex = _make_experience(db, host, status="approved")
 
-        resp = client.delete(
-            f"/experiences/{ex.id}", headers=auth_header(other)
-        )
+        resp = client.delete(f"/experiences/{ex.id}", headers=auth_header(other))
         # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
         assert resp.status_code == 404
 
     def test_owner_can_delete(self, client, db):
         host = make_user(db)
         ex = _make_experience(db, host)
-        resp = client.delete(
-            f"/experiences/{ex.id}", headers=auth_header(host)
-        )
+        resp = client.delete(f"/experiences/{ex.id}", headers=auth_header(host))
         assert resp.status_code == 200
         assert db.query(Experience).filter(Experience.id == ex.id).first() is None
 
@@ -803,9 +774,7 @@ class TestExperienceEdit:
         host = make_user(db, email="h@t.com")
         admin = make_user(db, role="admin", email="a@t.com")
         ex = _make_experience(db, host)
-        resp = client.delete(
-            f"/experiences/{ex.id}", headers=auth_header(admin)
-        )
+        resp = client.delete(f"/experiences/{ex.id}", headers=auth_header(admin))
         assert resp.status_code == 200
 
     def test_mine_returns_all_statuses_for_owner(self, client, db):
@@ -900,9 +869,7 @@ class TestExperienceCancelToggle:
         resp = client.put(
             f"/experiences/{ex.id}",
             json={
-                "description": (
-                    "תיאור חדש וארוך דיו שמכיל יותר מעשרים תווים אמיתיים."
-                )
+                "description": ("תיאור חדש וארוך דיו שמכיל יותר מעשרים תווים אמיתיים.")
             },
             headers=auth_header(host),
         )
@@ -919,9 +886,7 @@ class TestExperiencePinPrivacy:
     lat/lng must be hidden too, or MEH-1404's MiniMap redraws the exact
     residence as a pin. Public (commercial) venues keep their pin."""
 
-    def test_stranger_home_experience_hides_coords_and_address(
-        self, client, db
-    ):
+    def test_stranger_home_experience_hides_coords_and_address(self, client, db):
         host = _make_host(db)
         ex = _make_experience(
             db,
@@ -962,9 +927,7 @@ class TestExperiencePinPrivacy:
             lat=32.0853,
             lng=34.7818,
         )
-        body = client.get(
-            f"/experiences/{ex.id}", headers=auth_header(host)
-        ).json()
+        body = client.get(f"/experiences/{ex.id}", headers=auth_header(host)).json()
         assert body["address"] == "רחוב הגפן 5"
         assert body["lat"] is not None
         assert body["lng"] is not None
@@ -980,9 +943,7 @@ class TestExperiencePinPrivacy:
             lat=32.0853,
             lng=34.7818,
         )
-        body = client.get(
-            f"/experiences/{ex.id}", headers=auth_header(admin)
-        ).json()
+        body = client.get(f"/experiences/{ex.id}", headers=auth_header(admin)).json()
         assert body["lat"] is not None
         assert body["lng"] is not None
 

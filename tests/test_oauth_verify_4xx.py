@@ -18,6 +18,7 @@ assertion is deterministic and network-free (no live Google/Apple call). Each
 test asserts `!= 503` first so a re-appearance of the unconfigured-503
 regression surfaces with a clear message instead of the generic 401 mismatch.
 """
+
 import app.routers.auth as auth_router
 from app.config import settings
 

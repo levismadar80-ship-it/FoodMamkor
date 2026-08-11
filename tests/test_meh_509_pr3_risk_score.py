@@ -7,6 +7,7 @@ blocked, and the admin GET endpoint returns `{score: null, reasoning: null}`.
 Mocking pattern: monkeypatch `anthropic.Anthropic` inside the
 service module so the SDK is never actually invoked under tests.
 """
+
 from __future__ import annotations
 
 import json
@@ -23,9 +24,7 @@ from tests.conftest import auth_header, make_producer, make_user
 
 def _fake_anthropic_response(content_text: str):
     """Build an object shaped like anthropic.types.Message."""
-    return SimpleNamespace(
-        content=[SimpleNamespace(type="text", text=content_text)]
-    )
+    return SimpleNamespace(content=[SimpleNamespace(type="text", text=content_text)])
 
 
 def _install_anthropic_mock(
@@ -275,9 +274,7 @@ def test_score_producer_anthropic_error_leaves_null(db, monkeypatch):
     producer = make_producer(db, name="חוות הכישלון")
     db.commit()
 
-    _install_anthropic_mock(
-        monkeypatch, raise_exc=RuntimeError("simulated 5xx")
-    )
+    _install_anthropic_mock(monkeypatch, raise_exc=RuntimeError("simulated 5xx"))
 
     score_producer(producer.id)  # must NOT raise
 
@@ -496,7 +493,9 @@ def test_score_producer_no_api_key_skips(db, monkeypatch):
 
     # Sanity guard — if the SDK is reached, this would explode.
     fake_anthropic = SimpleNamespace(
-        Anthropic=lambda **kwargs: pytest.fail("Anthropic SDK invoked despite empty key")
+        Anthropic=lambda **kwargs: pytest.fail(
+            "Anthropic SDK invoked despite empty key"
+        )
     )
     monkeypatch.setitem(__import__("sys").modules, "anthropic", fake_anthropic)
 

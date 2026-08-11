@@ -109,7 +109,9 @@ class TestUnverifiedProducerBlocked:
         _assert_verify_detail(resp)
 
     def test_events_blocked(self, client, db):
-        self._assert_blocked(client, db, "/events", _event_payload, "ev-unv@example.com")
+        self._assert_blocked(
+            client, db, "/events", _event_payload, "ev-unv@example.com"
+        )
 
     def test_recipes_blocked(self, client, db):
         self._assert_blocked(

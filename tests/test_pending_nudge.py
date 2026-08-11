@@ -13,6 +13,7 @@ send_email is monkeypatched at the pending_nudge module surface to a
 list-append spy, so no Resend HTTP calls are attempted from the test process.
 Same shape as tests/test_onboarding_followup.py (MEH-539/MEH-1587).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -145,9 +146,7 @@ def test_pending_whatsapp_with_photo_gets_phone_item_only(db, sent_log):
 def test_pending_whatsapp_without_photo_gets_both_items(db, sent_log):
     """pending_whatsapp + no images → BOTH items in one email (not two
     emails)."""
-    _producer, _user = _make_producer_user(
-        db, status="pending_whatsapp", images=None
-    )
+    _producer, _user = _make_producer_user(db, status="pending_whatsapp", images=None)
 
     counts = pending_nudge.send_pending_nudges(db)
 
@@ -195,9 +194,7 @@ def test_only_pending_statuses_are_candidates(db, sent_log, status):
     "we are waiting for you to finish" is false for all three and actively
     insulting to a rejected business — the MEH-1587 failure, in a new module.
     """
-    _make_producer_user(
-        db, status=status, images=None, email_local=f"st_{status}"
-    )
+    _make_producer_user(db, status=status, images=None, email_local=f"st_{status}")
 
     counts = pending_nudge.send_pending_nudges(db)
 
@@ -208,9 +205,7 @@ def test_only_pending_statuses_are_candidates(db, sent_log, status):
         assert counts == {"sent": 0, "stamped_nothing_missing": 0}, (
             f"status={status!r} must NOT be a nudge candidate"
         )
-        assert sent_log == [], (
-            f"status={status!r} received {len(sent_log)} email(s)"
-        )
+        assert sent_log == [], f"status={status!r} received {len(sent_log)} email(s)"
 
 
 @pytest.mark.parametrize("status", _ALL_PRODUCER_STATUSES)

@@ -15,6 +15,7 @@ Hebrew error key (422), never a 500.
 Affected schemas (both validators stacked on `title`): HomeProductCreate,
 ExperienceCreate, ProducerRecipeBase.
 """
+
 import datetime
 
 import pytest

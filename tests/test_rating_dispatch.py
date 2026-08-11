@@ -10,6 +10,7 @@ Spec (CLAUDE.md §6):
 This module tests the pure dispatcher in isolation with a fake sender — no
 Twilio network call. The dispatcher returns the number of requests it sent.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
@@ -35,7 +36,9 @@ def _make_listing(db, owner) -> HomeProduct:
     return hp
 
 
-def _make_click(db, *, buyer, listing, hours_ago: float, **overrides) -> HomeProductWhatsAppClick:
+def _make_click(
+    db, *, buyer, listing, hours_ago: float, **overrides
+) -> HomeProductWhatsAppClick:
     click = HomeProductWhatsAppClick(
         user_id=buyer.id,
         home_product_id=listing.id,
@@ -84,9 +87,7 @@ class TestRatingDispatcher:
         seller = make_user(db)
         buyer = make_user(db)
         listing = _make_listing(db, seller)
-        _make_click(
-            db, buyer=buyer, listing=listing, hours_ago=72, rating_sent=True
-        )
+        _make_click(db, buyer=buyer, listing=listing, hours_ago=72, rating_sent=True)
 
         sent_to: list = []
         sent = dispatch_pending_rating_requests(db, sender=sent_to.append)
@@ -98,9 +99,7 @@ class TestRatingDispatcher:
         seller = make_user(db)
         buyer = make_user(db)
         listing = _make_listing(db, seller)
-        _make_click(
-            db, buyer=buyer, listing=listing, hours_ago=48, rated=True
-        )
+        _make_click(db, buyer=buyer, listing=listing, hours_ago=48, rated=True)
 
         sent_to: list = []
         sent = dispatch_pending_rating_requests(db, sender=sent_to.append)
@@ -116,12 +115,8 @@ class TestRatingDispatcher:
 
         eligible = _make_click(db, buyer=buyer, listing=listing, hours_ago=30)
         _make_click(db, buyer=buyer, listing=listing, hours_ago=10)  # too new
-        _make_click(
-            db, buyer=buyer, listing=listing, hours_ago=40, rating_sent=True
-        )
-        _make_click(
-            db, buyer=buyer, listing=listing, hours_ago=40, rated=True
-        )
+        _make_click(db, buyer=buyer, listing=listing, hours_ago=40, rating_sent=True)
+        _make_click(db, buyer=buyer, listing=listing, hours_ago=40, rated=True)
 
         sent_ids: list = []
         sent = dispatch_pending_rating_requests(
@@ -141,9 +136,7 @@ class TestRatingDispatcher:
         # Pretend it's 25 hours later than the click
         future = click.clicked_at + timedelta(hours=25)
         sent_to: list = []
-        sent = dispatch_pending_rating_requests(
-            db, now=future, sender=sent_to.append
-        )
+        sent = dispatch_pending_rating_requests(db, now=future, sender=sent_to.append)
 
         assert sent == 1
         assert len(sent_to) == 1

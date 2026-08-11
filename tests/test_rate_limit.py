@@ -8,6 +8,7 @@ Resolution order (when TRUSTED_PROXY is enabled):
 When TRUSTED_PROXY is NOT set, headers are client-controlled and
 must be ignored entirely — the test suite checks that too.
 """
+
 from unittest.mock import MagicMock
 
 from app.rate_limit import get_real_client_ip

@@ -22,6 +22,7 @@ Three properties are load-bearing and each has a test here:
 `TestClient(app)` — which does NOT fire startup events — these tests set and
 clear `app.state` explicitly rather than relying on a lifespan that never runs.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 

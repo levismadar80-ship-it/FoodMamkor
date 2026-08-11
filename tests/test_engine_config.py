@@ -8,6 +8,7 @@ These tests pin the env-parsing contract and the Postgres-vs-SQLite kwargs
 split — no live DB needed (create_engine is lazy; we only inspect the kwargs
 builder + the int parser). Safety-net suite untouched.
 """
+
 from app.database import (
     DB_MAX_OVERFLOW,
     DB_POOL_RECYCLE,

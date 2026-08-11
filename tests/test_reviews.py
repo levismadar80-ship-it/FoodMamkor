@@ -8,6 +8,7 @@ Guards tested:
   - PUT /admin/reviews/{id}/hide sets is_hidden, recomputes aggregates
   - _recompute_producer_rating excludes hidden reviews
 """
+
 import pytest
 
 from conftest import auth_header, make_producer, make_user
@@ -17,6 +18,7 @@ from app.models.models import ProducerReview, ProducerWhatsAppClick
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _wa_click(db, producer, user):
     """Insert a WA click row so the user passes the gate."""
@@ -31,6 +33,7 @@ VALID_BODY = "המוצרים מדהימים ואוהבת את השירות!"  # 
 # ---------------------------------------------------------------------------
 # POST guard: no WA click → 403
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_requires_wa_click(client, db):
     user = make_user(db)
@@ -48,6 +51,7 @@ def test_post_review_requires_wa_click(client, db):
 # POST guard: unauthenticated → 401
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_requires_auth(client, db):
     producer = make_producer(db)
     r = client.post(
@@ -60,6 +64,7 @@ def test_post_review_requires_auth(client, db):
 # ---------------------------------------------------------------------------
 # POST guard: producer owner cannot review themselves
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_rejects_producer_owner(client, db):
     owner = make_user(db, role="producer")
@@ -80,6 +85,7 @@ def test_post_review_rejects_producer_owner(client, db):
 # ---------------------------------------------------------------------------
 # POST success: user with WA click → 201
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_success(client, db):
     user = make_user(db)
@@ -104,6 +110,7 @@ def test_post_review_success(client, db):
 # frontend fix (authenticated fetch) is what makes the row attributable.
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_unattributed_wa_click_still_403(client, db):
     user = make_user(db)
     producer = make_producer(db)
@@ -123,6 +130,7 @@ def test_post_review_unattributed_wa_click_still_403(client, db):
 # per-(producer, user), so one user's click can't unlock another's review.
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_other_users_wa_click_does_not_count(client, db):
     reviewer = make_user(db)
     other = make_user(db)
@@ -141,6 +149,7 @@ def test_post_review_other_users_wa_click_does_not_count(client, db):
 # POST validation: body too short → 422
 # ---------------------------------------------------------------------------
 
+
 def test_post_review_body_too_short(client, db):
     user = make_user(db)
     producer = make_producer(db)
@@ -156,6 +165,7 @@ def test_post_review_body_too_short(client, db):
 # ---------------------------------------------------------------------------
 # POST upsert: duplicate updates existing review
 # ---------------------------------------------------------------------------
+
 
 def test_post_review_upserts_existing(client, db):
     user = make_user(db)
@@ -178,6 +188,7 @@ def test_post_review_upserts_existing(client, db):
 # ---------------------------------------------------------------------------
 # GET: hidden reviews excluded from public endpoint
 # ---------------------------------------------------------------------------
+
 
 def test_get_excludes_hidden_reviews(client, db):
     user1 = make_user(db)
@@ -204,6 +215,7 @@ def test_get_excludes_hidden_reviews(client, db):
 # ---------------------------------------------------------------------------
 # Admin: PUT /admin/reviews/{id}/hide sets is_hidden
 # ---------------------------------------------------------------------------
+
 
 def test_admin_hide_review(client, db):
     admin = make_user(db, role="admin")
@@ -244,6 +256,7 @@ def test_admin_hide_requires_admin(client, db):
 # Aggregate: hidden reviews excluded from avg_rating
 # ---------------------------------------------------------------------------
 
+
 def test_rating_aggregate_excludes_hidden(db):
     from app.routers.reviews import _recompute_producer_rating
 
@@ -252,7 +265,11 @@ def test_rating_aggregate_excludes_hidden(db):
     producer = make_producer(db)
 
     visible = ProducerReview(
-        producer_id=producer.id, user_id=user1.id, stars=5, is_hidden=False, body="מצוין"
+        producer_id=producer.id,
+        user_id=user1.id,
+        stars=5,
+        is_hidden=False,
+        body="מצוין",
     )
     hidden = ProducerReview(
         producer_id=producer.id, user_id=user2.id, stars=1, is_hidden=True, body="ספאם"
@@ -262,7 +279,7 @@ def test_rating_aggregate_excludes_hidden(db):
 
     _recompute_producer_rating(producer.id, db)
     db.refresh(producer)
-    assert producer.avg_rating == 5.0   # hidden 1-star excluded
+    assert producer.avg_rating == 5.0  # hidden 1-star excluded
     assert producer.reviews_count == 1  # only the visible review counted
 
 
@@ -270,6 +287,7 @@ def test_rating_aggregate_excludes_hidden(db):
 # Rating threshold: ProducerCard shows rating only when reviews_count >= 3
 # (backend stores the raw count; frontend enforces the ≥3 gate)
 # ---------------------------------------------------------------------------
+
 
 def test_rating_threshold_in_aggregate(db):
     """With 2 visible reviews, reviews_count should be 2 (< threshold for display)."""
@@ -279,9 +297,11 @@ def test_rating_threshold_in_aggregate(db):
     producer = make_producer(db)
 
     for i, u in enumerate(users):
-        db.add(ProducerReview(
-            producer_id=producer.id, user_id=u.id, stars=4, body="טוב מאוד!"
-        ))
+        db.add(
+            ProducerReview(
+                producer_id=producer.id, user_id=u.id, stars=4, body="טוב מאוד!"
+            )
+        )
     db.commit()
 
     _recompute_producer_rating(producer.id, db)
@@ -292,6 +312,7 @@ def test_rating_threshold_in_aggregate(db):
 # ---------------------------------------------------------------------------
 # DELETE — owner or admin; cross-owner is 404 (MEH-1001 anti-existence-leak)
 # ---------------------------------------------------------------------------
+
 
 def test_delete_review_cross_owner_returns_404(client, db):
     """MEH-1001 — a non-owner (non-admin) deleting someone else's review gets
@@ -350,7 +371,10 @@ def test_delete_review_admin_succeeds(client, db):
 # PUT /reviews/{id}/reply — business-owner only (MEH-1039)
 # ---------------------------------------------------------------------------
 
-def _owned_producer_review(db, owner_email="biz@example.com", cust_email="c@example.com"):
+
+def _owned_producer_review(
+    db, owner_email="biz@example.com", cust_email="c@example.com"
+):
     """Producer + owning user + a customer's review of that producer."""
     owner = make_user(db, role="producer", email=owner_email)
     customer = make_user(db, email=cust_email)

@@ -40,12 +40,11 @@ def _make_producer_user(db, *, email=None, **producer_kwargs):
     """Producer + owning User, wired like the register flow.
     REUSES: tests/test_producer_recipes.py:53-63."""
     producer = make_producer(
-        db, name=producer_kwargs.pop("name", f"עסק בדיקה {uuid4().hex[:6]}"),
+        db,
+        name=producer_kwargs.pop("name", f"עסק בדיקה {uuid4().hex[:6]}"),
         **producer_kwargs,
     )
-    user = make_user(
-        db, role="producer", email=email or f"p{uuid4().hex[:8]}@test.com"
-    )
+    user = make_user(db, role="producer", email=email or f"p{uuid4().hex[:8]}@test.com")
     user.producer_id = producer.id
     db.commit()
     db.refresh(user)
@@ -215,9 +214,7 @@ class TestJourney1RecipePipeline:
         public = client.get(f"/producers/{producer.slug}/recipes")
         assert recipe_id in [r["id"] for r in public.json()]
 
-    def test_recipe_submit_fires_admin_notification(
-        self, client, db, monkeypatch
-    ):
+    def test_recipe_submit_fires_admin_notification(self, client, db, monkeypatch):
         """MEH-997 journey-1 notification hop — PASS since MEH-1000.
 
         History: the original MEH-997 probe documented that recipe
@@ -233,9 +230,7 @@ class TestJourney1RecipePipeline:
         import app.routers.producer_recipes as recipes_router
 
         notify_mock = MagicMock()
-        monkeypatch.setattr(
-            recipes_router, "notify_admin_new_recipe", notify_mock
-        )
+        monkeypatch.setattr(recipes_router, "notify_admin_new_recipe", notify_mock)
 
         payload = _recipe_payload()
         resp = client.post(
@@ -292,9 +287,7 @@ class TestJourney2ProducerRegistration:
         resp = client.post("/auth/register/producer", json=payload)
         assert resp.status_code in (200, 201), resp.text
 
-        producer = (
-            db.query(Producer).filter_by(name=payload["producer_name"]).one()
-        )
+        producer = db.query(Producer).filter_by(name=payload["producer_name"]).one()
         assert producer.status in ("pending", "pending_whatsapp")
 
         # Hop — pending producer NOT in public list
@@ -423,7 +416,8 @@ class TestJourney6Review:
 
         # Gate — first-time reviewer without a WhatsApp click is 403
         blocked = client.post(
-            f"/producers/{producer.id}/reviews", json=body,
+            f"/producers/{producer.id}/reviews",
+            json=body,
             headers=auth_header(user),
         )
         assert blocked.status_code == 403
@@ -434,7 +428,8 @@ class TestJourney6Review:
 
         # Moderation is fail-open with no ANTHROPIC_API_KEY → auto-publish
         posted = client.post(
-            f"/producers/{producer.id}/reviews", json=body,
+            f"/producers/{producer.id}/reviews",
+            json=body,
             headers=auth_header(user),
         )
         assert posted.status_code in (200, 201), posted.text
@@ -553,7 +548,8 @@ class TestJourney8Experience:
 
         # Hop — admin queue shows it
         queue = client.get(
-            "/admin/experiences", params={"status": "pending"},
+            "/admin/experiences",
+            params={"status": "pending"},
             headers=auth_header(admin),
         )
         assert ex_id in [e["id"] for e in queue.json()]
@@ -574,9 +570,7 @@ class TestJourney8Experience:
 class TestJourney9MapData:
     def test_producers_list_serves_map_coordinates(self, client, db):
         approved = make_producer(db, name=f"מפה {uuid4().hex[:6]}")
-        pending = make_producer(
-            db, name=f"נסתרת {uuid4().hex[:6]}", status="pending"
-        )
+        pending = make_producer(db, name=f"נסתרת {uuid4().hex[:6]}", status="pending")
 
         rows = client.get("/producers").json()
         by_name = {p["name"]: p for p in rows}
@@ -600,14 +594,16 @@ class TestJourney10AuthorizationMatrix:
         assert client.get("/admin/dashboard").status_code == 401
         assert client.get("/admin/recipes").status_code == 401
         assert client.get("/admin/recipes/pending").status_code == 401
-        assert client.post(
-            "/producers/me/recipes", json=_recipe_payload()
-        ).status_code == 401
+        assert (
+            client.post("/producers/me/recipes", json=_recipe_payload()).status_code
+            == 401
+        )
         assert client.get("/producers/me/recipes").status_code == 401
         assert client.get("/users/me/favorites").status_code == 401
-        assert client.post(
-            "/group-buys", json=_group_buy_payload()
-        ).status_code in (401, 403)
+        assert client.post("/group-buys", json=_group_buy_payload()).status_code in (
+            401,
+            403,
+        )
         assert client.post("/events", json=_event_payload()).status_code == 401
 
     # ---- consumer ----
@@ -616,24 +612,29 @@ class TestJourney10AuthorizationMatrix:
         _mock_recipe_moderation(monkeypatch)
         consumer = make_user(db, email=f"c{uuid4().hex[:6]}@t.com")
         h = auth_header(consumer)
-        assert client.post(
-            "/producers/me/recipes", json=_recipe_payload(), headers=h
-        ).status_code == 403
-        assert client.post(
-            "/group-buys", json=_group_buy_payload(), headers=h
-        ).status_code == 403
-        assert client.post(
-            "/events", json=_event_payload(), headers=h
-        ).status_code == 403
+        assert (
+            client.post(
+                "/producers/me/recipes", json=_recipe_payload(), headers=h
+            ).status_code
+            == 403
+        )
+        assert (
+            client.post("/group-buys", json=_group_buy_payload(), headers=h).status_code
+            == 403
+        )
+        assert (
+            client.post("/events", json=_event_payload(), headers=h).status_code == 403
+        )
 
     def test_consumer_blocked_from_admin_apis(self, client, db):
         consumer = make_user(db, email=f"c{uuid4().hex[:6]}@t.com")
         h = auth_header(consumer)
         assert client.get("/admin/dashboard", headers=h).status_code == 403
         assert client.get("/admin/recipes", headers=h).status_code == 403
-        assert client.post(
-            f"/admin/recipes/{uuid4()}/approve", headers=h
-        ).status_code == 403
+        assert (
+            client.post(f"/admin/recipes/{uuid4()}/approve", headers=h).status_code
+            == 403
+        )
 
     # ---- producer (non-admin) ----
 
@@ -642,12 +643,14 @@ class TestJourney10AuthorizationMatrix:
         h = auth_header(owner)
         assert client.get("/admin/dashboard", headers=h).status_code == 403
         assert client.get("/admin/recipes", headers=h).status_code == 403
-        assert client.post(
-            f"/admin/recipes/{uuid4()}/approve", headers=h
-        ).status_code == 403
-        assert client.post(
-            f"/admin/experiences/{uuid4()}/approve", headers=h
-        ).status_code == 403
+        assert (
+            client.post(f"/admin/recipes/{uuid4()}/approve", headers=h).status_code
+            == 403
+        )
+        assert (
+            client.post(f"/admin/experiences/{uuid4()}/approve", headers=h).status_code
+            == 403
+        )
 
     # ---- producer A vs producer B (existence-leak convention) ----
 
@@ -666,17 +669,22 @@ class TestJourney10AuthorizationMatrix:
         recipe_id = created.json()["id"]
         h_b = auth_header(owner_b)
 
-        assert client.get(
-            f"/producers/me/recipes/{recipe_id}", headers=h_b
-        ).status_code == 404
-        assert client.patch(
-            f"/producers/me/recipes/{recipe_id}",
-            json={"servings": 2},
-            headers=h_b,
-        ).status_code == 404
-        assert client.delete(
-            f"/producers/me/recipes/{recipe_id}", headers=h_b
-        ).status_code == 404
+        assert (
+            client.get(f"/producers/me/recipes/{recipe_id}", headers=h_b).status_code
+            == 404
+        )
+        assert (
+            client.patch(
+                f"/producers/me/recipes/{recipe_id}",
+                json={"servings": 2},
+                headers=h_b,
+            ).status_code
+            == 404
+        )
+        assert (
+            client.delete(f"/producers/me/recipes/{recipe_id}", headers=h_b).status_code
+            == 404
+        )
         # And the recipe is untouched
         assert db.query(ProducerRecipe).filter_by(id=recipe_id).count() == 1
 
@@ -695,9 +703,12 @@ class TestJourney10AuthorizationMatrix:
         event_id = created.json()["id"]
         h_b = auth_header(owner_b)
 
-        assert client.put(
-            f"/events/{event_id}", json={"title": "פריצה"}, headers=h_b
-        ).status_code == 404
+        assert (
+            client.put(
+                f"/events/{event_id}", json={"title": "פריצה"}, headers=h_b
+            ).status_code
+            == 404
+        )
         assert client.delete(f"/events/{event_id}", headers=h_b).status_code == 404
 
     # ---- admin override ----
@@ -715,11 +726,14 @@ class TestJourney10AuthorizationMatrix:
         recipe_id = created.json()["id"]
 
         # request-changes requires feedback (400 without)
-        assert client.post(
-            f"/admin/recipes/{recipe_id}/request-changes",
-            json={},
-            headers=auth_header(admin),
-        ).status_code == 400
+        assert (
+            client.post(
+                f"/admin/recipes/{recipe_id}/request-changes",
+                json={},
+                headers=auth_header(admin),
+            ).status_code
+            == 400
+        )
         ok = client.post(
             f"/admin/recipes/{recipe_id}/request-changes",
             json={"feedback": "נא להוסיף כמויות מדויקות"},

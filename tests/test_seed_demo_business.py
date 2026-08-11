@@ -166,9 +166,7 @@ def test_refresh_sweeps_dietary_demos(db, seed_mod, bakery_category):
     seed_mod.seed_demo_business(db)
     seed_mod.seed_dietary_scope_demos(db)
     seed_mod.seed_demo_business(db, refresh=True)  # _delete_existing sweeps them
-    assert (
-        db.query(Producer).filter(Producer.slug.like("demo-diet-%")).count() == 0
-    )
+    assert db.query(Producer).filter(Producer.slug.like("demo-diet-%")).count() == 0
     assert seed_mod.seed_dietary_scope_demos(db) == 3
 
 

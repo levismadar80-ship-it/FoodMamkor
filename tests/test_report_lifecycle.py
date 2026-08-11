@@ -85,16 +85,22 @@ class TestResolveDismiss:
         producer = make_producer(db)
         r = _report(db, producer, make_user(db, email="r1@example.com"))
 
-        first = client.post(f"/admin/reports/{r.id}/resolve", headers=auth_header(admin))
+        first = client.post(
+            f"/admin/reports/{r.id}/resolve", headers=auth_header(admin)
+        )
         assert first.status_code == 200
         # Second close (resolve or dismiss) on an already-closed report → 409.
-        second = client.post(f"/admin/reports/{r.id}/dismiss", headers=auth_header(admin))
+        second = client.post(
+            f"/admin/reports/{r.id}/dismiss", headers=auth_header(admin)
+        )
         assert second.status_code == 409
 
     def test_close_missing_report_404(self, client, db):
         admin = make_user(db, role="admin", email="admin@example.com")
         missing = "00000000-0000-0000-0000-000000000000"
-        resp = client.post(f"/admin/reports/{missing}/resolve", headers=auth_header(admin))
+        resp = client.post(
+            f"/admin/reports/{missing}/resolve", headers=auth_header(admin)
+        )
         assert resp.status_code == 404
 
     def test_resolve_requires_admin(self, client, db):

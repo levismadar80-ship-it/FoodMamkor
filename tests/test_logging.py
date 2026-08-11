@@ -7,6 +7,7 @@ Four focused tests:
 3. Sensitive field redaction
 4. LOG_FORMAT=json produces JSON output; LOG_FORMAT=console produces plain text
 """
+
 import io
 import json
 import os
@@ -76,7 +77,11 @@ class TestSensitiveFieldRedaction:
     def test_safe_fields_are_not_redacted(self):
         from app.logging_config import _redact_sensitive
 
-        event_dict = {"event": "user created", "email": "alice@test.com", "user_id": "abc"}
+        event_dict = {
+            "event": "user created",
+            "email": "alice@test.com",
+            "user_id": "abc",
+        }
         result = _redact_sensitive(None, None, event_dict)
         assert result["email"] == "alice@test.com"
         assert result["user_id"] == "abc"

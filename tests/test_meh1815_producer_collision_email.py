@@ -67,9 +67,7 @@ class TestProducerVariant:
             "x@example.com", "נועה", "password", flow="producer"
         )
         producer_subject = sent["subject"]
-        auth_emails.send_duplicate_attempt_email(
-            "x@example.com", "נועה", "password"
-        )
+        auth_emails.send_duplicate_attempt_email("x@example.com", "נועה", "password")
         assert sent["subject"] != producer_subject
 
 
@@ -79,9 +77,7 @@ class TestConsumerVariantUnchanged:
     MEH-1815 edit leaked into the consumer path — which is out of scope."""
 
     def test_default_flow_is_consumer_copy(self, sent):
-        auth_emails.send_duplicate_attempt_email(
-            "noa@example.com", "נועה", "password"
-        )
+        auth_emails.send_duplicate_attempt_email("noa@example.com", "נועה", "password")
         assert sent["subject"] == "ניסיון רישום במהמקור — את כבר רשומה"
         body = sent["body"]
         assert "מישהו ניסה להירשם למהמקור עם הכתובת שלך" in body
@@ -95,7 +91,5 @@ class TestConsumerVariantUnchanged:
             "noa@example.com", "נועה", "google", flow="consumer"
         )
         default_body = sent["body"]
-        auth_emails.send_duplicate_attempt_email(
-            "noa@example.com", "נועה", "google"
-        )
+        auth_emails.send_duplicate_attempt_email("noa@example.com", "נועה", "google")
         assert sent["body"] == default_body

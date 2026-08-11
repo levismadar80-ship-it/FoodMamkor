@@ -16,6 +16,7 @@ MEH-508: SDK swapped Twilio → Meta Cloud API. Patches target the
 whatsapp_* settings; ``app.services.whatsapp.httpx.post`` is stubbed so
 the background task never attempts a real Meta Graph call during tests.
 """
+
 from unittest.mock import MagicMock
 
 from tests.conftest import auth_header, make_user, valid_producer_register_payload
@@ -55,6 +56,7 @@ def test_whatsapp_sent_true_when_whatsapp_env_present(client, db, monkeypatch):
     the real Meta Graph API.
     """
     from app.routers import auth as auth_module
+
     monkeypatch.setattr(auth_module.settings, "whatsapp_phone_number_id", "PNID_fake")
     monkeypatch.setattr(auth_module.settings, "whatsapp_access_token", "token_fake")
     fake_response = MagicMock(status_code=200)
@@ -82,6 +84,7 @@ def test_whatsapp_sent_false_when_phone_missing(client, db, monkeypatch):
     the whatsapp_sent=False branch with phone genuinely absent.
     """
     from app.routers import auth as auth_module
+
     monkeypatch.setattr(auth_module.settings, "whatsapp_phone_number_id", "PNID_fake")
     monkeypatch.setattr(auth_module.settings, "whatsapp_access_token", "token_fake")
     user = make_user(db, email="upgrade287c@test.com")

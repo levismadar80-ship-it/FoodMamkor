@@ -9,6 +9,7 @@ Covers: _safe_decimal, _parse_response_text, _build_prompt, and every
 validate_home_product branch (no-client, valid verdicts, invalid status,
 empty response, client raises).
 """
+
 import json
 from decimal import Decimal
 
@@ -152,8 +153,6 @@ class TestValidateHomeProduct:
         assert result["status"] == "APPROVED"
 
     def test_client_raises_falls_back_to_approved(self, monkeypatch):
-        _install_client(
-            monkeypatch, _FakeClient(raises=RuntimeError("api down"))
-        )
+        _install_client(monkeypatch, _FakeClient(raises=RuntimeError("api down")))
         result = mod.validate_home_product({"title": "t"})
         assert result["status"] == "APPROVED"

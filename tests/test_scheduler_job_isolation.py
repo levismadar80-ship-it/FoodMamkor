@@ -25,6 +25,7 @@ test 1 fails (nudge never called) and test 2 fails (tag reads
 "onboarding_followups"). Neither is a tautology — each names the exact
 value the old code produced.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -130,8 +131,7 @@ def test_nudge_crash_is_reported_under_its_own_sentry_task(scheduler_spies):
     startup._run_followup_job()
 
     assert scheduler_spies["sentry"] == ["pending_nudge"], (
-        f"expected the nudge's own Sentry task tag, got "
-        f"{scheduler_spies['sentry']!r}"
+        f"expected the nudge's own Sentry task tag, got {scheduler_spies['sentry']!r}"
     )
 
 
@@ -188,9 +188,7 @@ def test_db_level_failure_in_pass_one_does_not_poison_pass_two(
         scheduler_spies["nudge_query_ok"] = True
         return {"sent": 0, "stamped_nothing_missing": 0}
 
-    monkeypatch.setattr(
-        onboarding_followup, "send_due_followups", poisoning_followups
-    )
+    monkeypatch.setattr(onboarding_followup, "send_due_followups", poisoning_followups)
     monkeypatch.setattr(pending_nudge, "send_pending_nudges", querying_nudges)
     scheduler_spies["nudge_query_ok"] = False
 

@@ -485,9 +485,7 @@ class TestOwnerPutGrandfathersLicense:
         db.refresh(producer)
         assert {c.id for c in producer.categories} == {bakery.id}  # unchanged
 
-    def test_c_licensed_producer_clears_license_keeping_category_422(
-        self, client, db
-    ):
+    def test_c_licensed_producer_clears_license_keeping_category_422(self, client, db):
         """(c) 2c guard — blanking a held license with a licensed category → 422."""
         bakery = make_category(db, name=BAKERY, emoji="🍞")
         producer, user = self._owner(db, category=bakery, license_number="1234567")

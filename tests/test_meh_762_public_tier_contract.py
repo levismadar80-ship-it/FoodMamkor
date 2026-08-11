@@ -13,6 +13,7 @@ declared_at / declaration_version / producer_license_number stay admin-only.
 
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py.
 """
+
 from datetime import datetime, timezone
 
 import pytest

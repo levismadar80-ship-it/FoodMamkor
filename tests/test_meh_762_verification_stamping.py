@@ -14,6 +14,7 @@ Covers the grant/revoke admin endpoints that record the OUTCOME of the
 
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py.
 """
+
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -115,9 +116,7 @@ def test_revoke_clears_both(client, db):
         json={"doc_type": "license"},
         headers=hdr,
     )
-    resp = client.post(
-        f"/admin/producers/{producer.id}/revoke-verified", headers=hdr
-    )
+    resp = client.post(f"/admin/producers/{producer.id}/revoke-verified", headers=hdr)
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.verified_at is None

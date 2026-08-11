@@ -11,6 +11,7 @@ guard for a missing RESEND_API_KEY on staging/production. Unlike the
 FRONTEND_URL guard, a non-None result is fatal (the caller raises), so
 dev/test MUST stay a no-op.
 """
+
 import pytest
 
 from app.startup import (
@@ -38,7 +39,9 @@ def test_staging_pointing_at_production_warns():
 
 
 def test_production_pointing_at_staging_warns():
-    issues = _check_frontend_url_consistency("production", "https://staging.mehamakor.online")
+    issues = _check_frontend_url_consistency(
+        "production", "https://staging.mehamakor.online"
+    )
     assert len(issues) == 1
     assert "staging" in issues[0].lower()
 

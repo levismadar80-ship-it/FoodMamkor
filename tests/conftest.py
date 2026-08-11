@@ -7,6 +7,7 @@ schema via create_all/drop_all.
 Under pytest-xdist every worker provisions its own database
 (mehamakor_test_gw0, mehamakor_test_gw1, …) — see MEH-1911 below.
 """
+
 import os
 import re
 import sys
@@ -208,6 +209,7 @@ def _reset_rate_limiter():
     reset, the 12 POST /contact tests exhaust the 5/hour limit by test 6.
     """
     from app.rate_limit import limiter
+
     limiter._storage.reset()
     yield
 
@@ -229,6 +231,7 @@ def _mock_hibp_clean(monkeypatch, request):
     from unittest.mock import AsyncMock
 
     from app.services import password_policy
+
     monkeypatch.setattr(password_policy, "_check_hibp", AsyncMock(return_value=False))
     yield
 
@@ -262,6 +265,7 @@ def client():
 
 
 # ---------- factory helpers ----------
+
 
 def make_user(
     db,
@@ -355,6 +359,7 @@ def auth_header(user: User) -> dict:
 # ---------- valid payload fixtures (MEH-241) ----------
 # Guard tests (401/403/409) must use these so schema changes don't silently
 # invalidate security coverage.  Pattern: valid_*_payload() | {"field": bad}
+
 
 def valid_review_payload() -> dict:
     """Passes ReviewCreateNested: stars (1-5), body (min 10 chars)."""

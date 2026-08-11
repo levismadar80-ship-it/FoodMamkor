@@ -3,6 +3,7 @@
 Mirrors test_home_product_moderation_unit: pure-logic + fail-open coverage
 for the experiences AI moderation path. No network, no DB.
 """
+
 import json
 from decimal import Decimal
 
@@ -112,9 +113,7 @@ class TestValidateExperience:
         assert result["status"] == verdict
 
     def test_unknown_status_approved(self, monkeypatch):
-        _install_client(
-            monkeypatch, _FakeClient([_FakeBlock('{"status":"HUH"}')])
-        )
+        _install_client(monkeypatch, _FakeClient([_FakeBlock('{"status":"HUH"}')]))
         assert mod.validate_experience({"title": "t"})["status"] == "APPROVED"
 
     def test_empty_response_approved(self, monkeypatch):

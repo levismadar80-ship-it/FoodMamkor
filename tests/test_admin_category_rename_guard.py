@@ -23,6 +23,7 @@ test so a regression surfaces as an assertable 500 rather than an exception
 escaping the request cycle — without it, the pre-fix behaviour raises
 `IntegrityError` out of `client.put` and the assertion never runs.
 """
+
 from fastapi.testclient import TestClient
 
 from conftest import auth_header, make_category, make_user

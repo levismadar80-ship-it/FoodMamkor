@@ -18,6 +18,7 @@ These tests pin the contract:
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py. No
 Anthropic/email assertions (those layers fail-open in the test config).
 """
+
 from conftest import (
     auth_header,
     make_producer,

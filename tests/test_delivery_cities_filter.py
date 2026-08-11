@@ -11,6 +11,7 @@ delivery_cities ORs the SAME per-city condition as delivery_city
 Tests live in tests/ (repo root) per repo convention.
 REUSES: tests/test_delivery_exclusion.py (_nationwide helper pattern).
 """
+
 from tests.conftest import make_producer, make_user  # noqa: F401
 
 

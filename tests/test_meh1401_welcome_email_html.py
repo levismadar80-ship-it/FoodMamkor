@@ -8,6 +8,7 @@ variants, greets by first name only, and carries the LOCKED consumer copy.
 Pure construction + monkeypatch — no DB, no network. send_email is
 captured so we assert on the html= kwarg it receives.
 """
+
 from __future__ import annotations
 
 import pytest

@@ -17,6 +17,7 @@ monkeypatched at its module surface (the same technique
 tests/test_onboarding_followup.py uses for send_email), so no Resend HTTP call
 is attempted from the test process.
 """
+
 from __future__ import annotations
 
 import logging

@@ -7,6 +7,7 @@ an invalid code changes nothing.
 
 Mirrors the fixture + token pattern in tests/test_trust_ladder.py.
 """
+
 from datetime import datetime, timedelta
 
 from app.models.models import PhoneOtpToken

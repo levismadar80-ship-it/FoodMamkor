@@ -4,6 +4,7 @@ Covers is_bot_user_agent, hash_ip (salt determinism / None handling), and
 the in-memory request-metrics pair record_request / server_health. No DB:
 these helpers operate on strings and a module-level deque.
 """
+
 import pytest
 
 from app.services import analytics as mod

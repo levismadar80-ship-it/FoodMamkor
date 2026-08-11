@@ -19,6 +19,7 @@ The second test guards the other direction — that adding the limiter did not
 break the endpoint itself. Without it, deleting the handler body would still
 leave the rate-limit test green.
 """
+
 from datetime import datetime, timedelta
 
 from app.models.models import OutreachLead

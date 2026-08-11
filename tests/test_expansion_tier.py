@@ -11,6 +11,7 @@ session) — not duplicated here.
 
 Pure-function unit tests — no DB, but run under CI with the rest.
 """
+
 from types import SimpleNamespace
 
 from app.services.trust_tier import compute_trust_tier

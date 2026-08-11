@@ -11,7 +11,13 @@ Phone is intentionally NOT changed here — it is already conditionally
 enforced by the register handler (auth.py) for whatsapp/phone contact
 methods; see the MEH-1153 Phase-0 note.
 """
-from conftest import auth_header, make_category, make_user, valid_producer_register_payload
+
+from conftest import (
+    auth_header,
+    make_category,
+    make_user,
+    valid_producer_register_payload,
+)
 
 _CATEGORY_ERROR_HE = "חובה לבחור לפחות קטגוריה אחת"
 

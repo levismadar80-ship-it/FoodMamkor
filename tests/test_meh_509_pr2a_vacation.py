@@ -6,6 +6,7 @@ table (one source of truth shared with `friday_mode_override` et al.) —
 these tests intentionally don't poke the raw rows; they exercise the
 typed GET/POST surface that the frontend and PR2b watchdog will use.
 """
+
 from __future__ import annotations
 
 from tests.conftest import auth_header, make_user
@@ -36,9 +37,7 @@ def test_get_requires_admin_auth(client, db):
 
 def test_get_consumer_role_rejected(client, db):
     consumer = _consumer(db, email_suffix="get-consumer")
-    resp = client.get(
-        "/admin/settings/vacation", headers=auth_header(consumer)
-    )
+    resp = client.get("/admin/settings/vacation", headers=auth_header(consumer))
     assert resp.status_code == 403
 
 

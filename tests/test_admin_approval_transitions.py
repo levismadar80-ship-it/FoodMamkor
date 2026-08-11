@@ -23,6 +23,7 @@ notification hooks fail-open in the test config; we monkeypatch
 notify_producer_approved to assert fire-count (exactly once on the legit
 path, zero on a blocked toggle).
 """
+
 import app.routers.admin as admin_module
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from conftest import auth_header, make_category, make_producer, make_user
@@ -149,9 +150,7 @@ def test_approve_imageless_producer_is_blocked(client, db, monkeypatch):
 
 
 def test_approve_with_image_succeeds(client, db, monkeypatch):
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     producer = make_producer(db, status="pending", images=[TEST_IMAGE])
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
@@ -201,13 +200,9 @@ def test_approve_license_required_no_license_is_blocked(client, db, monkeypatch)
 
 def test_approve_license_required_with_override_succeeds(client, db, monkeypatch):
     """(b) same as (a) but ?allow_without_license=true → approved."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
-    producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
-    )
+    producer = make_producer(db, status="pending", images=[TEST_IMAGE], category=cat)
     resp = client.post(
         f"/admin/producers/{producer.id}/approve?allow_without_license=true",
         headers=auth_header(_admin(db)),
@@ -219,13 +214,9 @@ def test_approve_license_required_with_override_succeeds(client, db, monkeypatch
 
 def test_approve_license_required_with_license_succeeds(client, db, monkeypatch):
     """(c) license-required category + license present → approved (no override)."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
-    producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
-    )
+    producer = make_producer(db, status="pending", images=[TEST_IMAGE], category=cat)
     _set_license(db, producer, "1234567")
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
@@ -237,13 +228,9 @@ def test_approve_license_required_with_license_succeeds(client, db, monkeypatch)
 
 def test_approve_non_license_category_no_license_succeeds(client, db, monkeypatch):
     """(d) non-license category + NULL license → approved (guard does not fire)."""
-    monkeypatch.setattr(
-        admin_module, "notify_producer_approved", lambda *a, **k: None
-    )
+    monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
     cat = make_category(db, name="ירקות", emoji="🥬")  # not license-required
-    producer = make_producer(
-        db, status="pending", images=[TEST_IMAGE], category=cat
-    )
+    producer = make_producer(db, status="pending", images=[TEST_IMAGE], category=cat)
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )

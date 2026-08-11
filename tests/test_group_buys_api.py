@@ -6,6 +6,7 @@ min_participants, revert-to-open on cancel, duplicate/closed/full/deadline
 error paths). Uses the shared conftest fixtures + a producer-user helper
 mirroring test_producer_recipes.py.
 """
+
 import re
 from datetime import datetime, timedelta, timezone
 from unittest import mock
@@ -42,7 +43,7 @@ def _make_group_buy(
     gb = GroupBuy(
         producer_id=producer.id,
         title="רכש קמח מלא",
-        description="שק 25 ק\"ג",
+        description='שק 25 ק"ג',
         product_name="קמח מלא",
         unit="שק",
         price_per_unit_regular=120,
@@ -236,8 +237,10 @@ class TestCreate:
     def test_create_past_aware_deadline_is_400_not_500(self, client, db):
         """A past aware deadline → Hebrew 400, never a 500."""
         _, user = _producer_user(db)
-        past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat().replace(
-            "+00:00", "Z"
+        past = (
+            (datetime.now(timezone.utc) - timedelta(days=1))
+            .isoformat()
+            .replace("+00:00", "Z")
         )
         resp = client.post(
             "/group-buys",
@@ -323,9 +326,7 @@ class TestCommitLifecycle:
 
     def test_commit_rejected_when_full(self, client, db):
         producer, _ = _producer_user(db)
-        gb = _make_group_buy(
-            db, producer, min_participants=5, max_participants=1
-        )
+        gb = _make_group_buy(db, producer, min_participants=5, max_participants=1)
         first_user = make_user(db, email="full1@test.com")
         client.post(
             f"/group-buys/{gb.id}/commit",
@@ -349,18 +350,14 @@ class TestCommitLifecycle:
             json={"quantity": 1},
             headers=auth_header(user),
         )
-        resp = client.delete(
-            f"/group-buys/{gb.id}/commit", headers=auth_header(user)
-        )
+        resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(user))
         assert resp.status_code == 200
 
     def test_cancel_without_commit_404(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(db, producer)
         user = make_user(db, email="nocommit@test.com")
-        resp = client.delete(
-            f"/group-buys/{gb.id}/commit", headers=auth_header(user)
-        )
+        resp = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(user))
         assert resp.status_code == 404
 
     def test_commit_and_cancel_after_aware_create(self, client, db):
@@ -476,9 +473,7 @@ class TestFullLifecycle:
         assert funded["commits_count"] == 2
 
         # 6. Consumer #2 cancels → drops below min → reverts to open, count 1.
-        cancel = client.delete(
-            f"/group-buys/{gb_id}/commit", headers=auth_header(c2)
-        )
+        cancel = client.delete(f"/group-buys/{gb_id}/commit", headers=auth_header(c2))
         assert cancel.status_code == 200, cancel.text
         reopened = client.get(f"/group-buys/{gb_id}").json()
         assert reopened["status"] == "open"
@@ -526,12 +521,8 @@ class TestFundedNotificationPrivacy:
         def _capture(to, subject, body, html=None):
             sent.update(to=to, subject=subject, body=body)
 
-        with mock.patch(
-            "app.services.group_buy_notifications.send_email", _capture
-        ):
-            notify_producer_funded(
-                "owner@test.com", "רכש קמח מלא", 7, _FIXED_GB_ID
-            )
+        with mock.patch("app.services.group_buy_notifications.send_email", _capture):
+            notify_producer_funded("owner@test.com", "רכש קמח מלא", 7, _FIXED_GB_ID)
 
         # Absence: zero phone numbers, zero email addresses in the body.
         assert _contact_details_in(sent["body"]) == []
@@ -547,9 +538,7 @@ class TestFundedNotificationPrivacy:
         def _capture(to, subject, body, html=None):
             sent.update(to=to, subject=subject, body=body)
 
-        with mock.patch(
-            "app.services.group_buy_notifications.send_email", _capture
-        ):
+        with mock.patch("app.services.group_buy_notifications.send_email", _capture):
             notify_participant_funded(
                 "buyer@test.com", "רכש קמח מלא", "מאפיית הגליל", _FIXED_GB_ID
             )
@@ -654,9 +643,7 @@ class TestFundedNotificationDispatch:
         assert first_round == 3  # 1 business + 2 participants
 
         # funded -> cancel -> open
-        cancel = client.delete(
-            f"/group-buys/{gb.id}/commit", headers=auth_header(b2)
-        )
+        cancel = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b2))
         assert cancel.status_code == 200, cancel.text
         assert client.get(f"/group-buys/{gb.id}").json()["status"] == "open"
 
@@ -680,9 +667,7 @@ class TestFundedNotificationDispatch:
         def _boom(*args, **kwargs):
             raise RuntimeError("Resend is down")
 
-        monkeypatch.setattr(
-            "app.services.group_buy_notifications.send_email", _boom
-        )
+        monkeypatch.setattr("app.services.group_buy_notifications.send_email", _boom)
         producer, _ = _producer_user(db, email="gbowner_boom@test.com")
         gb = _make_group_buy(db, producer, min_participants=1)
         buyer = make_user(db, email="boom_b1@test.com")
@@ -718,8 +703,6 @@ class TestFundedNotificationDispatch:
         assert stored.phone is None
 
         # And the field is gone from the API contract entirely.
-        detail = client.get(
-            f"/group-buys/{gb.id}", headers=auth_header(buyer)
-        ).json()
+        detail = client.get(f"/group-buys/{gb.id}", headers=auth_header(buyer)).json()
         assert detail["user_commit"] is not None
         assert "phone" not in detail["user_commit"]

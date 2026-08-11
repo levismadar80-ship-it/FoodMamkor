@@ -12,6 +12,7 @@ context manager (a bare `TestClient(app)` does not fire startup events; the
 `with` block does), polls /health until db_init transitions out of
 "initializing", then asserts /producers returns 200.
 """
+
 import time
 
 import pytest

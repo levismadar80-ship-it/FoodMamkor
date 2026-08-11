@@ -332,15 +332,21 @@ def test_a_non_slug_integrity_error_propagates_instead_of_being_retried(
 
     real_commit = Session.commit
     real_mint = admin_module._mint_slug_if_absent
-    armed = {"yes": False}
+    state = {"armed": False, "fired": False}
 
     def arming_mint(session, prod):
-        armed["yes"] = True
+        # ONE-SHOT. Re-arming on the retry's mint call is what made the second
+        # version of this test non-discriminating too: the bare-except build
+        # raised again from the retry's commit, that raise landed outside the
+        # try, and the exception propagated in both worlds.
+        if not state["fired"]:
+            state["armed"] = True
         return real_mint(session, prod)
 
     def commit_raising_unrelated(self, *args, **kwargs):
-        if armed["yes"]:
-            armed["yes"] = False
+        if state["armed"]:
+            state["armed"] = False
+            state["fired"] = True
             raise _integrity_error("users_email_key")
         return real_commit(self, *args, **kwargs)
 

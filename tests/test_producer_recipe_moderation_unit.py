@@ -3,6 +3,7 @@
 Pure-logic + fail-open coverage for the producer-recipe AI moderation
 path. No network, no DB.
 """
+
 import json
 
 import pytest
@@ -101,29 +102,17 @@ class TestValidateProducerRecipe:
 
     def test_lowercase_status_normalized(self, monkeypatch):
         # status is upper()-cased before the VALID_STATUSES check.
-        _install_client(
-            monkeypatch, _FakeClient([_FakeBlock('{"status":"approved"}')])
-        )
-        assert (
-            mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
-        )
+        _install_client(monkeypatch, _FakeClient([_FakeBlock('{"status":"approved"}')]))
+        assert mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
 
     def test_unknown_status_approved(self, monkeypatch):
-        _install_client(
-            monkeypatch, _FakeClient([_FakeBlock('{"status":"WAT"}')])
-        )
-        assert (
-            mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
-        )
+        _install_client(monkeypatch, _FakeClient([_FakeBlock('{"status":"WAT"}')]))
+        assert mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
 
     def test_empty_response_approved(self, monkeypatch):
         _install_client(monkeypatch, _FakeClient([_FakeBlock("")]))
-        assert (
-            mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
-        )
+        assert mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
 
     def test_client_raises_approved(self, monkeypatch):
         _install_client(monkeypatch, _FakeClient(raises=RuntimeError("x")))
-        assert (
-            mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"
-        )
+        assert mod.validate_producer_recipe({"title": "t"})["status"] == "APPROVED"

@@ -10,7 +10,10 @@ from app.startup import _WORKER_COUNT_ENV_VARS, _check_single_replica
 
 def test_unset_returns_none():
     # Both vars absent — the platform default is a single worker.
-    assert _check_single_replica({"WEB_CONCURRENCY": None, "UVICORN_WORKERS": None}) is None
+    assert (
+        _check_single_replica({"WEB_CONCURRENCY": None, "UVICORN_WORKERS": None})
+        is None
+    )
 
 
 def test_empty_dict_returns_none():

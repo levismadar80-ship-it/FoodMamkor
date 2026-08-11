@@ -116,4 +116,9 @@ class TestTokenPatterns:
 
     def test_escaping_survives_the_variant_transforms(self):
         # "ה_בינה" strips to "_בינה"; both variants must stay escaped.
-        assert token_patterns("ה_בינה") == ["%ה\\_בינה%", "%\\_בינה%", "%ה\\_בינ%", "%\\_בינ%"]
+        assert token_patterns("ה_בינה") == [
+            "%ה\\_בינה%",
+            "%\\_בינה%",
+            "%ה\\_בינ%",
+            "%\\_בינ%",
+        ]

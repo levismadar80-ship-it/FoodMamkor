@@ -13,6 +13,7 @@ Includes regression coverage for the two paths that MUST stay open:
 authenticated consumer upgrading to producer (200), and anonymous new
 producer signup (200).
 """
+
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -38,6 +39,7 @@ def _upgrade_body(**overrides):
     for field in ("email", "name", "password"):
         base.pop(field, None)
     return {**base, "producer_name": "חוות הניסוי", "phone": "0501234567", **overrides}
+
 
 # 12-char SAFE_PASSWORD per MEH-306 PasswordField floor; matches
 # conftest.make_user default + valid_producer_register_payload.

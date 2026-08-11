@@ -13,6 +13,7 @@ Mocking convention follows tests/test_meh_509_pr1_hooks.py — stub
 tests assert template name + body params without depending on
 send_template internals.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

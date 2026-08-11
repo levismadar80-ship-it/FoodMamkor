@@ -8,6 +8,7 @@ Coverage:
 - GET /producers with lat/lng/radius_km includes delivery-only producers by
   default; excludes them only with ?require_physical=true (MEH-1282)
 """
+
 import pytest
 
 from app.models.models import City, Producer
@@ -20,6 +21,7 @@ def admin(db):
 
 
 # ---------- GET /cities ----------
+
 
 class TestCitiesEndpoint:
     def test_returns_prefix_matches(self, client, db):
@@ -54,6 +56,7 @@ class TestCitiesEndpoint:
 
 
 # ---------- Validation: both booleans false ----------
+
 
 class TestLocationModeValidation:
     def _base_payload(self):
@@ -98,6 +101,7 @@ class TestLocationModeValidation:
 
 # ---------- Validation: nationwide XOR cities ----------
 
+
 class TestNationwideXorCities:
     def test_nationwide_and_cities_rejected_on_update(self, client, db, admin):
         p = make_producer(db)
@@ -118,7 +122,11 @@ class TestNationwideXorCities:
         p = make_producer(db)
         resp = client.put(
             f"/admin/producers/{p.id}",
-            json={"offers_delivery": True, "delivery_nationwide": True, "delivery_area_cities": []},
+            json={
+                "offers_delivery": True,
+                "delivery_nationwide": True,
+                "delivery_area_cities": [],
+            },
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
@@ -143,6 +151,7 @@ class TestNationwideXorCities:
 
 
 # ---------- Geo-search + delivery-only (MEH-1282) ----------
+
 
 class TestGeoSearchDeliveryOnly:
     """MEH-1282: geo results include delivery-only producers by default; the

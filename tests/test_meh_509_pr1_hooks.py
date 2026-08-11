@@ -13,6 +13,7 @@ never hits Meta Graph. A capture list records every POST payload so
 tests can assert template name + body params without depending on
 internals of send_template.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

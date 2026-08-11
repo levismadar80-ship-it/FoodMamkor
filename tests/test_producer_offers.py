@@ -150,7 +150,10 @@ def test_headline_at_the_limit_is_accepted(client, db, owner):
     user, producer = owner
     res = _put(client, user, _offer(headline="א" * 60))
     assert res.status_code == 200, res.text
-    assert len(client.get(f"/producers/{producer.id}").json()["active_offer"]["headline"]) == 60
+    assert (
+        len(client.get(f"/producers/{producer.id}").json()["active_offer"]["headline"])
+        == 60
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -233,7 +236,9 @@ def test_writing_a_second_offer_replaces_the_first(client, db, owner):
     got = client.get(f"/producers/{producer.id}").json()["active_offer"]
     assert got["offer_type"] == "pickup_discount"
     # The superseded row survives as history rather than being destroyed.
-    rows = db.query(ProducerOffer).filter(ProducerOffer.producer_id == producer.id).all()
+    rows = (
+        db.query(ProducerOffer).filter(ProducerOffer.producer_id == producer.id).all()
+    )
     assert len(rows) == 2
     assert sum(1 for r in rows if r.is_active) == 1
 

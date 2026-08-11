@@ -6,6 +6,7 @@ Before MEH-247, `friday_mode_override` was not in `DEFAULT_SETTINGS` in
 appeared to save but the DB never stored it — admin A's override was
 never visible to admin B on the next /admin/settings load.
 """
+
 from tests.conftest import auth_header, make_user
 
 

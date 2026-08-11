@@ -30,6 +30,7 @@ Persona legend (register phase):
   P5 — pending producer: admin request-changes → owner resubmit loop.
   (P1 — full-wizard UI persona — lives in the Playwright leg, spec 22.)
 """
+
 import uuid
 
 import pytest
