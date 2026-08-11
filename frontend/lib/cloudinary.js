@@ -19,6 +19,19 @@
 // aspectRatio it pairs with c_limit (downscale only — never upscales a
 // smaller original); with aspectRatio the w_ rides the existing c_fill.
 // Used by HomeHero so the 4032px hero original ships at w_1920.
+//
+// MEH-2001: that width was OPT-IN, and almost nothing opted in — so every
+// other surface delivered the full original. Cloudinary support measured one
+// producer photo at 5886px / 2.43MB WebP being displayed at 1437px, and the
+// account hit 109.85 of 25 credits with 99.6% of it bandwidth. The width is
+// now DEFAULTED: a caller that passes none gets DEFAULT_MAX_WIDTH.
+//
+// 1200 is the cap, not a target — c_limit only ever scales DOWN, so a 700px
+// original still ships at 700px. It covers a 1440px desktop column and every
+// mobile viewport; the surfaces that genuinely need more (the hero) already
+// pass an explicit width, which still wins.
+const DEFAULT_MAX_WIDTH = 1200;
+
 export function optimizeCloudinary(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
   if (!url.includes("res.cloudinary.com")) return url;
@@ -31,15 +44,18 @@ export function optimizeCloudinary(url, opts = {}) {
   if (hasAspect) {
     parts.push("c_fill", "g_auto", `ar_${ar}`);
   }
-  const width = opts.width;
-  if (Number.isInteger(width) && width > 0) {
-    // Intentional: with aspectRatio, w_ rides c_fill — which MAY upscale a
-    // smaller original (fill semantics). Width-only gets c_limit (never
-    // upscales). HomeHero combines both (ar_16:9 + w_1920) — safe there
-    // because the 4032px hero original only ever downscales to 1920.
-    if (!hasAspect) parts.push("c_limit");
-    parts.push(`w_${width}`);
-  }
+  // An explicit width wins; otherwise the default cap applies. Resolving it
+  // here rather than branching keeps the width path single — the emitted
+  // transform is identical whether the number came from the caller or the
+  // default, so there is no second code path to drift.
+  const explicit = opts.width;
+  const width = Number.isInteger(explicit) && explicit > 0 ? explicit : DEFAULT_MAX_WIDTH;
+  // Intentional: with aspectRatio, w_ rides c_fill — which MAY upscale a
+  // smaller original (fill semantics). Width-only gets c_limit (never
+  // upscales). HomeHero combines both (ar_16:9 + w_1920) — safe there
+  // because the 4032px hero original only ever downscales to 1920.
+  if (!hasAspect) parts.push("c_limit");
+  parts.push(`w_${width}`);
   return url.replace("/upload/", `/upload/${parts.join(",")}/`);
 }
 
