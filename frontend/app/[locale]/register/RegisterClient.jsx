@@ -135,7 +135,11 @@ function RegisterPageBody() {
     try {
       // MEH-328: register() returns the OWASP ack ({detail}); no token,
       // no auto-login. Any 200 → render the inbox-check screen.
-      await register(form);
+      // MEH-1995: agreedToTerms lives outside `form` (it is checkbox state,
+      // not a text field), so it has to be merged in explicitly — spreading
+      // `form` alone is exactly how the consent was being dropped. The
+      // backend stamps users.terms_accepted_at + terms_version from this.
+      await register({ ...form, terms_accepted: agreedToTerms });
       // MEH-49: claim referral after successful registration (best-effort).
       // The user isn't yet authenticated post-MEH-328, so this endpoint
       // would 401 — but it's still wrapped in try/catch for safety, and
