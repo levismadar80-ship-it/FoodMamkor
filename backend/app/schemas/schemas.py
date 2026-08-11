@@ -2734,8 +2734,18 @@ class ExperienceCreate(BaseModel):
     event_date: date
     event_time: time | None = None
     duration_minutes: int | None = Field(None, ge=15, le=1440)
-    location_type: str = Field("home", pattern="^(home|public)$")
-    city: str | None = None
+    # MEH-2013: no default. "סוג מיקום *" is labelled required and the pills
+    # now render unselected, so the choice must come from the submitter — a
+    # default silently framed every experience as "בבית פרטי". `home` still
+    # drives the coordinate-hiding branch in experiences.py:309, which is
+    # exactly why it must not be assumed.
+    location_type: str = Field(..., pattern="^(home|public)$")
+    # MEH-2013: `city *` promised required and enforced nowhere, so a
+    # city-less experience never surfaced in the /experiences city filter —
+    # it vanished from the main discovery axis with no error. max_length
+    # mirrors Experience.city = Column(String(100)) (models.py:1365).
+    # REUSES: schemas.py:1016 — the city Field shape used across the app.
+    city: str = Field(..., min_length=1, max_length=100)
     address: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -2769,6 +2779,17 @@ class ExperienceCreate(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=300)
+
+    # MEH-2013: min_length=1 alone accepts "   ", which is city-less by every
+    # meaning that matters — the /experiences city filter would still never
+    # match it. Strip first, then require something left.
+    @field_validator("city")
+    @classmethod
+    def _require_city(cls, v: str) -> str:
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לבחור עיר")
+        return stripped
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")

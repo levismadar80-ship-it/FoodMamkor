@@ -46,7 +46,10 @@ const EMPTY = {
   event_date: "",
   event_time: "",
   duration_minutes: "",
-  location_type: "home",
+  // MEH-2013: no preselection. "סוג מיקום *" is marked required, and a pill
+  // row has no visible "unchosen" state — so a default meant the field passed
+  // without the owner ever deciding, and always toward "בבית פרטי".
+  location_type: "",
   city: "",
   address: "",
   lat: null,
@@ -69,7 +72,10 @@ function seed(initial) {
     event_date: initial.event_date ?? "",
     event_time: initial.event_time ? String(initial.event_time).slice(0, 5) : "",
     duration_minutes: str(initial.duration_minutes),
-    location_type: initial.location_type ?? "home",
+    // MEH-2013: a legacy row with a NULL location_type seeds unselected and
+    // has to be chosen before save, rather than being silently recorded as
+    // "home" on the next edit.
+    location_type: initial.location_type ?? "",
     city: initial.city ?? "",
     address: initial.address ?? "",
     lat: initial.lat ?? null,
@@ -87,12 +93,16 @@ function seed(initial) {
 // participant bounds were enforced only by native `min`/`max` attributes, which
 // the form's new `noValidate` turns off — so they move here unchanged rather
 // than disappearing. Order = DOM order, so "first invalid" means topmost.
+// MEH-2013: location_type + city join the list in DOM order (they sit between
+// the duration and price inputs), so "first invalid" still means topmost.
 const EXPERIENCE_FIELD_ORDER = [
   "title",
   "description",
   "image_url",
   "event_date",
   "duration_minutes",
+  "location_type",
+  "city",
   "price_per_person",
   "max_participants",
 ];
@@ -103,6 +113,10 @@ const EXPERIENCE_FIELD_ID = {
   image_url: "experience-image",
   event_date: "experience-date",
   duration_minutes: "experience-duration",
+  // The pill row has no single control to focus — the first pill is the entry
+  // point, matching how a radio group focuses its first option.
+  location_type: "experience-location-type",
+  city: "experience-city",
   price_per_person: "experience-price",
   max_participants: "experience-max-participants",
 };
@@ -130,6 +144,11 @@ function validateExperienceForm(f, t) {
     errors.image_url = t("error_invalid_url");
   }
   if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-2013: both are labelled `*` and neither was enforced anywhere. city
+  // additionally gates /experiences' city filter, so a city-less experience
+  // is invisible on the main discovery axis.
+  if (!f.location_type) errors.location_type = t("error_location_type_required");
+  if (f.city.trim() === "") errors.city = t("error_city_required");
   if (f.duration_minutes !== "") {
     const d = Number(f.duration_minutes);
     // ExperienceCreate.duration_minutes is `int` with ge=15/le=1440.
@@ -177,6 +196,14 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
   const setCityField = useCallback((value) => {
     setForm((f) => ({ ...f, city: value }));
+    // Same "a field being corrected stops shouting" rule as setField — city
+    // does not go through it because CitySearch reports a value, not an event.
+    setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
+  }, []);
+
+  const setLocationType = useCallback((value) => {
+    setForm((f) => ({ ...f, location_type: value }));
+    setFieldErrors((errs) => (errs.location_type ? { ...errs, location_type: undefined } : errs));
   }, []);
 
   // Debounced real-time moderation check (create + edit both re-validate).
@@ -208,7 +235,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       description: form.description,
       category: form.category || undefined,
       city: form.city || undefined,
-      location_type: form.location_type,
+      // MEH-2013: omit rather than send "" now that the form starts unselected
+      // — matching how category/city above are already sent.
+      location_type: form.location_type || undefined,
       price_per_person: form.price_per_person ? Number(form.price_per_person) : undefined,
       max_participants: form.max_participants ? Number(form.max_participants) : undefined,
     });
@@ -252,7 +281,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       event_time: form.event_time || null,
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
       location_type: form.location_type,
-      city: form.city || null,
+      // MEH-2013: required on both sides now — validateExperienceForm has
+      // already rejected an empty/whitespace value by the time we get here.
+      city: form.city.trim(),
       address: form.address || null,
       lat: form.lat ?? null,
       lng: form.lng ?? null,
@@ -385,13 +416,19 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         error={fieldErrors.duration_minutes}
       />
 
-      <Field label={t("field_location_type")}>
-        <div className="flex flex-wrap gap-2">
-          {LOCATION_TYPE_KEYS.map((lt) => (
+      {/* MEH-2013: `aria-pressed` is what tells assistive tech which pill is
+          chosen. It was optional while one was always preselected and the
+          colour carried the state; with a genuinely unselected initial state
+          the colour alone leaves a screen-reader user with no answer. */}
+      <Field label={t("field_location_type")} error={fieldErrors.location_type}>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("field_location_type")}>
+          {LOCATION_TYPE_KEYS.map((lt, i) => (
             <button
               key={lt.value}
+              id={i === 0 ? EXPERIENCE_FIELD_ID.location_type : undefined}
               type="button"
-              onClick={() => setForm((f) => ({ ...f, location_type: lt.value }))}
+              aria-pressed={form.location_type === lt.value}
+              onClick={() => setLocationType(lt.value)}
               className={`px-4 py-2 rounded-full text-sm transition ${
                 form.location_type === lt.value
                   ? "bg-primary text-white"
@@ -405,8 +442,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       </Field>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label={t("field_city")}>
-          <CitySearch id="experience-city" value={form.city} onChange={setCityField} placeholder={t("field_city_placeholder")} />
+        {/* MEH-2013: `id` on Field associates its <label> with CitySearch's
+            input (CitySearch renders its own label only when passed one). */}
+        <Field id={EXPERIENCE_FIELD_ID.city} label={t("field_city")} error={fieldErrors.city}>
+          <CitySearch id={EXPERIENCE_FIELD_ID.city} value={form.city} onChange={setCityField} placeholder={t("field_city_placeholder")} />
         </Field>
         <div>
           <label htmlFor="experience-address" className="block text-sm font-medium text-text mb-1">

@@ -120,6 +120,10 @@ describe("MEH-1404 — experience create form sends lat/lng", () => {
       target: { value: "תיאור מפורט של הסדנה שלנו שנמשך יותר מעשרים תווים בדיוק" },
     });
     fireEvent.change(screen.getByLabelText(N.field_date), { target: { value: "2026-09-01" } });
+    // MEH-2013: city + location_type are required now, so the form no longer
+    // submits without them. Fixture only — the subject here is still lat/lng.
+    fireEvent.click(screen.getByRole("button", { name: N.location_home }));
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("pick-experience-address"));
     fireEvent.click(screen.getByRole("button", { name: N.submit_cta }));
 

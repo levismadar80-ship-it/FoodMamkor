@@ -233,6 +233,58 @@ class TestExperienceSubmission:
         )
         assert resp.status_code == 422
 
+    # MEH-2013: the form labels both "עיר *" and "סוג מיקום *", and the client
+    # now blocks each — but MEH-1153's precedent is that a direct POST must be
+    # blocked too, not just the browser. These four assert the write boundary.
+    def test_missing_city_rejected(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        payload = _payload()
+        del payload["city"]
+        resp = client.post(
+            "/experiences", json=payload, headers=auth_header(user)
+        )
+        assert resp.status_code == 422
+        assert db.query(Experience).count() == 0
+
+    def test_blank_city_rejected(self, client, db, monkeypatch):
+        """min_length=1 alone would accept "   " — which is city-less by the
+        only meaning that matters, since the /experiences city filter would
+        still never match it."""
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        resp = client.post(
+            "/experiences",
+            json=_payload(city="   "),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_missing_location_type_rejected(self, client, db, monkeypatch):
+        """Previously defaulted to "home" server-side, which silently framed
+        every direct submission as taking place in a private residence — the
+        branch that hides lat/lng (experiences.py:309)."""
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        payload = _payload()
+        del payload["location_type"]
+        resp = client.post(
+            "/experiences", json=payload, headers=auth_header(user)
+        )
+        assert resp.status_code == 422
+        assert db.query(Experience).count() == 0
+
+    def test_city_is_stored_stripped(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch)
+        user = make_user(db)
+        resp = client.post(
+            "/experiences",
+            json=_payload(city="  תל אביב  "),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        assert db.query(Experience).one().city == "תל אביב"
+
 
 # ---------- Real-time validate endpoint ----------
 
@@ -778,6 +830,38 @@ class TestExperienceEdit:
         )
         # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
         assert resp.status_code == 404
+
+    # MEH-2013: ExperienceUpdate.city stays Optional on purpose. Making it
+    # required would 422 every edit of a row written before the create-side
+    # rule existed — the owner would be locked out of her own experience by a
+    # field she never had the chance to fill.
+    def test_editing_a_row_that_predates_the_city_rule_still_works(
+        self, client, db, monkeypatch
+    ):
+        _mock_moderation(monkeypatch)
+        host = make_user(db)
+        ex = _make_experience(db, host, city=None, status="approved")
+
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"title": "כותרת מעודכנת לסדנה"},
+            headers=auth_header(host),
+        )
+
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.city is None  # untouched, not backfilled
+
+    def test_a_legacy_null_city_row_still_renders(self, client, db):
+        """The read paths must not 500 on the rows the old create path let
+        through — ExperienceListOut.city is `str | None`, and it stays so."""
+        host = _make_host(db)
+        _make_experience(db, host, city=None, status="approved")
+
+        resp = client.get("/experiences")
+
+        assert resp.status_code == 200
+        assert [e["city"] for e in resp.json()] == [None]
 
     def test_non_owner_cannot_delete(self, client, db):
         host = make_user(db, email="a@t.com")
