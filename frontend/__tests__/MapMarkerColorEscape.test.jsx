@@ -137,14 +137,34 @@ describe("MEH-1998 — marker colour cannot break out of the onerror JS string",
     }
   });
 
-  it("leaves a legitimate palette colour byte-identical (no behaviour change)", () => {
-    style.color = "#c04040";
-    render(<MapComponent producers={[producer]} />);
+  // Every colour the real palette can produce, not a representative one. The
+  // validator's whole risk is rejecting a value it should have passed, and a
+  // single-colour control cannot see that — it would stay green while eight
+  // of the nine pins silently fell back to the primary token.
+  // Mirrors category-registry.js CATEGORY_STYLES + DEFAULT_CATEGORY_STYLE.
+  const REAL_PALETTE = [
+    "#c04040", // בשר · דגים
+    "#2e6853", // ירקות, פירות ומשקים · DEFAULT_CATEGORY_STYLE
+    "#4a90d9", // חלב וגבינות
+    "#896714", // לחמים ואפייה
+    "#e8a020", // שמנים
+    "#C8821E", // דבש — note the uppercase hex, which the regex must accept
+    "#9b59b6", // טיפוח וסבונים
+    "#3b72ad", // חלב וגבינות textColor
+    "#A8681A", // דבש textColor
+  ];
 
-    const handlers = parsedOnErrorHandlers();
-    expect(handlers.length).toBeGreaterThan(0);
-    for (const src of handlers) {
-      expect(src).toContain("background='#c04040'");
-    }
-  });
+  it.each(REAL_PALETTE)(
+    "leaves the legitimate palette colour %s byte-identical (no behaviour change)",
+    (colour) => {
+      style.color = colour;
+      render(<MapComponent producers={[producer]} />);
+
+      const handlers = parsedOnErrorHandlers();
+      expect(handlers.length).toBeGreaterThan(0);
+      for (const src of handlers) {
+        expect(src).toContain(`background='${colour}'`);
+      }
+    },
+  );
 });

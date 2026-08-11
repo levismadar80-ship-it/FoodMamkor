@@ -119,7 +119,11 @@ function escapeHtmlAttr(str) {
 // untouched. Anything else degrades to the primary token. Dormant today (the
 // palette is hardcoded); load-bearing the day the colour becomes DB-driven,
 // which is the scenario this ticket was filed for.
-const SAFE_HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+// 3/4/6/8 digits are the only lengths CSS recognises. A lazier `{3,8}` would
+// also admit 5 and 7 — not a security hole (the browser drops an unparseable
+// declaration) but it would render the pin unstyled, a visual regression in
+// exactly the DB-driven future this validator exists for.
+const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 function safeCssColor(value) {
   return SAFE_HEX_COLOR.test(String(value ?? "")) ? String(value) : "#2e6853";
 }
