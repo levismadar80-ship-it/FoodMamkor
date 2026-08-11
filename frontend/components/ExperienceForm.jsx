@@ -416,12 +416,25 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         error={fieldErrors.duration_minutes}
       />
 
-      {/* MEH-2013: `aria-pressed` is what tells assistive tech which pill is
-          chosen. It was optional while one was always preselected and the
-          colour carried the state; with a genuinely unselected initial state
-          the colour alone leaves a screen-reader user with no answer. */}
-      <Field label={t("field_location_type")} error={fieldErrors.location_type}>
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t("field_location_type")}>
+      {/* MEH-2013: this block does NOT use <Field>, deliberately. Field's label
+          carries `htmlFor`, and a <button> IS a labelable element — so pointing
+          it at the first pill would make a click on the words "סוג מיקום"
+          *select* "בבית פרטי". A <span> + aria-labelledby names the group with
+          no such side effect, and aria-describedby wires the error the way
+          MEH-1809 wires every other field in this form.
+          `aria-pressed` was optional while one pill was always preselected and
+          the colour carried the state; with a genuinely unselected initial
+          state, colour alone leaves a screen-reader user with no answer. */}
+      <div>
+        <span id="experience-location-type-label" className="block text-sm font-medium text-text mb-1">
+          {t("field_location_type")}
+        </span>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-labelledby="experience-location-type-label"
+          aria-describedby={fieldErrors.location_type ? "experience-location-type-error" : undefined}
+        >
           {LOCATION_TYPE_KEYS.map((lt, i) => (
             <button
               key={lt.value}
@@ -439,7 +452,12 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             </button>
           ))}
         </div>
-      </Field>
+        {fieldErrors.location_type && (
+          <span id="experience-location-type-error" className="text-xs text-error mt-1 block">
+            {fieldErrors.location_type}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* MEH-2013: `id` on Field associates its <label> with CitySearch's

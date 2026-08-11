@@ -125,6 +125,26 @@ describe("ExperienceForm — location_type is a real choice (MEH-2013)", () => {
     expect(pill(T.location_home)).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("the location error is wired to the pill group, not left as loose text", () => {
+    // MEH-1809's standard for this form: an error is announced with its
+    // control, not merely rendered near it. Adversarial-review finding on
+    // this PR — the first version rendered the message with nothing pointing
+    // at it. The group is named by a <span>, never a <label htmlFor>: a
+    // <button> is labelable, so a label would make a click on the words
+    // "סוג מיקום" select the first pill.
+    renderForm();
+    fillEverythingElse();
+    fireEvent.click(submitButton());
+
+    const group = screen.getByRole("group", { name: T.field_location_type });
+    const describedBy = group.getAttribute("aria-describedby");
+    expect(document.getElementById(describedBy)).toHaveTextContent(
+      T.error_location_type_required,
+    );
+    // The group's name must not come from a <label for> aimed at a pill.
+    expect(document.querySelector('label[for="experience-location-type"]')).toBeNull();
+  });
+
   it("edit mode seeds the stored choice — this is not a blanket reset", () => {
     renderForm({ mode: "edit", initial: { id: "x", location_type: "public", city: "חיפה" } });
 
