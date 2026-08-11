@@ -141,9 +141,14 @@ function createCategoryMarker(
   const isPremium = producer.plan === "premium";
   const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
-  // Round photo (square crop), else MEH-936 category-glyph fallback. No
-  // onerror→fallback swap: strict CSP blocks inline handlers, so we branch on
-  // image presence. The glyph + colour come from styleForProducer (the legend's
+  // Round photo (square crop), else MEH-936 category-glyph fallback.
+  // MEH-1976: this comment used to read "No onerror→fallback swap: strict CSP
+  // blocks inline handlers". That was FALSE, and measured so — next.config.js:84
+  // ships script-src with 'unsafe-inline' and declares no script-src-attr, so
+  // inline handlers do run. Branching on image presence alone was therefore not
+  // a CSP constraint, it was an unnecessary limitation, and it left a live
+  // Cloudinary 401 (MEH-1925) rendering the browser broken-glyph. There is now
+  // an onerror swap below. The glyph + colour come from styleForProducer (the legend's
   // single source of truth); empty/null category degrades to DEFAULT (Leaf on
   // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
   const imgUrl = producer.images?.[0]
@@ -154,7 +159,14 @@ function createCategoryMarker(
   // next/image is a React component and cannot be serialised into it — there
   // is no React tree here to render into. Structural, not a preference.
   const inner = imgUrl
-    ? `<img src="${imgUrl}" loading="lazy" alt="${escapeHtmlAttr(producer.name)}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+    // MEH-1976: onerror degrades a failed load (the MEH-1925 Cloudinary 401)
+    // to the category colour instead of the browser's broken-image glyph. It
+    // does NOT restore the category glyph SVG — re-injecting that markup from
+    // inside an HTML attribute needs escaping this string cannot do safely, so
+    // the pin reads as a clean coloured circle rather than the full empty
+    // state. Inline handlers DO fire here: next.config.js:84 ships
+    // script-src 'unsafe-inline' (checked, not assumed).
+    ? `<img src="${imgUrl}" loading="lazy" alt="${escapeHtmlAttr(producer.name)}" onerror="this.style.display='none';this.parentNode.style.background='${categoryColor}'" style="width:100%;height:100%;object-fit:cover;display:block;" />`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon)}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.

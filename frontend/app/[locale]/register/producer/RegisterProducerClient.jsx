@@ -564,6 +564,12 @@ function RegisterProducerPageBody() {
         // consent (agreedToTerms) is a separate gate enforced at submit.
         declaration_accepted:
           declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed),
+        // MEH-1995: the ToS consent the comment above calls "a separate gate
+        // enforced at submit" — it was enforced and then discarded, reaching
+        // no column. Sent now so users.terms_accepted_at + terms_version get
+        // stamped. Distinct from declaration_accepted directly above: that is
+        // the LICENSING declaration, recorded on the producer row.
+        terms_accepted: agreedToTerms,
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {
