@@ -49,6 +49,239 @@ class TestAuth:
         assert created.email_verified is False
         assert created.email_verify_token
 
+    def test_register_records_terms_consent_when_accepted(self, client, db):
+        # MEH-1995: the whole point of the column is EVIDENCE, so this asserts
+        # the stored consent record — not that a field was added to a schema.
+        # An inert implementation (field accepted, never persisted) passes the
+        # second kind of test and fails this one.
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "consent@example.com",
+                "name": "Consent",
+                "password": "Zx7Yp9Mq2Lr4",
+                "terms_accepted": True,
+            },
+        )
+        assert resp.status_code == 200
+        created = db.query(User).filter(User.email == "consent@example.com").first()
+        assert created is not None
+        # Both halves matter: a timestamp alone proves only THAT she agreed,
+        # the version proves WHAT she agreed to. Asserting one and not the
+        # other would let half the record silently go missing.
+        assert created.terms_accepted_at is not None
+        assert created.terms_version == TERMS_VERSION
+
+    def test_register_without_terms_flag_records_no_consent(self, client, db):
+        # MEH-1995: the discriminating half. Without this, a handler that
+        # stamped unconditionally would pass the test above — so the pair is
+        # what proves the stamp tracks the actual input rather than firing on
+        # every registration.
+        #
+        # NULL here is the intended state, not an oversight: it means "no
+        # record of consent", which is the truthful reading for a caller that
+        # never asserted acceptance. It must never read as "consent refused".
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "noconsent@example.com",
+                "name": "NoConsent",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        created = db.query(User).filter(User.email == "noconsent@example.com").first()
+        assert created is not None
+        assert created.terms_accepted_at is None
+        assert created.terms_version is None
+
+    def test_register_producer_records_terms_consent(self, client, db):
+        # MEH-1995: the producer password path stamps via a SECOND, hand-copied
+        # call site. The consumer tests above cannot see it — delete that site
+        # and they stay green — so it needs its own assertion or the stamp is
+        # unguarded on half the flows that write it.
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        payload = valid_producer_register_payload()
+        payload["email"] = "producer_consent@example.com"
+        payload["phone"] = "0521234567"  # required for the whatsapp contact method
+        payload["terms_accepted"] = True
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 200, resp.text
+        created = (
+            db.query(User)
+            .filter(User.email == "producer_consent@example.com")
+            .first()
+        )
+        assert created is not None
+        assert created.terms_accepted_at is not None
+        assert created.terms_version == TERMS_VERSION
+
+    def test_register_producer_upgrade_records_terms_consent(self, client, db):
+        # MEH-1995 (adversarial review R-1): the MEH-143 upgrade path does NOT
+        # construct a User — it mutates current_user — so it fell outside the
+        # "enumerate every User(...) site" sweep that produced the other stamps
+        # and shipped, briefly, with the consent discarded.
+        #
+        # This is the sharpest case in the ticket, not an edge: the checkbox is
+        # rendered for upgrade users with no isUpgrade condition and HARD-GATES
+        # their submit, and the flag rides the shared body object. So the consent
+        # provably happened and was transmitted, and NULL would be the database
+        # asserting "no record" about it.
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        user = make_user(db, email="upgrader@example.com")
+        assert user.terms_accepted_at is None  # precondition: nothing recorded
+
+        payload = valid_producer_register_payload()
+        payload.pop("email", None)
+        payload.pop("password", None)
+        payload.pop("name", None)
+        payload["phone"] = "0521234567"  # required for the whatsapp contact method
+        payload["terms_accepted"] = True
+        resp = client.post(
+            "/auth/register/producer",
+            json=payload,
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        upgraded = db.query(User).filter(User.email == "upgrader@example.com").first()
+        assert upgraded.role == "producer"  # the upgrade actually happened
+        assert upgraded.terms_accepted_at is not None
+        assert upgraded.terms_version == TERMS_VERSION
+
+    def test_producer_upgrade_without_flag_preserves_existing_consent(
+        self, client, db
+    ):
+        # MEH-1995 (CI review): the stamp at auth.py is guarded on the flag
+        # precisely so an upgrade CANNOT erase a consent this user already gave
+        # at consumer registration. That invariant is asserted in the handler's
+        # comment and in the PR body, and until this test nothing checked it —
+        # a refactor adding `else: user.terms_accepted_at = None` would keep all
+        # five other MEH-1995 tests green while destroying real consent records.
+        #
+        # Erasure is the worst outcome in the ticket's own terms: it converts
+        # evidence we hold into the database asserting "no record" about an
+        # acceptance that provably happened. Deletion is worse than never having
+        # stamped, because the row is the defence.
+        from datetime import datetime, timezone
+
+        from app.constants import TERMS_VERSION
+        from app.models.models import User
+
+        earlier = datetime(2026, 1, 15, 9, 30, tzinfo=timezone.utc)
+        user = make_user(db, email="preserve@example.com")
+        user.terms_accepted_at = earlier
+        user.terms_version = TERMS_VERSION
+        db.commit()
+
+        payload = valid_producer_register_payload()
+        payload.pop("email", None)
+        payload.pop("password", None)
+        payload.pop("name", None)
+        payload["phone"] = "0521234567"
+        payload.pop("terms_accepted", None)  # omitted → schema default False
+
+        resp = client.post(
+            "/auth/register/producer",
+            json=payload,
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        upgraded = db.query(User).filter(User.email == "preserve@example.com").first()
+        assert upgraded.role == "producer"  # the upgrade still happened
+        # The pre-existing consent survives it, unchanged in both columns.
+        assert upgraded.terms_accepted_at is not None
+        assert upgraded.terms_accepted_at.astimezone(timezone.utc) == earlier
+        assert upgraded.terms_version == TERMS_VERSION
+
+    def test_consent_columns_are_exposed_by_no_endpoint(self, client, db):
+        # MEH-1995 (CI review): the audit-only exposure contract is the whole
+        # privacy posture of this feature, and until this test it was held up by
+        # a code comment plus the fact that Pydantic maps only declared fields.
+        # Neither is a check. This asserts the property BEHAVIOURALLY — the
+        # strings must not appear in the JSON — so a future "ADR-006 R2 parity
+        # sweep" that adds them to UserOut or UserAdminOut goes red here instead
+        # of quietly publishing a consent timestamp.
+        #
+        # Deliberately asserts on the raw response TEXT, not on parsed keys: a
+        # nested serializer that buried the field one level down would still
+        # leak it, and `not in resp.json()` only inspects top-level keys.
+        from datetime import datetime, timezone
+
+        from app.constants import TERMS_VERSION
+
+        user = make_user(db, email="exposure@example.com")
+        user.terms_accepted_at = datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc)
+        user.terms_version = TERMS_VERSION
+        db.commit()
+
+        # 1. The user's own profile payload (UserOut).
+        me = client.get("/auth/me", headers=auth_header(user))
+        assert me.status_code == 200
+        assert "terms_accepted_at" not in me.text
+        assert "terms_version" not in me.text
+
+        # 2. The admin listing (UserAdminOut) — stricter than the sibling
+        #    declared_at/declaration_version pair, which IS admin-visible.
+        admin = make_user(db, email="exposure-admin@example.com", role="admin")
+        listing = client.get("/admin/users", headers=auth_header(admin))
+        assert listing.status_code == 200, listing.text
+        assert "exposure@example.com" in listing.text  # the row IS returned…
+        assert "terms_accepted_at" not in listing.text  # …without the consent
+        assert "terms_version" not in listing.text  # columns on it
+
+    def test_terms_version_fits_the_column(self):
+        # MEH-1995 (CI review, Minor): terms_version is VARCHAR(10) and the
+        # current value is EXACTLY 10 chars, so the column has zero headroom.
+        # A bump to a double-digit revision ("2026-08-v10") is 11 and would be
+        # silently truncated or rejected at the DB layer, on the one column
+        # whose job is to name WHICH wording was agreed to.
+        #
+        # Asserted as a test rather than a module-level `assert` because
+        # `python -O` strips assert statements, which would make the guard
+        # vanish in exactly the optimized builds that run in production.
+        from app.constants import TERMS_VERSION
+
+        assert len(TERMS_VERSION) <= 10, (
+            f"TERMS_VERSION={TERMS_VERSION!r} is {len(TERMS_VERSION)} chars; "
+            "users.terms_version is VARCHAR(10). Widen the column via an "
+            "Alembic revision before bumping the version string."
+        )
+
+    def test_register_stores_timezone_aware_consent_timestamp(self, client, db):
+        # MEH-1995 (adversarial review R-3): the column is DateTime(timezone=True)
+        # and naive utcnow() is in use 16 lines from the stamp, so "is not None"
+        # would pass just as happily on a naive value. For a column whose whole
+        # evidentiary worth is WHICH INSTANT, a silent offset is the failure that
+        # matters — a naive datetime lands in a TIMESTAMPTZ interpreted in the
+        # session TimeZone, not as UTC. This pins the one property nothing else did.
+        from datetime import timedelta
+        from app.models.models import User
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "tzaware@example.com",
+                "name": "TZ",
+                "password": "Zx7Yp9Mq2Lr4",
+                "terms_accepted": True,
+            },
+        )
+        assert resp.status_code == 200
+        created = db.query(User).filter(User.email == "tzaware@example.com").first()
+        assert created.terms_accepted_at.tzinfo is not None
+        assert created.terms_accepted_at.utcoffset() == timedelta(0)
+
     def test_register_duplicate_email_returns_identical_ack(self, client, db):
         # MEH-328: must NOT 400 (legacy behaviour leaked existence). Same
         # 200 + body as the new-email path. No second user row created.

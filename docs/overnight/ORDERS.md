@@ -245,10 +245,79 @@ or *cards*, and ORDERS is the file a sweep session actually reads.
 
 ---
 
+### 1.7 · A DoD never justifies weakening a security control
+
+**Note the conflict, satisfy the intent another way.** A card's Definition of
+Done is a description of the desired end state, not a warrant to remove a
+guardrail standing between you and it. When the two collide, the guardrail wins
+and the DoD item is reported blocked — it is never quietly unblocked by lowering
+the control.
+
+This is workflow rule 32 (*CC adds constraints, never removes one*) applied at
+the moment it actually bites. Rule 32 is easy to honour in the abstract; the
+pressure arrives disguised as diligence, when the only thing between you and a
+green checkbox is a one-line allowlist edit that you could plausibly justify.
+
+**The move is to attack the intent, not the control.** Almost every guardrail
+blocks a *mechanism*, not a *goal*, and the goal usually has a second route:
+
+| Blocked mechanism | Route that satisfies the same intent |
+|---|---|
+| `WebFetch` on a non-allowlisted host | `WebSearch` — returns the page's content as snippets without fetching the host |
+| `git reset --hard` (denied at L2) | `git checkout -B <branch> origin/<branch>` — the house pattern, `security.md` |
+| applying an Alembic migration (§1.4) | write the revision **file**; verification of `upgrade`/`downgrade` is Sapir's |
+| reading a `.env` for a value | read the variable's *name* from `config.py` and state that the value is unavailable |
+
+**Proven 2026-08-09 (MEH-1981 §0).** The card required grounding an
+Amendment-13 audit in the Privacy Protection Authority's own guidance on
+`gov.il` — a host `check-webfetch-allowlist.sh` denies. The allowlist was left
+untouched and the requirement was met via `WebSearch` with
+`allowed_domains: ["gov.il"]`, which surfaced the Authority's wording without
+fetching the host. The limitation (snippets, not fetched primary text) was
+written into the deliverable rather than papered over.
+
+**Two failure modes this closes, both of which look responsible from inside:**
+
+1. **Widening the control "just for this run."** There is no such thing — the
+   allowlist has no scope, and the next session inherits the wider one with no
+   idea why it widened. Per rule 32's corollary, most of the guardrail layer is
+   hard-denied to CC in *both* directions anyway, so the honest response to a
+   deny is a proposal to Sapir, not an edit.
+2. **Silently dropping the DoD item.** The inverse error, and the more common
+   one. A requirement that cannot be met is a *reported* blocker with the
+   control named — never an unticked box nobody mentions.
+
+**State the conflict in the deliverable, every time.** "Blocked by <control>;
+satisfied instead via <route>; residual limitation: <what the route cannot
+give you>" is the whole shape. A reader who cannot see which control fired
+cannot judge whether the substitute was good enough.
+
+---
+
 ## 2 · Ownership protocol
 
 **CLAIM = BRANCH.** Pushing `feature/meh-<N>-<slug>` to `origin` is the claim.
 There is no other signal, and no claim exists before the push.
+
+**CLAIM AT INTENT TIME, NOT BUILD TIME.** The moment a card enters your *next
+work* plan, push the claim branch — **before Phase 0, before reading the card
+deeply**. An empty branch pointing at `origin/staging` is a valid claim; you are
+not claiming a design, you are claiming the card. Everything else about the card
+can wait, because nothing else about it is visible to another session.
+
+**COROLLARY — a card named without a branch is UNCLAIMED and grabbable.** Naming
+it in a check-in note, a plan, or a session log confers nothing: another session
+that pushes a branch first has claimed it, correctly, and owes you no deference.
+So **do not list next work you have not claimed** — the listing is not a
+reservation and reads as one.
+
+_Source: MEH-1872, 09/08. At 19:39Z the frontend lane's check-in note listed it
+as next work; at 19:40Z — one minute later — another session opened PR #2745 on
+it. **Both sessions were following this section correctly**: no branch existed,
+so the card was unclaimed and takeable. What prevented a duplicate
+implementation was one session's courtesy comment, not any mechanism. The rule
+above closes the minute, and the corollary closes the expectation that produced
+it._
 
 **FOREIGN = READ-ONLY.** A branch or PR this session did not create is read-only.
 Read it, cite it, work around it — never push to it.
@@ -362,6 +431,48 @@ works"* (exec §9).
 
    The grep is cheap and the failure is not. One command, before the diff is
    final: `grep -rn "<TableOrColumnName>" --include=*.py --include=*.js .`
+
+### 3.0 · Every probe runs a known-answer control BEFORE its output is believed
+
+**A probe is any throwaway thing you build to find something out** — a grep, a
+`python3 -` one-liner, a DNS lookup, a route inventory, an `ast` walk, a browser
+sampler. It is *not* the deliverable, which is exactly why nobody tests it, and
+why its output gets quoted into a report as fact.
+
+**The rule:** before you believe a single number a probe produces, run it against
+at least one input **whose answer you already know**, and check it returns that
+answer. If it does not, the probe is broken and everything it has already told
+you is withdrawn — including the parts that looked reasonable.
+
+**A self-test that passes on a broken parser is not a self-test.** This is the
+trap, and it is not hypothetical. The control has to be capable of *failing* on
+the specific defect you are worried about; a fixture you invented to match the
+shape you assumed will happily confirm the assumption. `testing.md` states the
+general form ("anchor at least one case to a real file from this repo") — §3.0
+is the same rule for the ad-hoc tooling that never reaches a test file.
+
+**Two liars in one session, 2026-08-09, both caught only by a known-answer run:**
+
+| Probe | What it reported | Why it was wrong |
+|---|---|---|
+| DNS/SPF checker | `mehamakor.online` has **no SPF record** | The control — `google.com TXT`, which certainly has one — also returned **zero** records. UDP truncation on large TXT responses. "No SPF" and "the resolver is broken" are the **same output**. |
+| Route/auth inventory | **74 public routes, 34 unauthenticated** | The auth-dependency list was *guessed* rather than read from the source, so every owner-dashboard route was classed public. The probe's own self-test passed — it was built from the same wrong assumption. |
+
+**What they share** is the shape to watch for: a probe whose failure mode
+produces a **plausible, alarming answer** rather than an error. Zero records
+looks like a finding. A high public-route count looks like a finding. Neither
+announced itself, and both were one step from a Linear card prescribing a fix
+for a problem that did not exist.
+
+**Applies symmetrically to reds and greens.** A red from an unvalidated probe is
+the same error with the opposite sign — `testing.md` records the malformed `grep`
+that reported every Tailwind class missing from the built CSS, including one used
+site-wide. **And retract out loud:** a withdrawn finding is evidence the probe was
+checked; a silently-dropped one is indistinguishable from never having looked.
+
+**The one question, before quoting any probe:** *what would this have printed if
+it were broken — and is that different from what it just printed?* If the answers
+match, you have measured nothing.
 
 ### 3.1 · Merge, then verify — immediately
 
@@ -503,6 +614,52 @@ Full per-run matrix and the four-suspect correlation:
 aggregator, so both required gates can report `success` while nothing ran.
 Confirm the jobs that matter show `conclusion: success`, not `skipped`.
 
+#### The duration tell — check it before citing ANY run as evidence (third bite, 09/08)
+
+This section has now been rewritten three times by three sessions, each of which
+read a run-level `conclusion` and inferred that a suite had **run**. The rule
+below is the cheap mechanical check that would have stopped all three:
+
+> **A run-level `success` is never evidence that a suite ran. Open the job.**
+> Cite `conclusion` **and duration** together, or do not cite the run at all.
+
+| What you see | What it means |
+|---|---|
+| e2e run, **~8–10 min** | actually executed — the conclusion is a real result |
+| e2e run, **~25–35 sec** | the Playwright job `skipped`; nothing ran, the green is the aggregator |
+
+Measured 09/08: skip-greens `31317914516` (32 s), `31318839637` (26 s),
+`31327629452` — all `success`, all with `Playwright E2E (Vercel preview):
+skipped`. Real runs the same day: 520 s, and red.
+
+**The duration is visible in the run list without opening anything**, which is
+what makes this the check to reach for first. Job-level `conclusion` is the
+authority; duration is the two-second screen that tells you whether to bother.
+
+**Applies to every gate, not just e2e** — the same aggregator shape (`skipped →
+pass`) is used by `CI gate` and `Deploy gate` for paths-filtered legs. Any
+sentence of the form "CI was green on X" needs the job behind it.
+
+_Third instance: 08/08 (the "alternating pass/fail" correction), 08/08 again (the
+Cloudinary refutation built on green runs that never ran), 09/08 (a session
+reporting "staging recovered, the VRT set passed" on three 30-second skips)._
+
+#### The CI reviewer: adopt its findings, verify its conventions (09/08)
+
+`claude[bot]`'s **specific, local findings are usually right** — verify, then
+adopt. Its claims about **this repo's conventions** have a measured track record
+of **0 for 2** and must be checked against the actual file before acting:
+
+| Claim | Reality |
+|---|---|
+| "the project avoids inline styles where Tailwind covers it" (on a `style={{fontSize:"11px"}}` copyright line) | `Footer.jsx:261` is byte-identical for the same line; `:203` too. MEH-1103/1281 converted **links and headings**, never the copyright. Complying would have made the new component *diverge* from its sibling. |
+| a proposed `applied !== "ok"` guard | correct in shape, but as written it would have skipped the very case it protected — the sibling injection returned `undefined`, not `"ok"`. |
+
+**Never re-litigate an answered finding.** The reviewer runs per-head with no
+memory and will re-raise the same Minor on your next push. Answering it once, in
+a comment with `file:line` evidence, is the whole obligation — a second reply is
+noise.
+
 **A `cancelled` leg maps to FAIL, and the remedy inverts.** Supersession (a newer
 run exists for the head SHA) → **wait**. An infra hang (job stuck in its own
 setup, no newer run) → **re-run**. Read the log before choosing; applying "wait"
@@ -545,6 +702,20 @@ a red is.
 
 **Never idle on a gate.** When PR N is waiting on CI, arm a check-in and start
 task N+1 in parallel. Waiting is not work.
+
+**ONE CHECK-IN PER PR, EVER.** Arming a new check-in for a PR **requires deleting
+the existing one in the same action** — not afterwards, not once a duplicate is
+confirmed. `list_triggers` is the ledger; read it before arming, not instead of
+arming.
+
+The failure is quiet and self-inflicted: two live check-ins on one PR wake the
+session twice, produce two independent readings of the same state, and read like
+two events rather than one. Nothing goes red. _Source: 09/08 — PR #2745 carried
+check-ins at 21:05Z **and** 21:27Z, because one turn concluded "the old one is
+still live, nothing to do" and the next armed a second without deleting it. It
+surfaced only because `list_triggers` was called for an unrelated reason. The
+rule is written as *delete-and-arm is one action* precisely because the two-step
+version is what failed._
 
 **PARK after 30 minutes or 2 failed attempts on the same problem** — whichever
 comes first. Parking is: write what was learned to
