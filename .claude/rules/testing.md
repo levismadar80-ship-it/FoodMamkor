@@ -366,6 +366,83 @@ scope — not a separate ticket.
 
 ---
 
+## The artifact that asserts coverage is the one least likely to be checked
+
+> **A docstring, a count in a log line, a test-case name — each reads as
+> verification; none is one. Derive counts rather than stating them. Show a
+> guard failing against the old code before claiming it guards.**
+
+The sections above are about *outputs* that mislead — a green with two causes, a
+null that means "never ran". This one is about the **claim of coverage itself**.
+It is a different surface and it fails more quietly, because the claim is never
+the deliverable: nobody reviews a docstring, nobody re-counts a summary line,
+and a test case named `traversal` is read as proof that traversal is handled.
+
+**Four instances from one PR (#2780, MEH-1976), all found by the CI reviewer and
+none by me:**
+
+| The artifact | What it asserted | What was true |
+|---|---|---|
+| Docstring | *"an interrupted run costs only what it had not yet fetched"* | The skip condition required a prior manifest entry, and the manifest is written **once, at the end** — so an interrupted **first** run re-downloaded everything it had just pulled. The property was claimed and absent. |
+| A self-test case named `traversal` | that path traversal is guarded | `public_id` was sanitised; `resource_type` and `format` were interpolated into the same path **raw**. One of three inputs. The case name made the other two invisible. |
+| Explicit `encoding="utf-8"` | that the file's own docstring rule was applied | Applied at **two of three** I/O sites, in a file whose docstring explains why it is mandatory. Fixing the two sites a reviewer names is not fixing the class. |
+| `"14 assertions"` in the pass line | the size of the suite | It was **15**. The rate-limit block appended to `failures` without going through `check()`, so it was never counted — and a passing run misreported its own coverage. |
+
+**The remedies are mechanical, which is the point — none of them depends on
+remembering:**
+
+- **Derive counts, never state them.** `len(ran)` cannot go stale; `"14"` goes
+  stale the moment a case is added. Prove the derivation by adding a case and
+  watching the number move.
+- **Name a test case after the input it covers, not the class it belongs to.**
+  `traversal/resource_type` cannot pretend to cover `format`.
+- **When a reviewer names two sites, grep for the third.** A finding is a
+  sample, not an inventory.
+- **Show the guard failing against the old code before claiming it guards** —
+  the MEH-1619 discrimination rule, applied to the *claim* rather than the test.
+
+### Corollary — the control itself is an artifact, and it lies the same way
+
+Both of these happened on 11/08, while demonstrating the rules above:
+
+- **A control that fails for the wrong reason.** The new self-test was run
+  against the old implementation from **outside the repo**, so `ROOT` resolved
+  elsewhere, the fixtures were missing, and it exited `2` — an *invocation*
+  error. A red is not evidence of discrimination just because it is red. Re-run
+  from the repo root, it failed on the assertions themselves, which is the only
+  version that proves anything.
+- **A no-op that reads as confirmation.** A `sed` meant to inject a 16th case
+  silently did not match. The count stayed 15 — *exactly what a working derived
+  count would print if nothing had been added* — and that was briefly read as
+  the proof. Verified by grepping the generated file for the injected token
+  before trusting the number.
+
+**The question that catches both:** *did the thing I am using as evidence
+actually run, and did it run against what I think it ran against?*
+
+### Why this is stated as a rule and not an anecdote — the count is the argument
+
+**This is the eighth instance of the family this week**, across four different
+surfaces and two languages:
+
+1. **MEH-1909** — an `ast` probe passed four synthetic cases and returned
+   `revision = None` for **all 14 real revisions**; the repo uses annotated
+   assignments and every fixture used the plain form.
+2. **ORDERS §3.0 (10/08)** — a DNS probe reported "no SPF" while its own control
+   query (`google.com TXT`) also returned zero.
+3. **ORDERS §3.0 (10/08)** — a routes inventory reported 74 public routes by
+   **guessing** auth dependencies, and its self-test passed because it was built
+   from the same wrong assumption.
+4. **#2786 (11/08)** — a capture harness wrote six PNGs, logged six successes and
+   exited `0`, having photographed an error boundary.
+5–8. **#2780** — the four rows in the table above.
+
+Eight in one week is not a run of bad luck; it is the base rate for a class
+nobody checks. That is the argument for making the remedies mechanical rather
+than adding another line telling the next session to be careful.
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files. Fix every REFEREE
