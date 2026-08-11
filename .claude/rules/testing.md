@@ -189,8 +189,16 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 ## `networkidle` is banned in specs (MEH-215)
 
 > **A spec must never make its outcome depend on the network going quiet.**
-> `page.waitForLoadState("networkidle")` and `goto(…, { waitUntil: "networkidle" })`
-> are forbidden in anything under `e2e/flows/**` or `e2e/visual/**`.
+> **Unbounded** `page.waitForLoadState("networkidle")` and
+> `goto(…, { waitUntil: "networkidle" })` are forbidden in anything under
+> `e2e/flows/**` or `e2e/visual/**` — the two globs `playwright.config.ts:35`
+> actually runs.
+>
+> **The one sanctioned form is a bounded, caught wait** whose timeout is far above a
+> healthy settle, so it changes nothing on a good run and only caps the pathological
+> one: `e2e/visual/parity.spec.ts:246` is the exemplar, and the comment above it at
+> `:239` records the bound as deliberate. Do not "fix" it, and do not write a guard
+> that greps for the bare word.
 
 **Why, concretely.** On the CI runner **every Cloudinary image returns 401** and the
 Next image optimizer retries them, so the network can simply never reach the idle
@@ -201,8 +209,10 @@ latent **green-local / red-CI**, and the failure names the wrong thing — the t
 reports a missing element, not "the network never idled".
 
 _Measured on MEH-215 chunk C: the wrong-credentials spec passed 16/16 locally and the
-E2E job went red. A `.catch(() => {})` does **not** fix this — it makes the wait
-non-fatal, not cheap; the time is still spent._
+E2E job went red. A `.catch(() => {})` on its own does **not** fix this — it makes the
+wait non-fatal, not cheap; the time is still spent. **The `timeout` is the operative
+half**, and that is the difference between the banned form and the sanctioned one
+above: a bound caps the cost, the catch only stops the cap from failing the test._
 
 **The replacement, when you need to prove something did NOT happen** — an inverted
 bounded wait. Await the *unwanted* event and require that it times out:
