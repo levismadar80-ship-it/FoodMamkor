@@ -1153,7 +1153,32 @@ def confirm_phone_otp(
     if producer.phone_verified:
         return {"detail": "הטלפון כבר מאומת"}
 
-    token = (
+    # MEH-1820: claim the token with a CONDITIONAL UPDATE, not SELECT-then-set.
+    # The previous form read `used == False` and assigned `used = True` as two
+    # statements, so under READ COMMITTED (Postgres' default) two overlapping
+    # confirms could both find the same token before either committed — and
+    # both would then run the pending_whatsapp → pending transition and fire
+    # the "ready for review" admin ping. Damage was noise, not data: a
+    # duplicate admin notification.
+    #
+    # `.update()` returns the affected-row count, and that count IS the lock:
+    # the second request blocks on the first's row lock, re-evaluates the
+    # WHERE against the committed row, finds `used` already true, and matches
+    # zero rows. Exactly one caller can win, per token.
+    #
+    # Chose the conditional UPDATE over `SELECT … FOR UPDATE` (the card's
+    # option (a)) for three reasons: it is one statement rather than a
+    # lock-then-mutate pair; it holds no row lock across the
+    # `_pending_and_approvable` query below; and `with_for_update()` is a
+    # silent no-op on backends that ignore it, which would make the guard
+    # disappear without any test going red — the failure mode this repo keeps
+    # getting caught by.
+    #
+    # The loser gets the SAME 400 as a wrong or expired code. That is
+    # deliberate: from the caller's side a lost race and a stale code are the
+    # same event — this token is no longer usable — and inventing a new status
+    # or Hebrew string would leak concurrency internals into the API surface.
+    claimed = (
         db.query(PhoneOtpToken)
         .filter(
             PhoneOtpToken.producer_id == producer.id,
@@ -1161,12 +1186,11 @@ def confirm_phone_otp(
             PhoneOtpToken.used.is_(False),
             PhoneOtpToken.expires_at > datetime.utcnow(),
         )
-        .first()
+        .update({PhoneOtpToken.used: True}, synchronize_session=False)
     )
-    if not token:
+    if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
-    token.used = True
     producer.phone_verified = True
     # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
     # PUT /producers/me does at :259 — this is the SECOND mutation site able to
