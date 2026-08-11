@@ -82,6 +82,7 @@ WHAT THIS SCRIPT DOES NOT DO
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -130,9 +131,20 @@ def _log(msg: str) -> None:
     print(msg, flush=True)
 
 
-def _auth_header(api_key: str, api_secret: str) -> str:
-    import base64
+def write_manifest_atomically(path: Path, payload: dict[str, Any]) -> None:
+    """Serialise, write to a sibling .tmp, then rename.
 
+    A torn manifest is not a cosmetic problem: the resume path keys off it, so a
+    half-written file makes the next run treat every asset as un-fetched and
+    re-download the whole library — on an account whose overage is bandwidth.
+    Same tmp-then-rename shape `download()` uses for its .part files.
+    """
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+    tmp.replace(path)
+
+
+def _auth_header(api_key: str, api_secret: str) -> str:
     raw = f"{api_key}:{api_secret}".encode()
     return "Basic " + base64.b64encode(raw).decode()
 
@@ -330,8 +342,14 @@ def _self_test() -> int:
     for _ in range(3):
         limiter.wait()
     elapsed = time.monotonic() - t0
-    if elapsed < 0.09:
-        failures.append(f"  ratelimit: 3 calls at 20rps took {elapsed:.3f}s, expected >=0.10s")
+    # 3 calls at 20 rps = 2 enforced gaps of 50 ms. Assert the floor the maths
+    # actually gives, and state the same number in the message — a threshold and
+    # a description that disagree is a check nobody can act on.
+    MIN_ELAPSED = 0.09
+    if elapsed < MIN_ELAPSED:
+        failures.append(
+            f"  ratelimit: 3 calls at 20rps took {elapsed:.3f}s, expected >={MIN_ELAPSED:.2f}s"
+        )
 
     if failures:
         _log("SELF-TEST FAILED:")
@@ -418,12 +436,9 @@ def main() -> int:
     if args.dry_run:
         for e in entries:
             _log(f"  PLAN {e['bytes'] or 0:>10,}  {e['path']}")
-        manifest_path.write_text(
-            json.dumps(
-                {"version": MANIFEST_VERSION, "dry_run": True, "count": len(entries), "total_bytes": total_bytes, "assets": entries},
-                ensure_ascii=False,
-                indent=2,
-            )
+        write_manifest_atomically(
+            manifest_path,
+            {"version": MANIFEST_VERSION, "dry_run": True, "count": len(entries), "total_bytes": total_bytes, "assets": entries},
         )
         _log(f"dry-run — nothing downloaded. Plan written to {manifest_path}")
         return EXIT_OK
@@ -454,19 +469,16 @@ def main() -> int:
             failed += 1
             _log(f"[{i}/{len(entries)}] FAIL {e['path']} — {err}")
 
-    manifest_path.write_text(
-        json.dumps(
-            {
-                "version": MANIFEST_VERSION,
-                "dry_run": False,
-                "count": len(entries),
-                "total_bytes": total_bytes,
-                "failed": failed,
-                "assets": entries,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
+    write_manifest_atomically(
+        manifest_path,
+        {
+            "version": MANIFEST_VERSION,
+            "dry_run": False,
+            "count": len(entries),
+            "total_bytes": total_bytes,
+            "failed": failed,
+            "assets": entries,
+        },
     )
     _log(f"manifest written: {manifest_path}")
     if failed:
