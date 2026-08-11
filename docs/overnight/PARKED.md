@@ -125,6 +125,70 @@ pushed with the PR open, and the whole log merged intact once the gates settled.
 **Not a circuit-breaker event** — one signature, one task, and it resolved on its
 own terms.
 
+### 🔎 THE MECHANISM, named 2026-08-11 (PR #2775) — `strict_required_status_checks_policy`
+
+**The same error string has now produced three different diagnoses across three
+sessions. Here is the actual cause, so nobody spends a fourth.**
+
+`protect-staging` has **`strict_required_status_checks_policy` enabled**. Under a
+strict policy the required checks must be green **on a head that is up to date with
+the base**. A branch that is *behind* `staging` fails the gate **even when both
+required contexts report `success`** — its greens were measured against stale base
+code, so the ruleset declines to count them. The API says:
+
+```
+405 Repository rule violations found
+2 of 2 required status checks are expected.
+```
+
+**"Expected" here does not mean "not yet reported". It means "reported, but not on a
+head I will accept."** That wording is what has misled every session that hit it.
+
+**Measured on PR #2775, 11/08.** Both gates `success` on head `12ce2b8f`
+(`CI gate` `93804860031` 14:01:45Z, `Deploy gate` `93805135128` 14:02:38Z), base
+recorded as current — and three merge attempts all 405. Then:
+
+```
+git rev-list --count HEAD..origin/staging   →   3
+```
+
+The branch was **3 commits behind**. Sapir confirmed the same mechanism and the same
+error string on **PR #2752** earlier that day. The fix is one line:
+
+```bash
+git fetch origin staging && git merge origin/staging && git push
+# then WAIT for the gates to re-run on the NEW head, and merge
+```
+
+**Why the earlier readings were wrong, and the trap that survives both:**
+
+| Session | Diagnosis | Verdict |
+|---|---|---|
+| night 1, #2678 | "ruleset misconfigured — Sapir must inspect" | wrong; pointed a human at a healthy setting |
+| night 2, #2678 | "transient — the gates were still registering" | right *for that instance*, and it generalised badly |
+| 11/08, #2775 | **strict policy + behind branch** | the mechanism |
+
+Note that night 2's remedy — *wait longer* — **accidentally works on this cause
+too**, which is exactly why it survived as an explanation. If you wait long enough
+someone else's merge lands, you eventually re-sync for an unrelated reason, and the
+merge goes through. A remedy that works for the wrong reason is the hardest kind of
+wrong belief to dislodge.
+
+**The check that actually discriminates** — and the one I skipped on #2775, having
+"verified the base is current" by comparing the PR's `base.sha` to `origin/staging`,
+which only tells you where the base *pointer* is, never whether your branch contains
+it:
+
+```bash
+git rev-list --count HEAD..origin/staging    # 0 = up to date; anything else = behind
+```
+
+`mergeable_state: "behind"` reports the same fact, but it can read `blocked` instead
+when a required context is also outstanding — so on a 405, run the `rev-list` count
+before concluding anything. The generalisation of night 2's own lesson: a check-run
+saying `success`, the ruleset having ingested it, and the ruleset being *willing to
+count it* are **three** different facts, not two.
+
 ---
 
 # Session s4-r5tl1v (2026-08-08 evening)
