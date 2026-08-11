@@ -27,17 +27,60 @@ from pathlib import Path
 APP_ROOT = Path(__file__).resolve().parents[1] / "backend" / "app"
 
 # A query-level comparison against the vacation state. Matches the SQLAlchemy
-# filter form (`Producer.availability_state != ON_VACATION`) and the raw-literal
-# form it replaced. Deliberately does NOT match `self.availability_state ==
-# "on_vacation"` in schemas.py — those are Python-object reads on a single
-# instance (the auto-clear logic), not catalog query filters, and they are a
-# different concern with a different owner.
+# filter form (`Producer.availability_state != ON_VACATION`), the raw-literal
+# form it replaced, and the `.notin_([...])` re-derivation.
+#
+# `\s*` spans newlines, which is deliberate: the scan runs over whole-file text
+# rather than line by line, so a formatter wrapping a long condition across two
+# lines cannot slip a second owner past the guard.
+#
+# Deliberately does NOT match `self.availability_state == "on_vacation"` in
+# schemas.py — those are Python-object reads on one instance (the auto-clear
+# logic), not catalog query filters, and there is a control below pinning that
+# they stay unmatched.
 _QUERY_COMPARISON = re.compile(
-    r"Producer\.availability_state\s*(?:!=|==)\s*(?:ON_VACATION|\"on_vacation\"|'on_vacation')"
+    r"Producer\s*\.\s*availability_state\s*(?:!=|==)\s*"
+    r"(?:ON_VACATION|\"on_vacation\"|'on_vacation')"
+    r"|Producer\s*\.\s*availability_state\s*\.\s*notin_\s*\("
 )
 
-# The one legitimate owner.
+# KNOWN LIMITATIONS — stated rather than papered over, because a guard whose
+# gaps are undocumented reads as airtight. The adversarial review on PR #2778
+# constructed these and each one evades the pattern above:
+#
+#   1. an aliased model      — `PA = aliased(Producer); PA.availability_state != ...`
+#   2. raw SQL               — `text("availability_state != 'on_vacation'")`
+#   3. the value in a local  — `vac = "on_vacation"; ... != vac`
+#   4. dynamic attribute     — `getattr(Producer, "availability_state") != ...`
+#
+# All four are catchable only by real static analysis (an `ast` walk with name
+# resolution), which is a disproportionate amount of machinery for a rule with
+# five call sites. The guard's job is to catch the *plausible* re-derivation —
+# someone adding a sixth endpoint and writing the obvious filter — not to
+# defeat a determined author. Multi-line and `.notin_()` were the plausible
+# ones, and both are now covered.
 _OWNER = APP_ROOT / "services" / "producer_listing.py"
+
+
+def _strip_comments(source: str) -> str:
+    """Blank out `#` comments, preserving line count and offsets.
+
+    Necessary for correctness, not tidiness. Without it, this repo's house
+    style — verbose comments that quote the exact forbidden code shape, of
+    which this very file is an example — turns a *documentation* line into a
+    guard violation. A future developer writing
+    `# don't write Producer.availability_state != ON_VACATION here` in another
+    module would red the build for writing prose.
+
+    `_call_sites` below already stripped comments for exactly this reason; the
+    asymmetry between the two probes was the bug, and it produced a false RED
+    rather than a false green — the rarer and more confusing direction.
+    """
+    out = []
+    for line in source.splitlines():
+        code = line.split("#", 1)[0]
+        out.append(code + " " * (len(line) - len(code)))
+    return "\n".join(out)
 
 
 def _scan(root: Path) -> list[tuple[Path, int, str]]:
@@ -53,9 +96,12 @@ def _scan(root: Path) -> list[tuple[Path, int, str]]:
     paths = [root] if root.is_file() else sorted(root.rglob("*.py"))
     hits: list[tuple[Path, int, str]] = []
     for path in paths:
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if _QUERY_COMPARISON.search(line):
-                hits.append((path, lineno, line.strip()))
+        raw = path.read_text(encoding="utf-8")
+        text = _strip_comments(raw)
+        lines = raw.splitlines()
+        for match in _QUERY_COMPARISON.finditer(text):
+            lineno = text.count("\n", 0, match.start()) + 1
+            hits.append((path, lineno, lines[lineno - 1].strip()))
     return hits
 
 
@@ -106,6 +152,53 @@ def test_probe_ignores_the_instance_level_reads_it_must_not_flag(tmp_path):
     )
 
     assert _scan(benign.parent) == []
+
+
+def test_probe_catches_a_violation_split_across_lines(tmp_path):
+    """The evasion a formatter produces by accident, not by malice.
+
+    `ruff format` wrapping a long `.filter(...)` puts the operator on its own
+    line. A line-scoped scan misses it entirely, so a second owner of the rule
+    could land looking perfectly ordinary in review.
+    """
+    planted = tmp_path / "wrapped.py"
+    planted.write_text(
+        "q = q.filter(\n    Producer.availability_state\n    != ON_VACATION\n)\n",
+        encoding="utf-8",
+    )
+
+    hits = _scan(tmp_path)
+
+    assert len(hits) == 1, "probe missed a comparison wrapped across lines"
+
+
+def test_probe_catches_the_notin_re_derivation(tmp_path):
+    """`.notin_(["on_vacation"])` is the same rule in different clothes."""
+    planted = tmp_path / "notin.py"
+    planted.write_text(
+        'q = q.filter(Producer.availability_state.notin_(["on_vacation"]))\n',
+        encoding="utf-8",
+    )
+
+    assert len(_scan(tmp_path)) == 1
+
+
+def test_probe_does_not_flag_a_comment_describing_the_banned_shape(tmp_path):
+    """A guard that reds the build for writing documentation is worse than no
+    guard: it trains people to stop explaining things.
+
+    This repo's comments routinely quote the exact shape they warn against —
+    this file does it four times — so the case is live, not hypothetical.
+    """
+    documented = tmp_path / "documented.py"
+    documented.write_text(
+        "# Never write Producer.availability_state != ON_VACATION here —\n"
+        "# compose catalog_default_availability_condition() instead.\n"
+        "q = q.filter(catalog_default_availability_condition())\n",
+        encoding="utf-8",
+    )
+
+    assert _scan(tmp_path) == []
 
 
 def test_call_site_counter_ignores_the_definition_and_prose(tmp_path):
@@ -171,6 +264,15 @@ def test_every_converted_reader_composes_the_helper():
     Behavioural proof that each one works lives in
     test_catalog_count_consistency.py; this only proves none was quietly
     dropped in a later refactor.
+
+    THESE NUMBERS COUNT TEXTUAL CALLS, NOT APPLICATIONS — so a
+    behaviour-preserving refactor can legitimately red this test. The known
+    case: collapsing producer_listing's two `.filter()` calls into
+    `for query in (q, count_q): query.filter(...)` halves its count to 1 while
+    changing nothing. **If that is what you did, update the number here.** The
+    failure is a prompt to re-check, not an accusation — but do confirm the
+    behavioural suite is still green before editing the constant, because
+    "I refactored" and "I dropped a reader" produce the same red.
     """
     expected = {
         "services/producer_listing.py": 2,  # q + count_q
