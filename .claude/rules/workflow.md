@@ -1399,6 +1399,66 @@ Tasks auto-expire after 7 days.
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
     automation._
 
+    ### The branch name closes cards too — but NOT reliably. Verify after every merge.
+
+    Rule 29 above governs what the **text** says. The branch name is a second,
+    independent trigger: `Branch name gate` (MEH-1141) requires
+    `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$`, so **every legal branch
+    name carries some card's identifier**, and the integration has repeatedly
+    closed that card at merge with no closing keyword anywhere. The system
+    mandates the input that triggers the behaviour — this is not a mistake
+    avoidable by care.
+
+    **It was treated here as an unconditional law. It is not.** Measured
+    2026-08-11: a merge that should have closed by that rule did not.
+
+    | # | PR / branch | Body reference | Card state before | Result at merge |
+    |---|---|---|---|---|
+    | 1 | #2706 `feature/meh-215-handoff-qa-scope` | **none** | Backlog | **closed** — Done +2s, restored 13 min later |
+    | 2 | #2708 `feature/meh-999-dogfood-capture` | **none** | In Progress | **closed** — Done +7s, restored +49s |
+    | 3 | #2710 `feature/meh-1949-sweep-log` (docs-only) | **none** | Backlog | **closed** — Done +~6s, restored +10s |
+    | 4 | #2782 `feature/meh-1949-branch-name-guard` | `Closes MEH-1949` | Backlog | **closed** — but the keyword explains it, so this row says nothing about branch names |
+    | 5 | #2784 `feature/meh-2009-pkill-self-match` | **`Refs MEH-2009`** | Backlog | **DID NOT CLOSE** — still Backlog |
+
+    **What the data excludes.** Rows 4 and 5 merged the same day, by the same
+    actor, from the same card state — so **actor, date and start-state cannot
+    be the variable**. Rows 1 and 2 already excluded start-state on their own
+    (Backlog and In Progress both closed).
+
+    **Candidate condition, stated as a hypothesis and not as a rule:** the only
+    body carrying an *explicit non-closing* reference (`Refs MEH-N`) is the only
+    one that did not close. Every closing case had either **no** body reference
+    (1–3) or a real closing keyword (4). A plausible reading is that an explicit
+    `Refs` link takes precedence over the branch-derived one and suppresses the
+    close.
+
+    **Do not act on that as settled — it rests on a single suppressing
+    observation (n=1), and nothing here was checked against Linear's own
+    configuration or documentation.** Whoever verifies the Linear↔GitHub app
+    settings should run rows 4 and 5 against them; they are the controlled pair.
+
+    **The operative rule, which holds regardless of which hypothesis is right:**
+
+    > **After merging any PR whose branch carries `meh-<N>`, call `get_issue`
+    > on MEH-\<N> and check its status.** If it closed and the work is not
+    > finished, restore it and say so. Never write "the merge will close the
+    > card" — or "it won't" — as a prediction in a PR body; both directions
+    > have now been asserted from this file and both have been wrong.
+
+    A restored card is **indistinguishable from one that never closed**
+    (`completedAt` returns to `null`, `statusType` back to `started`), so the
+    only window in which the mistake is detectable is right after the merge.
+    Today the sole defence is that the author remembered — which is exactly what
+    Smell #2 calls a docs patch over a missing enforcement mechanism. The guard
+    shipped in #2782 checks *consistency* (branch identifier not declared as
+    `Closes` in the body) and is therefore unaffected by any of this; it does not
+    depend on the mechanism being understood.
+
+    _Sources: MEH-1949 (measured cases 1–3, 08–09/08, with `stateHistory`
+    timestamps); MEH-1872 (10/08 — closed, reopened and re-closed within five
+    seconds by a branch that had borrowed its number); case 5 measured 11/08 in
+    session `se-2xk7m`. Related open cards: MEH-1615, MEH-1736._
+
 30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
     never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
     PR title/body to unblock the `DO-NOT-MERGE marker gate` (`pr-checks.yml`
