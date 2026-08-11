@@ -133,13 +133,22 @@ def _call_sites(path: Path) -> int:
     definition line and a comment naming the function read as call sites).
     Comments are stripped and the definition skipped so the expected numbers
     below mean what they say.
+
+    Shares `_strip_comments` with `_scan` rather than re-implementing the
+    naive `#` split. That split was this function's original form, and it
+    carries the same string-literal defect the CI reviewer found in `_scan`
+    on PR #2778: a `#` inside a string truncates the line, so a call after it
+    is not counted. Failure direction here is a false RED — the count comes in
+    low and the assertion fails loudly rather than passing wrongly — which is
+    why it was a Minor and not a MUST-FIX. It is still a live miscount path,
+    and two probes in one file disagreeing about what a comment is was exactly
+    the asymmetry that produced the first bug. One owner for the rule.
     """
     count = 0
-    for line in path.read_text(encoding="utf-8").splitlines():
-        code = line.split("#", 1)[0]
-        if code.lstrip().startswith("def "):
+    for line in _strip_comments(path.read_text(encoding="utf-8")).splitlines():
+        if line.lstrip().startswith("def "):
             continue
-        count += code.count("catalog_default_availability_condition()")
+        count += line.count("catalog_default_availability_condition()")
     return count
 
 
@@ -265,6 +274,23 @@ def test_call_site_counter_ignores_the_definition_and_prose(tmp_path):
     )
 
     assert _call_sites(sample) == 2
+
+
+def test_call_site_counter_is_not_blinded_by_a_hash_inside_a_string_literal(tmp_path):
+    """The mirror of the `_scan` case, on the second probe.
+
+    Same line, so it discriminates: the naive split drops the call after the
+    string's `#` and returns 1 instead of 2.
+    """
+    tricky = tmp_path / "tricky.py"
+    tricky.write_text(
+        "q = q.filter(catalog_default_availability_condition())\n"
+        'ANCHOR = "docs#vacation"; '
+        "c = c.filter(catalog_default_availability_condition())\n",
+        encoding="utf-8",
+    )
+
+    assert _call_sites(tricky) == 2
 
 
 def test_probe_finds_the_real_owner_in_the_committed_tree():
