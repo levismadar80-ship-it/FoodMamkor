@@ -36,6 +36,7 @@ from app.models import (
     Product,
     SearchQuery,
 )
+from app.services.availability_validation import ON_VACATION
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
@@ -46,6 +47,45 @@ from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
+
+
+def catalog_default_availability_condition():
+    """The catalog's default-hide rule, as a reusable SQLAlchemy condition.
+
+    MEH-1986 — this rule used to live only inside ``build_producers_query``
+    (the listing + its X-Total-Count), while four sibling endpoints answered
+    the same question filtering on ``status == "approved"`` alone. Measured
+    09/08 against production: ``/producers`` said 4, ``/producers/count`` and
+    ``/producers/cities`` said 5. A rule converted in one reader and left raw
+    in the others is not a smaller version of the change — it is a live
+    disagreement, and it ships looking finished.
+
+    Every reader that answers "how many businesses does the catalog show"
+    composes THIS function, so the five can no longer drift apart:
+
+      - ``build_producers_query``            (the listing + X-Total-Count)
+      - ``GET /producers/count``             (routers/producers.py)
+      - ``GET /producers/cities``            (routers/producers.py)
+      - ``GET /producers/random``            (routers/producers.py)
+      - ``GET /stats``.producers_count       (routers/marketing.py)
+
+    Deliberately NOT applied to intent-driven lookups — direct slug, favorites,
+    free-text search, and an explicit ``?availability_state=on_vacation`` — all
+    of which MEH-291 preserved on purpose. Hiding is a browse-surface default,
+    never a removal from the site.
+
+    NULL-safety: ``producers.availability_state`` is ``nullable=False`` with
+    ``server_default 'accepting_orders'`` (models.py:221, migration
+    2a74fa41ceb1), so no row can hold NULL and the ``!=`` cannot silently drop
+    one the way it would on a nullable column.
+
+    The state name is imported rather than re-spelt: ``availability_validation``
+    owns that literal for every write path, and its own docstring already says
+    it does not decide listing exclusion — which is this function's job. One
+    owner for the value, one owner for the decision.
+    """
+    return Producer.availability_state != ON_VACATION
+
 
 # (key in filters dict, attribute on Producer model) — covers the simple
 # `if v is not None: q = q.filter(Producer.<attr> == v)` pattern. The
@@ -430,9 +470,14 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     # the default listing (still reachable via direct slug / favorites / an
     # explicit ?availability_state=on_vacation). User-visible behavior shift
     # bundled with the Phase 3 frontend per Q2a.
+    # MEH-1986: the condition itself moved to catalog_default_availability_condition()
+    # above so the four sibling count/city/random endpoints apply the same rule
+    # rather than re-deriving it. The `is None` gate stays HERE — it is this
+    # function's opt-out (an explicit ?availability_state), and the siblings
+    # take no such parameter.
     if filters.get("availability_state") is None:
-        q = q.filter(Producer.availability_state != "on_vacation")
-        count_q = count_q.filter(Producer.availability_state != "on_vacation")
+        q = q.filter(catalog_default_availability_condition())
+        count_q = count_q.filter(catalog_default_availability_condition())
 
     # MEH-986 ch3b + MEH-1260: verified-only kosher filter with expiry
     # enforcement — extracted to _kosher_condition (PLR0915 headroom).

@@ -40,7 +40,10 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import ViewContext, hash_ip, track_producer_view
 from app.services.license_validation import ensure_license_for_categories
-from app.services.producer_listing import build_producers_query
+from app.services.producer_listing import (
+    build_producers_query,
+    catalog_default_availability_condition,
+)
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_count,
@@ -201,9 +204,20 @@ def list_producers(
 @router.get("/producers/count")
 @limiter.limit("60/minute")
 def producers_count(request: Request, db: Session = Depends(get_db)):
-    """MEH-159 — lightweight total count for keeping pagination fresh client-side."""
+    """MEH-159 — lightweight total count for keeping pagination fresh client-side.
+
+    MEH-1986: applies the catalog's default-hide rule, so this number and the
+    ``X-Total-Count`` header of ``GET /producers`` are the same number. They
+    feed the same "X מתוך Y" counter (``ProducersClient.jsx:378``), and before
+    this they disagreed by every producer on vacation.
+    """
     count = (
-        db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar()
+        db.query(func.count(Producer.id))
+        .filter(
+            Producer.status == "approved",
+            catalog_default_availability_condition(),
+        )
+        .scalar()
         or 0
     )
     return {"count": count}
@@ -219,11 +233,17 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
     are computed live from the DB — never hardcoded (over-claim guard MEH-519).
     Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
     The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
+
+    MEH-1986: the empty-region guard now also covers availability. It existed
+    for blank city names only, so a city whose every producer was on vacation
+    still published a chip — and the catalog behind that chip returns nothing.
+    A city drops out entirely once its last non-vacation producer does.
     """
     rows = (
         db.query(Producer.city, func.count(Producer.id).label("count"))
         .filter(
             Producer.status == "approved",
+            catalog_default_availability_condition(),
             Producer.city.isnot(None),
             func.trim(Producer.city) != "",
         )
@@ -245,10 +265,18 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
     DECLARED BEFORE ``/producers/{producer_id}`` on purpose: FastAPI matches in
     declaration order, and "random" would otherwise 422 against the UUID path
     param. Mirrors the ordering of /count, /cities, /by-slug above.
+
+    MEH-1986: draws from the same set the catalog shows. "Surprise me" landing
+    on a business the catalog deliberately hides is the one case where the
+    default-hide is not merely inconsistent but actively wrong — the button
+    promises a business the visitor could have found by browsing.
     """
     row = (
         db.query(Producer.id, Producer.slug)
-        .filter(Producer.status == "approved")
+        .filter(
+            Producer.status == "approved",
+            catalog_default_availability_condition(),
+        )
         .order_by(func.random())
         .limit(1)
         .first()
