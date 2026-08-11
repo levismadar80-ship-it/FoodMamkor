@@ -135,4 +135,26 @@ def test_oauth_journey_dispatches_exactly_one_welcome():
     assert step_2 == 2, (
         f"expected exactly 2 sends in register_producer (upgrade + password), found {step_2}"
     )
-    assert step_0 + 1 == 1, "the OAuth journey must total exactly one welcome"
+    assert step_0 + step_2 == 2, (
+        f"expected 2 welcome sends across both entry points, found {step_0 + step_2}"
+    )
+
+
+# The line above replaced `assert step_0 + 1 == 1`, which the CI reviewer
+# correctly called VACUOUS: `step_0 == 0` is asserted two lines earlier, so it
+# reduced to `assert 1 == 1` and protected nothing. It read like a total-count
+# check and was a tautology — inside a file whose entire subject is numeric
+# final-state assertions.
+#
+# THE LIMIT OF THIS FILE, stated so the total above is not over-read: function
+# granularity cannot separate the two sends inside `register_producer`, because
+# the upgrade branch and the password branch live in one function. So this
+# guard proves "two send sites exist, and none of them is in
+# register_producer_oauth" — it does NOT prove the OAuth journey receives
+# exactly one mail. That claim belongs to the behavioural suite
+# (test_meh1806_upgrade_welcome.py::test_new_oauth_producer_gets_exactly_one_welcome),
+# which drives Step 0 → Step 2 and counts actual dispatches.
+#
+# The two are complementary and neither is redundant: the behavioural test
+# cannot see a send added to a path it does not exercise, and this one cannot
+# see which branch a send sits on.

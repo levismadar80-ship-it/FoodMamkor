@@ -206,7 +206,7 @@ def test_password_path_is_unchanged(client, welcome):
     assert _kinds(welcome) == ["producer"]
 
 
-def test_upgrade_path_still_sends_no_verify_email(client, db, welcome):
+def test_upgrade_path_still_sends_no_verify_email(client, db, monkeypatch):
     """The half of the original decision that STANDS.
 
     Verification is deliberately not enforced on the upgrade branch and is
@@ -216,18 +216,17 @@ def test_upgrade_path_still_sends_no_verify_email(client, db, welcome):
     """
     user = make_user(db, email="noverify@test.com", role="consumer")
     verify = Mock()
-    import app.routers.auth as auth_mod
+    # monkeypatch, not a manual try/finally. The hand-rolled version restored
+    # the original in `finally` but assigned `resp` inside `try`, so any raise
+    # from the request turned the assertion below into a NameError that masks
+    # the real error. monkeypatch reverts automatically and has no such gap.
+    monkeypatch.setattr("app.routers.auth._send_verify_email", verify)
 
-    original = auth_mod._send_verify_email
-    auth_mod._send_verify_email = verify
-    try:
-        resp = client.post(
-            "/auth/register/producer",
-            json=_upgrade_body(producer_name="משק ללא אימות", phone="0503334455"),
-            headers=auth_header(user),
-        )
-    finally:
-        auth_mod._send_verify_email = original
+    resp = client.post(
+        "/auth/register/producer",
+        json=_upgrade_body(producer_name="משק ללא אימות", phone="0503334455"),
+        headers=auth_header(user),
+    )
 
     assert resp.status_code == 200, resp.text
     verify.assert_not_called()
