@@ -1399,101 +1399,113 @@ Tasks auto-expire after 7 days.
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
     automation._
 
-    ### The branch name closes cards too — but NOT reliably. Verify after every merge.
+    ### 29b — branch-name auto-close: the condition is DOCUMENTED. Verify anyway.
 
-    Rule 29 above governs what the **text** says. The branch name is a second,
-    independent trigger: `Branch name gate` (MEH-1141) requires
-    `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$`, so **every legal branch
-    name carries some card's identifier**, and the integration has repeatedly
-    closed that card at merge with no closing keyword anywhere. The system
-    mandates the input that triggers the behaviour — this is not a mistake
-    avoidable by care.
+    Rule 29 above covers one direction: a **Done** issue flipped back to In
+    Progress. This covers the other: an **active** issue closed by nothing but
+    the identifier in the branch name. Same integration, opposite damage.
 
-    **It was treated here as an unconditional law. It is not — and the
-    condition is documented by Linear, not inferred by us.** Linear defines a
-    class of **non-closing magic words** — `ref`, `references`, `part of`,
-    `related to`, `contributes to`, `towards` — which **link** a PR to an issue
-    but explicitly do **not** automate its status on merge. That is the whole
-    mechanism: a non-closing reference in the body suppresses the close the
-    branch name would otherwise fire.
+    **The claim this replaces was stated as a law** in this repo's own artifacts
+    — *"every `meh-<N>` in a branch name IS an auto-link and will close the
+    ticket on merge with no keyword anywhere."* It is not a law, and the
+    condition is **published by Linear**, not something this repo had to derive.
 
-    Read against that spec, every row below is ordinary behaviour rather than a
-    puzzle. A **bare identifier with no magic word links only**; the branch name
-    then closes on merge **to the default branch** — which in this repo is
-    `staging`, not `main`.
+    **The mechanism.** Linear defines two classes of magic word:
 
-    Measured 2026-08-11, and now explained rather than merely tabulated:
+    | Class | Words | Effect on merge |
+    |---|---|---|
+    | **closing** | `close/closes/closed`, `fix/fixes/fixed`, `resolve/resolves/resolved` | links **and** closes |
+    | **non-closing** | `ref`, `references`, `part of`, `related to`, `contributes to`, `towards` | links **only** — explicitly does **not** automate status |
 
-    | # | PR / branch | Body reference | Card state before | Result at merge |
-    |---|---|---|---|---|
-    | 1 | #2706 `feature/meh-215-handoff-qa-scope` | **none** | Backlog | **closed** — Done +2s, restored 13 min later |
-    | 2 | #2708 `feature/meh-999-dogfood-capture` | **none** | In Progress | **closed** — Done +7s, restored +49s |
-    | 3 | #2710 `feature/meh-1949-sweep-log` (docs-only) | **none** | Backlog | **closed** — Done +~6s, restored +10s |
-    | 4 | #2782 `feature/meh-1949-branch-name-guard` | `Closes MEH-1949` | Backlog | **closed** — but the keyword explains it, so this row says nothing about branch names |
-    | 5 | #2784 `feature/meh-2009-pkill-self-match` | **`Refs MEH-2009`** | Backlog | **DID NOT CLOSE** — still Backlog |
+    A **bare identifier with no magic word links only**; the branch name then
+    closes on merge **to the default branch** — which in this repo is `staging`,
+    not `main`. A **non-closing** reference in the body suppresses the close the
+    branch name would otherwise fire. That is the whole rule.
 
-    The observations corroborate the spec; they are not what establishes it.
-    (Rows 4 and 5 merged the same day, same actor, same start state, opposite
-    outcomes — which independently excludes actor, date and card state. Rows 1–2
-    had already excluded start-state, Backlog and In Progress both closing.)
+    **Eight measured merges, every body reference read from the GitHub API:**
 
-    ### ⚠️ ONE OPEN CHECK — `Refs` is not literally in the documented list
+    | | PR | branch | body reference | before → after | fired? |
+    |---|---|---|---|---|---|
+    | 08/08 | #2706 | `feature/meh-215-…` | none | Backlog → **Done** in 2 s | ✅ |
+    | 09/08 | #2708 | `feature/meh-999-…` | none | In Progress → **Done** in 7 s | ✅ |
+    | 09/08 | #2710 | `feature/meh-1949-…` | none | Backlog → **Done** | ✅ |
+    | 10/08 | #2745 | `feature/meh-1872-…` | **closing** | → **Done** | ✅ |
+    | 11/08 | #2776 | `feature/meh-1249-…` | **closing** | Todo → **Done** | ✅ |
+    | 11/08 | #2780 | `feature/meh-1976-…` | **closing** | Todo → **Done** | ✅ |
+    | 11/08 | #2782 | `feature/meh-1949-…` | **closing** | Todo → **Done** in 15 s | ✅ |
+    | 11/08 | #2784 | `feature/meh-2009-…` | **`Refs MEH-2009`** (non-closing) | Backlog → **Backlog, unchanged** | ❌ |
 
-    The published non-closing words are `ref` and `references`. **`Refs` — the
-    plural this repo actually writes — is not among them.** Two possibilities,
-    and they are not equivalent:
+    Every firing row carries either **no reference** or a **closing** keyword.
+    The single non-firing row is the only one carrying a **non-closing** word.
+    Eight for eight against the published spec — so #2784 is not an anomaly and
+    there is nothing left to explain. _(An earlier version of this table asserted
+    "no closing keyword and no bare identifier in any body"; that was wrong for
+    five of the eight rows and is corrected here from measured values.)_
 
-    1. Linear normalises the plural, so `Refs` behaves as `ref`; or
-    2. `Refs` is *not* recognised, and row 5's suppression came from something
-       else entirely — in which case the mechanism above is right in general and
-       wrong about this repo's habit.
+    ### ⚠️ ONE OPEN CHECK — `Refs` is not literally in the published list
 
-    **Resolve this against Linear's settings or documentation — do NOT resolve it
-    by merging another PR to see what happens.** An experiment here is the slower
-    and weaker instrument, and running one would repeat the mistake this whole
-    entry records.
+    The documented words are `ref` and `references`. **`Refs` — the plural this
+    repo actually writes — is not among them.** Either Linear normalises it, or
+    #2784's suppression came from something else and the spec is right in general
+    while wrong about this repo's habit.
 
-    **Until it is resolved: keep writing `Refs`, and do not rely on it.** Those
-    are compatible — write it because it is the repo's convention and, if
-    recognised, it is the correct suppressor; do not lean on it, because an
-    unrecognised `Refs` degrades silently to a bare identifier, which closes.
-    The `get_issue`-after-merge step below covers both branches of the
-    uncertainty and costs one call.
+    **Resolve this against Linear's settings or documentation — NOT by merging
+    another PR to watch what happens.** An experiment is the slower, weaker
+    instrument against a documented system, and running one here would repeat the
+    exact error this entry exists to record.
 
-    **The operative rule, which holds regardless of which hypothesis is right:**
+    **Until resolved: keep writing `Refs`, and do not rely on it.** Both at once —
+    write it because it is the repo's convention and, if recognised, the correct
+    suppressor; do not lean on it, because an unrecognised `Refs` degrades
+    silently to a bare identifier, which closes.
 
-    > **After merging any PR whose branch carries `meh-<N>`, call `get_issue`
-    > on MEH-\<N> and check its status.** If it closed and the work is not
-    > finished, restore it and say so. Never write "the merge will close the
-    > card" — or "it won't" — as a prediction in a PR body; both directions
-    > have now been asserted from this file and both have been wrong.
+    ### A reopen does not necessarily stick — MEH-1872 (10/08)
 
-    A restored card is **indistinguishable from one that never closed**
-    (`completedAt` returns to `null`, `statusType` back to `started`), so the
-    only window in which the mistake is detectable is right after the merge.
-    Today the sole defence is that the author remembered — which is exactly what
-    Smell #2 calls a docs patch over a missing enforcement mechanism. The guard
-    shipped in #2782 checks *consistency* (branch identifier not declared as
-    `Closes` in the body) and is therefore unaffected by any of this; it does not
-    depend on the mechanism being understood.
+    PR #2745 merged at 13:32:28 and closed it. A human reopened it at 13:59:08.
+    It was **closed again at 13:59:13 — five seconds later**, by the integration
+    and not by a person. So "reopen after merge" is a step whose *result must
+    itself be verified*, not one you perform and walk away from.
+
+    **The three obligations, in order:**
+
+    1. **Never predict the outcome in either direction.** Do not write "merging
+       will close MEH-N" and do not write "the branch will not close it". Both
+       have been asserted from this file and both have been wrong.
+    2. **Always carry an explicit trailer that says what you mean** — `Closes
+       MEH-N` when the DoD is met, `Refs MEH-N` when it is not. The trailer is
+       the deterministic part, and it is what a reader months later will believe.
+    3. **After merge, `get_issue` every ticket number appearing in the branch
+       name** — not the ones you intended to close. If the DoD is unmet, reopen
+       with a one-paragraph Hebrew reason on the card, **then re-read the status
+       to confirm the reopen held.**
+
+    **You cannot avoid this by naming branches carefully.** `Branch name gate`
+    (MEH-1141) *requires* `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$` —
+    every legal branch name carries some ticket's identifier. The system mandates
+    the input that triggers the behaviour, so "be careful" is not a mitigation.
+
+    **What the MEH-1949 guard does and does not buy.** It warns when a branch
+    carries `meh-<N>` and the body does not declare `Closes MEH-<N>`. That is a
+    *consistency* check on the text — true regardless of what the integration
+    does — so it survives this correction intact. It does **not** predict or
+    prevent the close.
 
     **Structural option, recorded for Sapir and deliberately NOT acted on.**
     Linear supports **per-target-branch automation rules**, including regex
-    matching and a **"no action"** override. Closing-on-merge-to-`staging` can
-    therefore be switched off outright, leaving *only* explicit closing magic
-    words to close anything. That would convert this entire class from a rule
-    people must remember into a configuration that cannot be forgotten — the
-    exact upgrade Smell #2 asks for. **It is a Linear settings change, not a repo
-    change, so it is Sapir's call and not CC's.**
+    matching and a **"no action"** override. Closing-on-merge-to-`staging` can be
+    switched off outright, leaving *only* explicit closing magic words to close
+    anything — converting this entire class from a rule people must remember into
+    a configuration that cannot be forgotten (the upgrade Smell #2 asks for).
+    **Linear settings, not a repo change: Sapir's call, not CC's.**
 
-    _Sources: **Linear's own documentation** for the magic-word classes and the
-    per-branch automation rules — the mechanism above is quoted from the vendor,
-    not derived here. Corroborating measurements: MEH-1949 (cases 1–3, 08–09/08,
-    with `stateHistory` timestamps); MEH-1872 (10/08 — closed, reopened and
-    re-closed within five seconds by a branch that had borrowed its number); case
-    5 measured 11/08 in session `se-2xk7m`. PR #2795 carried a pre-registered
-    prediction of row 5's behaviour; it is **confirmation, not evidence** — the
-    docs settled it first. Related open cards: MEH-1615, MEH-1736._
+    _Sources: **Linear's own documentation** for the two magic-word classes and
+    the per-branch automation rules — the mechanism is quoted from the vendor,
+    not derived here. Corroborating measurements across 08–11/08 (table above),
+    bodies read from the GitHub API. PR #2795 carried a pre-registered prediction
+    of #2784's behaviour: **confirmation, not evidence** — the docs settled it
+    first; it still stands and is worth reporting when it resolves. The three
+    11/08 reopens (MEH-1249, MEH-1976, MEH-1949) all needed manual restoration on
+    the same day. Related open cards: MEH-1615, MEH-1736._
 
 30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
     never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
