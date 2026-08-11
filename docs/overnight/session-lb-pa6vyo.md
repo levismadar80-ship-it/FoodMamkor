@@ -105,11 +105,42 @@ The tell was available and I missed it: the failing run reported **2609** tests 
 
 ---
 
+## Fault 4 — I parked this PR on a wrong diagnosis, twice over
+
+This log's own PR (#2775) hit `405 — 2 of 2 required status checks are expected`
+with both required gates reading `success`. I parked it as a ruleset problem for
+Sapir. **Both the park and its evidence were wrong.**
+
+- I claimed the second merge attempt came 90 s after the first, and used that to
+  rule out the registration transient. It came *seconds* after — I read an
+  unfinished timer's empty output file and fired anyway. I asserted a wait I had
+  not performed, and it was the sole support for the claim.
+- Sapir then named the real cause: `protect-staging` runs
+  **`strict_required_status_checks_policy`**, under which a branch that is *behind*
+  the base fails the gate even with green checks. `git rev-list --count
+  HEAD..origin/staging` returned **3**. Same mechanism and same string as PR #2752
+  that morning.
+
+**The check I ran was the wrong check.** I compared the PR's `base.sha` to
+`origin/staging`, saw them equal, and wrote "base is current". That compares where
+the base *pointer* sits; it says nothing about whether my branch contains it. One
+command would have answered it, and it is now recorded in `PARKED.md` beside the
+#2678 entry along with why the previous two diagnoses of this same string were also
+wrong.
+
+**The shape worth keeping:** three sessions, one error string, three different
+causes asserted — and night 2's "just wait longer" remedy *accidentally works* on
+this cause too, which is why it survived. A remedy that works for the wrong reason
+is the hardest wrong belief to dislodge.
+
+---
+
 ## In-flight ledger
 
 | PR | Card | State |
 |---|---|---|
 | #2771 | MEH-1998 | **merged** `1c42e3d8`, verified off `origin/staging` |
 | — | MEH-1993 | closed zero-diff, claim branch still on origin (see fault 3) |
+| #2775 | this log | un-parked after the strict-policy diagnosis; synced and merged |
 
-Nothing in flight. No check-ins armed.
+No check-ins armed.
