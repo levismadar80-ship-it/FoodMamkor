@@ -129,6 +129,8 @@ check_branch_consistency() {
 
 run_self_test() {
   local rc=0 name title body expected got
+  # MEH-1949: the branch-case loop's own locals (CI reviewer, PR #2782).
+  local warns br fx
   # fixture -> expected exit code
   local -a cases=(
     "clean:0"
@@ -158,7 +160,6 @@ run_self_test() {
   # These assert on WARNING COUNT, not on exit code, because the branch check is
   # warn-only. Asserting the exit code here would pass identically whether the
   # check ran or not — a green with two possible causes is not a check.
-  local warns
   local -a branch_cases=(
     # branch|body-fixture|expected-warning-count
     "feature/meh-1379-guard|closes-only|0"
@@ -185,7 +186,10 @@ run_self_test() {
   done
 
   if [ "$rc" -eq 0 ]; then
-    echo "self-test: all 4 text fixtures + 6 branch cases passed"
+    # Counts derived, never hardcoded — a literal here goes stale the moment
+    # someone adds a case, and a stale claim in a passing message is worse
+    # than no claim (CI reviewer, PR #2782).
+    echo "self-test: all ${#cases[@]} text fixtures + ${#branch_cases[@]} branch cases passed"
   else
     echo "self-test: FAILURES above" >&2
   fi
