@@ -8,10 +8,16 @@ import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
+import { geocodeCity } from "@/lib/places";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation, setUserLocation, clearUserLocation } from "@/lib/user-location";
+import {
+  useUserLocationOrigin,
+  setUserLocation,
+  clearUserLocation,
+  SOURCE_CITY,
+} from "@/lib/user-location";
 
 import CityPickerModal from "./components/CityPickerModal";
 import FilterChipsBar from "./components/FilterChipsBar";
@@ -87,7 +93,15 @@ export default function MapPage() {
   // pending flag exists to disable it and to force the re-render that snaps the
   // native <select> back after a failed attempt.
   const [geoSortPending, setGeoSortPending] = useState(false);
-  const userLoc = useUserLocation();
+  // MEH-2014 PR 2: the origin carries WHERE it came from, because the UI has to
+  // say which of the two is active. sortProducers and every distance label read
+  // only .lat/.lng, so the extra fields are inert everywhere except the label.
+  const userLoc = useUserLocationOrigin();
+  // Separate from geoSortPending: a city lookup is a network round-trip on a
+  // path where the previous origin must keep working until the new one lands.
+  const [cityOriginPending, setCityOriginPending] = useState(false);
+  // Monotonic id of the newest city lookup — see handleMapCitySelected.
+  const cityOriginRequestRef = useRef(0);
   // MEH-1864: the auto default is now read from two places (here and the
   // rating-data fallback below), so it is named once instead of spelled twice.
   const autoSort = userLoc ? "nearest" : "newest";
@@ -299,7 +313,48 @@ export default function MapPage() {
     // the producer list by delivery_city, it doesn't pan the map. Users who
     // want to zoom into their city use the "קרוב אליי" (goToMyLocation)
     // button or pan manually.
-  }, [userCityCtx, filters, feed]);
+
+    // MEH-2014 PR 2: the chosen city also becomes the sort origin, which is
+    // what makes "מרחק" usable with GPS denied. This is LocationModal's
+    // onSelectCity and LocationModal is the "where are you?" modal — every
+    // path that opens it (the crosshair's denial, the sort trigger's denial,
+    // the near-me pill's denial) is a user establishing her location, so
+    // treating the pick as an origin is the same intent, not a second meaning.
+    //
+    // The filter above is deliberately NOT awaited on this: a geocode failure
+    // must leave the city filter working exactly as it did before PR 2.
+    // Stale-resolution guard: the modal closes on pick, so a second pick needs
+    // another denial — but that is a user action, not a lock, and a slow first
+    // lookup can land AFTER a fast second one. Without the token the stored
+    // origin would be the city the user replaced while the filter shows the one
+    // she chose, and the label would confidently name the wrong one. Only the
+    // newest request may write.
+    const token = ++cityOriginRequestRef.current;
+    setCityOriginPending(true);
+    geocodeCity(city)
+      .then((coords) => {
+        if (token !== cityOriginRequestRef.current) return;
+        if (!coords) {
+          showToast.info(t("map.client.sort.city_origin_failed"));
+          return;
+        }
+        // Replaces any GPS fix — one key, so mutual exclusion is structural.
+        setUserLocation(coords.lat, coords.lng, { source: SOURCE_CITY, city });
+        setSortBy("nearest");
+      })
+      .catch(() => {
+        if (token !== cityOriginRequestRef.current) return;
+        // ProviderError (MEH-1766) or a network failure. Same user-facing
+        // outcome: no origin, and the copy says a city could not be located
+        // rather than blaming the city the user picked.
+        showToast.info(t("map.client.sort.city_origin_failed"));
+      })
+      .finally(() => {
+        // The pending flag belongs to the newest request only; an outrun
+        // lookup must not clear the spinner the live one is showing.
+        if (token === cityOriginRequestRef.current) setCityOriginPending(false);
+      });
+  }, [userCityCtx, filters, feed, t]);
 
   // Was MapClient.jsx:430-455 — handleGpsClick
   const handleGpsClick = useCallback(() => {
@@ -451,16 +506,42 @@ export default function MapPage() {
   // now outlives the tab and no way to remove it, which is strictly worse than
   // the session-scoped behaviour this ticket replaced. Defined once rather than
   // copied into both shells (workflow.md → Smell #1: two mechanisms, one job).
-  const clearLocationControl = userLoc && !geoSortPending ? (
-    <button
-      type="button"
-      onClick={handleClearLocation}
-      data-testid="clear-user-location"
-      className="text-xs text-fg-muted underline underline-offset-2 hover:text-primary min-h-[44px]"
-    >
-      {t("map.client.sort.clear_location")}
-    </button>
-  ) : null;
+  //
+  // MEH-2014 PR 2 turned this into an ORIGIN control rather than a bare clear
+  // button. With two possible origins, "clear" alone left the user unable to
+  // tell what the distances were measured from — and after a city pick the
+  // card labels change meaning silently (MEH-1307 dropped the "ממך" suffix, so
+  // a label is a bare magnitude). Naming the active origin is what keeps the
+  // numbers readable; the clear button is unchanged beneath it.
+  const clearLocationControl =
+    cityOriginPending || (userLoc && !geoSortPending) ? (
+      <div
+        className="flex flex-wrap items-center gap-x-2 gap-y-1"
+        data-testid="sort-origin"
+      >
+        {cityOriginPending ? (
+          <span role="status" className="text-xs text-fg-muted">
+            {t("map.client.sort.locating_city")}
+          </span>
+        ) : (
+          <>
+            <span className="text-xs text-fg-muted" data-testid="sort-origin-label">
+              {userLoc.source === SOURCE_CITY
+                ? t("map.client.sort.origin_city", { city: userLoc.city })
+                : t("map.client.sort.origin_gps")}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearLocation}
+              data-testid="clear-user-location"
+              className="text-xs text-fg-muted underline underline-offset-2 hover:text-primary min-h-[44px]"
+            >
+              {t("map.client.sort.clear_location")}
+            </button>
+          </>
+        )}
+      </div>
+    ) : null;
 
   const filterChipsBar = (
     <FilterChipsBar

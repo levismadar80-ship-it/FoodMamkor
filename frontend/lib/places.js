@@ -249,3 +249,32 @@ export async function resolveSuggestion(suggestion, opts = {}) {
   if (suggestion?.provider === "google") return googleResolve(suggestion, opts);
   return suggestion?.raw ?? null;
 }
+
+/**
+ * City name → {lat, lng}, or null when nothing resolved (MEH-2014 PR 2).
+ *
+ * /map lets a user who denied GPS pick a city as the origin for the "מרחק"
+ * sort, and a city name is the only input available — the frontend has no
+ * city→coordinate table (`data/cities.js` is names only) and `GET /cities`
+ * returns names, even though the backend `cities` table does carry seeded
+ * lat/lng. Rather than teach the map about providers, this reuses the same
+ * two-step the address field uses.
+ *
+ * Deliberately returns null instead of throwing on a no-match: the caller's
+ * failure copy is identical for "no such city" and "provider said no", and a
+ * failed origin lookup must never take down the city FILTER that shares the
+ * same click. A provider rejection (MEH-1766 ProviderError) is still worth
+ * distinguishing in logs, so it is re-thrown.
+ */
+export async function geocodeCity(name, opts = {}) {
+  const query = String(name ?? "").trim();
+  if (!query) return null;
+  const suggestions = await autocompleteAddresses(query, opts);
+  const first = Array.isArray(suggestions) ? suggestions[0] : null;
+  if (!first) return null;
+  const place = await resolveSuggestion(first, opts);
+  const lat = Number(place?.lat);
+  const lng = Number(place?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
