@@ -423,11 +423,12 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
               {/* MEH-2033: the thumb appearing IS the upload success state
                   (no live region), so alt="" announced nothing. The section's
                   existing key is the plural heading — imperfect for one thumb,
-                  but the card bans new i18n keys; stated in the PR. */}
+                  but the card bans new i18n keys; the 1-based index suffix
+                  distinguishes N thumbs without a new key (CI reviewer). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
-                alt={t("heading")}
+                alt={`${t("heading")} ${i + 1}`}
                 className="w-full h-24 object-cover rounded-[8px] border border-border"
               />
               <button

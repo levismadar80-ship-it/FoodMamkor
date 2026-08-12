@@ -86,7 +86,8 @@ describe("dashboard ImagesCard gallery (MEH-2033)", () => {
 
     const thumb = document.querySelector('img[src*="a.jpg"]');
     expect(thumb).not.toBeNull();
-    expect(thumb.getAttribute("alt")).toBe(he.dashboard.producer.images.heading);
+    // Heading + 1-based index — N thumbs announce distinctly (CI reviewer).
+    expect(thumb.getAttribute("alt")).toBe(`${he.dashboard.producer.images.heading} 1`);
   });
 });
 
@@ -108,10 +109,13 @@ function scanFileInputs(source) {
   // Each <input ...> opening tag containing type="file"; JSX attributes never
   // nest '>', so a lazy match to the closing bracket bounds the tag.
   const tags = source.match(/<input\b[^>]*type="file"[^>]*>/gs) ?? [];
+  // Word-boundary regexes, not literal `className="sr-only"` substrings — the
+  // closing-quote form would score a future `className="sr-only focus:…"` as
+  // srOnly:0 and red the guard on compliant code (CI reviewer catch).
   return {
     total: tags.length,
-    srOnly: tags.filter((tag) => tag.includes('className="sr-only"')).length,
-    hidden: tags.filter((tag) => tag.includes('className="hidden"')).length,
+    srOnly: tags.filter((tag) => /className="sr-only[\s"]/.test(tag)).length,
+    hidden: tags.filter((tag) => /className="hidden[\s"]/.test(tag)).length,
   };
 }
 
