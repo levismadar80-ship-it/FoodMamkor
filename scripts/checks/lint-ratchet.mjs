@@ -40,9 +40,10 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..", "..");
@@ -65,19 +66,55 @@ const FIXTURE_PATH = join(HERE, "testdata", "knip-sample.json");
  *
  * @returns {Map<string, number>} key `${file}\t${rule}` -> count
  */
+/**
+ * Rule buckets Knip is known to emit as arrays, observed in the captured
+ * payload this baseline was frozen from.
+ *
+ * This list is NOT used to decide what to count — counting stays generic, so a
+ * Knip upgrade that adds a rule category is still picked up. It is used only to
+ * detect SHAPE DRIFT: if one of these known buckets ever stops being an array,
+ * that is a silent-zeroing bug and must be loud. Without this, a bucket that
+ * changed from `[...]` to `{count: 5, items: [...]}` would be skipped by the
+ * `!Array.isArray` guard, its real findings counted as 0, and the difference
+ * reported as an *improvement*.
+ */
+const KNOWN_RULE_BUCKETS = new Set([
+  "binaries", "catalog", "catalogReferences", "dependencies", "devDependencies",
+  "duplicates", "enumMembers", "exports", "files", "namespaceMembers",
+  "optionalPeerDependencies", "types", "unlisted", "unresolved",
+]);
+
 export function aggregate(knipJson) {
   if (!knipJson || typeof knipJson !== "object" || !Array.isArray(knipJson.issues)) {
     throw new Error("unrecognised Knip payload: expected an object with an `issues` array");
   }
   const counts = new Map();
+  const drift = [];
   for (const entry of knipJson.issues) {
     const file = entry?.file;
     if (typeof file !== "string" || file === "") continue;
     for (const [rule, value] of Object.entries(entry)) {
-      if (!Array.isArray(value) || value.length === 0) continue;
+      if (!Array.isArray(value)) {
+        // A known bucket that is no longer an array means Knip's shape changed
+        // under us. Skipping it silently would zero out real findings and
+        // report them as improvements — fail instead.
+        if (KNOWN_RULE_BUCKETS.has(rule)) {
+          drift.push(`${file} · ${rule} is ${value === null ? "null" : typeof value}, expected an array`);
+        }
+        continue; // non-array, unknown key => scalar metadata, legitimately ignored
+      }
+      if (value.length === 0) continue;
       const key = `${file}\t${rule}`;
       counts.set(key, (counts.get(key) ?? 0) + value.length);
     }
+  }
+  if (drift.length > 0) {
+    throw new Error(
+      `Knip payload SHAPE DRIFT — ${drift.length} known rule bucket(s) are no longer arrays:\n  ` +
+        drift.join("\n  ") +
+        `\nRefusing to report counts: a bucket skipped as "not an array" is silently counted as 0,` +
+        ` which surfaces as an improvement rather than a failure.`,
+    );
   }
   return counts;
 }
@@ -162,16 +199,31 @@ export function compare(current, baseline) {
 const total = (counts) => [...counts.values()].reduce((a, b) => a + b, 0);
 const show = (key) => key.replace("\t", "  ·  ");
 
+const parseBaselineIfPresent = () =>
+  existsSync(BASELINE_PATH) ? parseBaseline(readFileSync(BASELINE_PATH, "utf8")) : new Map();
+
 /* ------------------------------------------------------------------ *
  * Running Knip
  * ------------------------------------------------------------------ */
 
 function runKnip() {
+  // Invoke the installed binary directly rather than through `npx`. npx's flag
+  // semantics changed between npm 6 and 7+ (`--no-install` became `--no`), and
+  // an unrecognised flag can be forwarded to the wrapped command. Resolving the
+  // bin path ourselves removes the npm-version dependency entirely.
+  const knipBin = join(FRONTEND_DIR, "node_modules", ".bin", "knip");
+  if (!existsSync(knipBin)) {
+    throw new Error(
+      `knip binary not found at ${knipBin}. Run \`npm ci\` in frontend/ first.\n` +
+        `(Not falling back to npx on purpose: a fallback that silently fetches a` +
+        ` DIFFERENT knip version would change the counts this gate compares.)`,
+    );
+  }
   let stdout;
   try {
     // Knip exits 1 when it finds issues — that is its normal reporting path,
     // NOT a failure of this script. Only unparseable output is a real failure.
-    stdout = execFileSync("npx", ["--no-install", "knip", "--reporter", "json"], {
+    stdout = execFileSync(knipBin, ["--reporter", "json"], {
       cwd: FRONTEND_DIR,
       encoding: "utf8",
       maxBuffer: 64 * 1024 * 1024,
@@ -211,6 +263,10 @@ function selfTest() {
   };
 
   // ---- Case 0: anchored to a REAL captured Knip payload from this repo.
+  // NOTE: the fixture is a deliberately-trimmed subset — 5 of the freeze
+  // capture's 24 entries, chosen to cover six distinct rule buckets between
+  // them, kept small on purpose. It is a real capture, not the FULL one; every
+  // value in it matches the corresponding baseline row (asserted below).
   // Synthetic fixtures only prove the probe works on shapes I invented; they
   // cannot prove it recognises the shape this repo's tooling actually emits.
   // (testing.md / MEH-1909: an ast probe passed four synthetic cases and
@@ -230,6 +286,33 @@ function selfTest() {
       "real-payload/keys-are-file-and-rule",
       [...realCounts.keys()].every((k) => k.split("\t").length === 2 && k.split("\t")[0] !== ""),
       "every key must be exactly file<TAB>rule",
+    );
+    // Pin actual NUMBERS, not just shape. `size > 0` and "keys look right" are
+    // both true of a systematically miscounting aggregate() — e.g. one that
+    // drops a whole rule bucket. These expectations were read off the freeze
+    // capture and each matches the committed baseline row for the same key.
+    const expected = [
+      ["lib/places.js\texports", 1],
+      ["lib/env.server.js\tfiles", 1],
+      ["package.json\tdependencies", 1],
+      ["package.json\tdevDependencies", 1],
+      ["eslint.config.mjs\tunlisted", 1],
+      ["lib/schemas.js\tduplicates", 1],
+    ];
+    const wrong = expected.filter(([k, v]) => realCounts.get(k) !== v);
+    check(
+      "real-payload/counts-match-known-values",
+      wrong.length === 0,
+      wrong.map(([k, v]) => `${k.replace("\t", " · ")}: expected ${v}, got ${realCounts.get(k)}`).join("; "),
+    );
+    // Every expectation above must also agree with the committed baseline —
+    // otherwise the fixture and the baseline have drifted apart and one of them
+    // is lying about the same freeze.
+    const bl = parseBaselineIfPresent();
+    check(
+      "real-payload/agrees-with-baseline",
+      bl.size === 0 || expected.every(([k, v]) => bl.get(k) === v),
+      "fixture counts disagree with lint-ratchet-baseline.tsv for the same keys",
     );
     check(
       "real-payload/self-identical-is-clean",
@@ -310,6 +393,108 @@ function selfTest() {
   }
   check("malformed-payload/throws", threw, "must not return an empty map on unrecognised input");
 
+  // ---- Case 9: SHAPE DRIFT on a known rule bucket must throw, not zero out.
+  // If Knip ever emits `exports` as an object, the old `!Array.isArray` guard
+  // skipped it, counted the file's real findings as 0, and reported the
+  // difference as an IMPROVEMENT — a regression wearing the costume of progress.
+  let driftThrew = false;
+  try {
+    aggregate({ issues: [{ file: "lib/places.js", exports: { count: 5, items: [1, 2, 3, 4, 5] } }] });
+  } catch {
+    driftThrew = true;
+  }
+  check("shape-drift/throws", driftThrew, "a known bucket that stops being an array must fail loudly");
+
+  // An UNKNOWN non-array key is scalar metadata and must NOT trip the drift
+  // check — otherwise a benign Knip upgrade reds the gate. This is the other
+  // half of case 9: the check has to discriminate, not just fire.
+  check(
+    "shape-drift/ignores-unknown-scalar",
+    aggregate({ issues: [{ file: "a.js", someNewScalar: 7, exports: ["x"] }] }).get("a.js\texports") === 1,
+  );
+
+  // ---- Case 10: THE GATE'S OWN WIRING. Cases 1-9 test helpers in isolation;
+  // none of them reaches main()'s `if (violations.length > 0) return 1`, which
+  // is the single line that makes this a gate at all. A one-line regression
+  // there would ship with the whole suite green.
+  //
+  // The payloads are reconstructed FROM the committed baseline, so this runs
+  // against the real file the real gate reads — not a fixture of my invention.
+  const liveBaseline = parseBaselineIfPresent();
+  if (liveBaseline.size === 0) {
+    check("gate-wiring/baseline-present", false, `no baseline at ${BASELINE_PATH}`);
+  } else {
+    const payloadFrom = (counts) => ({
+      issues: [...counts.entries()].map(([key, n]) => {
+        const [file, rule] = key.split("\t");
+        return { file, [rule]: Array.from({ length: n }, (_, i) => ({ name: `stub${i}` })) };
+      }),
+    });
+    const tmp = mkdtempSync(join(tmpdir(), "lint-ratchet-selftest-"));
+    const cleanPath = join(tmp, "clean.json");
+    const dirtyPath = join(tmp, "dirty.json");
+
+    writeFileSync(cleanPath, JSON.stringify(payloadFrom(liveBaseline)));
+
+    const bumped = new Map(liveBaseline);
+    const firstKey = [...bumped.keys()].sort()[0];
+    bumped.set(firstKey, bumped.get(firstKey) + 1);
+    writeFileSync(dirtyPath, JSON.stringify(payloadFrom(bumped)));
+
+    const argv = (p) => ["node", "lint-ratchet.mjs", "--knip-json", p];
+    let cleanCode, dirtyCode;
+    const quiet = console.log;
+    console.log = () => {};
+    try {
+      cleanCode = main(argv(cleanPath));
+      dirtyCode = main(argv(dirtyPath));
+    } finally {
+      console.log = quiet;
+      rmSync(tmp, { recursive: true, force: true });
+    }
+
+    check(
+      "gate-wiring/clean-payload-exits-0",
+      cleanCode === 0,
+      `main() returned ${cleanCode} on a payload equal to the baseline`,
+    );
+    check(
+      "gate-wiring/violation-exits-1",
+      dirtyCode === 1,
+      `main() returned ${dirtyCode} on a payload one above baseline at "${firstKey?.replace("\t", " · ")}" — ` +
+        `this is the assertion that catches a regression in the exit-code decision itself`,
+    );
+  }
+
+  // ---- Case 11: an empty issues array must NOT pass as a clean sweep.
+  // Against a non-empty baseline it renders as all-improvements and exits 0,
+  // and the output then invites --update-baseline, which would collapse the
+  // baseline entirely. "Nothing found" and "nothing scanned" are the same output.
+  if (liveBaseline.size > 0) {
+    const tmp2 = mkdtempSync(join(tmpdir(), "lint-ratchet-empty-"));
+    const emptyPath = join(tmp2, "empty.json");
+    writeFileSync(emptyPath, JSON.stringify({ issues: [] }));
+    const quietErr = console.error;
+    const quietLog = console.log;
+    console.error = () => {};
+    console.log = () => {};
+    let emptyCode, allowedCode;
+    try {
+      emptyCode = main(["node", "x", "--knip-json", emptyPath]);
+      allowedCode = main(["node", "x", "--knip-json", emptyPath, "--allow-empty"]);
+    } finally {
+      console.error = quietErr;
+      console.log = quietLog;
+      rmSync(tmp2, { recursive: true, force: true });
+    }
+    check("empty-payload/refused", emptyCode === 2, `expected exit 2, got ${emptyCode}`);
+    check(
+      "empty-payload/escape-hatch-works",
+      allowedCode !== 2,
+      "--allow-empty must let a genuinely-clean run through",
+    );
+  }
+
   let threwBaseline = false;
   try {
     parseBaseline("a\tb\tc\td\te");
@@ -353,6 +538,25 @@ function main(argv) {
 
   const current = aggregate(payload);
   const curTotal = total(current);
+
+  // A zero-finding payload is indistinguishable from "Knip did not actually
+  // scan anything" — a broken knip.json, an entry glob resolving to nothing, a
+  // half-installed node_modules. Against a non-empty baseline it renders as a
+  // clean sweep of "improvements" and the gate passes; worse, the output then
+  // invites --update-baseline, which would collapse the baseline to empty and
+  // silently retire the ratchet. Treat it as suspicious, with an explicit
+  // escape hatch rather than a silent default (same shape as --allow-increase).
+  if (payload.issues.length === 0 && !args.has("--allow-empty")) {
+    console.error(
+      `Knip reported ZERO issues. Refusing to treat that as a result.\n\n` +
+        `"Nothing found" and "nothing was scanned" produce identical output here, and the\n` +
+        `second is far more likely: a broken knip.json, an entry glob matching no files, or\n` +
+        `an incomplete npm ci. Against the current baseline (${total(parseBaselineIfPresent())} finding(s)) this would\n` +
+        `otherwise report a clean sweep of improvements and pass.\n\n` +
+        `If the codebase genuinely has zero Knip findings, rerun with --allow-empty.`,
+    );
+    return 2;
+  }
 
   if (args.has("--update-baseline")) {
     const prior = existsSync(BASELINE_PATH)
@@ -422,4 +626,17 @@ function main(argv) {
   return 0;
 }
 
-process.exit(main(process.argv));
+// Guarded so the module can be imported (its helpers are exported) without the
+// CLI running as an import side effect — an unguarded `process.exit` here would
+// abort any process that merely imported this file to unit-test `compare()`.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  try {
+    process.exit(main(process.argv));
+  } catch (err) {
+    // These functions throw deliberately-readable messages ("knip binary not
+    // found…", "SHAPE DRIFT…"). Without this catch they surface as a Node
+    // stack trace, which buries the one line that tells you what to do.
+    console.error(`lint-ratchet: ${err?.message ?? err}`);
+    process.exit(2);
+  }
+}

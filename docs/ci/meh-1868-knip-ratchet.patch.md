@@ -118,8 +118,21 @@ evidence, not a pass."*
 
 Note the job's `if:` already restricts it to `frontend == 'true' || workflows ==
 'true'`, and the `check_ran` call sits inside the `if [ "$FRONTEND_TOUCHED" =
-"true" ]` branch — so a backend-only or docs-only PR never reaches it. The
-strictness applies exactly where the job was supposed to run.
+"true" ]` branch — so a backend-only or docs-only PR never reaches it.
+
+> **⚠️ One asymmetry, corrected from an earlier draft that claimed the gating
+> "applies exactly where the job was supposed to run".** It does not, quite. The
+> job runs on `frontend == 'true' **|| workflows == 'true'**, while
+> `FRONTEND_TOUCHED` is `needs.changes.outputs.frontend` **alone**. So on a
+> workflows-only PR the job runs — and post-patch could genuinely fail — while
+> the aggregator never reads its result.
+>
+> **This is pre-existing and not introduced here:** `backend-mypy` carries the
+> identical asymmetry against `BACKEND_TOUCHED`, as does every other
+> `frontend || workflows` job in the file. In practice it is near-unreachable,
+> since a workflows-only diff is CC-deny and would be Sapir's own PR. Recorded
+> rather than fixed — aligning the `*_TOUCHED` variables with the jobs' `if:`
+> conditions is a separate change with a wider blast radius than this card.
 
 ---
 
