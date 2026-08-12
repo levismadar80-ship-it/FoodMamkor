@@ -1240,7 +1240,11 @@
         "geo_unavailable": "Location is unavailable right now. You can pick a city to sort by distance.",
         "geo_timeout": "Finding your location took too long. Try again, or pick a city.",
         "geo_unknown": "We could not get your location. You can pick a city to sort by distance.",
-        "clear_location": "Clear the saved location"
+        "clear_location": "Clear the saved location",
+        "locating_city": "Finding that city…",
+        "city_origin_failed": "We could not locate that city. Try another one.",
+        "origin_gps": "Distance from your location",
+        "origin_city": "Distance from {city}"
       }
     },
     "errors": {

@@ -12,6 +12,7 @@ import {
   newSessionToken,
   autocompleteAddresses,
   resolveSuggestion,
+  geocodeCity,
 } from "@/lib/places";
 
 const KEY = "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY";
@@ -163,5 +164,58 @@ describe("autocompleteAddresses — Google Places (key present)", () => {
       lat: 32.57,
       lng: 34.95,
     });
+  });
+});
+
+/**
+ * MEH-2014 PR 2 — geocodeCity.
+ *
+ * Added after the CI reviewer noticed that `MapManualOrigin.test.jsx` mocks the
+ * whole `@/lib/places` module, so geocodeCity's OWN body — the empty-query
+ * guard, the `Array.isArray` guard, the resolve step and the `Number.isFinite`
+ * extraction — was never executed by any test. The QA harness exercises it in a
+ * real browser, but only along the happy path with both providers route-mocked;
+ * the null branches had no coverage at all.
+ *
+ * Driven through the Nominatim path (no key) so the two-step
+ * autocomplete → resolve runs for real against a stubbed `fetch`.
+ */
+describe("geocodeCity (MEH-2014 PR 2)", () => {
+  beforeEach(() => vi.stubEnv(KEY, ""));
+
+  const row = (lat, lon) => [
+    { place_id: 7, display_name: "חיפה, ישראל", lat, lon, address: { city: "חיפה" } },
+  ];
+
+  it("resolves a city name to {lat, lng}", async () => {
+    mockFetchOnce(row("32.794", "34.9896"));
+    await expect(geocodeCity("חיפה")).resolves.toEqual({ lat: 32.794, lng: 34.9896 });
+  });
+
+  it("returns null for an empty or whitespace query without calling the provider", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    await expect(geocodeCity("   ")).resolves.toBe(null);
+    await expect(geocodeCity(null)).resolves.toBe(null);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the provider matches nothing", async () => {
+    mockFetchOnce([]);
+    await expect(geocodeCity("עיר שלא קיימת")).resolves.toBe(null);
+  });
+
+  it("returns null when the matched row carries no usable coordinates", async () => {
+    // Nominatim omits lat/lon on some row types; `Number(undefined)` is NaN,
+    // and NaN coordinates would sort every producer to Infinity distance.
+    mockFetchOnce([{ place_id: 8, display_name: "חיפה", address: { city: "חיפה" } }]);
+    await expect(geocodeCity("חיפה")).resolves.toBe(null);
+  });
+
+  it("re-throws a provider rejection instead of reporting a no-match", async () => {
+    // MEH-1766: "provider said no" must stay distinguishable from "no such
+    // city". The caller turns both into the same toast, but only after it can
+    // tell them apart.
+    mockFetchOnce({}, false);
+    await expect(geocodeCity("חיפה")).rejects.toThrow(/rejected/i);
   });
 });
