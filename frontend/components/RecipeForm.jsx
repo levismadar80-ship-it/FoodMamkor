@@ -171,9 +171,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
 
+      {/* MEH-2015: the literal span in `label` is GONE — Input's required
+          prop renders the marker. Keeping both is exactly the double-asterisk
+          bug this ticket fixes, and this line reproduced it until the
+          adversarial review caught it. */}
       <Input
         id={`${uid}recipe-title`}
-        label={<>{t("title_label")} <span className="text-red-500">*</span></>}
+        label={t("title_label")}
         required
         minLength={3}
         maxLength={200}
@@ -194,7 +198,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       <div>
         <label htmlFor={`${uid}recipe-ingredients`} className="block text-sm font-medium mb-1">
-          {t("ingredients_label")} <span className="text-red-500">*</span>
+          {t("ingredients_label")}{" "}
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
         </label>
         <textarea
           id={`${uid}recipe-ingredients`}
@@ -210,7 +217,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       <div>
         <label htmlFor={`${uid}recipe-instructions`} className="block text-sm font-medium mb-1">
-          {t("instructions_label")} <span className="text-red-500">*</span>
+          {t("instructions_label")}{" "}
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
         </label>
         <textarea
           id={`${uid}recipe-instructions`}
