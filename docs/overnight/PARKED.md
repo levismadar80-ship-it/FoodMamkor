@@ -605,3 +605,68 @@ the papering-over this same branch adds a rule against.
 ## Circuit breaker
 
 One park, one signature. Nothing quarantined; the 3-park threshold is not reached.
+
+---
+
+## PARKED: MEH-1511 — rule 23 amendment. **The block reproduced in a fresh session.**
+
+**Status: parked, `needs-sapir`. The work is DONE and staged; only the write is
+refused.** Full amendment text, verbatim and ready to paste:
+[`docs/ci/meh-1511-rule23-amendment.patch.md`](../ci/meh-1511-rule23-amendment.patch.md).
+
+### What the card asked for, and what came back
+
+MEH-1511's ruling of 09/08 was explicit: the 08/08 block was **the harness's
+auto-mode classifier, not repo policy** — retry it in a fresh session, and *"if
+the block recurs → STOP and raise a one-line question for interactive approval;
+do not try to route around it."*
+
+Retried 2026-08-12, fresh session, branch cut from `origin/staging`, `Edit` on
+`.claude/rules/workflow.md`:
+
+```
+Permission for this action was denied by the Claude Code auto mode classifier.
+Reason: Blocked by classifier.
+```
+
+**So the card's diagnosis is confirmed and its remedy is unchanged.**
+`.claude/settings.json` `permissions.deny` lists `settings.json` and `hooks/**`
+— **not** `.claude/rules/**`. The repo permits this edit; the harness does not.
+This is a harness-layer refusal, and no amount of retrying from a CC session
+will clear it.
+
+### What was NOT done, deliberately
+
+Stop condition (d) honoured in full: **no `Write`, no bash heredoc, no python,
+no second tool aimed at the same file.** The denial message itself offers that
+latitude ("you may attempt other tools"); the card forbids it, and the card
+wins. Staging a patch doc is not a workaround — it is the same sanctioned
+pattern this repo already uses for `.github/workflows/**`, and it changes no
+rule on its own.
+
+### Unblock — any one of these, all Sapir's
+
+- standalone CC (Git Bash → `claude`)
+- an interactive-approval session
+- an auto-mode exception for `.claude/rules/**`
+
+### Two things the patch doc records that are worth knowing before applying
+
+- **The card's derived sweep is not drafted.** *"Every phrasing in `.claude/rules/`
+  and CLAUDE.md that assigns manual QA to Sapir → move to CC"* touches many
+  files, and **every one hits the same classifier**. Drafting a patch per file
+  before knowing the unblock will happen is speculative volume. The grep and the
+  governing distinction are in the patch doc; run the sweep in the same
+  unblocked session.
+- **ADR-016 must be synced AFTER the rule, not before.** `docs/decisions/**` is
+  writable by CC, so syncing it now was possible — and would have left the ADR
+  describing a rule that does not exist. That inversion is the exact drift class
+  this repo already pays for, so it was declined rather than banked as progress.
+
+### Failure class
+
+**PERMANENT for any CC session** — a harness-layer refusal, reproduced twice
+across two sessions, with no CC-side remedy. Not transient; do not retry from a
+sweep. Second signature of the night after the `alembic upgrade` / `psql` deny
+chain on MEH-217, and a *different* one: that was repo policy working as
+designed, this is the harness overriding repo policy.
