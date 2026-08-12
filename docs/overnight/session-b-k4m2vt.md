@@ -14,9 +14,34 @@ Hint list: MEH-2014, 2012, 2015, 1990, 1978, 1977, 1965.
 
 | PR | Card | pushed | gate state | next revisit trigger |
 |---|---|---|---|---|
-| [#2808](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2808) | MEH-2014 (PR 2) | 13:58Z (`2493a56c`) | `CI gate` ✅ + `Deploy gate` ✅ on the prior head; E2E re-running after the review fix | E2E result on `2493a56c` |
+| [#2808](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2808) | MEH-2014 (PR 2) | 13:58Z (`2493a56c`) | `CI gate` ✅ · `Deploy gate` ✅ · `E2E gate` ❌ on 4 pre-existing baselines | **auto-merge armed by a parallel actor; I disarmed it** — see below |
+| [#2810](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2810) | — (this log) | 14:02Z | docs-only | — |
+| [#2814](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2814) | MEH-2012 | 14:36Z | opened, CI starting | first CI result |
 
-**Not merged, deliberately** — see *Why nothing merged* below.
+**Nothing merged, deliberately** — see *Why nothing merged* below.
+
+### 🛑 Auto-merge was armed on #2808 by another actor. I disarmed it.
+
+Armed with **`mergeMethod: merge`**, not `squash`. Two problems, and the second is
+the one that mattered:
+
+1. `merge` discards the crafted squash message — reasoning, `Builder-Model:` trailer
+   and `Closes MEH-2014` all end up buried in branch history. Rule 21 documents this
+   exact shape (#2787, then #2781 and two others found armed the same way).
+2. **It would have merged over a red `E2E gate`, silently.** `E2E gate` is not in the
+   `protect-staging` required set — only `CI gate` and `Deploy gate` are, and both were
+   green — so auto-merge had nothing left to wait for.
+
+I think the E2E red is *not* a reason to block (four producer-detail VRT baselines,
+byte-identical to the set `staging` itself fails). But "a human decided to merge anyway"
+and "it merged because the gate that would have caught it isn't required" are different
+things, and only the first is a decision.
+
+Disarming ADDS a constraint, so rule 32's parallel-actor case makes it mine to do
+unasked; re-arming does not, so I left it off. **If the merge is wanted, re-arm with
+`squash`** — and note that changing the method needs a `disable` → `enable` round-trip,
+because `enable_auto_merge` on an already-armed PR is a silent no-op that reports success
+while keeping the old method. **Worth checking the other open PRs for the same thing.**
 
 ---
 
@@ -71,12 +96,39 @@ found a different real issue (a stale-geocode race) and missed this one entirely
 different-model CI reviewer is what caught it — ORDERS §3.2 earning its keep on a live diff
 rather than in principle.
 
-### ⏸️ MEH-2012, MEH-2015 — NOT STARTED
+### 🟡 MEH-2012 — the experience image is uploaded, not pasted · PR #2814 · OPEN
 
-Both eligible under Lane B's B1–B4 gate and both still open. MEH-2012 (experience-form image
-upload) is clean and self-contained — the best next pick. MEH-2015 chunk A (asterisk
-invariant) is also unblocked now that MEH-2013 merged (#2797), which was its stated
-dependency.
+`ExperienceForm` was the LAST surface still asking a business owner for a raw Cloudinary
+URL, while every other producer surface already posts to `/upload/image`. Mirrors
+`EventForm`'s widget with two deliberate departures: the failure renders **inline on the
+field** (this is the MEH-1809 inline-per-field form, not a toast form), and the
+**endpoint's own Hebrew `detail`** is preferred over ours when it sends one — the
+free-plan 3-image cap is a real actionable sentence.
+
+**🔴 The trap, found by reading `upload.py` before writing the widget.** The form's
+`validateExperienceForm` ran `new URL(image_url)`. `/upload/image` answers with a
+**relative** path when Cloudinary is unconfigured — `/placeholder-image.png?name=…`
+(`upload.py:115`) — and `new URL()` **throws** on a relative path. Had that guard outlived
+the field it validated, the form would have rejected the server's own successful response
+on every environment without Cloudinary credentials, telling the owner to "start with
+https://" about a field she cannot type into. Removing it was **required**, not cleanup,
+and the QA harness asserts that path against the real page rather than arguing it.
+
+**One AC is deliberately NOT covered, and the test says so** instead of faking it:
+*"previous image_url preserved"* is unreachable in this UI — the field is a ternary
+(preview-with-remove OR uploader), so a second upload cannot begin until the first image
+is removed, by which point there is no previous image. `EventForm` has the identical
+shape. Worth a decision: either the AC is wrong, or both forms need a "replace" affordance.
+
+Evidence: 9 unit cases, **8 of 9 red** against the old component; browser QA **69 checks,
+0 failed, 0 page errors** at 390×844 · Pixel 5 · 1440×900. A pre-existing test asserting
+the old URL boundary was **deleted, not relaxed**, and replaced with one asserting the new
+contract.
+
+### ⏸️ MEH-2015 — NOT STARTED
+
+Eligible and unblocked now that MEH-2013 merged (#2797), which was its stated dependency.
+Note chunk A's audit table is a deliverable Sapir reads **before** chunk B may run.
 
 ---
 
@@ -160,7 +212,26 @@ the bundle exists to prevent.** Left for Sapir.
 
 ## Next
 
-1. Read the E2E result on `2493a56c` — specifically whether `parity › home` recovered.
-2. MEH-2012 (experience image upload) — cleanest remaining Lane B card.
-3. MEH-2015 chunk A — unblocked by MEH-2013 (#2797); note its audit table is a deliverable
-   Sapir reads before chunk B.
+1. **MEH-2015 chunk A** — the remaining Lane B card, unblocked by MEH-2013 (#2797).
+2. Decide the `mergeMethod` question on #2808 (re-arm with `squash`, or merge by hand).
+3. Decide the unreachable-AC question on MEH-2012: either the "previous image preserved" AC
+   is wrong, or `ExperienceForm` **and** `EventForm` both need a replace-without-removing
+   affordance.
+
+## Resolved during the session — recorded so it is not re-investigated
+
+**`parity › home` (mobile) recovered.** It was the one E2E failure the staging backend
+outage did not obviously explain, and I said I would own it if it stayed red. On head
+`2493a56c` it passed, and the failure set dropped 14 → 4 — the four being *exactly* the
+producer-detail VRT specs that `staging` itself fails at the same line numbers
+(run `31599329688`). Not "staging is also red"; the identical set.
+
+**One residue, named rather than dropped:** `24-producer-locations › cluster badges never
+exceed the unique-producer count` reported **flaky** (passed on retry) on that run. It is a
+`/map` clustering assertion, so it is in MEH-2014's neighbourhood — but it was absent from
+the previous run's failures and nothing in the diff touches clustering. Unexplained
+observation, not attributed to the harness.
+
+**`MapNearestSortTrigger.test.jsx` is intermittently flaky under full-suite parallelism.**
+It failed once in a 306-file run and passed in isolation (9/9) and in two later full runs.
+Not caused by either PR here — measured on a branch that contains neither change.
