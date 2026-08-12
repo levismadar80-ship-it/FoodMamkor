@@ -433,19 +433,23 @@ detail של ה-403 עכשיו object `{"code":"email_unverified","message":"..."
 
 
 
-מטריצת בדיקות רישום בית-עסק לפי 5 פרסונות. **הכיסוי אוטומטי** (pytest +
+מטריצת בדיקות רישום בית-עסק לפי 6 פרסונות. **הכיסוי אוטומטי** (pytest +
 Playwright) — הטבלה כאן היא מפת ה-DoD + מדריך לבדיקה ידנית חוזרת מול staging.
 הבדיקות מכסות **רק את שלב הרישום** (השדות שהאשף אוסף); שדות עריכת-בעלים
 (delivery / website / contact-method לאחר אישור) הם **מחוץ לגבולות** (ראו הערה למטה).
+שתי העמודות האחרונות (MEH-1625): **"מה הופעל אחרי ההרשמה"** — הפיצ'רים שהפרסונה
+מפעילה אחרי הטופס עצמו, כי הטופס לבד לא חושף את הבאגים שם; **"מה נבדק שלא קרה"** —
+assertions של היעדר, לא רק נוכחות. תוכן העמודות נגזר מתאי "תוצאה מצופה" הקיימים
+ומהגדרת הכרטיס — לא נוספו טענות חדשות.
 
-| פרסונה | תרחיש register-phase | תוצאה מצופה | אוטומציה |
-|---|---|---|---|
-| **P1** אשף מלא | מילוי 5 מסכי האשף → submit → admin approve → דף ציבורי → login → דשבורד | נוצר `pending_whatsapp`; אחרי אישור: מופיע בדף הציבורי + הדשבורד ב-`data-state-approved="true"` + לינק "צפייה בעמוד" | `frontend/e2e/flows/22-register-personas.spec.ts` (P1, real-backend, TEST_URL=staging) |
-| **P2** OAuth | Google Step-0 → upgrade עם `license_pending` | נוצר יצרן ללא מספר רישיון (NULL) בתור ההמתנה; 409 עם toast אם כבר יש עסק | backend: `tests/test_register_personas.py::TestPersona2OAuthProducer` · UI 409: spec 22 (P2, GSI-stub) |
-| **P3** רב-קטגוריה | בחירת בשר+דגים (name→id) | 2 שורות `producer_categories`; דורש מספר רישיון (שתיהן license-required) אחרת 422 | `tests/test_register_personas.py::TestPersona3MultiCategory` |
-| **P4** אימייל+סיסמה | טלפון ריק + whatsapp; קטגוריות ריקות; אימייל כפול; double-submit; upgrade כפול; שדות עריכת-בעלים בגוף | 422 / 422 / RegisterAck זהה בייט-לבייט ללא token / אין שורה כפולה / 409 / שדות עריכת-בעלים **מתעלמים** (לא 422) | `tests/test_register_personas.py::TestPersona4PasswordEdgeCases` |
-| **P5** בהמתנה | admin request-changes → owner request-review (resubmit) | שני הצדדים 2xx, הסטטוס נשאר pending; request-changes על לא-pending → 409 | backend: `tests/test_register_personas.py::TestPersona5ResubmitLoop` · UI abandon: spec 22 (P5) |
-| **P6** מקסימלית (MEH-1625) | כל שדה מלא · שם עם גרש וגרשיים (`מאפיית "שקד" בע"מ`) · אימוג'י בתיאור · כתובת ארוכה · 3 קטגוריות · multi-location · כל ערוצי הקשר | הרשמה 2xx; הגרשיים והאימוג'י שורדים round-trip ומרונדרים בדף הציבורי בלי escaping; ה-slug נוצר תקין למרות תווי הקצה; 3 שורות `producer_categories`; כל ה-locations נשמרים | **אין עדיין** — הריצה חסומה (ראו למטה) |
+| פרסונה | תרחיש register-phase | תוצאה מצופה | מה הופעל אחרי ההרשמה | מה נבדק שלא קרה | אוטומציה |
+|---|---|---|---|---|---|
+| **P1** אשף מלא | מילוי 5 מסכי האשף → submit → admin approve → דף ציבורי → login → דשבורד | נוצר `pending_whatsapp`; אחרי אישור: מופיע בדף הציבורי + הדשבורד ב-`data-state-approved="true"` + לינק "צפייה בעמוד" | אישור אדמין → login → דשבורד → «צפייה בעמוד» בדף הציבורי | לא נשארת שורה יתומה — ה-spec מוחק את העסק ב-`finally` בכל תוצאה | `frontend/e2e/flows/22-register-personas.spec.ts` (P1, real-backend, TEST_URL=staging) |
+| **P2** OAuth | Google Step-0 → upgrade עם `license_pending` | נוצר יצרן ללא מספר רישיון (NULL) בתור ההמתנה; 409 עם toast אם כבר יש עסק | — (נשאר בתור ההמתנה) | לא נוצר עסק שני לאותו חשבון (409); הרישיון נשאר NULL — לא הומצא ערך | backend: `tests/test_register_personas.py::TestPersona2OAuthProducer` · UI 409: spec 22 (P2, GSI-stub) |
+| **P3** רב-קטגוריה | בחירת בשר+דגים (name→id) | 2 שורות `producer_categories`; דורש מספר רישיון (שתיהן license-required) אחרת 422 | — | לא נוצרת שורה ללא מספר רישיון (422 לפני יצירה) | `tests/test_register_personas.py::TestPersona3MultiCategory` |
+| **P4** אימייל+סיסמה | טלפון ריק + whatsapp; קטגוריות ריקות; אימייל כפול; double-submit; upgrade כפול; שדות עריכת-בעלים בגוף | 422 / 422 / RegisterAck זהה בייט-לבייט ללא token / אין שורה כפולה / 409 / שדות עריכת-בעלים **מתעלמים** (לא 422) | — | אין token ב-RegisterAck; אין שורה כפולה (double-submit); אין חשבון שני על מייל כפול | `tests/test_register_personas.py::TestPersona4PasswordEdgeCases` |
+| **P5** בהמתנה | admin request-changes → owner request-review (resubmit) | שני הצדדים 2xx, הסטטוס נשאר pending; request-changes על לא-pending → 409 | לולאת resubmit: admin request-changes → owner request-review | הסטטוס לא יוצא מ-pending; אין request-changes על לא-pending (409) | backend: `tests/test_register_personas.py::TestPersona5ResubmitLoop` · UI abandon: spec 22 (P5) |
+| **P6** מקסימלית (MEH-1625) | כל שדה מלא · שם עם גרש וגרשיים (`מאפיית "שקד" בע"מ`) · אימוג'י בתיאור · כתובת ארוכה · 3 קטגוריות · multi-location · כל ערוצי הקשר | הרשמה 2xx; הגרשיים והאימוג'י שורדים round-trip ומרונדרים בדף הציבורי בלי escaping; ה-slug נוצר תקין למרות תווי הקצה; 3 שורות `producer_categories`; כל ה-locations נשמרים | אחרי אישור אדמין: העלאת תמונות · 3 מוצרים · משלוחים לערים · אירוע · מתכון · בדיקת העמוד הציבורי בנייד | אין escaping של הגרשיים והאימוג'י בדף הציבורי (ההיעדר שתווי הקצה קיימים כדי לבדוק) | **אין עדיין** — הריצה חסומה (ראו למטה) |
 
 > ### ⚠️ למה P6 ולא P5 — התנגשות מזהים
 >
