@@ -16,18 +16,18 @@
 
 ## 📊 השוואה מהירה — אפריל 2026
 
-| ממד | Sonnet 5 | Opus 4.8 |
-|---|---|---|
-| **מחיר (MTok input/output)** | $3 / $15 | $5 / $25 |
-| **SWE-bench Verified** | 79.6% | ~93%+ · SWE-bench Pro 69.2% |
-| **GPQA Diamond (PhD reasoning)** | 74.1% | 91.3%+ |
-| **Vision (high-res)** | רגיל | 2,576px / 3.75MP (3x) |
-| **Max output tokens** | 64K | 128K |
-| **Default effort** | high | high |
-| **Fast mode** | — | /fast (2.5x speed, 3x cheaper, research preview) |
-| **Context window** | 1M | 1M |
-| **Speed** | מהיר | בינוני (משקיע ב-thinking) |
-| **Best at** | קוד יומיומי, CRUD, copy, classification | קוד מורכב, vision, multi-file, design taste, research |
+| ממד | Sonnet 5 | Opus 4.8 | Fable 5 (advisor בלבד) |
+|---|---|---|---|
+| **מחיר (MTok input/output)** | $3 / $15 | $5 / $25 | $10 / $50 |
+| **SWE-bench Verified** | 79.6% | ~93%+ · SWE-bench Pro 69.2% | — |
+| **GPQA Diamond (PhD reasoning)** | 74.1% | 91.3%+ | — |
+| **Vision (high-res)** | רגיל | 2,576px / 3.75MP (3x) | — |
+| **Max output tokens** | 64K | 128K | — |
+| **Default effort** | high | high | — |
+| **Fast mode** | — | /fast (2.5x speed, 3x cheaper, research preview) | — |
+| **Context window** | 1M | 1M | — |
+| **Speed** | מהיר | בינוני (משקיע ב-thinking) | — |
+| **Best at** | קוד יומיומי, CRUD, copy, classification | קוד מורכב, vision, multi-file, design taste, research | נקודות החלטה בלבד — ראו הסעיף למטה (MEH-1376) |
 
 ---
 
@@ -71,6 +71,15 @@
 **Effort recommendation:** `high` (default ב-Claude Code). `xhigh` ל-hard/async, `max` רק לבעיה ממש קשה (session-only) — אחרת overthinking.
 
 **עלות צפויה:** ~$3-15 per typical Opus PR.
+
+---
+
+### 🟠 Fable 5 — Advisor-only (הכרעת MEH-1376, 12/08/2026)
+
+תפקיד, לא executor: נשאל בנקודות החלטה בלבד — לפני שינוי ארכיטקטורה,
+אחרי 2 ניסיונות כושלים, ולפני סימון done (Skeptic-Mode reviews, research,
+אורקסטרציה — claude.ai בלבד). ה-executor נשאר Sonnet; מטריצת CC ללא שינוי.
+עלות $10/$50 לMTok (פי 2 מ-Opus) — advisor בלבד עד שיצטבר ניסיון פנימי.
 
 ---
 
@@ -292,4 +301,4 @@ Opus 4.8 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 
 ---
 
-**מתעדכן:** כל release חדש של Anthropic. Mythos Preview קיים (Apr 2026) אבל דורש Project Glasswing partnership — לא רלוונטי למהמקור כעת.
+**מתעדכן:** כל release חדש של Anthropic. Fable 5 זמין GA (claude.ai + API, מזהה `claude-fable-5`) — ראו סעיף Advisor-only למעלה; השכבה שדורשת partnership היא **Mythos 5**, לא Fable (אותו מודל בסיס, זמין ללא אמצעי הבטיחות הנוספים לארגונים מאושרים בלבד).

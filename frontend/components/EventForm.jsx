@@ -374,10 +374,17 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               {/* raw img: upload preview. `form.image_url` is whatever POST /upload returned —
                   a Cloudinary secure_url OR the local /placeholder-image.png fallback
                   (upload.py:115). Mixed provenance, authenticated form chrome, 96px. */}
+              {/* MEH-2031: NOT alt="" (decorative). A successful upload has no
+                  live region, so this preview appearing IS the success state —
+                  with an empty alt a screen-reader user is told nothing at all
+                  and has to infer it from a remove button materialising nearby.
+                  The field label is reused rather than inventing copy, so there
+                  is no new key and the en twin already exists.
+                  REUSES: components/ExperienceForm.jsx:465-476 (MEH-2012). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={form.image_url}
-                alt=""
+                alt={t("image_label")}
                 className="w-24 h-24 object-cover rounded-[8px] border border-border"
               />
               <button
@@ -391,11 +398,22 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+            /* MEH-2031: `sr-only`, NOT `hidden`. `hidden` is display:none, which
+               removes the input from the tab order — and the wrapping <label> is
+               not natively focusable, so the whole upload control was unreachable
+               by keyboard (WCAG 2.1.1, Level A). sr-only keeps the input focusable
+               while invisible, and `focus-within` on the wrapper renders the ring
+               the sighted keyboard user needs. Same idiom as AddressSearch.jsx:196
+               and CitiesAutocomplete.jsx:206, and the form this file's widget was
+               copied to. Four more `hidden` file inputs remain (ProductsSection
+               :811/:829, RecipeForm:290, dashboard/edit/cards.jsx:382) — inventory
+               on MEH-2031, deliberately out of this diff.
+               REUSES: components/ExperienceForm.jsx:499-514 (MEH-2012). */
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
               <input
                 type="file"
                 accept="image/*"
-                className="hidden"
+                className="sr-only"
                 disabled={uploading}
                 onChange={handleImageUpload}
               />
