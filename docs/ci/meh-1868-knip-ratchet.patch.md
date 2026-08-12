@@ -53,9 +53,38 @@ already wired — it is simply being fed a result that cannot be anything but
 ```diff
 -      - name: Run Knip (warn-only — findings logged, check passes)
 -        run: npm run knip || true
++      - name: Ratchet self-test (the comparator must still discriminate)
++        run: node ../scripts/checks/lint-ratchet.mjs --self-test
++
 +      - name: Knip ratchet (baseline frozen; only NEW findings fail)
 +        run: npm run lint:ratchet
 ```
+
+**The self-test step exists because the gate is otherwise unfalsifiable.** If
+`compare()` ever regressed to returning zero violations unconditionally,
+`lint:ratchet` would go **permanently green** and nothing in CI would notice — a
+green with a second cause, which is exactly what this repo's testing rules exist
+to catch. Running the self-test first means a broken comparator fails loudly
+*before* its verdict is read. Same guarantee `skills-audit.yml` gets from
+`audit-skills.sh --self-test`.
+
+> ### ⚠️ Expected exit code is **0**, not 1 — do not copy `skills-audit.yml` here
+>
+> The CI reviewer suggested this step and cited `audit-skills.yml` as precedent,
+> **including its assertion that the self-test must exit 1**. The finding was
+> right and the prescription is wrong for this script; applying it verbatim
+> would red the gate on every run, permanently.
+>
+> The two are not the same kind of self-test. Measured 2026-08-12:
+>
+> | Script | On success | Why |
+> |---|---|---|
+> | `audit-skills.sh --self-test` | **exit 1** | it audits a deliberately *malicious* fixture; exit 1 **is** the pass — `skills-audit.yml:66` wraps it in `if … then` and fails when it succeeds |
+> | `lint-ratchet.mjs --self-test` | **exit 0** | an ordinary assertion suite: 13 assertions, 0 failed. It exits 1 when an assertion *fails* |
+>
+> So `run:` with no wrapper is correct here — the step fails iff the self-test
+> fails. Verified: a broken comparator (`compare()` iterating baseline keys only)
+> exits **1** with `FAILED: new-key/blocks`, and the restored version exits 0.
 
 `npm run lint:ratchet` → `node ../scripts/checks/lint-ratchet.mjs`. The job's
 `working-directory: frontend` is what makes the relative path correct, and the
