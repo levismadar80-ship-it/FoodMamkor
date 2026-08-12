@@ -235,16 +235,23 @@ missing element, not "the network never idled".
 
 > **The ban rests on the observed behaviour above, not on a settled cause.** The
 > working diagnosis — that Cloudinary returns 401 for every image on the CI runner —
-> is **owned by MEH-1948 and is not established here**; do not restate it as fact
-> from this file. What justifies the ban is only the measured symptom: the network
-> does not idle on CI, and it does locally.
+> is **not established, and carries no owning card**; do not restate it as fact from
+> this file. (It previously read "owned by MEH-1948"; that identifier does not exist
+> in Linear — checked 2026-08-12. The nearest real card, MEH-1925, is the *production*
+> Cloudinary 401 incident, which is a different surface.) What justifies the ban is
+> only the measured symptom: the network does not idle on CI, and it does locally.
 >
-> **A second, possibly related failure class is under investigation on the same
-> card:** `next/font/google` build-time fetches failing on the runner with
-> `Module not found: @vercel/turbopack-next/internal/font/google/font` — measured
-> 2026-08-12 on two unrelated PRs, `frank_ruhl_libre` (#2790, 12:27Z) and `dm_sans`
-> (#2747, 14:33Z), while contemporaneous `staging` builds with the job actually
-> running went green (14:00 162s, 14:27 51s). Both classes are **external asset
+> **A second failure class, now with its own card — MEH-2029:**
+> `next/font/google` build-time fetches failing on the runner with
+> `Module not found: @vercel/turbopack-next/internal/font/google/font`. Measured
+> 2026-08-12 across three PRs — `frank_ruhl_libre` (#2790, 12:27Z), `dm_sans`
+> (#2747, 14:33Z), and on **#2811 twice with two passes interleaved on the same
+> commit `a68779a`**: pr-checks failed 14:07 (`frank_ruhl_libre`), the E2E build
+> succeeded 14:10, a re-run succeeded ~14:14, the E2E re-run failed 14:20
+> (`cormorant_garamond`). Same SHA, no push between, a different font named each
+> time, and `npm run build` on that commit exits 0 locally. So it is
+> **non-deterministic and per-build, not commit-shaped** — and a passing re-run is
+> not evidence it is fixed. Both classes are **external asset
 > fetches from the CI runner**. That they share a cause is a **hypothesis**, recorded
 > so the next reader can test it — not a conclusion, and not a reason to widen this
 > ban until MEH-1948 reports.
