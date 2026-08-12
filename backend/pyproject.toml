@@ -148,3 +148,4 @@ module = [
     "asgi_correlation_id.*",
 ]
 ignore_missing_imports = true
+# MEH-1585 gate-proof — temporary, do not merge
