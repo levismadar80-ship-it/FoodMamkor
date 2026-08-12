@@ -22,7 +22,7 @@ const PER_PAGE = 24;
 
 // MEH-1876: the second of two stacked cache layers. This number is NOT
 // independent — it composes with the backend's `_PUBLIC_CATALOG_CACHE`
-// (backend/app/routers/producers.py:67) as
+// (backend/app/routers/producers.py:88) as
 //     revalidate + s-maxage + stale-while-revalidate = worst-case staleness
 // because each refetch may be served a response the edge already held. At
 // 30/30/30 that is 90s, the bound MEH-1876 was opened to restore; the old
