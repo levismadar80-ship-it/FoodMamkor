@@ -57,14 +57,35 @@ router = APIRouter(tags=["producers"])
 router.include_router(producer_follows_router)
 
 
-# MEH-1833: the shared CDN policy for the two PUBLIC catalog GETs. 60s at the
-# edge with a 5-minute stale-while-revalidate window — a catalog edit shows up
-# within a minute, and the revalidation happens off the critical path.
+# MEH-1833: the shared CDN policy for the two PUBLIC catalog GETs.
 # `public` is load-bearing and is exactly why this must never be applied to an
 # endpoint that reads auth/user state: a shared cache may serve one user's
 # response to another. Mirrors the mechanics of the no-store block in
 # get_kashrut_cert below, with the policy inverted.
-_PUBLIC_CATALOG_CACHE = "public, s-maxage=60, stale-while-revalidate=300"
+#
+# MEH-1876: this header is only ONE of two stacked layers, and the window a
+# reader actually experiences is the SUM. The previous comment here claimed "a
+# catalog edit shows up within a minute" — true of this line in isolation, and
+# false of the system. Measured on staging 03/08: a removed offer stayed
+# publicly visible for ~6 minutes, because the old values composed as
+#     Next revalidate 60  +  s-maxage 60  +  stale-while-revalidate 300  ≈ 420s
+# Next serves its cached copy for `revalidate`, and each refetch may itself be
+# handed a response the edge has already held for `s-maxage + swr`.
+#
+# The values below are chosen so that sum is bounded, not so each line reads
+# well alone:  30 (Next) + 30 (s-maxage) + 30 (swr) = 90s worst case.
+# The swr window is kept non-zero deliberately — it is what keeps revalidation
+# off the critical path — but it is now the same order as the freshness window
+# instead of 5x it.
+#
+# SCOPE — deliberately partial (orchestrator ruling 09/08, option B). The 90s
+# figure is true for `/producers` ONLY. `/map` reads the same two endpoints but
+# stacks its own `revalidate: 3600` (frontend/app/[locale]/map/page.js:54), so a
+# removed offer can remain visible there for up to ~1 hour. That is a knowing
+# trade: /map is a browse surface, and pulling it to 90s would re-fetch a
+# ~100-producer payload up to 60x more often for a lower-stakes staleness. Do
+# not read the 90s as site-wide.
+_PUBLIC_CATALOG_CACHE = "public, s-maxage=30, stale-while-revalidate=30"
 
 
 @router.get("/producers", response_model=list[ProducerListOut])

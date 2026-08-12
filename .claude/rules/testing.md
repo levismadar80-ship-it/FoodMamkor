@@ -213,6 +213,74 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 
 ## A green that has two possible causes is not a signal
 
+> ### An instrument you have not checked produces conclusions indistinguishable from verified ones. Check the instrument before the claim, not after the objection.
+>
+> This is the general form of everything in this section. Each item below is one
+> instrument — a probe, a query, a ref, an API call, a rules file — that returned a
+> confident, well-formed, **wrong** answer, and nothing in the output said so.
+>
+> The defect is never in the reasoning that follows the reading; that part is usually
+> sound. It is that the reading was trusted without asking **what this instrument
+> cannot see, and what else would produce exactly this output.** By the time an
+> objection arrives, the conclusion has normally been written into a ticket, a PR body
+> or a rule — where the next reader inherits it as fact, with the uncertainty stripped.
+>
+> **The cost is asymmetric, which is why the check is worth its price.** Verifying an
+> instrument costs one command. Not verifying it costs a false claim in a rules file,
+> and rule files are trusted over direct observation by every session that loads them.
+>
+> Measured instances, all of them a confident answer from an unexamined instrument:
+> a `pkill -f` that matched its own shell · a `grep` that reported every Tailwind class
+> missing · an `addInitScript` probe reporting clean zeros because `documentElement`
+> was `null` and `observe()` threw · a `comm` comparison silently truncated at 15
+> chars · an `enable_auto_merge` call that no-op'd without error · a shallow clone
+> reporting the graft commit as every file's origin (workflow.md § *Provenance*) · a
+> `git diff A...B` against a **stale** `origin/staging`, which nearly produced a
+> scope-creep report against the session's own branch · and a rules-file claim about
+> Linear auto-close asserted twice into PR bodies as certain, then measured false
+> (workflow.md rule 29 § *branch name*).
+>
+> **Three of those happened in one session (2026-08-11), to a session that had this
+> very section loaded the whole time.** Knowing the rule is not the same as running
+> the check — so the practical form is a habit, not a principle: **before a claim
+> rests on a tool's output, run that tool once against a case whose answer you already
+> know.** A probe validated on a known case can be trusted in both directions; an
+> unvalidated one can be trusted in neither, and its *red* is worth exactly as little
+> as its green.
+>
+> ### Instance nine — the one where the answer was simply published
+>
+> **Before inferring a mechanism's rule from its observed behaviour, check whether the
+> mechanism documents its rule. An n=1 experiment against a documented system is a
+> slower and weaker instrument than reading the spec. This one was characterised from
+> five observations when the vendor states the condition outright.**
+>
+> The Linear auto-close condition (workflow.md rule 29 § *branch name*) was worked out
+> from five merges and their `stateHistory` timestamps, carefully excluding actor, date
+> and card state, and was written up as a **candidate hypothesis at n=1**. Linear
+> **documents** the answer: a class of non-closing magic words (`ref`, `references`,
+> `part of`, `related to`, `contributes to`, `towards`) that link without automating
+> status. One page of vendor documentation was strictly better evidence than the five
+> measurements, and it was available the entire time.
+>
+> **This one is different from the eight above, and that is why it is worth its own
+> heading.** Those were instruments that returned a *wrong* answer. Here the
+> measurements were all *correct* — and still the wrong instrument, because a
+> controlled experiment against a documented system buys a weaker conclusion at higher
+> cost than reading the spec. Being rigorous about the wrong instrument does not
+> upgrade it.
+>
+> **So the ordering is: read the spec, then measure — and measure to confirm the spec
+> or to find where the system departs from it.** Measurement stays essential where no
+> spec exists, where the spec is silent, or where behaviour contradicts it (this repo
+> has such cases: `vrt-update.yml:15`'s false claim about `actions: write`). What it
+> must not do is *substitute* for a documentation lookup nobody attempted.
+>
+> The residue is instructive too: the docs list `ref` and `references`, and this repo
+> writes **`Refs`** — a plural the published list does not contain. Reading the spec
+> did not just answer the question faster, it exposed a gap the five measurements had
+> silently papered over.
+
 > **A check that can be green for two opposite reasons is not a check.
 > Before trusting a green, ask what else would produce it.**
 
