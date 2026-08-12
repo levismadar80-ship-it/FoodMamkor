@@ -700,6 +700,9 @@ demo-admin credential is Sapir's.
 real pytest class or Playwright spec. That column is what a reader trusts to
 know whether a persona is genuinely covered, so a plausible-looking reference
 there would be worse than an admission.
+
+---
+
 ## PARKED: MEH-1511 — rule 23 amendment. **The block reproduced in a fresh session.**
 
 **Status: parked, `needs-sapir`. The work is DONE and staged; only the write is
