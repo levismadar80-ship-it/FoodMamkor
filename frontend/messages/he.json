@@ -1524,10 +1524,8 @@
           "view": "צפה",
           "suspend": "השהה",
           "activate": "הפעל",
-          "remove_ambassador_title": "הסר תפקיד שגרירה",
-          "set_ambassador_title": "הגדר כשגרירה",
-          "ambassador_active": "שגרירה",
-          "ambassador_inactive": "☆ שגריר",
+          "remove_ambassador_title": "הסרת תפקיד שגרירה",
+          "set_ambassador_title": "הגדרה כשגרירה",
           "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "סטורי",
@@ -2524,7 +2522,7 @@
       "field_city_placeholder": "חפשו עיר...",
       "field_address": "כתובת (פרטית — רק את והצוות רואים)",
       "field_address_placeholder": "רחוב, מספר",
-      "field_price": "מחיר לאדם (₪) — השאירי ריק לחינם",
+      "field_price": "מחיר לאדם (₪) — השאירו ריק לחינם",
       "field_price_placeholder": "150",
       "field_max_participants": "מספר משתתפים מקסימלי",
       "field_max_participants_placeholder": "10",
@@ -2540,6 +2538,8 @@
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
+      "error_location_type_required": "חובה לבחור סוג מיקום",
+      "error_city_required": "חובה לבחור עיר",
       "error_duration_range": "משך החוויה חייב להיות בין 15 ל-1440 דקות",
       "error_price_negative": "המחיר לא יכול להיות שלילי",
       "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
@@ -4706,7 +4706,10 @@
       "field_price_label_full": "מחיר (0 = חינם)",
       "field_max_participants_label_full": "מקסימום משתתפים",
       "save": "שמירה",
-      "saving": "שומרת…"
+      "saving": "שומרת…",
+      "field_category_placeholder": "בחרו קטגוריה",
+      "error_city_required": "חובה לבחור עיר",
+      "error_category_required": "חובה לבחור קטגוריה"
     }
   },
   "settings": {

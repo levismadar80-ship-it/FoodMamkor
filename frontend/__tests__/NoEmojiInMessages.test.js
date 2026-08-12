@@ -12,6 +12,28 @@ import path from "node:path";
 // every messages file must be one of the justified exemptions below, and the
 // exemptions themselves must stay emoji-bearing (a stale allowlist entry is
 // its own failure — no silent drift in either direction).
+//
+// MEH-1681 — WHERE THE BOUNDARY IS, AND WHY IT IS NOT MOVING.
+// `Extended_Pictographic` is the deliberate line, not an oversight. Star,
+// check and arrow glyphs are NOT matched by it, verified against ICU:
+// ☆ U+2606, ★ U+2605, ✓ U+2713, ✗ U+2717, ← U+2190 are all
+// Extended_Pictographic = False. So this guard never "missed" them — by its
+// definition they are typography, and MEH-1472 already settled that reading
+// when it moved ⭐ → ★ in admin/reviews/page.jsx and called ★ the repo's
+// typographic star.
+//
+// Two proposals were considered and both declined:
+//   · widening to U+2600–U+27BF — would redden ~80 lines per locale and
+//     overturn the MEH-1472 precedent;
+//   · allowlisting the ☆ ambassador string — would entrench the glyph as a
+//     directional cue and leave the real bug (a state label on an action
+//     item) open.
+// MEH-1681 removed that ☆ instead, by retiring the string that carried it:
+// the admin kebab now names the action ("הגדרה כשגרירה" / "הסרת תפקיד
+// שגרירה"). The glyph left as a side effect of fixing the copy — no regex
+// change and no allowlist growth here, on purpose.
+// This note exists so the two guards do not drift into arguing about the
+// definition.
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MESSAGES_DIR = path.join(HERE, "..", "messages");
