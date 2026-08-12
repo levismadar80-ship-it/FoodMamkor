@@ -437,12 +437,24 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           Preview seeds from initial.image_url in edit mode for free, because
           `seed()` already puts it in form state. */}
       <div>
-        <label
-          htmlFor="experience-image"
-          className="block text-sm font-medium text-text mb-1"
-        >
-          {t("field_image")}
-        </label>
+        {/* The field name is a <label htmlFor> only while the input it names is
+            on screen. In the preview branch there is no `experience-image`
+            element, so a `htmlFor` there would point at nothing — a dangling
+            association reads to AT as a labelled control that does not exist.
+            A <span> carries the same visible copy with no such claim.
+            (CI reviewer, PR #2814.) */}
+        {form.image_url ? (
+          <span className="block text-sm font-medium text-text mb-1">
+            {t("field_image")}
+          </span>
+        ) : (
+          <label
+            htmlFor="experience-image"
+            className="block text-sm font-medium text-text mb-1"
+          >
+            {t("field_image")}
+          </label>
+        )}
         {form.image_url ? (
           <div className="flex items-center gap-3">
             {/* raw img: upload preview. `form.image_url` is whatever POST
@@ -476,12 +488,22 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             </button>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+          /* `sr-only`, NOT `hidden`. `hidden` is display:none, which removes the
+             input from the tab order — and the wrapping <label> is not natively
+             focusable, so the whole upload control became unreachable by
+             keyboard. That is a regression this PR would have introduced: the
+             field it replaces was a text <Input>, which was reachable. sr-only
+             keeps the input focusable while invisible, and `focus-within` on the
+             wrapper renders the focus ring the sighted keyboard user needs —
+             the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
+             EventForm.jsx has the original `hidden`; not touched from here, noted
+             on the PR. (CI reviewer, PR #2814.) */
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             <input
               id="experience-image"
               type="file"
               accept="image/*"
-              className="hidden"
+              className="sr-only"
               disabled={uploading}
               onChange={handleImageUpload}
               aria-invalid={fieldErrors.image_url ? true : undefined}

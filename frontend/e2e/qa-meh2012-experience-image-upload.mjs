@@ -186,6 +186,26 @@ async function run(browser, vp) {
   const type = await page.locator(FILE_INPUT).getAttribute("type");
   check(type === "file", "the image field is a file input", `type=${type}`);
 
+  // 🔴 The keyboard-reachability evidence the jsdom suite explicitly defers to
+  // this harness, because jsdom loads no Tailwind and computes `hidden` and
+  // `sr-only` identically. Here a stylesheet exists, so this measures the
+  // rendered behaviour rather than the class string.
+  //
+  // `hidden` is display:none, which removes the input from the tab order — and
+  // the wrapping <label> is not natively focusable, so the upload control was
+  // unreachable without a mouse. `.focus()` is the discriminating probe: a
+  // display:none element cannot become activeElement, so this goes red against
+  // the pre-fix markup for the exact reason the fix exists.
+  const display = await page
+    .locator(FILE_INPUT)
+    .evaluate((el) => getComputedStyle(el).display);
+  check(display !== "none", "the file input is not display:none", `display=${display}`);
+  const focusable = await page.locator(FILE_INPUT).evaluate((el) => {
+    el.focus();
+    return document.activeElement === el;
+  });
+  check(focusable, "the file input can take keyboard focus (WCAG 2.1.1)");
+
   const body = await page.locator("body").innerText();
   check(!/cloudinary/i.test(body), "the word 'Cloudinary' appears nowhere on the page");
   check(!/res\.cloudinary\.com/.test(body), "no CDN URL placeholder is shown to the owner");
@@ -198,6 +218,19 @@ async function run(browser, vp) {
   check(previewCount === 1, "exactly one preview thumbnail after upload", `count=${previewCount}`);
   const src = await page.locator(PREVIEW).first().getAttribute("src");
   check(src === CLOUD_URL, "the preview shows the URL the endpoint returned", src);
+
+  // The field-name label used to keep htmlFor="experience-image" in this state,
+  // where that id no longer exists — a labelled control that is not on the page.
+  // Asserted over every label in the document, so a future field cannot
+  // reintroduce the same shape silently.
+  const dangling = await page.evaluate(() =>
+    [...document.querySelectorAll("label[for]")]
+      .map((el) => el.getAttribute("for"))
+      .filter((id) => document.getElementById(id) === null),
+  );
+  check(dangling.length === 0,
+    "no label points at a missing id while the preview is showing", dangling.join(","));
+
   await shoot(page, vp.tag, "3-uploaded");
   await checkNoHorizontalScroll(page, "uploaded");
 

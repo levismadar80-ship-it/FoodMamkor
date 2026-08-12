@@ -210,4 +210,51 @@ describe("MEH-2012 — the image field is an upload, not a URL box", () => {
     // complaint that MEH-2014 PR 1 was opened for on this very codebase.
     expect(submitEl()).toHaveTextContent(T.field_image_uploading);
   });
+
+  // ---- Both findings below come from the CI reviewer on PR #2814 (a different
+  // model from the one that wrote the code — the ORDERS §3.2 independent pass).
+  // Both were filed as "Minor"; the second is treated here as more than that,
+  // because it is a regression THIS diff introduces rather than one it inherits.
+
+  it("no label points at an id that does not exist — including in preview state", async () => {
+    // The field-name label was rendered unconditionally with
+    // htmlFor="experience-image", but that id only exists in the uploader
+    // branch. Once an image is set, the association pointed at nothing — which
+    // presents to AT as a labelled control that is not on the page.
+    //
+    // Asserted as an invariant over EVERY label in the form rather than as a
+    // check on this one: a dangling `for` is the defect, and stating it
+    // generally means a future field cannot reintroduce it silently.
+    api.post.mockResolvedValueOnce({ data: { url: CLOUD_URL } });
+    renderForm();
+
+    await selectFile(fileInput());
+    await waitFor(() => expect(preview()).toBeInTheDocument());
+
+    const dangling = [...document.querySelectorAll("label[for]")]
+      .map((el) => el.getAttribute("for"))
+      .filter((id) => document.getElementById(id) === null);
+    expect(dangling).toEqual([]);
+  });
+
+  it("the file input stays in the tab order — sr-only, never display:none", () => {
+    // `className="hidden"` is Tailwind display:none, which takes the input OUT
+    // of the tab order. The wrapping <label> is not natively focusable, so the
+    // upload control became unreachable by keyboard — and the field this PR
+    // replaces was a text <Input>, which was reachable. So this is a WCAG 2.1.1
+    // regression introduced by the diff, not inherited from EventForm.
+    //
+    // 🔴 HONEST LIMIT, stated rather than glossed: jsdom loads no Tailwind, so
+    // `hidden` and `sr-only` compute identically here and `.focus()` succeeds
+    // either way. This case therefore asserts the CLASS CONTRACT, which is the
+    // strongest thing available at this layer — it is red against the old code
+    // and green against the new, but it is NOT evidence about rendered
+    // behaviour. The behavioural assertion (real Chromium, computed display and
+    // a Tab landing on the input) lives in
+    // e2e/qa-meh2012-experience-image-upload.mjs, where a stylesheet exists.
+    renderForm();
+
+    expect(fileInput().className).toContain("sr-only");
+    expect(fileInput().className.split(/\s+/)).not.toContain("hidden");
+  });
 });
