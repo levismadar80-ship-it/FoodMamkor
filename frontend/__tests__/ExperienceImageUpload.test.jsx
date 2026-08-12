@@ -237,6 +237,20 @@ describe("MEH-2012 — the image field is an upload, not a URL box", () => {
     expect(dangling).toEqual([]);
   });
 
+  it("the preview announces itself — a successful upload is not silent to AT", async () => {
+    // alt="" would mark the thumbnail decorative. There is no live region on
+    // upload success, so this element appearing IS the success state; with an
+    // empty alt the only signal a screen-reader user gets is a remove button
+    // materialising nearby, which she has to infer the meaning of.
+    api.post.mockResolvedValueOnce({ data: { url: CLOUD_URL } });
+    renderForm();
+
+    await selectFile(fileInput());
+    await waitFor(() => expect(preview()).toBeInTheDocument());
+
+    expect(preview()).toHaveAttribute("alt", T.field_image);
+  });
+
   it("the file input stays in the tab order — sr-only, never display:none", () => {
     // `className="hidden"` is Tailwind display:none, which takes the input OUT
     // of the tab order. The wrapping <label> is not natively focusable, so the

@@ -461,10 +461,18 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
                 /upload/image returned — a Cloudinary secure_url OR the local
                 /placeholder-image.png fallback (upload.py:115). Mixed
                 provenance, authenticated form chrome, 96px. */}
+            {/* NOT alt="" (decorative). A successful upload has no live region,
+                so this preview appearing IS the success state — and with an
+                empty alt a screen-reader user is told nothing at all, inferring
+                it only from a "הסרת תמונה" button materialising nearby. The
+                field label is reused rather than inventing copy, so there is no
+                new key and the en twin already exists. EventForm.jsx has the
+                same alt="" gap; not touched from here, noted on the PR.
+                (CI reviewer, PR #2814.) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={form.image_url}
-              alt=""
+              alt={t("field_image")}
               className="w-24 h-24 object-cover rounded-[8px] border border-border"
             />
             {/* No aria-label: it carried "הסרת התמונה" while the visible text
