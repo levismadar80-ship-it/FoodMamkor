@@ -127,6 +127,39 @@ describe("MEH-2015 — no label prop smuggles a literal asterisk (the RecipeForm
     for (const d of SRC_DIRS) walk(path.resolve(__dirname, "..", d));
     expect(hits).toEqual([]);
   });
+
+  // Third shape, caught by the CI reviewer on this PR AFTER the scan above
+  // shipped: a bare text-node asterisk directly inside a <label> ELEMENT
+  // (settings page.jsx `pw-new`: `<label …>{tReset("password_aria")} *</label>`).
+  // That is outside the label-PROP corpus above — screen readers announce
+  // "star", the exact thing the invariant bans. [^<]* keeps the match inside
+  // the label's own text node; the fixed form (`{" "}<span aria-hidden>`)
+  // cannot match because `<span` interposes before the asterisk.
+  const LITERAL_MARKER_IN_LABEL_ELEMENT = /<label\b[^>]*>[^<]*\}\s*\*/;
+
+  it("control: the element scan matches the exact pw-new line the reviewer caught", () => {
+    const shipped =
+      '<label htmlFor="pw-new" className="block text-sm font-medium mb-1">{tReset("password_aria")} *</label>';
+    expect(LITERAL_MARKER_IN_LABEL_ELEMENT.test(shipped)).toBe(true);
+  });
+
+  it("no <label> element under frontend/ carries a bare text-node asterisk", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const hits = [];
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.(jsx?|tsx?)$/.test(e.name)) {
+          const src = fs.readFileSync(p, "utf8");
+          if (LITERAL_MARKER_IN_LABEL_ELEMENT.test(src)) hits.push(p);
+        }
+      }
+    };
+    for (const d of SRC_DIRS) walk(path.resolve(__dirname, "..", d));
+    expect(hits).toEqual([]);
+  });
 });
 
 describe("MEH-2015 — the קטגוריה * * bug stays dead", () => {

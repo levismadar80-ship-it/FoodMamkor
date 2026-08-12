@@ -550,7 +550,12 @@ function PasswordChangeCard({ isOAuth }) {
             "נבדק בשרת" pending tile because reuse-vs-current_hash is
             enforced inside the change_password handler (server-only). */}
         <div>
-          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">{tReset("password_aria")} *</label>
+          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">
+            {tReset("password_aria")}{" "}
+            <span className="text-error" aria-hidden="true">
+              *
+            </span>
+          </label>
           <PasswordInput
             id="pw-new"
             name="new"
