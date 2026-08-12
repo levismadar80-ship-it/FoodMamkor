@@ -1399,6 +1399,75 @@ Tasks auto-expire after 7 days.
     #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
     automation._
 
+    ### 29b — branch-name auto-close is NOT deterministic. Never rely on it, in either direction.
+
+    Rule 29 above covers one direction: a **Done** issue flipped back to In
+    Progress. This covers the other: an **active** issue closed by nothing but
+    the identifier in the branch name. Same integration, opposite damage.
+
+    **The claim this replaces was stated as a law**, in this repo's own
+    artifacts — *"every `meh-<N>` in a branch name IS an auto-link and will
+    close the ticket on merge with no keyword anywhere."* It is not a law. It
+    is a behaviour that has now been measured **failing in both directions**:
+
+    | | PR | branch | ticket | before → after | fired? |
+    |---|---|---|---|---|---|
+    | 08/08 | #2706 | `feature/meh-215-…` | MEH-215 | Backlog → **Done** in 2 s | ✅ |
+    | 09/08 | #2708 | `feature/meh-999-…` | MEH-999 | In Progress → **Done** in 7 s | ✅ |
+    | 09/08 | #2710 | `feature/meh-1949-…` | MEH-1949 | Backlog → **Done** | ✅ |
+    | 11/08 | #2776 | `feature/meh-1249-…` | MEH-1249 | Todo → **Done** | ✅ |
+    | 11/08 | #2780 | `feature/meh-1976-…` | MEH-1976 | Todo → **Done** | ✅ |
+    | 11/08 | #2782 | `feature/meh-1949-…` | MEH-1949 | Todo → **Done** in 15 s | ✅ |
+    | 11/08 | #2784 | `feature/meh-2009-…` | MEH-2009 | Backlog → **Backlog, unchanged** | ❌ |
+
+    Seven measured points, three different starting states, no closing keyword
+    and no bare identifier in any body. **Six fired; one did not.** Whatever
+    distinguishes #2784 is unknown — candidate explanations (the ticket's
+    canonical `gitBranchName` not matching the actual branch, a team-level
+    auto-close setting, state dependence, timing) are **hypotheses, and none has
+    been checked against the Linear↔GitHub app configuration.**
+
+    **The false-close case worth knowing by name is MEH-1872 (10/08), because it
+    shows a reopen does not necessarily stick.** PR #2745 merged at 13:32:28 and
+    closed it. A human reopened it at 13:59:08. It was **closed again at
+    13:59:13 — five seconds later**, by the integration and not by a person. So
+    "reopen after merge" is a step whose *result must itself be verified*, not a
+    step you perform and walk away from.
+
+    **The three obligations, in order:**
+
+    1. **Never rely on branch-name auto-close, in either direction.** Do not
+       write "merging will close MEH-N" and do not write "the branch will not
+       close it". Both have been wrong this week.
+    2. **Always carry an explicit trailer that says what you mean** — `Closes
+       MEH-N` when the DoD is met, `Refs MEH-N` when it is not. The trailer is
+       the only part of this that is deterministic, and it is what a reader
+       months later will believe.
+    3. **After merge, `get_issue` every ticket number appearing in the branch
+       name.** Not the ones you intended to close — the ones the *branch name*
+       contains, which the gate below forces to exist. If the DoD is unmet,
+       reopen with a one-paragraph Hebrew reason on the card, **then re-read the
+       status to confirm the reopen held.**
+
+    **You cannot avoid this by naming branches carefully.** `Branch name gate`
+    (MEH-1141) *requires* `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$` —
+    every legal branch name carries some ticket's identifier. The system
+    mandates the input that triggers the behaviour, so "be careful" is not an
+    available mitigation.
+
+    **What the MEH-1949 guard does and does not buy.** It warns when a branch
+    carries `meh-<N>` and the body does not declare `Closes MEH-<N>`. That is a
+    *consistency* check on the text — true regardless of whether the integration
+    fires — so it survives this correction intact. It does **not** predict or
+    prevent the close, and it cannot: it has no access to the integration's
+    behaviour. Post-merge verification is the only thing that closes the loop,
+    and it is human.
+
+    _Source: measured across 08–11/08 (table above). The three 11/08 reopens
+    were the pattern, not the exception — MEH-1249, MEH-1976 and MEH-1949 all
+    needed manual restoration on the same day, while MEH-999 and MEH-1872 closed
+    correctly off explicit `Closes` trailers in the same batch._
+
 30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
     never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
     PR title/body to unblock the `DO-NOT-MERGE marker gate` (`pr-checks.yml`
@@ -1418,10 +1487,44 @@ Tasks auto-expire after 7 days.
       diff) is not this rule — that's normal drive-to-green work. The line is:
       never neutralize the block itself; only fix the underlying cause CC owns.
 
+    - **The marker is not cleared by whoever concludes the block is STALE.**
+      This is the subtler failure, and the more likely one: not defiance, but
+      tidying. A session that placed the marker itself, watched its cause get
+      resolved, and then removed it is not overriding anybody — it is filing
+      paperwork. It is still the forbidden action.
+
+      **A stale-looking block and a discharged block are indistinguishable from
+      inside the session that wants to merge.** That asymmetry is the whole
+      mechanism: the session with the motive to merge is the one least able to
+      judge whether the block still binds, which is exactly why the judgement
+      sits with someone who has no such motive. "I put it there, so I can take
+      it away" is the reasoning to distrust — CC's *own* marker is still
+      Sapir's to clear.
+
+    - **"Auto-merge unarmed" is NOT a substitute for the marker.** A session
+      that removes the marker and offers restraint in its place — not arming
+      auto-merge, promising not to merge — has swapped a structural block for
+      an intention. **Unarmed is a state, not a lock:** a parallel lane can arm
+      it, and this repo has documented parallel-session collisions plus staging
+      moving under active branches. The marker sits in a **required gate**,
+      which is what makes it hold against everyone rather than against one
+      session's good behaviour. If you find yourself proposing a compensating
+      control, that is the signal you are removing something you should not be
+      touching.
+
     _Source: 2026-07-23 city-discovery batch — CC cleared the marker + pushed
     re-trigger commits on PRs #2087/#2089/#2090 to merge after a "MERGE ALL"
     authorization. The merges were correct; clearing the marker was not CC's to
     do. Codified so the STOP boundary survives future merge authorizations._
+
+    _Second source: 2026-08-11, PR #2781. CC parked a PR behind its own
+    `DO-NOT-MERGE` marker, Sapir later decided the open question, and CC then
+    stripped the marker from the PR title as part of taking the PR out of
+    draft — reading a "take it out of draft" instruction as covering both.
+    Draft and the marker are two separate blocks. CC disclosed it unprompted
+    and left auto-merge unarmed as compensation; the marker was restored by
+    instruction, with the note that unarmed auto-merge is a state a parallel
+    lane can undo. The two bullets above are that instruction, generalised._
 
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are

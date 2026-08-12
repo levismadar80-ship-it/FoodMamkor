@@ -40,7 +40,11 @@ const DEFAULTS = {
   lng: null,
   city: "",
   image_url: "",
-  category: "אחר",
+  // MEH-2013: "קטגוריה *" is marked required and the server enforces it
+  // (schemas.py EventCreate.category, min_length=1) — but pre-filling "אחר"
+  // meant the gate was satisfied by a catch-all nobody chose. Same class as
+  // ExperienceForm's location_type: "home".
+  category: "",
   price: 0,
   max_participants: "",
   registration_url: "",
@@ -59,7 +63,9 @@ function seed(initial) {
     lng: initial.lng ?? null,
     city: initial.city ?? "",
     image_url: initial.image_url ?? "",
-    category: initial.category ?? "אחר",
+    // MEH-2013: no "אחר" fallback here either — an existing event with no
+    // category has to be given one, not silently stamped catch-all on save.
+    category: initial.category ?? "",
     price: initial.price ?? 0,
     max_participants: initial.max_participants ?? "",
     registration_url: initial.registration_url ?? "",
@@ -70,7 +76,17 @@ function seed(initial) {
 // attributes. The form is `noValidate` now, so these checks replace them — all
 // evaluated together, each landing on its own field. Order = DOM order, which is
 // what makes "focus the first invalid field" mean the topmost one.
-const EVENT_FIELD_ORDER = ["title", "event_date", "price", "max_participants", "registration_url"];
+// MEH-2013: city + category join in DOM order (both sit between the date and
+// price inputs), so "first invalid" still means topmost.
+const EVENT_FIELD_ORDER = [
+  "title",
+  "event_date",
+  "city",
+  "category",
+  "price",
+  "max_participants",
+  "registration_url",
+];
 
 // `type="url"` rejects "abc" and "www.example.com" but ACCEPTS "javascript:…"
 // and "data:…" — measured in Chromium, not assumed. This mirrors that exactly,
@@ -93,6 +109,12 @@ function validateEventForm(f, t) {
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-2013: both are labelled `*`. `city` was enforced nowhere; `category`
+  // WAS enforced server-side, but the form is noValidate so the native
+  // `required` on the <select> is dead — the only failure path was a raw 422
+  // with no message beside the field.
+  if (!f.city.trim()) errors.city = t("error_city_required");
+  if (!f.category) errors.category = t("error_category_required");
   if (f.price !== "") {
     if (Number(f.price) < 0) errors.price = t("error_price_negative");
     // EventCreate.price is `int` — a fractional value 422s with an opaque
@@ -170,6 +192,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     try {
       const payload = {
         ...form,
+        // MEH-2013: required on both sides now — validateEventForm has already
+        // rejected an empty/whitespace value by the time we get here.
+        city: form.city.trim(),
         price: Number(form.price) || 0,
         max_participants: form.max_participants ? Number(form.max_participants) : null,
         event_time: form.event_time || null,
@@ -271,19 +296,41 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             id="city"
             label={t("field_city_label")}
             value={form.city}
-            onChange={(val) => setForm({ ...form, city: val })}
+            onChange={(val) => {
+              setForm((f) => ({ ...f, city: val }));
+              // MEH-2013: CitySearch reports a value, not an event, so it does
+              // not go through `update()` — clear its error the same way.
+              setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
+            }}
             placeholder={t("field_city_placeholder")}
           />
+          {/* MEH-2013: CitySearch has no error prop, so the message renders
+              beside it here. The input cannot reference it via
+              aria-describedby without changing CitySearch — noted in the PR. */}
+          {fieldErrors.city && (
+            <span id="city-error" className="text-xs text-error mt-1 block">
+              {fieldErrors.city}
+            </span>
+          )}
         </div>
 
-        <Field id="category" label={t("field_category_label")} required>
+        <Field id="category" label={t("field_category_label")} required error={fieldErrors.category}>
           <select
             id="category"
             value={form.category}
             onChange={update("category")}
             className="input-base"
             required
+            aria-invalid={fieldErrors.category ? true : undefined}
+            aria-describedby={fieldErrors.category ? "category-error" : undefined}
           >
+            {/* MEH-2013: a disabled placeholder is what gives the select an
+                "unchosen" state at all. Without it the first real option is
+                displayed and submitting looks like a deliberate choice of it —
+                which is how "אחר" used to be picked for everyone. */}
+            <option value="" disabled>
+              {t("field_category_placeholder")}
+            </option>
             {CATEGORY_KEYS.map((c) => (
               <option key={c.key} value={c.key}>
                 {tCat(c.labelKey)}
@@ -398,13 +445,22 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   );
 }
 
-function Field({ id, label, required, children }) {
+// MEH-2013: `error` mirrors ui/Input's error slot so a Field-hosted control
+// (the category <select>) can carry an inline message instead of the raw 422
+// that noValidate left as the only failure path. The asterisk mechanism above
+// is untouched on purpose — MEH-2015 owns consolidating it.
+function Field({ id, label, required, error, children }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
+      {error && (
+        <span id={id ? `${id}-error` : undefined} className="text-xs text-error mt-1 block">
+          {error}
+        </span>
+      )}
     </div>
   );
 }

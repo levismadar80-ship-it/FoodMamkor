@@ -58,6 +58,10 @@ def test_experience_title_junk_rejected():
             description="תיאור ארוך מספיק עבור הוולידציה של השדה",
             event_date=date(2026, 12, 1),
             location_type="home",
+            # MEH-2013: ExperienceCreate.city is required now. Added to the
+            # NEGATIVE case too, so it still fails for the title reason it
+            # names rather than for a missing city.
+            city="תל אביב",
         )
 
 
@@ -68,5 +72,6 @@ def test_experience_title_valid_accepted():
         description="תיאור ארוך מספיק עבור הוולידציה של השדה",
         event_date=date(2026, 12, 1),
         location_type="home",
+        city="תל אביב",  # MEH-2013: required now. Fixture only.
     )
     assert obj.title == "סדנת אפייה"
