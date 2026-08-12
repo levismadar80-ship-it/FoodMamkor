@@ -530,6 +530,9 @@ def update_my_producer(
 # so the next person either finishes it or extends the date in a reviewed PR.
 
 
+# DO NOT remove, rename, or make private-er — imported cross-module by
+# app/services/availability_expiry.py (MEH-1828). A rename fails silently at
+# the next Sunday rollover, not at startup; MEH-1854 owns deleting both ends.
 def _state_to_legacy(state: str) -> tuple[bool, str]:
     """Map the new 4-value enum to the (is_available_today, availability_status)
     pair so old readers (ProducerCard, ProducerDetail, dashboard) stay accurate
