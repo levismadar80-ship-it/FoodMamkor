@@ -4,6 +4,11 @@ out/
 .env.local
 # Playwright transient test artifacts (traces, videos, DOM dumps)
 test-results/
+# MEH-1980: vitest --coverage output (v8 provider). Regenerated on every run
+# and machine-specific; only the frozen summary in the committed baseline is
+# meant to be durable. Added with the coverage baseline itself — before it,
+# any local `vitest --coverage` left the tree dirty.
+coverage/
 # TypeScript incremental build state. Emitted by any local `tsc` run (the e2e
 # specs are TS, so verifying them writes this), machine-specific, and never
 # useful in a diff. CI regenerates it per run and discards it.
