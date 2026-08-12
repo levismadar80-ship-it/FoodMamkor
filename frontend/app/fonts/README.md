@@ -23,7 +23,8 @@ build output rather than fetching them from Google directly: it removes
 | `cormorant-garamond-latin.woff2` | Cormorant Garamond | latin, normal | 37 KB |
 | `cormorant-garamond-latin-italic.woff2` | Cormorant Garamond | latin, italic | 38 KB |
 
-**228 KB total, down from 524 KB.** The 13 dropped files (313 KB) were the
+**214 KiB total (219,240 bytes), down from 482 KiB (493,144 bytes).** The 13
+dropped files — 267 KiB, 56% of the payload — were the
 `latin-ext`, `cyrillic`, `cyrillic-ext`, `vietnamese` and math/symbol faces —
 no surface on this site renders those scripts, and `next/font/google` fetched
 them on every build regardless of the `subsets:` option.
