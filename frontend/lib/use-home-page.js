@@ -687,8 +687,13 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     setFilters(newFilters);
     updateURL(newFilters);
     trackEvent("delivery_days_filter", { count: 0 });
+    // The city is passed unconditionally, matching handleDaySelected above:
+    // both are only reachable with a non-empty city (a day cannot be active
+    // without one), so the guard the two handlers used to disagree about
+    // could never fire differently. One form, so a reader is not left
+    // wondering which sibling is right.
     loadProducers({
-      ...(newFilters.delivery_city ? { delivery_city: newFilters.delivery_city } : {}),
+      delivery_city: newFilters.delivery_city,
       ...buildChipParams(chips),
     });
   };

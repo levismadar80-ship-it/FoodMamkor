@@ -328,8 +328,8 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     nationwide and day-less rows remain excluded. That is deliberate (the
     ticket's "literal semantics" decision) — a business that never named a day
     has made no day promise, whatever the caller selected.
-    # REUSES: :478 category block — Category.id.in_ inside an EXISTS.
     """
+    # REUSES: the category block below — Category.id.in_ inside an EXISTS.
     conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
         conds.append(func.lower(DeliveryArea.city) == city.lower())
