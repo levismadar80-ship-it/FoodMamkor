@@ -34,7 +34,9 @@ import { test, expect, type Page } from "@playwright/test";
  *  C1  email + password form                 covered
  *  C1  eye toggle                            covered
  *  C1  "שכחתי סיסמה" link                    covered
- *  C1  "אין לי חשבון" → /register            covered
+ *  C1  register link → /register             covered (visible + href asserted;
+ *                                            the click itself is exercised by
+ *                                            the C2 control, not by C1)
  *  C2  correct credentials → login+redirect  covered (stubbed backend)
  *  C2  wrong credentials → Hebrew error      covered (stubbed backend)
  *  C2  session persists across a new tab     covered — a second page in the
@@ -430,17 +432,29 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
    * keeps paying for.
    *
    * The control is a navigation whose answer is already known: C1 asserts the
-   * "אין לי חשבון" link reaches /register, and that assertion passes today on
-   * both projects. So the recorder MUST log at least one request for it. If
-   * this test goes red, do not read any diagnostics from the two tests above —
-   * fix the recorder first.
+   * register link is visible and carries href="/register" (via
+   * data-testid="login-register-link"), and that assertion passes today on both
+   * projects. C1 does NOT click it — this control is the only test that does —
+   * so what C1 buys is that the element exists and points where we think. Given
+   * that, clicking it MUST produce at least one /register request in the
+   * recorder. If this test goes red, do not read any diagnostics from the two
+   * tests above — fix the recorder first.
+   *
+   * Locate by data-testid, never by copy. This control previously used
+   * getByRole("link", { name: "אין לי חשבון" }) — a string that exists nowhere
+   * in the repo (the real copy is auth.login.no_account, «אין לך חשבון?», and
+   * the rendered label comes from a third key, register_cta). It timed out at
+   * 20s on both projects, so the control never passed, so the recorder it
+   * exists to validate was never actually validated. The docstring above
+   * asserted C1 covered this same click, which it does not. See MEH-2035, and
+   * frontend/e2e/CLAUDE.md: "Hebrew strings change; tests should not."
    */
   test("C2 — control: the navigation recorder sees a navigation known to work", async ({
     page,
   }) => {
     const nav = recordNavigation(page);
     await page.goto("/he/login");
-    await page.getByRole("link", { name: "אין לי חשבון" }).click();
+    await page.getByTestId("login-register-link").click();
     await expectPath(page, "/register", nav);
 
     const toRegister = nav.events.filter((e) => e.url.includes("/register"));
