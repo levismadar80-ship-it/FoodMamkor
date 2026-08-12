@@ -85,15 +85,25 @@ def test_reset_touches_only_full_this_week(db):
     assert changed == 1  # exactly the one expired row, not 4
 
     from app.models.models import Producer
+    from app.routers.producer_me import _state_to_legacy
 
     for state, pid in untouched.items():
         row = db.query(Producer).filter(Producer.id == pid).one()
         assert row.availability_state == state, (
             f"{state}: reset must not touch it"
         )
-        # vacation's legacy status in particular must survive:
-        if state == "on_vacation":
-            assert row.availability_status == "vacation"
+        # The FULL row survives, not just the enum (CI reviewer catch: the
+        # docstring claims byte-identical, so all three columns are asserted
+        # for every untouched state — not only vacation's). available_today
+        # doubles as the true-flag control: its is_available_today=True would
+        # redline a reset that wrote the wrong mapping onto untouched rows.
+        exp_today, exp_status = _state_to_legacy(state)
+        assert row.is_available_today is exp_today, (
+            f"{state}: legacy flag must survive untouched"
+        )
+        assert row.availability_status == exp_status, (
+            f"{state}: legacy status must survive untouched"
+        )
 
 
 def test_reset_on_empty_set_is_a_clean_zero(db):
@@ -185,6 +195,10 @@ def test_weekly_job_is_registered_with_israel_timezone():
     # the source once, so the two cannot drift silently. A source-text probe
     # is weak evidence alone (it cannot execute), which is why the service
     # behaviour above is tested for real; this only pins the wiring strings.
+    # TODO: delete the source pins when the wiring has an integration test
+    # that runs lifespan's registration path for real (CI reviewer note —
+    # a helper-extraction refactor breaks these strings with no behaviour
+    # change, and they add nothing beyond the service tests when that lands).
     import inspect
 
     src = inspect.getsource(startup)
