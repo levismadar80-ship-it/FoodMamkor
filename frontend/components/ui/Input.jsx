@@ -50,6 +50,19 @@ export default function Input({
   id,
   className = "",
   disabled = false,
+  // MEH-2015: THE required-marker mechanism. The asterisk renders here and
+  // only here — never baked into the i18n label string (that duplication is
+  // what put "קטגוריה * *" on screen). The prop is named so the label can
+  // render the marker, and it is ALSO forwarded as the native required
+  // attribute below — byte-identical to what ...rest always did. An earlier
+  // shape of this change intercepted it (marker + aria-required, no native
+  // attr) and that was a measured regression: ContactClient and the
+  // group-buys form have no JS required-validation — the browser gate WAS
+  // their empty-field gate, and intercepting the attribute deleted it.
+  // Native required already announces "required" to AT, so no separate
+  // aria-required is needed; the span is aria-hidden so readers do not
+  // additionally hear "star".
+  required = false,
   ...rest
 }) {
   const autoId = useId();
@@ -66,6 +79,7 @@ export default function Input({
       id={inputId}
       type={type}
       disabled={disabled}
+      required={required || undefined}
       aria-invalid={hasError || undefined}
       aria-describedby={message ? describedById : undefined}
       className={[
@@ -95,6 +109,11 @@ export default function Input({
       {label && (
         <label htmlFor={inputId} className="text-sm font-medium text-text">
           {label}
+          {required && (
+            <span className="text-error" aria-hidden="true">
+              {" *"}
+            </span>
+          )}
         </label>
       )}
 
