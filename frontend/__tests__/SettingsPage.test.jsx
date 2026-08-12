@@ -349,16 +349,16 @@ describe("SettingsPage", () => {
   it("security: change-password PATCHes /users/me/password and clears the form", async () => {
     paramsRef.current = new URLSearchParams("tab=security");
     render(<SettingsPage />);
-    fireEvent.change(screen.getByLabelText(`${NS_PASSWORD}.current_label`), {
+    fireEvent.change(screen.getByLabelText(new RegExp(`${NS_PASSWORD}.current_label`)), {
       target: { value: "old-pass" },
     });
-    // The new-password field is a PasswordInput whose visible <label> carries a
-    // trailing " *" while its inner aria-label does not (page.jsx:543, :550) —
+    // The new-password field is a PasswordInput; its marker asterisk is an
+    // aria-hidden span (MEH-2015), so the accessible name is the bare key —
     // the exact-match query below resolves the labelled control unambiguously.
-    fireEvent.change(screen.getByLabelText(`${NS_RESET}.password_aria *`), {
+    fireEvent.change(screen.getByLabelText(`${NS_RESET}.password_aria`), {
       target: { value: "new-pass-123" },
     });
-    fireEvent.change(screen.getByLabelText(`${NS_PASSWORD}.confirm_label`), {
+    fireEvent.change(screen.getByLabelText(new RegExp(`${NS_PASSWORD}.confirm_label`)), {
       target: { value: "new-pass-123" },
     });
     // The submit gate (page.jsx:452 `canSave`) is the thing that decides
@@ -377,9 +377,9 @@ describe("SettingsPage", () => {
     );
 
     // "…and clears the form" — the half the old test named but never asserted.
-    await waitFor(() => expect(screen.getByLabelText(`${NS_PASSWORD}.current_label`)).toHaveValue(""));
-    expect(screen.getByLabelText(`${NS_RESET}.password_aria *`)).toHaveValue("");
-    expect(screen.getByLabelText(`${NS_PASSWORD}.confirm_label`)).toHaveValue("");
+    await waitFor(() => expect(screen.getByLabelText(new RegExp(`${NS_PASSWORD}.current_label`))).toHaveValue(""));
+    expect(screen.getByLabelText(`${NS_RESET}.password_aria`)).toHaveValue("");
+    expect(screen.getByLabelText(new RegExp(`${NS_PASSWORD}.confirm_label`))).toHaveValue("");
   });
 
   // NOTE — the "logout button calls logout + routes home" case that sat here
