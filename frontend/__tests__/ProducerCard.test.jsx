@@ -188,6 +188,7 @@ beforeEach(() => {
   enqueueSpy.mockClear();
   favCache.ids = new Set();
   window.sessionStorage.clear();
+  window.localStorage.clear();
 });
 
 describe("ProducerCard — Phase B anatomy", () => {
@@ -352,7 +353,7 @@ describe("ProducerCard — Phase B anatomy", () => {
   });
 
   it("renders distance inline in the location line when coords exist on both sides", () => {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "user_location",
       JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
     );
