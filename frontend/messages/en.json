@@ -2493,7 +2493,6 @@
       "field_image_upload_hint": "Drag here or click to upload · JPG / PNG / WebP",
       "field_image_uploading": "Uploading image…",
       "field_image_remove": "Remove image",
-      "field_image_remove_aria": "Remove image",
       "field_date": "Date *",
       "field_time": "Start time",
       "field_duration": "Duration (minutes)",

@@ -130,7 +130,7 @@ describe("MEH-2012 — the image field is an upload, not a URL box", () => {
     await selectFile(fileInput());
     await waitFor(() => expect(preview()).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: T.field_image_remove_aria }));
+    fireEvent.click(screen.getByTestId("experience-image-remove"));
 
     expect(preview()).toBeNull();
     expect(fileInput()).toHaveAttribute("type", "file");

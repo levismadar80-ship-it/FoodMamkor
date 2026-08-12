@@ -455,10 +455,20 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
               alt=""
               className="w-24 h-24 object-cover rounded-[8px] border border-border"
             />
+            {/* No aria-label: it carried "הסרת התמונה" while the visible text
+                is "הסרת תמונה", and WCAG 2.5.3 (Label in Name) requires the
+                accessible name to CONTAIN the visible text — the definite ה
+                breaks the substring, so a voice-control user saying what she
+                reads would not match the control. The visible text is already
+                a complete description, so the fix is to delete the override
+                rather than to reword it. (EventForm.jsx:380 has the same
+                mismatch; not touched from here — noted on the PR.)
+                data-testid, not the Hebrew string, is what the QA harness
+                targets, so a copy change cannot silently unhook it. */}
             <button
               type="button"
               onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
-              aria-label={t("field_image_remove_aria")}
+              data-testid="experience-image-remove"
               className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
             >
               <XCircle size={14} weight="bold" aria-hidden="true" />

@@ -202,7 +202,7 @@ async function run(browser, vp) {
   await checkNoHorizontalScroll(page, "uploaded");
 
   // Remove returns the uploader.
-  await page.locator('button[aria-label="הסרת התמונה"]').first().click();
+  await page.locator('[data-testid="experience-image-remove"]').first().click();
   await page.waitForTimeout(400);
   check((await page.locator(PREVIEW).count()) === 0, "remove clears the preview");
   check((await page.locator(FILE_INPUT).count()) === 1, "remove restores the file input");
