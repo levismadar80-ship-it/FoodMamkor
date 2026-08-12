@@ -29,9 +29,9 @@ orchestrator in the session prompt. The *partition scheme* below is stable; the
 
 | Lane | Owns | File domain |
 |---|---|---|
-| **A** | backend | `backend/**` |
+| **A** | backend | `backend/**`, and `tests/**` — see the boundary note below |
 | **B** | frontend | `frontend/app/**`, `frontend/components/**`, `frontend/lib/**` |
-| **C** | CI · tests · docs | `.github/**`, `scripts/**`, `backend/tests/**`, `frontend/e2e/**`, `frontend/__tests__/**`, `docs/**`, `.claude/**` |
+| **C** | CI · tests · docs | `.github/**`, `scripts/**`, `frontend/e2e/**`, `frontend/__tests__/**`, `docs/**`, `.claude/**` |
 
 **The domains are exclusive, and the boundary is the point.** Two lanes editing
 one file is the parallel-writer failure this repo has already hit (workflow rule
@@ -40,14 +40,55 @@ a merge queue — [MEH-1603](https://linear.app/mehamakor/issue/MEH-1603) is the
 open card for the mechanical version, and until it lands the partition is the
 only thing enforcing this.
 
+### ⚠️ `tests/**` — a real boundary disagreement, recorded rather than papered over
+
+The Lane C brief this file was written from listed **`backend/tests/**`**. **That
+path does not exist.** Measured 2026-08-12: `git cat-file -e
+origin/staging:backend/tests` → `fatal: path 'backend/tests' does not exist`. The
+backend pytest suite is at **repo-root `tests/**`** (`tests/conftest.py`,
+`tests/test_api.py` — which is also the path `workflow.md`'s own DoD line cites).
+
+That typo was not cosmetic. Lane A owns `backend/**` and Lane C was given a path
+that matches nothing, so the **actual** suite fell inside **no lane's domain at
+all** — the precise condition this document exists to prevent.
+
+**Resolved toward Lane A**, because a lane's own committed practice outranks a
+brief written about it: `session-a-9d5pkj.md:64` records *"`tests/` treated as
+lane A. It is the backend's own pytest suite."* A Lane C session that needs a
+change under `tests/**` raises it with Lane A rather than editing it.
+
+_This entry is kept as a worked example, not tidied away: the phantom path came
+from the session brief and was transcribed into a coordination doc without being
+checked, which is exactly the premise-verification failure ORDERS §1.6 describes.
+It was caught by adversarial review, not by the author._
+
+### Paths no lane owns are read-only until a lane claims one
+
+The three domains above do **not** cover the repo. Measured on `origin/staging`,
+`frontend/` alone also contains `messages/`, `i18n/`, `hooks/`, `data/`,
+`public/`, `scripts/`, and the `*.config.*` files; `.ai/diagrams/` is unowned
+too, and `session-a-9d5pkj.md` already flagged `.ai/diagrams/api-routes.md` as an
+open boundary question it had to defer.
+
+**`frontend/messages/{he,en}.json` is the one to watch** — the Bug Protocol's
+i18n-sibling sweep (§2a) sends nearly every copy change through it, so it is both
+unowned and high-traffic.
+
+> **Default for any path not in the table: treat it as read-only, and claim it
+> explicitly in the session log or on the card before editing.** An exclusivity
+> guarantee that quietly omits routinely-edited directories is worse than no
+> guarantee, because it is believed.
+
 ### The one sanctioned crossing
 
 **Lane C may read and import from `backend/app/**` and `frontend/app|components|lib/**`
 — never edit them.** A test must import the thing it tests. What Lane C may not
 do is change production code *to make a test pass*: that inverts the test's
-purpose and is explicitly out of scope in MEH-1911's own prompt block
-(*"production code must not change to accommodate tests; if a test fails
-because of app-level shared state — STOP and report, don't patch the app"*).
+purpose and is explicitly out of scope in the pytest-parallel card's own prompt
+block — *"production code must not change to accommodate tests; if a test fails
+under xdist because of app-level shared state — STOP and report, don't patch the
+app"*. That card scoped the sentence to xdist; the principle is general, and the
+quote is given in full rather than trimmed to look general.
 
 If a Lane C task genuinely requires a production-code change, that is a finding
 for Lane A or B, not a crossing. Report it; do not reach across.
@@ -100,21 +141,24 @@ up operating under orders nobody issued.
 
 ## 3 · Foreign branches are read-only
 
-**A branch or PR this session did not create is read-only.** Read it, cite it,
-work around it — never push to it. This is ORDERS §2 verbatim and is restated
-here because the lane partition makes foreign branches *routine* rather than
-exceptional: at any moment two other lanes have live branches you can see.
+**[ORDERS.md](./ORDERS.md) §2 owns this rule in full — foreign branches are
+read-only, `CLAIM = BRANCH`, and orphan adoption after a stated no-push window
+requires a PR comment first. Read it there; it is deliberately not restated
+here.**
 
-**CLAIM = BRANCH.** Pushing `feature/meh-<N>-<slug>` to `origin` is the claim,
-and there is no other signal. A card named in a session log, a check-in note, or
-a plan is **unclaimed and grabbable** — the listing is not a reservation and
-reads as one. Claim at *intent* time, not build time: an empty branch pointing at
-`origin/staging` is a valid claim.
+The original draft of this section copied ORDERS §2 almost verbatim, **including
+its numeric orphan-adoption threshold**. That was wrong on this file's own
+stated terms: a parameter Sapir may plausibly tune would then live in two files
+with nothing forcing the second to follow, and no guard to catch the drift — the
+Smell #1 pattern in substance. ORDERS §5 models the correct move one section
+earlier in that same file, declining to restate workflow.md's queue gates for
+exactly this reason. Caught in adversarial review.
 
-**The one exception — orphan adoption.** A PR or branch with **no push for more
-than 2 hours** may be adopted by exactly one session, and adopting means saying
-so in a PR comment **first**, so a returning owner sees a handover rather than a
-surprise force-push.
+**What this file adds, which ORDERS does not say:** the lane partition makes
+foreign branches *routine* rather than exceptional. At any moment the other two
+lanes have live branches you can see, so "is this mine?" is a question you answer
+many times a session rather than once — and the answer is a `git ls-remote`, not
+a memory.
 
 **Reading a foreign branch is encouraged.** The failure this rule prevents is
 concurrent writes, not awareness. `git log origin/feature/...`, the PR diff, and
@@ -164,8 +208,13 @@ instruction — it is **not** a licence to start editing another lane's files.
 ## 5 · Session logs
 
 One per session, at `docs/overnight/session-<lane>-<id>.md`, landing in a
-**docs-only** PR behind its own carrier card (precedent: MEH-2008, MEH-2011,
-MEH-2019 — and MEH-2024 for this file). The carrier card exists because
+**docs-only** PR behind its own carrier card. The precedent for *this exact
+pattern* is **MEH-2008** — a card whose body opens *"carrier card for a docs-only
+PR that lands `docs/overnight/session-a-9d5pkj.md`"* — and MEH-2024 for this
+file. (An earlier draft also cited MEH-2011 and MEH-2019 here. **Both are
+mis-cited:** they are rules cards whose PRs edit `.claude/rules/workflow.md`, not
+session-log carriers. They are precedent for docs-only carrier cards *in
+general*, which is a weaker and different claim.) The carrier card exists because
 `Branch name gate` requires `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$`,
 so every legal branch name needs some ticket's identifier.
 
@@ -188,9 +237,23 @@ that is the cost this section exists to avoid.
 | rule 31 (logs never ride a code branch) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) |
 | what is parked and why | [PARKED.md](./PARKED.md) |
 
-> **Note on the word "lane".** `workflow.md` uses *Lane A / Lane B* for the two
-> **queue** tracks (`In Progress` opt-in vs `Todo`/`Backlog` opt-out). This file
-> uses *Lane A / B / C* for **file-domain partitions across sessions**. They are
-> unrelated axes that share a word: a Lane C session still works both queue
-> tracks. The collision is noted rather than renamed, because renaming either
-> would break the other's existing references.
+> **⚠️ Note on the word "lane" — both senses are already live in this very
+> directory.** `workflow.md` uses *Lane A / Lane B* for the two **queue** tracks
+> (`In Progress` opt-in vs `Todo`/`Backlog` opt-out). This file uses *Lane A / B
+> / C* for **file-domain partitions across sessions**. They are unrelated axes
+> that share a word: a Lane C session still works both queue tracks.
+>
+> **Do not disambiguate by asking which file you are in — that heuristic fails.**
+> Measured 2026-08-12, inside `docs/overnight/` itself:
+>
+> | File | Sense used |
+> |---|---|
+> | `session-s8-r9k3mt.md:105-106` — *"Lane A = `In Progress` **and** `cc-queue`"* | **queue track** |
+> | `PROGRESS.md:25` — *"Lane A is opt-in → not mine"* | **queue track** |
+> | `session-a-9d5pkj.md`, `session-c-wsl6fq.md`, `session-lb-pa6vyo.md` | **file domain** |
+>
+> Disambiguate by what follows the word: a state name (`In Progress`, `Backlog`)
+> means queue track; a path glob means file domain. The collision is documented
+> rather than renamed, because renaming either sense would break the other's
+> existing references — but an earlier draft of this note implied a clean
+> this-file/that-file split, which the table above disproves.
