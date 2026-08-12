@@ -70,10 +70,25 @@ def test_stacked_cache_window_stays_within_the_documented_bound():
     )
     next_revalidate = int(match.group(1))
 
-    s_maxage = int(re.search(r"s-maxage=(\d+)", _PUBLIC_CATALOG_CACHE).group(1))
-    swr = int(
-        re.search(r"stale-while-revalidate=(\d+)", _PUBLIC_CATALOG_CACHE).group(1)
+    # Assert each match before .group(1): an absent token would otherwise raise
+    # AttributeError on None instead of saying which directive went missing.
+    # test_policy_constant_is_the_locked_string would normally catch a format
+    # change first, but pytest ordering is not guaranteed under -k or
+    # randomisation, so this test states its own precondition.
+    s_maxage_m = re.search(r"s-maxage=(\d+)", _PUBLIC_CATALOG_CACHE)
+    assert s_maxage_m, (
+        f"s-maxage token absent from _PUBLIC_CATALOG_CACHE ({_PUBLIC_CATALOG_CACHE!r}) "
+        "— the cumulative-window bound cannot be computed without it."
     )
+    swr_m = re.search(r"stale-while-revalidate=(\d+)", _PUBLIC_CATALOG_CACHE)
+    assert swr_m, (
+        "stale-while-revalidate token absent from _PUBLIC_CATALOG_CACHE "
+        f"({_PUBLIC_CATALOG_CACHE!r}) — the cumulative-window bound cannot be "
+        "computed without it."
+    )
+
+    s_maxage = int(s_maxage_m.group(1))
+    swr = int(swr_m.group(1))
 
     cumulative = next_revalidate + s_maxage + swr
     assert cumulative <= MAX_CUMULATIVE_STALENESS_SECONDS, (

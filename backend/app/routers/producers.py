@@ -78,7 +78,7 @@ router.include_router(producer_follows_router)
 # off the critical path — but it is now the same order as the freshness window
 # instead of 5x it.
 #
-# SCOPE — deliberately partial (orchestrator ruling 09/08, option ב). The 90s
+# SCOPE — deliberately partial (orchestrator ruling 09/08, option B). The 90s
 # figure is true for `/producers` ONLY. `/map` reads the same two endpoints but
 # stacks its own `revalidate: 3600` (frontend/app/[locale]/map/page.js:54), so a
 # removed offer can remain visible there for up to ~1 hour. That is a knowing
