@@ -57,8 +57,14 @@ def test_reset_clears_the_legacy_pair_too(db):
 
     assert changed == 1
     assert p.availability_state == RESET_STATE
-    # The two lines the naive implementation leaves stale:
+    # THE discriminating line — the naive enum-only implementation leaves
+    # availability_status='full' behind, and the construction run failed on
+    # exactly this assertion ('full' == 'available') and nothing else.
     assert p.availability_status == "available"
+    # NOT a discriminator, and saying so is the point (CI reviewer catch):
+    # full_this_week and accepting_orders BOTH map to is_available_today=False,
+    # so this line passes under the naive variant too. It is an invariant
+    # check — the reset must not accidentally set the flag truthy — not proof.
     assert p.is_available_today is False
 
 
