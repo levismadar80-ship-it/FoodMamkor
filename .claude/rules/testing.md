@@ -211,6 +211,99 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 
 ---
 
+## `networkidle` is banned in specs (MEH-215)
+
+> **A spec must never make its outcome depend on the network going quiet.**
+> **Unbounded** `page.waitForLoadState("networkidle")` and
+> `goto(…, { waitUntil: "networkidle" })` are forbidden in anything under
+> `e2e/flows/**` or `e2e/visual/**` — the two globs `playwright.config.ts:35`
+> actually runs.
+>
+> **The one sanctioned form is a bounded, caught wait** whose timeout is far above a
+> healthy settle, so it changes nothing on a good run and only caps the pathological
+> one: `e2e/visual/parity.spec.ts:246` is the exemplar, and the comment above it at
+> `:239` records the bound as deliberate. Do not "fix" it, and do not write a guard
+> that greps for the bare word.
+
+**Why, concretely.** On the CI runner the page issues image requests that do not
+settle, the Next image optimizer retries them, and the network therefore never
+reaches the idle threshold. An unbounded `waitForLoadState("networkidle")` then falls
+back to the default navigation timeout and burns the whole test budget. Locally the
+same call settles in milliseconds. Every occurrence is therefore a latent
+**green-local / red-CI**, and the failure names the wrong thing — the test reports a
+missing element, not "the network never idled".
+
+> **The ban rests on the observed behaviour above, not on a settled cause.** The
+> working diagnosis — that Cloudinary returns 401 for every image on the CI runner —
+> is **not established, and carries no owning card**; do not restate it as fact from
+> this file. (It previously read "owned by MEH-1948"; that identifier does not exist
+> in Linear — checked 2026-08-12. The nearest real card, MEH-1925, is the *production*
+> Cloudinary 401 incident, which is a different surface.) What justifies the ban is
+> only the measured symptom: the network does not idle on CI, and it does locally.
+>
+> **A second failure class, now with its own card — MEH-2029:**
+> `next/font/google` build-time fetches failing on the runner with
+> `Module not found: @vercel/turbopack-next/internal/font/google/font`. Measured
+> 2026-08-12 across three PRs — `frank_ruhl_libre` (#2790, 12:27Z), `dm_sans`
+> (#2747, 14:33Z), and on **#2811 twice with two passes interleaved on the same
+> commit `a68779a`**: pr-checks failed 14:07 (`frank_ruhl_libre`), the E2E build
+> succeeded 14:10, a re-run succeeded ~14:14, the E2E re-run failed 14:20
+> (`cormorant_garamond`). Same SHA, no push between, a different font named each
+> time, and `npm run build` on that commit exits 0 locally. So it is
+> **non-deterministic and per-build, not commit-shaped** — and a passing re-run is
+> not evidence it is fixed. Both classes are **external asset
+> fetches from the CI runner**. That they share a cause is a **hypothesis**, recorded
+> so the next reader can test it — not a conclusion, and not a reason to widen this
+> ban until MEH-1948 reports.
+
+_Measured on MEH-215 chunk C: the wrong-credentials spec passed 16/16 locally and the
+E2E job went red. A `.catch(() => {})` on its own does **not** fix this — it makes the
+wait non-fatal, not cheap; the time is still spent. **The `timeout` is the operative
+half**, and that is the difference between the banned form and the sanctioned one
+above: a bound caps the cost, the catch only stops the cap from failing the test._
+
+**The replacement, when you need to prove something did NOT happen** — an inverted
+bounded wait. Await the *unwanted* event and require that it times out:
+
+```js
+const strayed = await page
+  .waitForURL((u) => new URL(u).pathname !== "/login", { timeout: 3_000 })
+  .then(() => true)
+  .catch(() => false);
+expect(strayed, "a failed login must not navigate anywhere").toBe(false);
+```
+
+With the bug this resolves the instant the event lands; without it, it reports
+`false` after the bound. **Deterministic in both worlds and dependent on no network
+condition.** Note it is not a fixed pause either — the happy path pays the bound only
+when the answer is genuinely "it did not happen", which is the case you are asserting.
+
+For "wait until the thing I care about is ready", gate on **that thing** — a
+`data-testid`, a response, a URL — never on global quiet.
+
+### Sweep result (2026-08-09) — where this actually bites
+
+`grep -rn networkidle frontend/` returns ~110 hits. **Two were in files CI runs**, and
+the distinction is `playwright.config.ts:35`:
+
+```
+testMatch: ["e2e/flows/**/*.spec.ts", "e2e/visual/**/*.spec.ts"]
+```
+
+| Occurrence | Runs in CI? | Verdict |
+|---|---|---|
+| `e2e/visual/parity.spec.ts:239` | **yes** (`visual/`) | **converted** — bounded to 5s. Far above a normal settle, so a healthy run is byte-identical and **no baseline moves**; it only caps the pathological case. |
+| `e2e/screenshots.spec.ts:178` | **no** — root-level, matched by neither glob | **ticketed, not converted.** Unbounded *and* inside a `Promise.all` with no `.catch()`, so it would hang outright — but it is dead code today. |
+| ~108 others | no | `qa-meh*.mjs` / `scripts/qa-*.mjs` one-off probes, run by hand against a local server. Out of scope: not specs, not gates. |
+
+**Do not "fix" the probe scripts in bulk.** They are disposable, several already carry
+comments recording that `networkidle` is not layout-idle for them
+(`qa-meh1875-order-window-schedule.mjs:94`, `qa-meh1852-admin-kashrut-labels.mjs:107`,
+`qa-meh1919-register-success.mjs:92`), and one already refuses it outright
+(`qa-meh215-header-discovery.mjs:52`). A sweep there is churn with no gate behind it.
+
+---
+
 ## A green that has two possible causes is not a signal
 
 > ### An instrument you have not checked produces conclusions indistinguishable from verified ones. Check the instrument before the claim, not after the objection.
@@ -322,6 +415,28 @@ every Tailwind class missing from the built CSS — including `w-16`, which is u
 The build was fine; the probe was broken. **Validate a probe on a case whose answer you
 already know before you trust either its red or its green** — and report the retraction, since
 a withdrawn finding is evidence the probe was checked and a silent one is not.
+
+**The purest form of the class: a probe that matches its own invocation (MEH-215,
+2026-08-09).** Diagnosing an all-red local suite, `pgrep -f next-server` reported **2**
+processes, which read as "duplicate servers serving mismatched builds" — a tidy
+explanation that fit the symptom. It was an artifact: `pgrep -f` matches the full command
+line, and the shell running the `pgrep` **contains the string `next-server`**, so the probe
+counted itself. Re-running it a third time reported `3`, each new "server" being the next
+invocation. The count could never reach 0 and no `kill` would ever appear to work.
+
+This one is worth naming because it defeats the usual defence. There was no selector to
+get wrong and no fixture to mis-build — the command is correct, it just answers a question
+about **itself** rather than about the world. What settled it was moving to an instrument
+that cannot include the observer: `ss -ltn | grep ':3000'`, which reported **nothing
+listening** at the moment `pgrep` claimed two. The real cause was then found from the
+Playwright snapshot — the page was rendering the `משהו השתבש` error boundary — and
+confirmed by freeing the port, rebuilding, and starting exactly one server.
+
+**The generalisation:** any `ps`/`pgrep`/`grep`-over-process-list, any log scan run from
+inside the log's own writer, any search whose corpus includes the searcher. Ask **"could
+this probe be counting itself?"** — and prefer an instrument on the other side of the thing
+measured (a socket, a PID file, an exit code) over one that shares a namespace with the
+tool doing the measuring.
 
 **A probe whose corpus includes the searcher has a destructive twin, and it is worse than
 the miscount (MEH-2009).** `pkill -f "<pattern>"` matches every command line containing the

@@ -236,7 +236,14 @@ async function settle(page: Page): Promise<void> {
   const verdict = judgeFonts(fonts, failedFontRequests.get(page) ?? []);
   expect(verdict.ok, verdict.reason).toBe(true);
 
-  await page.waitForLoadState("networkidle").catch(() => {
+  // BOUNDED on purpose (MEH-215). `waitForLoadState("networkidle")` with no
+  // timeout falls back to the default navigation timeout, and on the runner the
+  // network can simply never go idle — every Cloudinary image 401s there and the
+  // Next image optimizer retries, so this would sit for the full default on every
+  // shot. The `.catch()` below keeps that non-fatal but does NOT make it cheap.
+  // 5s is far above a normal settle, so a healthy run behaves exactly as before
+  // and no baseline moves; it only caps the pathological case.
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
     /* long-polling/streaming must not fail the shot — fonts are the gate */
   });
   await page.waitForTimeout(500);
