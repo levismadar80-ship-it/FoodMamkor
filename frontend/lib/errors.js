@@ -140,7 +140,8 @@ export function sameCityLabelParams(detail) {
  * @param {(code: string, params: object) => (string | null | undefined)} [resolveCode]
  *   optional code→copy mapper, normally closing over a next-intl translator.
  *   Return a falsy value for a code you don't handle to fall through to
- *   `message`.
+ *   `message`. **A resolver that throws is also treated as "did not match"** —
+ *   it must not be able to crash a `catch` block; see the guard below.
  * @returns {string | null}
  */
 export function detailToMessage(detail, resolveCode) {
@@ -149,7 +150,29 @@ export function detailToMessage(detail, resolveCode) {
   }
   if (detail && typeof detail === "object" && !Array.isArray(detail)) {
     if (typeof detail.code === "string" && typeof resolveCode === "function") {
-      const mapped = resolveCode(detail.code, detail.params ?? {});
+      let mapped;
+      try {
+        mapped = resolveCode(detail.code, detail.params ?? {});
+      } catch (resolverError) {
+        // A throwing resolver is treated as "did not match" — NOT as fatal.
+        //
+        // This helper's whole job is to run inside a `catch` block, and
+        // `errorMessage()` documents that it never returns undefined. A
+        // next-intl `t()` on a missing key throws, so without this guard one
+        // absent i18n key turns a handled API error into an unhandled crash
+        // in the error handler itself — strictly worse than falling back to
+        // the backend's own sentence. Flagged by the CI reviewer on PR #2833;
+        // an earlier version of this function let it propagate.
+        //
+        // Not silent: dev gets a console warning, mirroring
+        // app/[locale]/error.js:15-17. Production degrades to `message`.
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `[detailToMessage] resolveCode threw for code "${detail.code}" — falling back to detail.message`,
+            resolverError,
+          );
+        }
+      }
       if (typeof mapped === "string" && mapped) return mapped;
     }
     return typeof detail.message === "string" && detail.message

@@ -12,10 +12,10 @@
  * not that a particular branch was written.
  *
  * DISCRIMINATION, stated precisely because "the suite went red" is not by
- * itself evidence: against the old implementation **8 of these 21 fail** —
- * every case in the two "object detail" describe blocks that asserts a
- * non-null result, plus the two `errorMessage` ones. The remaining 13 pass on
- * BOTH versions and are therefore controls, not evidence:
+ * itself evidence: against the pre-chunk-A implementation **9 of these 23
+ * fail** — every case in the two "object detail" describe blocks that asserts
+ * a non-null result, plus the three `errorMessage` ones. The remaining 14 pass
+ * on BOTH versions and are therefore controls, not evidence:
  *   - the string/array/nullish block — unchanged behaviour, guarding against
  *     this change breaking what already worked;
  *   - the "what must NOT be shown to a user" block — the old code returned
@@ -113,16 +113,47 @@ describe("MEH-1943 — object detail: unknown code falls back, never to null", (
     ).toBe("יש לאמת את המייל");
   });
 
-  it("a resolver that throws is not allowed to take the message down with it", () => {
-    // A caller's t() can throw on a missing key. The fallback must still run.
+  it("a throwing resolver falls through to `message` instead of crashing", () => {
+    // A caller's next-intl t() throws on a missing key. This helper runs INSIDE
+    // catch blocks and errorMessage() promises never to return undefined, so a
+    // throwing resolver must degrade, not propagate: one absent i18n key would
+    // otherwise turn a handled API error into an unhandled crash in the error
+    // handler itself. (CI reviewer finding on PR #2833 — an earlier version of
+    // this function let it propagate, and this test asserted that it did.)
     const detail = { code: "x", message: "הודעה מהשרת" };
     const resolve = () => {
       throw new Error("missing i18n key");
     };
-    expect(() => detailToMessage(detail, resolve)).toThrow();
-    // Documented, not silently swallowed: see the PR body. The guard is that
-    // callers pass a total resolver; `sameCityLabelParams`-style code checks
-    // are the in-repo pattern for that.
+    expect(detailToMessage(detail, resolve)).toBe("הודעה מהשרת");
+  });
+
+  it("a throwing resolver with no message yields null, still not a crash", () => {
+    const resolve = () => {
+      throw new Error("missing i18n key");
+    };
+    expect(detailToMessage({ code: "x" }, resolve)).toBeNull();
+  });
+
+  it("errorMessage stays total when the resolver throws — the invariant that matters", () => {
+    // errorMessage's contract is "never returns undefined / empty string".
+    // A resolver blowing up must not break it.
+    const t = (key) => `t:${key}`;
+    const resolve = () => {
+      throw new Error("missing i18n key");
+    };
+    const out = errorMessage(
+      { response: { status: 403, data: { detail: { code: "x", message: "הודעה מהשרת" } } } },
+      t,
+      resolve
+    );
+    expect(out).toBe("הודעה מהשרת");
+
+    const outNoMessage = errorMessage(
+      { response: { status: 403, data: { detail: { code: "x" } } } },
+      t,
+      resolve
+    );
+    expect(outNoMessage).toBe("t:mapper.forbidden");
   });
 });
 
