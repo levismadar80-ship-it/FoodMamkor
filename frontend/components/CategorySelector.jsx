@@ -139,7 +139,10 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
     <div role="group" aria-label={t("label")}>
       <div className="flex items-center justify-between mb-1">
         <p className="font-medium text-sm">
-          {t("label")} <span className="text-red-700">*</span>
+          {t("label")}{" "}
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
         </p>
         {/* MEH-1297: live N/3 counter */}
         <span className="text-xs text-fg-muted tabular-nums" data-testid="category-counter">
