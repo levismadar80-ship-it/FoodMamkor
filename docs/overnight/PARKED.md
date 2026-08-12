@@ -642,8 +642,10 @@ twice on the same card.
 
 ## MEH-1980 — coverage ratchet · PR #2813 open, blocked by a marker CC may not clear
 
-**Landed on the branch:** `scripts/checks/coverage-ratchet.mjs` (16 assertions,
-shown discriminating on three breaks), baseline frozen at **66.77%** lines
+**Landed on the branch:** `scripts/checks/coverage-ratchet.mjs` (the suite prints
+its own `ran.length` — this line said "16" and was measured at 23 by the CI
+reviewer, then 25 after the shrink-routing case; do not re-hardcode it), shown
+discriminating on four breaks, baseline frozen at **66.77%** lines
 (8,139/12,188, 339 files), `docs/reports/coverage-baseline.md`, and
 `docs/ci/meh-1980-coverage-ratchet.patch.md`.
 

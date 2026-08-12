@@ -83,7 +83,12 @@ Three notes, because each is a decision rather than a default:
    it on the first CI run and, if it is material, that is an argument for a
    separate scheduled job, not for dropping the gate.
 2. **The self-test runs FIRST.** Expected exit **0** — it is an ordinary
-   assertion suite (16 assertions), so a bare `run:` is correct. Do **not** copy
+   assertion suite, so a bare `run:` is correct. (No count is quoted here on
+   purpose: the script prints its own `ran.length`, and a number written into a
+   doc goes stale the moment a case is added. This line said "16 assertions"
+   until the CI reviewer measured 23 on PR #2813 — the suite is 25 as of the
+   shrink-routing case added after that review, which is itself the argument.)
+   Do **not** copy
    `skills-audit.yml`'s `if … then` inversion here; that script exits 1 on
    success because it audits a deliberately-malicious fixture. Getting this
    backwards reds the gate permanently, and it is the exact mistake the CI

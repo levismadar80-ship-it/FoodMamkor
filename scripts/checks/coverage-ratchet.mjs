@@ -357,6 +357,50 @@ function selfTest() {
     "ordinary churn must NOT trip it, or the guard is noise and gets disabled",
   );
 
+  // The two cases above exercise `checkDenominator` as a HELPER. Neither
+  // reaches main()'s routing block, so deleting that block left all of them
+  // green — the same gap this file's comment at the gate-wiring section claims
+  // not to be repeating, reopened one guard to the right. Found by the CI
+  // reviewer on PR #2813, not by this suite.
+  //
+  // The pair discriminates: coverage is held EQUAL to the baseline in both, so
+  // the only thing that can produce exit 1 is the shrink routing, and
+  // --allow-shrink is the control proving the 1 came from there and not from
+  // some unrelated refusal.
+  const tmp3 = mkdtempSync(join(tmpdir(), "coverage-ratchet-shrink-"));
+  const wideBase = join(tmp3, "wide.json");
+  writeFileSync(
+    wideBase,
+    JSON.stringify({ globalPct: 60, lines: { covered: 600, total: 1000 }, files: 300 }),
+  );
+  const shrunkPath = join(tmp3, "shrunk.json");
+  writeFileSync(shrunkPath, JSON.stringify(summaryFixture(60, 1)));
+  const qL3 = console.log;
+  const qE3 = console.error;
+  let shrinkCode, allowShrinkCode;
+  console.log = () => {};
+  console.error = () => {};
+  try {
+    shrinkCode = main(["node", "x", "--summary", shrunkPath, "--baseline", wideBase]);
+    allowShrinkCode = main([
+      "node", "x", "--allow-shrink", "--summary", shrunkPath, "--baseline", wideBase,
+    ]);
+  } finally {
+    console.log = qL3;
+    console.error = qE3;
+    rmSync(tmp3, { recursive: true, force: true });
+  }
+  check(
+    "gate-wiring/shrink-exits-1",
+    shrinkCode === 1,
+    `got ${shrinkCode} — 300 files -> 1 at unchanged coverage must fail through main(), not just through the helper`,
+  );
+  check(
+    "gate-wiring/allow-shrink-exits-0",
+    allowShrinkCode === 0,
+    `got ${allowShrinkCode} — the control: same input, escape hatch on`,
+  );
+
   console.log(`\n  ${ran.length} assertions ran, ${failures.length} failed.`);
   if (failures.length) {
     console.error(`\ncoverage-ratchet --self-test FAILED: ${failures.join(", ")}`);
