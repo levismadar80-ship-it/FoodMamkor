@@ -225,13 +225,29 @@ Full class-C sweep + verdicts: [docs/audits/silent-failure-audit.md](../../docs/
 > `:239` records the bound as deliberate. Do not "fix" it, and do not write a guard
 > that greps for the bare word.
 
-**Why, concretely.** On the CI runner **every Cloudinary image returns 401** and the
-Next image optimizer retries them, so the network can simply never reach the idle
-threshold. An unbounded `waitForLoadState("networkidle")` then falls back to the
-default navigation timeout and burns the whole test budget. Locally Cloudinary
-resolves and the same call settles in milliseconds. Every occurrence is therefore a
-latent **green-local / red-CI**, and the failure names the wrong thing — the test
-reports a missing element, not "the network never idled".
+**Why, concretely.** On the CI runner the page issues image requests that do not
+settle, the Next image optimizer retries them, and the network therefore never
+reaches the idle threshold. An unbounded `waitForLoadState("networkidle")` then falls
+back to the default navigation timeout and burns the whole test budget. Locally the
+same call settles in milliseconds. Every occurrence is therefore a latent
+**green-local / red-CI**, and the failure names the wrong thing — the test reports a
+missing element, not "the network never idled".
+
+> **The ban rests on the observed behaviour above, not on a settled cause.** The
+> working diagnosis — that Cloudinary returns 401 for every image on the CI runner —
+> is **owned by MEH-1948 and is not established here**; do not restate it as fact
+> from this file. What justifies the ban is only the measured symptom: the network
+> does not idle on CI, and it does locally.
+>
+> **A second, possibly related failure class is under investigation on the same
+> card:** `next/font/google` build-time fetches failing on the runner with
+> `Module not found: @vercel/turbopack-next/internal/font/google/font` — measured
+> 2026-08-12 on two unrelated PRs, `frank_ruhl_libre` (#2790, 12:27Z) and `dm_sans`
+> (#2747, 14:33Z), while contemporaneous `staging` builds with the job actually
+> running went green (14:00 162s, 14:27 51s). Both classes are **external asset
+> fetches from the CI runner**. That they share a cause is a **hypothesis**, recorded
+> so the next reader can test it — not a conclusion, and not a reason to widen this
+> ban until MEH-1948 reports.
 
 _Measured on MEH-215 chunk C: the wrong-credentials spec passed 16/16 locally and the
 E2E job went red. A `.catch(() => {})` on its own does **not** fix this — it makes the
