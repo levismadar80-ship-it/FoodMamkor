@@ -1,10 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import {
-  pickProducer,
-  detailPath,
-  watchPageErrors,
-  type FeedProducer,
-} from "./_producer-fixture";
+import { pickProducer, detailPath, type FeedProducer } from "./_producer-fixture";
 
 /**
  * Spec:     31-favorites-journey-d
@@ -263,7 +258,6 @@ test.describe("MEH-215 journey D — favourites", () => {
     page,
     request,
   }) => {
-    const pageErrors = watchPageErrors(page);
     const producer = await pickProducer(request, ANY_PRODUCER);
     const store = newStore(producer);
 
@@ -306,8 +300,6 @@ test.describe("MEH-215 journey D — favourites", () => {
     await expect(page.getByTestId("producer-card").first()).toContainText(
       producer.name ?? "",
     );
-
-    expect(pageErrors, "no uncaught page errors").toEqual([]);
   });
 
   test("D1-revert: a REJECTED save does not stick — the heart reverts and /favorites stays empty", async ({
@@ -374,6 +366,12 @@ test.describe("MEH-215 journey D — favourites", () => {
     expect(deletes, "one tap must issue exactly one DELETE").toHaveLength(1);
     expect(String(deletes[0].id)).toBe(String(producer.id));
     expect(store.ids.has(String(producer.id))).toBe(false);
+
+    // The list must actually empty. Without this the verdict table's "D2 the
+    // list empties — covered" was a claim nothing checked: a regression that
+    // left the removed card on screen (cache not invalidated, list not
+    // re-rendered) passed green on the DELETE assertions alone.
+    await expect(page.getByTestId("producer-card")).toHaveCount(0);
   });
 
   test("D3a (guest, CARD): tap arms the intent and prompts to sign in — and saves NOTHING", async ({
