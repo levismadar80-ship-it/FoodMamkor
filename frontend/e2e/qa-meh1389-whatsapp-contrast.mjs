@@ -121,7 +121,7 @@ for (const [label, width, height] of [["mobile", 375, 812], ["desktop", 1440, 90
   // would make this probe permanently red and useless as a regression gate.
   // They are REPORTED rather than swallowed — see the out-of-scope block.
   const ctaFlagged = contrastNodes.filter((n) => n.target.join(" ").includes("primary-contact-button"));
-  assert(`[${label}] axe flags the whatsapp CTA for color-contrast`, ctaFlagged.length, 0);
+  assert(`[${label}] axe finds zero color-contrast violations on the whatsapp CTA`, ctaFlagged.length, 0);
 
   const outOfScope = contrastNodes.filter((n) => !n.target.join(" ").includes("primary-contact-button"));
   for (const n of outOfScope) {
