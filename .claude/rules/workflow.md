@@ -711,6 +711,49 @@ section was asked to carry.
       docs-only PRs in `.claude/rules/testing.md` → "Required status checks +
       docs-only merge (MEH-716)" — cross-ref, don't duplicate; if one note
       changes, update both.
+    - **`enable_auto_merge` on an already-armed PR is a silent no-op that
+      reports success — and silently keeps the EXISTING merge method.**
+      Measured 2026-08-11 on PR #2787: the request carried
+      `mergeMethod: SQUASH`, the response read `method: MERGE`, and the call
+      returned success. **That mismatch is not an error and nothing surfaces
+      it** — the response is the only place the real method appears, and it
+      reads like confirmation of what you asked for.
+
+      **To change the method you must `disable` then `enable`, and you must
+      re-read the method from the second response.** Never infer arming state
+      — or merge method — from a successful `enable` call.
+
+      Why this is not tidiness: a merge commit **discards the crafted squash
+      message**, so a PR whose commit body carries the reasoning, the
+      `Builder-Model:` trailer and the `Closes MEH-XXXX` lands on `staging` as
+      a bare "Merge pull request #N" with all of it buried in branch history.
+      The same check that caught #2787 then found **#2781 and two others**
+      armed with `merge` by another actor.
+
+      Pairs with the parallel-actor rule under rule 32: this is *how you
+      detect* that a parallel actor armed something. Nothing notifies you, and
+      the arming state does not appear in `pull_request_read get` — the
+      disable/enable round-trip is the only read available.
+    - **Opening a docs-only PR as a draft can strand it red, and marking it
+      ready may not clear it.** `pr-checks.yml` lists `ready_for_review` in its
+      trigger types precisely so the draft→ready flip fires a real run — but
+      if you flip it within the `opened` run's window, the concurrency group
+      can swallow the second run and no fresh one appears. The PR then sits on
+      the draft run's result forever.
+
+      On a `.claude/`-only or docs-only diff that result is **red**, not the
+      usual skip-green: the gate takes its `Neither stack touched` branch,
+      where the only enforced job is `Env drift` — and `Env drift` is
+      draft-skipped, so the gate demands a job the draft guaranteed would not
+      run. Measured 2026-08-11 on PR #2794: `Stack touched -> frontend=false
+      backend=false`, then `FAIL Env drift (.env.example): skipped (required
+      job did not run — 'skipped' is not a pass)`.
+
+      **Open docs PRs non-draft** (rule 5a's substitution already says this for
+      code PRs; it applies here for a different reason). If one is already
+      stranded, a re-run does not help — a re-run replays the original event
+      payload, `draft: true` included — so the only fix is a genuine push that
+      fires `synchronize`.
 
 ---
 
@@ -1435,29 +1478,48 @@ Tasks auto-expire after 7 days.
     | 11/08 | #2782 | `feature/meh-1949-…` | **closing** | Todo → **Done** in 15 s | ✅ |
     | 11/08 | #2784 | `feature/meh-2009-…` | **`Refs MEH-2009`** (non-closing) | Backlog → **Backlog, unchanged** | ❌ |
 
-    Every firing row carries either **no reference** or a **closing** keyword.
-    The single non-firing row is the only one carrying a **non-closing** word.
-    Eight for eight against the published spec — so #2784 is not an anomaly and
-    there is nothing left to explain. _(An earlier version of this table asserted
-    "no closing keyword and no bare identifier in any body"; that was wrong for
-    five of the eight rows and is corrected here from measured values.)_
+    _(An earlier version of this table asserted "no closing keyword and no bare
+    identifier in any body"; that was wrong for five of the eight rows and is
+    corrected here from measured values.)_
 
-    ### ⚠️ ONE OPEN CHECK — `Refs` is not literally in the published list
+    ### ⛔ ROW 9 FALSIFIES THE `Refs` READING — measured 2026-08-12
 
-    The documented words are `ref` and `references`. **`Refs` — the plural this
-    repo actually writes — is not among them.** Either Linear normalises it, or
-    #2784's suppression came from something else and the spec is right in general
-    while wrong about this repo's habit.
+    The eight rows above were briefly written up as *"eight for eight against the
+    published spec — #2784 is not an anomaly and there is nothing left to
+    explain,"* on the reading that a non-closing `Refs` suppressed the close.
+    **A ninth merge, hours later, killed that reading.**
 
-    **Resolve this against Linear's settings or documentation — NOT by merging
-    another PR to watch what happens.** An experiment is the slower, weaker
-    instrument against a documented system, and running one here would repeat the
-    exact error this entry exists to record.
+    | PR | branch | body | before → after |
+    |---|---|---|---|
+    | #2784 | `feature/meh-2009-…` | `Refs MEH-2009` | Backlog → **Backlog** ❌ |
+    | **#2795** | `feature/meh-1949-…` | **`Refs MEH-1949`** | Todo → **Done in 3 s** ✅ |
 
-    **Until resolved: keep writing `Refs`, and do not rely on it.** Both at once —
-    write it because it is the repo's convention and, if recognised, the correct
-    suppressor; do not lean on it, because an unrecognised `Refs` degrades
-    silently to a bare identifier, which closes.
+    **Identical form. Opposite outcomes.** Merge `11:06:12Z`, close
+    `11:06:15.227Z`. So `Refs` does not suppress anything, `#2784` is
+    **unexplained again**, and the "nothing left to explain" sentence was wrong
+    within three hours of being written.
+
+    **What survives, and what does not:**
+
+    - ✅ **Linear's two magic-word classes are real** — that is vendor
+      documentation and is not in question.
+    - ❌ **`Refs` is not one of them.** The published non-closing words are `ref`
+      and `references`; the plural is not on the list and, on this evidence, is
+      **not recognised** — it degrades to a bare identifier, which closes.
+    - ❌ **The spec therefore does NOT explain #2784.** Whatever suppressed that
+      one close remains unknown, and no hypothesis here has been checked against
+      the Linear↔GitHub app configuration.
+
+    **The guidance that was written alongside the wrong reading turned out to be
+    the right guidance**, and it is now the operative line rather than a hedge:
+
+    > **Keep writing `Refs` for human readers. Never rely on it for behaviour.**
+    > An unrecognised `Refs` closes the card exactly like a bare identifier.
+
+    **Do not resolve the remaining gap by merging another PR to watch what
+    happens.** Two experiments have now produced two contradictory answers, which
+    is what an unvalidated instrument does. The next step belongs in Linear's
+    settings, not in this repo.
 
     ### A reopen does not necessarily stick — MEH-1872 (10/08)
 
@@ -1499,13 +1561,21 @@ Tasks auto-expire after 7 days.
     **Linear settings, not a repo change: Sapir's call, not CC's.**
 
     _Sources: **Linear's own documentation** for the two magic-word classes and
-    the per-branch automation rules — the mechanism is quoted from the vendor,
-    not derived here. Corroborating measurements across 08–11/08 (table above),
-    bodies read from the GitHub API. PR #2795 carried a pre-registered prediction
-    of #2784's behaviour: **confirmation, not evidence** — the docs settled it
-    first; it still stands and is worth reporting when it resolves. The three
-    11/08 reopens (MEH-1249, MEH-1976, MEH-1949) all needed manual restoration on
-    the same day. Related open cards: MEH-1615, MEH-1736._
+    the per-branch automation rules. Measurements across 08–12/08 (tables above),
+    every body read from the GitHub API._
+
+    _**On the pre-registered prediction.** PR #2795 predicted, in its own body
+    before merging, that it would not close MEH-1949 — and it closed it in 3
+    seconds. Recording the failed prediction rather than quietly dropping it is
+    the point: it is the only reason row 9 exists, and a prediction that is only
+    reported when it succeeds is not a test. Reading the spec was still the right
+    move (it is what exposed that `Refs` is not on the published list); what was
+    wrong was treating one documented list as settling a question the list does
+    not actually cover. **Check the spec first — then check that the spec covers
+    the exact token you use.**_
+
+    _The 11/08 reopens (MEH-1249, MEH-1976, MEH-1949) plus MEH-1949 again on
+    12/08 all needed manual restoration. Related open cards: MEH-1615, MEH-1736._
 
 30. **A DO-NOT-MERGE marker (or any blocking gate) is a STOP condition —
     never self-clear it.** CC must NEVER clear a `DO-NOT-MERGE` marker, edit a
@@ -1619,3 +1689,45 @@ Tasks auto-expire after 7 days.
     something CC can unilaterally act on. Verified empirically on 31/07: both
     `Edit` calls returned `File is in a directory that is denied by your
     permission settings.`
+
+    ### The parallel-actor case: the direction of the change is the test (11/08)
+
+    Rule 32 answers "may CC edit this guardrail." This answers a different
+    question that looks the same from inside the session: **an instruction
+    covers your own action, and a parallel actor has already produced the
+    state that instruction forbids.** What may you do about it unasked?
+
+    > **You may act only in the direction that ADDS a constraint. Disarming an
+    > auto-merge someone else armed is permitted; arming, clearing a marker, or
+    > merging is not. The test is the DIRECTION of the change, not whether the
+    > outcome looks like what the instruction wanted.**
+
+    That last clause is the load-bearing one, because "what the instruction
+    wanted" is exactly the reasoning that licenses the forbidden move. A
+    session told *"do not arm auto-merge on #2781"* which then finds it armed
+    can argue that clearing the marker and merging is what Sapir would have
+    wanted anyway — and every step of that argument feels like fidelity to the
+    instruction. Direction is checkable from outside the session's own
+    intentions; intent is not.
+
+    **Why the asymmetry is safe rather than merely cautious:** a constraint CC
+    adds can be removed by a human in one click, and its cost is a delay. A
+    constraint CC removes can be unrecoverable — a merge is not undone by
+    deciding it was premature. Where the two error costs are that lopsided,
+    acting unasked in the cheap direction and never in the expensive one needs
+    no further justification.
+
+    _Source: 2026-08-11, PR #2781. CC parked the PR behind its own marker,
+    Sapir instructed "restore it, and do not arm auto-merge under any
+    condition" — and a **parallel lane armed it anyway**, with method `merge`,
+    while the ticket's central question (option ב) had never been ratified. The
+    marker held the required gate red, so nothing merged; but the PR was one
+    marker-clear away from merging an unratified decision, and the marker-clear
+    is precisely the step a "merge all" instruction makes tempting. CC disabled
+    the auto-merge (adds a constraint), left the marker (removing one is not
+    CC's), and reported. Sapir accepted all three calls with no correction._
+
+    **This is also the concrete refutation of "auto-merge unarmed" as a
+    compensating control** (rule 30). Unarmed is a state; a parallel actor
+    re-armed it within the hour. Only the marker — sitting in a required gate —
+    held.
