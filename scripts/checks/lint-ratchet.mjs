@@ -56,17 +56,6 @@ const FIXTURE_PATH = join(HERE, "testdata", "knip-sample.json");
  * ------------------------------------------------------------------ */
 
 /**
- * Knip's JSON is { issues: [ { file, exports: [...], files: [...], ... } ] }.
- *
- * Every array-valued property is a rule bucket. We count them GENERICALLY
- * rather than against a hardcoded rule list, so that a Knip upgrade adding a
- * new rule category cannot be silently dropped on the floor. A hardcoded list
- * would make new-rule findings invisible, which is the same defect class the
- * ratchet exists to close.
- *
- * @returns {Map<string, number>} key `${file}\t${rule}` -> count
- */
-/**
  * Rule buckets Knip is known to emit as arrays, observed in the captured
  * payload this baseline was frozen from.
  *
@@ -84,6 +73,18 @@ const KNOWN_RULE_BUCKETS = new Set([
   "optionalPeerDependencies", "types", "unlisted", "unresolved",
 ]);
 
+/**
+ * Knip's JSON is { issues: [ { file, exports: [...], files: [...], ... } ] }.
+ *
+ * Every array-valued property is a rule bucket. We count them GENERICALLY
+ * rather than against a hardcoded rule list, so that a Knip upgrade adding a
+ * new rule category cannot be silently dropped on the floor. A hardcoded list
+ * would make new-rule findings invisible, which is the same defect class the
+ * ratchet exists to close. (`KNOWN_RULE_BUCKETS` above is consulted only for
+ * shape-drift detection, never to filter what gets counted.)
+ *
+ * @returns {Map<string, number>} key `${file}\t${rule}` -> count
+ */
 export function aggregate(knipJson) {
   if (!knipJson || typeof knipJson !== "object" || !Array.isArray(knipJson.issues)) {
     throw new Error("unrecognised Knip payload: expected an object with an `issues` array");
@@ -443,13 +444,19 @@ function selfTest() {
 
     const argv = (p) => ["node", "lint-ratchet.mjs", "--knip-json", p];
     let cleanCode, dirtyCode;
-    const quiet = console.log;
+    // Silence BOTH channels: the dirty run deliberately reports violations on
+    // stderr, which would otherwise interleave "1 NEW finding(s) above
+    // baseline" into a *passing* self-test's output and read as a real failure.
+    const quietLog = console.log;
+    const quietErr = console.error;
     console.log = () => {};
+    console.error = () => {};
     try {
       cleanCode = main(argv(cleanPath));
       dirtyCode = main(argv(dirtyPath));
     } finally {
-      console.log = quiet;
+      console.log = quietLog;
+      console.error = quietErr;
       rmSync(tmp, { recursive: true, force: true });
     }
 
