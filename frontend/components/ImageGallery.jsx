@@ -101,13 +101,34 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           data-testid="gallery-tint-layer"
         >
           {/* Recessive brand monogram — corner mark (end side, opposite the
-              favorite control), gold, ~24px. Decorative, never dominant. */}
-          <span
-            className="absolute top-3 end-3 font-headline-lg text-2xl text-accent/40 leading-none select-none pointer-events-none"
+              favorite control), gold, ~24px. Decorative, never dominant.
+              MEH-2025: SVG text, not an HTML text node. axe audits every
+              visible HTML text node for color-contrast (aria-hidden included)
+              and the recessive 40% fill measures 1.66:1; WCAG 1.4.3 exempts
+              purely decorative text, but an HTML text node has no way to say
+              so — an SVG mark is the standard encoding of that exemption.
+              The passing alternative (opacity >= /80, measured 3.04:1) would
+              make the mark dominant, which the recessive LOCK above forbids.
+              Same glyphs/font/fill; box 34x24 at the same corner (span box
+              measured 33x24 before the swap). */}
+          <svg
+            className="absolute top-3 end-3 select-none pointer-events-none overflow-visible"
+            width="34"
+            height="24"
+            viewBox="0 0 34 24"
             aria-hidden="true"
+            focusable="false"
           >
-            מ·ה
-          </span>
+            <text
+              x="17"
+              y="19"
+              textAnchor="middle"
+              fontSize="24"
+              className="font-headline-lg fill-accent/40"
+            >
+              מ·ה
+            </text>
+          </svg>
           {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
               its own name h1 when imageless, so the masthead must always supply
               the page's single h1 (guarantees exactly-one-h1 even for the
@@ -148,7 +169,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                     data-badge="verified"
                     className="group inline-flex items-center justify-center focus:outline-none"
                   >
-                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition">
+                    {/* MEH-2025: bg-accent/10 -> bg-surface-card. Over the masthead's
+                        6%-tint-on-cream the accent/10 fill composites to #dfdbcb and
+                        text-accent measures 3.77:1 (axe serious, AA needs 4.5). On the
+                        solid surface-card fill it measures 5.19:1. Same idiom as the
+                        icon-only chip branch in BadgeRow.jsx (bg-surface-card +
+                        border-accent/40 + text-accent). */}
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition">
                       <SealCheck size={16} aria-hidden="true" />
                       {tBadge("verified_label")}
                     </span>
