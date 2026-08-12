@@ -130,7 +130,7 @@ export default function CitySearch({
         >
           {label}
           {required && labelVisible && (
-            <span className="text-red-500" aria-hidden="true">
+            <span className="text-error" aria-hidden="true">
               {" *"}
             </span>
           )}

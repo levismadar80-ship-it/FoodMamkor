@@ -92,8 +92,48 @@ describe("MEH-2015 — the asterisk is a mechanism, not a string", () => {
   });
 });
 
+describe("MEH-2015 — no label prop smuggles a literal asterisk (the RecipeForm regression)", () => {
+  // The adversarial review caught RecipeForm passing
+  //   label={<>{t("title_label")} <span>*</span></>}
+  // to Input WITH required — reproducing the double-asterisk bug through the
+  // new mechanism itself. The unit test above cannot see it (its corpus is a
+  // plain-string label), so this scans the source for the shape directly.
+  const SRC_DIRS = ["components", "app"];
+  // Scan stays INSIDE the fragment (the (?!<\/>) guard stops at </>) so an
+  // asterisk later in the file cannot false-positive. First draft used
+  // [^}]* and the planted control caught it: the `}` inside {t("...")}
+  // ended the match before the asterisk was ever reached.
+  const LITERAL_MARKER_IN_LABEL = /label=\{<>(?:(?!<\/>)[\s\S]){0,200}\*/;
+
+  it("control: the scan matches the exact line that shipped the regression", () => {
+    const shipped = 'label={<>{t("title_label")} <span className="text-red-500">*</span></>}';
+    expect(LITERAL_MARKER_IN_LABEL.test(shipped)).toBe(true);
+  });
+
+  it("no JSX label prop under frontend/ carries a literal asterisk", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const hits = [];
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.(jsx?|tsx?)$/.test(e.name)) {
+          const src = fs.readFileSync(p, "utf8");
+          if (LITERAL_MARKER_IN_LABEL.test(src)) hits.push(p);
+        }
+      }
+    };
+    for (const d of SRC_DIRS) walk(path.resolve(__dirname, "..", d));
+    expect(hits).toEqual([]);
+  });
+});
+
 describe("MEH-2015 — the קטגוריה * * bug stays dead", () => {
   it("EventForm's category label renders exactly one asterisk", async () => {
+    // doUnmock rides a try/finally (CI reviewer catch): an assertion throw
+    // must not leave the mock active for later files in the same worker.
+    try {
     vi.doMock("next-intl", () => ({
       // Return the real he.json value for the event-form namespace so this
       // exercises the actual string the screen shows, not a synthetic key.
@@ -112,6 +152,8 @@ describe("MEH-2015 — the קטגוריה * * bug stays dead", () => {
       (label.textContent.match(/\*/g) || []).length,
       `category label reads: ${JSON.stringify(label.textContent)}`,
     ).toBe(1);
-    vi.doUnmock("next-intl");
+    } finally {
+      vi.doUnmock("next-intl");
+    }
   });
 });

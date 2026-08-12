@@ -293,7 +293,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         <div>
           <label htmlFor="city" className="block text-sm font-medium text-text mb-1">
             {t("field_city_label")}{" "}
-            <span className="text-red-500" aria-hidden="true">
+            <span className="text-error" aria-hidden="true">
               *
             </span>
           </label>
@@ -463,7 +463,7 @@ function Field({ id, label, required, error, children }) {
         {required && (
           // MEH-2015: aria-hidden — the hosted control carries aria-required;
           // without this, screen readers hear "star" after every label.
-          <span className="text-red-500" aria-hidden="true">
+          <span className="text-error" aria-hidden="true">
             *
           </span>
         )}

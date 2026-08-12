@@ -878,7 +878,7 @@ function RegisterProducerPageBody() {
             <div>
               <label htmlFor="producer-account-password" className="block text-sm font-medium text-text mb-1 text-start">
                 {t("auth.register.producer.fields.password_label")}{" "}
-                <span className="text-red-500" aria-hidden="true">
+                <span className="text-error" aria-hidden="true">
                   *
                 </span>
               </label>
@@ -963,7 +963,7 @@ function RegisterProducerPageBody() {
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
                 {t("auth.register.producer.fields.phone_label")}{" "}
-                <span className="text-red-500" aria-hidden="true">
+                <span className="text-error" aria-hidden="true">
                   *
                 </span>
               </label>

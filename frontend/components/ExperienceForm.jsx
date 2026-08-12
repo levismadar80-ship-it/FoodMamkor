@@ -339,7 +339,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       <Field id="experience-description" label={t("field_description")} required error={fieldErrors.description}>
         <textarea
           id="experience-description"
-          aria-required="true"
+          aria-required={true}
           value={form.description}
           onChange={setField("description")}
           rows={5}
@@ -436,7 +436,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       <div>
         <span id="experience-location-type-label" className="block text-sm font-medium text-text mb-1">
           {t("field_location_type")}{" "}
-          <span className="text-red-500" aria-hidden="true">
+          <span className="text-error" aria-hidden="true">
             *
           </span>
         </span>
@@ -587,7 +587,7 @@ function Field({ id, label, required, error, children }) {
       <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
         {label}
         {required && (
-          <span className="text-red-500" aria-hidden="true">
+          <span className="text-error" aria-hidden="true">
             {" *"}
           </span>
         )}

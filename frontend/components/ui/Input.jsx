@@ -110,7 +110,7 @@ export default function Input({
         <label htmlFor={inputId} className="text-sm font-medium text-text">
           {label}
           {required && (
-            <span className="text-red-500" aria-hidden="true">
+            <span className="text-error" aria-hidden="true">
               {" *"}
             </span>
           )}

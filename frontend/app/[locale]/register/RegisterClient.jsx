@@ -355,7 +355,7 @@ function RegisterPageBody() {
           <div>
             <label htmlFor="pw-password" className="block text-sm font-medium mb-1">
               {t("auth.register.consumer.fields.password")}{" "}
-              <span className="text-red-500" aria-hidden="true">
+              <span className="text-error" aria-hidden="true">
                 *
               </span>
             </label>

@@ -121,7 +121,7 @@ export default function ContactClient() {
               <div>
                 <label htmlFor="contact-message" className="block text-sm font-medium mb-1 text-text">
                   {t("field_message_label")}{" "}
-                  <span className="text-red-500" aria-hidden="true">
+                  <span className="text-error" aria-hidden="true">
                     *
                   </span>
                 </label>

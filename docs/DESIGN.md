@@ -588,13 +588,24 @@ three unenforced starred fields MEH-2013/2015 closed).
 `CitySearch`) render the marker from `required` and set `aria-required` on
 the control. The asterisk is **never baked into a label value** in
 `he.json`/`en.json` — two mechanisms firing together is what put
-`קטגוריה * *` on screen. Marker colour: `text-red-500`, the single token
-(MEH-2015 converged CategorySelector's `text-red-700`). The marker span is
-`aria-hidden` — screen readers hear "required" once via `aria-required`,
-not "star". Guard: `frontend/__tests__/RequiredMarkerParity.test.jsx`.
+`קטגוריה * *` on screen, and it happened AGAIN mid-review when a consumer
+kept its literal span beside the new `required` prop (RecipeForm). The
+label prop therefore never contains a literal `*`. Marker colour:
+**`text-error`** — the semantic token, per the token linter; MEH-2015
+converged the previous `text-red-500`/`text-red-700` mix onto it. The
+marker span is `aria-hidden` — screen readers hear "required" once via
+the native `required`/`aria-required`, not "star". Guard:
+`frontend/__tests__/RequiredMarkerParity.test.jsx`, including a source
+scan for literal asterisks inside `label={...}` props.
 
 Placeholders are exempt (a string attribute has no JSX layer); a placeholder
 showing `*` documents the expectation without being a label mechanism.
+
+**One transitional exception, named so this section does not overclaim:** the
+producer-register city marker is still visual-only (MEH-951) pending the
+MEH-2015 chunk-B verdict — the field shows the marker and gates nothing. It
+is the last surviving instance of the bug this rule bans, kept deliberately
+until the enforcement decision, and its audit-table row says so.
 
 ## References
 

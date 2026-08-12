@@ -517,7 +517,7 @@ function PasswordChangeCard({ isOAuth }) {
         <div>
           <label htmlFor="sec-current" className="block text-sm font-medium mb-1">
             {t("current_label")}{" "}
-            <span className="text-red-500" aria-hidden="true">
+            <span className="text-error" aria-hidden="true">
               *
             </span>
           </label>
@@ -567,7 +567,7 @@ function PasswordChangeCard({ isOAuth }) {
         <div>
           <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">
             {t("confirm_label")}{" "}
-            <span className="text-red-500" aria-hidden="true">
+            <span className="text-error" aria-hidden="true">
               *
             </span>
           </label>
