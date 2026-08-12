@@ -22,12 +22,24 @@ The exact pre-fix output is pasted in the PR body.
 
 from datetime import date, timedelta
 
+from app.services.availability_validation import ON_VACATION
 from tests.conftest import make_producer
 
 
 def _vacation(db, producer):
-    """Put a producer on vacation — the state the catalog hides by default."""
-    producer.availability_state = "on_vacation"
+    """Put a producer on vacation — the state the catalog hides by default.
+
+    Uses the constant, not the literal. This PR's argument is one owner for
+    the value, and spelling it a second time in the file that asserts that
+    would contradict it.
+
+    The two literals further down are deliberate and stay: the
+    `?availability_state=on_vacation` query and the response-body assertion
+    pin the **wire format**, which is the contract a client depends on. If
+    someone changed the constant's value those two SHOULD go red — that is the
+    test doing its job, not duplication to be cleaned up.
+    """
+    producer.availability_state = ON_VACATION
     producer.vacation_until = date.today() + timedelta(days=10)
     db.commit()
     db.refresh(producer)
