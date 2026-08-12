@@ -111,13 +111,31 @@ describe("ExperienceForm — submit validation (MEH-1809)", () => {
     expect(screen.getByText(T.error_max_participants_min)).toBeInTheDocument();
   });
 
-  it("restores the url-format boundary that noValidate turned off", () => {
+  // MEH-2012 REPLACED the case that used to sit here — "restores the url-format
+  // boundary that noValidate turned off". It is deleted rather than relaxed,
+  // because the behaviour it asserted is deliberately gone along with the field
+  // it guarded: image_url is no longer typed by anyone, it is whatever
+  // POST /upload/image returned. Keeping a softened version would have been the
+  // forbidden move (never weaken a test to make it pass); the honest one is to
+  // assert the new contract, which is what this case does.
+  //
+  // The removal is not cosmetic. /upload/image answers with a RELATIVE path
+  // when Cloudinary is unconfigured — `/placeholder-image.png?name=…`
+  // (upload.py:115) — and the old check ran `new URL(value)`, which throws on a
+  // relative path. Had the guard survived the field, the form would have
+  // rejected the server's own successful response on every environment without
+  // Cloudinary credentials.
+  it("no longer type-checks image_url as a URL — the server supplies it now", () => {
     renderForm();
 
-    fireEvent.change(document.getElementById("experience-image"), { target: { value: "abc" } });
+    // The old free-text input is gone; this is the file input that replaced it.
+    const imageInput = document.getElementById("experience-image");
+    expect(imageInput).toHaveAttribute("type", "file");
+
     fireEvent.click(submitButton());
 
-    expect(screen.getByText(T.error_invalid_url)).toBeInTheDocument();
+    // A URL-format complaint about a field nobody types in would be unfixable.
+    expect(screen.queryByText(T.error_invalid_url)).not.toBeInTheDocument();
   });
 
   it("restores the whole-number boundary on duration (an int server-side)", () => {

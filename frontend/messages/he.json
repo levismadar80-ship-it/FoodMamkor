@@ -2510,7 +2510,11 @@
       "rejected_fallback": "התוכן לא מתאים לפלטפורמה",
       "field_category": "קטגוריה",
       "category_none": "ללא",
-      "field_image": "תמונה (URL — Cloudinary מומלץ)",
+      "field_image": "תמונת החוויה",
+      "field_image_upload_hint": "גררו לכאן או לחצו להעלאה · JPG / PNG / WebP",
+      "field_image_uploading": "מעלה תמונה...",
+      "field_image_remove": "הסרת תמונה",
+      "field_image_remove_aria": "הסרת התמונה",
       "field_date": "תאריך *",
       "field_time": "שעת התחלה",
       "field_duration": "משך (דקות)",
@@ -2546,8 +2550,8 @@
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
       "error_whole_number": "יש להזין מספר שלם",
       "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
-      "save_cta": "שמירה",
-      "field_image_placeholder": "https://res.cloudinary.com/..."
+      "error_image_upload": "העלאת התמונה נכשלה. נסו שוב.",
+      "save_cta": "שמירה"
     }
   },
   "errors": {
