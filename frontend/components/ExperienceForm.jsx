@@ -607,7 +607,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         {/* MEH-2013: `id` on Field associates its <label> with CitySearch's
             input (CitySearch renders its own label only when passed one). */}
         <Field id={EXPERIENCE_FIELD_ID.city} label={t("field_city")} required error={fieldErrors.city}>
-          <CitySearch id={EXPERIENCE_FIELD_ID.city} required value={form.city} onChange={setCityField} placeholder={t("field_city_placeholder")} />
+          <CitySearch
+            id={EXPERIENCE_FIELD_ID.city}
+            required
+            value={form.city}
+            onChange={setCityField}
+            placeholder={t("field_city_placeholder")}
+            // MEH-2022: Field renders the error as `${id}-error`; point the
+            // input at it only while the error exists.
+            aria-describedby={fieldErrors.city ? `${EXPERIENCE_FIELD_ID.city}-error` : undefined}
+            aria-invalid={fieldErrors.city ? true : undefined}
+          />
         </Field>
         <div>
           <label htmlFor="experience-address" className="block text-sm font-medium text-text mb-1">
