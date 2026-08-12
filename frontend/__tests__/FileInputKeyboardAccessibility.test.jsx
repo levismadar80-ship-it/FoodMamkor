@@ -106,8 +106,11 @@ const FIXED_FILES = [
 
 /** Return the {srOnly, hidden} counts of type="file" input tags in a source. */
 function scanFileInputs(source) {
-  // Each <input ...> opening tag containing type="file"; JSX attributes never
-  // nest '>', so a lazy match to the closing bracket bounds the tag.
+  // Each <input ...> opening tag containing type="file". THESE inputs'
+  // attributes never contain '>' (plain strings + reference callbacks — no
+  // inline arrows with comparisons), so a lazy match to the closing bracket
+  // bounds the tag; an attribute carrying '>' would silently truncate the
+  // match (CI reviewer wording fix — the guarantee is per-site, not JSX-wide).
   const tags = source.match(/<input\b[^>]*type="file"[^>]*>/gs) ?? [];
   // Word-boundary regexes, not literal `className="sr-only"` substrings — the
   // closing-quote form would score a future `className="sr-only focus:…"` as
