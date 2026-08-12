@@ -445,6 +445,18 @@ Playwright) — הטבלה כאן היא מפת ה-DoD + מדריך לבדיקה
 | **P3** רב-קטגוריה | בחירת בשר+דגים (name→id) | 2 שורות `producer_categories`; דורש מספר רישיון (שתיהן license-required) אחרת 422 | `tests/test_register_personas.py::TestPersona3MultiCategory` |
 | **P4** אימייל+סיסמה | טלפון ריק + whatsapp; קטגוריות ריקות; אימייל כפול; double-submit; upgrade כפול; שדות עריכת-בעלים בגוף | 422 / 422 / RegisterAck זהה בייט-לבייט ללא token / אין שורה כפולה / 409 / שדות עריכת-בעלים **מתעלמים** (לא 422) | `tests/test_register_personas.py::TestPersona4PasswordEdgeCases` |
 | **P5** בהמתנה | admin request-changes → owner request-review (resubmit) | שני הצדדים 2xx, הסטטוס נשאר pending; request-changes על לא-pending → 409 | backend: `tests/test_register_personas.py::TestPersona5ResubmitLoop` · UI abandon: spec 22 (P5) |
+| **P6** מקסימלית (MEH-1625) | כל שדה מלא · שם עם גרש וגרשיים (`מאפיית "שקד" בע"מ`) · אימוג'י בתיאור · כתובת ארוכה · 3 קטגוריות · multi-location · כל ערוצי הקשר | הרשמה 2xx; הגרשיים והאימוג'י שורדים round-trip ומרונדרים בדף הציבורי בלי escaping; ה-slug נוצר תקין למרות תווי הקצה; 3 שורות `producer_categories`; כל ה-locations נשמרים | **אין עדיין** — הריצה חסומה (ראו למטה) |
+
+> ### ⚠️ למה P6 ולא P5 — התנגשות מזהים
+>
+> ‏MEH-1625 מגדיר את הפרסונה המקסימלית כ-**"P5 (חדשה)"** ומתאר את P1–P4 בלבד
+> כקיימות. **זה לא נכון נכון להיום:** ‏`P5` כבר תפוס כאן ע"י פרסונת ה-resubmit
+> loop, עם טסט backend משלה (`TestPersona5ResubmitLoop`) ו-spec UI. הוספת פרסונה
+> שנייה באותו שם הייתה יוצרת שני P5 שונים בטבלה שכל תכליתה כיסוי חד-משמעי —
+> ובדיוק בעמודה שמסמנת איזה טסט מכסה מה.
+>
+> לכן הפרסונה המקסימלית נכנסת כ-**P6**. הכרטיס לא טעה כשנכתב (27/07); הוא התיישן.
+> נרשם כאן ולא תוקן על הכרטיס — הכרטיס הוא של ספיר.
 
 **מחוץ לגבולות (owner-edit surface):** delivery / website / contact-method
 כשדות עריכה לאחר אישור, ו-delivery XOR (משלוח ארצי מול ערים) — מכוסים ב-
