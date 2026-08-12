@@ -1237,7 +1237,11 @@
         "geo_unavailable": "המיקום לא זמין כרגע. אפשר לבחור עיר כדי למיין לפי מרחק.",
         "geo_timeout": "לקח יותר מדי זמן לאתר את המיקום. נסו שוב, או בחרו עיר.",
         "geo_unknown": "לא הצלחנו לקבל את המיקום. אפשר לבחור עיר כדי למיין לפי מרחק.",
-        "clear_location": "נקו את המיקום השמור"
+        "clear_location": "נקו את המיקום השמור",
+        "locating_city": "מאתרים את העיר...",
+        "city_origin_failed": "לא הצלחנו לאתר את העיר. נסו עיר אחרת.",
+        "origin_gps": "מרחק מהמיקום שלכם",
+        "origin_city": "מרחק מ: {city}"
       }
     },
     "errors": {
@@ -2509,7 +2513,10 @@
       "rejected_fallback": "התוכן לא מתאים לפלטפורמה",
       "field_category": "קטגוריה",
       "category_none": "ללא",
-      "field_image": "תמונה (URL — Cloudinary מומלץ)",
+      "field_image": "תמונת החוויה",
+      "field_image_upload_hint": "גררו לכאן או לחצו להעלאה · JPG / PNG / WebP",
+      "field_image_uploading": "מעלה תמונה...",
+      "field_image_remove": "הסרת תמונה",
       "field_date": "תאריך",
       "field_time": "שעת התחלה",
       "field_duration": "משך (דקות)",
@@ -2544,9 +2551,8 @@
       "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
       "error_whole_number": "יש להזין מספר שלם",
-      "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
-      "save_cta": "שמירה",
-      "field_image_placeholder": "https://res.cloudinary.com/..."
+      "error_image_upload": "העלאת התמונה נכשלה. נסו שוב.",
+      "save_cta": "שמירה"
     }
   },
   "errors": {

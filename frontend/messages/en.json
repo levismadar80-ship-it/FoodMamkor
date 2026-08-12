@@ -1239,7 +1239,11 @@
         "geo_unavailable": "Location is unavailable right now. You can pick a city to sort by distance.",
         "geo_timeout": "Finding your location took too long. Try again, or pick a city.",
         "geo_unknown": "We could not get your location. You can pick a city to sort by distance.",
-        "clear_location": "Clear the saved location"
+        "clear_location": "Clear the saved location",
+        "locating_city": "Finding that city…",
+        "city_origin_failed": "We could not locate that city. Try another one.",
+        "origin_gps": "Distance from your location",
+        "origin_city": "Distance from {city}"
       }
     },
     "errors": {
@@ -2488,7 +2492,10 @@
       "rejected_fallback": "This content isn't a fit for the platform",
       "field_category": "Category",
       "category_none": "None",
-      "field_image": "Image (URL — Cloudinary recommended)",
+      "field_image": "Experience image",
+      "field_image_upload_hint": "Drag here or click to upload · JPG / PNG / WebP",
+      "field_image_uploading": "Uploading image…",
+      "field_image_remove": "Remove image",
       "field_date": "Date",
       "field_time": "Start time",
       "field_duration": "Duration (minutes)",
@@ -2523,9 +2530,8 @@
       "error_max_participants_min": "Max participants must be at least 1",
       "error_generic": "Error submitting the experience. Please try again.",
       "error_whole_number": "Please enter a whole number",
-      "error_invalid_url": "That address is not valid — start with https://",
-      "save_cta": "Save",
-      "field_image_placeholder": "https://res.cloudinary.com/..."
+      "error_image_upload": "Image upload failed. Please try again.",
+      "save_cta": "Save"
     }
   },
   "errors": {
