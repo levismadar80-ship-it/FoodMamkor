@@ -102,6 +102,55 @@ def test_reset_on_empty_set_is_a_clean_zero(db):
     assert p.availability_state == RESET_STATE
 
 
+def test_service_rolls_back_and_leaves_the_session_usable_on_failure(db, monkeypatch):
+    """SHOULD-FIX from the adversarial review: the wrapper test patches the
+    WHOLE service away, so the service's own except/rollback path — the
+    MEH-1824 session-usable invariant its docstring claims — was never
+    exercised by a real failure. This forces db.commit() to raise INSIDE the
+    real function and asserts all three halves of the claim:
+
+      1. the exception propagates (the wrapper is the swallow layer, not us),
+      2. rollback actually ran (the expired row is still expired),
+      3. the session is USABLE afterwards — the next query runs instead of
+         raising PendingRollbackError, which is the exact failure MEH-1824
+         measured when a poisoned session met its next caller.
+    """
+    import pytest as _pytest
+
+    p = make_producer(db, name="עמוסה")
+    _set_state(db, p, EXPIRED_STATE)
+
+    real_commit = db.commit
+    calls = {"rollback": 0}
+    real_rollback = db.rollback
+
+    def failing_commit():
+        raise RuntimeError("synthetic commit failure")
+
+    def counting_rollback():
+        calls["rollback"] += 1
+        return real_rollback()
+
+    monkeypatch.setattr(db, "commit", failing_commit)
+    monkeypatch.setattr(db, "rollback", counting_rollback)
+
+    with _pytest.raises(RuntimeError, match="synthetic commit failure"):
+        reset_expired_full_week(db)
+
+    # Un-patch before verifying, so the verification itself is unmocked.
+    monkeypatch.setattr(db, "commit", real_commit)
+    monkeypatch.setattr(db, "rollback", real_rollback)
+
+    assert calls["rollback"] == 1
+    # The session must answer a fresh query — a poisoned session raises here.
+    from app.models.models import Producer
+
+    row = db.query(Producer).filter(Producer.id == p.id).one()
+    # And the rollback must have undone the UPDATE: still expired.
+    assert row.availability_state == EXPIRED_STATE
+    assert row.availability_status == "full"
+
+
 def test_weekly_job_is_registered_with_israel_timezone():
     """The wiring: the job exists on a scheduler built the way lifespan builds
     it, with a weekly Sunday trigger carrying Asia/Jerusalem — not the

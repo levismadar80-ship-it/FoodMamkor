@@ -52,9 +52,12 @@ def reset_expired_full_week(db: Session) -> int:
     # One owner for the enum↔legacy mapping: the router's own helper. A
     # service importing from a router is unusual, and chosen on purpose —
     # a local copy of the triple would be a second owner (workflow.md
-    # Smell #1), free to drift until MEH-1854 deletes the original. Lazy
-    # import; by the time the scheduler thread calls this, the router
-    # module is long loaded.
+    # Smell #1), free to drift until MEH-1854 deletes the original.
+    # The import is lazy for STYLE CONSISTENCY with the scheduler-facing
+    # code in startup.py, not necessity — the adversarial review verified
+    # nothing in producer_me's import chain reaches this module, so a
+    # top-level import would also work. Stated so the next reader does not
+    # infer a circular-import constraint that does not exist.
     from app.routers.producer_me import _state_to_legacy
 
     is_available_today, availability_status = _state_to_legacy(RESET_STATE)

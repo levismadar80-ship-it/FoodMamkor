@@ -460,6 +460,10 @@ async def lifespan(app: FastAPI):
         CronTrigger(day_of_week="sun", hour=0, minute=10, timezone="Asia/Jerusalem"),
         id="meh_1828_full_week_expiry_weekly",
         replace_existing=True,
+        # max_instances=1 is APScheduler's default — written out only so this
+        # job reads consistently next to the watchdog registration above,
+        # which sets it explicitly. Not a behaviour change.
+        max_instances=1,
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
