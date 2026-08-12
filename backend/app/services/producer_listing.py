@@ -36,6 +36,7 @@ from app.models import (
     Product,
     SearchQuery,
 )
+from app.schemas.schemas import DELIVERY_DAYS
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
@@ -281,7 +282,36 @@ def _has_delivery_condition():
     )
 
 
-def _delivery_day_condition(day: str, city: str | None = None):
+# MEH-2036: the OR-list cap for ?delivery_days=. Unlike _MAX_DELIVERY_CITIES
+# (40, headroom over the largest region) this bound is EXACT: the vocabulary is
+# closed at seven, so a longer list can only be duplicates or junk.
+_MAX_DELIVERY_DAYS = len(DELIVERY_DAYS)
+
+
+def _normalize_delivery_days(days, day: str | None = None) -> list[str]:
+    """MEH-2036: fold the plural `delivery_days` and the legacy singular
+    `delivery_day` into one de-duplicated, bounded list.
+
+    Precedence: `delivery_days` WINS when both are sent. Note this is the
+    OPPOSITE winner to MEH-1487's delivery_city/delivery_cities pair, where the
+    SINGULAR wins — there the plural is an internal region-fallback widening
+    that must never override a user's explicit city, while here the plural IS
+    the user's explicit multi-select and the singular is only a back-compat
+    deep-link. Same shape of rule, deliberately inverted; do not "align" them.
+
+    Order is preserved (first occurrence wins) so the generated SQL is stable
+    for a given URL. Empty/blank entries are stripped, matching the
+    delivery_cities guard at :511.
+    """
+    raw = days if days else ([day] if day else [])
+    seen: list[str] = []
+    for value in raw:
+        if value and value.strip() and value not in seen:
+            seen.append(value)
+    return seen[:_MAX_DELIVERY_DAYS]
+
+
+def _delivery_day_condition(days: list[str], city: str | None = None):
     """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
     producers and day-less rows ("בתיאום מראש") are excluded from day
     filtering; the integrity of "משלוח ביום X" beats recall.
@@ -290,8 +320,17 @@ def _delivery_day_condition(day: str, city: str | None = None):
     row (one EXISTS). Two separate EXISTS would wrongly match a producer
     whose חיפה row is day-less while its עכו row is on שישי — the day
     promise would be attributed to the wrong city.
+
+    MEH-2036: `days` is now a LIST and the day test is an IN — OR within the
+    days, still AND-ed with the city inside the SAME single EXISTS, so the
+    same-row guarantee above is unchanged. Selecting all seven days is NOT
+    equivalent to clearing the filter: the predicate stays literal, so
+    nationwide and day-less rows remain excluded. That is deliberate (the
+    ticket's "literal semantics" decision) — a business that never named a day
+    has made no day promise, whatever the caller selected.
+    # REUSES: :478 category block — Category.id.in_ inside an EXISTS.
     """
-    conds = [DeliveryArea.delivery_day == day]
+    conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
         conds.append(func.lower(DeliveryArea.city) == city.lower())
     return Producer.delivery_areas.any(and_(*conds))
@@ -486,10 +525,17 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     # is present the combined condition REPLACES _delivery_city_condition —
     # v1 deliberately drops the nationwide OR-branch (no explicit day row =
     # no day promise), so the shared MEH-1487 helper is untouched.
-    delivery_day = filters.get("delivery_day")
+    # MEH-2036: one normalized list feeds every branch below — the plural
+    # ?delivery_days= wins over the legacy singular ?delivery_day=, which keeps
+    # working for old shared deep-links. An empty result (no days sent, or only
+    # blanks) falls through to the plain city path, so `.in_([])` — which is a
+    # false predicate and would blank the grid — is never constructed.
+    delivery_days = _normalize_delivery_days(
+        filters.get("delivery_days"), filters.get("delivery_day")
+    )
     if delivery_city:
-        if delivery_day:
-            city_cond = _delivery_day_condition(delivery_day, delivery_city)
+        if delivery_days:
+            city_cond = _delivery_day_condition(delivery_days, delivery_city)
         else:
             # MEH-1255: nationwide producers now match any delivery_city EXCEPT
             # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used
@@ -499,14 +545,19 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
             city_cond = _delivery_city_condition(delivery_city)
         q = q.filter(city_cond)
         count_q = count_q.filter(city_cond)
-    elif delivery_day:
-        # Day without a city — every explicit row with that day, any city.
-        day_cond = _delivery_day_condition(delivery_day)
+    elif delivery_days:
+        # Day(s) without a city — every explicit row on any selected day, any city.
+        day_cond = _delivery_day_condition(delivery_days)
         q = q.filter(day_cond)
         count_q = count_q.filter(day_cond)
     elif delivery_cities:
         # MEH-1487: region fallback — OR the SAME per-city condition across
         # the region's cities (nationwide-minus-excluded honoured per city).
+        # MEH-2036: the day axis is deliberately NOT threaded here. The fallback
+        # is an editorial "businesses that reach your area" discovery section,
+        # not a delivery-eligibility check (see the frontend note at
+        # use-home-page.js), so narrowing it by day would shrink a list whose
+        # whole purpose is to be a wider net after the strict query returned 0.
         # Cap + empty-strip guard bound a hostile / malformed list.
         cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
         if cities:
@@ -690,7 +741,9 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
 
     Expected keys in **filters: lat, lng, radius_km, require_physical,
     category, delivery_city, delivery_cities, delivery_day (MEH-1645 — one
-    canonical Hebrew day; explicit-row matching only), has_delivery, verified, kosher, city,
+    canonical Hebrew day; explicit-row matching only), delivery_days (MEH-2036 —
+    OR-list of the same vocabulary; WINS over delivery_day when both are
+    present), has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, vegetarian, lactose_free,
     no_added_sugar, low_carb (MEH-1934), sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)
