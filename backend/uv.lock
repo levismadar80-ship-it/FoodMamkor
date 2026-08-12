@@ -847,7 +847,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = "==2.5.2" },
     { name = "pyjwt", extras = ["crypto"], specifier = "==2.13.0" },
     { name = "python-multipart", specifier = "==0.0.32" },
-    { name = "pywebpush", specifier = "==2.0.0" },
+    { name = "pywebpush", specifier = "==2.3.0" },
     { name = "requests", specifier = "==2.34.2" },
     { name = "resend", specifier = "==2.30.1" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = "==2.60.0" },
@@ -2314,7 +2314,7 @@ wheels = [
 
 [[package]]
 name = "pywebpush"
-version = "2.0.0"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2322,9 +2322,11 @@ dependencies = [
     { name = "http-ece" },
     { name = "py-vapid" },
     { name = "requests" },
-    { name = "six" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a4/ba/79f4e52db8ab4d885712cb9a4b25bb036a90220e7d53b85ad6ebe6eb60d3/pywebpush-2.0.0.tar.gz", hash = "sha256:03ccc3e975b60374b7634c495595616be523bf2c7da0d976e84fda9ac8c63301", size = 33774, upload-time = "2024-03-14T15:52:30.104Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/d9/e497a24bc9f659bfc0e570382a41e6b2d6726fbcfa4d85aaa23fe9c81ba2/pywebpush-2.3.0.tar.gz", hash = "sha256:d1e27db8de9e6757c1875f67292554bd54c41874c36f4b5c4ebb5442dce204f2", size = 28489, upload-time = "2026-02-09T23:30:18.574Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/d8/ac21241cf8007cb93255eabf318da4f425ec0f75d28c366992253aa8c1b2/pywebpush-2.3.0-py3-none-any.whl", hash = "sha256:3d97469fb14d4323c362319d438183737249a4115b50e146ce233e7f01e3cf98", size = 22851, upload-time = "2026-02-09T23:30:16.093Z" },
+]
 
 [[package]]
 name = "pyyaml"

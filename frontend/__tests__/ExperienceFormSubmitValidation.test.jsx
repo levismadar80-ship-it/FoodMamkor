@@ -164,6 +164,13 @@ describe("ExperienceForm — submit validation (MEH-1809)", () => {
     fireEvent.change(document.getElementById("experience-date"), {
       target: { value: "2026-09-01" },
     });
+    // MEH-2013: city + location_type are now required, so "fully valid" means
+    // filling them too. Their own coverage lives in
+    // ExperienceFormRequiredFields.test.jsx; here they are only fixture.
+    fireEvent.click(screen.getByRole("button", { name: T.location_home }));
+    fireEvent.change(document.getElementById("experience-city"), {
+      target: { value: "תל אביב" },
+    });
     fireEvent.click(submitButton());
 
     expect(api.post).toHaveBeenCalledWith(
