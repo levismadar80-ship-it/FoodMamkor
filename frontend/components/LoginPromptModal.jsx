@@ -98,19 +98,22 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label={t("close_aria")}
-          className="absolute top-3 end-3 text-fg-muted hover:text-text transition p-1 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 end-3 w-11 h-11 flex items-center justify-center text-fg-muted hover:text-text transition rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
 
-        {/* MEH-2038: the button reaches 40px in from the card edge and the p-6
-            content box starts at 24px, so 16px needs clearing. Reserved
-            SYMMETRICALLY (px-6, not pe-6) because this panel is text-center —
-            a one-sided pad would visibly shift the heading off its centre
-            while the body copy below stayed centred. */}
+        {/* MEH-2038: the button spans 12→56px in from the card edge (end-3 +
+            w-11) and the p-6 content box starts at 24px, so 32px needs
+            clearing — px-8. Reserved SYMMETRICALLY (px-8, not pe-8) because
+            this panel is text-center: a one-sided pad would visibly shift the
+            heading off its centre while the body copy below stayed centred.
+            The reserve is tied to the button's WIDTH, so it grew with it — at
+            the earlier 28px button px-6 was enough. Growing a close button
+            without re-deriving this number re-opens the collision. */}
         <h2
           id="login-prompt-title"
-          className="font-headline-md text-xl font-bold text-text mb-3 px-6"
+          className="font-headline-md text-xl font-bold text-text mb-3 px-8"
         >
           {t("title")}
         </h2>

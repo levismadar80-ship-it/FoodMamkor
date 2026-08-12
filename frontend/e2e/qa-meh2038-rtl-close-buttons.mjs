@@ -289,8 +289,14 @@ const run = async () => {
     loginDlg.locator("#login-prompt-title"),
     "start-3",
     "end-3",
-    "px-6",
-    { requireTap44: false, requireOldCollision: false },
+    "px-8",
+    // requireTap44 is now ON. It was off in the first revision of this PR,
+    // because the ticket names the 44px target only for CertModal. The CI
+    // reviewer pointed out the obvious consequence: the rtl.md rule this PR
+    // ADDS makes 44px normative, so shipping the rule and a 28px close button
+    // in the same commit puts the first counterexample inside the diff that
+    // introduces it. Fixed rather than deferred.
+    { requireOldCollision: false },
   );
 
   // LATENT case. With the shipped (short, centred) title neither the old nor
@@ -308,15 +314,15 @@ const run = async () => {
   let lbox = await lbtn.boundingBox();
   let lrects = await textRects(h2);
   let lhit = lrects.filter((r) => overlaps(lbox, r)).length;
-  check(`LoginPromptModal: LONG title + NEW (end-3 + px-6) — still no overlap`, lhit === 0, `overlapping lines=${lhit} of ${lrects.length}`);
+  check(`LoginPromptModal: LONG title + NEW (end-3 + px-8) — still no overlap`, lhit === 0, `overlapping lines=${lhit} of ${lrects.length}`);
 
   await swapClass(lbtn, "end-3", "start-3");
-  await dropClass(h2, "px-6");
+  await dropClass(h2, "px-8");
   lbox = await lbtn.boundingBox();
   lrects = await textRects(h2);
   lhit = lrects.filter((r) => overlaps(lbox, r)).length;
   check(
-    `LoginPromptModal: LONG title + OLD (start-3, no px-6) — DOES collide (the latent bug, made real)`,
+    `LoginPromptModal: LONG title + OLD (start-3, no px-8) — DOES collide (the latent bug, made real)`,
     lhit > 0,
     `overlapping lines=${lhit} of ${lrects.length}`,
   );
