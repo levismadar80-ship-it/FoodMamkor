@@ -676,3 +676,24 @@ rider.
 
 Two parks, two signatures — both `blocked-by-CC-deny`, neither a failure class.
 The 3-park threshold is not reached and nothing is quarantined.
+
+## MEH-1625 — matrix extension DELIVERED (PR #2816), the live run is blocked
+
+The card splits into two parts with two timelines and says so.
+
+**Part 1 — the matrix extension — is done.** The maximal persona is in
+`docs/MANUAL_TESTING.md` as **P6**, not P5: the card calls it *"P5 (חדשה)"* and
+lists only P1–P4 as existing, which was true on 27/07 and is not true now —
+`P5` is already the resubmit-loop persona, with its own `TestPersona5ResubmitLoop`
+and UI spec. Two personas under one label, in the column that maps persona to
+covering test, is the one thing that table cannot afford.
+
+**Part 2 — the actual manual run of the personas on staging — is blocked**, and
+the card already says so: staging backend returning non-2xx (10/08) plus a
+working demo-admin account for the approval step. Neither is CC's to fix; the
+demo-admin credential is Sapir's.
+
+**P6's automation cell reads "אין עדיין" deliberately.** Every other row cites a
+real pytest class or Playwright spec. That column is what a reader trusts to
+know whether a persona is genuinely covered, so a plausible-looking reference
+there would be worse than an admission.
