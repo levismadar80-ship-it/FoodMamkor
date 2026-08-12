@@ -345,11 +345,11 @@ const run = async () => {
 
   // Discriminator for the margin: mt-6 is the pre-fix value and MUST collide.
   await certImg.evaluate((el) => {
-    el.className = el.className.replace("mt-10", "mt-6");
+    el.className = el.className.replace("mt-11", "mt-6");
   });
   const ciOld = await certImg.boundingBox();
   check("CertModal: OLD mt-6 DOES collide (proves the probe discriminates)", overlaps(cb, ciOld) === true, `btn.bottom=${cb && Math.round(cb.y + cb.height)} img.top=${ciOld && Math.round(ciOld.y)}`);
-  await certImg.evaluate((el) => { el.className = el.className.replace("mt-6", "mt-10"); });
+  await certImg.evaluate((el) => { el.className = el.className.replace("mt-6", "mt-11"); });
 
   // ---------- 4. Esc + backdrop still close (no behaviour regression) ----------
   await page.keyboard.press("Escape");

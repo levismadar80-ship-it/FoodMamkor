@@ -76,18 +76,20 @@ function CertModal({ src, expiryText, onClose, t }) {
         {/* raw img: src is our own /kashrut-cert proxy route, not a Cloudinary
             URL — lib/cloudinary.js has nothing to transform, and the host is
             not in next.config.js images.remotePatterns (frozen this ticket). */}
-        {/* MEH-2038: the top margin is STILL REQUIRED and had to grow 6→10. The
+        {/* MEH-2038: the top margin is STILL REQUIRED and had to grow 6→11. The
             image is w-full, so moving the close button to end-3 does not clear
             it horizontally — only vertical separation works. Button: top-3
             (12px) + h-11 (44px) = 56px from the card top; the p-4 content box
-            starts at 16px, so the image needs mt-10 (40px) to clear it. At the
-            old w-8/mt-6 the numbers were 44px vs 40px and the image already
-            tucked 4px under the button. */}
+            starts at 16px, so 40px (mt-10) is the EXACT clearance and mt-11
+            (44px) buys a 4px gap. Exact was measured working, but a 0px
+            knife-edge overlaps on any sub-pixel rounding or future type change,
+            so the margin carries the slack. At the old w-8/mt-6 the numbers
+            were 44px vs 40px and the image already tucked 4px under. */}
         <img
           src={src}
           alt={t("cert.image_alt")}
           data-testid="kashrut-cert-image"
-          className="w-full max-h-[70vh] object-contain rounded mt-10"
+          className="w-full max-h-[70vh] object-contain rounded mt-11"
         />
         <div className="mt-3 space-y-1 text-sm">
           {expiryText && <p className="font-medium text-text">{expiryText}</p>}

@@ -80,7 +80,7 @@ overlap is `inset + button-width − card-padding`. Pad past that, not by feel.
 
 **On a `text-center` panel, reserve symmetrically (`px-*`).** A one-sided `pe-*`
 shifts the heading off its centre while the body copy below stays centred —
-trading a collision for a misalignment. `LoginPromptModal.jsx:107` is the worked
+trading a collision for a misalignment. `LoginPromptModal.jsx:113` is the worked
 case.
 
 **Tap target ≥ 44px** on any such button (`w-11 h-11`) — `ShareButton.jsx` is
