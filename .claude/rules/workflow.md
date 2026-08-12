@@ -711,6 +711,49 @@ section was asked to carry.
       docs-only PRs in `.claude/rules/testing.md` → "Required status checks +
       docs-only merge (MEH-716)" — cross-ref, don't duplicate; if one note
       changes, update both.
+    - **`enable_auto_merge` on an already-armed PR is a silent no-op that
+      reports success — and silently keeps the EXISTING merge method.**
+      Measured 2026-08-11 on PR #2787: the request carried
+      `mergeMethod: SQUASH`, the response read `method: MERGE`, and the call
+      returned success. **That mismatch is not an error and nothing surfaces
+      it** — the response is the only place the real method appears, and it
+      reads like confirmation of what you asked for.
+
+      **To change the method you must `disable` then `enable`, and you must
+      re-read the method from the second response.** Never infer arming state
+      — or merge method — from a successful `enable` call.
+
+      Why this is not tidiness: a merge commit **discards the crafted squash
+      message**, so a PR whose commit body carries the reasoning, the
+      `Builder-Model:` trailer and the `Closes MEH-XXXX` lands on `staging` as
+      a bare "Merge pull request #N" with all of it buried in branch history.
+      The same check that caught #2787 then found **#2781 and two others**
+      armed with `merge` by another actor.
+
+      Pairs with the parallel-actor rule under rule 32: this is *how you
+      detect* that a parallel actor armed something. Nothing notifies you, and
+      the arming state does not appear in `pull_request_read get` — the
+      disable/enable round-trip is the only read available.
+    - **Opening a docs-only PR as a draft can strand it red, and marking it
+      ready may not clear it.** `pr-checks.yml` lists `ready_for_review` in its
+      trigger types precisely so the draft→ready flip fires a real run — but
+      if you flip it within the `opened` run's window, the concurrency group
+      can swallow the second run and no fresh one appears. The PR then sits on
+      the draft run's result forever.
+
+      On a `.claude/`-only or docs-only diff that result is **red**, not the
+      usual skip-green: the gate takes its `Neither stack touched` branch,
+      where the only enforced job is `Env drift` — and `Env drift` is
+      draft-skipped, so the gate demands a job the draft guaranteed would not
+      run. Measured 2026-08-11 on PR #2794: `Stack touched -> frontend=false
+      backend=false`, then `FAIL Env drift (.env.example): skipped (required
+      job did not run — 'skipped' is not a pass)`.
+
+      **Open docs PRs non-draft** (rule 5a's substitution already says this for
+      code PRs; it applies here for a different reason). If one is already
+      stranded, a re-run does not help — a re-run replays the original event
+      payload, `draft: true` included — so the only fix is a genuine push that
+      fires `synchronize`.
 
 ---
 
@@ -1646,3 +1689,45 @@ Tasks auto-expire after 7 days.
     something CC can unilaterally act on. Verified empirically on 31/07: both
     `Edit` calls returned `File is in a directory that is denied by your
     permission settings.`
+
+    ### The parallel-actor case: the direction of the change is the test (11/08)
+
+    Rule 32 answers "may CC edit this guardrail." This answers a different
+    question that looks the same from inside the session: **an instruction
+    covers your own action, and a parallel actor has already produced the
+    state that instruction forbids.** What may you do about it unasked?
+
+    > **You may act only in the direction that ADDS a constraint. Disarming an
+    > auto-merge someone else armed is permitted; arming, clearing a marker, or
+    > merging is not. The test is the DIRECTION of the change, not whether the
+    > outcome looks like what the instruction wanted.**
+
+    That last clause is the load-bearing one, because "what the instruction
+    wanted" is exactly the reasoning that licenses the forbidden move. A
+    session told *"do not arm auto-merge on #2781"* which then finds it armed
+    can argue that clearing the marker and merging is what Sapir would have
+    wanted anyway — and every step of that argument feels like fidelity to the
+    instruction. Direction is checkable from outside the session's own
+    intentions; intent is not.
+
+    **Why the asymmetry is safe rather than merely cautious:** a constraint CC
+    adds can be removed by a human in one click, and its cost is a delay. A
+    constraint CC removes can be unrecoverable — a merge is not undone by
+    deciding it was premature. Where the two error costs are that lopsided,
+    acting unasked in the cheap direction and never in the expensive one needs
+    no further justification.
+
+    _Source: 2026-08-11, PR #2781. CC parked the PR behind its own marker,
+    Sapir instructed "restore it, and do not arm auto-merge under any
+    condition" — and a **parallel lane armed it anyway**, with method `merge`,
+    while the ticket's central question (option ב) had never been ratified. The
+    marker held the required gate red, so nothing merged; but the PR was one
+    marker-clear away from merging an unratified decision, and the marker-clear
+    is precisely the step a "merge all" instruction makes tempting. CC disabled
+    the auto-merge (adds a constraint), left the marker (removing one is not
+    CC's), and reported. Sapir accepted all three calls with no correction._
+
+    **This is also the concrete refutation of "auto-merge unarmed" as a
+    compensating control** (rule 30). Unarmed is a state; a parallel actor
+    re-armed it within the hour. Only the marker — sitting in a required gate —
+    held.
