@@ -135,7 +135,19 @@ describe("ExperienceForm — submit validation (MEH-1809)", () => {
     fireEvent.click(submitButton());
 
     // A URL-format complaint about a field nobody types in would be unfixable.
-    expect(screen.queryByText(T.error_invalid_url)).not.toBeInTheDocument();
+    //
+    // The expected string is INLINE, not `T.error_invalid_url`, and that is the
+    // point of a not-present assertion: it has to name the string it is
+    // asserting away without depending on the key that carried it. Reading the
+    // key here made the test hostage to it — `experiences.new.error_invalid_url`
+    // has no production reader once the URL field is gone, so deleting it (as
+    // this PR does) would have turned this into `queryByText(undefined)`, which
+    // throws a TypeError instead of failing an assertion. A test that errors
+    // rather than fails is a test that stopped measuring.
+    // (CI reviewer, PR #2814.)
+    expect(
+      screen.queryByText("הכתובת אינה תקינה — התחילו ב-https://"),
+    ).not.toBeInTheDocument();
   });
 
   it("restores the whole-number boundary on duration (an int server-side)", () => {

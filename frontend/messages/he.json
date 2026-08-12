@@ -2548,7 +2548,6 @@
       "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
       "error_generic": "שגיאה בשליחת החוויה. נסו שוב.",
       "error_whole_number": "יש להזין מספר שלם",
-      "error_invalid_url": "הכתובת אינה תקינה — התחילו ב-https://",
       "error_image_upload": "העלאת התמונה נכשלה. נסו שוב.",
       "save_cta": "שמירה"
     }

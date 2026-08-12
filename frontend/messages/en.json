@@ -2527,7 +2527,6 @@
       "error_max_participants_min": "Max participants must be at least 1",
       "error_generic": "Error submitting the experience. Please try again.",
       "error_whole_number": "Please enter a whole number",
-      "error_invalid_url": "That address is not valid — start with https://",
       "error_image_upload": "Image upload failed. Please try again.",
       "save_cta": "Save"
     }
