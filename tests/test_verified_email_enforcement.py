@@ -62,6 +62,9 @@ def _event_payload(**overrides):
         "title": "סדנת אפייה",
         "event_date": date(2099, 1, 1).isoformat(),
         "category": "שוק",  # in events.VALID_CATEGORIES (MEH-1657: 4-value set)
+        # MEH-2013: EventCreate.city is required now. Fixture only — the
+        # subject of every test in this file is unchanged.
+        "city": "תל אביב",
     }
     payload.update(overrides)
     return payload
