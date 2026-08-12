@@ -606,6 +606,11 @@ export default function MapPage() {
 
   const cardList = (
     <MapCardList
+      // MEH-1671: closes the desktop-sidebar empty-state flash. The mobile
+      // sheet already gates one level up (:801, MEH-1054); passing it here
+      // too is a no-op there (the sheet swaps children for its own skeleton
+      // while loading) and makes the sidebar mount safe.
+      loading={feed.loading}
       visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
