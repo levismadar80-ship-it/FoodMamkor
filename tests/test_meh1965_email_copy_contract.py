@@ -10,6 +10,29 @@ Does NOT: assert delivery, triggers, or which email fires when — that is
           It also does not police ADMIN-facing bodies (auth_notifications.py):
           those go to settings.admin_email, are not a brand touchpoint, and
           the plural/impersonal register there is deliberate.
+
+          NOT COVERED, and it is a real gap rather than a judgement call:
+          the three PRODUCER-facing bodies in `admin.py` (:702 approved,
+          :746 rejected, :812 changes-requested). They go to
+          `producer_user.email` — the business owner, not an admin — so they
+          are brand touchpoints of exactly the class this file exists to
+          protect. They are absent because they are inline f-strings inside
+          route handlers, so rendering one means standing up a request, a DB
+          row and an authenticated admin. Extracting them into body builders
+          is a refactor of `admin.py`'s handlers, which is outside this
+          ticket's "templates only" scope. A follow-up card carries it.
+          All three were read by hand and are clean on the four axes below
+          as of 2026-08-12 — that is an as-of, not a guarantee, and it is
+          precisely what a test would replace.
+
+          HOW THE GAP HAPPENED, because the method matters more than the
+          miss: the corpus was assembled from `grep -rn "send_email("`.
+          These three call `_send_notification_email(`, a wrapper whose name
+          does not contain the substring `send_email(` — while
+          `experience_notifications`/`group_buy_notifications` wrap it as
+          `_send_email`, which does. So the probe silently under-reported,
+          and its output looked like a complete inventory. Found by the
+          different-model adversarial reviewer, not by the author.
 Related:  docs/BRAND.md §4 (voice), docs/decisions/ADR-024-voice-surface-function.md
 History:  MEH-1965 (creation) — the transactional-email audit.
 
@@ -132,8 +155,21 @@ def rendered(monkeypatch):
 
 
 def test_control_corpus_is_fully_rendered(rendered):
-    """If the capture harness silently caught nothing, every assertion in this
-    file passes vacuously. Count is DERIVED from the corpus, never stated."""
+    """Guards the one way the corpus can silently shrink: a DUPLICATE LABEL.
+
+    `rendered` is a dict keyed by label, so two entries sharing a label collapse
+    into one and the second silently replaces the first — every parametrised
+    assertion below then runs one case short, with nothing anywhere reporting it.
+    The count is DERIVED (`len(_CORPUS)`), never stated, so adding a case moves
+    it automatically.
+
+    It does NOT guard "the harness caught nothing" — the adversarial reviewer
+    was right that that case cannot reach here, because the fixture's own
+    `assert captured` fails during setup first. The original docstring claimed
+    otherwise and was wrong; this is the failure mode that actually survives to
+    this assertion. Proven by construction: duplicating a corpus label makes
+    this test, and only this test, go red.
+    """
     assert len(rendered) == len(_CORPUS)
     assert all(text.strip() for _, text, _ in rendered.values())
 
@@ -152,11 +188,18 @@ def test_control_corpus_actually_contains_links_and_html(rendered):
 
 _ABSOLUTE_URL = re.compile(r"https?://\S+")
 _HTML_TAG = re.compile(r"<[^>]+>")
-_HREF = re.compile(r'href="([^"]*)"')
+# Both quote styles. Single-quoted was a genuine blind spot: `_HTML_TAG` strips
+# the whole tag including its attributes, so an `href='/about'` was invisible to
+# the prose check AND to the href check at once. No current template uses single
+# quotes, which is exactly why it would have gone unnoticed.
+_HREF = re.compile(r"""href=["']([^"']*)["']""")
 # A path segment that survives after every absolute URL is removed is, by
 # definition, not attached to a host. `[a-z]` only: Hebrew slash forms
 # ("PDF / תמונה") and dual-gender notation ("לקוח/ה") are not paths.
-_ORPHAN_PATH = re.compile(r"/[a-z][a-z0-9-]{2,}")
+# `{1,}` rather than `{2,}` so a short locale prefix (`/he`, `/en`) cannot slip
+# through — the repo routes under `[locale]`, so those are the likeliest future
+# relative paths to appear in a body.
+_ORPHAN_PATH = re.compile(r"/[a-z][a-z0-9-]{1,}")
 
 
 def _visible(part: str) -> str:
@@ -203,6 +246,13 @@ def test_every_link_is_absolute(rendered, label):
 # copy: בטוח ("החשבון שלך בטוח"), שמור ("שם זה שמור"), מלא ("מדריך מלא"),
 # העתק ("העתק של הרישיון"), צריך (impersonal "לא צריך מצלמה"), רשום.
 # A guard that reds on correct copy gets disabled, so precision beats recall.
+#
+# KNOWN RECALL HOLE, stated so nobody discovers it as a surprise: the word
+# boundary is `(?<![֐-׿])X(?![֐-׿])`, and a Hebrew prefix letter (ו/ה/ב/ל/כ/מ/ש)
+# is itself in that block. So `ולחץ` does NOT match `לחץ`. That is the price of
+# not matching inside longer words, and it is the right trade for a gate — but
+# it means a prefixed masculine imperative passes. Rendering catches what this
+# list catches; it does not catch what this list misses.
 _MASCULINE_ADDRESS = [
     "צור", "לחץ", "היכנס", "הירשם", "בחר", "עדכן", "אמת", "השב",
     "תוכל", "תקבל", "תמצא", "תיהנה", "אתה",
