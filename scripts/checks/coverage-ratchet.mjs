@@ -280,7 +280,16 @@ function main(argv) {
 
   const flagValue = (flag) => {
     const i = argv.indexOf(flag);
-    return i === -1 ? null : argv[i + 1];
+    if (i === -1) return null;
+    const val = argv[i + 1];
+    // `--summary` with no path following it must be LOUD. Returning undefined
+    // here would `??`-fall-through to the built-in default and silently measure
+    // a leftover summary from a previous run — a wrong answer that looks like a
+    // real one. Same for a bare `--summary --baseline x`.
+    if (val === undefined || val.startsWith("--")) {
+      throw new Error(`${flag} requires a path (got ${val === undefined ? "nothing" : val})`);
+    }
+    return val;
   };
   const summaryPath = flagValue("--summary") ?? SUMMARY_PATH;
   const baselinePath = flagValue("--baseline") ?? BASELINE_PATH;
