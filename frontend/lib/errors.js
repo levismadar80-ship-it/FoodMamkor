@@ -89,11 +89,12 @@ export function sameCityLabelParams(detail) {
 /**
  * MEH-957 — normalise a FastAPI `detail` payload to a single display string.
  *
- * FastAPI returns three `detail` shapes:
+ * FastAPI returns three `detail` shapes, and this helper handles all three:
  *   - 400/409/403 (HTTPException) → `detail` is a string.
  *   - 422 (RequestValidationError) → `detail` is an ARRAY of error objects
  *     (`{type, loc, msg, input}`), each `msg` Pydantic-prefixed with
  *     "Value error, " for custom-validator failures.
+ *   - **MEH-1943 chunk A** → `detail` is an OBJECT `{code, message, params}`.
  *
  * Rendering the raw array as a React child crashes the tree ("Objects are
  * not valid as a React child" — the MEH-957 register white-screen). This
@@ -101,12 +102,82 @@ export function sameCityLabelParams(detail) {
  * Pydantic prefix. Returns `null` for any shape it can't turn into text so
  * callers fall back to their own generic copy.
  *
+ * ## The object shape (MEH-1943 chunk A — the "expand" half)
+ *
+ * Two endpoints already send it (`auth.py` `_EMAIL_UNVERIFIED_DETAIL`,
+ * `producer_me.py` `SAME_CITY_NEEDS_LABEL_CODE`) and the ticket generalises
+ * it: the backend ships a stable `code` plus the `params` the copy needs, and
+ * the Hebrew lives in `messages/*.json` where the rest of the copy lives.
+ *
+ * Before this change **every object `detail` returned `null`**, so a caller
+ * fell through to its own generic copy and the perfectly good `message` the
+ * backend had sent was discarded. That is what made the object contract
+ * expensive to adopt: converting a router made its errors *less* specific
+ * until every consumer was updated. Now the fallback chain is:
+ *
+ *   1. `resolveCode(code, params)` — a params-driven rendering, when the
+ *      caller supplied a resolver AND it recognises the code. Preferred,
+ *      because it is the only branch that can be localized and can name the
+ *      facts in `params`.
+ *   2. `detail.message` — the backend's transition-safety sentence.
+ *   3. `null`.
+ *
+ * **`resolveCode` is injected rather than built in, and that is deliberate:**
+ * a built-in registry would have to hold Hebrew strings in JS, which is the
+ * exact thing this ticket exists to stop. The copy stays in `messages/*.json`
+ * and the caller — which has the translator — does the mapping.
+ *
+ * **On step 3, one deliberate deviation from "never return `null` on an
+ * object":** an object with no resolver hit and no usable `message` has no
+ * renderable text, and the only other thing in it is `code` — an internal
+ * identifier. Returning that would print `location_same_city_needs_label` at
+ * a user, which is precisely the enum-leak this ticket lists as defect #3. So
+ * a textless object still yields `null` and the caller's own generic copy
+ * wins. `null` here means "I have nothing to show", never "the payload was an
+ * object".
+ *
  * @param {unknown} detail  `err.response.data.detail`
+ * @param {(code: string, params: object) => (string | null | undefined)} [resolveCode]
+ *   optional code→copy mapper, normally closing over a next-intl translator.
+ *   Return a falsy value for a code you don't handle to fall through to
+ *   `message`. **A resolver that throws is also treated as "did not match"** —
+ *   it must not be able to crash a `catch` block; see the guard below.
  * @returns {string | null}
  */
-export function detailToMessage(detail) {
+export function detailToMessage(detail, resolveCode) {
   if (typeof detail === "string") {
     return detail || null;
+  }
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    if (typeof detail.code === "string" && typeof resolveCode === "function") {
+      let mapped;
+      try {
+        mapped = resolveCode(detail.code, detail.params ?? {});
+      } catch (resolverError) {
+        // A throwing resolver is treated as "did not match" — NOT as fatal.
+        //
+        // This helper's whole job is to run inside a `catch` block, and
+        // `errorMessage()` documents that it never returns undefined. A
+        // next-intl `t()` on a missing key throws, so without this guard one
+        // absent i18n key turns a handled API error into an unhandled crash
+        // in the error handler itself — strictly worse than falling back to
+        // the backend's own sentence. Flagged by the CI reviewer on PR #2833;
+        // an earlier version of this function let it propagate.
+        //
+        // Not silent: dev gets a console warning, mirroring
+        // app/[locale]/error.js:15-17. Production degrades to `message`.
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `[detailToMessage] resolveCode threw for code "${detail.code}" — falling back to detail.message`,
+            resolverError,
+          );
+        }
+      }
+      if (typeof mapped === "string" && mapped) return mapped;
+    }
+    return typeof detail.message === "string" && detail.message
+      ? detail.message
+      : null;
   }
   if (Array.isArray(detail)) {
     const parts = detail
@@ -131,11 +202,18 @@ export function detailToMessage(detail) {
  * `error.mapper.*` keys (admin-only consumers pass `useTranslations("error")`).
  * A server-supplied `detail` string still wins over the mapped copy.
  *
+ * MEH-1943 chunk A: `resolveCode` is forwarded to `detailToMessage`, so a
+ * caller that knows how to render a `{code, params}` detail gets that
+ * rendering here too. Omitted, the object's `message` is used — which is
+ * already an improvement on the pre-chunk-A behaviour, where an object detail
+ * collapsed to the generic copy.
+ *
  * @param {any} err
  * @param {(key: string) => string} t  translator scoped to the `error` namespace
+ * @param {(code: string, params: object) => (string | null | undefined)} [resolveCode]
  * @returns {string}
  */
-export function errorMessage(err, t) {
+export function errorMessage(err, t, resolveCode) {
   // Offline / network unreachable — axios sets no `response`
   if (!err?.response) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -155,16 +233,16 @@ export function errorMessage(err, t) {
     // MEH-959: detailToMessage handles both the string (400/409) and the
     // 422 array (RequestValidationError) shapes, so a validation error now
     // surfaces its Hebrew message instead of collapsing to the generic copy.
-    return detailToMessage(detail) || t("mapper.bad_request");
+    return detailToMessage(detail, resolveCode) || t("mapper.bad_request");
   }
   if (status === 401) {
     return t("mapper.unauthorized");
   }
   if (status === 403) {
-    return detailToMessage(detail) || t("mapper.forbidden");
+    return detailToMessage(detail, resolveCode) || t("mapper.forbidden");
   }
   if (status === 404) {
-    return detailToMessage(detail) || t("mapper.not_found");
+    return detailToMessage(detail, resolveCode) || t("mapper.not_found");
   }
   if (status === 429) {
     return t("mapper.rate_limited");
