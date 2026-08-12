@@ -340,7 +340,9 @@ const run = async () => {
 
   // The CertModal's collision partner is the IMAGE, not a heading: the panel
   // has no visible title, and the image is w-full so it runs under the button
-  // unless the top margin clears it. That is why mt had to grow 6 -> 10.
+  // unless the top margin clears it. That is why mt had to grow 6 -> 11
+  // (mt-10 is the exact clearance; mt-11 carries 4px of slack so a sub-pixel
+  // rounding difference cannot turn "touching" into "overlapping").
   const certBtn = page.locator('[data-testid="kashrut-cert-close"]');
   const certImg = page.locator('[data-testid="kashrut-cert-image"]');
   const cb = await certBtn.boundingBox();
