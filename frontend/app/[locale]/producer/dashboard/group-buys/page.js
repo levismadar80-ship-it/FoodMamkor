@@ -97,7 +97,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           {/* MEH-1128 Wave B: single-line fields via ui/Input — labels gain the
               canon htmlFor/id wiring these bare <label>s never had (MEH-1096 class). */}
           <Input
-            label={`${t("title_label")}${t("required_marker")}`}
+            label={t("title_label")}
             value={form.title}
             onChange={set("title")}
             placeholder={t("title_placeholder")}
@@ -119,7 +119,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <Input
-          label={`${t("product_name_label")}${t("required_marker")}`}
+          label={t("product_name_label")}
           value={form.product_name}
           onChange={set("product_name")}
           placeholder={t("product_name_placeholder")}
@@ -143,7 +143,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           type="number"
           min={1}
           step={0.01}
-          label={`${t("price_regular_label")}${t("required_marker")}`}
+          label={t("price_regular_label")}
           value={form.price_per_unit_regular}
           onChange={set("price_per_unit_regular")}
           required
@@ -156,7 +156,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             type="number"
             min={1}
             step={0.01}
-            label={`${t("price_group_label")}${t("required_marker")}`}
+            label={t("price_group_label")}
             value={form.price_per_unit_group}
             onChange={set("price_per_unit_group")}
             required
@@ -171,7 +171,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <Input
-          label={<>{t("min_label")}{t("required_marker")} <InfoTooltip content={t("min_tooltip")} /></>}
+          label={<>{t("min_label")} <InfoTooltip content={t("min_tooltip")} /></>}
           type="number"
           min={2}
           value={form.min_participants}
@@ -193,7 +193,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         {/* MEH-992 deadline helper (what the date means + Israel time) rides the
             Input helperText slot. */}
         <Input
-          label={`${t("deadline_label")}${t("required_marker")}`}
+          label={t("deadline_label")}
           type="datetime-local"
           value={form.deadline}
           onChange={set("deadline")}
