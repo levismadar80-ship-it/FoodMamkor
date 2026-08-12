@@ -178,6 +178,20 @@ export default function AdminLayout({ children }) {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
+  // MEH-1701: ONE owner for the badge decision, consumed by BOTH navs — the
+  // desktop sidebar and the mobile horizontal nav previously diverged here
+  // (badge desktop-only), the MEH-1698 viewport-parity class in the other
+  // direction. Same derivation idea as NAV_HREFS above: extend the shared
+  // source, don't grow a parallel one. Returns the count to show, or null.
+  // A failed fetch leaves both counts null, so `> 0` is false and no badge
+  // renders — indistinguishable from a real 0, inherited from the desktop
+  // behaviour and unchanged here.
+  const badgeCountFor = (href) => {
+    if (href === "/admin" && pendingModCount > 0) return pendingModCount;
+    if (href === "/admin/kashrut" && pendingKashrutCount > 0) return pendingKashrutCount;
+    return null;
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Dark-green sidebar — RTL, so it's on the right */}
@@ -195,10 +209,10 @@ export default function AdminLayout({ children }) {
               {section.items.map((n) => {
                 const active = isActive(n.href);
                 const Icon = n.Icon;
-                const showBadge =
-                  (n.href === "/admin" && pendingModCount > 0) ||
-                  (n.href === "/admin/kashrut" && pendingKashrutCount > 0);
-                const badgeCount = n.href === "/admin/kashrut" ? pendingKashrutCount : pendingModCount;
+                // MEH-1701: decision moved to badgeCountFor (shared with the
+                // mobile nav); rendering here is unchanged.
+                const badgeCount = badgeCountFor(n.href);
+                const showBadge = badgeCount !== null;
                 return (
                   <Link
                     key={n.href}
@@ -240,6 +254,10 @@ export default function AdminLayout({ children }) {
           {NAV_HREFS.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
+            // MEH-1701: the same badge the desktop sidebar shows — an admin
+            // on a phone could not see anywhere in the nav that a queue is
+            // waiting. Same decision source (badgeCountFor), smaller pill.
+            const badgeCount = badgeCountFor(n.href);
             return (
               <Link
                 key={n.href}
@@ -250,6 +268,15 @@ export default function AdminLayout({ children }) {
               >
                 <Icon size={14} />
                 {t(`layout.nav.${n.key}`)}
+                {badgeCount !== null && (
+                  <span
+                    className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                    aria-label={t("common.items_pending_label", { count: badgeCount })}
+                    title={t("common.items_pending_title", { count: badgeCount })}
+                  >
+                    {badgeCount}
+                  </span>
+                )}
               </Link>
             );
           })}
