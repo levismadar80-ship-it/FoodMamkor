@@ -69,18 +69,25 @@ function CertModal({ src, expiryText, onClose, t }) {
           onClick={onClose}
           aria-label={t("cert.close")}
           data-testid="kashrut-cert-close"
-          className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted"
+          className="absolute top-3 end-3 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted"
         >
           <X size={16} weight="bold" aria-hidden="true" />
         </button>
         {/* raw img: src is our own /kashrut-cert proxy route, not a Cloudinary
             URL — lib/cloudinary.js has nothing to transform, and the host is
             not in next.config.js images.remotePatterns (frozen this ticket). */}
+        {/* MEH-2038: the top margin is STILL REQUIRED and had to grow 6→10. The
+            image is w-full, so moving the close button to end-3 does not clear
+            it horizontally — only vertical separation works. Button: top-3
+            (12px) + h-11 (44px) = 56px from the card top; the p-4 content box
+            starts at 16px, so the image needs mt-10 (40px) to clear it. At the
+            old w-8/mt-6 the numbers were 44px vs 40px and the image already
+            tucked 4px under the button. */}
         <img
           src={src}
           alt={t("cert.image_alt")}
           data-testid="kashrut-cert-image"
-          className="w-full max-h-[70vh] object-contain rounded mt-6"
+          className="w-full max-h-[70vh] object-contain rounded mt-10"
         />
         <div className="mt-3 space-y-1 text-sm">
           {expiryText && <p className="font-medium text-text">{expiryText}</p>}

@@ -98,14 +98,19 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label={t("close_aria")}
-          className="absolute top-3 start-3 text-fg-muted hover:text-text transition p-1 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 end-3 text-fg-muted hover:text-text transition p-1 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
 
+        {/* MEH-2038: the button reaches 40px in from the card edge and the p-6
+            content box starts at 24px, so 16px needs clearing. Reserved
+            SYMMETRICALLY (px-6, not pe-6) because this panel is text-center —
+            a one-sided pad would visibly shift the heading off its centre
+            while the body copy below stayed centred. */}
         <h2
           id="login-prompt-title"
-          className="font-headline-md text-xl font-bold text-text mb-3"
+          className="font-headline-md text-xl font-bold text-text mb-3 px-6"
         >
           {t("title")}
         </h2>
