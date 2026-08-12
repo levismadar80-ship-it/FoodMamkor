@@ -46,6 +46,9 @@ def _event(**overrides):
         "title": "שוק איכרים",
         "event_date": date.today(),
         "category": "שוק",
+        # MEH-2013: EventCreate.city is required now. Fixture only — every
+        # test in this file is about title/description sanitisation.
+        "city": "תל אביב",
         **overrides,
     }
 
