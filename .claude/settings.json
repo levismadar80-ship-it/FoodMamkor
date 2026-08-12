@@ -282,7 +282,12 @@
       "Write(frontend/e2e/**)",
       "Write(backend/tests/**)",
       "Write(frontend/messages/**)",
-      "Read(**)"
+      "Read(**)",
+      "mcp__linear__list_*",
+      "mcp__linear__get_*",
+      "mcp__linear__save_comment",
+      "mcp__linear__save_issue",
+      "mcp__linear__search_documentation"
     ],
     "deny": [
       "Bash(git push --force:*)",
