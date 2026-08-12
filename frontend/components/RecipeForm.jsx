@@ -280,10 +280,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         {form.image_url ? (
           <div className="flex items-center gap-3">
             {/* raw img: upload preview, same mixed provenance as EventForm (upload.py:115). */}
+            {/* MEH-2033: NOT alt="" — there is no live region for upload
+                success, so the preview appearing IS the success state; an
+                empty alt announces nothing (same reasoning as EventForm:379). */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={form.image_url}
-              alt=""
+              alt={t("image_label")}
               className="w-24 h-24 object-cover rounded-[10px] border border-border"
             />
             <button
@@ -295,11 +298,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+            {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
+                MEH-2031 pattern. */}
             <input
               type="file"
               accept="image/*"
-              className="hidden"
+              className="sr-only"
               disabled={uploading}
               onChange={handleImageUpload}
             />
