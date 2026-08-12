@@ -60,8 +60,8 @@ export default function HomeClient({ initialProducers = null, initialCategories 
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showTrustCount,
-    featuredProducer, geoActive, cityActive, dayActive, geoEmptyNotice,
-    handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleCitySelected, handleClearLocation,
+    featuredProducer, geoActive, cityActive, daysActive, geoEmptyNotice,
+    handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleClearDays, handleCitySelected, handleClearLocation,
     // MEH-1684: `scrollToProducers` is no longer destructured here — the hero's
     // filled "גלו בתי עסק" button was its only consumer on this page and the
     // search pill replaced it. The helper itself still lives in use-home-page
@@ -234,8 +234,9 @@ export default function HomeClient({ initialProducers = null, initialCategories 
         hasProducers={statsProducersCount > 0}
         geoActive={geoActive}
         cityActive={cityActive}
-        dayActive={dayActive}
+        daysActive={daysActive}
         onSelectDay={handleDaySelected}
+        onClearDays={handleClearDays}
         geoEmptyNotice={geoEmptyNotice}
         regionFallback={regionFallback}
       />
