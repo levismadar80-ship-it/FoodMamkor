@@ -18,15 +18,85 @@ That gate does run for this PR — the diff touches ``backend/``, so the
 paths-filter does not skip it.
 """
 
+import re
+from pathlib import Path
+
 from app.routers.producers import _PUBLIC_CATALOG_CACHE
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
-EXPECTED = "public, s-maxage=60, stale-while-revalidate=300"
+EXPECTED = "public, s-maxage=30, stale-while-revalidate=30"
+
+# MEH-1876: the bound the two stacked layers must respect together.
+MAX_CUMULATIVE_STALENESS_SECONDS = 90
 
 
 def test_policy_constant_is_the_locked_string():
     """The routers share one constant; pin its value so a silent edit fails."""
     assert _PUBLIC_CATALOG_CACHE == EXPECTED
+
+
+def test_stacked_cache_window_stays_within_the_documented_bound():
+    """MEH-1876 — the CROSS-LAYER assertion. This is the one that matters.
+
+    Every other test in this file checks one layer in isolation, which is
+    exactly how the original bug shipped: `s-maxage=60, swr=300` was defensible
+    on its own line, and `revalidate: 60` was defensible on its own line, and
+    nothing anywhere read them together. Measured consequence on staging
+    (03/08): a removed offer stayed publicly visible for ~6 minutes.
+
+    Next serves its cached copy for `revalidate`, and each refetch may itself be
+    handed a response the edge has already held for `s-maxage + swr`. So the
+    worst case a reader experiences is the SUM, and that sum is what this pins.
+
+    Deliberately reads the real frontend file rather than restating its number
+    (MEH-1909: a fixture-only guard proves the probe works on shapes you
+    invented). If someone raises either side alone, this goes red.
+    """
+    page = (
+        Path(__file__).resolve().parents[1]
+        / "frontend"
+        / "app"
+        / "[locale]"
+        / "producers"
+        / "page.jsx"
+    )
+    source = page.read_text(encoding="utf-8")
+
+    match = re.search(r"const CATALOG_REVALIDATE_SECONDS = (\d+)", source)
+    assert match, (
+        "CATALOG_REVALIDATE_SECONDS not found in producers/page.jsx — if it was "
+        "renamed or inlined back to a literal, this cross-layer guard silently "
+        "stops guarding. Update the pattern, do not delete the assertion."
+    )
+    next_revalidate = int(match.group(1))
+
+    # Assert each match before .group(1): an absent token would otherwise raise
+    # AttributeError on None instead of saying which directive went missing.
+    # test_policy_constant_is_the_locked_string would normally catch a format
+    # change first, but pytest ordering is not guaranteed under -k or
+    # randomisation, so this test states its own precondition.
+    s_maxage_m = re.search(r"s-maxage=(\d+)", _PUBLIC_CATALOG_CACHE)
+    assert s_maxage_m, (
+        f"s-maxage token absent from _PUBLIC_CATALOG_CACHE ({_PUBLIC_CATALOG_CACHE!r}) "
+        "— the cumulative-window bound cannot be computed without it."
+    )
+    swr_m = re.search(r"stale-while-revalidate=(\d+)", _PUBLIC_CATALOG_CACHE)
+    assert swr_m, (
+        "stale-while-revalidate token absent from _PUBLIC_CATALOG_CACHE "
+        f"({_PUBLIC_CATALOG_CACHE!r}) — the cumulative-window bound cannot be "
+        "computed without it."
+    )
+
+    s_maxage = int(s_maxage_m.group(1))
+    swr = int(swr_m.group(1))
+
+    cumulative = next_revalidate + s_maxage + swr
+    assert cumulative <= MAX_CUMULATIVE_STALENESS_SECONDS, (
+        f"stacked cache window is {cumulative}s "
+        f"(Next revalidate {next_revalidate} + s-maxage {s_maxage} + swr {swr}), "
+        f"over the {MAX_CUMULATIVE_STALENESS_SECONDS}s bound. A removed offer "
+        f"stays publicly visible for that long — see MEH-1876."
+    )
 
 
 def test_producers_listing_carries_public_cache_header(client, db):
