@@ -114,13 +114,22 @@ export default function ProducersClient({
   // useCallback([]) and must read the current value without being recreated
   // or growing a parameter at every existing call site. Set synchronously in
   // the handlers below, before any callback that reads it fires.
-  const [dayFilter, setDayFilter] = useState(() => {
-    const day = searchParams.get("delivery_day");
-    if (!day || !DELIVERY_DAYS.includes(day)) return null;
-    return searchParams.get("city") ? day : null;
+  // MEH-2036: the axis is a SET. Hydration reads the plural first and falls
+  // back to the legacy singular, so an old shared ?delivery_day= deep-link
+  // keeps working verbatim. Unknown and duplicate members are dropped rather
+  // than 422'd (the MEH-1645 asymmetry: untrusted at the API, recoverable typo
+  // in the browser), and the whole set still requires a city.
+  const [dayFilters, setDayFilters] = useState(() => {
+    if (!searchParams.get("city")) return [];
+    const raw = searchParams.getAll("delivery_days");
+    const legacy = searchParams.get("delivery_day");
+    const values = raw.length ? raw : legacy ? [legacy] : [];
+    return values
+      .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
+      .slice(0, DELIVERY_DAYS.length);
   });
-  const dayFilterRef = useRef(dayFilter);
-  useEffect(() => { dayFilterRef.current = dayFilter; }, [dayFilter]);
+  const dayFilterRef = useRef(dayFilters);
+  useEffect(() => { dayFilterRef.current = dayFilters; }, [dayFilters]);
   const [filteredItems, setFilteredItems] = useState(null);
   // MEH-1483: sort axis. `sortOrderRef` mirrors it so the stable-identity
   // callbacks (syncUrl / fetchFiltered / loadNextPage, all useCallback([])) can
@@ -214,7 +223,10 @@ export default function ProducersClient({
       // MEH-1825: the day rides the URL only alongside a city — the same
       // precondition the ghost row states, enforced here so a shared link can
       // never carry a day that the page would then ignore on load.
-      if (city && dayFilterRef.current) params.set("delivery_day", dayFilterRef.current);
+      // MEH-2036: repeated ?delivery_days= keys, matching the api
+      // paramsSerializer and the category loop above. The legacy singular is
+      // READ on hydration but never written back — one canonical serialization.
+      if (city) for (const d of dayFilterRef.current) params.append("delivery_days", d);
       if (q) params.set("q", q);
       // MEH-1483: mirror the active sort to ?sort= (omitted at the default so
       // the plain /producers URL is unchanged). Read from the ref so this
@@ -246,7 +258,7 @@ export default function ProducersClient({
     if (city) params.delivery_city = city;
     // MEH-1825: same precondition as syncUrl — delivery_day is only sent with
     // a delivery_city (MEH-1645 same-row EXISTS semantics).
-    if (city && dayFilterRef.current) params.delivery_day = dayFilterRef.current;
+    if (city && dayFilterRef.current.length) params.delivery_days = dayFilterRef.current;
     if (q) params.q = q;
     // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
     if (category?.length) params.category = category;
@@ -446,8 +458,8 @@ export default function ProducersClient({
         // MEH-1825: the day cannot outlive its city — drop it in the same
         // action, or re-picking a city later would silently restore a filter
         // the user never re-selected.
-        dayFilterRef.current = null;
-        setDayFilter(null);
+        dayFilterRef.current = [];
+        setDayFilters([]);
         syncUrl(chips, null, searchQ, categoryFilter);
         fetchFiltered(chips, null, searchQ, categoryFilter);
       } else if (savedUserCity) {
@@ -477,18 +489,26 @@ export default function ProducersClient({
   // MEH-1825: mirrors useHomePage.handleDaySelected. Without a city the row
   // is a ghost and the tap is a discovery affordance, not a filter — it opens
   // the LocationModal this page already mounts, which is exactly what the
-  // hint tells the user to do. With a city, tapping the active day clears it.
+  // hint tells the user to do. With a city, tapping an active day removes it.
+  //
+  // MEH-2036: SET-TOGGLE, same semantics as home — a tap adds or removes ONE
+  // day and leaves the rest of the selection standing. The ref is set
+  // synchronously before syncUrl/fetchFiltered because both are useCallback([])
+  // and read the ref, not the state (which has not committed yet).
   const handleDaySelected = (day) => {
     if (!cityFilter) {
       setLocationModalOpen(true);
       return;
     }
-    const next = dayFilter === day ? null : day;
+    const current = dayFilterRef.current;
+    const next = current.includes(day)
+      ? current.filter((d) => d !== day)
+      : [...current, day].slice(0, DELIVERY_DAYS.length);
     dayFilterRef.current = next;
-    setDayFilter(next);
+    setDayFilters(next);
     syncUrl(chips, cityFilter, searchQ, categoryFilter);
     fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
-    trackEvent("producers_day_filter", { day: next || "" });
+    trackEvent("delivery_days_filter", { count: next.length });
   };
 
   // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
@@ -505,8 +525,8 @@ export default function ProducersClient({
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
     // MEH-1825: day is part of "everything".
-    dayFilterRef.current = null;
-    setDayFilter(null);
+    dayFilterRef.current = [];
+    setDayFilters([]);
     setSearchQ("");
     setCategoryFilter([]);
     setFilteredItems(null);
@@ -763,7 +783,7 @@ export default function ProducersClient({
           ghost row + hint and a tap opens the LocationModal below. */}
       <DeliveryDayRow
         cityActive={cityFilter}
-        dayActive={dayFilter}
+        daysActive={dayFilters}
         onSelectDay={handleDaySelected}
       />
 

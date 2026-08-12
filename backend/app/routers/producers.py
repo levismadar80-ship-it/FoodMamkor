@@ -116,6 +116,13 @@ def list_producers(
     # semantics; see producer_listing._delivery_day_condition). Validated
     # below with the router's manual-422 pattern (cf. sort).
     delivery_day: str | None = None,
+    # MEH-2036: OR over several days — repeatable ?delivery_days=שישי&delivery_days=רביעי.
+    # Same whitelist + same same-row EXISTS as the singular above, just an IN on
+    # the day column. Takes PRECEDENCE over delivery_day when both are sent (the
+    # singular is now only a back-compat deep-link); the service de-duplicates
+    # and caps the list at the seven canonical days.
+    # REUSES: delivery_cities:113 (repeatable list param) + category:106.
+    delivery_days: list[str] | None = Query(None),
     has_delivery: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
@@ -172,11 +179,19 @@ def list_producers(
         raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
     # MEH-1645: whitelist the day param against the canonical vocabulary —
     # same list DeliveryAreaCreate validates on the write path (MEH-1644).
-    if delivery_day is not None and delivery_day not in DELIVERY_DAYS:
-        raise HTTPException(
-            status_code=422,
-            detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
-        )
+    # MEH-2036: the plural is validated with the SAME whitelist and the SAME
+    # Hebrew 422 — one bad member rejects the whole request rather than being
+    # silently dropped, so a hand-edited URL can never quietly return a result
+    # set that doesn't match what it asked for. (The FRONTEND drops unknown
+    # values on hydration instead; that asymmetry is intentional and matches
+    # MEH-1645 — the URL bar is untrusted input to the API but a recoverable
+    # typo in the browser.)
+    for value in [delivery_day, *(delivery_days or [])]:
+        if value is not None and value not in DELIVERY_DAYS:
+            raise HTTPException(
+                status_code=422,
+                detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
+            )
     results, total_count = build_producers_query(
         db,
         lat=lat,
@@ -187,6 +202,7 @@ def list_producers(
         delivery_city=delivery_city,
         delivery_cities=delivery_cities,
         delivery_day=delivery_day,
+        delivery_days=delivery_days,  # MEH-2036
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
