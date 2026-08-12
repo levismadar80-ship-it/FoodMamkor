@@ -644,8 +644,9 @@ twice on the same card.
 
 **Landed on the branch:** `scripts/checks/coverage-ratchet.mjs` (the suite prints
 its own `ran.length` — this line said "16" and was measured at 23 by the CI
-reviewer, then 25 after the shrink-routing case; do not re-hardcode it), shown
-discriminating on four breaks, baseline frozen at **66.77%** lines
+reviewer, then 29 after the shrink-routing and baseline-banking cases; do not
+re-hardcode it), every guard shown red against its own deletion before being
+claimed, baseline frozen at **66.77%** lines
 (8,139/12,188, 339 files), `docs/reports/coverage-baseline.md`, and
 `docs/ci/meh-1980-coverage-ratchet.patch.md`.
 

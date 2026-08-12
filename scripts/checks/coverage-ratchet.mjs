@@ -361,7 +361,7 @@ function selfTest() {
   // reaches main()'s routing block, so deleting that block left all of them
   // green — the same gap this file's comment at the gate-wiring section claims
   // not to be repeating, reopened one guard to the right. Found by the CI
-  // reviewer on PR #2813, not by this suite.
+  // reviewer, not by this suite.
   //
   // The pair discriminates: coverage is held EQUAL to the baseline in both, so
   // the only thing that can produce exit 1 is the shrink routing, and
@@ -400,6 +400,54 @@ function selfTest() {
     allowShrinkCode === 0,
     `got ${allowShrinkCode} — the control: same input, escape hatch on`,
   );
+
+  // --- THE SAME GUARD ON THE *WRITE* PATH. The compare path refuses a shrunk
+  // universe; --update-baseline did not, so the shrink could simply be BANKED.
+  // Found by the CI reviewer, one guard to the right of the gap it had just
+  // found in the read path — which is the "when a reviewer names two sites,
+  // grep for the third" case in .claude/rules/testing.md, arriving on schedule.
+  //
+  // Coverage RISES here (81 vs a 60 baseline), and that is the whole
+  // construction: it makes the drop guard provably inactive, so a 1 can only
+  // come from the shrink refusal. It also mirrors the real failure, where a
+  // narrowed include glob drops the worst-covered directory and the number
+  // goes UP. Asserting the FILE is unmodified matters as much as the exit
+  // code — the damage is the write, not the status.
+  const tmp4 = mkdtempSync(join(tmpdir(), "coverage-ratchet-bank-"));
+  const bankBase = join(tmp4, "bl.json");
+  const writeWide = () =>
+    writeFileSync(
+      bankBase,
+      JSON.stringify({ globalPct: 60, lines: { covered: 600, total: 1000 }, files: 300 }),
+    );
+  writeWide();
+  const richPath = join(tmp4, "rich.json");
+  writeFileSync(richPath, JSON.stringify(summaryFixture(81, 1)));
+  const qL4 = console.log;
+  const qE4 = console.error;
+  let bankCode, bankedPct, bankAllowCode, bankAllowPct;
+  console.log = () => {};
+  console.error = () => {};
+  try {
+    bankCode = main(["node", "x", "--update-baseline", "--summary", richPath, "--baseline", bankBase]);
+    bankedPct = JSON.parse(readFileSync(bankBase, "utf8")).globalPct;
+    bankAllowCode = main([
+      "node", "x", "--update-baseline", "--allow-shrink", "--summary", richPath, "--baseline", bankBase,
+    ]);
+    bankAllowPct = JSON.parse(readFileSync(bankBase, "utf8")).globalPct;
+  } finally {
+    console.log = qL4;
+    console.error = qE4;
+    rmSync(tmp4, { recursive: true, force: true });
+  }
+  check("banking/shrink-refused", bankCode === 1, `got ${bankCode}`);
+  check(
+    "banking/baseline-untouched-on-refusal",
+    bankedPct === 60,
+    `baseline was BANKED at ${bankedPct} from a universe cut to a third — the exit code alone is not the guarantee`,
+  );
+  check("banking/allow-shrink-permitted", bankAllowCode === 0, `got ${bankAllowCode}`);
+  check("banking/allow-shrink-actually-writes", bankAllowPct === 81, `got ${bankAllowPct}`);
 
   console.log(`\n  ${ran.length} assertions ran, ${failures.length} failed.`);
   if (failures.length) {
@@ -446,6 +494,28 @@ function main(argv) {
   if (args.has("--update-baseline")) {
     if (existsSync(baselinePath)) {
       const prior = JSON.parse(readFileSync(baselinePath, "utf8"));
+      // DENOMINATOR SHRINK, on the WRITE path. The drop check below cannot
+      // stand in for this one, and that is the whole point: a shrunk universe
+      // makes the percentage go UP, so `current.globalPct < prior.globalPct` is
+      // false exactly when this is most dangerous. Narrow the vitest `include`
+      // to `lib/**`, and app/[locale] (56.6%, the largest directory) silently
+      // stops being measured — the run reports ~81% against a 66.77% baseline
+      // and banks it. Every later correct-config run then fails as a
+      // "regression" against a baseline that was never real.
+      if (checkDenominator(current, prior) && !args.has("--allow-shrink")) {
+        console.error(
+          `REFUSING to update the baseline: the measured universe SHRANK by ` +
+            `more than ${DENOMINATOR_TOLERANCE_PCT}%.\n` +
+            `  files:      ${prior.files} -> ${current.files}\n` +
+            `  statements: ${prior.lines?.total} -> ${current.lines.total}\n` +
+            `Coverage can rise because code got tested, or because code stopped ` +
+            `being MEASURED — only the first is progress, and banking the second ` +
+            `raises the bar against a universe that no longer exists.\n` +
+            `Check the vitest coverage \`include\` glob first. If the shrink is ` +
+            `real and intended, rerun with --allow-shrink and say why in the PR body.`,
+        );
+        return 1;
+      }
       if (current.globalPct < prior.globalPct && !args.has("--allow-drop")) {
         console.error(
           `REFUSING to update the baseline: coverage would DROP ` +
