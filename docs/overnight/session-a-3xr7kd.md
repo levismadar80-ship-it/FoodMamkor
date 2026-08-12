@@ -7,15 +7,61 @@ Resume segment. Predecessors read before re-deriving anything (ORDERS §5): `ses
 
 ## In-flight ledger
 
-| PR | Card | pushed | gate state | next revisit trigger |
-|---|---|---|---|---|
-| [#2839](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2839) | MEH-1906 | 20:36Z (`6275a1f3`), re-synced 20:41Z (`7e90dea4`) | first pass: `Deploy gate` ✅ · `Repo guards` ✅ · `Branch name gate` ✅ · `Env drift` ✅ · `DO-NOT-MERGE gate` ✅. Staging moved 2 commits mid-flight → merged `origin/staging` (rule 25) and the gates restarted | different-model review returning |
+| PR | Card | final state | resolved |
+|---|---|---|---|
+| [#2839](https://github.com/levismadar80-ship-it/FoodMamkor/pull/2839) | MEH-1906 | **MERGED** — squash `17e8c8aa` on `origin/staging`, 21:23Z. `CI gate` ✅ 21:21:42 · `Deploy gate` ✅ 21:19:51, both re-verified on the final head `1f496a3e` | ✅ closed |
 
-**This log rides PR #2839 rather than its own carrier PR.** LANES.md §5 asks for a docs-only PR
-behind its own card; #2839 *is* docs-only and its branch name supplies a legal ticket id, so the
-mechanism is satisfied and only the "own card" half is stretched. The reason is the in-flight cap of
-1 set for this drain — opening a second PR to carry one markdown file would breach it. Stated here
-rather than left for a reader to notice.
+**Ledger closed.** This row is the reason this file got a second PR: it merged inside #2839 still
+reading *"gates restarted / awaiting review"*, which was true when written and stale by the time it
+landed. A log that describes its own PR as unresolved is the staleness class the audit it accompanies
+is about, so it was corrected rather than left. Cost: one short docs-only PR on the freed in-flight
+slot.
+
+### What it took to land, recorded because the shape recurs
+
+- **Two branch-behind cycles.** Staging moved under the branch twice (once 2 commits, once 1). The
+  first merge attempt returned the `405 … 2 of 2 required status checks are expected` — the
+  documented wording for behind-base under strict policy. Remedy is `git merge origin/staging` +
+  push, never investigation.
+- **Runner-queue contention, not a hang.** `Deploy gate` sat `queued` ~4 min while its dependencies
+  had finished. Distinguished from the `actions/checkout` hang class (MEH-1873) by reading the run:
+  `status: queued`, `run_attempt: 1`, **no newer run for the head SHA** — the job never started, so
+  there was nothing to re-run. Waiting was correct; re-running would have been the wrong remedy
+  applied confidently.
+- **Vercel red throughout** — `api-deployments-free-per-day`, the daily account quota. Non-required,
+  named, unfixable by any commit. The PR body first called this state `Ignored`; that was wrong and
+  was corrected, because `deployment.md` treats the two as different states with different remedies.
+
+**This log first rode PR #2839 rather than its own carrier PR**, because the in-flight cap was 1 and
+opening a second PR for one markdown file would have breached it. LANES.md §5 asks for a docs-only PR
+behind its own card; #2839 *was* docs-only and its branch name supplied a legal ticket id, so only the
+"own card" half was stretched. The ledger-closing edit above then landed in its own follow-up once
+#2839 merged and the slot was free.
+
+---
+
+## LANE-A-EMPTY — the sweep that earned it
+
+Reported at 21:0xZ and re-confirmed after #2839 merged. **This is LANE-EMPTY, not QUEUE-EMPTY**
+(LANES.md §4): other lanes had hours of work live at the time, and three cards from MEH-2023's frozen
+list went Done during this segment.
+
+The sweep was run on both tracks in single full windows, and **deliberately without the `cc-queue`
+filter on Todo/Backlog** — workflow.md's Lane B is opt-out and content-gated, so a label-filtered
+sweep would have been a narrower query wearing a complete one's clothes. That widening is what
+surfaced MEH-2023 and MEH-1938, neither of which carries `cc-queue`.
+
+| Bucket | Swept | Eligible for Lane A |
+|---|---|---|
+| `In Progress` (opt-in, `cc-queue`) | 18 | 0 |
+| `Todo` (all, unfiltered) | 13 | 0 |
+| `Backlog` + `cc-queue` | 17 | 0 |
+
+Every exclusion is recorded with its reason in the skip table above. The two nearest misses:
+**MEH-2021** (backend, `quick-task`) is blocked by its own description — re-checked live rather than
+trusted from the predecessor log, and MEH-2020 is still Backlog / `needs-sapir` / undecided; and
+**MEH-2023** (Urgent) was refused as a whole-session dispatch card whose contents two other lanes
+were actively draining — taking it would have been the rule-28 double-dispatch it exists to prevent.
 
 ---
 
