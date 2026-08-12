@@ -58,19 +58,32 @@ const DAY_HINT_ID = "delivery-day-hint";
  * the strings are surface-neutral ("יום משלוח:", "בחרו אזור כדי לסנן לפי יום
  * משלוח") and MEH-1825's scope forbids new copy keys.
  *
+ * MEH-2036 — the axis is MULTI-SELECT: `daysActive` is an ARRAY and each pill
+ * toggles its own day independently (tap adds, tap again removes that day
+ * only). `aria-pressed` is per-pill, which is what makes the multi-select
+ * legible to a screen reader without any new copy — the previous single-select
+ * shape already used aria-pressed, so the semantics widen rather than change.
+ * Baymard: mutually-exclusive facet values are a top-15% filtering defect
+ * because they force a reload between every comparison.
+ *
  * Does NOT: own filter state, fetching, or the modal — the mounting surface
- * does (useHomePage on home, ProducersClient on /producers).
+ * does (useHomePage on home, ProducersClient on /producers). It also does not
+ * de-duplicate or cap `daysActive`; the mounting surface normalizes on
+ * hydration (both surfaces do) and the backend re-validates.
  */
-export function DeliveryDayRow({ cityActive, dayActive, onSelectDay }) {
+export function DeliveryDayRow({ cityActive, daysActive, onSelectDay }) {
   const t = useTranslations();
   const ghost = !cityActive;
+  // MEH-2036: tolerate a null/undefined prop so a surface that has not yet
+  // hydrated renders the ghost row rather than throwing on .includes.
+  const selected = daysActive || [];
 
   return (
     <div className="mb-6" data-testid="delivery-day-row" data-ghost={ghost ? "true" : "false"}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-fg-muted">{t("home.producers.day_row_label")}</span>
         {DELIVERY_DAYS.map((day) => {
-          const active = !ghost && day === dayActive;
+          const active = !ghost && selected.includes(day);
           return (
             <button
               key={day}
