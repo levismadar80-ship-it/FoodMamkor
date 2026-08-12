@@ -309,10 +309,12 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
             }}
             placeholder={t("field_city_placeholder")}
+            aria-describedby={fieldErrors.city ? "city-error" : undefined}
+            aria-invalid={fieldErrors.city ? true : undefined}
           />
           {/* MEH-2013: CitySearch has no error prop, so the message renders
-              beside it here. The input cannot reference it via
-              aria-describedby without changing CitySearch — noted in the PR. */}
+              beside it here. MEH-2022 closed the half this comment used to
+              flag: the input now references it via aria-describedby above. */}
           {fieldErrors.city && (
             <span id="city-error" className="text-xs text-error mt-1 block">
               {fieldErrors.city}
