@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-12 — batch 12/08 (מאושר ע"י ספיר), משימה 1/5: MEH-1376 — התנגשות מקבילית שנתפסה, ודלתאות היום
+
+**שורה אחת:** עריכות המדריך של MEH-1376 (שכבת Fable 5 advisor-only + תיקון ה-footer) **כבר נמסרו ב-PR #2826 ע"י סשן מקביל** (‏17:38Z) — ה-push שלי נדחה ע"י git, לא שוכפל PR · ה-PR הזה נושא **רק** את קיפול דלתאות הסשן, ש-#2826 השאיר בחוץ במכוון.
+
+### ⚠️ ההתנגשות, בקצרה (המקרה של כלל 28 §B4 / כלל 1)
+
+אותו batch נשלח כנראה פעמיים; הסשן המקביל דחף `feature/meh-1376-fable-advisor-guide` ופתח PR #2826 עם תוכן זהה כמעט מילה במילה (הסעיף מהספק verbatim; המחיר כעמודה בטבלת ההשוואה עם הערת פרשנות; אותו תיקון footer). מה שתפס את זה: דחיית ה-push של git — לא בדיקה מוקדמת. `git ls-remote origin | grep <branch>` לפני חיתוך ענף היה תופס את זה מוקדם יותר (כלל 28, בדיקה 4).
+
+### דלתאות סשן מ-12/08 (מקופלות כאן, לא ב-PRs נפרדים)
+
+1. **MEH-1585 — Done.** השער נצפה חוסם בפועל.
+2. **MEH-2018 — Done.** ‏framer-13 אומת כולל markers ‏16/16; ‏spiderfy (החפיפה עם MEH-1568) **לא אומת** — נשאר על הכרטיס ההוא.
+3. **MEH-2030 — קופל: Duplicate של MEH-1906.**
+4. **Sentry עיוור בחלון staging ‏15:05–15:27Z** — נרשם כ-thread על MEH-1905.
+5. **`VERCEL_AUTOMATION_BYPASS_SECRET` הוקם בסביבת CC.**
+
+### הצעד הבא
+
+המשך ה-batch לפי הסדר: MEH-1511 (docs) → MEH-1625 (docs) → MEH-1943 (audit בלבד, אפס שינויי קופי) → MEH-1754 (Phase 0 בלבד — resolver הוא central component, ממתין ל-"go" של ספיר לכל chunk).
+
 ## 2026-08-11 — סגירת הסוויפ: חמישה PRs מוזגו, ושני כללים שנכתבו מהריצה עצמה
 
 **שורה אחת:** ‏#2776 · #2779 · #2780 · #2782 · #2786 — **כולם מוזגו** · MEH-999 ו-MEH-1872 נסגרו **נכון** (מילת סגירה) · MEH-1249, MEH-1976, MEH-1949 נסגרו **בטעות** ע"י שם הענף ו**נפתחו מחדש** עם נימוק · שני כללים חדשים ב-`.claude/rules/`.
