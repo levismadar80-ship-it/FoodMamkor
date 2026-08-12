@@ -469,7 +469,10 @@ async def lifespan(app: FastAPI):
     )
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
-    log.info("[FOLLOWUP] scheduler started — daily 10:00 UTC")
+    log.info(
+        "[FOLLOWUP] scheduler started — daily 10:00 UTC"
+        " + weekly full-week expiry Sun 00:10 Asia/Jerusalem (MEH-1828)"
+    )
 
     yield
 
