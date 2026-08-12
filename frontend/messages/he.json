@@ -1232,7 +1232,13 @@
         "label": "מיון:",
         "nearest": "מרחק",
         "top_rated": "הכי מדורגות",
-        "newest": "הצטרפו לאחרונה"
+        "newest": "הצטרפו לאחרונה",
+        "locating": "מאתרים את המיקום שלכם...",
+        "geo_denied": "לא ניתן גישה למיקום. אפשר לבחור עיר כדי למיין לפי מרחק.",
+        "geo_unavailable": "המיקום לא זמין כרגע. אפשר לבחור עיר כדי למיין לפי מרחק.",
+        "geo_timeout": "לקח יותר מדי זמן לאתר את המיקום. נסו שוב, או בחרו עיר.",
+        "geo_unknown": "לא הצלחנו לקבל את המיקום. אפשר לבחור עיר כדי למיין לפי מרחק.",
+        "clear_location": "נקו את המיקום השמור"
       }
     },
     "errors": {
@@ -1374,7 +1380,8 @@
         "whatsapp_failures": "הודעות שלא נמסרו",
         "analytics": "אנליטיקס",
         "settings": "הגדרות",
-        "help": "עזרה"
+        "help": "עזרה",
+        "name_change_requests": "בקשות שינוי שם"
       },
       "nav_sections": {
         "overview": "סקירה",
@@ -1517,10 +1524,8 @@
           "view": "צפה",
           "suspend": "השהה",
           "activate": "הפעל",
-          "remove_ambassador_title": "הסר תפקיד שגרירה",
-          "set_ambassador_title": "הגדר כשגרירה",
-          "ambassador_active": "שגרירה",
-          "ambassador_inactive": "☆ שגריר",
+          "remove_ambassador_title": "הסרת תפקיד שגרירה",
+          "set_ambassador_title": "הגדרה כשגרירה",
           "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "סטורי",
@@ -2343,6 +2348,25 @@
       },
       "footer": "צ'קליסט יומי/שבועי/חודשי + אנשי קשר לחירום — ראה <code>docs/ADMIN.md</code> (סקציה \"Handover checklist\").",
       "footer_back": "→ חזרה ללוח המחוונים"
+    },
+    "name_change_requests": {
+      "title": "בקשות לשינוי שם",
+      "subtitle": "{count} בקשות ממתינות",
+      "empty": "אין בקשות ממתינות.",
+      "current_label": "שם נוכחי",
+      "requested_label": "שם מבוקש",
+      "reason_label": "סיבה מבעלת העסק",
+      "approve": "אישור",
+      "reject": "דחייה",
+      "status": {
+        "pending": "ממתין",
+        "approved": "אושר",
+        "rejected": "נדחה"
+      },
+      "load_error": "טעינת הבקשות נכשלה",
+      "update_error": "עדכון הבקשה נכשל",
+      "approved_toast": "השם אושר ועודכן",
+      "rejected_toast": "הבקשה נדחתה"
     }
   },
   "events": {
@@ -2498,7 +2522,7 @@
       "field_city_placeholder": "חפשו עיר...",
       "field_address": "כתובת (פרטית — רק את והצוות רואים)",
       "field_address_placeholder": "רחוב, מספר",
-      "field_price": "מחיר לאדם (₪) — השאירי ריק לחינם",
+      "field_price": "מחיר לאדם (₪) — השאירו ריק לחינם",
       "field_price_placeholder": "150",
       "field_max_participants": "מספר משתתפים מקסימלי",
       "field_max_participants_placeholder": "10",
@@ -2514,6 +2538,8 @@
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
+      "error_location_type_required": "חובה לבחור סוג מיקום",
+      "error_city_required": "חובה לבחור עיר",
       "error_duration_range": "משך החוויה חייב להיות בין 15 ל-1440 דקות",
       "error_price_negative": "המחיר לא יכול להיות שלילי",
       "error_max_participants_min": "מספר המשתתפים חייב להיות 1 לפחות",
@@ -4553,6 +4579,28 @@
         "status_approved": "מאושרת",
         "status_rejected": "נדחתה",
         "status_changes_requested": "נדרשים תיקונים"
+      },
+      "name_change": {
+        "heading": "שינוי שם העסק",
+        "accordion_summary": "בקשה לשינוי השם המוצג באתר",
+        "intro": "השם החדש יוצג באתר רק אחרי אישור הצוות. עד אז השם הנוכחי נשאר.",
+        "current_label": "השם הנוכחי",
+        "requested_label": "השם המבוקש",
+        "requested_where": "יופיע בעמוד העסק, בכרטיס ובחיפוש — אחרי אישור",
+        "requested_placeholder": "לדוגמה: מאפיית לחם וזמן",
+        "reason_label": "סיבה (אופציונלי)",
+        "reason_where": "נראה לצוות בלבד, לא מופיע באתר",
+        "reason_placeholder": "לדוגמה: תיקון שגיאת כתיב בהרשמה",
+        "same_name_hint": "השם המבוקש זהה לשם הנוכחי.",
+        "submit_cta": "שליחת בקשה לשינוי שם",
+        "submitting": "שולח…",
+        "sent_confirmation": "הבקשה נשלחה. נעדכן אותך כשהשם החדש יאושר.",
+        "sent_toast": "הבקשה נשלחה",
+        "pending_heading": "בקשה לשינוי שם ממתינה לאישור",
+        "pending_detail": "ביקשת לשנות את השם ל«{name}». השם הנוכחי נשאר מוצג באתר עד האישור.",
+        "loading": "טוען…",
+        "load_error": "לא הצלחנו לטעון את סטטוס הבקשות. רענני את הדף.",
+        "submit_error": "שליחת הבקשה נכשלה. נסי שוב."
       }
     }
   },
@@ -4658,7 +4706,10 @@
       "field_price_label_full": "מחיר (0 = חינם)",
       "field_max_participants_label_full": "מקסימום משתתפים",
       "save": "שמירה",
-      "saving": "שומרת…"
+      "saving": "שומרת…",
+      "field_category_placeholder": "בחרו קטגוריה",
+      "error_city_required": "חובה לבחור עיר",
+      "error_category_required": "חובה לבחור קטגוריה"
     }
   },
   "settings": {
