@@ -15,9 +15,13 @@
  *   may run unattended against a shared seeded backend.
  * - **Role gating is not re-tested here.** `flows/25-role-reachability.spec.ts`
  *   owns admin-vs-owner-vs-consumer-vs-guest. One concern per spec.
- * - The card says "6 tabs". The panel now renders **18 items in 5 sections**
- *   (`admin/layout.js:57-104`); the card was written 22/04. The six below are
- *   the ones it names, all still live routes.
+ * - The card says "6 tabs". The panel now renders considerably more than that
+ *   across 5 sections (`admin/layout.js:57-104`); the card was written 22/04.
+ *   The six below are the ones it names, all still live routes. No count is
+ *   quoted: this comment said "18 items", the real figure was 17
+ *   (`grep -c 'href: "/admin'`), and a hand-counted number in a comment is the
+ *   "artifact that asserts coverage" defect .claude/rules/testing.md warns
+ *   about — nobody re-derives it, and it rots on the next nav change.
  *
  * SELECTORS: href + `aria-current`, the house pattern from spec 25
  * (`ADMIN_NAV = 'a[href$="/admin/producers"]'`). No `data-testid` is added to
@@ -30,8 +34,8 @@
  * `[mobile]` project. Spec 25 made the same call for the same reason.
  */
 import { test, expect, type Page } from "@playwright/test";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 const AUTH_DIR = path.join(__dirname, "..", ".auth");
 
