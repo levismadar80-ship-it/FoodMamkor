@@ -370,7 +370,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
         }}
         onDrop={atCap ? (e) => e.preventDefault() : handleDrop}
-        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 transition ${
+        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
           atCap
             ? "border-border text-fg-muted cursor-not-allowed"
             : dragOver
@@ -382,7 +382,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           type="file"
           accept="image/*"
           multiple
-          className="hidden"
+          className="sr-only"
           disabled={uploading || atCap}
           onChange={handleUpload}
         />
@@ -420,10 +420,15 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
                   is neither absolute nor leading-slash (image-loader.ts:93) —
                   it does not degrade — so migrating here trades a broken
                   thumbnail for a crashed dashboard. Measured, see PR. */}
+              {/* MEH-2033: the thumb appearing IS the upload success state
+                  (no live region), so alt="" announced nothing. The section's
+                  existing key is the plural heading — imperfect for one thumb,
+                  but the card bans new i18n keys; the 1-based index suffix
+                  distinguishes N thumbs without a new key (CI reviewer). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
-                alt=""
+                alt={`${t("heading")} ${i + 1}`}
                 className="w-full h-24 object-cover rounded-[8px] border border-border"
               />
               <button
