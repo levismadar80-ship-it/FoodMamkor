@@ -83,6 +83,24 @@ export function parseSummary(json) {
         "without measuring anything. Refusing to treat that as a coverage figure.",
     );
   }
+  // ZERO STATEMENTS is the same defect wearing file entries, and it is WORSE:
+  // istanbul's `percent()` returns 100 when total === 0, so a run that
+  // instrumented nothing reports **100% and an improvement**, and the gate
+  // passes. Proven end-to-end before this guard existed: a summary of
+  // {pct:100, covered:0, total:0} with one file key printed
+  // "Improved by 33.23%" against the 66.77% baseline and exited 0.
+  // The file-count check above cannot see this — the files are present, they
+  // just have no statements.
+  if (!Number.isFinite(total) || total <= 0) {
+    throw new Error(
+      `coverage summary reports ${files} file(s) but ${total} total statements. ` +
+        "istanbul renders 0/0 as 100%, so this would surface as full coverage and " +
+        "an improvement. Refusing to treat a run that instrumented nothing as a result.",
+    );
+  }
+  if (!Number.isFinite(covered) || covered < 0 || covered > total) {
+    throw new Error(`coverage summary is internally inconsistent: covered=${covered}, total=${total}`);
+  }
   return { globalPct: pct, lines: { covered, total }, files };
 }
 
@@ -140,6 +158,24 @@ export function compare(current, baseline, tolerance = TOLERANCE_PCT) {
 }
 
 const fmt = (n) => `${n.toFixed(2)}%`;
+
+/** How far the measured universe may shrink before the result is not comparable. */
+export const DENOMINATOR_TOLERANCE_PCT = 10;
+
+/**
+ * True when the measured universe shrank enough that the percentage is no
+ * longer comparable to the baseline's. Deliberately checks BOTH axes: a glob
+ * change can drop whole files, and an exclude change can drop statements while
+ * leaving the file count alone.
+ */
+export function checkDenominator(current, baseline, tolerancePct = DENOMINATOR_TOLERANCE_PCT) {
+  const floor = (n) => n * (1 - tolerancePct / 100);
+  const baseFiles = baseline.files;
+  const baseLines = baseline.lines?.total;
+  if (Number.isFinite(baseFiles) && current.files < floor(baseFiles)) return true;
+  if (Number.isFinite(baseLines) && current.lines.total < floor(baseLines)) return true;
+  return false;
+}
 
 /* ------------------------------------------------------------------ *
  * Self-test
@@ -261,6 +297,66 @@ function selfTest() {
     `got ${badCode} — this is the assertion that catches a regression in the exit-code decision itself`,
   );
 
+  // --- THE LOOSENING GUARD. Previously untested: deleting the refusal
+  // entirely still passed 16/16, so the file's own headline guarantee — "a
+  // ratchet that can be loosened by rerunning the tool it gates is not a
+  // ratchet" — was unguarded by the suite meant to prove it.
+  const tmp2 = mkdtempSync(join(tmpdir(), "coverage-ratchet-loosen-"));
+  const blPath = join(tmp2, "bl.json");
+  const writeBl = () =>
+    writeFileSync(blPath, JSON.stringify({ globalPct: 60, lines: { covered: 600, total: 1000 }, files: 3 }));
+  writeBl();
+  const dropPath = join(tmp2, "drop.json");
+  writeFileSync(dropPath, JSON.stringify(summaryFixture(50)));
+  const qL = console.log;
+  const qE = console.error;
+  let refuseCode, refusedPct, allowCode, allowedPct;
+  console.log = () => {};
+  console.error = () => {};
+  try {
+    refuseCode = main(["node", "x", "--update-baseline", "--summary", dropPath, "--baseline", blPath]);
+    refusedPct = JSON.parse(readFileSync(blPath, "utf8")).globalPct;
+    allowCode = main([
+      "node", "x", "--update-baseline", "--allow-drop", "--summary", dropPath, "--baseline", blPath,
+    ]);
+    allowedPct = JSON.parse(readFileSync(blPath, "utf8")).globalPct;
+  } finally {
+    console.log = qL;
+    console.error = qE;
+    rmSync(tmp2, { recursive: true, force: true });
+  }
+  check("loosening/drop-refused", refuseCode === 1, `got ${refuseCode}`);
+  check(
+    "loosening/baseline-untouched-on-refusal",
+    refusedPct === 60,
+    `baseline moved to ${refusedPct} despite the refusal — the exit code alone is not the guarantee`,
+  );
+  check("loosening/allow-drop-permitted", allowCode === 0, `got ${allowCode}`);
+  check("loosening/allow-drop-actually-writes", allowedPct === 50, `got ${allowedPct}`);
+
+  // --- ZERO STATEMENTS. istanbul renders 0/0 as 100%, so a run that
+  // instrumented nothing reads as full coverage AND an improvement.
+  let threwVacuous = false;
+  try {
+    parseSummary({ total: { lines: { pct: 100, covered: 0, total: 0 } }, "a.js": { lines: { pct: 100 } } });
+  } catch {
+    threwVacuous = true;
+  }
+  check("zero-statements/throws", threwVacuous, "0/0 rendered as 100% must not pass as a result");
+
+  // --- DENOMINATOR SHRINK.
+  const bigBase = { globalPct: 60, lines: { covered: 600, total: 1000 }, files: 300 };
+  check(
+    "denominator/shrink-detected",
+    checkDenominator({ files: 100, lines: { total: 300 } }, bigBase),
+    "a universe cut to a third must be flagged",
+  );
+  check(
+    "denominator/normal-variation-ignored",
+    !checkDenominator({ files: 299, lines: { total: 995 } }, bigBase),
+    "ordinary churn must NOT trip it, or the guard is noise and gets disabled",
+  );
+
   console.log(`\n  ${ran.length} assertions ran, ${failures.length} failed.`);
   if (failures.length) {
     console.error(`\ncoverage-ratchet --self-test FAILED: ${failures.join(", ")}`);
@@ -350,6 +446,29 @@ function main(argv) {
   }
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
   const tolerance = baseline._tolerancePct ?? TOLERANCE_PCT;
+
+  // DENOMINATOR SHRINK. A percentage can rise because code got tested, or
+  // because code stopped being MEASURED — and only the first is progress. A
+  // one-line typo narrowing the `include` glob to `lib/**` would report ~81.5%
+  // against a 66.77% baseline: a false +14.7pt "improvement" with `app/[locale]`
+  // (56.6%, the largest directory) silently unmeasured.
+  //
+  // The baseline has recorded `files` and `lines.total` since it was first
+  // written and nothing ever read them back. This is that check.
+  const shrink = checkDenominator(current, baseline);
+  if (shrink && !args.has("--allow-shrink")) {
+    console.error(
+      `REFUSING: the measured universe SHRANK by more than ${DENOMINATOR_TOLERANCE_PCT}%.\n` +
+        `  files:      ${baseline.files} -> ${current.files}\n` +
+        `  statements: ${baseline.lines?.total} -> ${current.lines.total}\n\n` +
+        `Coverage can rise because code got tested, or because code stopped being\n` +
+        `measured. This is the second one. Check vitest.config.js's coverage\n` +
+        `include/exclude globs before believing the percentage.\n` +
+        `If the shrink is intended (files genuinely deleted), rerun with --allow-shrink.`,
+    );
+    return 1;
+  }
+
   const { delta, regressed, improved } = compare(current, baseline, tolerance);
 
   console.log(

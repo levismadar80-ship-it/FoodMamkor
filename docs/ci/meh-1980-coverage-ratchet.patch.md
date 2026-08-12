@@ -21,6 +21,46 @@ drift — match on content, not position.
 
 ---
 
+## Change A0 — REQUIRED, and it is the one that makes A worth anything
+
+**`scripts/checks/**` matches no paths-filter category**, so a PR touching only
+the ratchet script or its baseline sets `frontend=false`, skips
+`frontend-vitest` entirely, and lands with `ci-gate` taking its *"Neither stack
+touched"* branch. The gate can be defanged — `regressed: false`, tolerance
+raised to 100, baseline `globalPct` hand-edited to 0 — with **zero required-check
+coverage**.
+
+The compounding case is worse: a PR that weakens the comparator **and** regresses
+coverage does trigger the job (frontend touched), and then runs the self-test and
+comparator **from the same commit that just weakened them**. The gate evaluates
+itself against its own defanged copy. Same shape MEH-420 closed for skills, where
+`computedHash` was decorative metadata no script read.
+
+```diff
+             frontend:
+               - 'frontend/**'
+               - 'package.json'
+               - 'package-lock.json'
++              # MEH-1980 / MEH-1868: the ratchets and their baselines gate the
++              # frontend job, so an edit to EITHER must force that job to run.
++              # Without these lines a PR touching only these files skips the very
++              # job that would have checked them.
++              - 'scripts/checks/coverage-ratchet.mjs'
++              - 'scripts/checks/coverage-ratchet-baseline.json'
++              - 'scripts/checks/lint-ratchet.mjs'
++              - 'scripts/checks/lint-ratchet-baseline.tsv'
+```
+
+**The two `lint-ratchet` lines belong to MEH-1868 and are included here on
+purpose** — it has the identical gap today, currently inert only because its own
+CI patch is likewise unapplied. Whichever patch is applied first should carry
+them; applying both is harmless (duplicate globs are a no-op).
+
+**Apply A0 with A.** Change A alone arms a gate that a later PR can quietly
+disarm.
+
+---
+
 ## Change A — frontend (`:630-631`)
 
 ```diff
