@@ -353,7 +353,12 @@ function RegisterPageBody() {
             dir="ltr"
           />
           <div>
-            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.password")}</label>
+            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">
+              {t("auth.register.consumer.fields.password")}{" "}
+              <span className="text-red-500" aria-hidden="true">
+                *
+              </span>
+            </label>
             {/* MEH-306: PasswordInput owns input + eye toggle + live policy
                 checklist (length + breach). Form-level error div above
                 renders 422-failure messages from the submit handler. */}

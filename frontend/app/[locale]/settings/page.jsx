@@ -330,7 +330,7 @@ export function ProfileTab() {
         <Input
           id="profile-name"
           type="text"
-          label={`${t("field_name_label")} *`}
+          label={t("field_name_label")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -515,7 +515,12 @@ function PasswordChangeCard({ isOAuth }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Current password */}
         <div>
-          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">{t("current_label")}</label>
+          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">
+            {t("current_label")}{" "}
+            <span className="text-red-500" aria-hidden="true">
+              *
+            </span>
+          </label>
           <div className="relative">
             <input
               id="sec-current"
@@ -560,7 +565,12 @@ function PasswordChangeCard({ isOAuth }) {
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">{t("confirm_label")}</label>
+          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">
+            {t("confirm_label")}{" "}
+            <span className="text-red-500" aria-hidden="true">
+              *
+            </span>
+          </label>
           <div className="relative">
             <input
               id="sec-confirm"

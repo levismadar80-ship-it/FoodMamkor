@@ -336,9 +336,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         error={fieldErrors.title}
       />
 
-      <Field id="experience-description" label={t("field_description")} error={fieldErrors.description}>
+      <Field id="experience-description" label={t("field_description")} required error={fieldErrors.description}>
         <textarea
           id="experience-description"
+          aria-required="true"
           value={form.description}
           onChange={setField("description")}
           rows={5}
@@ -434,7 +435,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           state, colour alone leaves a screen-reader user with no answer. */}
       <div>
         <span id="experience-location-type-label" className="block text-sm font-medium text-text mb-1">
-          {t("field_location_type")}
+          {t("field_location_type")}{" "}
+          <span className="text-red-500" aria-hidden="true">
+            *
+          </span>
         </span>
         <div
           className="flex flex-wrap gap-2"
@@ -469,8 +473,8 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* MEH-2013: `id` on Field associates its <label> with CitySearch's
             input (CitySearch renders its own label only when passed one). */}
-        <Field id={EXPERIENCE_FIELD_ID.city} label={t("field_city")} error={fieldErrors.city}>
-          <CitySearch id={EXPERIENCE_FIELD_ID.city} value={form.city} onChange={setCityField} placeholder={t("field_city_placeholder")} />
+        <Field id={EXPERIENCE_FIELD_ID.city} label={t("field_city")} required error={fieldErrors.city}>
+          <CitySearch id={EXPERIENCE_FIELD_ID.city} required value={form.city} onChange={setCityField} placeholder={t("field_city_placeholder")} />
         </Field>
         <div>
           <label htmlFor="experience-address" className="block text-sm font-medium text-text mb-1">
@@ -575,11 +579,18 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 // are optional, so the callers that pass neither render exactly as before —
 // this is the textarea/select path that ui/Input, an <input>-only primitive,
 // cannot cover.
-function Field({ id, label, error, children }) {
+// MEH-2015: `required` mirrors ui/Input's marker — the ONE asterisk mechanism.
+// The span is aria-hidden; the hosted control carries aria-required itself.
+function Field({ id, label, required, error, children }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
         {label}
+        {required && (
+          <span className="text-red-500" aria-hidden="true">
+            {" *"}
+          </span>
+        )}
       </label>
       {children}
       {error && (

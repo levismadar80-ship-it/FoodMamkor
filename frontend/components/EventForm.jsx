@@ -291,9 +291,15 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </div>
 
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">{t("field_city_label")}</label>
+          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">
+            {t("field_city_label")}{" "}
+            <span className="text-red-500" aria-hidden="true">
+              *
+            </span>
+          </label>
           <CitySearch
             id="city"
+            required
             label={t("field_city_label")}
             value={form.city}
             onChange={(val) => {
@@ -453,7 +459,14 @@ function Field({ id, label, required, error, children }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label}{" "}
+        {required && (
+          // MEH-2015: aria-hidden — the hosted control carries aria-required;
+          // without this, screen readers hear "star" after every label.
+          <span className="text-red-500" aria-hidden="true">
+            *
+          </span>
+        )}
       </label>
       {children}
       {error && (

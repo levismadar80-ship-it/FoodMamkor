@@ -50,6 +50,14 @@ export default function Input({
   id,
   className = "",
   disabled = false,
+  // MEH-2015: THE required-marker mechanism. The asterisk renders here and
+  // only here — never baked into the i18n label string (that duplication is
+  // what put "קטגוריה * *" on screen). Named prop, NOT ...rest: spreading it
+  // would set the NATIVE required attribute and change browser-validation
+  // behaviour in forms without noValidate; a11y parity comes from
+  // aria-required on the input instead (WCAG 3.3.2). The span is aria-hidden
+  // so screen readers hear "required" once, not "star".
+  required = false,
   ...rest
 }) {
   const autoId = useId();
@@ -66,6 +74,7 @@ export default function Input({
       id={inputId}
       type={type}
       disabled={disabled}
+      aria-required={required || undefined}
       aria-invalid={hasError || undefined}
       aria-describedby={message ? describedById : undefined}
       className={[
@@ -95,6 +104,11 @@ export default function Input({
       {label && (
         <label htmlFor={inputId} className="text-sm font-medium text-text">
           {label}
+          {required && (
+            <span className="text-red-500" aria-hidden="true">
+              {" *"}
+            </span>
+          )}
         </label>
       )}
 
