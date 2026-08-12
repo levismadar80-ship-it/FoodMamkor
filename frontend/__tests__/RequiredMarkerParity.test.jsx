@@ -71,20 +71,22 @@ describe("MEH-2015 — the asterisk is a mechanism, not a string", () => {
     expect(en.group_buys?.dashboard?.form?.required_marker).toBeUndefined();
   });
 
-  it("ui/Input with required renders exactly ONE asterisk and aria-required", () => {
+  it("ui/Input with required renders exactly ONE asterisk and keeps the NATIVE attribute", () => {
     render(<Input id="rm-a" label="שם מלא" required onChange={() => {}} value="" />);
     const input = screen.getByLabelText(/שם מלא/);
-    expect(input).toHaveAttribute("aria-required", "true");
-    // Native required must NOT leak through (it would re-enable browser
-    // bubbles in non-noValidate forms — the reason `required` is intercepted).
-    expect(input).not.toHaveAttribute("required");
+    // The native attribute MUST survive — before MEH-2015 it reached the
+    // input via ...rest, and ContactClient + the group-buys form have no JS
+    // required-validation: the browser gate IS their empty-field gate. An
+    // earlier shape of this change intercepted the attribute and that was a
+    // measured regression; this assertion is what keeps it from returning.
+    expect(input).toHaveAttribute("required");
     const label = document.querySelector('label[for="rm-a"]');
     expect((label.textContent.match(/\*/g) || []).length).toBe(1);
   });
 
-  it("ui/Input without required renders NO asterisk and no aria-required", () => {
+  it("ui/Input without required renders NO asterisk and no required attribute", () => {
     render(<Input id="rm-b" label="כתובת" onChange={() => {}} value="" />);
-    expect(screen.getByLabelText("כתובת")).not.toHaveAttribute("aria-required");
+    expect(screen.getByLabelText("כתובת")).not.toHaveAttribute("required");
     const label = document.querySelector('label[for="rm-b"]');
     expect(label.textContent).not.toContain("*");
   });

@@ -52,11 +52,16 @@ export default function Input({
   disabled = false,
   // MEH-2015: THE required-marker mechanism. The asterisk renders here and
   // only here — never baked into the i18n label string (that duplication is
-  // what put "קטגוריה * *" on screen). Named prop, NOT ...rest: spreading it
-  // would set the NATIVE required attribute and change browser-validation
-  // behaviour in forms without noValidate; a11y parity comes from
-  // aria-required on the input instead (WCAG 3.3.2). The span is aria-hidden
-  // so screen readers hear "required" once, not "star".
+  // what put "קטגוריה * *" on screen). The prop is named so the label can
+  // render the marker, and it is ALSO forwarded as the native required
+  // attribute below — byte-identical to what ...rest always did. An earlier
+  // shape of this change intercepted it (marker + aria-required, no native
+  // attr) and that was a measured regression: ContactClient and the
+  // group-buys form have no JS required-validation — the browser gate WAS
+  // their empty-field gate, and intercepting the attribute deleted it.
+  // Native required already announces "required" to AT, so no separate
+  // aria-required is needed; the span is aria-hidden so readers do not
+  // additionally hear "star".
   required = false,
   ...rest
 }) {
@@ -74,7 +79,7 @@ export default function Input({
       id={inputId}
       type={type}
       disabled={disabled}
-      aria-required={required || undefined}
+      required={required || undefined}
       aria-invalid={hasError || undefined}
       aria-describedby={message ? describedById : undefined}
       className={[
