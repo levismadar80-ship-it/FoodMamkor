@@ -11,7 +11,7 @@ import { haversineKm } from "@/lib/distance";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation, setUserLocation } from "@/lib/user-location";
+import { useUserLocation, setUserLocation, clearUserLocation } from "@/lib/user-location";
 
 import CityPickerModal from "./components/CityPickerModal";
 import FilterChipsBar from "./components/FilterChipsBar";
@@ -78,9 +78,15 @@ export default function MapPage() {
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
-  // useUserLocation (sessionStorage) — the same source the cards use for their
-  // distance labels, so "מרחק" orders by exactly what the user sees.
+  // useUserLocation (localStorage since MEH-2014) — the same source the cards
+  // use for their distance labels, so "מרחק" orders by exactly what the user
+  // sees.
   const [sortBy, setSortBy] = useState(null);
+  // MEH-2014: "מרחק" is a trigger now, so there is a window between picking it
+  // and having a fix. The select stays on its previous value throughout — the
+  // pending flag exists to disable it and to force the re-render that snaps the
+  // native <select> back after a failed attempt.
+  const [geoSortPending, setGeoSortPending] = useState(false);
   const userLoc = useUserLocation();
   // MEH-1864: the auto default is now read from two places (here and the
   // rating-data fallback below), so it is named once instead of spelled twice.
@@ -332,6 +338,70 @@ export default function MapPage() {
     );
   }, [gpsLoading, sync.mapApiRef]);
 
+  // MEH-2014: "מרחק" used to be <option disabled> whenever no fix was cached,
+  // and the ONLY writer of a fix was a button on another page — so landing
+  // straight on /map (link, search, share) showed a grey option that never
+  // said why. NN/g: a disabled control that gives no feedback reads as broken.
+  // It is a trigger now. The request is in-context, never on page load
+  // (Lighthouse geolocation-on-start), and every failure names the manual way.
+  const handleSortChange = useCallback(
+    (value) => {
+      if (value !== "nearest" || userLoc) {
+        setSortBy(value);
+        return;
+      }
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        showToast.error(t("map.client.errors.no_gps"));
+        return;
+      }
+      setGeoSortPending(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGeoSortPending(false);
+          const { latitude: lat, longitude: lng } = pos.coords || {};
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            showToast.error(t("map.client.sort.geo_unknown"));
+            return;
+          }
+          setUserLocation(lat, lng);
+          setSortBy("nearest");
+        },
+        (err) => {
+          setGeoSortPending(false);
+          // NEVER surface GeolocationPositionError.message — it is English-only
+          // and developer-facing per the W3C Geolocation spec. Map err.code to
+          // our own Hebrew strings, each pointing at choosing a city instead.
+          const msgs = {
+            1: t("map.client.sort.geo_denied"),
+            2: t("map.client.sort.geo_unavailable"),
+            3: t("map.client.sort.geo_timeout"),
+          };
+          showToast.info(msgs[err?.code] ?? t("map.client.sort.geo_unknown"));
+          // Denial is the one failure with an alternative available right now,
+          // so offer it — the same fallback handleGpsClick uses for code 1.
+          if (err?.code === 1) setLocationModalOpen(true);
+          // sortBy is deliberately NOT set: `value={effectiveSort}` is
+          // unchanged, so this re-render snaps the native <select> back to
+          // whatever it displayed before the attempt.
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    },
+    [userLoc, t]
+  );
+
+  // MEH-2014: the counterpart to persisting the fix across tab close. Without
+  // a way out, a stored location would be permanent — session scope used to
+  // be the (invisible) exit, and this is the visible one that replaces it.
+  const handleClearLocation = useCallback(() => {
+    clearUserLocation();
+    // Drop an explicit "nearest" too. Leaving it would sort by a location that
+    // no longer exists, which sortProducers renders as the unchanged input
+    // order — a list that silently stops meaning what its label says. `null`
+    // returns the select to auto, which is "newest" once the fix is gone.
+    setSortBy((prev) => (prev === "nearest" ? null : prev));
+  }, []);
+
   // MEH-970 chunk 2-lite: single near-me invoker shared by the labeled
   // "קרוב אליי" pill (mobile) and the existing filter-bar crosshair. Reuses
   // the EXISTING goToMyLocation imperative path (MapComponent) — no second
@@ -373,6 +443,24 @@ export default function MapPage() {
   // focus is ever wanted again, it belongs in the URL, not in session state.
 
   // ============================================================
+
+  // MEH-2014: ONE clear affordance, rendered in both shells. The sort <select>
+  // lives in the desktop sidebar only (`hidden lg:grid`), but a mobile visitor
+  // CAN set a location — the NearMePill writes one. Shipping the clear button
+  // beside the select alone would have left every mobile user with a fix that
+  // now outlives the tab and no way to remove it, which is strictly worse than
+  // the session-scoped behaviour this ticket replaced. Defined once rather than
+  // copied into both shells (workflow.md → Smell #1: two mechanisms, one job).
+  const clearLocationControl = userLoc && !geoSortPending ? (
+    <button
+      type="button"
+      onClick={handleClearLocation}
+      data-testid="clear-user-location"
+      className="text-xs text-fg-muted underline underline-offset-2 hover:text-primary min-h-[44px]"
+    >
+      {t("map.client.sort.clear_location")}
+    </button>
+  ) : null;
 
   const filterChipsBar = (
     <FilterChipsBar
@@ -511,13 +599,16 @@ export default function MapPage() {
                 <span className="text-sm text-fg-muted" aria-hidden="true">{t("map.client.sort.label")}</span>
                 <select
                   value={effectiveSort}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
-                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                  aria-busy={geoSortPending || undefined}
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
                 >
-                  {/* "מרחק" needs a GPS fix to mean anything — disabled without one
-                      (the auto default then falls back to newest). */}
-                  <option value="nearest" disabled={!userLoc}>{t("map.client.sort.nearest")}</option>
+                  {/* MEH-2014: never `disabled`. Choosing it without a known
+                      location ASKS for one (handleSortChange) instead of
+                      sitting grey with no explanation. */}
+                  <option value="nearest">{t("map.client.sort.nearest")}</option>
                   {/* MEH-1864: rating axis only once enough businesses carry a
                       review — otherwise it orders the list on data almost
                       nobody has. nearest + newest remain, so the control stays. */}
@@ -534,6 +625,16 @@ export default function MapPage() {
                 />
               </div>
             </div>
+            {/* MEH-2014: the fix now outlives the tab, so it needs a visible
+                way out. Shown only when there is something to clear, and it
+                announces the pending state for screen readers, which cannot
+                see the greyed <select>. */}
+            {geoSortPending && (
+              <p role="status" className="text-xs text-fg-muted mb-3">
+                {t("map.client.sort.locating")}
+              </p>
+            )}
+            {clearLocationControl && <div className="mb-3">{clearLocationControl}</div>}
             {cardList}
           </div>
         </div>
@@ -574,6 +675,11 @@ export default function MapPage() {
           <div className="mb-2">
             <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
+          {/* MEH-2014: the mobile half of the clear affordance. There is no sort
+              <select> on this shell, but the NearMePill writes a location here,
+              and a persisted fix with no way out is the failure this ticket's
+              "explicit clear" requirement exists to prevent. */}
+          {clearLocationControl && <div className="mb-2">{clearLocationControl}</div>}
           {filterChipsBar}
         </div>
 

@@ -1234,7 +1234,13 @@
         "label": "Sort:",
         "nearest": "Distance",
         "top_rated": "Top rated",
-        "newest": "Recently joined"
+        "newest": "Recently joined",
+        "locating": "Finding your location…",
+        "geo_denied": "Location access was declined. You can pick a city to sort by distance.",
+        "geo_unavailable": "Location is unavailable right now. You can pick a city to sort by distance.",
+        "geo_timeout": "Finding your location took too long. Try again, or pick a city.",
+        "geo_unknown": "We could not get your location. You can pick a city to sort by distance.",
+        "clear_location": "Clear the saved location"
       }
     },
     "errors": {
@@ -1372,7 +1378,8 @@
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
         "settings": "Settings",
-        "help": "Help"
+        "help": "Help",
+        "name_change_requests": "Name changes"
       },
       "nav_sections": {
         "overview": "Overview",
@@ -1517,8 +1524,6 @@
           "activate": "Activate",
           "remove_ambassador_title": "Remove ambassador role",
           "set_ambassador_title": "Set as ambassador",
-          "ambassador_active": "Ambassador",
-          "ambassador_inactive": "☆ Ambassador",
           "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
           "story_card": "Story",
@@ -2322,6 +2327,25 @@
       },
       "footer": "Daily/weekly/monthly checklist + emergency contacts — see <code>docs/ADMIN.md</code> (\"Handover checklist\" section).",
       "footer_back": "← Back to dashboard"
+    },
+    "name_change_requests": {
+      "title": "Name-change requests",
+      "subtitle": "{count} pending requests",
+      "empty": "No pending requests.",
+      "current_label": "Current name",
+      "requested_label": "Requested name",
+      "reason_label": "Reason from the owner",
+      "approve": "Approve",
+      "reject": "Reject",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "load_error": "Failed to load requests",
+      "update_error": "Failed to update the request",
+      "approved_toast": "Name approved and updated",
+      "rejected_toast": "Request rejected"
     }
   },
   "events": {
@@ -2493,6 +2517,8 @@
       "error_title_short": "Title is too short",
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
+      "error_location_type_required": "Choose a location type",
+      "error_city_required": "A city is required",
       "error_duration_range": "Duration must be between 15 and 1440 minutes",
       "error_price_negative": "Price cannot be negative",
       "error_max_participants_min": "Max participants must be at least 1",
@@ -4536,6 +4562,28 @@
         "status_approved": "Approved",
         "status_rejected": "Rejected",
         "status_changes_requested": "Changes requested"
+      },
+      "name_change": {
+        "heading": "Change business name",
+        "accordion_summary": "Request a change to the name shown on the site",
+        "intro": "The new name appears on the site only after our team approves it. Until then the current name stays.",
+        "current_label": "Current name",
+        "requested_label": "Requested name",
+        "requested_where": "Will appear on the business page, card and search — after approval",
+        "requested_placeholder": "e.g. Lehem VeZman Bakery",
+        "reason_label": "Reason (optional)",
+        "reason_where": "Visible to the team only, never shown on the site",
+        "reason_placeholder": "e.g. fixing a typo from registration",
+        "same_name_hint": "The requested name is the same as the current one.",
+        "submit_cta": "Send name-change request",
+        "submitting": "Sending…",
+        "sent_confirmation": "Request sent. We'll let you know when the new name is approved.",
+        "sent_toast": "Request sent",
+        "pending_heading": "A name-change request is awaiting approval",
+        "pending_detail": "You asked to change the name to «{name}». The current name stays visible on the site until approval.",
+        "loading": "Loading…",
+        "load_error": "Couldn't load your request status. Please refresh.",
+        "submit_error": "Sending the request failed. Please try again."
       }
     }
   },
@@ -4641,7 +4689,10 @@
       "field_price_label_full": "Price (0 = free)",
       "field_max_participants_label_full": "Max participants",
       "save": "Save",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "field_category_placeholder": "Choose a category",
+      "error_city_required": "A city is required",
+      "error_category_required": "A category is required"
     }
   },
   "settings": {
