@@ -239,9 +239,13 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
                 key: "ambassador",
                 // MEH-1267: title explains the ambassador action (Trust Tier 5)
                 // for admins who don't know what "שגריר" means.
+                // MEH-1681: the label names the ACTION the click performs, not the
+                // current state. It previously read "שגרירה" / "☆ שגריר" — state
+                // descriptions, where only the ☆ glyph carried the direction, so an
+                // admin could not tell whether clicking would set or remove the role.
                 label: (
                   <span title={t("producers.table.actions.ambassador_tooltip")}>
-                    {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
+                    {p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
                   </span>
                 ),
                 disabled: busy(`ambassador:${p.id}`),
