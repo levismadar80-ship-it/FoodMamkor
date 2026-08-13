@@ -728,9 +728,7 @@ def approve_producer(
         _send_notification_email(
             producer_user.email,
             f'מהמקור - העסק "{p_name}" אושר!',
-            f'שלום,\n\nהעסק שלך "{p_name}" אושר במהמקור!\n'
-            f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_approved_body(p_name),
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
@@ -766,15 +764,13 @@ def reject_producer(
     producer.changes_requested_at = None
     db.commit()
 
-    reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
+    reason_text = _rejection_reason_suffix(reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
         _send_notification_email(
             producer_user.email,
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            f'שלום,\n\nלצערנו הבקשה לרישום העסק "{producer.name}" במהמקור לא אושרה.{reason_text}\n\n'
-            f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_rejected_body(producer.name, reason),
         )
 
     # Notify admin via WhatsApp
@@ -838,13 +834,7 @@ def request_producer_changes(
         _send_notification_email(
             producer_user.email,
             f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
-            f"שלום,\n\n"
-            f'הבקשה לרישום "{p_name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
-            f"בית העסק, נשאר להשלים:\n\n"
-            f"{feedback}\n\n"
-            f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
-            f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_changes_requested_body(p_name, feedback, dashboard_link),
         )
 
     # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
@@ -1049,6 +1039,56 @@ def seed_cities(
         inserted += result.rowcount
     db.commit()
     return {"seeded": inserted}
+
+
+# MEH-2027: the three PRODUCER-facing bodies below were inline f-strings inside
+# their route handlers, which put them out of reach of the copy contract in
+# tests/test_meh1965_email_copy_contract.py — rendering one meant standing up a
+# request, a DB row and an authenticated admin. They are pure functions of their
+# arguments so the contract can render them directly. Behaviour is unchanged:
+# the strings are byte-identical to the f-strings they replace.
+#
+# These go to producer_user.email — the business owner, NOT an admin — so they
+# are brand touchpoints and the contract's four axes (absolute links, no
+# masculine address to the reader, RTL on any HTML part, real text fallback)
+# apply to them in full.
+
+
+def _rejection_reason_suffix(reason: str) -> str:
+    """The optional "סיבת הדחייה" tail, shared by the email body and the admin
+    WhatsApp line so the two cannot drift apart (workflow.md Smell #1)."""
+    return f"\nסיבת הדחייה: {reason}" if reason else ""
+
+
+def _producer_approved_body(name: str) -> str:
+    return (
+        f'שלום,\n\nהעסק שלך "{name}" אושר במהמקור!\n'
+        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_rejected_body(name: str, reason: str) -> str:
+    return (
+        f'שלום,\n\nלצערנו הבקשה לרישום העסק "{name}" במהמקור לא אושרה.'
+        f"{_rejection_reason_suffix(reason)}\n\n"
+        f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_changes_requested_body(
+    name: str, feedback: str, dashboard_link: str
+) -> str:
+    return (
+        f"שלום,\n\n"
+        f'הבקשה לרישום "{name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
+        f"בית העסק, נשאר להשלים:\n\n"
+        f"{feedback}\n\n"
+        f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
+        f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
 
 
 def _send_notification_email(to_email: str, subject: str, body: str):
