@@ -512,6 +512,11 @@ function LoginAccount({ label }) {
   return (
     <Link
       href="/login"
+      // MEH-215 journey C: locator for the header-discovery assertion. The
+      // `hidden md:inline-flex` above is the whole point — this link exists on
+      // desktop and NOT on mobile, and the spec asserts both halves rather
+      // than only the one that happens to be present.
+      data-testid="header-login-link"
       className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}

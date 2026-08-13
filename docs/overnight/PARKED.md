@@ -605,3 +605,163 @@ the papering-over this same branch adds a rule against.
 ## Circuit breaker
 
 One park, one signature. Nothing quarantined; the 3-park threshold is not reached.
+
+---
+
+# Parked 2026-08-12 — lane C (CI/tests/docs). Two cards, both on **Sapir's hands**, neither on a failure.
+
+Neither hit the timebox and neither failed. Both are parked because their one
+remaining DoD item is an action CC is mechanically denied from taking —
+`.github/workflows/**` (MEH-1837) or a required-gate marker (rule 30). Parking
+them is the honest state; leaving them "In Progress" would imply CC is still
+working them.
+
+## MEH-1868 — Knip ratchet · chunk 2 MERGED (`be1ba20e`), chunk 3 is Sapir's
+
+**Landed:** `scripts/checks/lint-ratchet.mjs`, baseline frozen at 46 findings /
+24 `(file, rule)` pairs, a real-payload fixture, and 21 self-test assertions each
+shown failing against its own break.
+
+**Blocked on:** applying `docs/ci/meh-1868-knip-ratchet.patch.md`. Four changes;
+the substantive finding is that `frontend-knip` carries **both** swallows
+(`continue-on-error: true` at `:555` *and* `|| true` at `:574`), so removing
+either alone buys nothing — `continue-on-error` makes `needs.frontend-knip.result`
+resolve to `success` regardless, which is why the aggregator's existing `check()`
+passes today.
+
+**Open question for Sapir:** does `frontend-knip` become genuinely merge-blocking
+(all four changes, incl. `check` → `check_ran`), or stay a non-blocking honest
+red (1–3)? Recommendation in the patch is all four, with the escape hatch
+(`--allow-increase`) documented.
+
+**Deliberately NOT closed.** The merge auto-closed it via `Closes`; CC reopened
+it. The card's own headline complains that *chunk 0 merged while the gate stayed
+a non-gate* — chunk 2 is now in exactly that state (the ratchet is on `staging`
+and has run **zero times** in CI). Marking it Done would bury the same complaint
+twice on the same card.
+
+## MEH-1980 — coverage ratchet · PR #2813 open, blocked by a marker CC may not clear
+
+**Landed on the branch:** `scripts/checks/coverage-ratchet.mjs` (the suite prints
+its own `ran.length` — this line said "16" and was measured at 23 by the CI
+reviewer, then 29 after the shrink-routing and baseline-banking cases; do not
+re-hardcode it), every guard shown red against its own deletion before being
+claimed, baseline frozen at **66.77%** lines
+(8,139/12,188, 339 files), `docs/reports/coverage-baseline.md`, and
+`docs/ci/meh-1980-coverage-ratchet.patch.md`.
+
+**Blocked on two things, both Sapir's:**
+
+1. **`DO-NOT-MERGE marker gate` is red — CC tripped it with its own PR body.**
+   The sentence *"Do not merge this as complete."* matches the gate's regex. Not
+   a deliberate marker; prose that happens to match, the documented PR #2511 /
+   MEH-1844 precedent. **CC did not edit it out**: rule 30 covers this case by
+   name — *"the marker is not cleared by whoever concludes the block is stale…
+   CC's own marker is still Sapir's to clear."*
+2. **The `docs/ci/` patch**, which carries its own decision: the backend's
+   `--cov-fail-under=70` is a static floor with a **7-point dead zone** below the
+   77% baseline. Threshold deliberately left as a PLACEHOLDER — backend coverage
+   is unmeasurable from the CC sandbox (no postgres, no `backend/.venv`), and the
+   two figures on record disagree by 3,400 statements (77%/5,529 in the workflow
+   comment vs 89%/8,923 in MEH-1911's proof). Read `TOTAL` from a current pytest
+   job; do not reuse either.
+
+**Also worth knowing:** auto-merge was armed on #2813 **twice**, both times with
+method `merge`, by an actor that was not this session. CC disabled it once (rule
+32 permits acting unasked only in the constraint-adding direction) and it was
+re-armed. The accidental DNM marker is currently the only thing holding it.
+
+**Still genuinely outstanding on the card** (not blocked, just not done): three
+template-07 test tickets for the top risks, and the MEH-1961 license-scanning
+rider.
+
+## Circuit breaker
+
+Two parks, two signatures — both `blocked-by-CC-deny`, neither a failure class.
+The 3-park threshold is not reached and nothing is quarantined.
+
+## MEH-1625 — matrix extension DELIVERED (PR #2816), the live run is blocked
+
+The card splits into two parts with two timelines and says so.
+
+**Part 1 — the matrix extension — is done.** The maximal persona is in
+`docs/MANUAL_TESTING.md` as **P6**, not P5: the card calls it *"P5 (חדשה)"* and
+lists only P1–P4 as existing, which was true on 27/07 and is not true now —
+`P5` is already the resubmit-loop persona, with its own `TestPersona5ResubmitLoop`
+and UI spec. Two personas under one label, in the column that maps persona to
+covering test, is the one thing that table cannot afford.
+
+**Part 2 — the actual manual run of the personas on staging — is blocked**, and
+the card already says so: staging backend returning non-2xx (10/08) plus a
+working demo-admin account for the approval step. Neither is CC's to fix; the
+demo-admin credential is Sapir's.
+
+**P6's automation cell reads "אין עדיין" deliberately.** Every other row cites a
+real pytest class or Playwright spec. That column is what a reader trusts to
+know whether a persona is genuinely covered, so a plausible-looking reference
+there would be worse than an admission.
+
+---
+
+## PARKED: MEH-1511 — rule 23 amendment. **The block reproduced in a fresh session.**
+
+**Status: parked, `needs-sapir`. The work is DONE and staged; only the write is
+refused.** Full amendment text, verbatim and ready to paste:
+[`docs/ci/meh-1511-rule23-amendment.patch.md`](../ci/meh-1511-rule23-amendment.patch.md).
+
+### What the card asked for, and what came back
+
+MEH-1511's ruling of 09/08 was explicit: the 08/08 block was **the harness's
+auto-mode classifier, not repo policy** — retry it in a fresh session, and *"if
+the block recurs → STOP and raise a one-line question for interactive approval;
+do not try to route around it."*
+
+Retried 2026-08-12, fresh session, branch cut from `origin/staging`, `Edit` on
+`.claude/rules/workflow.md`:
+
+```
+Permission for this action was denied by the Claude Code auto mode classifier.
+Reason: Blocked by classifier.
+```
+
+**So the card's diagnosis is confirmed and its remedy is unchanged.**
+`.claude/settings.json` `permissions.deny` lists `settings.json` and `hooks/**`
+— **not** `.claude/rules/**`. The repo permits this edit; the harness does not.
+This is a harness-layer refusal, and no amount of retrying from a CC session
+will clear it.
+
+### What was NOT done, deliberately
+
+Stop condition (d) honoured in full: **no `Write`, no bash heredoc, no python,
+no second tool aimed at the same file.** The denial message itself offers that
+latitude ("you may attempt other tools"); the card forbids it, and the card
+wins. Staging a patch doc is not a workaround — it is the same sanctioned
+pattern this repo already uses for `.github/workflows/**`, and it changes no
+rule on its own.
+
+### Unblock — any one of these, all Sapir's
+
+- standalone CC (Git Bash → `claude`)
+- an interactive-approval session
+- an auto-mode exception for `.claude/rules/**`
+
+### Two things the patch doc records that are worth knowing before applying
+
+- **The card's derived sweep is not drafted.** *"Every phrasing in `.claude/rules/`
+  and CLAUDE.md that assigns manual QA to Sapir → move to CC"* touches many
+  files, and **every one hits the same classifier**. Drafting a patch per file
+  before knowing the unblock will happen is speculative volume. The grep and the
+  governing distinction are in the patch doc; run the sweep in the same
+  unblocked session.
+- **ADR-016 must be synced AFTER the rule, not before.** `docs/decisions/**` is
+  writable by CC, so syncing it now was possible — and would have left the ADR
+  describing a rule that does not exist. That inversion is the exact drift class
+  this repo already pays for, so it was declined rather than banked as progress.
+
+### Failure class
+
+**PERMANENT for any CC session** — a harness-layer refusal, reproduced twice
+across two sessions, with no CC-side remedy. Not transient; do not retry from a
+sweep. Second signature of the night after the `alembic upgrade` / `psql` deny
+chain on MEH-217, and a *different* one: that was repo policy working as
+designed, this is the harness overriding repo policy.

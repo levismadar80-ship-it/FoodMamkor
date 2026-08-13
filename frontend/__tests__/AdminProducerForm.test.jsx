@@ -27,7 +27,10 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn() },
 }));
 
-const NAME_LABEL = he.admin.producers.form.fields.name; // "שם העסק *"
+// MEH-2015: the asterisk moved out of the i18n value into a marker span the
+// label ALSO contains, so an exact textContent match no longer works — match
+// on the (now unstarred) value as a prefix instead.
+const NAME_LABEL = new RegExp(he.admin.producers.form.fields.name);
 
 function renderForm() {
   return render(
