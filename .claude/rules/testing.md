@@ -756,6 +756,22 @@ aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
 
+**Consequence of the above, made explicit (MEH-1907):** with auto-merge armed,
+a PR lands the instant `CI gate` and `Deploy gate` report `success` —
+regardless of any verbal or written instruction like "wait for two
+consecutive green E2E runs first." `E2E gate` carries no vote in what merges
+today, so that kind of instruction is not enforced by the merge machinery at
+all; it is enforced only by **not arming auto-merge** until the condition is
+checked by hand. Measured directly: PR #2592 merged on one green E2E run
+though the orchestrator's instruction required two consecutive ones — the
+mechanism did exactly what its required-context set says it will do, which is
+ignore E2E either way. Not a compliance failure on CC's part; a property of
+which contexts `protect-staging` (ruleset 15240090) actually requires. See
+[docs/ci/pr-checks-cancelled-not-failure.patch.md](../../docs/ci/pr-checks-cancelled-not-failure.patch.md)
+for the sibling MEH-1907 fix (a cancelled required job must not read as a
+failed one — same aggregator, opposite direction from the skip-green fix
+above).
+
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then
 retry the merge once. (Observed on PR #908 — first merge attempt blocked on a
