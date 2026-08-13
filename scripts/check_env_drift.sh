@@ -44,7 +44,13 @@ cd "$ROOT"
 # `.env.example` would be actively wrong: it would tell a reader they are theirs to
 # configure. Read by frontend/e2e/qa-meh1853-cls.mjs, which resolves the commit it
 # was launched from so it can refuse to measure an undeployed build.
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|PATH|HOME|USER|PYTHONPATH)$'
+# QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH (MEH-1516): same class as TEST_URL /
+# PW_WEBKIT above — optional overrides for the CI screenshot-capture tool
+# (frontend/scripts/qa-ci-screenshots.mjs), not application config. Both have
+# working defaults (localhost:3000, Playwright's own bundled browser) when
+# unset; listing them in .env.example would tell a developer they're theirs
+# to configure, which they aren't.
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")
