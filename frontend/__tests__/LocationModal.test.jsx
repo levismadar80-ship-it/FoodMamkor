@@ -98,3 +98,62 @@ describe("LocationModal commit contract (MEH-1192)", () => {
     window.removeEventListener(EVENT_NAME, eventListener);
   });
 });
+
+/**
+ * MEH-2039 — the dialog contract, guarded at the vitest gate.
+ *
+ * These exist because the CI reviewer on PR #2847 pointed out that the
+ * keyboard evidence for this file lived only in
+ * frontend/e2e/qa-meh2039-modal-a11y.mjs — a hand-run QA script that no CI job
+ * executes. A trap with no gated test is a trap a future refactor can delete
+ * silently. Same three assertions as CategoryRequestModal.test.jsx.
+ *
+ * The trap test discriminates by construction: jsdom does not implement native
+ * Tab focus movement, so nothing moves focus on a Tab keydown unless the
+ * component's own handler runs and calls .focus() itself.
+ */
+describe("LocationModal dialog contract (MEH-2039)", () => {
+  it("traps Tab inside the panel — wraps last→first and first→last", () => {
+    setup();
+    const panel = screen.getByRole("dialog");
+    const focusables = panel.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(first);
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("locks body scroll while open and restores it on unmount", () => {
+    document.body.style.overflow = "auto";
+    const { unmount } = render(<LocationModal open onClose={() => {}} onSelectCity={() => {}} />);
+    expect(document.body.style.overflow).toBe("hidden");
+    unmount();
+    expect(document.body.style.overflow).toBe("auto");
+  });
+
+  it("names itself from the visible heading, not a parallel aria-label", () => {
+    setup();
+    const panel = screen.getByRole("dialog");
+    expect(panel).toHaveAttribute("aria-labelledby", "location-modal-title");
+    expect(panel).toHaveAttribute("aria-describedby", "location-modal-subtitle");
+    // The name must resolve to real, rendered text — an aria-labelledby
+    // pointing at nothing is worse than the aria-label it replaced.
+    expect(document.getElementById("location-modal-title").textContent.trim()).not.toBe("");
+    expect(panel).not.toHaveAttribute("aria-label");
+  });
+
+  it("moves initial focus to the close button, not the city field", () => {
+    setup();
+    // Deliberate: focusing the text input would raise the on-screen keyboard
+    // the moment the modal opens on mobile.
+    expect(document.activeElement).toBe(screen.getByLabelText("modals.location.close_aria"));
+  });
+});
