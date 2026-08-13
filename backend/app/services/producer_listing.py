@@ -343,6 +343,13 @@ def _pickup_condition(cities: list[str] | None = None):
     _delivery_day_condition below. Without a city the arm is unscoped:
     "has pickup anywhere".
 
+    ProducerLocation.city is NULLABLE (models.py:820), and a NULL city does NOT
+    match a city-scoped query: `lower(NULL) IN (...)` is NULL, which is not
+    true, so the row drops out. That is the intended reading — a pickup point
+    whose city nobody filled in is a point we cannot place, and claiming it
+    serves the queried city would be an invention. The business still matches
+    the UNSCOPED chip. Pinned by test_pickup_row_without_a_city_is_not_placed.
+
     # REUSES: _build_base_queries:197-202 — the kind IN (...) EXISTS shape.
     """
     conds = [ProducerLocation.kind.in_(("pickup", "market_stand"))]
@@ -597,6 +604,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     delivery_city = filters.get("delivery_city")
     delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
+    pickup_points = filters.get("pickup_points")  # MEH-2046
     # MEH-1645: single canonical day (router 422s anything else). When a city
     # is present the combined condition REPLACES _delivery_city_condition —
     # v1 deliberately drops the nationwide OR-branch (no explicit day row =
@@ -656,7 +664,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         # list is not consulted on this axis.
         delivery_scope_cond = _has_delivery_condition()
 
-    pickup_cond = _pickup_condition(scope_cities) if filters.get("pickup_points") else None
+    pickup_cond = _pickup_condition(scope_cities) if pickup_points else None
     service_conds = [c for c in (delivery_scope_cond, pickup_cond) if c is not None]
     if service_conds:
         # or_() over a single clause would render it unchanged, but the explicit

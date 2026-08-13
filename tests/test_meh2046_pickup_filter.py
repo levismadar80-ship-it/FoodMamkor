@@ -236,6 +236,22 @@ def test_pickup_city_scope_is_case_insensitive(client, db):
     assert _names(resp) == ["איסוף בhaifa"]
 
 
+def test_pickup_row_without_a_city_is_not_placed(client, db):
+    """ProducerLocation.city is nullable. A pickup point with no city cannot be
+    placed, so it must NOT answer a city-scoped query — `lower(NULL) IN (...)`
+    is NULL, not true, and the row drops out. The same business still matches
+    the unscoped chip, which is the half that keeps this from being a hole."""
+    _with_pickup(db, "איסוף בלי עיר", city=None)
+
+    scoped = client.get("/producers", params={**PICKUP, "delivery_city": "חיפה"})
+    assert scoped.status_code == 200, scoped.text
+    assert _names(scoped) == []
+
+    unscoped = client.get("/producers", params=PICKUP)
+    assert unscoped.status_code == 200, unscoped.text
+    assert _names(unscoped) == ["איסוף בלי עיר"]
+
+
 def test_pickup_survives_delivery_days(client, db):
     """Days constrain the delivery arm only — a pickup point has no delivery
     day, so day-filtering must not delete the pickup arm from the union."""
