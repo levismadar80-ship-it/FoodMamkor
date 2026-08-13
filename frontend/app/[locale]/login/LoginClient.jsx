@@ -267,7 +267,13 @@ function LoginPageBody() {
               <label htmlFor="login-password" className="text-[13.5px] font-semibold text-text">
                 {t("password_label")}
               </label>
-              <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+              {/* MEH-215 journey C: locator for the login → forgot-password
+                  hand-off spec (30-login-journey-c), per docs/E2E-LOCATORS.md. */}
+              <Link
+                href="/forgot-password"
+                data-testid="login-forgot-link"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 {t("forgot_password")}
               </Link>
             </div>
@@ -320,7 +326,11 @@ function LoginPageBody() {
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm text-start" role="alert">
+            /* MEH-215 journey C: the FORM-level error, distinct from the two
+               field-level role="alert" nodes above it. A bare getByRole("alert")
+               is ambiguous here (strict-mode violation, measured), so the spec
+               targets this id. */
+            <p className="text-red-500 text-sm text-start" data-testid="login-error" role="alert">
               {error}
             </p>
           )}

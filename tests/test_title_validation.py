@@ -78,6 +78,10 @@ def test_valid_titles_pass():
         title="סדנת אפייה",
         description="x" * 25,
         event_date=datetime.date(2030, 1, 1),
+        # MEH-2013: city is required and location_type lost its "home"
+        # default. Fixture only — this file is about title validation.
+        city="תל אביב",
+        location_type="home",
     )
     assert exp.title == "סדנת אפייה"
 

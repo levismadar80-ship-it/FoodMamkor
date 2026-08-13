@@ -72,7 +72,7 @@ describe("LocationModal commit contract (MEH-1192)", () => {
   // distance labels unlock. Persistence happens BEFORE the reverse-geocode, so
   // it must survive even when Nominatim fails.
   it("geolocate success persists user_location + dispatches the sync event, even if reverse-geocode fails", async () => {
-    window.sessionStorage.clear();
+    window.localStorage.clear();
     const getCurrentPosition = vi.fn((success) =>
       success({ coords: { latitude: 32.0853, longitude: 34.7818 } }),
     );
@@ -89,7 +89,7 @@ describe("LocationModal commit contract (MEH-1192)", () => {
     const geoBtn = screen.getByText("modals.location.geo_button");
     await act(async () => { fireEvent.click(geoBtn); });
 
-    expect(JSON.parse(window.sessionStorage.getItem(STORAGE_KEY))).toEqual({
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY))).toEqual({
       lat: 32.0853,
       lng: 34.7818,
     });
