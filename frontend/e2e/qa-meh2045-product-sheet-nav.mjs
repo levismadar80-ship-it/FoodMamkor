@@ -27,10 +27,16 @@
  * (.claude/rules/testing.md, PR #2786).
  */
 import { chromium } from "@playwright/test";
-import { mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import sharp from "sharp";
 
-const BASE = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
+// PLAYWRIGHT_BASE_URL, not a QA_* name of its own: `scripts/check_env_drift.sh`
+// scans every environment-variable read in the repo and BLOCKS on any that no
+// .env.example documents, so inventing a knob here reds a required gate. (It
+// scans comments too, which is why this paragraph describes the pattern in
+// words rather than writing it out.) This name is already declared at
+// frontend/.env.example:87 and is what the sibling harnesses use.
+const BASE = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000";
 const OUT = "qa-artifacts/MEH-2045";
 const failures = [];
 let checks = 0;
@@ -178,13 +184,16 @@ async function sheetState(page) {
 }
 
 async function run(width, height, label) {
-  // The sandbox ships Chromium build 1194 at a fixed path; this repo's
-  // Playwright asks for 1234 and there is no download here (the environment
-  // sets PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD). Point at the installed binary
-  // rather than fetching one.
-  const browser = await chromium.launch({
-    executablePath: process.env.QA_CHROMIUM || "/opt/pw-browsers/chromium",
-  });
+  // The CC sandbox ships Chromium at a fixed path and its build number does
+  // not match what this repo's Playwright asks for, with no download available
+  // (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD is set). Fall back to that binary when it
+  // exists, otherwise let Playwright resolve its own — so this runs unchanged
+  // on a normal machine. Not an environment variable by design: a new one
+  // would have to be added to .env.example or it blocks the env-drift gate.
+  const sandboxChromium = "/opt/pw-browsers/chromium";
+  const browser = await chromium.launch(
+    existsSync(sandboxChromium) ? { executablePath: sandboxChromium } : {},
+  );
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
   const boxes = [];
 
