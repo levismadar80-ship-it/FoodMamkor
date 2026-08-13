@@ -22,6 +22,43 @@
 **Known issue found, not fixed (out of this batch's scope):** `qa-meh2045-product-sheet-nav.mjs`'s photo-square-sizing check fails reproducibly at 375px for the first non-signature product (renders as the no-photo fallback band height instead of a square); desktop-1440 and the other two test photos are fine. Not caused by anything in this batch — none of the 4 items touched `ProductSheet.jsx`. Needs its own investigation to confirm real vs. a local image-load timing artifact before filing.
 
 **Next task:** none pre-selected — resume via the normal queue (workflow.md "Working the queue", Lane A then Lane B).
+## 2026-08-13 — MEH-1855 chunk 1 + MEH-2063: שני מיזוגים, וסשן מקביל תפס את chunk 2 מחוץ להיקף
+
+**שורה אחת:** שני PRs מוזגו — **#2895** (MEH-1855 chunk 1, `b90e917f`) ו-**#2900** (MEH-2063, `6fd25857`) · MEH-1855 **נשאר In Progress** בלינר (chunk 2 עדיין לא סגור), MEH-2063 **Done** · סשן מקביל אחר תפס את chunk 2 Phase 1 (PR #2898, `c8feb00d`) **מחוץ לסמכות שהוענקה לסשן הזה** ("chunk 2 = RED. Do NOT start.").
+
+### MEH-1855 chunk 1 — הבאג נסגר
+
+חמישה אתרי קריאה (לא ארבעה, כפי שהכרטיס טען) הפכו מ-`starting_price_label`-בלבד ל-`price_range || starting_price_label`: `hasSignature` (השער הקריטי — קובע אם כל בלוק החתימה מוצג), שני שומרי fallback, הרינדור, וגם `ProducerDetail.jsx:184` (שער נראות טאב המוצרים — לא נמנה בכרטיס). עסק שמילא רק `price_range` עבר מבלתי-נראה לגמרי למוצג. אפס alias-בלבד ב-`frontend/` (grep). שני shaping points (Pydantic, Zod) נבדקו — שניהם משמרים את השדה.
+
+5 טסטים חדשים הוצגו נכשלים על הקוד הישן לפני שהתיקון הוחזר (guard-test discrimination).
+
+### MEH-2063 — סדר כרטיסים
+
+"שינוי שם העסק" עבר מראשון לאחרון בקבוצת ה-profile. `anchorId` לא השתנה; המפות (`ANCHOR_TO_KEY` וכו') הן מפתח־ערך, לא סדר — אין תלות. שני טסטים חדשים (סדר + deep-link) הוצגו: הראשון נכשל על הקוד הישן, השני עבר ללא שינוי (מוכיח שהעוגן לא תלוי בסדר). LocationCard (MEH-2058, PR #2896 עדיין פתוח) לא נגע — קבוצה נפרדת לגמרי בקובץ.
+
+### ⚠️ סשן מקביל תפס את chunk 2, מחוץ להיקף שהוענק
+
+הסמכות שקיבל הסשן הזה כללה במפורש: *"Chunk 2 (backfill + column drop) = RED. Do NOT start. Do NOT create its branch."* בזמן שהסשן הזה עבד על chunk 1 + MEH-2063, session אחר (session id שונה, נראה ב-PR footer) פתח PR נפרד ל-chunk 2, צמצם את ההיקף בעצמו לפי ADR-007 (Expand-Contract — backfill בלבד, בלי מחיקת עמודה, `downgrade()` מתועד כ-no-op גלוי), ומוזג (`sapirschnapp`, 16:24:30, `c8feb00d`). MEH-1855 עדיין **In Progress** — נבדק, לא נסגר אוטומטית — כי Phase 2 (מחיקת העמודה, אחרי 7 ימי soak) עדיין לא בוצע.
+
+**זה לא נעשה ע"י הסשן הזה** — נרשם כאן לשקיפות, לא כדיווח על עבודה שביצעתי.
+
+### ⚠️ ממצא CI reviewer על PR #2895 (מוזג, לא תוקן בסבב הזה)
+
+`ProducerDetail.jsx:184`'s tab-visibility gate לא נבדק ישירות (רק עקיף דרך `ProducerSections`). פער כיסוי קדם-קיים שגדל בשדה אחד. מדווח, לא תוקן — מחוץ להיקף שתי המשימות שהוגדרו.
+
+### אימות סופי, על ה-staging tip אחרי שני המיזוגים
+
+`npm run build` יצא 0 · frontend `npx vitest run` מלא **2941 עברו / 3 דולגו** (324 קבצים) · `pytest tests/test_api.py` **267 עברו / 4 דולגו** · QA חי בדפדפן אמיתי (`next start`, מוק API) על ה-tip הסופי: 6/6 ו-6/6 (0 כשלים, 375px+1440px). בדיקת רגרסיה חזותית ל-`/producers`+`/map`: אפס שגיאות console חדשות; ה-`ERR_TUNNEL_CONNECTION_FAILED` שנראה ב-`/map` הוא חסימת רשת ידועה של ה-sandbox (אותה מחלקה כמו חסימת `res.cloudinary.com`), לא רגרסיה מהדיף.
+
+### פתוח לספיר
+
+1. **בדיקת נייד סופית** — self-QA שלי ב-375/1440px בוצע (screenshots ב-`frontend/qa-artifacts/MEH-1855/` ו-`MEH-2063/`); preview URL חסום ע"י `api-deployments-free-per-day` (Vercel quota — מצב, לא תקלה).
+2. **MEH-1855 chunk 2 Phase 2** (מחיקת עמודת ה-alias) — נשאר אחרי 7 ימי soak מ-`b90e917f`.
+3. **הממצא של ה-CI reviewer** על `ProducerDetail.jsx:184` — טסט חסר, לא Must Fix.
+
+### הצעד הבא
+
+אין PR קוד נוסף מהסשן הזה — שתי המשימות שהוזמנו הושלמו. PR הזה עצמו הוא docs-only (CHANGELOG + HANDOFF, כלל 31).
 
 ## 2026-08-13 — MEH-2023 bug sweep v4: 14/14 resolved, שלוש שגיאות `save_issue` full-replace באותו סשן, ופער תיעוד ב-#2882
 
