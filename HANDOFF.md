@@ -3,6 +3,28 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-13 — Lane B: התנגשות מקבילית שנתפסה ללא נזק, ו-MEH-1974 נסגר כי הגורם השורשי שלו כבר לא משוחזר
+
+**שורה אחת:** MEH-2047 (שני PRs) התגלה בבעלות סשן מקביל חי באמצע עבודה — לא נגעתי, נסנכרן בלבד · MEH-1974 (VRT parity, Urgent) נסגר עם ראיה חיה שה-Cloudinary 401 שגרם לו כבר לא קיים · שלושה כשלים לא-קשורים שנחשפו בדרך כבר מתועדים בכרטיסים משלהם.
+
+### MEH-2047 — לא נגעתי, ובצדק
+
+הכרטיס נשא שני PRs (#2857 merged, #2859 open עם `mergeable_state: dirty`). פתרתי מקומית קונפליקט מיזוג יחיד ב-`ProductsSection.jsx` (בלוק הערה בלבד) — ואז `git push` נדחה: `fetch first`. `list_sessions` אישר: `session_01AsSmZzUtNWfy8NeNHohEV1` ("Diet tag definitions disclosure") **חי וכתוב על אותו ענף באותו רגע**, עם אותה רזולוציה בדיוק לאותו קונפליקט, פלוס תיקוני CI-reviewer שלא היו לי. סנכרנתי (`git checkout -B` מ-origin, **לא** `reset --hard` — חסום ב-L2) ונסוגתי לגמרי מהכרטיס. כלל 1 (single-session) עבד בדיוק כמו שהוא אמור.
+
+### MEH-1974 — VRT parity, נסגר
+
+הכרטיס תיאר כשל דטרמיניסטי ב-7 specs (home/login/register/about), שורש: Cloudinary 401 (MEH-1925, "disabled customer" ב-Admin API). לפני שחזור מקומי — בדיקת CI חי קודם, לפי אבחון-משך (ריצה אמיתית ~800–950 שנ' מול skip-green ~20–50 שנ'). **שלוש ריצות אמיתיות אחרונות על staging היום (10:17/11:22/11:33) — VRT `parity.spec.ts` ירוק 17/17 בכולן.** בלוג המלא (198K תו) של הריצה האחרונה: אפס מופעים של `upstream image response failed` / `UNAUTHORIZED` / `res.cloudinary` / `dfzpscjks` — לעומת מאות שורות בעבר. ראייה חיה, לא היעדר-תסמין.
+
+**מה זה לא סוגר:** MEH-1925 (חשבון Cloudinary) נשאר `Todo` — אין לי גישת Console לאשר. פער בין Linear למדידה בפועל, מתועד ולא נסגר על ידי.
+
+**מדוע ה-job הכולל בכל זאת אדום:** 5 כשלים ב-`e2e/flows/**` (לא ב-`e2e/visual/**`) + `[middleware/producerExists] backend answered 500` חוזר על `/producers/by-slug/*`. שלושתם כבר מתועדים: MEH-1906 (500/RecursionError, In Progress), MEH-2040 (favorites D1, Backlog), MEH-215 (journey flakiness, In Progress). לא נגעתי בהם — מחוץ ל-scope.
+
+MEH-1799 (skip-green mechanic שהכרטיס תלה בו) — כבר Done, patch doc #2770 ממתין להחלה של ספיר.
+
+### הצעד הבא
+
+אין PR קוד מהסשן הזה (שני הכרטיסים לא דרשו שינוי קוד: אחד בבעלות אחרת, השני אבחון-וסגירה בלבד). PR הזה הוא docs-only (HANDOFF + CHANGELOG).
+
 ## 2026-08-12 — 30 מיזוגים, תקלת backend חיה שהרעילה את ה-E2E, ושלושה כרטיסים שהתגלו כבר-עשויים
 
 **שורה אחת:** ‏**30 מיזוגים ל-staging** (נספרו מ-`git log --first-parent`) · כל שבעת ה-PRs של הסשן **מוזגו** · **‏MEH-1625 נסגר אוטומטית ע"י שם הענף ונפתח מחדש** — המקרה היחיד מתוך שבעה · `GET /api/producers` החזיר 500 בחלון ~15:05–15:37Z ו**הסיבה לא נקבעה** · סוויפ framer-motion 13 לא מצא רגרסיה.

@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+- **13/08 — MEH-1974 (VRT parity, Urgent) נסגר: הגורם השורשי (Cloudinary 401) כבר לא משוחזר, נמדד חי ולא הונח.**
+  - שלוש ריצות E2E אמיתיות רצופות על staging היום (לא skip-green — משך 800–950 שנ') הראו VRT `parity.spec.ts` ירוק 17/17 בכולן. בלוג המלא של הריצה האחרונה: אפס מופעים של חתימת ה-401 (`upstream image response failed`/`UNAUTHORIZED`/`res.cloudinary`/`dfzpscjks`) שמילאה מאות שורות בעבר (MEH-1925).
+  - ה-job הכולל עדיין אדום — אבל מסיבות לא-קשורות ל-VRT, כבר מתועדות בנפרד: `producerExists` 500 חוזר (MEH-1906), `favorites` D1 (MEH-2040), journey flakiness כללי (MEH-215).
+  - MEH-1925 (חשבון Cloudinary) נשאר `Todo` ב-Linear — לא נסגר, אין גישת Console. פער Linear-מול-מדידה מתועד על הכרטיס.
+- **13/08 — MEH-2047: התנגשות מקבילית עם סשן חי, נתפסה ע"י `git push` (fetch first) ולא ע"י בדיקה יזומה.**
+  - פתרון קונפליקט מיזוג מקומי (`ProductsSection.jsx`, בלוק הערה) הושלם ואז נדחה בפועל — סשן אחר כבר דחף רזולוציה זהה + תיקוני CI-reviewer לאותו ענף בו-זמנית. `list_sessions` אישר סשן חי על אותו ענף. סונכרן (`git checkout -B` מ-origin, לא `reset --hard`) ונסוגתי מהכרטיס לגמרי — כלל 1 (single-session).
+
 - **12/08 — 30 מיזוגים ל-staging ביום אחד, ותקלת backend חיה שהרעילה את אות ה-E2E באמצע. הרשימה נגזרה מ-`git log --first-parent origin/staging`, לא מדוחות.**
   - **🔴 הממצא שגובר על כל השאר: `GET /api/producers` החזיר 500 רציף בחלון ~15:05–15:37Z.** לא רגרסיה של דיף כלשהו — החלון תחום בין שני deploys שלא נגעו בקוד הליסטינג (‏`edf8a967`, docs-only, 15:00:03 · `aab3be55`, OTP בלבד, 15:33:40). ההסלמה: המשפחה המוכרת של `by-slug` → 500 (הכרטיס שמודד אותה פתוח מאז 04/08) **התרחבה לראשונה גם ל-endpoint האוסף**. אומת ב-curl ×3 מול Vercel→Railway (‏`x-railway-request-id` נוכח, אין `X-Railway-Fallback`), בזמן ש-`/api/health` ו-`/api/categories` החזירו 200 — כלומר כשל ממוקד, לא outage. **הסיבה לא נקבעה**: ה-stacktrace יושב ב-Sentry (`environment: staging`) ו-Railway חסום מה-sandbox, כך ש-CC מסרה מדידה ולא אבחנה. פרודקשן **לא הושפע** (נמדד: `mehamakor.co.il/api/producers` ו-`by-slug` → 200).
   - **ההשלכה שצריך לזכור לפני שקוראים אדום כרגרסיה:** בחלון הזה שתי PRs עם דיפים ללא חפיפה הפיקו **סט כשלים זהה-בייט** ב-E2E, וספירת הטסטים זזה 217 → 212 → 228 בשלוש ריצות. כשה-backend נופל לסירוגין, הסוויטה מודדת אותו ולא את הדיף — אסור לקרוא אדום כרגרסיה ואסור לקרוא ירוק כתקינות.
