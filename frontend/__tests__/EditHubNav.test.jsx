@@ -150,6 +150,29 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     expect(routerStub.replace).not.toHaveBeenCalled();
   });
 
+  // MEH-2058: ProfileCompletenessCard's "location" checklist step now deep-links
+  // to #locations (LocationsEditor) instead of the deleted LocationCard's
+  // #location. Discriminating: before ANCHOR_TO_KEY/KEY_TO_GROUP/KEY_TO_ANCHOR
+  // registered "locations", this hash resolved to no key and applyHash returned
+  // early (the same silent no-op #location now falls into) — the accordion
+  // would never reach aria-expanded="true" and this assertion would time out.
+  it("opens + scrolls the card for an in-group #locations deep link", async () => {
+    const scrollSpy = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy;
+    window.requestAnimationFrame = (cb) => cb();
+    params.group = "location";
+    window.location.hash = "#locations";
+    mount();
+    await waitFor(() =>
+      expect(screen.getByTestId("accordion-locations")).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      ),
+    );
+    expect(scrollSpy).toHaveBeenCalled();
+    expect(routerStub.replace).not.toHaveBeenCalled();
+  });
+
   it("composes license + kashrut as one unified trust card (no separate cards)", async () => {
     params.group = "trust";
     mount();
