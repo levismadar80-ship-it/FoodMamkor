@@ -104,6 +104,30 @@ function escapeHtmlAttr(str) {
     .replace(/>/g, "&gt;");
 }
 
+// MEH-1998: the category colour is interpolated into the divIcon's raw HTML —
+// including into a JS string literal inside the `onerror` handler below. That
+// nesting (HTML attribute → JS source) is why this is a VALIDATOR and not an
+// escape: the browser decodes character references BEFORE the handler is
+// parsed as JS, so `&#39;` arrives at the JS parser as a bare `'` and closes
+// the string exactly as an unescaped quote would. Measured, not assumed —
+// `escapeHtmlAttr("#fff';alert(1);'")` produces a handler byte-identical to
+// the unescaped one. HTML-escaping cannot defend this position; only refusing
+// the value can.
+//
+// A colour is a closed vocabulary, so an allowlist costs nothing: every value
+// in category-registry.js CATEGORY_STYLES is #rrggbb and passes through
+// untouched. Anything else degrades to the primary token. Dormant today (the
+// palette is hardcoded); load-bearing the day the colour becomes DB-driven,
+// which is the scenario this ticket was filed for.
+// 3/4/6/8 digits are the only lengths CSS recognises. A lazier `{3,8}` would
+// also admit 5 and 7 — not a security hole (the browser drops an unparseable
+// declaration) but it would render the pin unstyled, a visual regression in
+// exactly the DB-driven future this validator exists for.
+const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+function safeCssColor(value) {
+  return SAFE_HEX_COLOR.test(String(value ?? "")) ? String(value) : "#2e6853";
+}
+
 // MEH-1611: focus-on-select. When one business is selected, every OTHER
 // business's pin is DEMOTED (faded + desaturated) rather than removed — the
 // Airbnb map-search pattern: the surrounding supply stays legible as context,
@@ -141,20 +165,33 @@ function createCategoryMarker(
   const isPremium = producer.plan === "premium";
   const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
-  // Round photo (square crop), else MEH-936 category-glyph fallback. No
-  // onerror→fallback swap: strict CSP blocks inline handlers, so we branch on
-  // image presence. The glyph + colour come from styleForProducer (the legend's
+  // Round photo (square crop), else MEH-936 category-glyph fallback.
+  // MEH-1976: this comment used to read "No onerror→fallback swap: strict CSP
+  // blocks inline handlers". That was FALSE, and measured so — next.config.js:84
+  // ships script-src with 'unsafe-inline' and declares no script-src-attr, so
+  // inline handlers do run. Branching on image presence alone was therefore not
+  // a CSP constraint, it was an unnecessary limitation, and it left a live
+  // Cloudinary 401 (MEH-1925) rendering the browser broken-glyph. There is now
+  // an onerror swap below. The glyph + colour come from styleForProducer (the legend's
   // single source of truth); empty/null category degrades to DEFAULT (Leaf on
   // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
   const imgUrl = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.square })
     : null;
-  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const categoryColor = safeCssColor(rawCategoryColor);
   // raw img: this is an HTML *string* handed to Leaflet's divIcon, not JSX.
   // next/image is a React component and cannot be serialised into it — there
   // is no React tree here to render into. Structural, not a preference.
   const inner = imgUrl
-    ? `<img src="${imgUrl}" loading="lazy" alt="${escapeHtmlAttr(producer.name)}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+    // MEH-1976: onerror degrades a failed load (the MEH-1925 Cloudinary 401)
+    // to the category colour instead of the browser's broken-image glyph. It
+    // does NOT restore the category glyph SVG — re-injecting that markup from
+    // inside an HTML attribute needs escaping this string cannot do safely, so
+    // the pin reads as a clean coloured circle rather than the full empty
+    // state. Inline handlers DO fire here: next.config.js:84 ships
+    // script-src 'unsafe-inline' (checked, not assumed).
+    ? `<img src="${imgUrl}" loading="lazy" alt="${escapeHtmlAttr(producer.name)}" onerror="this.style.display='none';this.parentNode.style.background='${categoryColor}'" style="width:100%;height:100%;object-fit:cover;display:block;" />`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon)}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.
@@ -247,7 +284,8 @@ function createSecondaryMarker(
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.7 : 1;
   const grayscale = dimmed ? "filter:grayscale(1);" : "";
-  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const categoryColor = safeCssColor(rawCategoryColor);
   const borderWidth = active ? 3 : 2;
   // Preserved: dashed border still carries `approximate` on the secondary pin —
   // only the halo shrinks (MEH-1569), so the precision signal survives at 24px.
@@ -300,7 +338,8 @@ function createSecondaryMarker(
 // logical props) — same exception as createCategoryMarker's verified badge.
 function createSingleBusinessClusterIcon(producer, markerCount) {
   const size = 36;
-  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const { color: rawCategoryColor, icon: GlyphIcon } = styleForProducer(producer);
+  const categoryColor = safeCssColor(rawCategoryColor);
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
       <div style="

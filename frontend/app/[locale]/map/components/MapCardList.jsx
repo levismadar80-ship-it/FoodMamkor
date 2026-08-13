@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
+import { SkeletonStyles } from "@/components/Skeleton";
 
 /**
  * Vertical list of producer cards. Verbatim move of the `cardList`
@@ -39,8 +40,29 @@ export default function MapCardList({
   onCardMouseLeave,
   onCardClick,
   onResetAll,
+  // MEH-1671: while the first /producers fetch is in flight the list is
+  // empty for a reason that is NOT "no results" — rendering the empty state
+  // then is the desktop-sidebar flash this prop closes. The mobile sheet was
+  // already guarded one level up (MapBottomSheet `loading`, MEH-1054); this
+  // guard lives here so NO host can show "לא נמצאו" during load. Skeleton
+  // only when loading AND empty: a refetch with stale rows keeps the rows
+  // (no flash), and a genuine empty (loading resolved) still shows the pin.
+  loading = false,
 }) {
   const t = useTranslations();
+  if (loading && visibleProducers.length === 0) {
+    return (
+      // REUSES: frontend/components/MapBottomSheet.jsx:25 SheetListSkeleton —
+      // same geometry (h-20 rounded-[16px] bars), same role="status" + label
+      // recipe, same styled-jsx mount (skeleton-box is not global CSS).
+      <div data-testid="sidebar-list-skeleton" role="status" aria-label={t("common.skeleton.loading_businesses")}>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="skeleton-box rounded-[16px] h-20 mb-3" aria-hidden="true" />
+        ))}
+        <SkeletonStyles />
+      </div>
+    );
+  }
   return (
     <div className="space-y-3">
       {visibleProducers.map((p) => (

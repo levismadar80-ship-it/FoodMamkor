@@ -83,7 +83,13 @@ def notify_host_rejected(host_email: str, title: str, reason: str) -> None:
     body = (
         f"שלום,\n\n"
         f'לצערנו החוויה "{title}" לא אושרה לפרסום במהמקור.{reason_line}\n'
-        f"ניתן לפנות אלינו לפרטים נוספים דרך טופס יצירת הקשר ב-/about.\n\n"
+        # MEH-1965: was the bare relative path "ב-/about". An email has no base
+        # URL, so that rendered as literal unclickable text — in the one email
+        # where the recipient most needs the contact route. Every other link in
+        # every other email body in this repo interpolates settings.frontend_url;
+        # this was the only exception (measured by grep across all send sites).
+        f"ניתן לפנות אלינו לפרטים נוספים דרך טופס יצירת הקשר: "
+        f"{settings.frontend_url}/about\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     _send_email(host_email, subject, body)

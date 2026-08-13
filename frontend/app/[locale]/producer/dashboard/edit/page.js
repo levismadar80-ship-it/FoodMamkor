@@ -77,7 +77,7 @@ import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -93,6 +93,10 @@ import { isDefaultDescription } from "@/lib/producer-completeness";
 // The anchor ids are a public deep-link contract (#contact-channels …).
 // Do not rename.
 const ANCHOR_TO_KEY = {
+  // MEH-1872: business-name change-request card. Registered in BOTH maps —
+  // this file's own note says a card added to the JSX without an entry renders
+  // but is unreachable by anchor.
+  "business-name": "businessName",
   bio: "bio",
   questions: "questions",
   "contact-channels": "contact",
@@ -150,6 +154,7 @@ const METHOD_FIELD = {
 // Canonical section id per open-state key — hash aliases above scroll to the
 // section that actually carries the id attribute.
 const KEY_TO_ANCHOR = {
+  businessName: "business-name",
   bio: "bio",
   questions: "questions",
   contact: "contact-channels",
@@ -276,6 +281,8 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  // MEH-1872: business-name change-request card.
+  const tName = useTranslations("dashboard.producer.name_change");
   // MEH-1823: the offer feature owns one namespace shared by the dashboard
   // card and the public badge, so the four type labels have a single source.
   const tOffer = useTranslations("producer.offer");
@@ -776,6 +783,21 @@ function EditPageInner() {
         data-testid="group-profile"
       >
         {backLink}
+
+        {/* ⓪ MEH-1872: business-name editor. First in the group because the
+            name is the most fundamental field — and the ONLY card here that
+            files a REQUEST rather than writing its value. The public name does
+            not move until an admin approves (MEH-1851 removed `name` from
+            _PRODUCER_WRITABLE_FIELDS; this is the sanctioned route back). */}
+        <EditAccordionCard
+          anchorId="business-name"
+          title={tName("heading")}
+          summary={tName("accordion_summary")}
+          open={openKey === "businessName"}
+          onToggle={() => toggleKey("businessName")}
+        >
+          <BusinessNameCard profile={profile} />
+        </EditAccordionCard>
 
         {/* ① Edit-tab chunk B — producer-facing gallery images editor */}
         <EditAccordionCard

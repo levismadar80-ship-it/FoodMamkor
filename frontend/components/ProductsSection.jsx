@@ -99,6 +99,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // renders a distinct error card + retry instead of the "no products yet"
   // EmptyState; `reloadKey` re-fires the mount fetch on retry.
   const [loadError, setLoadError] = useState(false);
+  // MEH-1976: product id → the image src that failed to load. A map rather
+  // than a boolean because the thumbs render inside a .map(); one shared flag
+  // would blank every sibling when a single image 401s (MEH-1925).
+  const [failedThumbs, setFailedThumbs] = useState({});
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -519,9 +523,21 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             </form>
           ) : (
             <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
-              {product.image_url ? (
+              {product.image_url && failedThumbs[product.id] !== product.image_url ? (
                 <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
-                  <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="48px" />
+                  <Image
+                    src={product.image_url}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                    // MEH-1976: a 401 here previously rendered a broken glyph.
+                    // Keyed by product id because this row is inside a .map —
+                    // one flag would blank every sibling thumb.
+                    onError={() =>
+                      setFailedThumbs((prev) => ({ ...prev, [product.id]: product.image_url }))
+                    }
+                  />
                 </div>
               ) : (
                 <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
@@ -779,18 +795,26 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
 // REUSES: app/[locale]/producer/dashboard/events/new/page.js:251-288 (dashed
 // click-to-upload label + thumbnail/remove). Upload handler stays in the parent.
 function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
-  if (imageUrl) {
+  // MEH-1976: must precede the `if (imageUrl)` return — hooks cannot be
+  // conditional. Holds the src that failed to load, so a new imageUrl clears
+  // it during render with no effect.
+  const [failedSrc, setFailedSrc] = useState(null);
+  if (imageUrl && failedSrc !== imageUrl) {
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-16 h-16 rounded-[8px] overflow-hidden shrink-0 border border-border">
-          <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" />
+          <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" onError={() => setFailedSrc(imageUrl)} />
         </div>
-        <label className="cursor-pointer text-sm text-primary hover:underline">
+        {/* MEH-2033: sr-only (NOT hidden) keeps the input in the tab order —
+            display:none removes it and the wrapping label is not natively
+            focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
+            affordance; this label has no border, so the ring alone carries it. */}
+        <label className="cursor-pointer text-sm text-primary hover:underline rounded-[4px] focus-within:ring-2 focus-within:ring-primary/30">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
             accept="image/*"
-            className="hidden"
+            className="sr-only"
             onChange={onUpload}
             disabled={uploading}
           />
@@ -801,14 +825,16 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
       </div>
     );
   }
+  // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
+  // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
         onChange={onUpload}
         disabled={uploading}
       />
