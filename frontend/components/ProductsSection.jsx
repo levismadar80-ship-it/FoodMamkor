@@ -52,10 +52,18 @@ import Input from "@/components/ui/Input";
 // removal, whose comments in lib/badges.js and lib/map-chips.js are the
 // precedent this followed.
 //
-// Note the form no longer SENDS is_low_carb at all: the product update handler
-// (backend/app/routers/producer_me.py:1445) uses model_dump(exclude_unset=True),
-// so an omitted field is not written and an existing marking survives an edit
-// untouched. Sending `false` instead would have silently cleared it.
+// Note the form no longer SENDS is_low_carb at all: `update_my_product` (the
+// PUT /products/{product_id} handler in backend/app/routers/producer_me.py)
+// applies model_dump(exclude_unset=True), so an omitted field is not written
+// and an existing marking survives an edit untouched. Sending `false` instead
+// would have silently cleared it.
+//
+// Cited by SYMBOL, not by line number, and that is the correction rather than
+// an incidental style choice: this comment first read `producer_me.py:1445`,
+// which was accurate when written and was 56 lines stale within the hour as
+// staging moved. It had drifted onto the POST decorator — a real line, wrong
+// handler — which reads as a working citation and is worse than a dangling
+// one. `grep update_my_product` cannot rot that way.
 const DIET_DEFINITION_KEYS = ["gluten_free", "vegan", "vegetarian", "lactose_free", "no_added_sugar"];
 
 // MEH-1809: unified submit-validation — every required/range check runs
