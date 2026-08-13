@@ -46,6 +46,16 @@ function report(message, err) {
   console.error(`[middleware/producerExists] ${message}`, err ?? "");
 }
 
+// MEH-1521: an unreachable backend already fails open (see the catch below),
+// but a SLOW backend previously had no bound at all — the edge request would
+// hang for as long as the platform's own connect/read timeout, which is far
+// longer than any user should wait for routing. AbortSignal.timeout() turns
+// "slow" into "unreachable" at a fixed 3s, which then rides the identical
+// fail-open path. 3s chosen to comfortably exceed a healthy backend response
+// (typically <200ms) while bounding the worst case to something a page nav
+// can absorb.
+const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
+
 async function producerExists(url) {
   try {
     // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
@@ -55,7 +65,10 @@ async function producerExists(url) {
     // producers API. Abuse is bounded by the backend's slowapi rate limiting, not
     // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
     // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(EXISTENCE_CHECK_TIMEOUT_MS),
+    });
     if (res.ok) return true;
 
     // MEH-1899: 404 is the ONLY status that answers the question we asked.

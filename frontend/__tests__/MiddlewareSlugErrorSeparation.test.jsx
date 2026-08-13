@@ -122,4 +122,26 @@ describe("middleware slug check — only a 404 means the business is absent", ()
     await middleware(requestFor(`/he/${SLUG}`));
     expect(console.error).not.toHaveBeenCalled();
   });
+
+  // ── MEH-1521: a SLOW backend must not hang the edge request indefinitely —
+  //    it should degrade to the same fail-open path as "unreachable", bounded.
+  it("bounds the existence check with an abort signal, so a hung backend cannot hang the edge request", async () => {
+    backendReturns(200);
+    await middleware(requestFor(`/he/${SLUG}`));
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("a timed-out fetch (AbortError) fails open exactly like an unreachable backend", async () => {
+    global.fetch = vi.fn(async () => {
+      const err = new Error("The operation was aborted");
+      err.name = "TimeoutError";
+      throw err;
+    });
+    const res = await middleware(requestFor(`/he/${SLUG}`));
+    expect(wasNotFound(res)).toBe(false);
+    expect(console.error).toHaveBeenCalled();
+  });
 });
