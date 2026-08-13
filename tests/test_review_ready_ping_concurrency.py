@@ -35,11 +35,38 @@ So the fixed run costs one bounded wait (`_BARRIER_TIMEOUT`) and the broken run
 costs nothing — neither outcome depends on thread scheduling luck.
 
 Touches:  producers table only, via the standard test session. No Cloudinary
-          (the destroy step at producer_me.py:490 is post-commit and the
+          (the destroy step at producer_me.py:540 is post-commit and the
           gallery only grows here), no Resend/WhatsApp (the ping is mocked).
-Does NOT: assert anything about `confirm_phone_otp` — that is the sibling site,
-          closed by MEH-1820 and covered by tests/test_otp_confirm_concurrency.py.
+Does NOT: cover a PUT racing `confirm_phone_otp`. **That race is real, still
+          open, and measured — see the warning below.** This file covers
+          PUT-vs-PUT only.
 History:  MEH-2007 (creation).
+
+⚠️ WHAT THIS FILE DOES NOT CLOSE, stated because the first version of this
+docstring claimed the opposite. It read "that is the sibling site, closed by
+MEH-1820" — which conflates two different races:
+
+    OTP-vs-OTP    two concurrent confirms claiming ONE token.
+                  CLOSED by MEH-1820's conditional UPDATE on the token row;
+                  guarded by tests/test_otp_confirm_concurrency.py.
+    OTP-vs-PUT    a PUT and a confirm each computing the SAME snapshot
+                  independently. NOT closed by anything, including this file.
+
+The second one reproduces deterministically. A producer sitting in
+`pending_whatsapp` WITH an image is already `_is_approvable`; the only thing
+missing is the status flip that the OTP confirm performs. A PUT touching an
+unrelated field snapshots `was_approvable=False`, the confirm commits the flip
+and fires, and the PUT's post-commit re-check then sees the committed flip and
+fires a SECOND ping for a transition it played no part in.
+
+Measured on this branch: **2 pings**, and — the part that matters for reading
+this correctly — **2 pings on `origin/staging` too**. It is a pre-existing hole
+that MEH-2007 neither opened nor closed, not a regression from the lock. The
+lock is deliberately taken in `update_my_producer` alone; extending it to
+`confirm_phone_otp` would change *why* MEH-1820's concurrency test passes (its
+loser would block on the advisory lock instead of on the token row lock its
+docstring describes), so it needs its own fail-by-construction proof rather
+than a line smuggled in here.
 """
 
 import threading
