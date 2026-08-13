@@ -10,7 +10,40 @@ import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
+
+/**
+ * MEH-1703 chunk 2 — ORDER stays here, identity comes from the registry.
+ *
+ * This is the chunk 0 finding made concrete: the Header renders
+ * home → map → experiences → about while the BottomNav renders
+ * home → map → about, so no single declaration order can describe both.
+ * Deriving order from the registry would itself be a visual change. The
+ * registry supplies each item's `href` and its per-surface `labelKey`; these
+ * two arrays supply the sequence, and stay shell-local by design.
+ *
+ * An id listed here that the registry does not declare for this surface is
+ * simply dropped — but it cannot go unnoticed, because
+ * __tests__/NavRegistryParity.test.jsx compares the rendered link set against
+ * the registry for every auth state.
+ */
+const HEADER_NAV_ORDER = ["home", "map", "experiences", "about"];
+const HEADER_MENU_ORDER = [
+  "producerDashboard",
+  "producerPublicPage",
+  "favorites",
+  "settings",
+  "admin",
+];
+
+/** Order a surface's registry entries by an explicit shell-local sequence. */
+function orderedForSurface(surface, state, order) {
+  const byId = new Map(
+    itemsForSurface(surface, state).map((entry) => [entry.item.id, entry]),
+  );
+  return order.map((id) => byId.get(id)).filter(Boolean);
+}
 
 /**
  * Header — MEH-643 (S3 chunk 4) floating-pill navbar. Global chrome,
@@ -175,13 +208,21 @@ export default function Header() {
   // only once /experiences has real supply, and is absent (not disabled, not
   // greyed) below the threshold. Mirrors the existing items exactly; no
   // redesign, no count badge.
+  // MEH-1703 chunk 2: the list is now DERIVED from lib/nav-registry rather than
+  // written out here. Same four items, same order, same keys — `nav.explore`
+  // still comes from the registry's `header` surface and `nav.discover` stays
+  // the BottomNav's, which is exactly why the registry keeps a separate record
+  // per surface instead of one canonical labelKey.
   const showExperiences = useExperiencesNavGate();
-  const NAV_ITEMS = [
-    { href: "/", label: t("nav.explore") },
-    { href: "/map", label: t("nav.map") },
-    ...(showExperiences ? [{ href: "/experiences", label: t("nav.experiences") }] : []),
-    { href: "/about", label: t("nav.about") },
-  ];
+  const NAV_ITEMS = orderedForSurface(
+    "header",
+    { signedIn: !!user, role: user?.role ?? null },
+    HEADER_NAV_ORDER,
+  )
+    // The data gate stays here: the registry records THAT experiences is gated
+    // on supply, not what the current supply is.
+    .filter(({ item }) => item.dataGate !== "experiences-supply" || showExperiences)
+    .map(({ item, surface }) => ({ href: item.href, label: t(surface.labelKey) }));
 
   const isHomepage = pathname === "/";
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
@@ -554,8 +595,6 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
   const hasAvatar = !!user.avatar_url;
-  const isProducer = user.role === "producer";
-  const isAdmin = user.role === "admin";
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -566,24 +605,33 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   // profile row is dropped entirely — their menu is settings → logout.
   // Settings drops the ?tab param to land on the same /settings as the
   // mobile AccountSheet.
-  const items = [
-    ...(isProducer
-      ? [
-          { href: "/producer/dashboard", label: t("account.menu.dashboard") },
-          ...(user.producer_id
-            ? [{ href: `/producer/${user.producer_id}`, label: t("account.menu.profile") }]
-            : []),
-        ]
-      : []),
-    // MEH-1310: favorites row for EVERY logged-in role — desktop parity with
-    // the mobile AccountSheet, which already links /favorites via the SAME
-    // nav.favorites key (AccountSheet.jsx:148-151). Without it /favorites was
-    // orphaned on desktop (reachable only by typing the URL). No icon — the
-    // existing dropdown rows are text-only, so this matches their anatomy.
-    { href: "/favorites", label: t("nav.favorites") },
-    { href: "/settings", label: t("account.menu.settings") },
-    ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
-  ];
+  //
+  // MEH-1703 chunk 2: the role gating that used to be spelled out here as
+  // `isProducer` / `isAdmin` ternaries now lives on the registry records as
+  // `audience`, and `itemsForSurface` applies it. Both local booleans were
+  // removed because those ternaries were their only readers. The producer-id
+  // guard stays here — the registry records THAT the row needs a linked id
+  // (`dataGate`), not whether this particular user has one.
+  const items = orderedForSurface(
+    "headerMenu",
+    { signedIn: true, role: user.role },
+    HEADER_MENU_ORDER,
+  )
+    .filter(
+      ({ item }) =>
+        item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
+    )
+    .map(({ item, surface }) => ({
+      href: item.href.replace(":producerId", user.producer_id ?? ""),
+      label: t(surface.labelKey),
+    }));
+
+  // MEH-1310 (why the favorites row exists at all, preserved from the list this
+  // replaced): desktop parity with the mobile AccountSheet, which links
+  // /favorites via the SAME nav.favorites key. Without it /favorites was
+  // orphaned on desktop, reachable only by typing the URL — the first of the
+  // three incidents that motivated MEH-1703. It carries no icon because the
+  // dropdown rows are text-only; that stays shell-local, in the JSX below.
 
   return (
     // MEH-789: desktop-only — the bottom-pill account tab + AccountSheet own
