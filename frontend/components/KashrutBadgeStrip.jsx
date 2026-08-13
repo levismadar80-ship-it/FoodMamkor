@@ -37,10 +37,32 @@ function daysUntil(dateStr) {
  */
 function CertModal({ src, expiryText, onClose, t }) {
   const closeRef = useRef(null);
+  // MEH-2039: the trap scopes to the panel, not the fixed inset-0 overlay.
+  const panelRef = useRef(null);
+  // MEH-2039: Tab trap ONLY. Initial focus (closeRef, below) and the body
+  // scroll lock were already here and are deliberately left untouched — the
+  // ticket's audit table said to verify before adding, and both were present.
+  // REUSES: LoginPromptModal.jsx:42-77 for the trap half.
   useEffect(() => {
     closeRef.current?.focus();
     const onKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+
+      const focusables = panelRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -62,7 +84,7 @@ function CertModal({ src, expiryText, onClose, t }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-surface-floating rounded-lg border border-border w-full max-w-md p-4 relative" dir="rtl">
+      <div ref={panelRef} className="bg-surface-floating rounded-lg border border-border w-full max-w-md p-4 relative" dir="rtl">
         <button
           ref={closeRef}
           type="button"

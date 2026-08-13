@@ -103,11 +103,20 @@ describe("ReportInfoModal (MEH-1443)", () => {
     expect(showToast.error).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it("calls onClose when backdrop clicked", () => {
+  // MEH-2039: previously clicked `getByRole("dialog")` — which closed the modal
+  // only because role="dialog" sat on the full-screen OVERLAY, the very thing
+  // this ticket moves. The role is now on the inner panel, so the backdrop is
+  // addressed as the panel's parent. Pins both halves instead of one.
+  it("calls onClose when the backdrop is clicked, and NOT when the panel is", () => {
     const onClose = vi.fn();
     render(<ReportInfoModal open={true} onClose={onClose} producerSlug={SLUG} />);
-    fireEvent.click(screen.getByRole("dialog"));
-    expect(onClose).toHaveBeenCalled();
+    const panel = screen.getByRole("dialog");
+
+    fireEvent.click(panel);
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(panel.parentElement);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("calls onClose on Escape key — WCAG 2.1 §2.1.2", () => {
