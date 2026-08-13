@@ -15,10 +15,12 @@
 #           It also does not judge PR bodies - that is the gate's own job.
 # Related:  the `do-not-merge-gate` job in the workflow (see WORKFLOW),
 #           docs/ci/dnm-gate-regex.patch.md (the staged narrowing, Sapir-applied),
+#           docs/ci/meh-1523-dnm-label-gate.patch.md (the staged MECHANISM swap),
 #           scripts/checks/run-all.sh (dispatcher), scripts/checks/README.md.
-# History:  MEH-1922 (creation - after the #2637 false positive).
+# History:  MEH-1922 (creation - after the #2637 false positive);
+#           MEH-1523 (label mode - after #2813 showed marker removal leaves no trace).
 #
-# TWO MODES, ON PURPOSE
+# THREE MODES, ON PURPOSE
 #   The narrowing this guard exists to protect is a workflow edit, and workflow
 #   edits are Sapir's. So the guard has to be correct BEFORE and AFTER she
 #   applies it, and must be green in both - a guard that reds the whole repo
@@ -32,9 +34,29 @@
 #     post-patch  detected by DNM_TITLE_RE= / DNM_BODY_RE= in the workflow.
 #                 Asserted against the TARGET table - the behaviour the patch
 #                 promises. Any deviation fails.
+#     label       detected by DNM_LABEL_RE= in the workflow. The MEH-1523
+#                 mechanism swap: the marker is a GitHub label and the gate reads
+#                 nothing else. Asserted against the LABEL table, PLUS a
+#                 structural assertion that the step no longer reads PR text at
+#                 all - see WHY THE STRUCTURAL ASSERTION EXISTS below.
 #
 #   The mode is read from the workflow, not from a flag, so it cannot get out of
-#   step with reality.
+#   step with reality. `label` is checked FIRST: it is the terminal state, and a
+#   workflow carrying both a label matcher and the old regexes is a half-applied
+#   patch, which the structural assertion is there to catch rather than average.
+#
+# WHY THE STRUCTURAL ASSERTION EXISTS (MEH-1523)
+#   In label mode the interesting fixtures are the NEGATIVE ones - prose in a PR
+#   body that must not block. But a label-only gate never reads a body, so those
+#   fixtures pass *by construction*: they would pass just as well against a gate
+#   that still scanned text and simply happened not to match my examples. A green
+#   with two possible causes is not a signal (.claude/rules/testing.md).
+#
+#   So the negative direction is asserted STRUCTURALLY instead: the gate step must
+#   contain no reference to PR_BODY / PR_TITLE / pull_request.title /
+#   pull_request.body. That is the assertion MEH-1523 acceptance criterion 1
+#   actually asks for - "delete the text-scanning path; do not leave it dormant" -
+#   and it is falsifiable by exactly the change under test.
 #
 # WHY THE BASELINE TABLE RECORDS DEFECTS AS EXPECTED
 #   A guard asserting the ideal would be red from birth, and a permanently-red
@@ -59,6 +81,7 @@ SELF_TEST=0
 # exists to pin down, one directory over.
 WORKFLOW="${1:-.github/workflows/pr-checks.yml}"
 PATCH_DOC="docs/ci/dnm-gate-regex.patch.md"
+PATCH_DOC_LABEL="docs/ci/meh-1523-dnm-label-gate.patch.md"
 
 # -- fixture corpus ----------------------------------------------------------
 # Format: <kind>|<expected-pre>|<expected-post>|<label>|<text>
@@ -111,11 +134,96 @@ FIXTURES=(
 KNOWN_DEFECTS=(
   "FALSE POSITIVE - ordinary English containing the words blocks the PR (this is what blocked #2637)"
   "FALSE NEGATIVE - the [DNM] token does not match at all, so it silently fails to block"
+  "NO AUDIT TRAIL - the marker lives in an editable PR body, so removing it leaves no trace (#2813)"
+)
+
+# -- label-mode fixture corpus (MEH-1523) ------------------------------------
+# Format: <expected>|<label>|<comma-separated label names carried by the PR>
+#
+# The matcher runs against LABEL NAMES ONLY, each normalised to lowercase with
+# every non-alphanumeric stripped - so `do-not-merge`, `DO NOT MERGE`,
+# `do_not_merge` and `don't merge` all collapse to the same two forms
+# (donotmerge / dontmerge) that `dono?tmerge` matches.
+LABEL_FIXTURES=(
+  # -- MUST block -------------------------------------------------------------
+  "TRIP|the canonical marker label|do-not-merge"
+  "TRIP|spacing + case variant|DO NOT MERGE"
+  "TRIP|underscore variant|do_not_merge"
+  "TRIP|apostrophe variant (normalises to dontmerge)|don't merge"
+  "TRIP|DNM-LOCK as a label - ORDERS 1.4 names BOTH markers|dnm-lock"
+  "TRIP|marker alongside ordinary labels|tooling,do-not-merge,docs"
+  "TRIP|marker last in the list|docs,Bug,DNM-LOCK"
+
+  # -- MUST NOT block ---------------------------------------------------------
+  "PASS|no labels at all|"
+  "PASS|ordinary labels only|tooling,docs,Bug"
+  "PASS|a label that merely mentions merging|merge-queue"
+  "PASS|near-miss wording that is not the marker|should-not-merge"
+  "PASS|the repo's real queue label|cc-queue"
+)
+
+# -- text that MUST be irrelevant in label mode ------------------------------
+# These are the MEH-1523 acceptance-criteria fixtures 3-5 plus the two real
+# incidents. In label mode they are NOT evaluated against a regex, because the
+# gate has no text path left to evaluate them against - that absence is asserted
+# structurally instead (see WHY THE STRUCTURAL ASSERTION EXISTS at the top).
+# They are listed so a reader can see exactly which strings the swap frees, and
+# so the #2121 / #2813 sentences remain permanently on the record.
+TEXT_MUST_NOT_MATTER=(
+  "#2121 verbatim - the orchestrator's own safety note|do not merge until Sapir confirms"
+  "#2813 verbatim - CC's own prose, which reddened a required gate|Do not merge this as complete."
+  "#2637 verbatim - a pasted vitest test name|many open days that do NOT merge"
+  "the phrase in a commit message|fix(ci): explain why we do not merge on red"
+  "the phrase in a fenced code block|    grep -Eiq 'do[ _-]?not[ _-]?merge'"
+)
+
+# Tokens whose presence anywhere in the gate step proves a text path survives.
+FORBIDDEN_TEXT_TOKENS=(
+  "PR_BODY"
+  "PR_TITLE"
+  "pull_request.title"
+  "pull_request.body"
 )
 
 fail=0
 warn=0
 note() { printf '  %s\n' "$1"; }
+
+# -- helpers shared by label mode --------------------------------------------
+
+# Print just the `do-not-merge-gate:` job block, so the structural assertion
+# cannot be fooled by a PR_BODY reference belonging to some OTHER job in the
+# same workflow (there are several). Ends at the next key indented two spaces.
+gate_block() {
+  awk '
+    /^[[:space:]][[:space:]][A-Za-z0-9_-]+:[[:space:]]*$/ {
+      inblock = ($0 ~ /do-not-merge-gate/) ? 1 : 0
+    }
+    inblock { print }
+  ' "$WORKFLOW"
+}
+
+# Collapse a label name to the form the matcher runs against: lowercase, every
+# non-alphanumeric removed. `DO NOT MERGE` -> donotmerge; `don't merge` ->
+# dontmerge. This MUST mirror the workflow's own normalisation step; the patch
+# doc pins both to the same two commands so they cannot drift silently.
+normalise_label() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
+}
+
+# One fixture row: does this set of label names trip the gate?
+labels_trip() {
+  local csv="$1" name norm
+  local IFS=','
+  # An empty label list must never trip - read it as zero labels, not one empty.
+  [ -z "$csv" ] && return 1
+  for name in $csv; do
+    norm="$(normalise_label "$name")"
+    [ -n "$norm" ] || continue
+    printf '%s' "$norm" | grep -Eq "$LABEL_RE" && return 0
+  done
+  return 1
+}
 
 
 # -- self-test ---------------------------------------------------------------
@@ -168,6 +276,58 @@ run_self_test() {
   emit_wf "$tmp/neutered.yml" 'zzz_never_matches_zzz'
   check "neutered matcher rejected" "$tmp/neutered.yml" 1
 
+  # -- label mode (MEH-1523) -------------------------------------------------
+  # Emits a LABEL-shaped gate. The optional third argument injects one extra
+  # line into the step, which is how the structural assertion is exercised.
+  emit_label_wf() { # $1=file  $2=label-regex  $3=optional extra line in the step
+    {
+      printf '%s\n' \
+        "  do-not-merge-gate:" \
+        "    steps:" \
+        "      - env:" \
+        "          PR_LABELS: \${{ toJSON(github.event.pull_request.labels.*.name) }}" \
+        "        run: |" \
+        "          DNM_LABEL_RE='$2'"
+      if [ -n "${3:-}" ]; then printf '          %s\n' "$3"; fi
+      # A second job, so the block-extraction boundary is exercised rather than
+      # assumed: everything below this line must NOT be read as part of the gate.
+      printf '%s\n' "  repo-guards:" "    steps:" "      - run: echo PR_BODY"
+    } > "$1"
+  }
+
+  # (e) the agreed label matcher must be ACCEPTED - this is the LABEL table.
+  emit_label_wf "$tmp/label-ok.yml" 'dono?tmerge|dnmlock'
+  check "label matcher accepted" "$tmp/label-ok.yml" 0
+
+  # (f) TEXT PATH SURVIVING - the label matcher is correct, but the step still
+  #     greps the body. Every negative fixture still passes, so ONLY the
+  #     structural assertion can catch this. It is the whole reason that
+  #     assertion exists, and this is the case that proves it discriminates.
+  emit_label_wf "$tmp/label-textleft.yml" 'dono?tmerge|dnmlock' \
+    'printf "%s" "$PR_BODY" | grep -Eiq "do[ _-]?not[ _-]?merge" && exit 1'
+  check "label matcher WITH a surviving text path rejected" "$tmp/label-textleft.yml" 1
+
+  # (g) GUTTED - matches the hyphenated literal only. Since the gate normalises
+  #     labels by stripping non-alphanumerics, `do-not-merge` never reaches the
+  #     matcher in that form, so this blocks NOTHING. The dangerous direction.
+  emit_label_wf "$tmp/label-gutted.yml" 'do-not-merge'
+  check "gutted label matcher rejected" "$tmp/label-gutted.yml" 1
+
+  # (h) WIDENED - any label mentioning merging trips it, so `merge-queue` blocks
+  #     the PR. The #2637 failure reincarnated on the label surface.
+  emit_label_wf "$tmp/label-widened.yml" 'merge'
+  check "widened label matcher rejected" "$tmp/label-widened.yml" 1
+
+  # (i) NEUTERED - matches nothing.
+  emit_label_wf "$tmp/label-neutered.yml" 'zzz_never_matches_zzz'
+  check "neutered label matcher rejected" "$tmp/label-neutered.yml" 1
+
+  # (j) HALF-APPLIED - the marker moved to a label but DNM-LOCK was dropped from
+  #     the matcher, so a PR labelled dnm-lock sails through. ORDERS 1.4 names
+  #     both markers, so losing one is a false negative in a blocking gate.
+  emit_label_wf "$tmp/label-nolock.yml" 'dono?tmerge'
+  check "label matcher missing DNM-LOCK rejected" "$tmp/label-nolock.yml" 1
+
   echo "  $pass/$total self-test cases behaved correctly"
   [ "$pass" -eq "$total" ] || return 1
   return 0
@@ -188,6 +348,74 @@ GATE_LINE="${GATE_LINE:-0}"
 
 TITLE_RE="$(sed -n "s/^[[:space:]]*DNM_TITLE_RE='\(.*\)'[[:space:]]*$/\1/p" "$WORKFLOW" | head -1)"
 BODY_RE="$(sed -n "s/^[[:space:]]*DNM_BODY_RE='\(.*\)'[[:space:]]*$/\1/p" "$WORKFLOW" | head -1)"
+LABEL_RE="$(sed -n "s/^[[:space:]]*DNM_LABEL_RE='\(.*\)'[[:space:]]*$/\1/p" "$WORKFLOW" | head -1)"
+
+# ---------------------------------------------------------------------------
+# LABEL MODE (MEH-1523) - checked first, because it is the terminal state.
+# ---------------------------------------------------------------------------
+if [ -n "$LABEL_RE" ]; then
+  echo "DNM matcher guard - mode: label"
+  echo "  matcher source: $WORKFLOW:$GATE_LINE"
+  echo "  label matcher:  $LABEL_RE"
+  echo
+
+  # (1) STRUCTURAL - the text path must be GONE, not dormant. This is the
+  #     assertion that makes the negative fixtures below mean anything; without
+  #     it they pass against a gate that still scans text (testing.md: a green
+  #     with two possible causes is not a signal).
+  block="$(gate_block)"
+  if [ -z "$block" ]; then
+    echo "$WORKFLOW:$GATE_LINE: FAIL - could not isolate the do-not-merge-gate job block."
+    note "Label mode asserts the ABSENCE of a text path, and an absence cannot be"
+    note "asserted against an empty extraction - that would pass for the wrong"
+    note "reason. Re-read the job and update this guard deliberately."
+    exit 1
+  fi
+  for tok in "${FORBIDDEN_TEXT_TOKENS[@]}"; do
+    if printf '%s' "$block" | grep -qF "$tok"; then
+      echo "$WORKFLOW:$GATE_LINE: FAIL - the gate still reads PR text ($tok)."
+      note "MEH-1523 acceptance criterion 1: the text-scanning path is DELETED,"
+      note "not disabled. A label gate that still greps a body has two markers,"
+      note "and the prose one is the one that fires by accident (#2637, #2813)."
+      fail=1
+    fi
+  done
+
+  # (2) BEHAVIOURAL - the label matcher itself, both directions.
+  for row in "${LABEL_FIXTURES[@]}"; do
+    IFS='|' read -r expected label csv <<<"$row"
+    if labels_trip "$csv"; then actual="TRIP"; else actual="PASS"; fi
+    if [ "$actual" != "$expected" ]; then
+      echo "$WORKFLOW:$GATE_LINE: FAIL - [label] $label"
+      note "expected: $expected   actual: $actual"
+      note "labels: ${csv:-(none)}"
+      fail=1
+    fi
+  done
+
+  if [ "$fail" -ne 0 ]; then
+    echo
+    echo "The DNM label gate no longer behaves as pinned."
+    note "If you INTENDED to change it, update LABEL_FIXTURES in this file in the"
+    note "same commit, and say which direction you moved it - widening (more PRs"
+    note "blocked) or narrowing (a real marker can slip through)."
+    note "The agreed mechanism is documented in $PATCH_DOC_LABEL."
+    exit 1
+  fi
+
+  echo "  ${#LABEL_FIXTURES[@]} label fixtures pinned, all as expected."
+  echo "  text path absent - none of ${#FORBIDDEN_TEXT_TOKENS[@]} forbidden tokens present."
+  echo
+  echo "  Freed by the swap (no longer capable of blocking a PR):"
+  for row in "${TEXT_MUST_NOT_MATTER[@]}"; do
+    IFS='|' read -r label text <<<"$row"
+    note "- $label"
+    note "    $text"
+  done
+  echo
+  echo "dnm-matcher-guard: label mode, ${#LABEL_FIXTURES[@]} fixtures pinned, all as expected."
+  exit 0
+fi
 
 if [ -n "$TITLE_RE" ] && [ -n "$BODY_RE" ]; then
   MODE="post-patch"
@@ -251,8 +479,14 @@ if [ "$MODE" = "pre-patch" ]; then
   echo
   echo "WARNING - the live matcher is the PRE-PATCH one. Pinned, but defective:"
   for d in "${KNOWN_DEFECTS[@]}"; do note "- $d"; done
-  note "Fix staged for Sapir in $PATCH_DOC (workflows are CC-deny, MEH-671)."
-  note "This guard flips to the stricter TARGET table automatically once applied."
+  note "TWO patches are staged for Sapir (workflows are CC-deny, MEH-671). They"
+  note "fix different things and the second SUPERSEDES the first:"
+  note "  1. $PATCH_DOC"
+  note "     narrows the regex - closes defects 1 and 2, keeps text scanning."
+  note "  2. $PATCH_DOC_LABEL"
+  note "     swaps the mechanism to a label - closes all THREE, including the"
+  note "     audit trail, and deletes the text path. Apply this one and 1 is moot."
+  note "This guard flips to the matching stricter table automatically once applied."
   warn=1
 fi
 
