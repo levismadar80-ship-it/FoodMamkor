@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-13 — Close-out batch: 4 items dispatched, 3 merged, 1 handed to Sapir
+
+**Last PRs merged:** #2895 (MEH-1855 chunk 1, `b90e917f`), #2898 (MEH-1855 chunk 2 Phase 1/2, `c8feb00d`), #2897 (MEH-1844 docs, `41766370`). MEH-2045 (#2860) was already merged before this batch started — verified only.
+
+**Branch:** worked from `feature/meh-1855-price-contract` (MEH-1855 chunk 2), now sitting at `origin/staging` tip `c8feb00d`. Docs PR for this entry: `feature/meh-1855-close-out-docs`.
+
+**What's done:**
+- MEH-2045 — DoD re-verified, moved to Done.
+- MEH-1855 chunks 1+2 — both merged, in the ticket's intended order (chunk 1 before chunk 2, confirmed via `git log` before merging chunk 2). Ticket stays **In Progress**, not Done — Phase 2/4 (column drop) is separate future work gated on a 7-day staging soak from today. Post-deploy absence-assertion + real CI conflict/backfill counts posted as Linear comments (corrected once, when a bigger `tail_lines` on `get_job_logs` surfaced the real numbers instead of the truncated 500-line default).
+- MEH-1925 — no code fix possible from this sandbox (Cloudinary Console/billing action only); posted the exact click-path + verification `curl` for Sapir, left as Todo.
+- MEH-1844 — docs-only PR removed the resolved "TEMPORARY" section from `workflow.md`, archived its history to `docs/audits/`. Auto-closed to Done on merge (branch-name mechanism).
+
+**What's pending (Sapir):**
+- MEH-1925: Cloudinary Console decision (upgrade plan or migrate host) — see the ticket's latest comment for the exact steps + verification command.
+- MEH-1855: real staging-DB conflict/backfill count only visible in Railway's boot log (sandbox can't reach Railway) — informational only, not blocking.
+
+**Known issue found, not fixed (out of this batch's scope):** `qa-meh2045-product-sheet-nav.mjs`'s photo-square-sizing check fails reproducibly at 375px for the first non-signature product (renders as the no-photo fallback band height instead of a square); desktop-1440 and the other two test photos are fine. Not caused by anything in this batch — none of the 4 items touched `ProductSheet.jsx`. Needs its own investigation to confirm real vs. a local image-load timing artifact before filing.
+
+**Next task:** none pre-selected — resume via the normal queue (workflow.md "Working the queue", Lane A then Lane B).
 ## 2026-08-13 — MEH-1855 chunk 1 + MEH-2063: שני מיזוגים, וסשן מקביל תפס את chunk 2 מחוץ להיקף
 
 **שורה אחת:** שני PRs מוזגו — **#2895** (MEH-1855 chunk 1, `b90e917f`) ו-**#2900** (MEH-2063, `6fd25857`) · MEH-1855 **נשאר In Progress** בלינר (chunk 2 עדיין לא סגור), MEH-2063 **Done** · סשן מקביל אחר תפס את chunk 2 Phase 1 (PR #2898, `c8feb00d`) **מחוץ לסמכות שהוענקה לסשן הזה** ("chunk 2 = RED. Do NOT start.").
