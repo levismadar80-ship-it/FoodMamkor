@@ -16,17 +16,26 @@ import { test, expect } from "@playwright/test";
  * Touches:  one endpoint, reached for real, never mocked — POST
  *           /api/auth/google, fed a syntactically-invalid credential so the
  *           REAL backend's real 401 path fires. See "On mocking" below for
- *           why this is the opposite of what MEH-1968 flags.
+ *           why this is the opposite of what MEH-1968 flags. NOT egress-free
+ *           — see "A real, unmocked network call" below; corrected after
+ *           different-model review found the original claim here false.
  * Related:  app/[locale]/register/RegisterClient.jsx (the surface),
  *           components/GoogleAuthButton.jsx (the SDK wiring),
- *           backend/app/routers/auth.py:806-822 (the 401/503 contract),
+ *           backend/app/routers/auth.py:806-825 (the 401/503 contract — the
+ *           401 raise itself is at :825, not inside the 806-822 span this
+ *           docstring first cited; corrected after review),
  *           backend/app/services/oauth_verifiers.py:211-227 (verify_google_token
  *           returns None on any verification failure, malformed token
- *           included — no network egress needed for THIS shape of failure).
+ *           included).
  * History:  MEH-215 (creation).
  *
- * Viewports: both default projects — `mobile` (Pixel 5, 393x851) and
- * `desktop` (1440x900). Locale he-IL, RTL (playwright.config.ts:use.locale).
+ * Viewports: both default projects — `mobile` (Pixel 5, viewport 393x727)
+ * and `desktop` (1440x900). The `393x851` figure this docstring first cited
+ * is Pixel 5's `screen.height` (unused for layout), not its `viewport`
+ * (`playwright-core`'s device descriptor); testing.md makes the same
+ * pre-existing mix-up for the same project — not introduced here, but not
+ * repeated here either after review. Locale he-IL, RTL
+ * (playwright.config.ts:use.locale).
  *
  * ── On mocking, and why this spec does the opposite of the contested pattern ─
  * `frontend/e2e/CLAUDE.md` says functional specs under `e2e/flows/` stay
@@ -61,6 +70,26 @@ import { test, expect } from "@playwright/test";
  * `frontend/e2e/**` only). It lets B1's first two steps be asserted without
  * touching RegisterClient.jsx at all.
  *
+ * ── A real, unmocked network call, and what that actually costs ────────────
+ * The credential-rejection test's original claim here — that a malformed
+ * token fails without the backend reaching Google — was WRONG, caught by
+ * different-model review reading the pinned `google-auth` library rather
+ * than trusting this docstring: `verify_oauth2_token` → `verify_token` calls
+ * `_fetch_certs(request, certs_url)` FIRST, issuing a real HTTP GET to
+ * `https://www.googleapis.com/oauth2/v1/certs`, before `jwt.decode` ever
+ * inspects the token's shape. A non-JWT-shaped string does not skip that
+ * fetch. `oauth_verifiers.py`'s blanket `except Exception` still turns
+ * either outcome (cert-fetch failure, or a decode failure after a
+ * successful fetch) into the same 401 — so the assertion below is not
+ * wrong — but the backend genuinely makes one real outbound call to
+ * `googleapis.com` per test run, unmocked, and that call's own transport
+ * has a 120s default timeout (`google/auth/transport/requests.py`) that
+ * comfortably exceeds this test's 10s wait on `register-error`. This is
+ * the first spec in the suite to exercise that path — flows/10 and /22
+ * both `page.route()` their OAuth endpoint, so nothing already validates
+ * this is safe under CI load. Named here rather than silently believed;
+ * not fixed by mocking, which is exactly the move MEH-1968 blocks.
+ *
  * ── Coverage map, B1-B2 (every checkbox on the card gets a verdict) ─────────
  *   B1  לוחצת "הרשמה עם Google" ....... COVERED, real+unmocked (button renders,
  *                                       correct options passed to the real SDK
@@ -88,16 +117,22 @@ import { test, expect } from "@playwright/test";
  *                                       session), so it inherits B1's block.
  */
 
-// ── Annotation helper — same shape as flows/29/30, one spelling ─────────────
-const mark = (type: "covered-by-stub" | "superseded" | "not-applicable", description: string) =>
-  test.info().annotations.push({ type, description });
+// No annotation helper here (flows/29/30's `mark()` shape was tried and
+// removed — see the second test below): neither of this file's two tests
+// ends up needing `covered-by-stub` / `superseded` / `not-applicable`. The
+// happy-path gap is documented in the header's coverage map instead.
 
-// backend/app/routers/auth.py:822 — the real, deterministic 401 detail string
-// for an id_token that fails google.oauth2.id_token.verify_oauth2_token(). A
-// syntactically-invalid token (no header.payload.signature structure) fails
-// that call locally, without the backend needing network access to Google's
-// certs — so this assertion has no external-network flakiness of its own.
+// backend/app/routers/auth.py:825 — the real, deterministic 401 detail string
+// for an id_token that fails google.oauth2.id_token.verify_oauth2_token().
+// NOT egress-free: see the header's "A real, unmocked network call" section —
+// the backend fetches Google's certs before it ever inspects the token's
+// shape, so this assertion still depends on a real outbound HTTP call.
 const GOOGLE_TOKEN_INVALID = "אסימון Google לא תקין";
+
+// /auth/google is limited to 10/minute (auth.py:805). This spec's two real
+// calls (mobile + desktop) are far under that, but on shared CI runner IPs
+// under concurrent PR load a 429 instead of 401 is possible — same exposure
+// flows/29's docstring names for /auth/register, not yet hit in practice.
 
 /**
  * Installs a stub for `window.google.accounts.id` BEFORE the page loads, so
@@ -135,17 +170,35 @@ async function stubGoogleSdk(page) {
   });
 }
 
-/** True once the GSI stub's callback has actually been captured — i.e. the
- * component mounted and called initialize(). False (not a hang) when
+/**
+ * True once the GSI stub's callback has actually been captured — i.e. the
+ * component mounted and called initialize(). False when
  * NEXT_PUBLIC_GOOGLE_CLIENT_ID is unset at build time and GoogleAuthButton
- * renders null — same detection shape as flows/10. */
+ * renders null.
+ *
+ * Polls for up to 5s rather than checking once. flows/10's identical-shaped
+ * check (a single `page.evaluate` right after `domcontentloaded`) races
+ * `useGoogleSignIn`'s effect, which only runs once React hydration reaches
+ * that component — not guaranteed by `domcontentloaded` (HTML-parse
+ * completion, not hydration). A false skip there would read as a
+ * legitimate "not configured" case and silently drop this test's real
+ * coverage. `waitForFunction`'s own default timeout is 30s; capped to 5s
+ * here so a genuinely-unconfigured run still skips promptly rather than
+ * waiting out the default.
+ */
 async function googleCallbackReady(page): Promise<boolean> {
-  return page.evaluate(() => {
-    const getter = (
-      window as unknown as { __getConsumerGoogleCallback?: () => unknown }
-    ).__getConsumerGoogleCallback;
-    return typeof getter === "function" && typeof getter() === "function";
-  });
+  return page
+    .waitForFunction(
+      () => {
+        const getter = (
+          window as unknown as { __getConsumerGoogleCallback?: () => unknown }
+        ).__getConsumerGoogleCallback;
+        return typeof getter === "function" && typeof getter() === "function";
+      },
+      { timeout: 5_000 },
+    )
+    .then(() => true)
+    .catch(() => false);
 }
 
 test.describe("MEH-215 journey B — consumer Google OAuth registration", () => {
@@ -177,11 +230,6 @@ test.describe("MEH-215 journey B — consumer Google OAuth registration", () => 
   test("B1 - an invalid credential hits the REAL backend and surfaces its REAL 401, no navigation", async ({
     page,
   }) => {
-    mark(
-      "not-applicable",
-      "B1's later steps (consent screen, successful login, welcome toast) do not run in this test — see the spec header's coverage map. Nothing here is a stub standing in for them.",
-    );
-
     await stubGoogleSdk(page);
     await page.goto("/register");
     await page.waitForLoadState("domcontentloaded");
@@ -191,12 +239,20 @@ test.describe("MEH-215 journey B — consumer Google OAuth registration", () => 
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID not configured in build env — Google button absent",
     );
 
+    // Deliberate asymmetry: this skip covers the FRONTEND's client ID only.
+    // If the BACKEND's GOOGLE_CLIENT_ID were unset on the target, auth.py's
+    // 503 branch would fire instead of 401, and the toHaveText assertion
+    // below would fail LOUDLY with a legible diff — not silently skip. That
+    // is the wanted behaviour (a real backend misconfiguration should be
+    // visible), not an oversight to fix.
+
     // Fire the captured GSI callback with a credential that is not even
     // JWT-shaped — no dots, no base64 segments. Deliberately NOT
     // page.route()'d: this is the real POST /api/auth/google, hitting the
     // real backend, and the real oauth_verifiers.verify_google_token()
     // rejection path. No user is created — the route returns 401 before any
-    // DB lookup (auth.py:820-822), so this leaves no row to clean up.
+    // DB lookup (auth.py:825, before the first db.query at :833), so this
+    // leaves no row to clean up.
     await page.evaluate(() => {
       const getter = (
         window as unknown as {
