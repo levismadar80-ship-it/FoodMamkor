@@ -37,6 +37,10 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
   // LEFT in RTL) and the sheet's own icons load through this same mock.
   CaretLeft: (props) => <span data-testid="row-chevron" className={props.className} />,
+  // MEH-2045: the sheet's "previous" chevron in RTL. Loaded through this mock
+  // for the same reason CaretLeft is — paging itself is asserted in
+  // ProductSheetNavigation.test.jsx.
+  CaretRight: (props) => <span data-testid="sheet-caret-right" className={props.className} />,
   MapPin: () => <span data-testid="map-pin" />,
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
