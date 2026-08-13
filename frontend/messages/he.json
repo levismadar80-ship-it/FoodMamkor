@@ -1268,7 +1268,8 @@
       "aria": {
         "remove": "הסירו סינון {label}"
       },
-      "clear_all": "× נקו הכל"
+      "clear_all": "× נקו הכל",
+      "arranged_hidden": "בתי עסק בתיאום אישי לא מוצגים בסינון הזה"
     },
     "card_list": {
       "empty": {

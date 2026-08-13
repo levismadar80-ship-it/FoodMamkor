@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-13 — MEH-2023 bug sweep v4: 14/14 resolved, שלוש שגיאות `save_issue` full-replace באותו סשן, ופער תיעוד ב-#2882
+
+**שורה אחת:** כל 14 ה-IDs ברשימה הקפואה הגיעו למצב סופי — 7 היו כבר Done לפני תחילת הסשן, 2 נסגרו/הוסקו (MEH-1991 canceled, MEH-1873 Phase 0 שהושאר Backlog בכוונה), 1 parked כהלכה (MEH-2015, חסום על חתימת ספיר), 1 backed off על התנגשות אמיתית (MEH-217), 1 נסגר בלי שינוי קוד אחרי מדידה שהפריכה את ההשערה (MEH-1434), ו-3 PRs נפתחו עם auto-merge חמוש (squash) וממתינים ל-staging שמזיז מהר מאוד (#2885, #2887, #2890).
+
+### הממצא החשוב מהסשן: שלוש שגיאות `save_issue` זהות, כולן נתפסו באותו turn
+
+`mcp__Linear__save_issue` הוא **full-replace**, לא append/prepend. שלוש פעמים בסשן הזה נכתב בלוק SYNC/PARKED חדש ל-`description` בלי לשרשר את הטקסט הקיים המלא — פעם על MEH-2023 עצמו, פעם על MEH-1526, ופעם שלישית על ה-FINAL SYNC של MEH-2023 עצמו. כל שלוש נתפסו ותוקנו באותו turn (אין אובדן מידע), אבל זה עלה בסבבי `get_issue`+`save_issue` נוספים. **התיקון הפרוצדורלי:** לפני כל `save_issue` על שדה `description` — `get_issue` טרי מיד לפני, ולשרשר את הטקסט המלא. לא לסמוך על מה שכבר בהקשר.
+
+### פער תיעוד שנתפס אך לא תוקן: MEH-217 chunk 2 (#2882)
+
+PR #2882 (chunk 2 של MEH-217, admin producers tab) נפתח ב-13:04Z ע"י סשן מקביל, זמן קצר אחרי שהתחלתי לעבוד על הרשימה הקפואה. גילוי דרך שער B4 (בדיקת PRs פתוחים) לפני עריכה כלשהי — אפס קבצים נגעו על ידי. MEH-217 עצמו נשאר עם DoD רחוק ממימוש מלא (6 טאבים, פעולות מרובות לכל טאב) — לא בבעלות הסשן הזה.
+
+### סשן מקביל פעיל לאורך כל הריצה
+
+staging זז עשרות פעמים; זרם רציף של ענפי `feature/meh-*` לא-קשורים לאורך כל הסשן. שלוש ה-PRs שנפתחו כאן (`mergeable_state: behind`) נמצאים בתור auto-merge (squash) — הם צריכים לנחות מעצמם ברגע ש-GitHub מדביק את הענף, אבל זה טרם אומת בזמן כתיבת רשומה זו.
+
+**מלא (SYNC + טבלת מצב לכל 14 ה-IDs, כולל evidence מפורט לכל אחד): MEH-2023, בלוק "🔄 FINAL SYNC — 2026-08-13" בראש ה-description.**
+
 ## 2026-08-13 — MEH-2045: דפדוף ב-ProductSheet נמזג. שני פגמים שנמצאו במדידה, אדום CI אחד שיצרתי בעצמי, ושעה שאבדה ל-churn
 
 **שורה אחת:** ‏PR #2860 **מוזג** (‏`a7ac37fc`) ב-override של ספיר אחרי שישה מחזורי עדכון שנחסמו ב-`strict up-to-date` · ‏MEH-2045 **לא נסגר אוטומטית** (נבדק) · ה-DoD עדיין לא מלא — נותרה בדיקת מכשיר אמיתי של ספיר · ‏CHANGELOG/HANDOFF הגיעו ב-PR docs-only נפרד לפי כלל 31.
