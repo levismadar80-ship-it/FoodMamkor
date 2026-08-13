@@ -57,13 +57,13 @@ if (process.argv[2] === "--self-test") {
       output: "Cannot find module 'vitest/config'\n",
       expect: false,
     },
-    // Zero-passed summary (a run that only skipped) is NOT verification.
     // Colorized DIGITS — the case bracket-only stripping would have broken.
     {
       name: "ANSI inside the count",
       output: " Tests  \u001B[1m12\u001B[22m passed (12)\n",
       expect: true,
     },
+    // Zero-passed summary (a run that only skipped) is NOT verification.
     {
       name: "zero passed",
       output: " Tests  0 passed | 4 skipped (4)\n",
