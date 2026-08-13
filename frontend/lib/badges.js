@@ -289,11 +289,20 @@ function earnsBadge(producer, key) {
       if (producer.has_physical_location === false && producer.offers_delivery) {
         return false;
       }
-      return (
-        !!producer.has_delivery ||
-        (typeof producer.delivery_count === "number" &&
-          producer.delivery_count > 0)
-      );
+      // MEH-2046: reads the server-computed `delivers`, which IS the result of
+      // producer_listing._has_delivery_condition(). It replaces
+      // `has_delivery || delivery_count > 0` — a heuristic that had drifted
+      // from the filter it was meant to reflect. `has_delivery` is a legacy
+      // column no delivery predicate consults (producer_import.py:311-312), and
+      // `delivery_count` counts delivery_areas rows, of which a NATIONWIDE
+      // business has none. So a business that delivers everywhere passed the
+      // delivery filter and rendered no delivery badge — MEH-1836's divergence,
+      // reaching the user as a card that says nothing about the very axis they
+      // filtered on. Do not reintroduce either operand as a fallback: a
+      // fallback would restore the drift for exactly the rows that need it
+      // least, and `delivers` is false only when the business genuinely does
+      // not deliver.
+      return !!producer.delivers;
     // MEH-1846: no products case — the badge is removed. producer.products_count
     // stays on the payload and keeps its non-badge consumers; it simply drives
     // no badge, the same shape MEH-1259 used to retire "organic".
