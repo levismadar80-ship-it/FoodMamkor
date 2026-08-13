@@ -333,6 +333,19 @@ comments recording that `networkidle` is not layout-idle for them
 > Linear auto-close asserted twice into PR bodies as certain, then measured false
 > (workflow.md rule 29 § *branch name*).
 >
+> **A CI aggregator is the same instrument, one level up (MEH-1742).** `needs.<job>.result`
+> collapses to one of `success|failure|cancelled|skipped` — GitHub Actions does not
+> expose *why* a job skipped. `e2e-gate`'s `ok() { case "$1" in success|skipped) ... }`
+> therefore reads a docs-only PR's *intended* skip and a frontend PR's *unintended* one
+> (a job condition suppressing `e2e` for a reason unrelated to scope) as the identical
+> token, and passes both. Same shape as the `check`/`check_ran` split MEH-1582 already
+> landed on `pr-checks.yml` for exactly this reason on other required jobs — a skip
+> the gate is actively enforcing must have *run*, not just returned a token that also
+> means "nothing to check." Fix staged at
+> [`docs/ci/e2e-gate-strict-skip.patch.md`](../../docs/ci/e2e-gate-strict-skip.patch.md)
+> (`.github/workflows/**` is CC-deny; discrimination proven in
+> `scripts/e2e-gate-selftest.sh` before the patch is even applied).
+>
 > **Three of those happened in one session (2026-08-11), to a session that had this
 > very section loaded the whole time.** Knowing the rule is not the same as running
 > the check — so the practical form is a habit, not a principle: **before a claim
@@ -742,6 +755,22 @@ amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
 aggregator gates** are green (a third, `E2E gate`, joins them once
 Sapir fixes the filter, greens the suite, applies the patch, and adds the context
 to ruleset 15240090).
+
+**Consequence of the above, made explicit (MEH-1907):** with auto-merge armed,
+a PR lands the instant `CI gate` and `Deploy gate` report `success` —
+regardless of any verbal or written instruction like "wait for two
+consecutive green E2E runs first." `E2E gate` carries no vote in what merges
+today, so that kind of instruction is not enforced by the merge machinery at
+all; it is enforced only by **not arming auto-merge** until the condition is
+checked by hand. Measured directly: PR #2592 merged on one green E2E run
+though the orchestrator's instruction required two consecutive ones — the
+mechanism did exactly what its required-context set says it will do, which is
+ignore E2E either way. Not a compliance failure on CC's part; a property of
+which contexts `protect-staging` (ruleset 15240090) actually requires. See
+[docs/ci/pr-checks-cancelled-not-failure.patch.md](../../docs/ci/pr-checks-cancelled-not-failure.patch.md)
+for the sibling MEH-1907 fix (a cancelled required job must not read as a
+failed one — same aggregator, opposite direction from the skip-green fix
+above).
 
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then
