@@ -75,6 +75,38 @@ export default defineConfig({
     // core count; hardcoding a number would either cap a 4-core runner or
     // oversubscribe a 2-core one, and CI and local machines differ here (see
     // docs/ci/meh-1912-vitest-shard.patch.md, "parallelism starvation").
+
+    // MEH-1980: coverage. Only ACTIVE when `--coverage` is passed, so the
+    // ordinary `vitest run` used by the CI unit-test job is untouched — no
+    // instrumentation cost on the path that gates every PR.
+    //
+    // NO `thresholds` block on purpose. A vitest threshold is a *floor* that
+    // fails the test run itself, which would conflate "a test broke" with
+    // "coverage slipped" in one exit code. The ratchet
+    // (scripts/checks/coverage-ratchet.mjs) owns the pass/fail decision and
+    // reports which files moved; vitest's job here is only to produce numbers.
+    coverage: {
+      provider: "v8",
+      // json-summary is what the ratchet parses; text is for a human reading
+      // CI logs. `html` is deliberately absent — it is ~40MB of output nobody
+      // opens in CI, and `coverage/` is gitignored anyway.
+      reporter: ["json-summary", "text"],
+      reportsDirectory: "./coverage",
+      // Measure the source the app actually ships. Without `all`, v8 reports
+      // only files some test imported — so deleting the last test for a module
+      // would make its coverage *improve* to 100%-of-nothing by removing it
+      // from the report entirely. That is the single worst failure mode for a
+      // coverage ratchet, and `all: true` is what closes it.
+      all: true,
+      include: ["app/**/*.{js,jsx}", "components/**/*.{js,jsx}", "lib/**/*.{js,jsx}"],
+      exclude: [
+        "**/*.test.{js,jsx}",
+        "**/__tests__/**",
+        "**/node_modules/**",
+        // Next.js route conventions that are declarations, not logic.
+        "app/**/{layout,loading,error,not-found,template}.{js,jsx}",
+      ],
+    },
   },
   resolve: {
     alias: {
