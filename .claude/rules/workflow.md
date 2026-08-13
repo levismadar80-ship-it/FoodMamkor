@@ -1842,3 +1842,40 @@ Tasks auto-expire after 7 days.
     compensating control** (rule 30). Unarmed is a state; a parallel actor
     re-armed it within the hour. Only the marker — sitting in a required gate —
     held.
+
+33. **A DoD checkbox is a claim of fact — check it only for a box you performed
+    yourself and can cite evidence for (MEH-1755).**
+
+    The PR template ships with **every** box unchecked (`.github/pull_request_template.md`,
+    verified 2026-08-13: zero `[x]` in the file). So a merged PR carrying
+    `[x] Tested on mobile` with no device ever touched, `[x] npm run build green`
+    with no build run on that branch, is not a template defect and not bot
+    output — no `.github/workflows/**` automation writes PR bodies with checked
+    boxes (`vrt-update.yml` contains no `title:`/`body:`/`gh pr create` at all;
+    it commits directly onto an existing branch). The box was checked by the CC
+    session that opened the PR, describing verification that did not happen.
+
+    That is the same failure MEH-1742 already named for CI gates — *a device
+    that reports success from the absence of measurement* — one layer up: there
+    the device is a workflow job, here it is a session filling in a checklist
+    from what a PR of this shape usually has, not from what this PR's session
+    actually did.
+
+    **Measured case, not hypothetical:** PR #2399 (MEH-1689, 28/07) shipped
+    `[x] Tested on mobile: iOS Safari + Android Chrome` — zero device touched;
+    `[x] Snapshots reviewed visually before commit` — reviewed *after* the bot's
+    commit, and only 2 of 5; `[x] npm run build green` — never run on that
+    branch. All four were later caught and unchecked by name, with a table
+    added to the PR body attributing each check to who actually did it and on
+    what basis (`git log`, the review is still visible on the merged PR).
+    Retroactive correction is not the fix — the fix is not checking it wrongly
+    in the first place.
+
+    **The rule, mechanically:** before writing `[x]` on any DoD/manual-checks
+    box, be able to name the command you ran or the artifact you read that
+    makes it true. If the honest answer is "this PR type usually has this
+    done" or "the template implies I should", leave it `[ ]` and say why in
+    prose — an honest unchecked box with a reason is worth more than a checked
+    one that isn't load-bearing. This applies with the same force to boxes a
+    PR marks **N/A** — state the reason (docs-only, no UI touched, no schema
+    change), don't just tick past it.
