@@ -134,7 +134,7 @@ describe("middleware slug check — only a 404 means the business is absent", ()
     );
   });
 
-  it("a timed-out fetch (AbortError) fails open exactly like an unreachable backend", async () => {
+  it("a timed-out fetch (TimeoutError) fails open exactly like an unreachable backend", async () => {
     global.fetch = vi.fn(async () => {
       const err = new Error("The operation was aborted");
       err.name = "TimeoutError";
