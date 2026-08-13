@@ -1704,6 +1704,48 @@ Tasks auto-expire after 7 days.
     instruction, with the note that unarmed auto-merge is a state a parallel
     lane can undo. The two bullets above are that instruction, generalised._
 
+    ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
+
+    **`do-not-merge` is a GitHub label. It is the only marker.** Draft is the
+    separate tool, for a different state: draft means *still being worked on*,
+    the label means *ready, do not land yet*. Do not write the marker as prose
+    and do not put a token in a PR title — §2 of MEH-1523 considered and
+    rejected both after a six-source review, because a title is as editable and
+    as traceless as a body.
+
+    **Why the mechanism changed, in one measurement.** The gate used to scan
+    title and body, and its matcher OR-ed a prose-shaped pattern against a
+    literal token (`DNM-LOCK`). When two cues are OR-ed the loose one carries
+    every match, so the token bought nothing — it was present during every
+    incident:
+
+    | | |
+    |---|---|
+    | **#2637** | blocked by a pasted vitest test name — *"many open days that do NOT merge"* |
+    | **#2121** | blocked by the orchestrator's own safety note in the body |
+    | **#2813** | blocked by CC's own prose, *"Do not merge this as complete."* |
+
+    #2813 is the one that forced the swap. The block was cleared, the PR merged,
+    and **the sentence is simply gone from the body** — so a marker deliberately
+    set and cleared by Sapir is now indistinguishable from a marker tripped by
+    accident and edited away by CC. Rule 30 makes clearing it Sapir's alone, then
+    stored it in the one place whose removal leaves no author and no timestamp.
+
+    A label removal is a permanent, attributed timeline event. **That is the
+    gain: auditability, not prevention.** CC *can* add and remove labels
+    (measured — MEH-1523 §7), so the label is not a lock either; what changes is
+    that violating rule 30 becomes visible instead of invisible.
+
+    **Staged, not yet applied** — the gate lives in `.github/workflows/**`
+    (CC-deny, MEH-671):
+    [`docs/ci/meh-1523-dnm-label-gate.patch.md`](../../docs/ci/meh-1523-dnm-label-gate.patch.md).
+    It supersedes `dnm-gate-regex.patch.md` (MEH-1922), which narrowed the same
+    regex and kept text scanning — apply one, not both. Until it is applied the
+    live gate still scans text, so **prose containing the words still reds a
+    required check**: phrase it as "the marker" in a PR body, as MEH-1523's own
+    constraints block instructs. `scripts/checks/dnm-matcher-guard.sh` pins all
+    three states and flips tables automatically.
+
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
     append-only, so every concurrent merge to `staging` conflicts on them. Keep
