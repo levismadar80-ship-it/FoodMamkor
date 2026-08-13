@@ -21,12 +21,11 @@ describe("BADGE_PRIORITY", () => {
       "vegetarian",
       "vegan",
       "lactose_free",
-      // MEH-1934: the two new diet badges join the diet run, after
-      // lactose_free — where every other diet badge already sits relative to
-      // kosher/delivery. Only the top 2 reach a card, so position is
-      // load-bearing and is pinned deliberately.
+      // MEH-1934: the new diet badge joins the diet run, after lactose_free —
+      // where every other diet badge already sits relative to kosher/delivery.
+      // Only the top 2 reach a card, so position is load-bearing and is pinned
+      // deliberately. (MEH-2047 withdrew its low_carb sibling from this run.)
       "no_added_sugar",
-      "low_carb",
       "kosher",
       "delivery",
     ]);
@@ -39,13 +38,19 @@ describe("BADGE_PRIORITY", () => {
   it("carries no products key, in either structure (MEH-1846)", () => {
     expect(BADGE_PRIORITY).not.toContain("products");
     expect(Object.keys(BADGE_CONFIG)).not.toContain("products");
-    // MEH-1934: 11 → 13 (no_added_sugar + low_carb). Both numbers move together
+    // MEH-1934: 11 → 13 (no_added_sugar + low_carb); MEH-2047: 13 → 12, low_carb
+    // withdrawn as an undefined nutrition claim. Both numbers move together
     // on purpose — allBadges() iterates BADGE_PRIORITY while the tooltips live
     // in BADGE_CONFIG, so a badge present in one and absent from the other is
     // either never rendered or rendered undefined. This pin caught exactly that
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
-    expect(BADGE_PRIORITY).toHaveLength(13);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(13);
+    expect(BADGE_PRIORITY).toHaveLength(12);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(12);
+    // MEH-2047: absence in BOTH structures, the same pair-check the products
+    // removal above uses — a count alone would pass if something else were
+    // added in the same commit that removed this.
+    expect(BADGE_PRIORITY).not.toContain("low_carb");
+    expect(Object.keys(BADGE_CONFIG)).not.toContain("low_carb");
     // Stronger than either count: the two arrays must describe the SAME set.
     expect([...BADGE_PRIORITY].sort()).toEqual(Object.keys(BADGE_CONFIG).sort());
   });
