@@ -12,6 +12,7 @@ import OfferBadge from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { formatPrice } from "@/lib/utils";
 // MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
 // the canonical Israel-local "HH:MM" formatter and the card interpolates it
 // into the very same `orders_open` string the page renders — a second copy here
@@ -35,6 +36,19 @@ import {
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
 import { humanTime } from "@/lib/time-format";
+
+// MEH-1678: bidi-safe amount interpolation, mirroring the pattern
+// DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
+// amount sits INSIDE a Hebrew sentence ("משלוח: {amount}"), so it needs a
+// `<bdi>` wrapper rather than the whole string forced `dir="ltr"`, which
+// would reorder the surrounding Hebrew words. Not imported from
+// DeliveryBlock.jsx because it isn't exported there and duplicating five
+// lines is cheaper than widening that file's public surface for one caller.
+const AMOUNT_SENTINEL = "\u0000";
+function splitAroundAmount(text) {
+  const [before, after = ""] = text.split(AMOUNT_SENTINEL);
+  return { before, after };
+}
 
 // MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
 // available_today → primary (brand green); on_vacation / full_this_week →
@@ -579,6 +593,48 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
             <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
             {t("producer.card.favorites_count_short", { count: localFavCount })}
+          </p>
+        )}
+
+        {/* MEH-1678: producer-level delivery fee, a row (not a BADGE_CONFIG
+            entry — see PR body for why: MEH-1753's labels-contract scope
+            doesn't cover this object, and a plain text row needs no
+            disclosure popover under labels.md's indicator rule the way a
+            truncated badge would).
+
+            NOT the MEH-1210 "no price on discovery cards" case below: that
+            rule is about product/menu pricing ("how much does the bread
+            cost"), which stays a marketplace signal reserved for the
+            product level inside /producer. A delivery fee is logistics
+            information about reaching the business at all — the same
+            category DoorDash/Wolt show at listing level (MEH-1577's own
+            evidence) — not a price on what she sells. Distinguished
+            explicitly here so a future reader doesn't read this as MEH-1210
+            being quietly reversed.
+
+            `!= null`, not truthy: delivery_fee=0 is a VALUE ("משלוח חינם"),
+            not an absence (same distinction DeliveryBlock.jsx's AreaRow and
+            MEH-1942 already pin for the per-area field). Renders nothing
+            when delivery_fee is null/undefined — no "no delivery" row. */}
+        {producer.delivery_fee != null && (
+          <p className="flex items-center gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
+            <Truck size={14} className="shrink-0" aria-hidden="true" />
+            {producer.delivery_fee === 0 ? (
+              t("group_buys.delivery.fee_free")
+            ) : (
+              (() => {
+                const { before, after } = splitAroundAmount(
+                  t("group_buys.delivery.fee", { amount: AMOUNT_SENTINEL }),
+                );
+                return (
+                  <>
+                    {before}
+                    <bdi>{formatPrice(producer.delivery_fee)}</bdi>
+                    {after}
+                  </>
+                );
+              })()
+            )}
           </p>
         )}
 
