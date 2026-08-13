@@ -189,8 +189,16 @@ export const ProducerListSchema = z.object({
   // payload is JSON and badges.js:216 does its own `new Date(...)` comparison.
   kashrut_verified_at: z.string().nullable().optional(),     // → kosher
   kashrut_expires_at: z.string().nullable().optional(),      // → kosher (expiry)
-  has_delivery: z.boolean().nullable().optional(),           // → delivery
-  delivery_count: z.number().nullable().optional(),          // → delivery (fallback count)
+  has_delivery: z.boolean().nullable().optional(),           // → delivery (legacy; no longer read by earnsBadge)
+  delivery_count: z.number().nullable().optional(),          // → delivery (legacy; no longer read by earnsBadge)
+  // MEH-2046: the eighth recurrence of the note at :182 — server-computed
+  // fulfillment booleans, each equal to its listing predicate. Undeclared here
+  // they are stripped by the strict parse and the delivery badge goes dark on
+  // /map and the home grid no matter what the API sends. `has_delivery` and
+  // `delivery_count` above are KEPT declared: other consumers still read them,
+  // and stripping a field the payload carries is how this list rots.
+  delivers: z.boolean().nullable().optional(),               // → delivery badge + card fulfillment tag
+  offers_pickup: z.boolean().nullable().optional(),          // → card fulfillment tag (PR-3)
   products_count: z.number().nullable().optional(),          // → products
   // MEH-1719: the SEVENTH recurrence, and the first one that is not about
   // badges at all. MEH-1704 declared what `badges.js::earnsBadge` reads and
