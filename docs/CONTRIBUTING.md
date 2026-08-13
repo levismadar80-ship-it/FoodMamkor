@@ -44,7 +44,7 @@ Two consequences, and the first is the one the old `AND` hid:
    `Branch name gate` *requires* `^(feature|levismadar80)/meh-[0-9]+…`, **every
    legal feature-branch name carries some card's identifier**, so every feature
    merge is capable of closing something. There is no such thing as an inert
-   branch slug here.
+   branch slug for a feature branch: the gate rejects a name without one.
 
    _(One exemption, and it is not a loophole: the gate's `if:` skips
    `staging → main` release PRs, whose head branch is `staging`. That branch
@@ -68,7 +68,7 @@ because neither is predictable**:
 > closed that should have been.
 
 Do not settle the `Refs` inconsistency by merging another PR to watch what
-happens — two experiments have already returned contradictory answers. The
+happens — three experiments have already returned two contradictory answers. The
 remaining question lives in Linear's per-branch automation settings, not in this
 repo.
 

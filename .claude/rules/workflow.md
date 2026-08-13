@@ -1465,7 +1465,8 @@ Tasks auto-expire after 7 days.
     not `main`. A **non-closing** reference in the body suppresses the close the
     branch name would otherwise fire. That is the whole rule.
 
-    **Eight measured merges, every body reference read from the GitHub API:**
+    **Eight measured merges, every body reference read from the GitHub API** — rows
+    9 and 10 follow in the subsections below, bringing the total to **ten**:
 
     | | PR | branch | body reference | before → after | fired? |
     |---|---|---|---|---|---|
@@ -1608,8 +1609,11 @@ Tasks auto-expire after 7 days.
 
     **You cannot avoid this by naming branches carefully.** `Branch name gate`
     (MEH-1141) *requires* `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$` —
-    every legal branch name carries some ticket's identifier. The system mandates
-    the input that triggers the behaviour, so "be careful" is not a mitigation.
+    every legal **feature** branch name carries some ticket's identifier. The
+    system mandates the input that triggers the behaviour, so "be careful" is not
+    a mitigation. _(The gate's `if:` exempts one case — a `staging → main` release
+    PR, whose head branch is `staging` and carries no identifier at all. That is a
+    branch with no slug rather than a harmless one, and it is the only such case.)_
 
     **What the MEH-1949 guard does and does not buy.** It warns when a branch
     carries `meh-<N>` and the body does not declare `Closes MEH-<N>`. That is a
