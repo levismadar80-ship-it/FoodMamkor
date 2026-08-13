@@ -31,8 +31,8 @@ import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 export const DIET_PAGE_MIN = 5;
 
 /**
- * The six pages, in the MEH-1438 chip order (טבעוני · צמחוני · ללא גלוטן ·
- * ללא לקטוז) with the two MEH-1934 additions appended — that order is locked
+ * The five pages, in the MEH-1438 chip order (טבעוני · צמחוני · ללא גלוטן ·
+ * ללא לקטוז) with the surviving MEH-1934 addition appended — that order is locked
  * and must not be reshuffled here, because the sibling-chip row renders it.
  *
  *  - `slug`        URL segment. English, per the project-wide route rule.
@@ -46,7 +46,7 @@ export const DIET_PAGE_MIN = 5;
  * ENTIRE approved catalog — which sails through a count-based gate and would
  * publish an indexable page whose grid contradicts its own H1. The count gate
  * cannot detect that; only this flag can. MEH-1934 shipped the two columns and
- * their filters; MEH-1941 flipped these to `true`, so all six are backed today
+ * their filters; MEH-1941 flipped these to `true`, so all five are backed today
  * — the flag stays because it is what a NEW slug must declare before it can be
  * served, and because the count gate still cannot detect an ignored param.
  */
@@ -73,13 +73,10 @@ export const DIET_PAGES = [
     backed: true,
     pendingLabel: "ללא סוכר מוסף",
   },
-  {
-    slug: "low-carb",
-    attribute: "low_carb",
-    filterParam: "low_carb",
-    backed: true,
-    pendingLabel: "דל פחמימות",
-  },
+  // MEH-2047: the low-carb page is withdrawn with the claim itself — an
+  // indexable page whose H1 states an unregulated nutrition claim is the same
+  // over-claim on a louder surface. getDietPage("low-carb") now returns null,
+  // so the route 404s and sitemap.js stops emitting it.
 ];
 
 /**
