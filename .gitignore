@@ -49,3 +49,4 @@ e2e-failure-tail.txt
 headers.txt
 runs-may6-7.json
 OVERNIGHT-REPORT.md
+.vercel/
