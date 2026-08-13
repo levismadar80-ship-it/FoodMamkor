@@ -287,7 +287,8 @@
       "mcp__linear__get_*",
       "mcp__linear__save_comment",
       "mcp__linear__save_issue",
-      "mcp__linear__search_documentation"
+      "mcp__linear__search_documentation",
+      "RemoteTrigger"
     ],
     "deny": [
       "Bash(git push --force:*)",
