@@ -9,6 +9,7 @@ import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { geocodeCity } from "@/lib/places";
+import { producerPoints } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -468,11 +469,14 @@ export default function MapPage() {
     sync.mapApiRef.current?.goToMyLocation(
       () => setLocationModalOpen(true),
       ({ lat, lng }) => {
-        const hasNearby = feed.allProducers.some(
-          (p) =>
-            Number.isFinite(p.lat) &&
-            Number.isFinite(p.lng) &&
-            haversineKm(lat, lng, p.lat, p.lng) <= NEAR_ME_RADIUS_KM
+        // MEH-1938 chunk 3: read through producerPoints() instead of
+        // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
+        // citation (MapClient.jsx:348-350) had already drifted to this site
+        // by the time this chunk landed; re-verified live via grep.
+        const hasNearby = feed.allProducers.some((p) =>
+          producerPoints(p).some(
+            (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
+          )
         );
         if (!hasNearby) {
           showToast.info(t("map.near_me_pill.empty"));

@@ -8,7 +8,7 @@ import {
   resolveCategoryId,
 } from "@/lib/map-chips";
 import { haversineKm } from "@/lib/distance";
-import { producerInBounds } from "@/lib/producerPoints";
+import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's
@@ -31,10 +31,15 @@ import { producerInBounds } from "@/lib/producerPoints";
 export function sortProducers(list, sortBy, userLoc) {
   if (!Array.isArray(list) || list.length < 2) return list ?? [];
   if (sortBy === "nearest" && userLoc) {
-    const dist = (p) =>
-      typeof p.lat === "number" && typeof p.lng === "number"
-        ? haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng)
+    // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
+    // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx /
+    // the backend's haversine_min_km COALESCE).
+    const dist = (p) => {
+      const pts = producerPoints(p);
+      return pts.length > 0
+        ? Math.min(...pts.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng)))
         : Infinity;
+    };
     return [...list].sort((a, b) => dist(a) - dist(b));
   }
   if (sortBy === "rating") {
