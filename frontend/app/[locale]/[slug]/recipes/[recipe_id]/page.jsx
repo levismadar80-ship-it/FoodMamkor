@@ -6,11 +6,14 @@
  * name + related-product hydration) and the recipe in parallel, then
  * renders <RecipeDetail> + <RecipeJsonLd> for SEO.
  *
- * 404 routes: producer-by-slug fails OR recipe is not published+approved
- * (the backend already filters by `published=true AND
- * moderation_status='approved'` — chunks 1/2 — so a 404 here covers
- * both unknown-slug and not-yet-published recipes without leaking the
- * existence of the latter).
+ * 404 routes: producer-by-slug 404s OR recipe 404s — the latter covering
+ * "not published+approved" too, since the backend already filters by
+ * `published=true AND moderation_status='approved'` (chunks 1/2), so a 404
+ * here covers both unknown-slug and not-yet-published recipes without
+ * leaking the existence of the latter.
+ *
+ * MEH-1754: a 404 from the backend is the ONLY thing that becomes a 404 here.
+ * Any other failure (5xx/429/403, timeout, DNS) throws — see getJson below.
  */
 
 import { notFound } from "next/navigation";
@@ -23,23 +26,55 @@ import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildRecipeBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 import { BRAND_NAME } from "@/lib/constants";
 
-async function getJson(path) {
-  try {
-    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
+// MEH-1754: `null` means ONE thing — this entity does not exist. Every other
+// failure throws, so it reaches app/[locale]/error.js (Hebrew copy + retry +
+// Sentry) instead of rendering a silent not-found.
+//
+// MEASURED, and deliberately NOT claimed otherwise: on this route the HTTP
+// status stays **200** for both outcomes — `app/[locale]/loading.js` flushes
+// the shell before the throw, which is the same streaming mechanic MEH-1045
+// documents for notFound(). So what the split buys here is the *page* and the
+// *Sentry event*, not the status code: a backend 404 renders "לא מצאנו את הדף
+// הזה" and a backend 500 renders "משהו השתבש — נסו שוב" (both verified at
+// 375 + 1440 against a stub backend). Do not restate the sibling resolver's
+// "the response carries a 5xx" for this route without re-measuring it.
+//
+// REUSES: frontend/app/[locale]/[slug]/page.js:26-42 (getProducerBySlug,
+// MEH-1754/PR #2514) — same split, same reason. This route is the sibling the
+// original fix did not cover: its resolver still returned `null` for `!res.ok`
+// and swallowed the catch, so a 404, a 500, a 429 and an 8s timeout were
+// indistinguishable — all four rendered a silent 404 with no stack, no Sentry
+// event and no error status. A 404 tells Google the page is GONE and it starts
+// de-indexing, while a 5xx says "try later"; Next then caches the notFound()
+// result on top (vercel/next.js#79497).
+//
+// Do NOT reintroduce a bare `catch` here.
+async function getJson(path, slug) {
+  const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
+  // The one genuine not-found. Only a 404 may become notFound(). For the
+  // recipe leg that covers unpublished/unapproved too — the backend filters
+  // them out (chunks 1/2), which is the existence-hiding this page relies on.
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const err = new Error(
+      `recipe page lookup failed: ${res.status} ${res.statusText} (path=${path})`
+    );
+    // Read by Sentry in app/[locale]/error.js; keeps slug+status on the event.
+    err.status = res.status;
+    err.slug = slug;
+    throw err;
   }
+  return res.json();
 }
 
 async function getProducerAndRecipe(slug, recipeId) {
   const [producer, recipe] = await Promise.all([
-    getJson(`/producers/by-slug/${encodeURIComponent(slug)}`),
+    getJson(`/producers/by-slug/${encodeURIComponent(slug)}`, slug),
     getJson(
       `/producers/${encodeURIComponent(slug)}/recipes/${encodeURIComponent(
         recipeId
-      )}`
+      )}`,
+      slug
     ),
   ]);
   return { producer, recipe };

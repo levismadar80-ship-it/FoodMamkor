@@ -1,0 +1,40 @@
+# Knip ratchet baseline — MEH-1868
+#
+# Format: <file>\t<rule>\t<count>, sorted. One line per (file, rule).
+#
+# Keyed by file+rule+count and deliberately NOT by line number: a
+# line-keyed baseline resurrects already-accounted-for warnings on any
+# unrelated code shift (Life360's documented failure with lint-baseline.xml).
+#
+# Everything listed here is GRANDFATHERED — allowed, not endorsed. The gate
+# blocks only counts that RISE above these numbers, and any (file, rule) not
+# listed here has an implicit baseline of 0, so genuinely new findings block.
+#
+# Regenerate:  node scripts/checks/lint-ratchet.mjs --update-baseline
+# Raising a number requires an explicit --allow-increase and should be justified in the PR.
+#
+# as-of: this file is a measurement, not a target. Total at freeze: 46.
+components/CategoryIcons.jsx	exports	12
+components/MapBottomSheet.jsx	exports	1
+components/Skeleton.jsx	exports	2
+components/ui/index.js	exports	4
+e2e/auth-fixture.ts	exports	2
+eslint.config.mjs	unlisted	1
+lib/api-schemas.js	exports	1
+lib/category-registry.js	exports	1
+lib/categoryQuestions.js	exports	2
+lib/env.server.js	files	1
+lib/errors.js	exports	1
+lib/holidays.js	exports	1
+lib/hours-serialize.js	exports	1
+lib/i18n-key-map.js	exports	1
+lib/launch-cohort.js	exports	2
+lib/license-required-categories.js	exports	2
+lib/order-window.js	exports	3
+lib/places.js	exports	1
+lib/producer-filters.js	exports	1
+lib/producer-status.js	exports	2
+lib/schemas.js	duplicates	1
+lib/useFirstVisit.js	files	1
+package.json	dependencies	1
+package.json	devDependencies	1

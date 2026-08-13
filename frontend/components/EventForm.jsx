@@ -40,7 +40,11 @@ const DEFAULTS = {
   lng: null,
   city: "",
   image_url: "",
-  category: "אחר",
+  // MEH-2013: "קטגוריה *" is marked required and the server enforces it
+  // (schemas.py EventCreate.category, min_length=1) — but pre-filling "אחר"
+  // meant the gate was satisfied by a catch-all nobody chose. Same class as
+  // ExperienceForm's location_type: "home".
+  category: "",
   price: 0,
   max_participants: "",
   registration_url: "",
@@ -59,7 +63,9 @@ function seed(initial) {
     lng: initial.lng ?? null,
     city: initial.city ?? "",
     image_url: initial.image_url ?? "",
-    category: initial.category ?? "אחר",
+    // MEH-2013: no "אחר" fallback here either — an existing event with no
+    // category has to be given one, not silently stamped catch-all on save.
+    category: initial.category ?? "",
     price: initial.price ?? 0,
     max_participants: initial.max_participants ?? "",
     registration_url: initial.registration_url ?? "",
@@ -70,7 +76,17 @@ function seed(initial) {
 // attributes. The form is `noValidate` now, so these checks replace them — all
 // evaluated together, each landing on its own field. Order = DOM order, which is
 // what makes "focus the first invalid field" mean the topmost one.
-const EVENT_FIELD_ORDER = ["title", "event_date", "price", "max_participants", "registration_url"];
+// MEH-2013: city + category join in DOM order (both sit between the date and
+// price inputs), so "first invalid" still means topmost.
+const EVENT_FIELD_ORDER = [
+  "title",
+  "event_date",
+  "city",
+  "category",
+  "price",
+  "max_participants",
+  "registration_url",
+];
 
 // `type="url"` rejects "abc" and "www.example.com" but ACCEPTS "javascript:…"
 // and "data:…" — measured in Chromium, not assumed. This mirrors that exactly,
@@ -93,6 +109,12 @@ function validateEventForm(f, t) {
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-2013: both are labelled `*`. `city` was enforced nowhere; `category`
+  // WAS enforced server-side, but the form is noValidate so the native
+  // `required` on the <select> is dead — the only failure path was a raw 422
+  // with no message beside the field.
+  if (!f.city.trim()) errors.city = t("error_city_required");
+  if (!f.category) errors.category = t("error_category_required");
   if (f.price !== "") {
     if (Number(f.price) < 0) errors.price = t("error_price_negative");
     // EventCreate.price is `int` — a fractional value 422s with an opaque
@@ -170,6 +192,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     try {
       const payload = {
         ...form,
+        // MEH-2013: required on both sides now — validateEventForm has already
+        // rejected an empty/whitespace value by the time we get here.
+        city: form.city.trim(),
         price: Number(form.price) || 0,
         max_participants: form.max_participants ? Number(form.max_participants) : null,
         event_time: form.event_time || null,
@@ -266,24 +291,54 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         </div>
 
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">{t("field_city_label")}</label>
+          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">
+            {t("field_city_label")}{" "}
+            <span className="text-error" aria-hidden="true">
+              *
+            </span>
+          </label>
           <CitySearch
             id="city"
+            required
             label={t("field_city_label")}
             value={form.city}
-            onChange={(val) => setForm({ ...form, city: val })}
+            onChange={(val) => {
+              setForm((f) => ({ ...f, city: val }));
+              // MEH-2013: CitySearch reports a value, not an event, so it does
+              // not go through `update()` — clear its error the same way.
+              setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
+            }}
             placeholder={t("field_city_placeholder")}
+            aria-describedby={fieldErrors.city ? "city-error" : undefined}
+            aria-invalid={fieldErrors.city ? true : undefined}
           />
+          {/* MEH-2013: CitySearch has no error prop, so the message renders
+              beside it here. MEH-2022 closed the half this comment used to
+              flag: the input now references it via aria-describedby above. */}
+          {fieldErrors.city && (
+            <span id="city-error" className="text-xs text-error mt-1 block">
+              {fieldErrors.city}
+            </span>
+          )}
         </div>
 
-        <Field id="category" label={t("field_category_label")} required>
+        <Field id="category" label={t("field_category_label")} required error={fieldErrors.category}>
           <select
             id="category"
             value={form.category}
             onChange={update("category")}
             className="input-base"
             required
+            aria-invalid={fieldErrors.category ? true : undefined}
+            aria-describedby={fieldErrors.category ? "category-error" : undefined}
           >
+            {/* MEH-2013: a disabled placeholder is what gives the select an
+                "unchosen" state at all. Without it the first real option is
+                displayed and submitting looks like a deliberate choice of it —
+                which is how "אחר" used to be picked for everyone. */}
+            <option value="" disabled>
+              {t("field_category_placeholder")}
+            </option>
             {CATEGORY_KEYS.map((c) => (
               <option key={c.key} value={c.key}>
                 {tCat(c.labelKey)}
@@ -321,10 +376,17 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               {/* raw img: upload preview. `form.image_url` is whatever POST /upload returned —
                   a Cloudinary secure_url OR the local /placeholder-image.png fallback
                   (upload.py:115). Mixed provenance, authenticated form chrome, 96px. */}
+              {/* MEH-2031: NOT alt="" (decorative). A successful upload has no
+                  live region, so this preview appearing IS the success state —
+                  with an empty alt a screen-reader user is told nothing at all
+                  and has to infer it from a remove button materialising nearby.
+                  The field label is reused rather than inventing copy, so there
+                  is no new key and the en twin already exists.
+                  REUSES: components/ExperienceForm.jsx:465-476 (MEH-2012). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={form.image_url}
-                alt=""
+                alt={t("image_label")}
                 className="w-24 h-24 object-cover rounded-[8px] border border-border"
               />
               <button
@@ -338,11 +400,22 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+            /* MEH-2031: `sr-only`, NOT `hidden`. `hidden` is display:none, which
+               removes the input from the tab order — and the wrapping <label> is
+               not natively focusable, so the whole upload control was unreachable
+               by keyboard (WCAG 2.1.1, Level A). sr-only keeps the input focusable
+               while invisible, and `focus-within` on the wrapper renders the ring
+               the sighted keyboard user needs. Same idiom as AddressSearch.jsx:196
+               and CitiesAutocomplete.jsx:206, and the form this file's widget was
+               copied to. Four more `hidden` file inputs remain (ProductsSection
+               :811/:829, RecipeForm:290, dashboard/edit/cards.jsx:382) — inventory
+               on MEH-2031, deliberately out of this diff.
+               REUSES: components/ExperienceForm.jsx:499-514 (MEH-2012). */
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
               <input
                 type="file"
                 accept="image/*"
-                className="hidden"
+                className="sr-only"
                 disabled={uploading}
                 onChange={handleImageUpload}
               />
@@ -398,13 +471,29 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   );
 }
 
-function Field({ id, label, required, children }) {
+// MEH-2013: `error` mirrors ui/Input's error slot so a Field-hosted control
+// (the category <select>) can carry an inline message instead of the raw 422
+// that noValidate left as the only failure path. The asterisk mechanism above
+// is untouched on purpose — MEH-2015 owns consolidating it.
+function Field({ id, label, required, error, children }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label}{" "}
+        {required && (
+          // MEH-2015: aria-hidden — the hosted control carries aria-required;
+          // without this, screen readers hear "star" after every label.
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
+        )}
       </label>
       {children}
+      {error && (
+        <span id={id ? `${id}-error` : undefined} className="text-xs text-error mt-1 block">
+          {error}
+        </span>
+      )}
     </div>
   );
 }
