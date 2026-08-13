@@ -19,7 +19,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 // MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
 // currentColor, aria-hidden) instead of a baked-in emoji — same source the
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
@@ -32,6 +32,22 @@ import { showToast } from "@/lib/toast";
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+
+// MEH-2047: the diet tags that carry a definition, in the order the chip row
+// above them renders. Each key resolves BOTH strings — the term from the chip's
+// own `diet_<key>` label (one owner, so the disclosure can never name a tag
+// differently from the chip beside it) and the body from `diet_def_<key>`.
+//
+// The definitions are INGREDIENT-level only, deliberately. Facility scope
+// (shared vs dedicated line) and "100%" declarations belong to MEH-1508, which
+// is In Progress on exactly that surface — stating either here would pre-empt
+// its decision with copy nobody ratified.
+//
+// This is what the owner form offers minus `low_carb`, which is being withdrawn
+// as an undefined claim (MEH-2047 PR-B, MEH-1259 precedent). PR-A leaves that
+// chip standing and gives it no definition; PR-B removes the chip, at which
+// point this list is again exactly the chip row.
+const DIET_DEFINITION_KEYS = ["gluten_free", "vegan", "vegetarian", "lactose_free", "no_added_sugar"];
 
 // MEH-1809: unified submit-validation — every required/range check runs
 // together (not one-at-a-time via a setError chain) and lands on its field.
@@ -490,6 +506,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
                       surfaces the business in the matching public filter. */}
                   <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
+                  {/* MEH-2047: …and what each tag MEANS. Per-product id — see
+                      the DietDefinitions doc comment. */}
+                  <DietDefinitions id={`edit-diet-definitions-${product.id}`} tForm={tForm} />
                 </div>
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
@@ -657,6 +676,8 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               {/* MEH-1439: tell the owner what marking a diet flag does — it
                   surfaces the business in the matching public filter. */}
               <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
+              {/* MEH-2047: …and what each tag MEANS. */}
+              <DietDefinitions id="add-diet-definitions" tForm={tForm} />
             </div>
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its
@@ -761,6 +782,51 @@ function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, r
       startAdornment="₪"
       error={error}
     />
+  );
+}
+
+/**
+ * MEH-2047: "מה הסימונים אומרים?" — one collapsed disclosure under the chip
+ * row, listing what each tag MEANS.
+ *
+ * Distinct from the MEH-1439 helper line directly above it, which stays: that
+ * one states the tag's EFFECT ("marking it lists you in the matching filter"),
+ * and an owner who knows the effect can still mis-mark a product because she
+ * read "ללא לקטוז" as "ללא חלב". Meaning and effect are two questions.
+ *
+ * One disclosure rather than a ⓘ per chip (Sapir, 13/08): six icons on a
+ * six-chip row is the noise the DoorDash/Deliveroo pattern avoids by putting
+ * the definitions one tap away instead of beside every control.
+ *
+ * `id` is required and must be unique per mount — the edit form renders one of
+ * these PER PRODUCT, so a constant would duplicate the id across every open
+ * editor and point every trigger's aria-controls at the first panel.
+ */
+function DietDefinitions({ id, tForm }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="inline-flex items-center gap-1 rounded-md text-xs text-fg-muted underline underline-offset-2 focus-ring"
+      >
+        {tForm("diet_definitions_cta")}
+        {open ? <CaretUp size={14} aria-hidden="true" /> : <CaretDown size={14} aria-hidden="true" />}
+      </button>
+      {open && (
+        <dl id={id} className="mt-2 space-y-1.5 text-xs text-fg-muted">
+          {DIET_DEFINITION_KEYS.map((key) => (
+            <div key={key}>
+              <dt className="inline font-medium">{tForm(`diet_${key}`)}:</dt>{" "}
+              <dd className="inline">{tForm(`diet_def_${key}`)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
   );
 }
 
