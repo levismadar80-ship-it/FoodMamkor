@@ -11,6 +11,18 @@ was fixed point-wise **four times** before this contract existed (§Precedents).
 The contract encodes it once, and a CI guard blocks any new label that omits
 either field.
 
+**What counts as a label: a term the owner can attach to her business or product
+as a claim about it. Editorial prose that merely names a diet category is not a
+label and is not bound by this contract — the test is whether a business gets
+marked by it, not whether the words appear on screen.** MEH-2047 is the worked
+pair: the *chip* «דל פחמימות» was withdrawn from every surface because no
+standard defines it and an owner cannot substantiate it, while the phrase
+«תפריט דל פחמימות» correctly survives in the locked intro copy of the
+no-added-sugar landing page, where it describes who that page suits and attaches
+to nobody. Deleting the second on the strength of the first would be a scope
+error in the opposite direction — under-claiming — and it needs a copy decision,
+not this rule.
+
 ---
 
 ## The vocabulary
