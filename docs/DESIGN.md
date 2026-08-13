@@ -214,6 +214,20 @@ Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
 
+### Address/city fields must use the canonical component
+
+A hand-rolled `<input>` for an address or city, instead of `<AddressSearch>` /
+`<CitySearch>`, has shipped two production bugs: a hand-typed city silently fell
+outside the map's city filter (MEH-1455), and a hand-typed address saved with no
+lat/lng — the pin never appeared (MEH-1766). Same mechanism as the palette rule
+above (MEH-1767, `no-restricted-syntax`, `warn`): a raw `input`/`textarea` whose
+literal `id`/`name`/`placeholder`/`aria-label` names "city"/"address"/"עיר"/
+"כתובת" is flagged; `<CitySearch id="…">` / `<AddressSearch id="…">` never match
+(component tag names aren't lowercase). Doesn't see through an i18n key
+(`placeholder={t("city")}`) — same gap `no-literal-string` already has. Legitimate
+exception (e.g. an admin raw-coordinates override)? Mark it `// address-field-ok`
++ `eslint-disable-next-line`.
+
 Two families carry the whole system. **Frank Ruhl Libre** — a Hebrew serif —
 for headlines, set at weight **900** for editorial gravitas (the canonical
 headline weight per CONTEXT.md §5 and BRAND.md §3). **DM Sans** for all body,
