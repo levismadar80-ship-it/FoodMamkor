@@ -369,6 +369,29 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(distance).not.toHaveAttribute("dir");
   });
 
+  // MEH-1938 chunk 3 — the discriminating case: distance now reads through
+  // producerPoints(), so a producer whose only coordinates live in a
+  // producer_locations row (no Producer.lat/lng) still shows a distance.
+  // This would render nothing against the pre-chunk-3 direct p.lat/p.lng read.
+  it("renders distance from a locations[] row when Producer.lat/lng are both null", () => {
+    window.localStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          lat: null,
+          lng: null,
+          locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
+    );
+    const distance = screen.getByTestId("distance-pill");
+    expect(distance.textContent).toMatch(/ק"מ$/);
+  });
+
   it("prefers short_description over top_product_name", () => {
     render(<ProducerCard producer={fullProducer} />);
     const desc = screen.getByTestId("card-description");
