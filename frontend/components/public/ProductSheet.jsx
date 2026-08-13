@@ -11,8 +11,10 @@ import {
   FacebookLogo,
   Receipt,
   X,
+  CaretLeft,
+  CaretRight,
 } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import {
@@ -42,6 +44,13 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  *           chosen primary_contact_method (lib/contact-method.js), so the sheet
  *           routes where she asked to be reached — and a producer with no phone
  *           no longer gets a sheet that ends in nothing.
+ *           MEH-2045 added prev/next paging between the producer's products
+ *           (chevrons + counter + arrow keys) so browsing no longer means
+ *           closing and reopening the overlay per product. The sheet does NOT
+ *           own the list or the position: ProducerSections passes `index` /
+ *           `total` / `onPrev` / `onNext`, exactly as it already passes
+ *           `product`. Visible controls only — swipe physics stays out
+ *           (NN/g: gesture ambiguity in bottom sheets), same call MEH-1901 made.
  * Does NOT: own a route ("מגזין, לא marketplace" — overlay only, no
  *           /product/[id]), fetch anything (the product object arrives from
  *           the already-loaded producer payload), or render a gallery /
@@ -116,17 +125,66 @@ const METHOD_CTA = {
   },
 };
 
-export default function ProductSheet({ product, producer, onClose }) {
+// MEH-2045: the two chevrons and the close button are the same overlay control,
+// so they share one class string — a contrast or hit-area change cannot drift
+// between them. 44px (h-11 w-11) is the tap-target floor .claude/rules/rtl.md
+// sets for this idiom; the close button already met it, and its inline copy of
+// these classes was folded in here rather than left to drift.
+//
+// `transition-colors`, NOT the bare `transition` the close button carried.
+// Tailwind's `transition` includes `transform`, and the chevrons change
+// transform between the two image forks (`-translate-y-1/2` on the square,
+// none on the short band) — so the bare form animated a 22px vertical SLIDE
+// every time paging crossed a no-photo product. Measured, not theorised: the
+// QA harness read the chevron 22px above its own computed offset while the
+// transition was still in flight. The only transition this control ever wanted
+// is the hover colour.
+const OVERLAY_CONTROL_CLS =
+  "flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-text " +
+  "transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-primary/40";
+
+export default function ProductSheet({
+  product,
+  producer,
+  onClose,
+  // MEH-2045. Defaults describe the pre-MEH-2045 caller: one product, no paging.
+  // A caller that passes neither `total` nor the handlers renders exactly the
+  // sheet MEH-1901 shipped — no chevrons, no counter, no arrow-key listener.
+  index = 0,
+  total = 1,
+  onPrev,
+  onNext,
+}) {
   const t = useTranslations();
   // MEH-1524: the source line is defined once, under whatsapp.question_chips,
   // and every prefill that opens a chat with a specific business ends with it
   // on its own final line. Read from there rather than restating the string.
   const tChips = useTranslations("whatsapp.question_chips");
+  // MEH-2045: `/en` really is LTR (layout.js:201 — `locale === "he" ? "rtl" :
+  // "ltr"`), so the arrow-key mapping and the chevron GLYPHS both have to flip.
+  // The chevron POSITIONS do not: they are logical (start-/end-) and mirror
+  // themselves, same as Lightbox.jsx:209,218.
+  const isRtl = useLocale() === "he";
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
+  const scrollRef = useRef(null);
   // MEH-1976: the src whose load failed (Cloudinary 401, MEH-1925). Must sit
   // above the `if (!product) return null` below — hooks cannot be conditional.
   const [failedSrc, setFailedSrc] = useState(null);
+
+  // MEH-2045. Paging is offered only when there is somewhere to page TO *and*
+  // the caller wired the handlers — `total > 1` alone would render two dead
+  // chevrons if a future caller passed the count and forgot the callbacks.
+  // `Boolean(product)` matters only for the arrow-key listener: the chevrons
+  // themselves live past the `if (!product) return null` below, but the effect
+  // does not, so without it a null-product sheet would still answer the arrow
+  // keys and page a dialog nobody can see.
+  const canPage =
+    Boolean(product) && total > 1 && typeof onPrev === "function" && typeof onNext === "function";
+  // No loop, deliberately: at the first product "previous" is a dead end and
+  // says so, rather than teleporting to the last one.
+  const canPrev = canPage && index > 0;
+  const canNext = canPage && index < total - 1;
 
   useEffect(() => {
     // Focus moves to the close button on open and RETURNS to whatever opened
@@ -162,6 +220,39 @@ export default function ProductSheet({ product, producer, onClose }) {
     };
   }, [onClose]);
 
+  // MEH-2045: paging to a product whose description is one line, from one whose
+  // description is forty, must not land the reader halfway down the new sheet.
+  // Keyed on the product id rather than the index so it also fires if the same
+  // position ever resolves to a different product.
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [product?.id]);
+
+  // MEH-2045: arrow-key paging lives in its OWN listener rather than being
+  // folded into the modal effect above. That effect captures `prevActive` and
+  // moves focus every time it re-runs, so making it depend on `index` would
+  // yank focus off the chevron the moment the user pages. This one only adds
+  // and removes a listener, so re-running it per index change costs nothing.
+  useEffect(() => {
+    if (!canPage) return undefined;
+    const onArrow = (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      // In RTL, ArrowLeft advances and ArrowRight goes back — the same mapping
+      // Lightbox.jsx:97-98 uses, and the one that matches which physical side
+      // each logically-positioned chevron actually lands on. LTR is the mirror.
+      const forward = isRtl ? e.key === "ArrowLeft" : e.key === "ArrowRight";
+      if (forward && canNext) {
+        e.preventDefault();
+        onNext();
+      } else if (!forward && canPrev) {
+        e.preventDefault();
+        onPrev();
+      }
+    };
+    window.addEventListener("keydown", onArrow);
+    return () => window.removeEventListener("keydown", onArrow);
+  }, [canPage, canPrev, canNext, isRtl, onPrev, onNext]);
+
   if (!product) return null;
 
   const img = product.image_url
@@ -175,6 +266,24 @@ export default function ProductSheet({ product, producer, onClose }) {
   // (The hook itself lives above the `if (!product)` early return; declaring
   // it here would call it conditionally — react-hooks/rules-of-hooks.)
   const imgError = failedSrc !== null && failedSrc === img;
+  const hasPhoto = Boolean(img) && !imgError;
+
+  // MEH-2045: WHERE the chevrons sit vertically depends on which image fork is
+  // rendered, and this is a measured fix, not a preference.
+  //
+  // On the full square, `top-1/2 -translate-y-1/2` is the carousel idiom and
+  // clears everything. On the MEH-1901 no-photo band (h-28 = 112px) it does
+  // NOT: the close button occupies y 12–56 of the same box at the same inline
+  // edge, and a 44px control centred in 112px spans y 34–78. Measured on this
+  // branch before the fix, at BOTH 375 and 1440, the close button and the
+  // `end` chevron overlapped by 22px — the MEH-2038 collision class, in a fork
+  // MEH-2038 never saw. Anchoring to the band's bottom puts the control at
+  // y 66–110, clear of the close button by 10px, and the counter is centred on
+  // the cross axis so the three never contend for the same pixels.
+  //
+  // The band's own height is untouched — collapsing it is a deliberate
+  // MEH-1901 decision with before/after captures behind it.
+  const chevronY = hasPhoto ? "top-1/2 -translate-y-1/2" : "bottom-2";
 
   const dietKeys = DIET_FLAGS.filter((f) => product[f.field] === true).map((f) => f.key);
 
@@ -234,6 +343,12 @@ export default function ProductSheet({ product, producer, onClose }) {
   // the chosen channel is not visually contested (MEH-1901 layout invariant).
   const showSecondaryWa = !waIsPrimary && Boolean(waHref);
 
+  // MEH-2045: the POSITIONS mirror themselves (logical start-/end-), the
+  // GLYPHS do not — a caret is a picture, so it has to be chosen per direction
+  // or `/en` gets two arrows pointing the wrong way.
+  const PrevIcon = isRtl ? CaretRight : CaretLeft;
+  const NextIcon = isRtl ? CaretLeft : CaretRight;
+
   const fireWaTracking = () => {
     pingWhatsAppBeacon(producer?.id);
     markWhatsAppClickedLocal(producer?.id);
@@ -261,7 +376,7 @@ export default function ProductSheet({ product, producer, onClose }) {
           onClick={onClose}
           aria-label={t("producer.detail.sections.products.sheet_close_aria")}
           data-testid="product-sheet-close"
-          className="absolute top-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-text transition hover:bg-background focus-visible:ring-2 focus-visible:ring-primary/40"
+          className={`absolute top-3 end-3 z-10 ${OVERLAY_CONTROL_CLS}`}
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
@@ -270,6 +385,7 @@ export default function ProductSheet({ product, producer, onClose }) {
             is the thing allowed to grow — the CTA lives in the footer below,
             outside the scroller, and stays reachable however long the text. */}
         <div
+          ref={scrollRef}
           className="flex-1 overflow-y-auto"
           data-testid="product-sheet-scroll"
         >
@@ -282,10 +398,10 @@ export default function ProductSheet({ product, producer, onClose }) {
               ~60% of the panel. It collapses to a short band instead. */}
           <div
             className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
-              img && !imgError ? "aspect-square" : "h-28"
+              hasPhoto ? "aspect-square" : "h-28"
             }`}
           >
-            {img && !imgError ? (
+            {hasPhoto ? (
               <Image
                 src={img}
                 alt={product.name}
@@ -310,6 +426,81 @@ export default function ProductSheet({ product, producer, onClose }) {
                   {product.name?.trim()?.[0] || "•"}
                 </span>
               </div>
+            )}
+
+            {/* MEH-2045: prev/next + counter, overlaying the image box — so on
+                a no-photo product they ride the short h-28 band the MEH-1901
+                fork collapses to. That band is unchanged in height and a 44px
+                control still fits inside it; the controls simply sit closer
+                together there than on a full square.
+
+                POSITIONING IS LOGICAL (start-/end-), NOT physical. start-2 is
+                the visual RIGHT in RTL = "previous", end-2 the visual LEFT =
+                "next" — the same construction Lightbox.jsx:209,218 uses and
+                annotates. That is what rtl.md's "carousel prev/next arrows"
+                exception licenses here: the arrows are directional and must not
+                be flipped by a bidi sweep. It is NOT a licence to hardcode
+                left-/right-, which would invert on the LTR /en locale
+                (layout.js:201). Only the glyphs are chosen per direction. */}
+            {canPage && (
+              <>
+                <button
+                  type="button"
+                  // aria-disabled, not `disabled`: a disabled button leaves the
+                  // tab order, so the Tab trap's first/last pair would change
+                  // shape as the reader pages. This keeps the control
+                  // focusable and announced-as-unavailable, and the guard here
+                  // is what makes the end of the list a dead end.
+                  aria-disabled={!canPrev}
+                  onClick={() => {
+                    if (canPrev) onPrev();
+                  }}
+                  aria-label={t("producer.detail.sections.products.sheet_prev_aria")}
+                  data-testid="product-sheet-prev"
+                  className={`absolute z-10 start-2 ${chevronY} ${OVERLAY_CONTROL_CLS} ${
+                    canPrev ? "" : "opacity-40"
+                  }`}
+                >
+                  <PrevIcon size={20} weight="bold" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  aria-disabled={!canNext}
+                  onClick={() => {
+                    if (canNext) onNext();
+                  }}
+                  aria-label={t("producer.detail.sections.products.sheet_next_aria")}
+                  data-testid="product-sheet-next"
+                  className={`absolute z-10 end-2 ${chevronY} ${OVERLAY_CONTROL_CLS} ${
+                    canNext ? "" : "opacity-40"
+                  }`}
+                >
+                  <NextIcon size={20} weight="bold" aria-hidden="true" />
+                </button>
+
+                {/* Centred with inset-x-0 + mx-auto + w-fit rather than the
+                    left-1/2/-translate-x-1/2 idiom: same result, no physical
+                    class, so no rtl-ok exception is needed at all. */}
+                <div
+                  aria-live="polite"
+                  aria-label={t("producer.detail.sections.products.sheet_counter_aria", {
+                    current: index + 1,
+                    total,
+                  })}
+                  data-testid="product-sheet-counter"
+                  className="absolute inset-x-0 bottom-2 z-10 mx-auto w-fit rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium tabular-nums text-text"
+                >
+                  {/* MEH-1933: "2 / 5" is an EN run, a neutral run, an EN run.
+                      Under UBA rule N1 the neutral " / " inherits the
+                      paragraph's R direction and the whole fraction renders
+                      reversed. dir="ltr" is the fix that actually holds —
+                      Lightbox.jsx:236 carries the same pair. */}
+                  <span dir="ltr">
+                    {index + 1} / {total}
+                  </span>
+                </div>
+              </>
             )}
           </div>
 
