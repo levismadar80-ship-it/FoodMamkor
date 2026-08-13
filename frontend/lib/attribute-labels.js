@@ -102,8 +102,9 @@ export const ATTRIBUTE_LABELS = {
     subtext: "עסקים עם מוצרים ללא לקטוז בקטלוג",
   },
   // MEH-1934: fifth diet axis (a sixth, low_carb, was withdrawn — see below).
-  // Same any-product / self-declared shape as — an EXISTS subquery over products, never a whole-business
-  // property. Copy is Sapir-LOCKED (MEH-1934 §hebrew_copy): do not paraphrase.
+  // Same any-product / self-declared shape as the four above — an EXISTS
+  // subquery over products, never a whole-business property. Copy is
+  // Sapir-LOCKED (MEH-1934 §hebrew_copy): do not paraphrase.
   //
   // "מתאים לסוכרתיים" stays banned on every surface — it is a medical claim,
   // and this label is a self-declaration about a product, which is the exact
