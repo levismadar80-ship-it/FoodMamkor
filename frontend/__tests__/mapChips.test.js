@@ -75,11 +75,30 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(kosher).toMatchObject({ label: "כשרות מאומתת", group: "quality" });
   });
 
-  // MEH-1468: pickup is not a producer toggle filter (it's a map-layer toggle).
-  // Preserved from the retired MEH-1461 quick-row test — the sole assertion in it
-  // that was independent of the now-deleted QUICK_CHIP_KEYS.
-  it("no pickup toggle exists in TOGGLE_CHIPS", () => {
-    expect(TOGGLE_CHIPS.some((c) => /pickup/.test(c.key))).toBe(false);
+  // This assertion used to read "no pickup toggle exists in TOGGLE_CHIPS", on
+  // the MEH-1468 rationale that "pickup is not a producer toggle filter (it's a
+  // map-layer toggle)". That premise was true until MEH-2046: `?pickup_points=true`
+  // is now a real producer filter on GET /producers (an EXISTS over pickup /
+  // market_stand location rows), so pickup is BOTH — a producer filter and,
+  // separately, a marker-layer toggle.
+  //
+  // Conflating those two was the actual bug this ticket exists to fix: the layer
+  // button sat on the map canvas looking like a filter. The invariant worth
+  // pinning is therefore no longer "pickup is absent" but "the two are DISTINCT
+  // things" — the filter is a TOGGLE_CHIPS member, the layer toggle is not and
+  // must never become one (it is MapClient's `showSecondaryLayer`, which changes
+  // what is DRAWN, not which businesses match).
+  it("MEH-2046: pickup_points is a service-group producer filter", () => {
+    const pickup = TOGGLE_CHIPS.find((c) => c.key === "pickup_points");
+    expect(pickup).toMatchObject({ label: "איסוף עצמי", group: "service" });
+  });
+
+  it("MEH-2046: the marker-LAYER toggle is not a chip", () => {
+    // The layer toggle has no TOGGLE_CHIPS key and must not acquire one — it
+    // hides pins, it does not filter the result set. `pickup_points` is the
+    // only pickup-shaped key here.
+    const pickupish = TOGGLE_CHIPS.filter((c) => /pickup|layer|secondary/.test(c.key));
+    expect(pickupish.map((c) => c.key)).toEqual(["pickup_points"]);
   });
 });
 

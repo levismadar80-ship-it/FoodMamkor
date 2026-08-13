@@ -17,6 +17,7 @@
 import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
 import { parseHours } from "./hours";
+import { producerPoints } from "./producerPoints.js";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -252,11 +253,19 @@ export function buildJsonLd(producer, locale = "he") {
     if (deliveryCities.length > 0) business.areaServed = deliveryCities;
   }
 
-  if (!isDeliveryOnly && producer.lat && producer.lng) {
+  // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
+  // directly — producerPoints() still falls back to Producer.lat/lng when
+  // there is no usable location row, so today's producers are unaffected.
+  // Prefers the PRIMARY point when one exists — Producer.locations has no
+  // `order_by` (models.py:369), so points[0] is arbitrary DB row order, not
+  // necessarily the branch address this structured data should describe.
+  const geoPoints = isDeliveryOnly ? [] : producerPoints(producer);
+  const geoPoint = geoPoints.find((pt) => pt.location?.is_primary) ?? geoPoints[0];
+  if (geoPoint) {
     business.geo = {
       "@type": "GeoCoordinates",
-      latitude: producer.lat,
-      longitude: producer.lng,
+      latitude: geoPoint.lat,
+      longitude: geoPoint.lng,
     };
   }
 
