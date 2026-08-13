@@ -25,6 +25,7 @@ Revises: c1f4b8e27d35
 Create Date: 2026-08-13 15:12:00
 """
 
+import logging
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -34,6 +35,13 @@ revision: str = "97669fe803f5"
 down_revision: str | None = "c1f4b8e27d35"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
+
+# MEH-1855: logging.info(), not print() — portable across whatever captures
+# Railway's boot-log output, unlike stdout which is unverified anywhere in
+# this repo (CI reviewer finding on PR #2898). `alembic upgrade head` already
+# configures logging from alembic.ini, so this routes through the same
+# handlers as every other library log line in the migration run.
+logger = logging.getLogger("alembic.runtime.migration")
 
 
 def upgrade() -> None:
@@ -49,9 +57,10 @@ def upgrade() -> None:
             """
         )
     ).scalar_one()
-    print(
-        f"[MEH-1855] conflict rows (both set, different — owner's price_range "
-        f"kept, NOT overwritten): {conflict_count}"
+    logger.info(
+        "[MEH-1855] conflict rows (both set, different — owner's price_range "
+        "kept, NOT overwritten): %s",
+        conflict_count,
     )
 
     result = conn.execute(
@@ -64,7 +73,7 @@ def upgrade() -> None:
             """
         )
     )
-    print(f"[MEH-1855] backfilled rows (price_range was NULL): {result.rowcount}")
+    logger.info("[MEH-1855] backfilled rows (price_range was NULL): %s", result.rowcount)
 
 
 def downgrade() -> None:
@@ -74,7 +83,7 @@ def downgrade() -> None:
     # only means "undo the copy," which would require distinguishing rows
     # this migration wrote from rows that already matched by coincidence.
     # No-op by design; documented rather than a silent pass.
-    print(
+    logger.info(
         "[MEH-1855] downgrade is a documented no-op — this migration only "
         "copies data forward (price_range = starting_price_label where NULL); "
         "starting_price_label is untouched in both directions, so there is "
