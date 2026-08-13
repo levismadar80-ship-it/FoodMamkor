@@ -335,7 +335,13 @@ def send_deletion_email(email: str, name: str) -> None:
         f"שלום {name},\n\n"
         f"החשבון שלך במהמקור נמחק בהצלחה.\n"
         f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
-        f"אם לא ביקשת למחוק את החשבון, צור איתנו קשר מיידית.\n\n"
+        # MEH-1965: was "צור" — pure masculine imperative addressed to the
+        # reader, which docs/BRAND.md §4 forbids on every surface ("פנייה
+        # זכרית לקוראת", ADR-024). The same sentence already ended in the
+        # feminine "מיידית", and every other imperative in this module is
+        # feminine (לחצי / העתיקי / אמתי / השיבי), so this was a slip, not a
+        # voice choice. BRAND.md names "צרי" as the feminine example verbatim.
+        f"אם לא ביקשת למחוק את החשבון, צרי איתנו קשר מיידית.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     send_email(email, "מהמקור - החשבון שלך נמחק", body)

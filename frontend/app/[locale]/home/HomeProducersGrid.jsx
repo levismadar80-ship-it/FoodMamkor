@@ -64,7 +64,11 @@ export function HomeProducersGrid({
   geoActive,
   cityActive,
   // MEH-1645: active day refinement + its handler (day row + empty-state CTA).
-  dayActive,
+  // MEH-2036: default to [] so a caller that has not yet been threaded the
+  // prop renders an empty day axis instead of throwing on .length. Mirrors the
+  // same tolerance in DeliveryDayRow.
+  daysActive = [],
+  onClearDays,
   onSelectDay,
   geoEmptyNotice,
   regionFallback,
@@ -163,7 +167,7 @@ export function HomeProducersGrid({
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
-        dayActive={dayActive}
+        daysActive={daysActive}
         onClear={onClearLocation}
       />
 
@@ -172,7 +176,7 @@ export function HomeProducersGrid({
           and a pill click routes into the LocationModal (handleDaySelected). */}
       <DeliveryDayRow
         cityActive={cityActive}
-        dayActive={dayActive}
+        daysActive={daysActive}
         onSelectDay={onSelectDay}
       />
 
@@ -232,14 +236,17 @@ export function HomeProducersGrid({
           {/* MEH-1645: zero results while a DAY refinement is active → suggest
               removing the day BEFORE the region fallback — the day is the
               narrowest filter, so it is the first thing to relax. */}
-          {producers.length === 0 && dayActive && (
+          {producers.length === 0 && daysActive.length > 0 && (
             <div className="text-center py-8" data-testid="day-empty-suggestion">
               <p className="text-fg-muted mb-3 max-w-md mx-auto">
-                {t("home.producers.day_empty_suggestion", { day: dayActive, city: filters.delivery_city })}
+                {/* MEH-2036: the full set reads out here — this is a
+                    paragraph, not the width-constrained chip, so it never
+                    truncates the way ActiveFilterChip's label does. */}
+                {t("home.producers.day_empty_suggestion", { day: daysActive.join(" · "), city: filters.delivery_city })}
               </p>
               <button
                 type="button"
-                onClick={() => onSelectDay(dayActive)}
+                onClick={onClearDays}
                 className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
               >
                 {t("home.producers.day_empty_clear_cta")}

@@ -9,9 +9,28 @@
 @tailwind utilities;
 
 /* WhatsApp colour tokens — single source of truth. All #25D366 references
-   in the codebase resolve to one of these three utilities. */
+   in the codebase resolve to one of these three utilities.
+
+   MEH-1389 — `.btn-whatsapp` no longer fills with #25D366. White-on-#25D366
+   measures 1.98:1, an axe `color-contrast` SERIOUS failure against the 4.5:1
+   AA threshold for normal text; the old hover (#1ea855) was 3.09:1, so the
+   button failed in BOTH states and hovering made it look addressed without
+   fixing it.
+
+   The fill is now a DARKENED WHATSAPP GREEN, not the brand green: #16803E is
+   the same hue (142.4°) and the same saturation (0.825) as #25D366 with the
+   value dropped 0.83 → 0.50. It is the channel colour, just dark enough to
+   carry white text — swapping to the mehamakor green would erase the channel
+   code the CTA exists to signal.
+
+     white on #16803E → 5.01:1  (AA normal text, with headroom over 4.5)
+     white on #136B34 → 6.60:1  (hover, also same hue/saturation)
+
+   The focus ring stays #25D366 on purpose: it is a non-text indicator, it is
+   not what axe flagged, and against the darker fill it now reads MORE clearly
+   as the WhatsApp colour than it did against #25D366 itself. */
 .btn-whatsapp {
-  @apply bg-[#25D366] hover:bg-[#1ea855] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
+  @apply bg-[#16803E] hover:bg-[#136B34] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
 }
 .btn-whatsapp-outline {
   @apply border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/5 transition;

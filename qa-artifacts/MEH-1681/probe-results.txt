@@ -1,0 +1,7 @@
+PASS table-rendered-both-rows: {"actual":true,"expected":true}
+PASS ambassador=false renders the SET action label: {"actual":"הגדרה כשגרירה","expected":"הגדרה כשגרירה"}
+PASS ambassador=true renders the REMOVE action label: {"actual":"הסרת תפקיד שגרירה","expected":"הסרת תפקיד שגרירה"}
+PASS the two states render different labels: {"actual":true,"expected":true}
+PASS no retired state string (☆ / שגרירה / ☆ שגריר) in the menu: {"actual":[],"expected":[]}
+PASS no menu item rendered as a raw i18n key: {"actual":[],"expected":[]}
+FAILURES: 0
