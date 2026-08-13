@@ -787,6 +787,9 @@
           },
           "sheet_open_aria": "Details about {name}",
           "sheet_close_aria": "Close product details",
+          "sheet_prev_aria": "Previous product",
+          "sheet_next_aria": "Next product",
+          "sheet_counter_aria": "Product {current} of {total}",
           "sheet_cta": "Ask about this product on WhatsApp",
           "sheet_secondary_wa": "Or ask about this product on WhatsApp",
           "sheet_wa_prefill": "Hi, I saw “{name}” on your Mehamakor page and would love to hear more"
