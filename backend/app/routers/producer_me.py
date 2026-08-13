@@ -299,12 +299,20 @@ def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> 
         )
 
 
-# MEH-2007: namespace for the (int4, int4) form of pg_advisory_xact_lock, so
-# this lock cannot collide with an advisory lock taken elsewhere for an
-# unrelated purpose. The second half is derived from the producer UUID; two
-# different producers can in principle fold onto the same 31-bit value, which
-# costs them one avoidable wait and nothing else — correctness does not depend
-# on the derivation being injective.
+# MEH-2007: namespace for the (int4, int4) form of pg_advisory_xact_lock. The
+# second half is derived from the producer UUID; two different producers can in
+# principle fold onto the same 31-bit value, which costs them one avoidable wait
+# and nothing else — correctness does not depend on the derivation being
+# injective.
+#
+# The repo's only other advisory lock is alembic's migration mutex
+# (`backend/alembic/env.py:42`, key 273273273) and it CANNOT collide with this
+# one — measured, not assumed. The two call forms occupy separate lock objects:
+# holding `pg_advisory_xact_lock(273273273)` in one backend and
+# `pg_advisory_xact_lock(2007, 273273273)` in another yields two rows in
+# `pg_locks`, distinguished by `objsubid` (1 for the int8 form, 2 for the
+# int4-pair form) — with the numeric halves deliberately made identical, which
+# is the case that would have collided if the spaces were shared.
 _PRODUCER_UPDATE_LOCK_NAMESPACE = 2007
 
 
