@@ -333,6 +333,19 @@ comments recording that `networkidle` is not layout-idle for them
 > Linear auto-close asserted twice into PR bodies as certain, then measured false
 > (workflow.md rule 29 § *branch name*).
 >
+> **A CI aggregator is the same instrument, one level up (MEH-1742).** `needs.<job>.result`
+> collapses to one of `success|failure|cancelled|skipped` — GitHub Actions does not
+> expose *why* a job skipped. `e2e-gate`'s `ok() { case "$1" in success|skipped) ... }`
+> therefore reads a docs-only PR's *intended* skip and a frontend PR's *unintended* one
+> (a job condition suppressing `e2e` for a reason unrelated to scope) as the identical
+> token, and passes both. Same shape as the `check`/`check_ran` split MEH-1582 already
+> landed on `pr-checks.yml` for exactly this reason on other required jobs — a skip
+> the gate is actively enforcing must have *run*, not just returned a token that also
+> means "nothing to check." Fix staged at
+> [`docs/ci/e2e-gate-strict-skip.patch.md`](../../docs/ci/e2e-gate-strict-skip.patch.md)
+> (`.github/workflows/**` is CC-deny; discrimination proven in
+> `scripts/e2e-gate-selftest.sh` before the patch is even applied).
+>
 > **Three of those happened in one session (2026-08-11), to a session that had this
 > very section loaded the whole time.** Knowing the rule is not the same as running
 > the check — so the practical form is a habit, not a principle: **before a claim
