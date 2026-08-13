@@ -1064,13 +1064,21 @@ describe("RegisterProducerClient — draft survives the anti-enum ack (MEH-1815)
 
     const saved = localStorage.getItem(DRAFT_KEY);
     expect(saved).toBeTruthy();
+    // MEH-1977: the stored value is now an envelope — `{v, savedAt, step, form}`
+    // — so the seller's fields moved one level down. Every assertion below is
+    // the one this test already made; only the path to the value changed.
     const parsed = JSON.parse(saved);
     // The expensive part of the fill is what has to come back.
-    expect(parsed.producer_name).toBe("העסק שלי");
-    expect(parsed.city).toBe("תל אביב");
-    // saveDraft strips the password — extending the draft's lifetime must not
-    // extend a stored credential's lifetime.
-    expect(parsed).not.toHaveProperty("password");
+    expect(parsed.form.producer_name).toBe("העסק שלי");
+    expect(parsed.form.city).toBe("תל אביב");
+    // packDraft strips the password — extending the draft's lifetime must not
+    // extend a stored credential's lifetime. Asserted on the WHOLE serialised
+    // value, not just `form`: a password that leaked into the envelope's own
+    // keys would pass a `form`-scoped check while sitting on disk all the same.
+    expect(parsed.form).not.toHaveProperty("password");
+    expect(saved).not.toContain("Abcdefgh1234"); // the value fillAccountToDetails types
+    // MEH-1977: the draft that survives must also be one that can expire.
+    expect(typeof parsed.savedAt).toBe("number");
   });
 
   it("clears the draft on the upgrade path, where access_token proves the write landed", async () => {
@@ -1079,5 +1087,83 @@ describe("RegisterProducerClient — draft survives the anti-enum ack (MEH-1815)
     });
     await fillWizardAndSubmit();
     await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).toBeNull());
+  });
+});
+
+// MEH-1977: where a resumed draft is allowed to LAND.
+//
+// The card asks for "restore lands on step 3 with data". That is safe with a
+// token and unsafe without one, and the reason is the other half of the same
+// feature: the password is deliberately never persisted. Dropped straight onto
+// STORY, a signed-out seller carries an empty password into the submit body —
+// and `password` is absent from CROSS_STEP_REQUIRED, so nothing bounces her
+// back to the account frame. She gets a rejection pointing at no field.
+//
+// These assert the frame the wizard ends up on, not that safeResumeStep was
+// called — the same end-state discipline as the MEH-1815 pair above.
+describe("RegisterProducerClient — resumed drafts land where they can finish (MEH-1977)", () => {
+  const seedDraftAtStep = (step) =>
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        v: 2,
+        savedAt: Date.now(),
+        step,
+        form: { producer_name: "העסק שלי", city: "תל אביב", category_ids: [1] },
+      }),
+    );
+
+  it("signed out: restores the data but stays on ACCOUNT, because the password is gone", async () => {
+    seedDraftAtStep(4); // STORY — the furthest frame, the worst case
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+
+    expect(screen.getByTestId("register-frame-account")).toBeTruthy();
+    expect(screen.queryByTestId("register-frame-story")).toBeNull();
+
+    // The restore still has to be WORTH something. Cross the account gate on
+    // foot and the restored business name is waiting on the next frame — so
+    // what she re-types is the three account fields, not the whole wizard.
+    // (Asserted by walking, not by reading state: a test that only checked the
+    // frame would pass identically if the restore had merged nothing at all.)
+    await fillAccountToDetails();
+    expect(ph("producer_name").value).toBe("העסק שלי");
+  });
+
+  it("signed in: lands on the stored frame, where the account fields are not submitted at all", async () => {
+    localStorage.setItem("token", "tok-123");
+    authState.user = { role: "user" };
+    seedDraftAtStep(4);
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+
+    expect(await screen.findByTestId("register-frame-story")).toBeTruthy();
+  });
+
+  it("never lands on CONFIRM — that frame is only reachable from a 200", async () => {
+    localStorage.setItem("token", "tok-123");
+    authState.user = { role: "user" };
+    seedDraftAtStep(5); // CONFIRM
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+
+    expect(screen.queryByTestId("register-frame-confirm")).toBeNull();
+  });
+
+  it("drops an expired draft instead of offering it back", async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        v: 2,
+        savedAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+        step: 2,
+        form: { producer_name: "העסק שלי", category_ids: [] },
+      }),
+    );
+    await renderWizard();
+    expect(screen.queryByTestId("register-draft-banner")).toBeNull();
+    // Not merely hidden — gone. A stale draft holding a name, phone and address
+    // must not sit on a shared machine because nobody came back for it.
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 });
