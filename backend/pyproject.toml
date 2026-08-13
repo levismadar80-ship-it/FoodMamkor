@@ -46,6 +46,22 @@ dev = [
 ]
 
 [tool.uv]
+# MEH-1586: starlette floor as a CONSTRAINT, deliberately not a direct
+# dependency — it arrives transitively via FastAPI and must stay that way, so
+# declaring it under [project] dependencies would be the wrong fix.
+#
+# MEH-1570 (PR #2191) raised starlette to 1.3.1 for CVE-2026-54283 by editing
+# only `uv.lock`. A lock is an ARTIFACT of a resolution, not a rule about it:
+# it protects today, but the next re-resolution that runs without a floor is
+# free to pick a version below 1.3.1 again and nothing would object. This is
+# the rule the lock was standing in for.
+#
+# Verified enforced rather than accepted-and-ignored: with the floor set to an
+# unsatisfiable `starlette>=99.0.0`, `uv lock` exits 1 with
+# "your project's requirements are unsatisfiable". A key uv merely tolerated
+# would have resolved cleanly and left this comment claiming a guarantee that
+# was not there.
+constraint-dependencies = ["starlette>=1.3.1"]
 # This is a web application, not an installable package.
 package = false
 
