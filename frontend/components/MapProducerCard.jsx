@@ -10,6 +10,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
+import { producerPoints } from "@/lib/producerPoints";
 
 // MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
 // (wide banner/logo) and letterboxed (object-contain) instead of cropped
@@ -124,9 +125,15 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // MEH-1243 (🔒 §3): Hebrew unit, digits-first, no "ממך" suffix — rendered
   // inside the <bdi dir="ltr"> below. e.g. "1.2 ק"מ". (MEH-1307 dropped the
   // "ממך" tail everywhere, so no per-call suffix flag is needed anymore.)
+  // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
+  // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx).
+  const points = producerPoints(p);
   const distanceLabel =
-    userLoc && p.lat != null && p.lng != null
-      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng), { unit: "he" })
+    userLoc && points.length > 0
+      ? formatDistance(
+          Math.min(...points.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng))),
+          { unit: "he" },
+        )
       : null;
 
   // MEH-1243 (Direction B): body tap SELECTS an unselected card (pin-sync,
