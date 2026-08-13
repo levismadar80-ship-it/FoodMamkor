@@ -23,12 +23,14 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // The classifier: does this captured output prove ≥1 test actually passed?
-// Strips ANSI color first so the regex sees plain text (the ESC byte itself
-// may remain; the summary match does not care). Takes the LAST summary
+// Strips full ANSI SGR sequences (ESC + bracket) so the regex sees plain text.
+// \u001B, not a literal ESC byte: no-control-regex is off in this config, and
+// the escape keeps the source ASCII-clean. Stripping only the bracket would
+// break the moment vitest colorized the digits themselves. Takes the LAST
 // occurrence (review note: defensive against any reporter that emits
 // intermediate "Tests N passed" lines before the grand total).
 export function classify(output) {
-  const plain = output.replace(/\[[0-9;]*m/g, "");
+  const plain = output.replace(/\u001B\[[0-9;]*m/g, "");
   const matches = [...plain.matchAll(/Tests\s+(\d+)\s+passed/g)];
   const last = matches.at(-1);
   const passed = last ? Number.parseInt(last[1], 10) : 0;
@@ -55,6 +57,12 @@ if (process.argv[2] === "--self-test") {
       output: "Cannot find module 'vitest/config'\n",
       expect: false,
     },
+    // Colorized DIGITS — the case bracket-only stripping would have broken.
+    {
+      name: "ANSI inside the count",
+      output: " Tests  \u001B[1m12\u001B[22m passed (12)\n",
+      expect: true,
+    },
     // Zero-passed summary (a run that only skipped) is NOT verification.
     {
       name: "zero passed",
@@ -63,8 +71,8 @@ if (process.argv[2] === "--self-test") {
     },
     // Colorized real-shaped summary — the ANSI strip is load-bearing.
     {
-      name: "ANSI-colored summary",
-      output: " [32mTests  12 passed[39m (12)\n",
+      name: "ANSI-colored summary (full ESC sequences)",
+      output: " \u001B[32mTests  12 passed\u001B[39m (12)\n",
       expect: true,
     },
   ];
