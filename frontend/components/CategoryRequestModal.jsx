@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
@@ -16,14 +16,45 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
   const [examples, setExamples] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // MEH-2039: trap scopes to the PANEL, never the fixed inset-0 overlay.
+  const panelRef = useRef(null);
+
   useFocusReturn(open);
 
   // WCAG 2.1 §2.1.2 — Escape closes the dialog.
+  // MEH-2039: + Tab trap and body scroll lock. No initial-focus call — the name
+  // input already carries autoFocus below, and a second focus call would fight it.
+  // REUSES: LoginPromptModal.jsx:42-77.
   useEffect(() => {
     if (!open) return;
-    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+
+      const focusables = panelRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -51,15 +82,24 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
     }
   };
 
+  // MEH-2039: role="dialog" + aria-modal moved off the full-screen overlay onto
+  // the inner panel — with the role on the overlay, the whole page sat inside the
+  // dialog boundary. Backdrop click-to-close is unchanged; the
+  // `e.target === e.currentTarget` guard still separates backdrop from panel.
+  // REUSES: LoginPromptModal.jsx:87 for the role="presentation" wrapper.
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cat-req-title"
+      role="presentation"
       className="fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cat-req-title"
+        className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start"
+      >
         <h2 id="cat-req-title" className="font-headline-md text-lg font-bold text-text mb-4">
           {t("title")}
         </h2>
