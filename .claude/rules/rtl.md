@@ -47,6 +47,51 @@ _Source: 2026-06-25 /map UX batch — an orchestrator instruction specified
 left in RTL and corrected it to `start-`. (meta-patterns.md §1 — verify
 orchestrator claims.)_
 
+### Close buttons mirror to the inline-END — and the header must reserve the space (MEH-2038)
+
+**A modal/tip/sheet close button goes at `end-*`, never `start-*`, and the
+heading it floats over carries a matching `pe-*`.** Both halves are required:
+the position stops the collision, the padding stops it coming back the first
+time someone writes a longer title.
+
+**Why `end-`, when the section above warns against exactly that reflex.** These
+are not in tension, and the distinction is the whole rule. The warning above is
+about *where a control should sit* — "primary action on the right" is a
+placement decision, and in RTL right is `start-`. This rule is about
+*mirroring*: an X that sits top-right in LTR sits there because that is the
+**end** of the reading direction, so its RTL counterpart is top-**left** =
+`end-`. Ask which one you are doing. If the answer is "the LTR design puts it
+in the far corner", you are mirroring, and the logical property carries the
+mirror for free.
+
+**The failure mode is specific to RTL and invisible in LTR review.** `start-*`
+is where Hebrew text *begins*, so a `start-` close button lands on the first
+characters of every heading — the one position guaranteed to collide. The same
+component reviewed in English looks fine, because there `start-` is the empty
+left margin.
+
+**Reference implementation: `OnboardingTip.jsx:50,55`** — `top-2 end-3` on the
+button *and* `pe-5` on the paragraph. `Lightbox.jsx:156` (`top-4 end-4`) is the
+position half.
+
+**Reserving the space is arithmetic, not a guess:** the button is absolutely
+positioned against the *card*, the text sits inside the card's padding, so the
+overlap is `inset + button-width − card-padding`. Pad past that, not by feel.
+
+**On a `text-center` panel, reserve symmetrically (`px-*`).** A one-sided `pe-*`
+shifts the heading off its centre while the body copy below stays centred —
+trading a collision for a misalignment. `LoginPromptModal.jsx:113` is the worked
+case.
+
+**Tap target ≥ 44px** on any such button (`w-11 h-11`) — `ShareButton.jsx` is
+the house size. A 32px control is under the standard the rest of the repo meets.
+
+_Source: MEH-2038 (2026-08-12) — three modals shipped with `start-*` close
+buttons. `LocationModal.jsx` visibly covered its own `<h2>`; `LoginPromptModal`
+escaped only because its content is centred; `KashrutBadgeStrip`'s CertModal had
+the collision hand-patched with a magic `mt-6` on the image instead of being
+fixed at the button._
+
 ### Intentional physical-property exceptions (keep as-is, add `// rtl-ok` comment)
 
 - Eye-toggle buttons inside `dir="ltr"` password inputs (`right-3`)
