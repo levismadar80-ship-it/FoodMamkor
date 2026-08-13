@@ -865,6 +865,26 @@ Three points that are easy to lose and are worth the duplication:
   from this sandbox — say *"deferred to user (CC sandbox limitation)"*.
 - **Never run `playwright install`.** Chromium is preinstalled at
   `/opt/pw-browsers`.
+- **Unbounded `networkidle` is BANNED in specs** (MEH-215) — a bounded, caught wait
+  is the sanctioned form, and `e2e/visual/parity.spec.ts:246` is a deliberate one.
+  The unbounded form couples the test outcome to
+  network conditions the test is not about: on the runner every Cloudinary image
+  401s and the Next image optimizer retries, so the network may never go idle and
+  an unbounded `waitForLoadState("networkidle")` burns the whole test timeout.
+  Locally Cloudinary resolves and it settles instantly — a latent
+  **green-local/red-CI** in every occurrence. Replacement, when you need to prove
+  something did *not* happen: **await the unwanted event with a timeout and
+  require the timeout**.
+  ```js
+  const strayed = await page
+    .waitForURL((u) => new URL(u).pathname !== "/login", { timeout: 3_000 })
+    .then(() => true).catch(() => false);
+  expect(strayed).toBe(false);
+  ```
+  With the bug it resolves the moment the event lands; without it, it reports
+  `false` after the bound. Deterministic in both worlds, network-independent.
+  Full rule: [.claude/rules/testing.md](../../.claude/rules/testing.md) §
+  *`networkidle` is banned in specs*.
 - **Sentry and Vercel MCP tools DO exist here — measured 2026-08-11.** This line
   read *"No Sentry or Vercel MCP tools exist in harness sessions. Do not plan
   around them"*, and that was false: `mcp__Sentry__find_organizations` returns org

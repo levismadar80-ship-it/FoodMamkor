@@ -1,0 +1,10 @@
+{
+  "_comment": "MEH-1980 frontend coverage ratchet baseline. Global LINE coverage only; per-directory detail lives in docs/reports/. Regenerate with `node scripts/checks/coverage-ratchet.mjs --update-baseline`. Lowering it requires --allow-drop and a justification in the PR body.",
+  "_tolerancePct": 0.5,
+  "globalPct": 66.77,
+  "lines": {
+    "covered": 8139,
+    "total": 12188
+  },
+  "files": 339
+}

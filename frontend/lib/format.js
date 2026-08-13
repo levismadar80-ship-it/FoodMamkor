@@ -2,7 +2,8 @@
  * Module:   lib/format
  * Purpose:  Locale-aware number formatting helpers shared across pages.
  * Touches:  nothing — pure functions over Intl.NumberFormat.
- * Does NOT: format dates (lib/format-date.js) or percentages (lib/percent.js).
+ * Does NOT: format dates (lib/format-date.js) or percentages — no percent
+ *           helper exists in this repo (clampPercent deleted, MEH-1972).
  * Related:  app/[locale]/producer/dashboard/insights/page.js (windowed metric
  *           cards — the original home of formatCompact, MEH-1433);
  *           __tests__/formatCompact.test.js (unit pin).

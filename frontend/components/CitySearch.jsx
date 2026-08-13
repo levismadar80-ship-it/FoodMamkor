@@ -18,6 +18,10 @@ import api from "@/lib/api";
  *   - id (required for <label htmlFor>)
  *   - onSubmit (fn, called when user hits Enter)
  *   - useBackend (boolean) — if true, also merges results from GET /cities
+ *   - aria-describedby / aria-invalid — forwarded verbatim to the <input>
+ *     (MEH-2022: the callers render the city error message themselves; these
+ *     let it be programmatically associated. Omitted -> absent, byte-identical
+ *     markup for every caller that does not pass them.)
  *
  * Shows dropdown after 2 characters. Keyboard navigation: ArrowUp/Down/Enter/Escape.
  *
@@ -42,6 +46,15 @@ export default function CitySearch({
   onSubmit,
   useBackend = true,
   className = "",
+  // MEH-2015: same marker mechanism as ui/Input — aria-required on the input,
+  // visual asterisk only when this component's own label is the visible one
+  // (labelVisible; when sr-only, the OUTER label carries the marker).
+  required = false,
+  // MEH-2022: passthrough only — no error prop that renders its own message.
+  // The callers own the error markup (a second renderer would be the
+  // two-mechanisms smell, MEH-271); this just points the input at it.
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
 }) {
   const t = useTranslations("search.city_search");
   const inputPlaceholder = placeholder ?? t("placeholder");
@@ -125,6 +138,11 @@ export default function CitySearch({
           className={labelVisible ? "block text-sm font-medium text-text mb-1 text-start" : "sr-only"}
         >
           {label}
+          {required && labelVisible && (
+            <span className="text-error" aria-hidden="true">
+              {" *"}
+            </span>
+          )}
         </label>
       )}
       {/* MEH-1127: wrapper py-2 removed (input min-h-[44px] alone sets the ~44px
@@ -139,6 +157,9 @@ export default function CitySearch({
           ref={inputRef}
           id={id}
           type="text"
+          aria-required={required || undefined}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           value={value || ""}
           onChange={(e) => {
             onChange(e.target.value);

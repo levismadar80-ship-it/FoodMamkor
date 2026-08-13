@@ -11,6 +11,8 @@
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report",
     "knip": "knip",
+    "lint:ratchet": "node ../scripts/checks/lint-ratchet.mjs",
+    "lint:ratchet:baseline": "node ../scripts/checks/lint-ratchet.mjs --update-baseline",
     "design:lint": "design.md lint ../docs/DESIGN.md",
     "design:export": "design.md export --format tailwind ../docs/DESIGN.md > tailwind.tokens.json"
   },
