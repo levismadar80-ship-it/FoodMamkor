@@ -734,6 +734,21 @@ section was asked to carry.
       detect* that a parallel actor armed something. Nothing notifies you, and
       the arming state does not appear in `pull_request_read get` — the
       disable/enable round-trip is the only read available.
+    - **A direct `merge_pull_request` call with `merge_method: "squash"` can
+      also land as a plain merge commit — same failure family, different
+      mechanism (MEH-1526).** Not the auto-merge re-arm case above; this is a
+      single synchronous call whose *response* says success and whose
+      *landed commit* is a merge, not a squash. Confirmed 8/8 on the PRs
+      MEH-1526 Phase 0 measured, via the commit message template — GitHub's
+      squash template is always `<title> (#N)` + body; its merge template is
+      always `Merge pull request #N from <owner>/<branch>` — mutually
+      exclusive and machine-generated, so it discriminates perfectly even
+      though no available tool exposes the timeline `merged` event's method
+      field directly. **After any `merge_pull_request` call with
+      `merge_method: "squash"`, read the landed commit's message (or parent
+      count) — never trust the call succeeded as requested.** Root cause of
+      *why* only some calls fall back is still open (a stale-branch-then-405
+      candidate was tested and only partially held — see MEH-1526).
     - **Opening a docs-only PR as a draft can strand it red, and marking it
       ready may not clear it.** `pr-checks.yml` lists `ready_for_review` in its
       trigger types precisely so the draft→ready flip fires a real run — but
