@@ -39,8 +39,8 @@ export const CHIPS_CONFIG = [
   { key: "vegetarian",    ...ATTRIBUTE_LABELS.vegetarian },
   { key: "gluten_free",   ...ATTRIBUTE_LABELS.gluten_free },
   { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free },
-  // MEH-1934: peers of the four diet chips above, so they live in the SHARED
-  // array like their siblings — and ATTRIBUTE_LABELS membership is precisely
+  // MEH-1934: peer of the four diet chips above, so it lives in the SHARED
+  // array like its siblings — and ATTRIBUTE_LABELS membership is precisely
   // the promise that the shared row renders them (attributeLabels.test.js).
   // Unlike open_for_orders_now (MEH-1881), which is a by-the-hour operational
   // state its ticket scoped to /producers only, these are durable product
@@ -49,7 +49,6 @@ export const CHIPS_CONFIG = [
   // Because this array IS the home grid's row, both are gated at EVERY render
   // site via visibleGatedDietKeys — see DIET_CHIP_MIN below.
   { key: "no_added_sugar", ...ATTRIBUTE_LABELS.no_added_sugar },
-  { key: "low_carb",      ...ATTRIBUTE_LABELS.low_carb },
   { key: "has_delivery",  ...ATTRIBUTE_LABELS.has_delivery },
   { key: "verified",      ...ATTRIBUTE_LABELS.verified },
 ];
@@ -63,15 +62,16 @@ export const CHIPS_CONFIG = [
 export const OPEN_NOW_CHIP_MIN = 5;
 
 // MEH-1934: same runtime-data-gate reasoning as OPEN_NOW_CHIP_MIN, applied to
-// the two NEW diet axes only. Until the catalog carries the markings, a chip
-// that returns an empty list looks broken and punishes the businesses that
-// joined first — so it stays OUT of the DOM rather than rendering disabled.
+// the NEW diet axis only (MEH-2047 withdrew the second, low_carb). Until the
+// catalog carries the markings, a chip that returns an empty list looks broken
+// and punishes the businesses that joined first — so it stays OUT of the DOM
+// rather than rendering disabled.
 //
 // Deliberately NOT applied to the four older axes: they already have data and
 // gating them now would REMOVE working filters. New axes start gated; existing
 // ones are never retro-gated.
 export const DIET_CHIP_MIN = 5;
-export const GATED_DIET_KEYS = ["no_added_sugar", "low_carb"];
+export const GATED_DIET_KEYS = ["no_added_sugar"];
 
 /**
  * Which gated diet chips have earned their place, given the loaded producers.
@@ -79,14 +79,13 @@ export const GATED_DIET_KEYS = ["no_added_sugar", "low_carb"];
  * Counts businesses whose aggregate flag is true — the same has_X_products
  * field the badge layer reads, so chip visibility and badge display cannot
  * disagree. An ACTIVE filter always keeps its chip (`active`), or a
- * deep-linked ?low_carb=1 would strand the visitor with a filter she can see
- * the effect of and cannot switch off — the identical carve-out
+ * deep-linked ?no_added_sugar=1 would strand the visitor with a filter she can
+ * see the effect of and cannot switch off — the identical carve-out
  * ProducersClient makes for open_for_orders_now.
  */
 export function visibleGatedDietKeys(producers = [], chips = {}) {
   const field = {
     no_added_sugar: "has_no_added_sugar_products",
-    low_carb: "has_low_carb_products",
   };
   return GATED_DIET_KEYS.filter((key) => {
     if (chips[key]) return true;
@@ -102,7 +101,6 @@ export const CHIPS_DEFAULT = {
   gluten_free: false,
   lactose_free: false,
   no_added_sugar: false,  // MEH-1934
-  low_carb: false,        // MEH-1934
   has_delivery: false,
   verified: false,
 };
@@ -149,7 +147,6 @@ const PRODUCERS_CHIP_GROUPS = {
   gluten_free: "diet",
   lactose_free: "diet",
   no_added_sugar: "diet",
-  low_carb: "diet",
   has_delivery: "service",
   verified: "service",
   open_for_orders_now: "service",  // MEH-1881 — /producers-only
@@ -180,7 +177,6 @@ export function buildChipParams(chips, overrides = {}) {
   if (c.vegetarian) p.vegetarian = true;  // MEH-1438
   if (c.lactose_free) p.lactose_free = true;
   if (c.no_added_sugar) p.no_added_sugar = true;  // MEH-1934
-  if (c.low_carb) p.low_carb = true;              // MEH-1934
   if (c.has_delivery) p.has_delivery = true;
   if (c.verified) p.verified = true;
   if (c.open_for_orders_now) p.open_for_orders_now = true;  // MEH-1881
