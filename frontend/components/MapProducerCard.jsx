@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Star, CaretRight } from "@phosphor-icons/react";
+import { Star, CaretRight, Truck, Package } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
@@ -16,6 +16,50 @@ import { haversineKm, formatDistance } from "@/lib/distance";
 // (object-cover). 2.0 (≥2:1) catches wide logos while leaving normal landscape
 // food photos (≤16:9 ≈ 1.78) filling the box as before.
 const LOGO_ASPECT_MIN = 2;
+
+// MEH-2046: the fulfillment tag washes. Brand green at 12% for a business that
+// declares a service; neutral sand for "בתיאום אישי". The neutral is
+// deliberately NOT a faded green — an absent service axis must not read as a
+// weaker version of a present one, which a green tint would imply.
+const FULFILLMENT_WASH_GREEN = "rgba(46, 104, 83, 0.12)";
+const FULFILLMENT_WASH_NEUTRAL = "#f1ede3";
+const FULFILLMENT_ICON_PX = 13;
+
+/**
+ * MEH-2046: the fulfillment state of one business, as tags.
+ *
+ * FOUR states, and the block is present in ALL of them — including the
+ * "neither" case. That is not padding: MapProducerCard's text column is three
+ * fixed-height rows precisely so every card is the same height (🔒 MEH-1243
+ * §5), and a block that appeared only for *some* businesses would reintroduce
+ * the ragged list that guarantee exists to prevent. Always-present costs one
+ * row uniformly and keeps the lock intact.
+ *
+ * Reads `delivers` / `offers_pickup` and NOTHING else. Both are computed
+ * server-side (MEH-2046 PR-1) as the exact results of the listing predicates,
+ * so the tag on the card and the filter that returned the card cannot disagree
+ * — which is the MEH-1836 divergence this ticket closes. Do not fall back to
+ * `has_delivery` or `delivery_count` here: those are the operands whose drift
+ * caused it.
+ */
+function fulfillmentTags(delivers, offersPickup, t) {
+  if (delivers && offersPickup) {
+    return [
+      { key: "delivery", label: t("fulfillment.delivery"), Icon: Truck },
+      { key: "pickup", label: t("fulfillment.pickup"), Icon: Package },
+    ];
+  }
+  if (delivers) {
+    return [{ key: "delivery_only", label: t("fulfillment.delivery_only"), Icon: Truck }];
+  }
+  if (offersPickup) {
+    return [{ key: "pickup_only", label: t("fulfillment.pickup_only"), Icon: Package }];
+  }
+  // No declared service axis — the business is reachable, just not through a
+  // standing arrangement. This is also exactly the set the /map service filter
+  // excludes (MEH-2046 PR-2's explanation line says so out loud).
+  return [{ key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true }];
+}
 
 // MEH-1243 (🔒 Pin-Echo): the selected card washes its background with 6% of the
 // category color. Hex → rgba so any 6-digit CATEGORY_STYLES color works; falls
@@ -34,8 +78,16 @@ function categoryTint(hex, alpha) {
  * Purpose:  /map list "selection card" — image · name · rating-if-exists · meta
  *           line, plus ONE end-corner chevron as the only navigation affordance.
  *           Card = select (pin-sync), page = act.
- * Does NOT: hold a contact CTA / "full profile" link / verified seal / delivery
- *           pill — those live in MobileSheetSelectedCard + /producer (MEH-1243).
+ * Does NOT: hold a contact CTA / "full profile" link / verified seal — those
+ *           live in MobileSheetSelectedCard + /producer (MEH-1243).
+ *           MEH-2046 AMENDMENT — the MEH-1243 lock is narrowed, not lifted: the
+ *           card now carries a fulfillment TAG BLOCK (delivery / pickup / both /
+ *           neither). The rest of the lock stands — still no CTA, no seal, no
+ *           second link. Rationale (ticket decision 6): information a user
+ *           FILTERS by has to be visible on the list item, or the filter's
+ *           effect is invisible; Google Maps labels delivery/takeout on
+ *           listings for the same reason. Tags only — if a future change wants
+ *           a CTA or a seal here, that is a fresh decision, not this precedent.
  * Related:  frontend/app/[locale]/map/components/MapCardList.jsx (useMapSync,
  *           active/hover wiring); frontend/lib/map-categories.js (CATEGORY_STYLES).
  * History:  MEH-826 (client distance); MEH-1133 (logo letterbox); MEH-1178
@@ -177,6 +229,37 @@ export default function MapProducerCard({ producer, active, onClick }) {
               <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
             </span>
           )}
+        </div>
+
+        {/* MEH-2046: fulfillment tags — ALWAYS rendered, in all four states, so
+            the uniform-height guarantee (🔒 §5) survives a fourth row. The
+            labels wrap rather than truncate: at 390px a two-tag card still fits
+            beside the 88px thumb and the 44px chevron, and a wrap is honest
+            where an ellipsis would hide which service a business offers. */}
+        <div className="flex flex-wrap items-center gap-1" data-testid="map-fulfillment">
+          {fulfillmentTags(!!p.delivers, !!p.offers_pickup, t).map((tag) => (
+            <span
+              key={tag.key}
+              data-testid={`map-fulfillment-${tag.key}`}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap"
+              style={{
+                backgroundColor: tag.neutral
+                  ? FULFILLMENT_WASH_NEUTRAL
+                  : FULFILLMENT_WASH_GREEN,
+                color: tag.neutral ? "var(--color-fg-muted, #6b6b6b)" : undefined,
+              }}
+            >
+              {tag.Icon && (
+                <tag.Icon
+                  size={FULFILLMENT_ICON_PX}
+                  weight="regular"
+                  aria-hidden="true"
+                  className="shrink-0 text-primary"
+                />
+              )}
+              {tag.label}
+            </span>
+          ))}
         </div>
       </div>
 
