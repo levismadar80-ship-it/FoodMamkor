@@ -3980,6 +3980,7 @@
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
+        "tools": "We couldn't load your data",
         "retry_cta": "Try again"
       },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
