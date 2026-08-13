@@ -42,8 +42,14 @@ Two consequences, and the first is the one the old `AND` hid:
 1. **The branch name alone is enough to close a card.** `Closes MEH-XX` is not a
    second required condition — it is one of several sufficient ones. Since
    `Branch name gate` *requires* `^(feature|levismadar80)/meh-[0-9]+…`, **every
-   legal branch name carries some card's identifier**, so every merge is capable
-   of closing something. There is no such thing as an inert branch slug here.
+   legal feature-branch name carries some card's identifier**, so every feature
+   merge is capable of closing something. There is no such thing as an inert
+   branch slug here.
+
+   _(One exemption, and it is not a loophole: the gate's `if:` skips
+   `staging → main` release PRs, whose head branch is `staging`. That branch
+   carries no identifier at all, so there is nothing for the integration to
+   match — a branch with **no** slug, not an inert one.)_
 2. **Nor is the branch name reliable on its own.** #2813 merged from
    `feature/meh-1980-coverage-ratchet` and MEH-1980 **stayed in Backlog** — never
    `Done` at any point. So a card whose work landed can silently keep an
