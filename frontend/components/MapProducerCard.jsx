@@ -18,12 +18,21 @@ import { producerPoints } from "@/lib/producerPoints";
 // food photos (≤16:9 ≈ 1.78) filling the box as before.
 const LOGO_ASPECT_MIN = 2;
 
-// MEH-2046: the fulfillment tag washes. Brand green at 12% for a business that
-// declares a service; neutral sand for "בתיאום אישי". The neutral is
-// deliberately NOT a faded green — an absent service axis must not read as a
-// weaker version of a present one, which a green tint would imply.
-const FULFILLMENT_WASH_GREEN = "rgba(46, 104, 83, 0.12)";
-const FULFILLMENT_WASH_NEUTRAL = "#f1ede3";
+// MEH-2046: the fulfillment tag washes, both from tailwind.tokens.json.
+// `green-50` is the same light-green the /map service chips use for their ON
+// state (ServiceChipRow.jsx:71), so a declared service reads in the palette the
+// filter already established. The neutral is deliberately NOT a faded green — an
+// absent service axis must not read as a weaker version of a present one, which
+// a green tint would imply — so it takes the sand `background-alt` with
+// `fg-muted` text (#5c584f, the palette's quiet-but-AA foreground).
+//
+// Both are CLASSES, not inline values. An earlier revision of this block wrote
+// `var(--color-fg-muted, #6b6b6b)`, and no such custom property exists: the
+// token is a Tailwind color, so the var resolved to nothing and every neutral
+// tag rendered in an off-palette grey that had never been through DESIGN.md. It
+// read as a token reference while being a hardcoded hex with extra steps.
+const FULFILLMENT_WASH_GREEN = "bg-green-50 text-primary";
+const FULFILLMENT_WASH_NEUTRAL = "bg-background-alt text-fg-muted";
 const FULFILLMENT_ICON_PX = 13;
 
 /**
@@ -41,9 +50,12 @@ const FULFILLMENT_ICON_PX = 13;
  * so the tag on the card and the filter that returned the card cannot disagree
  * — which is the MEH-1836 divergence this ticket closes. Do not fall back to
  * `has_delivery` or `delivery_count` here: those are the operands whose drift
- * caused it.
+ * caused it. The destructured first parameter is what makes that contract
+ * literal rather than a promise in prose — the whole producer is not in scope
+ * here, so a future fallback to a legacy operand cannot be added without
+ * widening the signature first.
  */
-function fulfillmentTags(delivers, offersPickup, t) {
+function fulfillmentTags({ delivers, offersPickup }, t) {
   if (delivers && offersPickup) {
     return [
       { key: "delivery", label: t("fulfillment.delivery"), Icon: Truck },
@@ -244,24 +256,20 @@ export default function MapProducerCard({ producer, active, onClick }) {
             beside the 88px thumb and the 44px chevron, and a wrap is honest
             where an ellipsis would hide which service a business offers. */}
         <div className="flex flex-wrap items-center gap-1" data-testid="map-fulfillment">
-          {fulfillmentTags(!!p.delivers, !!p.offers_pickup, t).map((tag) => (
+          {fulfillmentTags({ delivers: !!p.delivers, offersPickup: !!p.offers_pickup }, t).map((tag) => (
             <span
               key={tag.key}
               data-testid={`map-fulfillment-${tag.key}`}
-              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap"
-              style={{
-                backgroundColor: tag.neutral
-                  ? FULFILLMENT_WASH_NEUTRAL
-                  : FULFILLMENT_WASH_GREEN,
-                color: tag.neutral ? "var(--color-fg-muted, #6b6b6b)" : undefined,
-              }}
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap ${
+                tag.neutral ? FULFILLMENT_WASH_NEUTRAL : FULFILLMENT_WASH_GREEN
+              }`}
             >
               {tag.Icon && (
                 <tag.Icon
                   size={FULFILLMENT_ICON_PX}
                   weight="regular"
                   aria-hidden="true"
-                  className="shrink-0 text-primary"
+                  className="shrink-0"
                 />
               )}
               {tag.label}
