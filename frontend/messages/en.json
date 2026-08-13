@@ -495,6 +495,7 @@
       "day_row_label": "Delivery day:",
       "day_row_hint": "Choose an area to filter by delivery day",
       "day_option_aria": "Filter deliveries on {day}",
+      "days_chip_more": "{day} +{count}",
       "day_empty_suggestion": "No businesses deliver to {city} on {day} right now — try other days",
       "day_empty_clear_cta": "Remove day filter",
       "clear_location_filter": "Remove location filter",
