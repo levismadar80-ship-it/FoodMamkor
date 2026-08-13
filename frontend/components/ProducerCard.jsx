@@ -22,6 +22,7 @@ import { formatPrice } from "@/lib/utils";
 import { israelTime } from "@/app/[locale]/producer/[id]/lib/order-status";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
+import { producerPoints } from "@/lib/producerPoints";
 import { allBadges, badgeCount } from "@/lib/badges";
 import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
@@ -211,10 +212,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
+  // MEH-1938 chunk 3: distance to the CLOSEST point (mirrors the backend's
+  // haversine_min_km COALESCE, producer_queries.py:100-115), read through
+  // producerPoints() instead of Producer.lat/lng directly — producerPoints
+  // still falls back to Producer.lat/lng when there is no usable location row.
+  const points = producerPoints(producer);
   const distanceLabel =
-    userLoc && producer.lat != null && producer.lng != null
+    userLoc && points.length > 0
       ? formatDistance(
-          haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+          Math.min(...points.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng))),
           { unit: locale === "he" ? "he" : "latin" },
         )
       : null;
