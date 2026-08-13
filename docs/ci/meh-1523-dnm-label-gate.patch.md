@@ -100,7 +100,7 @@ patch does not reopen either:
 
 ## 3 · The change — three edits, all in `.github/workflows/pr-checks.yml`
 
-All three are required. Edit 1 alone produces a gate that **cannot fire**; see §4.
+All three are required. Edit 1 alone produces a gate that **cannot fire** — see Edit 2 immediately below for why.
 
 ### Edit 1 of 3 — the gate step itself (replaces lines 67–77)
 
@@ -131,7 +131,17 @@ All three are required. Edit 1 alone produces a gate that **cannot fire**; see �
           # do_not_merge / don't merge all collapse onto donotmerge|dontmerge.
           # The two `tr` calls below are mirrored exactly in the guard's
           # normalise_label(); they must stay identical.
-          DNM_LABEL_RE='dono?tmerge|dnmlock'
+          # ANCHORED (^...$) deliberately. MEH-1523 acceptance criterion 2
+          # says to match "the normalized form /dono?tmerge/" — unanchored.
+          # Do NOT ship that: normalisation strips non-alphanumerics, so
+          # `audit-do-not-merge-findings` becomes `auditdonotmergefindings`,
+          # which CONTAINS `donotmerge` and would trip this BLOCKING gate on a
+          # documentation label. That is #2637's false positive moved from prose
+          # onto metadata — the swap shipping the very bug it was sent to fix.
+          # The variant-tolerance AC2 actually wants is fully preserved:
+          # `do_not_merge`, `DO NOT MERGE` and `don't merge` all normalise onto
+          # the two strings below.
+          DNM_LABEL_RE='^(dono?tmerge|dnmlock)$'
           # Fail-closed: a jq error fails the assignment under `set -e` +
           # pipefail, so a broken parse BLOCKS rather than falling through.
           # Deliberately NOT a process substitution — that would swallow it.
@@ -154,7 +164,7 @@ All three are required. Edit 1 alone produces a gate that **cannot fire**; see �
 `names`, the loop body never runs, and the gate passes — the correct answer for
 an unlabelled PR.
 
-### Edit 2 of 3 — trigger types (line 29)
+### Edit 2 of 3 — trigger types (line 27)
 
 ```diff
    pull_request:
@@ -173,7 +183,7 @@ an unlabelled PR.
 most likely to be dropped as incidental. Without it the swap is strictly worse
 than today: today's gate at least fires.
 
-### Edit 3 of 3 — concurrency group (line 39)
+### Edit 3 of 3 — concurrency group (line 40)
 
 `labeled` and `unlabeled` must NOT share a concurrency group with code pushes.
 `cancel-in-progress: true` plus `ci-gate`'s `cancelled → FAIL` mapping means a
@@ -199,6 +209,71 @@ choice is visible.
 
 ---
 
+## 3.1 · The cost Edit 2 imposes — and the option that avoids it
+
+**Found by the different-model adversarial reviewer, not by me.** §5.2 below argues
+the swap is cheap, and that argument is only about how often *the gate itself*
+fires. It says nothing about the CI blast radius of Edit 2, which is the part that
+actually costs money.
+
+**Measured, not reasoned:** `github.event.action` appears in `pr-checks.yml`
+**exactly once** — the concurrency group at line 40. None of the 13 job-level
+`if:` conditions reference it; they gate on draft state or
+`needs.changes.outputs.*`. So a trigger widened to `labeled`/`unlabeled` re-runs
+**every job in the workflow**:
+
+```
+build · pytest (coverage gate) · lint-backend · env-drift · backend-mypy
+frontend-knip · frontend-tsc-strict · frontend-vitest · pip-audit
+ai-artifact-scan · … plus the four guard jobs
+```
+
+And Edit 3 makes these *additional, uncancellable* runs by design — separate
+buckets mean a label toggle neither cancels nor is cancelled by the code bucket.
+So the true cost of Edit 2 is **one full pipeline per label add or remove.**
+
+Precedent that softens it: `ready_for_review` already causes a comparable full
+re-run, so this is not an unprecedented shape. It roughly doubles the exposure.
+
+### Two ways to have the mechanism, with different bills
+
+| | **Option A** — in place (§3 as written) | **Option B** — its own workflow ⭐ |
+|---|---|---|
+| Edits | 3, all in `pr-checks.yml` | 1 new file; delete the step from `pr-checks.yml` |
+| Ruleset change | **none** — job keeps its name and its place in `ci-gate`'s `needs:` (line 696) | **one** — add the new context to ruleset 15240090 |
+| CI cost per label toggle | **a full pipeline** | **one ~10-second job** |
+| Edit 3 (concurrency surgery) | required | **unnecessary** — the new workflow owns its own group |
+
+**Recommendation: Option B**, because it removes the cost *and* the concurrency
+hazard rather than trading one for the other, and because a gate this small has no
+business dragging `pytest` behind it. It is safe against MEH-892 (a
+skipped-but-required check reporting *Expected* and blocking docs-only PRs) for a
+specific reason: the new job would carry **no paths filter and no draft
+condition**, so it never skips — it is exactly the shape a directly-required
+context is allowed to have.
+
+**Option A stays fully specified above** and is correct if you would rather not
+touch the ruleset. That is a real preference and this doc does not pretend
+otherwise; the bill is now stated so the choice is informed.
+
+### A third option, considered and rejected — do NOT do this
+
+Adding `github.event.action != 'labeled'` to each heavy job's `if:` looks like the
+cheap fix: keep one workflow, skip the expensive legs on label events. **It would
+strand PRs red.** `ci-gate` does not merely map `skipped → pass` any more — since
+the MEH-1582 patch it carries `check_ran` / `strict_ok`, and a required leg that
+did not run reports as a failure:
+
+```
+FAIL Env drift (.env.example): skipped (required job did not run — 'skipped' is not a pass)
+```
+
+That is the same mechanic that stranded PR #2794. So the obvious middle path
+converts a cost problem into a correctness problem, which is why it is named here
+rather than left for someone to discover.
+
+---
+
 ## 4 · Measured behaviour
 
 `scripts/checks/dnm-matcher-guard.sh` gains a third mode, `label`, detected by
@@ -206,7 +281,7 @@ choice is visible.
 `DNM_TITLE_RE`. It reads the matcher out of the workflow rather than keeping a
 copy, so it tests the real rule.
 
-### 12 label fixtures — every row executed
+### 15 label fixtures — every row executed
 
 | Expected | Labels on the PR |
 |---|---|
@@ -222,6 +297,9 @@ copy, so it tests the real rule.
 | PASS | `merge-queue` — mentions merging, is not the marker |
 | PASS | `should-not-merge` — near-miss wording |
 | PASS | `cc-queue` — the repo's real queue label |
+| PASS | `audit-do-not-merge-findings` — compound, **the blocker case** |
+| PASS | `explains-do-not-merge-gate` — compound |
+| PASS | `blocked-do-not-merge-review` — marker text as a suffix |
 
 ### The five strings the swap frees
 
@@ -263,18 +341,20 @@ $ bash scripts/checks/dnm-matcher-guard.sh --self-test
   ok   gutted matcher rejected (exit 1)
   ok   neutered matcher rejected (exit 1)
   ok   label matcher accepted (exit 0)
+  ok   unanchored label matcher rejected (substring false positive) (exit 1)
   ok   label matcher WITH a surviving text path rejected (exit 1)
   ok   gutted label matcher rejected (exit 1)
   ok   widened label matcher rejected (exit 1)
   ok   neutered label matcher rejected (exit 1)
   ok   label matcher missing DNM-LOCK rejected (exit 1)
-  10/10 self-test cases behaved correctly
+  11/11 self-test cases behaved correctly
 ```
 
 Each rejection is a matcher a careless edit could plausibly produce:
 
 | Case | Break | Why it must be rejected |
 |---|---|---|
+| (e2) | matcher **unanchored** — AC2's literal wording | `audit-do-not-merge-findings` blocks the PR; #2637 reborn on the label surface |
 | (f) | correct matcher + surviving `$PR_BODY` grep | two markers, and the prose one fires by accident |
 | (g) | `do-not-merge` as the literal matcher | labels are normalised before matching, so the hyphenated form never reaches it — blocks **nothing** |
 | (h) | `merge` | `merge-queue` blocks the PR — #2637 reincarnated on the label surface |
@@ -357,7 +437,7 @@ gate is a no-op that cannot false-positive.
      push**. That "no push" is the whole point: today clearing the block
      requires editing the body, which rule 30 puts out of CC's reach.
 5. `bash scripts/checks/dnm-matcher-guard.sh` → expect `mode: label`, no
-   `WARNING`, `12 fixtures pinned, all as expected`.
+   `WARNING`, `15 fixtures pinned, all as expected`.
 6. **Mark `dnm-gate-regex.patch.md` superseded** so it does not read as pending.
 7. **Release #2121** — its body no longer needs rewriting.
 

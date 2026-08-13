@@ -160,7 +160,30 @@ LABEL_FIXTURES=(
   "PASS|a label that merely mentions merging|merge-queue"
   "PASS|near-miss wording that is not the marker|should-not-merge"
   "PASS|the repo's real queue label|cc-queue"
+
+  # -- COMPOUND labels: the #2637 class, reborn on the label surface -----------
+  # These are the reason the matcher is ANCHORED (^...$) rather than the bare
+  # /dono?tmerge/ that MEH-1523 acceptance criterion 2 literally specifies.
+  # Unanchored, the normalisation step (strip non-alphanumerics) turns
+  # `audit-do-not-merge-findings` into `auditdonotmergefindings`, which CONTAINS
+  # `donotmerge` and therefore trips a blocking gate on a documentation label.
+  # That is exactly the false positive this whole ticket exists to remove, moved
+  # from prose onto metadata - so the swap would have shipped the same bug it was
+  # sent to fix. Found by the different-model adversarial reviewer, which
+  # constructed the label; it was NOT caught by the original 12 fixtures.
+  "PASS|compound label ABOUT the gate, not the marker|audit-do-not-merge-findings"
+  "PASS|compound label describing the gate|explains-do-not-merge-gate"
+  "PASS|marker text as a suffix of a longer label|blocked-do-not-merge-review"
 )
+
+# Residual, stated rather than hidden: anchoring means a label like
+# `do-not-merge-yet` normalises to `donotmergeyet` and does NOT fire. That is
+# accepted because the marker is ONE canonical label Sapir creates in repo
+# settings (patch doc section 6) - a near-miss name has to be deliberately
+# created to exist at all, and the anchored rule is the predictable one. The
+# variant-tolerance AC2 actually asks for (`do_not_merge`, `DO NOT MERGE`,
+# `don't merge`) is fully preserved, because all of those normalise to the same
+# two strings the anchored matcher accepts.
 
 # -- text that MUST be irrelevant in label mode ------------------------------
 # These are the MEH-1523 acceptance-criteria fixtures 3-5 plus the two real
@@ -197,7 +220,9 @@ note() { printf '  %s\n' "$1"; }
 gate_block() {
   awk '
     /^[[:space:]][[:space:]][A-Za-z0-9_-]+:[[:space:]]*$/ {
-      inblock = ($0 ~ /do-not-merge-gate/) ? 1 : 0
+      # Exact key match, not a substring: a future job named e.g.
+      # `pre-do-not-merge-gate-setup` must NOT be read as this gate.
+      inblock = ($0 ~ /^[[:space:]][[:space:]]do-not-merge-gate:[[:space:]]*$/) ? 1 : 0
     }
     inblock { print }
   ' "$WORKFLOW"
@@ -296,14 +321,29 @@ run_self_test() {
   }
 
   # (e) the agreed label matcher must be ACCEPTED - this is the LABEL table.
-  emit_label_wf "$tmp/label-ok.yml" 'dono?tmerge|dnmlock'
+  emit_label_wf "$tmp/label-ok.yml" '^(dono?tmerge|dnmlock)$'
   check "label matcher accepted" "$tmp/label-ok.yml" 0
+
+  # (e2) UNANCHORED - the form MEH-1523 acceptance criterion 2 literally
+  #      specifies, and the form this guard shipped with in its first draft.
+  #      Normalisation strips non-alphanumerics, so `audit-do-not-merge-findings`
+  #      becomes `auditdonotmergefindings`, which CONTAINS `donotmerge` and trips
+  #      a BLOCKING gate on a documentation label. That is the #2637 false
+  #      positive moved from prose onto metadata - the swap shipping the same bug
+  #      it was sent to fix.
+  #
+  #      This case is the MEH-1619 discrimination requirement made concrete: it
+  #      goes RED against the previous version of this matcher and GREEN against
+  #      the anchored one, so it can tell the two apart. The original 12 fixtures
+  #      could not - every one of them passed under both forms.
+  emit_label_wf "$tmp/label-unanchored.yml" 'dono?tmerge|dnmlock'
+  check "unanchored label matcher rejected (substring false positive)" "$tmp/label-unanchored.yml" 1
 
   # (f) TEXT PATH SURVIVING - the label matcher is correct, but the step still
   #     greps the body. Every negative fixture still passes, so ONLY the
   #     structural assertion can catch this. It is the whole reason that
   #     assertion exists, and this is the case that proves it discriminates.
-  emit_label_wf "$tmp/label-textleft.yml" 'dono?tmerge|dnmlock' \
+  emit_label_wf "$tmp/label-textleft.yml" '^(dono?tmerge|dnmlock)$' \
     'printf "%s" "$PR_BODY" | grep -Eiq "do[ _-]?not[ _-]?merge" && exit 1'
   check "label matcher WITH a surviving text path rejected" "$tmp/label-textleft.yml" 1
 
@@ -325,7 +365,7 @@ run_self_test() {
   # (j) HALF-APPLIED - the marker moved to a label but DNM-LOCK was dropped from
   #     the matcher, so a PR labelled dnm-lock sails through. ORDERS 1.4 names
   #     both markers, so losing one is a false negative in a blocking gate.
-  emit_label_wf "$tmp/label-nolock.yml" 'dono?tmerge'
+  emit_label_wf "$tmp/label-nolock.yml" '^(dono?tmerge)$'
   check "label matcher missing DNM-LOCK rejected" "$tmp/label-nolock.yml" 1
 
   echo "  $pass/$total self-test cases behaved correctly"
