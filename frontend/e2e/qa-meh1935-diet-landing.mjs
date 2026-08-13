@@ -169,9 +169,13 @@ check(
 );
 await page.screenshot({ path: `${OUT}/no-added-sugar-390-404.png` });
 
-// low-carb is the same closed gate — cheap to confirm both.
+// low-carb still 404s, but MEH-2047 changed WHY: it is no longer a page behind
+// a closed count gate, it is not a configured page at all (getDietPage returns
+// null). The status is identical either way, which is exactly why the reason is
+// worth writing down — a future reader would otherwise read this pass as
+// evidence the gate still works for a slug the gate never sees.
 const lcResp = await page.request.get(`${BASE}/producers/diet/low-carb`);
-check("low-carb also 404s", lcResp.status() === 404, `status=${lcResp.status()}`);
+check("low-carb 404s — withdrawn, not gated", lcResp.status() === 404, `status=${lcResp.status()}`);
 
 await browser.close();
 
