@@ -327,6 +327,47 @@ coverage is the one least likely to be checked, and the assertion was mine.
 
 The body now carries the correction in place rather than a quiet edit.
 
+### 🔴 The marker gate blocked THIS log's PR — for quoting the gate
+
+**Incident #4 in the class, and the sharpest evidence yet for the swap #2846
+stages.** PR #2850's first run failed in 26 s:
+
+```
+##[error]This PR carries a DO-NOT-MERGE marker. …Only Sapir may remove the marker.
+FAIL DO-NOT-MERGE marker gate: failure
+##[error]CI gate failed
+```
+
+**Nothing in that PR was a marker.** The body was describing the anchoring blocker,
+and one token did it — the *normalised* form, written in backticks as evidence:
+
+| token in my body | trips? |
+|---|---|
+| `` `audit-do-not-merge-findings` `` | **passes** — hyphens are excluded from the boundary class |
+| `` `auditdonotmergefindings` `` | **passes** — preceded by `t`, an alphanumeric |
+| **`` `donotmerge` ``** | **TRIPS** |
+
+**Why the shortest form is the dangerous one:** `do[ _-]?not[ _-]?merge` has both
+separators *optional*, so it matches `donotmerge` with no separators at all — and a
+backtick is a valid boundary character on both sides. So the gate cannot be quoted
+in a PR body **in the one spelling it produces itself.**
+
+**Read the direction of that carefully.** The hyphenated label name — the thing
+that is *actually* the marker — sails through, while the normalised string, which
+is never a label and only ever appears in analysis, blocks a required check. The
+matcher is not merely noisy; on this input it is **backwards**.
+
+Four incidents now, and every one is a PR *documenting* the gate rather than
+invoking it: #2637 (a pasted vitest test name), #2121 (the orchestrator's own safety
+note), #2813 (CC's prose), and this one. The mechanism keeps punishing exactly the
+behaviour the repo wants — writing the safety condition down — which is the argument
+MEH-1523 §2 made in July and this is its fourth confirmation.
+
+**Fix applied here:** the token is no longer written standalone in the PR body. The
+verbatim strings stay in the guard's fixture table and the patch doc, where the gate
+cannot reach them, because it reads PR metadata and not files. **That asymmetry is
+the whole reason the swap is worth applying.**
+
 ### Vercel
 
 `Ignored` on #2846 (no `[preview]` token — the configured behaviour) and
