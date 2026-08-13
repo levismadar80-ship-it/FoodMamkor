@@ -292,6 +292,17 @@ export const NAV_ITEMS = Object.freeze([
  * @returns {Array<{item: object, surface: object}>} in declaration order
  */
 export function itemsForSurface(surface, state = {}) {
+  // An unknown surface would otherwise filter to `[]`, and `[]` is also the
+  // honest answer for a surface that legitimately declares no items — so a
+  // typo ("headerMEnu") would make every downstream comparison empty-vs-empty
+  // and green. That is the one failure this module must not have, because its
+  // future callers (chunks 2-4) pass these strings by hand.
+  // Same reasoning as the `matches()` default below; the caller's argument was
+  // simply left unguarded. Caught by the CI reviewer on PR #2853.
+  if (!Object.hasOwn(NAV_SURFACES, surface)) {
+    throw new Error(`nav-registry: unknown surface "${surface}"`);
+  }
+
   const { signedIn = false, role = null } = state;
   const matches = (audience) => {
     switch (audience) {

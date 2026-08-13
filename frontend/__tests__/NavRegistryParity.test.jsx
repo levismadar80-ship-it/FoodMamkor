@@ -251,6 +251,24 @@ describe("MEH-1703 — the harness itself", () => {
    * unknown audience, so a typo would otherwise surface as an exception from
    * whichever consumer happened to hit that surface first, in chunk 2.
    */
+  /**
+   * The mirror of the case below: that one validates the surfaces the DATA
+   * declares, this one validates the surface the CALLER asks for. Without it a
+   * typo'd argument filters to `[]`, and an empty expectation compared against
+   * an empty harvest is green — the failure this whole file exists to prevent.
+   *
+   * Shown failing against the pre-fix module (it returned `[]` instead of
+   * throwing, so both assertions below failed). Caught by the CI reviewer.
+   */
+  it("CONTROL — itemsForSurface throws on an unknown surface, never returns []", () => {
+    expect(() => itemsForSurface("headerMEnu")).toThrow(/unknown surface/);
+    expect(() => itemsForSurface(undefined)).toThrow(/unknown surface/);
+    // …and still works for every real surface, so the guard is not over-broad.
+    for (const surface of Object.keys(NAV_SURFACES)) {
+      expect(() => itemsForSurface(surface, { signedIn: true, role: "admin" })).not.toThrow();
+    }
+  });
+
   it("CONTROL — every item declares a known surface, kind and audience", () => {
     expect(NAV_ITEMS.length).toBeGreaterThan(0);
     const surfaces = new Set(Object.keys(NAV_SURFACES));
