@@ -368,6 +368,29 @@ verbatim strings stay in the guard's fixture table and the patch doc, where the 
 cannot reach them, because it reads PR metadata and not files. **That asymmetry is
 the whole reason the swap is worth applying.**
 
+### The body the gate judges is the body at EVENT time, not the body now
+
+A corollary of the same payload mechanic the label patch turns on (§1, Edit 2), and
+it bit in the opposite direction here.
+
+Sequence on #2850: push at `08:02`, then the body corrected at `~08:03`. The
+`synchronize` payload was already captured, so **the run on that head evaluated the
+pre-correction body** — a fixed body plus an unfixed verdict. Editing a PR body
+cannot clear a body-triggered gate, because `pr-checks.yml`'s `types:` does not
+include `edited`, so no new run is created at all.
+
+**So the remedy for a body-triggered marker red is a genuine push, after the edit.**
+That is not gate-neutralising under rule 30: the cause was mine, the cause is fixed,
+and the gate has to re-read to see it. Rule 30 forbids clearing a block; this is
+making the block actually evaluate the corrected input. The commit carrying that
+push is this paragraph — real content, not a no-op.
+
+**The symmetry worth noticing:** the label design needs `labeled`/`unlabeled` added
+to `types:` for exactly this reason, and the text design has the identical hole for
+`edited` — which nobody has ever added, and which is why a prose false positive
+today can only be cleared by pushing code. Same root, both mechanisms; the label one
+is at least fixable in the trigger list.
+
 ### Vercel
 
 `Ignored` on #2846 (no `[preview]` token — the configured behaviour) and
