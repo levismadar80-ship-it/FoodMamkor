@@ -564,6 +564,12 @@ function RegisterProducerPageBody() {
         // consent (agreedToTerms) is a separate gate enforced at submit.
         declaration_accepted:
           declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed),
+        // MEH-1995: the ToS consent the comment above calls "a separate gate
+        // enforced at submit" — it was enforced and then discarded, reaching
+        // no column. Sent now so users.terms_accepted_at + terms_version get
+        // stamped. Distinct from declaration_accepted directly above: that is
+        // the LICENSING declaration, recorded on the producer row.
+        terms_accepted: agreedToTerms,
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {
@@ -871,7 +877,10 @@ function RegisterProducerPageBody() {
                 (rendered on 409 from submit) is preserved by Chunk D. */}
             <div>
               <label htmlFor="producer-account-password" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.password_label")}
+                {t("auth.register.producer.fields.password_label")}{" "}
+                <span className="text-error" aria-hidden="true">
+                  *
+                </span>
               </label>
               <input
                 id="producer-account-password"
@@ -953,7 +962,10 @@ function RegisterProducerPageBody() {
 
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.phone_label")}
+                {t("auth.register.producer.fields.phone_label")}{" "}
+                <span className="text-error" aria-hidden="true">
+                  *
+                </span>
               </label>
               <input
                 id="producer-phone"
@@ -984,9 +996,13 @@ function RegisterProducerPageBody() {
                 autocomplete (MEH-213: free-text city forbidden). CitySearch
                 emits a string, so it can't use the event-based set() helper. */}
             <div data-testid="register-details-city">
+            {/* MEH-2015 chunk A: `required` here preserves today's VISUAL state
+                only — the marker predates this change and stays visual-only per
+                MEH-951 until chunk B's verdict. The field still gates nothing. */}
             <CitySearch
               id="producer-city"
               labelVisible
+              required
               label={t("auth.register.producer.fields.city_label")}
               placeholder={t("auth.register.producer.fields.city")}
               value={form.city}

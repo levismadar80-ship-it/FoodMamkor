@@ -124,3 +124,644 @@ pushed with the PR open, and the whole log merged intact once the gates settled.
 
 **Not a circuit-breaker event** — one signature, one task, and it resolved on its
 own terms.
+
+### 🔎 THE MECHANISM, named 2026-08-11 (PR #2775) — `strict_required_status_checks_policy`
+
+**The same error string has now produced three different diagnoses across three
+sessions. Here is the actual cause, so nobody spends a fourth.**
+
+`protect-staging` has **`strict_required_status_checks_policy` enabled**. Under a
+strict policy the required checks must be green **on a head that is up to date with
+the base**. A branch that is *behind* `staging` fails the gate **even when both
+required contexts report `success`** — its greens were measured against stale base
+code, so the ruleset declines to count them. The API says:
+
+```
+405 Repository rule violations found
+2 of 2 required status checks are expected.
+```
+
+**"Expected" here does not mean "not yet reported". It means "reported, but not on a
+head I will accept."** That wording is what has misled every session that hit it.
+
+**Measured on PR #2775, 11/08.** Both gates `success` on head `12ce2b8f`
+(`CI gate` `93804860031` 14:01:45Z, `Deploy gate` `93805135128` 14:02:38Z), base
+recorded as current — and three merge attempts all 405. Then:
+
+```
+git rev-list --count HEAD..origin/staging   →   3
+```
+
+The branch was **3 commits behind**. Sapir confirmed the same mechanism and the same
+error string on **PR #2752** earlier that day. The fix is one line:
+
+```bash
+git fetch origin staging && git merge origin/staging && git push
+# then WAIT for the gates to re-run on the NEW head, and merge
+```
+
+**Why the earlier readings were wrong, and the trap that survives both:**
+
+| Session | Diagnosis | Verdict |
+|---|---|---|
+| night 1, #2678 | "ruleset misconfigured — Sapir must inspect" | wrong; pointed a human at a healthy setting |
+| night 2, #2678 | "transient — the gates were still registering" | right *for that instance*, and it generalised badly |
+| 11/08, #2775 | **strict policy + behind branch** | the mechanism |
+
+Note that night 2's remedy — *wait longer* — **accidentally works on this cause
+too**, which is exactly why it survived as an explanation. If you wait long enough
+someone else's merge lands, you eventually re-sync for an unrelated reason, and the
+merge goes through. A remedy that works for the wrong reason is the hardest kind of
+wrong belief to dislodge.
+
+**The check that actually discriminates** — and the one I skipped on #2775, having
+"verified the base is current" by comparing the PR's `base.sha` to `origin/staging`,
+which only tells you where the base *pointer* is, never whether your branch contains
+it:
+
+```bash
+git rev-list --count HEAD..origin/staging    # 0 = up to date; anything else = behind
+```
+
+`mergeable_state: "behind"` reports the same fact, but it can read `blocked` instead
+when a required context is also outstanding — so on a 405, run the `rev-list` count
+before concluding anything. The generalisation of night 2's own lesson: a check-run
+saying `success`, the ruleset having ingested it, and the ruleset being *willing to
+count it* are **three** different facts, not two.
+
+---
+
+# Session s4-r5tl1v (2026-08-08 evening)
+
+## PARKED: MEH-1941 — flip `backed: true` on the two diet pages
+
+> ## ✅ RESOLVED 2026-08-08 — unparked and shipped. Do not re-take this card.
+>
+> Measured at 21:12Z (session s5): **MEH-1941 is `Done`**, `completedAt`
+> `2026-08-08T20:28:16Z`, closed by **PR #2701** — *"fix(diet): open
+> no-added-sugar and low-carb — the backend filters landed"*.
+>
+> The park below diagnosed itself correctly: failure class **resource**, *"it will
+> succeed on a fresh session with no changes to anything"*. It did, roughly two
+> hours later. The entry is kept rather than deleted because the analysis under it
+> — especially the correction to the card's prediction about the second test — is
+> what made the follow-up session cheap.
+>
+> **The one item that did NOT resolve itself:** the orphan branch
+> `feature/meh-1941-flip-diet-backed` (one empty claim commit, no PR). It could not
+> be deleted from a CC session because `check-branch-name.sh` parses the delete
+> argument as a branch name. **Still Sapir's, still one line, still not urgent.**
+
+**Not blocked by anything in the ticket.** Parked on **session context budget**: I
+claimed it, verified its preconditions, and then did not have the room left to
+implement it to the standard the card asks for (test surgery + a
+failing-by-construction run + full suites + a different-model review). Stopping
+there beats a rushed job on a test whose whole purpose is to stay discriminating.
+
+**Failure class: NOT transient, NOT permanent — resource.** It will succeed on a
+fresh session with no changes to anything. Nothing needs fixing first.
+
+### What was verified (so the next session does not redo it)
+
+Both blocking preconditions are **met**, checked against `origin/staging` rather
+than assumed:
+
+- **1935 (frontend):** `frontend/lib/diet-pages.js` exists, `backed: false` at both
+  entries — `no-added-sugar` `:64`, `low-carb` `:71`, exactly as the card says.
+- **1934 (schema):** `backend/alembic/versions/20260807_1200_a2f7d4c8e153_meh1934_product_no_added_sugar_low_carb.py`,
+  plus `no_added_sugar` references in `models.py`, `schemas.py`,
+  `routers/producers.py`, `producer_contract_snapshot.json`.
+
+### ⚠️ The card's prediction about its second test is wrong
+
+It says `DietLandingPage.test.jsx:170-173` *"does not fail, but loses its subject"*.
+**It will fail.** That test mocks a passing count (`listing(DIET_PAGE_MIN * 10)`) and
+asserts `meta("no-added-sugar")` **rejects**; once the slug is backed both gates
+pass, nothing rejects, and `.rejects` goes red. The prescribed remedy (a synthetic
+unbacked fixture) is still right — the symptom description is not, and someone
+following it will think they broke something.
+
+### The route that avoids mocking the config module
+
+`vi.mock("@/lib/diet-pages")` forces a reimplementation of `getDietPage` inside the
+mock — a **copy**, which is what `.claude/rules/testing.md` warns against. Not
+needed: the page resolves through the real functions
+(`page.js:95-96` → `getDietPage()` → `isDietPageBacked()`), `DIET_PAGES` is a mutable
+array, and `BACKED_DIET_PAGES` is computed once at import. So `push` a synthetic
+`backed: false` row onto `DIET_PAGES` **inside the single `it`** with a `pop()` in
+`finally`: the real lookup finds it, the real gate rejects it, `BACKED_DIET_PAGES`
+is unaffected, and the exact-slug-list assertion at `:124` never sees it.
+
+Still unchecked: the loop at `:380` (sitemap exclusion), step 4 of the card's prompt.
+
+### Claim state — and one thing I could not do
+
+The card is **Backlog, no `cc-queue`** — genuinely unclaimed.
+
+**The branch `feature/meh-1941-flip-diet-backed` could NOT be deleted from this
+session**, and I said on the card that it had been before catching myself; corrected
+there. `check-branch-name.sh` (rule 3 / MEH-1141) blocks both delete forms because
+it parses the delete argument as a branch name:
+
+```
+git push origin --delete <branch>              → Blocked: push branch '--delete'
+git push origin +:refs/heads/<branch>          → Blocked: push branch 'refs/heads/…'
+git push origin :<branch>                      → not blocked, but "remote end hung up"
+```
+
+I did not work around the hook (rule 32). The branch holds **one empty claim commit**
+and no PR, so nothing is lost; it is adoptable under ORDERS §2 after ~21:19Z, or the
+next session can simply cut a differently-named branch off `origin/staging`.
+**Left for Sapir: delete the orphan branch.** One line, not urgent.
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. Nothing quarantined.
+
+---
+
+# Session s5-k2m9xp (2026-08-08 night)
+
+## PARKED: MEH-999 · MEH-215 · MEH-217 · MEH-1897 — all four on one credential gate
+
+**Failure class: PERMANENT for this session — ORDERS §1.2 gate 2 (credentials
+Sapir holds).** Not transient, not resource. No retry will clear it and none was
+attempted after the second confirmation.
+
+**The block, verbatim, reproduced ~20 minutes apart:**
+
+```
+mcp__Linear__get_issue MEH-999
+  -> MCP server "Linear" requires re-authorization (token expired)
+```
+
+The Linear OAuth token expired **mid-session** — the first three `get_issue` calls
+of the run succeeded, so this is an expiry during the sweep and not a session that
+started without access. A non-interactive session cannot run the OAuth flow.
+
+**Why the cards were not built anyway.** The seed list in the prompt names all
+four, and their titles are known. That is not enough: ORDERS §5 states any queue
+list in a prompt is *"a HINT, never state"*, and workflow.md's Lane B eligibility
+gate is **derived from the card's own description**, which could not be read.
+Building from a one-line title is guessing at requirements — rule 4's explicit
+anti-pattern — and the B3 gate (unresolved questions to Sapir? denied action
+required? brand ruling needed?) is unanswerable without the body. **Skipping was
+the rule-compliant outcome, not caution.**
+
+**Nothing was claimed.** No `cc-queue` label was applied (Linear was down, so the
+audit trail ORDERS §5 requires could not be written), no branch was cut for any of
+the four, and `git ls-remote` confirms none exists.
+
+**To unpark:** re-authorize Linear via the claude.ai connector settings. Every one
+of the four is then immediately workable — no repository state blocks them.
+
+## Circuit breaker
+
+One signature (`Linear token expired`) across four cards. **This is one blocker
+counted once, not four parks toward the 3-park threshold** — the threshold exists
+to catch a repeating *failure mode*, and four cards sharing a single credential
+gate is one fact about the environment. Nothing quarantined.
+
+---
+
+# Session s6-t7w2nq (2026-08-09 morning)
+
+## PARKED: MEH-217 — admin panel suite. **Structural, not a blocker in the code.**
+
+> ## ❌ CORRECTED 2026-08-09 (session s7) — the premise below is FALSE. The secret IS wired.
+>
+> **Measured from the file, not remembered:**
+>
+> ```
+> .github/workflows/e2e.yml:231-233   (step "Run E2E tests")
+>   DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD / DEMO_ADMIN_PASSWORD
+> ```
+>
+> The park's load-bearing sentence — *"The default `e2e.yml` job is exactly that
+> shape (… **no `DEMO_*` secret exported**)"* — is wrong. Sapir applied
+> `docs/ci/e2e-auth-fixtures.patch.md` in `21ccecc` on **26/07**, and
+> `frontend/e2e/CLAUDE.md` says so outright: *"Authenticated coverage runs on
+> every PR"*, citing run `30220096957`, which wrote the `admin` storageState and
+> executed all 6 `25-role-reachability` tests. So an admin spec **runs** in CI;
+> it does not skip, and no `e2e.yml` edit is needed.
+>
+> **How the error was made, because it is the reusable part.** The park read
+> `global-setup.ts:72-80` — correctly — and concluded the localhost target means
+> no fixture. It never asked the second question: *does the job supply the
+> password anyway?* "The secret does not exist" and "I did not look where it
+> lives" produce identical evidence. That is the same class as s6's own three
+> retractions, made one day later, in a park written by the session that wrote
+> them.
+>
+> **The blocker inverted rather than vanished — CI yes, LOCAL no.** The CC
+> sandbox has no backend (Railway egress denied, MEH-360; a local Postgres was
+> blocked by the sandbox on 09/08), so the specs are CI-valid but cannot be shown
+> green before push. **Corrected failure class: `resource` (local evidence), NOT
+> `permanent`, NOT a credential gate.** Nothing needs Sapir.
+>
+> **To unpark:** a session that can reach a seeded target — `TEST_URL=<staging |
+> preview>` with `DEMO_ADMIN_PASSWORD` + `VERCEL_AUTOMATION_BYPASS_SECRET` (row 3
+> of the table in `frontend/e2e/CLAUDE.md`) — or a sandbox where a local stack
+> comes up. Full chunk plan is on the card.
+>
+> **What survives from the park below, unaffected:** the §1A finding (already
+> covered by `flows/25` — do not rewrite), and the ruling that 2F and 3C
+> delete/promote stay out of CI.
+
+**Failure class: ~~PERMANENT for CC — ORDERS §1.2 gate 2 + MEH-671~~ → see the
+correction above.** Not transient, not resource. No retry clears it and none was
+attempted.
+
+**Nothing in the repository blocks writing the specs.** What blocks *delivering
+the card's DoD* is that the specs could only ever `skip` in CI:
+
+`global-setup.ts:72-80` deliberately does not provision `e2e/.auth/*.json` when
+the target is localhost and no `DEMO_*_PASSWORD` is set. The default `e2e.yml`
+job is exactly that shape (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, no
+`DEMO_*` secret exported). Every admin spec therefore reports `skipped`, and a
+skipped leg **passes** the aggregator.
+
+The card's DoD asks for *"green locally **and registered in CI**"*. The second
+half needs either a repository secret or an `e2e.yml` edit — **both Sapir's**
+(secrets are gate 2; `.github/workflows/**` is CC-deny, MEH-671). Shipping six
+tabs of always-skipping specs would manufacture the exact "green with two
+possible causes" that `testing.md` documents at length, so it was not done.
+
+**Also established, and it removes work rather than adding it:** §1A
+(access control, all three roles + the guest round-trip) is **already covered in
+full** by `e2e/flows/25-role-reachability.spec.ts`. Re-verified independently
+against the live code — all 7 admin routes redirect anonymously with the return
+path preserved; a logged-in non-admin gets `data-testid="access-denied"` with
+**zero `/api/admin` calls**. Do not rewrite that chunk.
+
+**To unpark:** Sapir decides between (a) wire `DEMO_ADMIN_PASSWORD` into the E2E
+job, or (b) restate the DoD as local-only. A chunk breakdown for either path is
+on the card, including the two sub-sections that should stay out of CI entirely
+(§2F delete, §3C promote/delete — the card's own reasoning, never reversed by the
+08/08 ruling).
+
+**Not claimed.** No `cc-queue` label, no branch, no code.
+
+## PARKED: MEH-215 — registration journey suite. **Resource.**
+
+**Failure class: NOT transient, NOT permanent — resource (session context).** It
+will succeed on a fresh session with no changes to anything, and unlike MEH-217
+it needs **no credential fixture**: the whole wizard was walked today with none.
+
+**Not claimed.** No `cc-queue`, no branch (`git ls-remote` confirms), no PR.
+
+**The handoff is in `session-s6-t7w2nq.md` §6** and is the reason this park is
+cheap: the five step headings verbatim, the twelve field **`id`s** (they are
+`id`, not `name` — a `[name=...]` locator silently matches nothing), the
+`aria-pressed` category convention, the empty-submit alert string, and the fact
+that the final advance button is `הצטרפו ←` and not `הבא ←` so a `הבא`-only
+regex stalls without failing. Journey A is writable from that list alone.
+
+**Still open and worth settling first:** `covered-by-stub` has no defined form
+(ORDERS §1.5 records that `grep` found no existing pattern in any `*.md`). Settle
+it before assertions start carrying it, or it will drift into three spellings.
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. Two parks, two different failure
+classes, nothing quarantined.
+
+---
+
+# Session s7-q4n8vz (2026-08-09 midday)
+
+## PARKED: MEH-217 — re-parked with a **corrected** failure class.
+
+**Failure class: `resource` (local evidence), NOT permanent, NOT a credential
+gate.** See the correction block on the s6 entry above: `DEMO_ADMIN_PASSWORD` has
+been exported into the E2E job since `21ccecc` (26/07), so admin specs **run** in
+CI and no `e2e.yml` edit or new secret is needed. Nothing here is Sapir's.
+
+**What actually stopped the work:** this sandbox cannot produce a green local
+run. There is no backend — `*.up.railway.app` egress is denied (MEH-360) and a
+local Postgres start was blocked by the sandbox on 09/08 (s6 managed one the day
+before, so this is a per-session property, not a standing one — retry, don't
+assume). ORDERS §3 wants pasted evidence, and six tabs of specs that were never
+executed is the "green with two possible causes" this card has already paid for
+once.
+
+**Not claimed beyond a label.** `cc-queue` applied while investigating, no
+branch, no code (`git ls-remote` confirms). Chunk plan, run recipe and the
+CI-exclusion ruling for 2F / 3C are posted as a comment on the card.
+
+## NOT parked, and worth stating: MEH-215 is only 1/4 done
+
+Journey A shipped. **B (Google OAuth), C (login / forgot-password) and D
+(favorites) are unwritten** — stopped on session context, not on any blocker.
+C and D need a session, so they carry the same local-evidence constraint as
+MEH-217; B additionally needs the mocked-OAuth-callback convention, which is
+still undefined.
+
+**The s6 handoff in `session-s6-t7w2nq.md` §6 does not apply to journey A** — it
+documents the **producer** wizard (`/register/producer`, 5 steps), and journey A
+is the **consumer** form at `/register` (one page, 3 fields). Both are real; they
+are different surfaces. That handoff is still exactly what a producer-journey
+card needs, so it should not be read as spent.
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. One park, one failure class, nothing
+quarantined.
+
+---
+
+# Session s8-r9k3mt (2026-08-09, continuous drain)
+
+## ~~PARKED: MEH-160 — view dedupe~~ · **UNPARKED AND FINISHED 09/08 (s9). PR #2721.**
+
+> **Resolved.** All seven readers of `producer_page_views` now dedupe through one
+> expression in `services/analytics.py`; the CI red is closed; both Sapir-gated
+> questions are drafted on the card with the lexicon-safe default implemented, so
+> neither blocks. A different-model review found one more partial conversion — the
+> admin reader deduped cross-producer while its comment claimed otherwise — fixed
+> with `scope_col` plus the test that pins it. Full account: `session-s9-v3xq8w.md`.
+>
+> The park entry below is kept verbatim as the record of what was known at park time.
+
+### Original park entry (09/08, s8)
+
+
+**Failure class: NOT transient, NOT permanent — scope.** The mechanism works and is
+verified; what is unfinished is its blast radius. A fresh session finishes it from
+the PR comment alone.
+
+**The finding that defines the park, and it is mine:** `producer_page_views` feeds
+**six** dashboard metrics. I deduped **three** (`profile_views`, `search_appearances`,
+`views_by_day`) and left three raw — and all six render on the same screen. The
+reviewer (different model, isolated worktree, pinned `e1250a34`, everything executed
+against real Postgres) found four blockers:
+
+1. `test_analytics.py:305` fails — `_seed_view` defaults to one shared hash, so two
+   same-day search rows dedupe to 1. **This is the CI red.**
+2. `weekly_trend` compares deduped `last_7d` against raw `prev_7d_views` → reads
+   **"down" on perfectly flat traffic**. Permanent regression.
+3. `conversion_rate` = raw clicks ÷ deduped views → **200%**, hidden by MEH-1118's
+   `clampPercent`, so the API contract is wrong while the screen looks right.
+4. `profile_views_tooltip` in both locales now states the **inverse** of the code
+   ("including repeat visits"), and the MEH-1557 guard is one-directional so it
+   stays green.
+
+**Two need decisions, not patches:** (3) is a contract choice — dedupe the numerator
+or rename to "clicks per unique viewer" and stop clamping; (4) is approved copy in
+two locales plus inverting the guard.
+
+**What is already proven and must not be re-derived:** the SQL composes correctly on
+PG15 (the `FILTER` keeping `(day, NULL)` out of the tuple arm is load-bearing and
+measured); the two-directional discrimination claim **holds** under independent
+rebuild of both rival implementations (old impl 5 failed, naive `COUNT(DISTINCT)` 2
+failed, shipped 8 passed); `search_appearances ≤ profile_views` is preserved; and the
+rotating-salt hazard is **moot** under the day grain.
+
+**The lesson worth more than the ticket:** I ran the two obvious analytics test files,
+saw them pass, and treated that as coverage — an hour after writing on MEH-1952 that
+running the probe that cannot fail is the error to avoid. The full suite was the only
+probe that could have caught finding 1, and I ran it only after CI did.
+
+## Not parked, resolved this session
+
+- **MEH-1952** — ×10 full-suite matrix: `EventExperienceAddress` **0/10**. A different
+  file, `CityProfileBridge.test.jsx`, failed **1/10** with the same signature. Reported
+  on the card with both options (re-point vs close-and-open); neither taken — that is
+  Sapir's call.
+- **MEH-1925** — answered (`disabled customer` on three endpoints); Console is hers.
+- **MEH-1905** — Phase 0 closed; the staging `db_init` failure is **data drift, not
+  code** (seed unchanged 31/07, violations from 02/08), and Sentry's silence reduces to
+  one unfiltered dashboard query (`ENV` defaults to `development`, not `production`).
+
+## Circuit breaker
+
+No signature reached the 3-park threshold. Nothing quarantined.
+
+---
+
+# PARKED 2026-08-11 (lane `se-2xk7m`) — PR #2747, MEH-215 chunk C
+
+**Task:** merge the adopted orphan PR for journey C. **Status: parked in DRAFT after
+the 2-attempt rule. The PR is complete and must NOT merge** — its own new specs are red
+in CI.
+
+## The block
+
+The suite ran for real for the first time (run `31492087550`, 4.7 min, 233 executed):
+
+```
+1 failed   [mobile]  30-login-journey-c.spec.ts:286  C2 — session survives a new tab
+1 flaky    [desktop] 30-login-journey-c.spec.ts:209  C2 — correct credentials … redirect
+231 passed, 29 skipped
+```
+
+**Every non-passing test is in the file this PR adds.** No unrelated spec is red, so the
+standing environmental explanation (Cloudinary / MEH-1948) does not cover it.
+
+## Ruled out — measured, not assumed
+
+| Hypothesis | Verdict |
+|---|---|
+| Route stubs don't match in CI (`**/api/auth/login` vs a Railway URL) | **Dead.** `lib/api.js` sets `baseURL: "/api"`; the browser always requests same-origin and Next rewrites server-side. `page.route` intercepts before that, identically in both environments. |
+| `login()` awaits something unstubbed | **Dead.** `auth-context.js:128-131` calls exactly `/auth/login` then `/auth/me`, both stubbed. |
+| The specs are wrong | **Dead.** 18/18 green locally, `--repeat-each=3`, both projects, 40.4s. |
+| A flake a re-run clears | **Dead, and load-bearing.** Mobile `:286` failed on its **retry** too (`1 failed`, not `2 flaky`). Do not re-run expecting green. |
+
+## One run withdrawn, on the record
+
+The first local attempt reported **18/18 failed** — including a test that passes in CI.
+That was a harness defect: `@playwright/test 1.62.1` expects chromium build **1234**, the
+sandbox ships **1194**, and no browser launched. **Withdrawn in full.** A local result
+redder than CI is a probe defect, and `playwright install` is forbidden — the way through
+is `executablePath` at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
+
+## What remains — hypothesis, NOT a finding
+
+Both failures are the same assertion (`expectPath(page, "/")` after a successful login)
+and the desktop message is `Expected "/" Received "/login"` after 20s — **the URL never
+moved.** Locally `NEXT_PUBLIC_API_URL` points at a dead port so `/` renders instantly;
+in CI it points at a live backend and `/` server-renders. `router.push` does not commit
+until the RSC payload lands. Two candidates, unseparated:
+
+1. the redirect target fails to render in CI, so the navigation never commits;
+2. `LoginClient.jsx:103` (`push`) races the effect at `:90` (`replace`).
+
+**If (2), the defect is product-side on the login path** — which would mean the spec did
+its job on its first real run, and the fix is out of scope for a tests-only PR.
+
+Not separable from the sandbox: `*.up.railway.app` is proxy-denied and the 39 MB
+`playwright-report` sits behind authenticated blob storage.
+
+## The cheap discriminating step
+
+Download `playwright-report` from run `31492087550` (artifact `9101679729`, expires
+18/08) and read the `:286` trace for **whether `localStorage.token` was set at timeout**.
+Set ⇒ login worked, the navigation is the defect. Absent ⇒ both hypotheses are wrong.
+
+**Do not lengthen the poll timeout.** If the navigation never commits, a bigger number
+buys a slower red; if it commits late, the number hides a home-render regression. That is
+the papering-over this same branch adds a rule against.
+
+## Circuit breaker
+
+One park, one signature. Nothing quarantined; the 3-park threshold is not reached.
+
+---
+
+# Parked 2026-08-12 — lane C (CI/tests/docs). Two cards, both on **Sapir's hands**, neither on a failure.
+
+Neither hit the timebox and neither failed. Both are parked because their one
+remaining DoD item is an action CC is mechanically denied from taking —
+`.github/workflows/**` (MEH-1837) or a required-gate marker (rule 30). Parking
+them is the honest state; leaving them "In Progress" would imply CC is still
+working them.
+
+## MEH-1868 — Knip ratchet · chunk 2 MERGED (`be1ba20e`), chunk 3 is Sapir's
+
+**Landed:** `scripts/checks/lint-ratchet.mjs`, baseline frozen at 46 findings /
+24 `(file, rule)` pairs, a real-payload fixture, and 21 self-test assertions each
+shown failing against its own break.
+
+**Blocked on:** applying `docs/ci/meh-1868-knip-ratchet.patch.md`. Four changes;
+the substantive finding is that `frontend-knip` carries **both** swallows
+(`continue-on-error: true` at `:555` *and* `|| true` at `:574`), so removing
+either alone buys nothing — `continue-on-error` makes `needs.frontend-knip.result`
+resolve to `success` regardless, which is why the aggregator's existing `check()`
+passes today.
+
+**Open question for Sapir:** does `frontend-knip` become genuinely merge-blocking
+(all four changes, incl. `check` → `check_ran`), or stay a non-blocking honest
+red (1–3)? Recommendation in the patch is all four, with the escape hatch
+(`--allow-increase`) documented.
+
+**Deliberately NOT closed.** The merge auto-closed it via `Closes`; CC reopened
+it. The card's own headline complains that *chunk 0 merged while the gate stayed
+a non-gate* — chunk 2 is now in exactly that state (the ratchet is on `staging`
+and has run **zero times** in CI). Marking it Done would bury the same complaint
+twice on the same card.
+
+## MEH-1980 — coverage ratchet · PR #2813 open, blocked by a marker CC may not clear
+
+**Landed on the branch:** `scripts/checks/coverage-ratchet.mjs` (the suite prints
+its own `ran.length` — this line said "16" and was measured at 23 by the CI
+reviewer, then 29 after the shrink-routing and baseline-banking cases; do not
+re-hardcode it), every guard shown red against its own deletion before being
+claimed, baseline frozen at **66.77%** lines
+(8,139/12,188, 339 files), `docs/reports/coverage-baseline.md`, and
+`docs/ci/meh-1980-coverage-ratchet.patch.md`.
+
+**Blocked on two things, both Sapir's:**
+
+1. **`DO-NOT-MERGE marker gate` is red — CC tripped it with its own PR body.**
+   The sentence *"Do not merge this as complete."* matches the gate's regex. Not
+   a deliberate marker; prose that happens to match, the documented PR #2511 /
+   MEH-1844 precedent. **CC did not edit it out**: rule 30 covers this case by
+   name — *"the marker is not cleared by whoever concludes the block is stale…
+   CC's own marker is still Sapir's to clear."*
+2. **The `docs/ci/` patch**, which carries its own decision: the backend's
+   `--cov-fail-under=70` is a static floor with a **7-point dead zone** below the
+   77% baseline. Threshold deliberately left as a PLACEHOLDER — backend coverage
+   is unmeasurable from the CC sandbox (no postgres, no `backend/.venv`), and the
+   two figures on record disagree by 3,400 statements (77%/5,529 in the workflow
+   comment vs 89%/8,923 in MEH-1911's proof). Read `TOTAL` from a current pytest
+   job; do not reuse either.
+
+**Also worth knowing:** auto-merge was armed on #2813 **twice**, both times with
+method `merge`, by an actor that was not this session. CC disabled it once (rule
+32 permits acting unasked only in the constraint-adding direction) and it was
+re-armed. The accidental DNM marker is currently the only thing holding it.
+
+**Still genuinely outstanding on the card** (not blocked, just not done): three
+template-07 test tickets for the top risks, and the MEH-1961 license-scanning
+rider.
+
+## Circuit breaker
+
+Two parks, two signatures — both `blocked-by-CC-deny`, neither a failure class.
+The 3-park threshold is not reached and nothing is quarantined.
+
+## MEH-1625 — matrix extension DELIVERED (PR #2816), the live run is blocked
+
+The card splits into two parts with two timelines and says so.
+
+**Part 1 — the matrix extension — is done.** The maximal persona is in
+`docs/MANUAL_TESTING.md` as **P6**, not P5: the card calls it *"P5 (חדשה)"* and
+lists only P1–P4 as existing, which was true on 27/07 and is not true now —
+`P5` is already the resubmit-loop persona, with its own `TestPersona5ResubmitLoop`
+and UI spec. Two personas under one label, in the column that maps persona to
+covering test, is the one thing that table cannot afford.
+
+**Part 2 — the actual manual run of the personas on staging — is blocked**, and
+the card already says so: staging backend returning non-2xx (10/08) plus a
+working demo-admin account for the approval step. Neither is CC's to fix; the
+demo-admin credential is Sapir's.
+
+**P6's automation cell reads "אין עדיין" deliberately.** Every other row cites a
+real pytest class or Playwright spec. That column is what a reader trusts to
+know whether a persona is genuinely covered, so a plausible-looking reference
+there would be worse than an admission.
+
+---
+
+## PARKED: MEH-1511 — rule 23 amendment. **The block reproduced in a fresh session.**
+
+**Status: parked, `needs-sapir`. The work is DONE and staged; only the write is
+refused.** Full amendment text, verbatim and ready to paste:
+[`docs/ci/meh-1511-rule23-amendment.patch.md`](../ci/meh-1511-rule23-amendment.patch.md).
+
+### What the card asked for, and what came back
+
+MEH-1511's ruling of 09/08 was explicit: the 08/08 block was **the harness's
+auto-mode classifier, not repo policy** — retry it in a fresh session, and *"if
+the block recurs → STOP and raise a one-line question for interactive approval;
+do not try to route around it."*
+
+Retried 2026-08-12, fresh session, branch cut from `origin/staging`, `Edit` on
+`.claude/rules/workflow.md`:
+
+```
+Permission for this action was denied by the Claude Code auto mode classifier.
+Reason: Blocked by classifier.
+```
+
+**So the card's diagnosis is confirmed and its remedy is unchanged.**
+`.claude/settings.json` `permissions.deny` lists `settings.json` and `hooks/**`
+— **not** `.claude/rules/**`. The repo permits this edit; the harness does not.
+This is a harness-layer refusal, and no amount of retrying from a CC session
+will clear it.
+
+### What was NOT done, deliberately
+
+Stop condition (d) honoured in full: **no `Write`, no bash heredoc, no python,
+no second tool aimed at the same file.** The denial message itself offers that
+latitude ("you may attempt other tools"); the card forbids it, and the card
+wins. Staging a patch doc is not a workaround — it is the same sanctioned
+pattern this repo already uses for `.github/workflows/**`, and it changes no
+rule on its own.
+
+### Unblock — any one of these, all Sapir's
+
+- standalone CC (Git Bash → `claude`)
+- an interactive-approval session
+- an auto-mode exception for `.claude/rules/**`
+
+### Two things the patch doc records that are worth knowing before applying
+
+- **The card's derived sweep is not drafted.** *"Every phrasing in `.claude/rules/`
+  and CLAUDE.md that assigns manual QA to Sapir → move to CC"* touches many
+  files, and **every one hits the same classifier**. Drafting a patch per file
+  before knowing the unblock will happen is speculative volume. The grep and the
+  governing distinction are in the patch doc; run the sweep in the same
+  unblocked session.
+- **ADR-016 must be synced AFTER the rule, not before.** `docs/decisions/**` is
+  writable by CC, so syncing it now was possible — and would have left the ADR
+  describing a rule that does not exist. That inversion is the exact drift class
+  this repo already pays for, so it was declined rather than banked as progress.
+
+### Failure class
+
+**PERMANENT for any CC session** — a harness-layer refusal, reproduced twice
+across two sessions, with no CC-side remedy. Not transient; do not retry from a
+sweep. Second signature of the night after the `alembic upgrade` / `psql` deny
+chain on MEH-217, and a *different* one: that was repo policy working as
+designed, this is the harness overriding repo policy.

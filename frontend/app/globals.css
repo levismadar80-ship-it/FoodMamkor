@@ -9,9 +9,28 @@
 @tailwind utilities;
 
 /* WhatsApp colour tokens — single source of truth. All #25D366 references
-   in the codebase resolve to one of these three utilities. */
+   in the codebase resolve to one of these three utilities.
+
+   MEH-1389 — `.btn-whatsapp` no longer fills with #25D366. White-on-#25D366
+   measures 1.98:1, an axe `color-contrast` SERIOUS failure against the 4.5:1
+   AA threshold for normal text; the old hover (#1ea855) was 3.09:1, so the
+   button failed in BOTH states and hovering made it look addressed without
+   fixing it.
+
+   The fill is now a DARKENED WHATSAPP GREEN, not the brand green: #16803E is
+   the same hue (142.4°) and the same saturation (0.825) as #25D366 with the
+   value dropped 0.83 → 0.50. It is the channel colour, just dark enough to
+   carry white text — swapping to the mehamakor green would erase the channel
+   code the CTA exists to signal.
+
+     white on #16803E → 5.01:1  (AA normal text, with headroom over 4.5)
+     white on #136B34 → 6.60:1  (hover, also same hue/saturation)
+
+   The focus ring stays #25D366 on purpose: it is a non-text indicator, it is
+   not what axe flagged, and against the darker fill it now reads MORE clearly
+   as the WhatsApp colour than it did against #25D366 itself. */
 .btn-whatsapp {
-  @apply bg-[#25D366] hover:bg-[#1ea855] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
+  @apply bg-[#16803E] hover:bg-[#136B34] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
 }
 .btn-whatsapp-outline {
   @apply border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/5 transition;
@@ -157,17 +176,21 @@ html {
 
      Three terms, each already owned elsewhere — this rule only sums them:
        · 5rem            — the BottomNav band. `md:hidden` on the nav
-                           (BottomNav.jsx:237), hence the breakpoint split below.
+                           (BottomNav.jsx:304), hence the breakpoint split below.
+                           MEH-1950 note: the BANNER now derives its own offset
+                           from the live `--bottom-nav-clearance` var; this 5rem
+                           is a surviving static copy of the same geometry —
+                           re-home it via MEH-1703's registry, don't grow it here.
        · --cookie-banner-h — the banner's LIVE measured height, published on
-                           <html> by a ResizeObserver in CookieBanner.jsx:44 and
-                           REMOVED again on dismiss (:40, :50). So the fallback
+                           <html> by a ResizeObserver in CookieBanner.jsx:48 and
+                           REMOVED again on dismiss (:44, :54). So the fallback
                            `0px` is what applies whenever the banner is not up,
                            and the reserved space is released on accept — no
                            permanent dead gap, and nothing to keep in sync by
                            hand. Do NOT hardcode a banner height here: the copy
                            wraps to two lines at some widths.
        · env(safe-area-inset-bottom) — the banner's own offset includes it
-                           (CookieBanner.jsx:68), so the reservation must too or
+                           (CookieBanner.jsx:72), so the reservation must too or
                            content still tucks under by the home-indicator
                            height on notched devices. 0px everywhere else.
 
@@ -181,7 +204,7 @@ html {
 
 @media (min-width: 768px) {
   /* md — BottomNav is `md:hidden`, so its 5rem drops out. The banner is still
-     there (CookieBanner.jsx:68 `md:bottom-0`, flush to the viewport edge), so
+     there (CookieBanner.jsx:72 `md:bottom-0`, flush to the viewport edge), so
      its live height is the entire inset. */
   html {
     --bottom-inset: var(--cookie-banner-h, 0px);

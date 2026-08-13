@@ -33,8 +33,17 @@ import { detailToMessage } from "@/lib/errors";
 // guideline #1). CONTACT_EMAIL = NEXT_PUBLIC_CONTACT_EMAIL w/ fallback (MEH-653).
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+
+// MEH-2001: the story portrait. Raw asset URL — every transform is applied by
+// optimizeCloudinary at the call site, never baked into this string.
+const STORY_PORTRAIT =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg";
+// 360px (the `sizes` cap on this image) at DPR 2. The source is 1200px wide,
+// so this only ever downscales.
+const STORY_PORTRAIT_WIDTH = 720;
 
 // MEH-1112: testimonials section render-gated OFF until real testimonials
 // exist (NN/g: real social proof or nothing — no empty-shelf placeholder).
@@ -165,13 +174,45 @@ export default function AboutPage() {
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
                   {/* IMG-01: founder portrait. Empty/failed state falls back
                       to a tonal background-alt plate (no leaf box). */}
-                  <div
-                    className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt"
-                    aria-label={t("story.image_aria")}
-                  >
+                  {/* MEH-1227: this wrapper carries NO aria-label and NO role.
+                      It used to carry aria-label={t("story.image_aria")}, which
+                      is `aria-prohibited-attr` (axe, serious) on a role-less
+                      div and fails 12-axe-a11y.spec.ts on /about.
+                      Naming the wrapper instead (role="img" + the label) was
+                      tried and rejected: this fallback renders `null` — a bare
+                      tonal plate, deliberately no Leaf box — so a name here
+                      announces "תמונה של ספיר" over an empty box, and that
+                      empty state is the live one while the Cloudinary images
+                      401. The name belongs on the Image's own alt, which is
+                      where the repo already puts it: ImageWithFallback.jsx:37-56
+                      and ProducerCard.jsx:288-310 both scope role="img" to the
+                      no-photo branch and leave the loaded branch a bare Image.
+                      This DOES drop a name Chrome was exposing — measured via
+                      CDP, the prohibited label produced `role=generic
+                      name="…" ignored=false`. That is the point, not a cost:
+                      a name on a generic container is what ARIA prohibits, and
+                      here it named an empty box. The loaded state keeps its
+                      name through the Image's alt. */}
+                  <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt">
                     {imgFailed ? null : (
+                      // MEH-2001: this src used to be a hardcoded transform
+                      // string, which frontend.md forbids ("never hardcode
+                      // transform params in component code") and which meant
+                      // the helper's new default width could not reach it —
+                      // it delivered the full original. Routed through the
+                      // helper, so future transform policy lands here too.
+                      //
+                      // width is explicit because on the c_fill path the helper
+                      // deliberately does NOT apply DEFAULT_MAX_WIDTH: c_fill +
+                      // w_ can upscale a narrower original. It cannot here —
+                      // measured via the Cloudinary Admin API, the source is
+                      // 1200x1600 / 186KB, and `sizes` below caps display at
+                      // 360px, so 720 is that at DPR 2.
                       <Image
-                        src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
+                        src={optimizeCloudinary(STORY_PORTRAIT, {
+                          aspectRatio: "3:4",
+                          width: STORY_PORTRAIT_WIDTH,
+                        })}
                         alt={t("story.image_alt")}
                         fill
                         sizes="(min-width: 768px) 360px, 280px"

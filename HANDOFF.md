@@ -3,6 +3,148 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-12 — 30 מיזוגים, תקלת backend חיה שהרעילה את ה-E2E, ושלושה כרטיסים שהתגלו כבר-עשויים
+
+**שורה אחת:** ‏**30 מיזוגים ל-staging** (נספרו מ-`git log --first-parent`) · כל שבעת ה-PRs של הסשן **מוזגו** · **‏MEH-1625 נסגר אוטומטית ע"י שם הענף ונפתח מחדש** — המקרה היחיד מתוך שבעה · `GET /api/producers` החזיר 500 בחלון ~15:05–15:37Z ו**הסיבה לא נקבעה** · סוויפ framer-motion 13 לא מצא רגרסיה.
+
+### מה שחשוב יותר מהעבודה שהוזמנה
+
+1. **🔴 ה-500 על `/api/producers` הוא הפריט הדחוף, והוא לא נסגר.** החלון תחום בין שני deploys שלא נגעו בקוד הליסטינג, כלומר **לא רגרסיה של דיף**. זו הסלמה של משפחת `by-slug` → 500 המוכרת: לראשונה גם endpoint האוסף. **פרודקשן לא הושפע** (נמדד ישירות). ה-stacktrace ב-Sentry תחת `environment: staging`; ‏Railway חסום מה-sandbox, ולכן נמסרה **מדידה ולא אבחנה** — קריאה אחת ב-Sentry תסגור את זה בדקה.
+2. **⚠️ אות ה-E2E של היום מזוהם, ואסור לקרוא ממנו מסקנות.** באותו חלון שתי PRs עם דיפים ללא חפיפה הפיקו סט כשלים **זהה-בייט**, וספירת הטסטים זזה 217 → 212 → 228. מי שרואה אדום מהיום — לבדוק את חלון הזמן לפני שמייחסים אותו לדיף.
+3. **שלושה כרטיסים בסוויפ התגלו כבר-מסופקים, וזה היה רוב הערך.** הכרטיסים תיארו עבודה חסרה שכבר נחתה: סקריפט הייצוא של Cloudinary (556 שורות, manifest + dry-run + self-test) ו-runbook השחזור (200 שורות, שלושה מסלולים) **קיימים ב-staging** למרות שטבלת המצב בכרטיס אומרת שלא — היא נכתבה לפני שה-PR נמזג. חצי ה-CC של כרטיס ה-VRT-by-label נמסר ונמזג ב-29/07 (patch doc בן 381 שורות, שלושת ה-guards, מצביע ב-`testing.md:174`). **הבדיקה מול `origin/staging` לפני כתיבת קוד חסכה שלוש עבודות כפולות.**
+4. **⚠️ שער ה-mypy מעולם לא הריץ mypy — אף פעם אחת.** ‏`grep -c '^name = "mypy"' backend/uv.lock` → **0**. ה-baseline וה-comparator נחתו לפני שמונה ימים; חצי התלות לא. כלומר השער דיווח **הצלחה עבור כלי שלא מותקן** — משפחת ה-skip-green בצורתה הטהורה. תוקן ב-#2829 (הצמדה ל-`mypy==2.3.0`), וה-comparator רץ לראשונה ושחזר את ה-20 הקפואים בדיוק.
+5. **⚠️ 10 מתוך 30 המיזוגים היו במתודת `merge` ולא `squash`** — גוף ה-commit המנוסח, ה-trailer של `Builder-Model` ומילת הסגירה נקברים בהיסטוריית הענף. אותה תופעה שנתפסה ב-#2787/#2781; לא נחסמה.
+6. **סשן מקביל היה פעיל (כלל 1).** ‏#2827 נכתב ע"י session אחר שקיבל את אותה משימת מדריך-המודלים, גילה ש-#2826 כבר סיפק אותה, וה-push הכפול שלו **נדחה ע"י git**. ההתנגשות נתפסה ולא עלתה כלום — אבל היא קרתה.
+7. **✅ שאלה סגורה — `merge queue` אינו זמין בריפו הזה. לא לחקור מחדש.** ‏GitHub מגביל merge queue לריפו ציבורי בבעלות ארגון, או לריפו פרטי של ארגון תחת Enterprise Cloud; זהו ריפו של **חשבון אישי**, ולכן התכונה אינה קיימת כאן כלל. **הערת ה-10/08 בקובץ הזה (שורה ~102) מונה «merge queue» כאחת משלוש אפשרויות — האפשרות הזו בטלה**, והיא נשארת שם כרשומה היסטורית ולא כמשימה. גם **`strict up-to-date` נשאר דלוק** — לא מכובה. **התחליף שנבחר: auto-merge**, שכבר מופעל בריפו והיה בלתי-מנוצל. הוא פותר בדיוק את הבעיה שהערת 10/08 מתארת: אין יותר מרוץ בין «ירוק» ל«מישהו אחר מיזג», כי GitHub ממזג בעצמו ברגע שהשערים הנדרשים עוברים.
+
+### מצב ה-PRs שנפתחו היום מהסשן הזה
+
+| PR | נושא | מצב |
+|---|---|---|
+| #2826 | Fable 5 כ-advisor-only במדריך המודלים | **מוזג**. הכרטיס נסגר ידנית ב-17:05Z, לפני שה-PR נוצר — לא ע"י שם הענף |
+| #2829 | הצמדת mypy + patch doc ל-wiring | **מוזג**. ‏pytest עבר · ה-reviewer של CI החזיר שלושה `None.` · **הכרטיס נשאר Backlog אחרי המיזוג** — נבדק ב-`get_issue`, ולא נדרשה פתיחה מחדש |
+| #2830 | ראיות pre-lock ל-skills בלי עוגן hash | **מוזג** 22:33:21Z (squash `b14786a3`). ‏MEH-1055 **נשאר Backlog** — נבדק, לא נדרשה פתיחה מחדש |
+| #2828 | עמודות פר-פרסונה ל-מטריצת ההרשמה | **מוזג** 22:35:09Z (squash `7cde044a`). ⛔ **‏MEH-1625 נסגר אוטומטית ונפתח מחדש** — ראו למטה |
+| #2837 | ה-backfill הזה עצמו | ממתין למיזוג |
+
+### ⛔ המקרה היחיד שבו הסגירה האוטומטית ירתה — MEH-1625
+
+מתוך **שבעה** מיזוגים שנבדקו היום בשם-ענף נושא-מזהה, **אחד** נסגר אוטומטית: ‏MEH-1625 עבר ל-Done ב-`22:35:12.036Z`, **שלוש שניות** אחרי מיזוג #2828 ב-`22:35:09Z`. אף אחד לא סגר ידנית.
+
+**ה-DoD אינו מתקיים:** חלק ה-docs נמסר (#2816 + #2828), אבל **הריצה הידנית של P1–P5 על staging מעולם לא רצה** והיא חסומה — חשבון demo-admin, ובנוסף ה-500 שנמדד היום. סגירה הייתה מסמנת ריצת QA שלא התקיימה כ"בוצעה" — משפחת skip-green.
+
+**נפתח מחדש ל-Backlog עם נימוק בעברית, ואז נקרא שוב לאימות:** ההיסטוריה מראה Backlog → Done (22:35:12) → Backlog (23:35:40), והקריאה החוזרת בוצעה ~40 שניות אחרי — מעבר לחלון חמש השניות שביטל את השחזור ב-MEH-1872. **הפתיחה החזיקה.**
+
+**המאזן:** 1 מתוך 7 ירה. יחד עם ששת המיזוגים שלא ירו, זה מחזק את §29b כפי שהוא כתוב — לא-דטרמיניסטי לשני הכיוונים, ולכן **בודקים אחרי כל מיזוג במקום לחזות**.
+
+**נקודת מדידה נוספת ל-§29b, שהתקבלה בחינם ולא מניסוי:** ‏#2829 נמזג מענף `feature/meh-1868-...` עם `Refs` (בלי מילת סגירה), והכרטיס **נשאר Backlog** — נבדק ב-`get_issue` אחרי המיזוג. זה **הפוך** משורה 9 בטבלת §29b, שבה `Refs` על ענף נושא-מזהה סגר כרטיס תוך 3 שניות. שתי התצפיות עומדות זו מול זו ומחזקות את מה שהכלל כבר אומר: המנגנון אינו דטרמיניסטי לשום כיוון, ולכן **לבדוק אחרי כל מיזוג במקום לחזות**. ‏§29b אוסר במפורש למזג PR נוסף כניסוי — התצפית הזו הגיעה ממיזוג שהיה קורה ממילא, ולא נעשה כאן שום ניסוי.
+
+### פתוח לספיר
+
+1. **שורש ה-500 ב-staging** — קריאה ב-Sentry (`environment: staging`, המשפחה של `by-slug`). זה חוסם כל QA שרץ מול staging.
+2. **החלת שני ה-patch docs** — `docs/ci/meh-1868-mypy-ratchet.patch.md` (ארבעה שינויים ב-`pr-checks.yml`; **למזג את #2829 קודם**, אחרת השער מאדים על spawn error ולא על verdict) ו-`docs/ci/vrt-label-trigger.patch.md` (עדיין ממתין להכרעה: להחיל או להישאר עם `workflow_dispatch`).
+3. **נעילת ה-hash ל-skills** — **ארבעה** ולא שלושה. שניים מהם לא שורדים audit: אחד מקדים את התוכן שלו ב-14 יום, והשני נמצא ארבעה commits אחרי תאריך ה-audit שלו ונושא executable. הפירוט ב-#2830.
+4. **מכסת Vercel היומית** (`api-deployments-free-per-day`) — נכשלת על כל PR, מתאפסת מעצמה, לא ניתנת לתיקון ב-commit.
+5. **הרצת ייצוא Cloudinary** — פקודה אחת עם ה-credentials שלך; הסקריפט וה-runbook כבר ב-staging.
+## 2026-08-12 — batch 12/08 (מאושר ע"י ספיר), משימה 1/5: MEH-1376 — התנגשות מקבילית שנתפסה, ודלתאות היום
+
+**שורה אחת:** עריכות המדריך של MEH-1376 (שכבת Fable 5 advisor-only + תיקון ה-footer) **כבר נמסרו ב-PR #2826 ע"י סשן מקביל** (‏17:38Z) — ה-push שלי נדחה ע"י git, לא שוכפל PR · ה-PR הזה נושא **רק** את קיפול דלתאות הסשן, ש-#2826 השאיר בחוץ במכוון.
+
+### ⚠️ ההתנגשות, בקצרה (המקרה של כלל 28 §B4 / כלל 1)
+
+אותו batch נשלח כנראה פעמיים; הסשן המקביל דחף `feature/meh-1376-fable-advisor-guide` ופתח PR #2826 עם תוכן זהה כמעט מילה במילה (הסעיף מהספק verbatim; המחיר כעמודה בטבלת ההשוואה עם הערת פרשנות; אותו תיקון footer). מה שתפס את זה: דחיית ה-push של git — לא בדיקה מוקדמת. `git ls-remote origin | grep <branch>` לפני חיתוך ענף היה תופס את זה מוקדם יותר (כלל 28, בדיקה 4).
+
+### דלתאות סשן מ-12/08 (מקופלות כאן, לא ב-PRs נפרדים)
+
+1. **MEH-1585 — Done.** השער נצפה חוסם בפועל.
+2. **MEH-2018 — Done.** ‏framer-13 אומת כולל markers ‏16/16; ‏spiderfy (החפיפה עם MEH-1568) **לא אומת** — נשאר על הכרטיס ההוא.
+3. **MEH-2030 — קופל: Duplicate של MEH-1906.**
+4. **Sentry עיוור בחלון staging ‏15:05–15:27Z** — נרשם כ-thread על MEH-1905.
+5. **`VERCEL_AUTOMATION_BYPASS_SECRET` הוקם בסביבת CC.**
+
+### הצעד הבא
+
+המשך ה-batch לפי הסדר: MEH-1511 (docs) → MEH-1625 (docs) → MEH-1943 (audit בלבד, אפס שינויי קופי) → MEH-1754 (Phase 0 בלבד — resolver הוא central component, ממתין ל-"go" של ספיר לכל chunk).
+
+## 2026-08-11 — סגירת הסוויפ: חמישה PRs מוזגו, ושני כללים שנכתבו מהריצה עצמה
+
+**שורה אחת:** ‏#2776 · #2779 · #2780 · #2782 · #2786 — **כולם מוזגו** · MEH-999 ו-MEH-1872 נסגרו **נכון** (מילת סגירה) · MEH-1249, MEH-1976, MEH-1949 נסגרו **בטעות** ע"י שם הענף ו**נפתחו מחדש** עם נימוק · שני כללים חדשים ב-`.claude/rules/`.
+
+### מה שהסשן למד על עצמו
+
+1. **🔴 `MEH-1872` — אל תפתחו אותו מחדש.** אומת עצמאית: ‏`he.json` ב-staging נושא `name_change` ו-`name_change_requests`. הקופי שוחרר, הסגירה אמיתית. הכרטיס **אינו** הארטיפקט שהוא עצמו הזהיר מפניו.
+2. **§29b — שם ענף אינו סוגר באופן דטרמיניסטי.** שש ירו, אחת לא (#2784 → MEH-2009 נשאר Backlog). **והמקרה החמור: שחזור ידני של MEH-1872 ב-10/08 בוטל ע"י האינטגרציה תוך חמש שניות.** לכן אחרי כל מיזוג: `get_issue` על כל מזהה בשם הענף, ואם פותחים מחדש — **לקרוא שוב** ולוודא שהחזיק.
+3. **⚠️ `git add -A` אחרי build סחף את `frontend/next-env.d.ts` לתוך שני ענפים** (#2782, #2780), מה שהפך ענף docs לענף קוד והאדים את `changelog-branch-guard`. **לשמור נתיבים מפורשים.** בפעם השלישית זה נתפס לפני commit כי הבדיקה כבר הייתה בסשן.
+4. **⚠️ דחיתי ממצא נכון של ה-reviewer כי הראיה שלו הייתה שגויה.** הוא נקב בקובץ שאינו ב-diff; המסקנה (יש קובץ קוד + לוגים) **הייתה נכונה** דרך קובץ אחר. **לבדוק את המסקנה מול פלט הגארד, לא רק את הקובץ שנוקב.**
+5. **‏#2780 עבר תשעה סבבי ביקורת — 12 ליקויים אמיתיים.** ארבעה מהם: הארטיפקט הצהיר על כיסוי שלא היה. זה הפך לכלל ב-`testing.md`.
+
+### פתוח לספיר
+
+1. **מכסת Linear** — חוסמת יצירת כרטיסים בכל הסביבה; חמשת כרטיסי ה-sev-2+ מנוסחים ב-`meh999-friction-top10.md`.
+2. **הרצת הייצוא** — MEH-1976 נסגר בפקודה אחת עם ה-credentials שלך.
+3. **חיווט `pr-checks.yml`** לגארד של MEH-1949 — ה-diff בגוף #2782.
+4. **מכסת Vercel היומית** — מקור ה-Vercel האדום בכל ה-PRs; מתאפסת מעצמה.
+
+## 2026-08-11 — batch sweep 11/08, משימה 2/5: MEH-999 chunk 4 — סגירה
+
+**שורה אחת:** שלושה מסמכי audit חדשים · מטריצה 19 שורות (14+5, נספר) · ממצאי PR #1492 נסגרו פרטנית · **MEH-999 נסגר** · **אפס עריכות קוד אפליקציה**.
+
+### מה שחשוב יותר מהתוצרים
+
+1. **🔴 שני "ממצאים" נעצרו לפני שהפכו לכרטיסים.** ‏`taglineFieldFound: false` הוא **פגם ב-probe** — אותו `fieldLabels` **מכיל** את «משפט תדמית» (`cards.jsx:713`). ‏`validationErrors: ["מחיקה"]` נשאר **תצפית לא מוסברת**, לא artifact. שניהם היו משפט אחד מכרטיס, והכרטיס היה הופך למרשם תיקון שאיש לא גוזר מחדש.
+2. **⛔ Linear חסום ליצירת כרטיסים** — "exceeded the free issue limit for this workspace". חמשת כרטיסי ה-sev-2+ **מנוסחים במלואם** ב-`docs/audits/meh999-friction-top10.md` כולל חיפושי הכפילויות. **צריך שדרוג תוכנית — של ספיר.** זה החלק היחיד ב-chunk 4 שלא הושלם כפי שהוגדר.
+3. **⚠️ `unmeasured` ≠ `✗` במטריצה, וזה לא קוסמטי.** רק **4 מ-14** היכולות עברו סיבוב E2E אמיתי. קורא שסורק אחרי `✗` יסיק שהמוצר תקין; הקריאה הכנה היא שרוב המשטח מעולם לא הופעל. `experiences` הוא היחיד מבין 5 כרטיסי ה-tools בלי **שום** כיסוי.
+4. **📊 Cloudinary — התיקון המתבקש מכוון למספר הלא נכון.** החשבון **עונה** (לא מושבת), חורג ב-445.6%, ו-**99.6% מהחריגה היא bandwidth**, לא אחסון. מחיקת קבצים לא תוריד את החשבון. בנוסף 125MB (42% מהאחסון) הם **סרטוני הדגמה של Cloudinary עצמה** תחת `samples/` — לא תוכן שלנו. מחיקה = החלטה של ספיר.
+
+### פתוח לספיר
+
+1. **שדרוג תוכנית Linear** — חוסם כל יצירת כרטיס בכל הסביבה, לא רק כאן.
+2. **A4 (גליף ב-VerifyBanner)** — פתוח, דורש את **המכשיר המדויק** שהראה את הגזירה. לא ניתן לשחזור מ-sandbox. הקוד לא השתנה (`VerifyBanner.jsx:63-64`; הציטוט הישן `:50-51` הוא הסחף של השורות, לא שינוי).
+3. **נכס ה-placeholder (A1/A2/A7)** — `mehamakor/79cd766d…` עדיין **חי ופעיל** (אומת ב-Admin API 11/08). האם הרשומה עדיין מצביעה עליו — **לא אומת**, דורש קריאת נתונים מאומתת.
+4. **`samples/*`** — 4 סרטוני הדגמה, 125MB. למחוק?
+## 2026-08-11 — batch sweep 11/08, משימה 4/5: MEH-1949 — שומר שם-ענף
+
+**שורה אחת:** ארגומנט שלישי אופציונלי ל-`check-linear-mentions.sh` · סמנטיקה **הפוכה** מכותרת/גוף · warn-only · ‏10 מקרי self-test · **MEH-1949 לא נסגר** (חיווט ל-`pr-checks.yml` = ספיר).
+
+- **⚠️ למה לא לאסור `meh-<N>` בשם ענף:** שער שם-הענף (MEH-1141) **דורש** אותו. שני שומרים על אותו token = התנגשות, והשער הנדרש מנצח. לכן זו בדיקת **עקביות** ולא איסור.
+- **🔴 הלקח החשוב מהסשן הזה: בקרת החיוב נכשלה מהסיבה הלא נכונה בניסיון הראשון.** ‏`ROOT` הצביע מחוץ לריפו → fixtures חסרים → `exit 2`. זה נראה כמו "הבדיקה מבחינה!" והוא לא היה. **הרצה מחוץ לריפו של סקריפט שמחשב את ה-fixtures מ-`git rev-parse --show-toplevel` היא בדיקה של כלום.** לרוץ מתוך הריפו.
+- **⚠️ ושני מקרי בדיקה אינם מבחינים בפני עצמם** — `dependabot/*` ו-`docs/no-ticket` עוברים **גם** על המימוש הישן (אפס אזהרות, כי אין מה שירוץ). רק שלושת המקרים שמצפים לאזהרה נושאים ראיה. מי שיוסיף מקרים — לשאול לגבי כל אחד אם הוא היה עובר על הגרסה הקודמת.
+- **הצעד הבא:** ה-diff ל-`pr-checks.yml` נמצא בגוף ה-PR. `.github/workflows/**` הוא CC-deny — ספיר מחילה.
+## 2026-08-11 — batch sweep 11/08, משימה 1/5: MEH-1249 — שחרור קובץ ה-checkpoint
+
+**שורה אחת:** ‏`docs/qa/conversion-progress.md` הכריז wait-gate שנסגר ב-05/08 · שני checkboxes סומנו · הסטטוס `▶️ READY` · **MEH-1249 לא נסגר** — ההמרה עצמה (508 פריטי CONVERT-PW) לא התחילה.
+
+- **⚠️ שם הענף סוגר את הכרטיס במיזוג, בלי מילת סגירה.** `feature/meh-1249-*` מקשר אוטומטית; ה-PR נושא `DOES NOT CLOSE MEH-1249` ו**צריך פתיחה מחדש ידנית מיד אחרי המיזוג**. אותו מנגנון בדיוק שכלל 29 מתאר, רק מכיוון הענף ולא מכיוון ה-body — וזה בדיוק הפער ש-MEH-1949 (משימה 4 בסוויפ) בא לכסות.
+- **מה שלא נגעתי בו, בכוונה:** השורה *"Conversion has NOT started"* **נכונה** — `frontend/e2e/flows/manual/` הוא אפס קבצים ב-staging. ‏13 ה-specs המומרים חיים רק על הענף הנטוש `feature/meh-1171-manual-testing-conversion`, ולכן `git log --all` נותן רושם מטעה שההמרה התקדמה. לבדוק מול `git ls-tree origin/staging`, לא מול `--all`.
+- **הצעד הבא בכרטיס:** לחתוך `feature/meh-1249-manual-testing-conversion` מ-staging, להעתיק 17 קבצים **בלי** `HANDOFF.md` (כלל 31), ולהתחיל section-by-section. רק אחרי MEH-1909 ופריטי launch-blocking.
+
+## 2026-08-10 17:45Z — MEH-1995 (הסכמה לתקנון) + ORDERS §1.7/§3.0: שניהם מוזגו. שני כמעט-כשלים שווים יותר מהעבודה.
+
+**שורה אחת:** ‏**2 מוזגו** — PR #2751 (`e480cfa7`) + PR #2750 (`6b7943e4`) · staging ירוק · MEH-1995 ל-Done · **3 פריטים פתוחים לספיר** (למטה) · MEH-2000 = ה-PR הזה (backfill docs).
+
+### מה שחשוב יותר מהעבודה שהוזמנה
+
+1. **🔴 שני ראשי Alembic כמעט שברו את ה-deploy.** MEH-1872 נחת ב-staging עם revision שמסתעף מ**אותו הורה** כמו MEH-1995 → שני ראשים → `alembic upgrade head` נכשל. **וזה לא רק CI:** ה-`Dockerfile` מריץ אותו **בכל boot של Railway**, כלומר מיזוג במצב הזה שובר deploy ולא רק שער. נסגר ע"י revision מיזוג ריק `c1f4b8e27d35`. **הנקודה לסשן הבא:** ההתנגשות **לא הייתה קיימת כששני ה-PRs נכתבו** — נוצרה ע"י כך שהענף השני נמזג ראשון. אין בדיקה בזמן כתיבה שהייתה מוצאת אותה; מה שתפס אותה זה `alembic-head-guard` **בסנכרון**. כלומר: אחרי כל sync ל-staging, שער הראשים הוא אות אמיתי ולא רעש.
+2. **🔴 הכרטיס עצמו ספר לא נכון, ואני חזרתי על טעותו.** MEH-1995 אמר "רק בשתיים יש הסכמה"; יש **שלוש** — מסלול השדרוג מרנדר checkbox ללא תנאי וחוסם submit. שנינו מנינו אתרי `User(...)`, והשדרוג **משנה שורה קיימת ולא בונה אחת**. השאלה הנכונה: *אילו מסלולים אוספים הסכמה*. נתפס בביקורת אדוורסרית לפני המיזוג.
+3. **⚠️ `CI gate` אדום ≠ כשל.** שבע פעמים בסשן הזה ה-`CI gate` דיווח failure כשכל הרגליים `success` מלבד `R_PYTEST: cancelled` — כל `update_pull_request_branch` מבטל את הריצה שבאוויר וה-aggregator ממפה `cancelled → FAIL`. **אבל אחת מהן הייתה אמיתית** (שני הראשים). לכן: לקרוא את הלוג לפני שקוראים לזה artifact.
+4. **⚠️ Cloudinary מחזיר 401 על כל תמונה בסביבת ה-E2E** — נמדד בלוג של שרת ה-Next. מסביר מכניזם למה ארבעת המשטחים עתירי-התמונות נופלים ב-VRT ולמה הדלתאות זהות-בייט על עצים שונים. **הקישור ל-7 ה-specs לא אומת** (ה-artifact חסום מ-CC). נרשם על MEH-1974. **לא לחדש baselines לפני שה-401 נסגר** — זה יקבע את מצב הכשל כאמת (תקדים MEH-1552).
+
+### מכשול מבני שחוזר — לא באג, החלטה של ספיר
+
+`protect-staging` דורש ענף **מעודכן**, ו-GitHub **לא** מעדכן ראשים אוטומטית בריפו הזה. staging מיזג ~כל 10 דקות היום — בערך אורך מחזור CI אחד — כך ש-#2751 הפסיד את המרוץ **5 פעמים** ברציפות ונחת רק כשנפתח חלון שקט. שלוש אפשרויות, כולן שלה: **merge queue** · הגדרת **"Automatically update head branches"** · מיזוג ידני בחלון שקט.
+
+### פתוח לספיר
+
+1. **האם admin צריכה לראות `terms_accepted_at` דרך ה-API?** לא חשפתי — הזוג התאום כן חשוף ל-admin, ולכן זו **החמרה מכוונת**. חשיפת מועד הסכמה של אדם מזוהה = החלטת פרטיות. שתי שורות ב-`UserAdminOut` אם תרצה, ככרטיס נפרד.
+2. **`alembic upgrade`/`downgrade` מול DB מאוכלס** — לא אומת. ה-CI הריץ `upgrade head` מול Postgres **נקי** + שער drift מול המודל; מה שלא נבדק הוא החלה על טבלה עם נתונים. העמודות nullable ואדיטיביות.
+3. **שורש ה-401 של Cloudinary** (signed delivery? restricted media? מפתח שפג?) — ה-credentials שלה.
+
+### הצעד הבא
+
+‏**9 מיזוגים נוספים מ-10/08 עדיין לא ב-CHANGELOG** — `#2745` · `#2764` · `#2732` · `#2738` · `#2757` · `#2758` · `f08d723f` · `7ac7e048` · `180ae338`. הם של סשנים אחרים ותמצות מהודעת commit הוא יד שנייה; סוויפ יומי מלא הוא כרטיס backfill ייעודי בסוף היום.
+
+---
+
 ## 2026-08-08 08:45Z — סוויפ לילי v2 (לילה 2): באג מחיר חי, ושתי הוראות שהתבררו כשגויות
 
 **שורה אחת:** 0 מוזגו · #2680 + #2678 ממתינים לך · MEH-1942 נפתח (באג חי) · MEH-1511 חסום ע"י classifier · staging ירוק ב-`b50e4c82`.
@@ -5629,6 +5771,34 @@ End-to-end batch under the 17/07 ADR-016 grant (Sapir-approved). Sequential; eac
 - **Item 1 — ProducerCard eyebrow (YELLOW, central) → PR #1640:** `ProducerCard.jsx:312` — removed `uppercase` + `tracking-[0.15em]` from the Hebrew category eyebrow (the last tracked eyebrow, deliberately parked out of the #1628 T10 sweep as a central component). Same MEH-1073 T10 / MEH-867 treatment as the 19 site-wide edits; no `font-english` Latin here to exempt. className-only, zero logic risk. Auto-merge (squash) armed — lands on green CI per Sapir.
 - **Item 4 — demo-business identity (APPROVED) → PR #1640:** `seed_demo_business.py` DEMO IDENTITY block — removed the `needs-sapir` checkpoint framing (Sapir approved the drafted identity); **kept** the STAGING-ONLY guard comments + `_assert_not_production()` gate; comment kept English (identity values live in the dict + Linear). Seed script itself already merged (#1597). **Staging seed RUN is Sapir's one command** — sandbox cannot reach Railway (MEH-360) and there is no `seed-demo-business` dispatch workflow: `railway run python backend/scripts/seed_demo_business.py` (skip-if-exists; `--refresh` recreates). Full 375px render already captured + merged in Wave 3 (#1610, `qa-artifacts/MEH-1074-wave3/`); staging-render confirmation follows her run.
 - **Item 2 — MEH-215:** obsolete checklist item "אימייל כבר קיים → error" retired in-ticket (struck + MEH-328 anti-enumeration rationale). Ticket stays Backlog (real device/OAuth QA remains Sapir's).
+  > **⚠️ SUPERSEDED 2026-08-08 — the "remains Sapir's" clause above no longer holds.
+  > The 12/07 text is left intact because this is a dated entry and it was true on its
+  > date; only its forward-looking guidance is retired.**
+  >
+  > **New scope (Sapir, 08/08):** the registration-journey QA is **CC's**, executed as
+  > **a test inbox + mocked OAuth**, with every assertion that rides the stub
+  > explicitly **marked `covered-by-stub`**. A real handset and a live Google consent
+  > screen are still out of reach from a CC sandbox — the change is that stubbed
+  > coverage now *counts* and ships labelled, instead of the card waiting on hardware.
+  >
+  > **The label is the whole safeguard, not decoration.** ORDERS §1.2 gate 2 says a
+  > session blocked by credentials must *"say so plainly and route around, never to
+  > simulate the step."* Stubbed QA reported as stubbed is routing around; the same
+  > run reported as device QA is simulating it. `covered-by-stub` is what keeps this
+  > on the right side of that line, so an unlabelled stubbed assertion is a defect
+  > even when it passes.
+  >
+  > **Two things a reader should not take from this note.** (1) It introduces a
+  > convention that has **no prior use anywhere in this repo** — `grep -rniE
+  > "covered-by-stub|mocked oauth|test inbox"` over all `*.md` returned nothing on
+  > 08/08, so there is no existing pattern to copy and the label's exact form is
+  > still open. (2) **The scope change is recorded from Sapir's direct instruction,
+  > not re-derived from the ruling.** `docs/overnight/ORDERS.md`, which transcribes
+  > the 08/08 ruling, contains **no** mention of QA, device, OAuth, מכשיר or ידני —
+  > it is about merge authority. MEH-1756 carries the ruling's own text and was
+  > unreadable when this was written (Linear MCP down), so the ruling was **not**
+  > independently confirmed to extend this far. If the two ever disagree, the ruling
+  > wins and this note is what gets fixed.
 - **Item 3 — MEH-1106:** verified **Done** (completed 11/07, Option-B recorded, PR #1621 merged) — nothing pending; dropped from the needs-sapir list.
 - **Item 5 — legal wording (CORRECTION ×2):** (a, meta-patterns §1) the parked "MEH-1118/1119 legal-wording" line was **mislabeled** — those are **GREEN code bugs**, not legal wording; the real legal wording (MEH-1058 privacy #1585 + MEH-1059 a11y #1584) is already merged. (b) **CC over-read correction:** CC briefly recorded a Sapir legal sign-off ("מאשרת") — **retracted**. It came from a bundled 3-question prompt showing only an abridged summary; Sapir did NOT review the legal text this session. **Legal wording remains an OPEN gate** — Sapir reviews the live `/privacy` + `/accessibility` full text before release. Rule adopted 12/07: approvals cover ONLY the exact items shown (no bundling across domains; legal shown verbatim, never summarized). MEH-1118 + MEH-1119 are being fixed as a GREEN follow-up on this branch after #1640 merges (that decision stands — it was about the exact items shown).
 - **staging→main:** Sapir's gate — **now includes a legal-review step** (read live `/privacy` + `/accessibility` full text) + smoke dispatch → mobile spot-check → merge. Checklist + corrections posted to MEH-1074.

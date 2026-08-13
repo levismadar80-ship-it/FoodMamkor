@@ -135,7 +135,11 @@ function RegisterPageBody() {
     try {
       // MEH-328: register() returns the OWASP ack ({detail}); no token,
       // no auto-login. Any 200 → render the inbox-check screen.
-      await register(form);
+      // MEH-1995: agreedToTerms lives outside `form` (it is checkbox state,
+      // not a text field), so it has to be merged in explicitly — spreading
+      // `form` alone is exactly how the consent was being dropped. The
+      // backend stamps users.terms_accepted_at + terms_version from this.
+      await register({ ...form, terms_accepted: agreedToTerms });
       // MEH-49: claim referral after successful registration (best-effort).
       // The user isn't yet authenticated post-MEH-328, so this endpoint
       // would 401 — but it's still wrapped in try/catch for safety, and
@@ -232,7 +236,7 @@ function RegisterPageBody() {
             cream-open, no floating white card. text-center kept: this is a
             centered confirmation (login has no equivalent screen); the parity
             fix is the white-card chrome, not the alignment. */}
-        <div className="w-full max-w-[416px] mx-auto text-center">
+        <div className="w-full max-w-[416px] mx-auto text-center" data-testid="register-email-sent">
           <div
             className="w-16 h-16 rounded-full bg-background mx-auto mb-4 flex items-center justify-center"
             aria-hidden="true"
@@ -242,7 +246,7 @@ function RegisterPageBody() {
           <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
-          <Link href="/" className="block w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-center">
+          <Link href="/" data-testid="register-email-sent-home" className="block w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-center">
             {t("auth.register.consumer.email_sent.back_home")}
           </Link>
         </div>
@@ -295,7 +299,7 @@ function RegisterPageBody() {
           </span>
           {/* MEH-788: headline-lg token (32px/900) — utility-page scale, exact
               parity with LoginClient's welcome headline (MEH-131 precedent). */}
-          <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text mb-1">{t("auth.register.consumer.heading")}</h1>
+          <h1 data-testid="register-heading" className="font-headline-lg font-black text-headline-lg leading-tight text-text mb-1">{t("auth.register.consumer.heading")}</h1>
           <p className="text-fg-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
         </div>
 
@@ -308,7 +312,7 @@ function RegisterPageBody() {
             platform promise no business opted into (MEH-1050 ruling). The
             referralCode state + /referral/claim call below stay live; copy only. */}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} data-testid="register-form" className="space-y-4">
           {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
               = right (its own end), preserving the old physical text-right.
               MEH-1919: NEITHER field passes ui/Input's D1 success props. Per
@@ -326,6 +330,7 @@ function RegisterPageBody() {
               not an oversight. */}
           <Input
             id="register-name"
+            data-testid="register-name"
             label={t("auth.register.consumer.fields.name")}
             value={form.name}
             onChange={set("name")}
@@ -336,6 +341,7 @@ function RegisterPageBody() {
           />
           <Input
             id="register-email"
+            data-testid="register-email"
             type="email"
             label={t("auth.register.consumer.fields.email")}
             value={form.email}
@@ -347,12 +353,18 @@ function RegisterPageBody() {
             dir="ltr"
           />
           <div>
-            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.password")}</label>
+            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">
+              {t("auth.register.consumer.fields.password")}{" "}
+              <span className="text-error" aria-hidden="true">
+                *
+              </span>
+            </label>
             {/* MEH-306: PasswordInput owns input + eye toggle + live policy
                 checklist (length + breach). Form-level error div above
                 renders 422-failure messages from the submit handler. */}
             <PasswordInput
               name="password"
+              testId="register-password"
               value={form.password}
               onChange={set("password")}
               ariaLabel={t("auth.register.consumer.fields.password_aria")}
@@ -362,6 +374,7 @@ function RegisterPageBody() {
           <label className="flex items-start gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
+              data-testid="register-terms"
               checked={agreedToTerms}
               onChange={(e) => setAgreedToTerms(e.target.checked)}
               className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
@@ -380,12 +393,13 @@ function RegisterPageBody() {
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
-          {error && <p className="text-error text-sm" role="alert">{error}</p>}
+          {error && <p data-testid="register-error" className="text-error text-sm" role="alert">{error}</p>}
           {/* MEH-839: filled-green primary, mirrors /login's CTA fill
               (LoginClient.jsx:303) — was a ghost/outline. Height stays in
               register's 44px field rhythm (MEH-838), not login's 54px. */}
           <button
             type="submit"
+            data-testid="register-submit"
             disabled={loading || !formIsValid}
             className="w-full min-h-[44px] flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
@@ -433,7 +447,7 @@ function RegisterPageBody() {
 
         <p className="text-center text-sm text-fg-muted mt-6">
           {t("auth.register.consumer.have_account")}{" "}
-          <Link href="/login" className="text-primary underline">
+          <Link href="/login" data-testid="register-login-link" className="text-primary underline">
             {t("auth.register.consumer.login_link")}
           </Link>
         </p>

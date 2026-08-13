@@ -55,6 +55,25 @@ const GEO_RADIUS_KM = 15;
 const GEO_RADIUS_KM_RETRY = 30;
 
 /**
+ * MEH-2036 — coerce an untrusted list of day values into the canonical set.
+ * Drops anything outside the DELIVERY_DAYS whitelist, de-duplicates, and caps
+ * at the vocabulary size, so a hand-edited `?day=a&day=a&day=…` can neither
+ * 422 the API nor build an unbounded query string.
+ *
+ * Deliberately NOT sorted: insertion order is what the URL round-trips, and
+ * the one place week-order matters (the chip label) sorts at render time
+ * (ActiveFilterChip.jsx). Sorting here would make the URL churn on every
+ * toggle for no user-visible gain.
+ * # REUSES: backend _normalize_delivery_days (producer_listing.py) — same
+ * whitelist, same dedupe, same cap; the two must not drift.
+ */
+function normalizeDays(values) {
+  return (values || [])
+    .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
+    .slice(0, DELIVERY_DAYS.length);
+}
+
+/**
  * Custom hook owning the homepage's state, effects, handlers, and
  * derived values. Extracted from app/page.js (MEH-437) so the page
  * component can stay JSX-only.
@@ -78,7 +97,15 @@ const GEO_RADIUS_KM_RETRY = 30;
  *     does not need setFilters / setVisibleCount / loadProducers /
  *     buildChipParams / updateURL injected as separate props.
  */
-export function useHomePage() {
+/**
+ * MEH-1832 chunk 1: `initialData` is the server-fetched first paint. When it is
+ * present the hook seeds its state from it and SKIPS the first client fetch;
+ * when it is null (backend blip, or any caller that does not pass it) every
+ * path below behaves exactly as it did before this change.
+ *
+ * @param {{initialProducers?: object[]|null, initialCategories?: object[]|null}} [initialData]
+ */
+export function useHomePage({ initialProducers = null, initialCategories = null } = {}) {
   const { user } = useAuth();
   // MEH-1288: real navigation to a random producer page (a page change, unlike
   // the MEH-1293 same-URL History-API mirroring below — push is correct here).
@@ -90,12 +117,12 @@ export function useHomePage() {
   // this wrap is removed.
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
-  const [producers, setProducers] = useState([]);
+  const [producers, setProducers] = useState(initialProducers ?? []);
   // MEH-1487: region fallback — { regionName, producers } when a delivery_city
   // filter returned 0 AND the city belongs to a region in data/regions.js;
   // null otherwise. Drives the "בתי עסק שמגיעים לאזור" section in the empty state.
   const [regionFallback, setRegionFallback] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(initialCategories ?? []);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
   // sessionStorage) are read in the initial useEffect below to avoid React
   // #418 hydration mismatches caused by lazy initializers running on the client
@@ -104,7 +131,10 @@ export function useHomePage() {
   // canonical Hebrew day, lib/delivery-days.js). Only meaningful WITH a city:
   // the day row is progressive-disclosure UI, so a day can never be set
   // without a city, and clearing the city clears the day.
-  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false, delivery_day: "" });
+  // MEH-2036: now `delivery_days`, an ARRAY (multi-select OR). Every invariant
+  // above is unchanged — the set still cannot exist without a city and still
+  // falls with it; only its cardinality widened.
+  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false, delivery_days: [] });
   // MEH-23 — persist visibleCount + scrollY across navigations so the
   // "Load more" expansion isn't lost when a user opens a producer and
   // returns via the back button. Read on mount only; subsequent changes
@@ -116,7 +146,11 @@ export function useHomePage() {
   // skeleton (statsLoaded=false), counter (loaded + count >= threshold),
   // fallback/hidden (loaded + below threshold).
   const [stats, setStats] = useState(null);
-  const [producersLoading, setProducersLoading] = useState(true);
+  // MEH-1832: with a server-supplied feed there is nothing in flight, so the
+  // grid must NOT open on the skeleton — otherwise the server HTML contains
+  // skeletons where the cards should be and the whole SSR win is invisible.
+  // The skeleton still reserves the same space on the no-server-data path.
+  const [producersLoading, setProducersLoading] = useState(!initialProducers);
   // MEH-1269: geoLoading is now real — true while getCurrentPosition + the geo
   // fetch are in flight, so the HomeHero home.hero.searching ("בחיפוש...")
   // spinner actually shows (previously a dead const with no setter).
@@ -182,8 +216,11 @@ export function useHomePage() {
       // MEH-1269 lesson) AND only a canonical value: a crafted ?day= would
       // 422 on the backend, which loadProducers swallows into a silently
       // stale grid. Same whitelist the API validates against.
-      delivery_day:
-        p.get("city") && DELIVERY_DAYS.includes(p.get("day")) ? p.get("day") : "",
+      // MEH-2036: ?day= is now REPEATABLE (getAll). Unknown/duplicate members
+      // are dropped rather than 422'd — the URL bar is a recoverable typo on
+      // this side, while the API rejects the whole request (producers.py). The
+      // asymmetry is deliberate and inherited from MEH-1645.
+      delivery_days: p.get("city") ? normalizeDays(p.getAll("day")) : [],
     };
     // MEH-1083: hydrate all 7 CHIPS_CONFIG keys — gluten_free/vegan/
     // lactose_free filtered results without surviving refresh/share
@@ -209,22 +246,33 @@ export function useHomePage() {
 
     // Rule-19: validate the shape before trusting it; on parse failure
     // keep categories empty (same as the network-error branch below).
-    api
-      .get("/categories")
-      .then((r) => {
-        const parsed = CategoriesResponseSchema.safeParse(r.data);
-        setCategories(parsed.success ? parsed.data : []);
-      })
-      .catch(() => {});
+    // MEH-1832: skipped when the server already supplied them.
+    if (!initialCategories) {
+      api
+        .get("/categories")
+        .then((r) => {
+          const parsed = CategoriesResponseSchema.safeParse(r.data);
+          setCategories(parsed.success ? parsed.data : []);
+        })
+        .catch(() => {});
+    }
     // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
     // Use local vars — state setters above are async and won't be reflected yet.
     const initParams = {};
     if (initFilters.category) initParams.category = initFilters.category;
     if (initFilters.delivery_city) initParams.delivery_city = initFilters.delivery_city;
-    if (initFilters.delivery_day) initParams.delivery_day = initFilters.delivery_day;
+    // MEH-2036: repeated bare keys via api.js's paramsSerializer.
+    if (initFilters.delivery_days.length) initParams.delivery_days = initFilters.delivery_days;
     const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
-    loadProducers(initParams);
+    // MEH-1832: the server fetched the DEFAULT feed only. A bookmarked or
+    // shared URL carrying a category / city / day / chip needs a filtered
+    // fetch that the server never made, so the skip is conditional on there
+    // being no params — not merely on initialProducers being present.
+    const serverCoversThisLoad = Boolean(initialProducers) && Object.keys(initParams).length === 0;
+    if (!serverCoversThisLoad) {
+      loadProducers(initParams);
+    }
     // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
     // true and the skeleton dismisses (CLS-safe — skeleton bridged the gap).
     // MEH-879/881: with stats `{}` the trust band shows the verification
@@ -307,7 +355,9 @@ export function useHomePage() {
     if (f.category) p.set("category", f.category);
     if (f.delivery_city) p.set("city", f.delivery_city);
     // MEH-1645: day serialized only beside its city (never a day-only URL).
-    if (f.delivery_city && f.delivery_day) p.set("day", f.delivery_day);
+    // MEH-2036: append (not set) so the set round-trips as repeated ?day= keys
+    // — the same shape the hydration above reads with getAll.
+    if (f.delivery_city) (f.delivery_days || []).forEach((d) => p.append("day", d));
     if (c.kosher) p.set("kosher", "1");
     // MEH-1259: organic param no longer written — chip + filter removed.
     // MEH-1083: diet keys were missing from the serializer — param names
@@ -435,8 +485,9 @@ export function useHomePage() {
   //
   // The param NAMES here are /producers' names, not home's, and the two do NOT
   // agree — this is the trap the ticket flagged as "verify, do not assume":
-  //   home's own serializer (updateURL below)  writes  ?city= + ?day=
-  //   ProducersClient hydrates (post-MEH-1825)  reads  ?city= + ?delivery_day=
+  //   home's own serializer (updateURL below)  writes  ?city= + ?day= (xN)
+  //   ProducersClient hydrates (post-MEH-2036)  reads  ?city= + ?delivery_days= (xN)
+  //                                             (+ ?delivery_day= for back-compat)
   // Emitting home's `day` here would be silently dropped on arrival: the value
   // is well-formed, no error fires anywhere, and the day filter simply is not
   // applied. Verified against the merged MEH-1825 code, ProducersClient.jsx:89.
@@ -454,7 +505,12 @@ export function useHomePage() {
     params.set(key, "1");
     if (filters.delivery_city) {
       params.set("city", filters.delivery_city);
-      if (filters.delivery_day) params.set("delivery_day", filters.delivery_day);
+      // MEH-2036: the plural param name, appended once per day. This is the
+      // exact line the MEH-1826 note above is about — /producers reads
+      // `delivery_days` (ProducersClient.jsx), NOT home's own `day`, and a
+      // wrong name here is dropped in silence with no error anywhere. Verified
+      // end-to-end against ProducersClient's hydration, not assumed.
+      (filters.delivery_days || []).forEach((d) => params.append("delivery_days", d));
     }
     localeRouter.push(`/producers?${params.toString()}`);
   };
@@ -510,7 +566,7 @@ export function useHomePage() {
   // scroll to the grid.
   const applyGeoFilter = ({ lat, lng }) => {
     // MEH-1645: the day rides the city filter — geo mode clears both.
-    const newFilters = { ...filters, delivery_city: "", delivery_day: "" };
+    const newFilters = { ...filters, delivery_city: "", delivery_days: [] };
     setFilters(newFilters);
     setGeoFilter({ lat, lng });
     updateURL(newFilters);
@@ -575,7 +631,11 @@ export function useHomePage() {
     // explicit choice, visible in the chip, and re-applies to the new city.
     loadProducers({
       delivery_city: city,
-      ...(newFilters.delivery_day ? { delivery_day: newFilters.delivery_day } : {}),
+      // MEH-2036: axios serializes an array as repeated bare keys
+      // (api.js:11 paramsSerializer indexes:null) — the shape FastAPI's list
+      // Query needs. Omitted entirely when empty so no `?delivery_days=` with
+      // no value ever reaches the API.
+      ...(newFilters.delivery_days.length ? { delivery_days: newFilters.delivery_days } : {}),
       ...buildChipParams(chips),
     });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
@@ -597,13 +657,43 @@ export function useHomePage() {
       return;
     }
     setGeoEmptyNotice(false);
-    const next = filters.delivery_day === day ? "" : day;
-    const newFilters = { ...filters, delivery_day: next };
+    // MEH-2036: SET-TOGGLE. Tapping an inactive day adds it; tapping an active
+    // one removes ONLY that day and leaves the rest of the selection standing.
+    // Order is append-on-add, so the URL is stable under re-toggling.
+    const current = filters.delivery_days || [];
+    const next = current.includes(day)
+      ? current.filter((d) => d !== day)
+      : normalizeDays([...current, day]);
+    const newFilters = { ...filters, delivery_days: next };
     setFilters(newFilters);
     updateURL(newFilters);
+    trackEvent("delivery_days_filter", { count: next.length });
     loadProducers({
       delivery_city: newFilters.delivery_city,
-      ...(next ? { delivery_day: next } : {}),
+      ...(next.length ? { delivery_days: next } : {}),
+      ...buildChipParams(chips),
+    });
+  };
+
+  // MEH-2036: drop the WHOLE day set at once. handleDaySelected toggles a
+  // single day, which was enough to mean "clear" when the axis held at most
+  // one — with a set it is not, so the empty-state "הסירי את סינון היום" CTA
+  // needs its own handler rather than N toggles (which would also fight React
+  // state batching). The city is deliberately untouched: the day is the
+  // narrowest filter and the point of the CTA is to relax ONLY it.
+  const handleClearDays = () => {
+    if (!filters.delivery_days.length) return;
+    const newFilters = { ...filters, delivery_days: [] };
+    setFilters(newFilters);
+    updateURL(newFilters);
+    trackEvent("delivery_days_filter", { count: 0 });
+    // The city is passed unconditionally, matching handleDaySelected above:
+    // both are only reachable with a non-empty city (a day cannot be active
+    // without one), so the guard the two handlers used to disagree about
+    // could never fire differently. One form, so a reader is not left
+    // wondering which sibling is right.
+    loadProducers({
+      delivery_city: newFilters.delivery_city,
       ...buildChipParams(chips),
     });
   };
@@ -631,7 +721,7 @@ export function useHomePage() {
     // MEH-1282: clearing the location filter also clears the empty-near-me notice.
     setGeoEmptyNotice(false);
     // MEH-1645: the day refinement falls with its city.
-    const newFilters = { ...filters, delivery_city: "", delivery_day: "" };
+    const newFilters = { ...filters, delivery_city: "", delivery_days: [] };
     setFilters(newFilters);
     updateURL(newFilters);
     const params = buildChipParams(chips);
@@ -720,9 +810,10 @@ export function useHomePage() {
   // so at most one is truthy. cityActive carries the city name for the label.
   const geoActive = geoFilter !== null;
   const cityActive = filters.delivery_city || null;
-  // MEH-1645: active day refinement (null when unset) — only ever set
-  // alongside cityActive (progressive disclosure + the hydration guard).
-  const dayActive = filters.delivery_day || null;
+  // MEH-1645: active day refinement — only ever non-empty alongside cityActive
+  // (progressive disclosure + the hydration guard). MEH-2036: an ARRAY, empty
+  // when unset; ActiveFilterChip sorts it into week order for display.
+  const daysActive = filters.delivery_days || [];
 
   return {
     // i18n + auth
@@ -760,13 +851,14 @@ export function useHomePage() {
     featuredProducer,
     geoActive,
     cityActive,
-    dayActive,
+    daysActive,
     geoEmptyNotice,
     // handlers
     handleNearMe,
     handleSurprise,
     handleDeliveryCta,
     handleDaySelected,
+    handleClearDays,
     handleCitySelected,
     handleClearLocation,
     handleWhatsAppClick,

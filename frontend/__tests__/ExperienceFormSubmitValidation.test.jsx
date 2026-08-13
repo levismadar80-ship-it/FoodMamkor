@@ -111,13 +111,43 @@ describe("ExperienceForm — submit validation (MEH-1809)", () => {
     expect(screen.getByText(T.error_max_participants_min)).toBeInTheDocument();
   });
 
-  it("restores the url-format boundary that noValidate turned off", () => {
+  // MEH-2012 REPLACED the case that used to sit here — "restores the url-format
+  // boundary that noValidate turned off". It is deleted rather than relaxed,
+  // because the behaviour it asserted is deliberately gone along with the field
+  // it guarded: image_url is no longer typed by anyone, it is whatever
+  // POST /upload/image returned. Keeping a softened version would have been the
+  // forbidden move (never weaken a test to make it pass); the honest one is to
+  // assert the new contract, which is what this case does.
+  //
+  // The removal is not cosmetic. /upload/image answers with a RELATIVE path
+  // when Cloudinary is unconfigured — `/placeholder-image.png?name=…`
+  // (upload.py:115) — and the old check ran `new URL(value)`, which throws on a
+  // relative path. Had the guard survived the field, the form would have
+  // rejected the server's own successful response on every environment without
+  // Cloudinary credentials.
+  it("no longer type-checks image_url as a URL — the server supplies it now", () => {
     renderForm();
 
-    fireEvent.change(document.getElementById("experience-image"), { target: { value: "abc" } });
+    // The old free-text input is gone; this is the file input that replaced it.
+    const imageInput = document.getElementById("experience-image");
+    expect(imageInput).toHaveAttribute("type", "file");
+
     fireEvent.click(submitButton());
 
-    expect(screen.getByText(T.error_invalid_url)).toBeInTheDocument();
+    // A URL-format complaint about a field nobody types in would be unfixable.
+    //
+    // The expected string is INLINE, not `T.error_invalid_url`, and that is the
+    // point of a not-present assertion: it has to name the string it is
+    // asserting away without depending on the key that carried it. Reading the
+    // key here made the test hostage to it — `experiences.new.error_invalid_url`
+    // has no production reader once the URL field is gone, so deleting it (as
+    // this PR does) would have turned this into `queryByText(undefined)`, which
+    // throws a TypeError instead of failing an assertion. A test that errors
+    // rather than fails is a test that stopped measuring.
+    // (CI reviewer, PR #2814.)
+    expect(
+      screen.queryByText("הכתובת אינה תקינה — התחילו ב-https://"),
+    ).not.toBeInTheDocument();
   });
 
   it("restores the whole-number boundary on duration (an int server-side)", () => {
@@ -163,6 +193,13 @@ describe("ExperienceForm — submit validation (MEH-1809)", () => {
     });
     fireEvent.change(document.getElementById("experience-date"), {
       target: { value: "2026-09-01" },
+    });
+    // MEH-2013: city + location_type are now required, so "fully valid" means
+    // filling them too. Their own coverage lives in
+    // ExperienceFormRequiredFields.test.jsx; here they are only fixture.
+    fireEvent.click(screen.getByRole("button", { name: T.location_home }));
+    fireEvent.change(document.getElementById("experience-city"), {
+      target: { value: "תל אביב" },
     });
     fireEvent.click(submitButton());
 

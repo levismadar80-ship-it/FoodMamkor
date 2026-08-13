@@ -1,7 +1,7 @@
 /**
  * MEH-1692 — homepage trust band: sentence below the threshold, count above it.
  *
- * Mounts the REAL `app/[locale]/page.js` under the REAL NextIntlClientProvider
+ * Mounts the REAL `app/[locale]/home/HomeClient.jsx` under the REAL NextIntlClientProvider
  * with the REAL he.json, mirroring the EditTabDescriptionCard pattern. Nothing
  * here re-implements the markup or the interpolation: a second copy of either is
  * free to drift from the one that ships, and then the test passes while the page
@@ -66,7 +66,11 @@ vi.mock("@/app/[locale]/home/HomeHero", () => ({
 const useHomePage = vi.fn();
 vi.mock("@/lib/use-home-page", () => ({ useHomePage: () => useHomePage() }));
 
-import HomePage from "@/app/[locale]/page";
+// MEH-1832: page.js became an async Server Component (the SSR shell); the
+// trust band this file tests lives in the client body, which moved to
+// home/HomeClient.jsx. Same subject, same assertions — only the mount point
+// changed, because an async component cannot be rendered by RTL.
+import HomePage from "@/app/[locale]/home/HomeClient";
 
 const LOCKED_LEAD = "בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק";
 const OLD_LEAD = "בתי עסק שכבר בדקנו בשבילך";
