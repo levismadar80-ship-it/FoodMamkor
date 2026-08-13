@@ -805,12 +805,16 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
         <div className="relative w-16 h-16 rounded-[8px] overflow-hidden shrink-0 border border-border">
           <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" onError={() => setFailedSrc(imageUrl)} />
         </div>
-        <label className="cursor-pointer text-sm text-primary hover:underline">
+        {/* MEH-2033: sr-only (NOT hidden) keeps the input in the tab order —
+            display:none removes it and the wrapping label is not natively
+            focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
+            affordance; this label has no border, so the ring alone carries it. */}
+        <label className="cursor-pointer text-sm text-primary hover:underline rounded-[4px] focus-within:ring-2 focus-within:ring-primary/30">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
             accept="image/*"
-            className="hidden"
+            className="sr-only"
             onChange={onUpload}
             disabled={uploading}
           />
@@ -821,14 +825,16 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
       </div>
     );
   }
+  // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
+  // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
         onChange={onUpload}
         disabled={uploading}
       />

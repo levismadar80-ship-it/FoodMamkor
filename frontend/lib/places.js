@@ -249,3 +249,44 @@ export async function resolveSuggestion(suggestion, opts = {}) {
   if (suggestion?.provider === "google") return googleResolve(suggestion, opts);
   return suggestion?.raw ?? null;
 }
+
+/**
+ * City name → {lat, lng}, or null when nothing resolved (MEH-2014 PR 2).
+ *
+ * /map lets a user who denied GPS pick a city as the origin for the "מרחק"
+ * sort, and a city name is the only input available — the frontend has no
+ * city→coordinate table (`data/cities.js` is names only) and `GET /cities`
+ * returns names, even though the backend `cities` table does carry seeded
+ * lat/lng. Rather than teach the map about providers, this reuses the same
+ * two-step the address field uses.
+ *
+ * Deliberately returns null instead of throwing on a no-match: the caller's
+ * failure copy is identical for "no such city" and "provider said no", and a
+ * failed origin lookup must never take down the city FILTER that shares the
+ * same click.
+ *
+ * A provider rejection (ProviderError) is **re-thrown rather than folded into
+ * that null**, so the two stay distinguishable at the boundary — MEH-1766
+ * exists because collapsing them made a disabled API key look like a real
+ * zero-result search. Today's only caller (/map) catches both and shows one
+ * toast; it does not log, so the distinction is currently available and
+ * unused. Stated plainly rather than claimed as a benefit this code delivers.
+ */
+export async function geocodeCity(name, opts = {}) {
+  const query = String(name ?? "").trim();
+  if (!query) return null;
+  const suggestions = await autocompleteAddresses(query, opts);
+  const first = Array.isArray(suggestions) ? suggestions[0] : null;
+  if (!first) return null;
+  const place = await resolveSuggestion(first, opts);
+  // `== null` FIRST, and it is load-bearing: normalizeNominatim yields
+  // `lat: null` for a row without coordinates, and `Number(null)` is **0**, not
+  // NaN. A bare Number.isFinite check therefore accepts null as the valid
+  // origin (0, 0) — the Gulf of Guinea — and every producer sorts by distance
+  // from there, silently. Found by the geocodeCity unit test, not by review.
+  if (place?.lat == null || place?.lng == null) return null;
+  const lat = Number(place.lat);
+  const lng = Number(place.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}

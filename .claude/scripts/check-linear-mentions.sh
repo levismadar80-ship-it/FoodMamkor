@@ -17,7 +17,7 @@
 # INVERTED relative to title/body, and the inversion is the whole point:
 #
 #   title / body  — `Closes MEH-XX` is ALLOWED, a bare identifier is FORBIDDEN.
-#   branch name   — every `meh-<N>` IS an auto-link, and no closing keyword can
+#   branch name   — a `meh-<N>` MAY auto-link, and no closing keyword can
 #                   exist in a branch name. So banning the identifier is
 #                   impossible AND wrong: the branch-name gate (MEH-1141)
 #                   *requires* it —
@@ -28,11 +28,13 @@
 #
 # So the branch check is a CONSISTENCY check, not a ban: if the branch carries
 # `meh-<N>`, the body must declare `Closes MEH-<N>` for that same N. Otherwise
-# the merge silently closes a ticket the PR never claimed to close — the branch
-# auto-links with no keyword needed, and nothing in the PR text says so.
+# the merge may silently close a ticket the PR never claimed to close, with no
+# keyword anywhere and nothing in the PR text saying so.
 #
 # This is the gap rule 29 leaves open. Rule 29 governs what the *text* says; the
-# branch name closes tickets regardless of the text.
+# branch name can close a ticket regardless of the text — and, once measured,
+# can also fail to. Neither direction is reliable, which is why the remedy is a
+# post-merge check by a human and not a prediction by this script (rule 29b).
 #
 # Usage:
 #   bash .claude/scripts/check-linear-mentions.sh <title-file> <body-file> [branch-name]
@@ -89,7 +91,9 @@ scan_source() {
 
 # check_branch_consistency <branch-name> <body-file>
 # INVERTED semantics vs scan_source — see the header. A `meh-<N>` in the branch
-# is an auto-link that will close the ticket on merge with no keyword anywhere.
+# MAY auto-close the ticket on merge with no keyword anywhere — measured firing
+# 6 times and NOT firing once across 08-11/08 (workflow.md rule 29b). This check
+# does not predict that; it asserts only that the branch and the body agree.
 # Warn when the body does not declare `Closes MEH-<N>` for that same N.
 # Always returns 0: warn-only by design.
 check_branch_consistency() {
@@ -120,7 +124,7 @@ check_branch_consistency() {
     if printf '%s' "$body" | grep -qE "${CLOSING}MEH-${num}([^0-9]|$)"; then
       continue
     fi
-    printf '::warning::branch name carries meh-%s but the body does not declare "Closes MEH-%s" — the branch auto-links, so merging will close MEH-%s even though this PR never claimed to. Add the closing keyword, or reopen the ticket immediately after merge (rule 29, branch half)\n' \
+    printf '::warning::branch name carries meh-%s but the body does not declare "Closes MEH-%s" — merging MAY close MEH-%s even though this PR never claimed to (measured 6 fires, 1 non-fire). Add the closing keyword, or check the ticket after merge and reopen if the DoD is unmet — then confirm the reopen held (rule 29b)\n' \
       "$num" "$num" "$num" >&2
   done < <(printf '%s' "$branch" | grep -oiE 'meh-[0-9]+' || true)
 

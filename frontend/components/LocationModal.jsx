@@ -119,19 +119,28 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         aria-modal="true"
         aria-label={t("aria_label")}
       >
+        {/* MEH-2038: end-4 (visual LEFT in RTL) — the X mirrors to the END of
+            the reading direction. At start-4 it sat exactly where the Hebrew
+            <h2>/<p> begin and covered them. bg-background replaces
+            bg-background-secondary, which matched no token in
+            tailwind.tokens.json and rendered transparent — see PR for the
+            measured contrast ratios. */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 start-4 w-11 h-11 rounded-full bg-background-secondary hover:bg-green-50 flex items-center justify-center text-text transition-colors"
+          className="absolute top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 flex items-center justify-center text-text transition-colors"
           aria-label={t("close_aria")}
         >
           <X size={16} weight="regular" />
         </button>
 
-        <h2 className="font-headline-md text-xl font-bold text-text mb-1">
+        {/* MEH-2038: pe-10 (40px) reserves the button's footprint — it spans
+            16→60px from the card edge while the p-6 content box starts at 24px,
+            so 36px of overlap needs clearing. REUSES: OnboardingTip.jsx:55. */}
+        <h2 className="font-headline-md text-xl font-bold text-text mb-1 pe-10">
           {t("title")}
         </h2>
-        <p className="text-fg-muted text-sm mb-5">
+        <p className="text-fg-muted text-sm mb-5 pe-10">
           {t("subtitle")}
         </p>
 
