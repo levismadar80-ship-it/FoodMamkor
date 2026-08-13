@@ -13,7 +13,7 @@
  * this + the mount — the ContactCard contact block itself is untouched.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
@@ -25,16 +25,48 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // MEH-2039: the trap scopes to the PANEL. It must not scope to the overlay —
+  // the overlay is fixed inset-0 and is also the backdrop, so a query rooted
+  // there is a query over the whole screen.
+  const panelRef = useRef(null);
+
   useFocusReturn(open);
 
   // WCAG 2.1 §2.1.2 — Escape closes the dialog.
+  // MEH-2039: + Tab trap and body scroll lock. Initial focus is NOT added here
+  // — the textarea already carries autoFocus (below), which is the same thing
+  // done declaratively. Adding a second focus call would fight it.
+  // REUSES: LoginPromptModal.jsx:42-77.
   useEffect(() => {
     if (!open) return;
     const handleKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+
+      const focusables = panelRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -62,17 +94,27 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
     }
   };
 
+  // MEH-2039: role="dialog" + aria-modal moved from the OVERLAY onto the inner
+  // panel. The overlay is `fixed inset-0` and is the backdrop, so with the role
+  // on it the entire page sat inside the dialog's boundary and the close control
+  // was not a descendant of the modal container (MDN). Backdrop click-to-close is
+  // unchanged — it still fires on the wrapper, and the
+  // `e.target === e.currentTarget` guard still separates a backdrop click from a
+  // click inside the panel. role="presentation" marks the wrapper non-semantic,
+  // matching LoginPromptModal.jsx:87.
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="report-info-title"
+      role="presentation"
       className="fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/40"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-info-title"
         className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start"
       >
         <h2

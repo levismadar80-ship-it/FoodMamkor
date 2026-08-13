@@ -1465,7 +1465,8 @@ Tasks auto-expire after 7 days.
     not `main`. A **non-closing** reference in the body suppresses the close the
     branch name would otherwise fire. That is the whole rule.
 
-    **Eight measured merges, every body reference read from the GitHub API:**
+    **Eight measured merges, every body reference read from the GitHub API** — rows
+    9 and 10 follow in the subsections below, bringing the total to **ten**:
 
     | | PR | branch | body reference | before → after | fired? |
     |---|---|---|---|---|---|
@@ -1504,8 +1505,11 @@ Tasks auto-expire after 7 days.
     - ✅ **Linear's two magic-word classes are real** — that is vendor
       documentation and is not in question.
     - ❌ **`Refs` is not one of them.** The published non-closing words are `ref`
-      and `references`; the plural is not on the list and, on this evidence, is
-      **not recognised** — it degrades to a bare identifier, which closes.
+      and `references`; the plural is not on the list. _This bullet used to end
+      "**not recognised** — it degrades to a bare identifier, which closes." A
+      third data point (row 10 below) makes that the **minority** outcome: 1 of
+      3. What survives is only that `Refs` is not on the published list; what it
+      does instead is unknown._
     - ❌ **The spec therefore does NOT explain #2784.** Whatever suppressed that
       one close remains unknown, and no hypothesis here has been checked against
       the Linear↔GitHub app configuration.
@@ -1513,13 +1517,75 @@ Tasks auto-expire after 7 days.
     **The guidance that was written alongside the wrong reading turned out to be
     the right guidance**, and it is now the operative line rather than a hedge:
 
-    > **Keep writing `Refs` for human readers. Never rely on it for behaviour.**
-    > An unrecognised `Refs` closes the card exactly like a bare identifier.
+    > **Keep writing `Refs` for human readers. Never rely on it for behaviour —
+    > in EITHER direction.** It has both closed a card and left one untouched, so
+    > it predicts nothing. _(This line used to end "An unrecognised `Refs` closes
+    > the card exactly like a bare identifier," which row 10 makes the minority
+    > case.)_
 
     **Do not resolve the remaining gap by merging another PR to watch what
-    happens.** Two experiments have now produced two contradictory answers, which
-    is what an unvalidated instrument does. The next step belongs in Linear's
-    settings, not in this repo.
+    happens.** Three experiments have now produced two contradictory answers,
+    which is what an unvalidated instrument does. The next step belongs in
+    Linear's settings, not in this repo.
+
+    ### Row 10 — `Refs` is now 1 of 3, and the branch slug is NOT the discriminator (measured 2026-08-13)
+
+    | PR | branch | body | before → after |
+    |---|---|---|---|
+    | **#2813** | `feature/meh-1980-coverage-ratchet` | **`Refs MEH-1980`** | Backlog → **Backlog, unchanged** ❌ |
+
+    Merged `2026-08-12T23:55:56Z`. `get_issue MEH-1980` returns a `stateHistory`
+    with **exactly two entries** — `Todo` (09/08 → 12/08 14:43:50Z) then
+    `Backlog` (12/08 14:43:50Z → `null`). **The card was never `Done`**, so this
+    is not a close-then-reopen; the close never fired.
+
+    **Tallied by what the body carried, every body read from the GitHub API:**
+
+    | Body reference | Closed |
+    |---|---|
+    | none (#2706, #2708, #2710) | **3 / 3** ✅ |
+    | a closing magic word (#2745, #2776, #2780, #2782) | **4 / 4** ✅ |
+    | **`Refs`** (#2784 ❌ · #2795 ✅ · **#2813** ❌) | **1 / 3** |
+
+    So `Refs` is the **only** inconsistent class, and it now leans the *other*
+    way. The root cause is still unknown and is still not to be chased by
+    merging a fourth PR to watch.
+
+    #### ⛔ A cause that sounds right and is refuted by this repo's own rows
+
+    This measurement arrived with an explanation attached: *"MEH-1980 did not
+    close because the card's own `gitBranchName` is a different (Hebrew) slug
+    than the branch that merged."* **That cannot be the discriminator.** Every
+    card here has a Hebrew `gitBranchName`, because Linear derives it from the
+    Hebrew title, while every CC branch carries an English slug — so the mismatch
+    is universal and cannot explain a split outcome. Two rows above prove it
+    directly:
+
+    | Card | its `gitBranchName` | branch that merged | closed? |
+    |---|---|---|---|
+    | MEH-215 | `levismadar80/meh-215-e2e-אוטומטי-…` | `feature/meh-215-…` (#2706) | **yes**, 2 s |
+    | MEH-1949 | `levismadar80/meh-1949-פער-כלל-29-…` | `feature/meh-1949-…` (#2795) | **yes**, 3 s |
+
+    Recorded because an unverified cause in a rules file is inherited as fact
+    with the uncertainty stripped, and the fix prescribed from it would have been
+    aimed at branch naming — which the rows above show is not where the
+    behaviour lives. Premises get checked before they get written down (ORDERS
+    §1.6; `meta-patterns.md` §1).
+
+    #### What this changes operationally — nothing, and that is the point
+
+    The flip-check was already mandatory. Row 10 removes the last excuse for
+    skipping it in the *other* direction:
+
+    > **After every merge, `get_issue` every MEH identifier in the branch name,
+    > and check BOTH failure modes.** Not just "did it close a card it should not
+    > have" — also **"did it fail to close a card it should have."** #2813 is the
+    > second kind, and it sat mis-stated in Backlog for a day because nobody
+    > looked for that direction.
+
+    Neither outcome is predictable, so carry the explicit trailer that says what
+    you mean (`Closes` when the DoD is met, `Refs` when it is not), then verify —
+    and re-read any restore, per the MEH-1872 five-second re-close above.
 
     ### A reopen does not necessarily stick — MEH-1872 (10/08)
 
@@ -1543,8 +1609,11 @@ Tasks auto-expire after 7 days.
 
     **You cannot avoid this by naming branches carefully.** `Branch name gate`
     (MEH-1141) *requires* `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$` —
-    every legal branch name carries some ticket's identifier. The system mandates
-    the input that triggers the behaviour, so "be careful" is not a mitigation.
+    every legal **feature** branch name carries some ticket's identifier. The
+    system mandates the input that triggers the behaviour, so "be careful" is not
+    a mitigation. _(The gate's `if:` exempts one case — a `staging → main` release
+    PR, whose head branch is `staging` and carries no identifier at all. That is a
+    branch with no slug rather than a harmless one, and it is the only such case.)_
 
     **What the MEH-1949 guard does and does not buy.** It warns when a branch
     carries `meh-<N>` and the body does not declare `Closes MEH-<N>`. That is a
@@ -1634,6 +1703,48 @@ Tasks auto-expire after 7 days.
     and left auto-merge unarmed as compensation; the marker was restored by
     instruction, with the note that unarmed auto-merge is a state a parallel
     lane can undo. The two bullets above are that instruction, generalised._
+
+    ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
+
+    **`do-not-merge` is a GitHub label. It is the only marker.** Draft is the
+    separate tool, for a different state: draft means *still being worked on*,
+    the label means *ready, do not land yet*. Do not write the marker as prose
+    and do not put a token in a PR title — §2 of MEH-1523 considered and
+    rejected both after a six-source review, because a title is as editable and
+    as traceless as a body.
+
+    **Why the mechanism changed, in one measurement.** The gate used to scan
+    title and body, and its matcher OR-ed a prose-shaped pattern against a
+    literal token (`DNM-LOCK`). When two cues are OR-ed the loose one carries
+    every match, so the token bought nothing — it was present during every
+    incident:
+
+    | | |
+    |---|---|
+    | **#2637** | blocked by a pasted vitest test name — *"many open days that do NOT merge"* |
+    | **#2121** | blocked by the orchestrator's own safety note in the body |
+    | **#2813** | blocked by CC's own prose, *"Do not merge this as complete."* |
+
+    #2813 is the one that forced the swap. The block was cleared, the PR merged,
+    and **the sentence is simply gone from the body** — so a marker deliberately
+    set and cleared by Sapir is now indistinguishable from a marker tripped by
+    accident and edited away by CC. Rule 30 makes clearing it Sapir's alone, then
+    stored it in the one place whose removal leaves no author and no timestamp.
+
+    A label removal is a permanent, attributed timeline event. **That is the
+    gain: auditability, not prevention.** CC *can* add and remove labels
+    (measured — MEH-1523 §7), so the label is not a lock either; what changes is
+    that violating rule 30 becomes visible instead of invisible.
+
+    **Staged, not yet applied** — the gate lives in `.github/workflows/**`
+    (CC-deny, MEH-671):
+    [`docs/ci/meh-1523-dnm-label-gate.patch.md`](../../docs/ci/meh-1523-dnm-label-gate.patch.md).
+    It supersedes `dnm-gate-regex.patch.md` (MEH-1922), which narrowed the same
+    regex and kept text scanning — apply one, not both. Until it is applied the
+    live gate still scans text, so **prose containing the words still reds a
+    required check**: phrase it as "the marker" in a PR body, as MEH-1523's own
+    constraints block instructs. `scripts/checks/dnm-matcher-guard.sh` pins all
+    three states and flips tables automatically.
 
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
