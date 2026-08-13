@@ -28,6 +28,16 @@ Does NOT: assert delivery, triggers, or which email fires when — that is
           it: an inventory of call sites is not built from a grep on one
           function name. Chase the wrappers (`grep -rn "def .*email"`, then
           grep each name found) or work from the call tree.
+
+          STILL NOT COVERED, stated because "Purpose" above says *every*
+          user-facing email and that is not yet true: the newsletter welcome
+          (`routers/marketing.py:197`, which carries an HTML part) and the
+          pending-producer nudge (`services/pending_nudge.py:223`). Both call
+          `send_email(` directly, so unlike the admin.py three they were
+          visible to the original grep — the miss happened when the corpus was
+          assembled, not when it was searched, which is a separate cause and
+          needs a separate fix. Carried by MEH-2041. Until it lands, read
+          "every" above as "every sender in `_CORPUS`".
 Related:  docs/BRAND.md §4 (voice), docs/decisions/ADR-024-voice-surface-function.md
 History:  MEH-1965 (creation) — the transactional-email audit.
           MEH-2027 — the three admin.py producer-facing bodies joined the
