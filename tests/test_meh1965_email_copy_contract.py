@@ -11,30 +11,27 @@ Does NOT: assert delivery, triggers, or which email fires when — that is
           those go to settings.admin_email, are not a brand touchpoint, and
           the plural/impersonal register there is deliberate.
 
-          NOT COVERED, and it is a real gap rather than a judgement call:
-          the three PRODUCER-facing bodies in `admin.py` (:702 approved,
-          :746 rejected, :812 changes-requested). They go to
-          `producer_user.email` — the business owner, not an admin — so they
-          are brand touchpoints of exactly the class this file exists to
-          protect. They are absent because they are inline f-strings inside
-          route handlers, so rendering one means standing up a request, a DB
-          row and an authenticated admin. Extracting them into body builders
-          is a refactor of `admin.py`'s handlers, which is outside this
-          ticket's "templates only" scope. A follow-up card carries it.
-          All three were read by hand and are clean on the four axes below
-          as of 2026-08-12 — that is an as-of, not a guarantee, and it is
-          precisely what a test would replace.
-
-          HOW THE GAP HAPPENED, because the method matters more than the
-          miss: the corpus was assembled from `grep -rn "send_email("`.
-          These three call `_send_notification_email(`, a wrapper whose name
-          does not contain the substring `send_email(` — while
+          HOW A GAP HAPPENED ONCE, because the method matters more than the
+          miss: the corpus was originally assembled from
+          `grep -rn "send_email("`, which silently omitted the three
+          PRODUCER-facing bodies in `admin.py` — they call
+          `_send_notification_email(`, a wrapper whose name does not contain
+          the substring `send_email(`, while
           `experience_notifications`/`group_buy_notifications` wrap it as
-          `_send_email`, which does. So the probe silently under-reported,
-          and its output looked like a complete inventory. Found by the
-          different-model adversarial reviewer, not by the author.
+          `_send_email`, which does. The probe reported a completely
+          plausible number and looked like a full inventory. Found by the
+          different-model adversarial reviewer, not by the author; closed in
+          MEH-2027, which extracted those three into the body builders the
+          corpus now renders.
+
+          The general lesson, kept because the next corpus addition will face
+          it: an inventory of call sites is not built from a grep on one
+          function name. Chase the wrappers (`grep -rn "def .*email"`, then
+          grep each name found) or work from the call tree.
 Related:  docs/BRAND.md §4 (voice), docs/decisions/ADR-024-voice-surface-function.md
 History:  MEH-1965 (creation) — the transactional-email audit.
+          MEH-2027 — the three admin.py producer-facing bodies joined the
+          corpus once they were extracted into pure module-level builders.
 
 WHY THIS IS RENDERED RATHER THAN GREPPED
 ----------------------------------------
@@ -59,6 +56,7 @@ import re
 import pytest
 
 from app.config import settings
+from app.routers import admin
 from app.services import auth_emails, experience_notifications
 from app.services import group_buy_notifications as gb
 
@@ -107,6 +105,36 @@ _CORPUS = [
         "her@example.com", "קמח מלא", 12, "gb-1")),
     ("group-buy-funded-participant", gb, lambda: gb.notify_participant_funded(
         "her@example.com", "קמח מלא", "מאפיית הדגן", "gb-1")),
+
+    # MEH-2027 — the three admin -> producer bodies. They reach the corpus via
+    # `admin._send_notification_email`, which calls the `send_email` symbol
+    # imported into `app.routers.admin`, so the same patch-the-caller rule
+    # above applies unchanged.
+    #
+    # The SUBJECT passed here is scaffolding, not the shipped subject line: the
+    # contract asserts over the body parts only, and duplicating the handlers'
+    # subject f-strings into this file would create a second owner for copy
+    # with no gate keeping the two in step (workflow.md Smell #1).
+    #
+    # `rejected` is entered TWICE on purpose. The reason argument selects
+    # between two different rendered bodies via `_rejection_reason_suffix`, and
+    # a corpus carrying only the with-reason case would leave the empty-reason
+    # body — the one an admin sends by clicking reject without typing anything
+    # — unasserted while the file list said "rejected is covered".
+    ("producer-approved", admin, lambda: admin._send_notification_email(
+        "her@example.com", "subject-not-asserted",
+        admin._producer_approved_body("חוות הבר"))),
+    ("producer-rejected-with-reason", admin, lambda: admin._send_notification_email(
+        "her@example.com", "subject-not-asserted",
+        admin._producer_rejected_body("מאפיית הדגן", "חסר רישיון עסק"))),
+    ("producer-rejected-no-reason", admin, lambda: admin._send_notification_email(
+        "her@example.com", "subject-not-asserted",
+        admin._producer_rejected_body("מאפיית הדגן", ""))),
+    ("producer-changes-requested", admin, lambda: admin._send_notification_email(
+        "her@example.com", "subject-not-asserted",
+        admin._producer_changes_requested_body(
+            "משק הזית", "נא להוסיף תמונה של הרישיון",
+            f"{settings.frontend_url}/producer/dashboard"))),
 ]
 
 
