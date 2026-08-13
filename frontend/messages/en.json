@@ -1321,7 +1321,14 @@
       "verified": "✓ Verified",
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
-      "full_profile": "Full profile"
+      "full_profile": "Full profile",
+      "fulfillment": {
+        "delivery": "Delivery",
+        "pickup": "Self-pickup",
+        "delivery_only": "Delivery only",
+        "pickup_only": "Self-pickup only",
+        "arranged": "By arrangement"
+      }
     },
     "mini": {
       "default_label": "Location",
