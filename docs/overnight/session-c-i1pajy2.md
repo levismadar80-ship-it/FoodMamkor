@@ -101,11 +101,138 @@ a Linear comment.
 
 ---
 
-## 4 · What the next Lane C session should know in one paragraph
+## 4 · B3 pass on the eight held-over candidates (second continuation, same day)
+
+Ran B3 on all eight named in §2. Two produced merged PRs, three produced Phase-0-only findings
+posted to their cards (Sapir-decision or sandbox-tooling gated), three were found already
+substantially resolved by other sessions and needed no new work.
+
+**MEH-1516 (PR #2878, open at time of writing)** — `frontend/scripts/qa-ci-screenshots.mjs` (new
+script, 6 fixed routes × 2 viewports, never fails the job) + `docs/ci/meh-1516-qa-screenshots.patch.md`
+(staged `e2e.yml` diff, CC-deny). Smoke-tested against a static local server (12/12 captured,
+compression 434KB→135KB). `claude[bot]`'s CI review caught one real nit (a dynamic `writeFileSync`
+import that should've been static, same module already statically imports `mkdirSync`) — fixed and
+pushed. Branch synced against `origin/staging` twice (two concurrent staging merges landed while
+this was open — `SEED_COVERAGE.md` and the labels-rule addition, both clean auto-merges). CI run
+in progress at hand-off; PR-activity subscription is live, so completion will wake the session
+without polling.
+
+**MEH-1514 (VRT `/about` invisible scroll-reveal, Phase 0 posted, no branch)** — traced the bug to
+`FadeInSection.jsx`'s `whileInView` (`viewport:{once:true}`), confirmed `parity.css` has no path to
+trigger an `IntersectionObserver`. Cross-spec sweep (fullPage × FadeInSection-usage) found `/about`
+is the **only** spec affected — home/map/producer-detail are viewport-only, so below-fold
+FadeInSection content there is out of frame regardless of opacity; login/register are fullPage but
+don't use the component. This empirically refutes the card's stated concern that `parity.css` being
+shared makes the blast radius of a fix unknown. Also found the card's proposed option (a)
+FORCE-REVEAL isn't cleanly implementable without a product-code change (no selector hook exists on
+`FadeInSection` without adding one, which the card's `<scope>` forbids) — and surfaced a 4th option
+the card hadn't considered: scroll-then-shoot, scoped to the `/about` test file only, zero `parity.css`
+touch, renders real content instead of faking visibility. Recommended over the card's three original
+options. Posted, stopped — Phase 1 needs Sapir's pick per the card's own DoD.
+
+**MEH-1517 (backup-restore drill in CI, Phase 0 posted, no branch)** — read `docs/BACKUPS.md` +
+`pr-checks.yml`'s `EXPECTED_TABLES` + `deploy.yml`'s Railway token scoping. No literally-new-named
+secret is required (an existing `RAILWAY_STAGING_TOKEN` could technically be reused via `railway run`),
+but wiring this would newly grant CI runners read access to real user PII (emails, phones) on the
+staging DB — judged equivalent in kind to the card's own "STOP if new secret required" condition even
+though it wouldn't literally trip it. Posted as a Phase 0 finding recommending Sapir decide before any
+implementation; not proceeding.
+
+**MEH-1526 (squash-merge non-determinism, Phase 0b posted, no branch)** — the card's primary ask
+(read the GitHub Timeline API's `merged` event) has no route from this sandbox: `pull_request_read`'s
+methods don't include a timeline/events call, and raw HTTP to `api.github.com` is proxy-blocked
+(confirmed via a fresh control measurement, not assumed from memory — same block MEH-2040 hit).
+Substituted a stronger-than-requested signal that answers the same question: the merge commits'
+own messages carry GitHub's `"Merge pull request #N from …"` boilerplate, which only a real merge
+commit produces (never squash) — independent corroboration of Phase 0's parent-count finding, without
+needing the inaccessible timeline route. Also checked and **ruled out** concurrent-staging-push as an
+explanation for both flagged cases specifically (nothing else landed on `staging` within ±90s of either
+merge). Root-cause mechanism ("why" the fallback happens) stays undetermined — still `(c)`, but two
+sub-questions that were previously open are now closed.
+
+**MEH-1873, MEH-1755, MEH-1962, MEH-2040, MEH-1706 chunk B, MEH-217** — not new work:
+- MEH-1873 was already closed out earlier this segment (§3).
+- MEH-1755's core fix (`.claude/rules/workflow.md` rule 33) already shipped and merged via PR #2864
+  by a separate session before this one reached the card; the one remaining DoD item (a mechanical
+  CI guard) is explicitly deferred to its own ticket in that PR's own body — nothing actionable left
+  for this pass.
+- MEH-1962's quick-win fixes (Cloudinary transform params, `next/image` props) live under
+  `frontend/app/**`/`frontend/components/**` — Lane B's file domain, not Lane C's. Not claimed on
+  lane-boundary grounds, independent of B1–B4.
+- MEH-2040 was already investigated and commented on twice earlier today (by this segment and by a
+  separate session hitting the same wall from a different PR) — the separating evidence lives inside
+  a GitHub Actions artifact on Azure Blob Storage, and that host is unreachable from this sandbox
+  (confirmed via a live control measurement: a public, unauthenticated GitHub API endpoint also
+  returned 403 through the proxy, so the block is the proxy, not a missing credential). Nothing new
+  to add; left `Backlog`, not claimed.
+- MEH-1706 chunk B is YELLOW-tier with an explicit "chunk-by-chunk + WAIT between sub-steps" authority
+  grant — that WAIT has no counterpart in an unattended sweep, so it wasn't started (same treatment as
+  any chunk-gated card in this repo's risk-tiering convention).
+- MEH-217 (admin-panel E2E, 6 tabs) flipped `Backlog → In Progress` with a live `feature/meh-217-admin-e2e-chunk2`
+  branch appearing on `origin` in the same instant this session queried the card — a parallel session
+  claiming it in real time, not this one. Left untouched per rule 1 (single-session) the moment the
+  collision was visible; not investigated further.
+
+## 6 · PR #2878 (MEH-1516) — closed out to merge
+
+Opened non-draft, synced against `origin/staging` **five times** across the review window (this
+repo's staging churns fast under concurrent lanes — every sync showed a clean auto-merge on
+unrelated files, never a real conflict). `claude[bot]`'s CI review left one real nit (fixed: a
+dynamic `writeFileSync` import folded into the existing static `node:fs` import) and one
+"Should Consider" that didn't hold up on inspection (`actions/upload-artifact@v7` in the staged
+patch doc — checked against `grep -rn "actions/upload-artifact@" .github/workflows/`, `v7` is
+already live in `e2e.yml` itself three times; not a guess, matched the repo's own convention).
+
+**E2E failures on this PR were real but pre-existing** — `e2e/flows/32-register-journey-b-oauth.spec.ts`
+(blocked pending MEH-1968's ruling), `e2e/flows/30-login-journey-c.spec.ts:394` (the exact test
+that stayed red on a same-head re-run with zero code changes, per MEH-2040's own thread earlier
+today), `e2e/flows/24-producer-locations.spec.ts` (unrelated marker flake). Diagnosis posted to the
+PR with evidence rather than dismissed silently. `CI gate (required)` and `Deploy gate (required)`
+— the only two contexts `protect-staging` actually gates on — were green throughout; `E2E gate` is
+not yet wired into the required set (`.claude/rules/testing.md` documents the still-unapplied
+patch), so the real, diagnosed E2E reds never blocked merge.
+
+The CI reviewer itself (`Adversarial review (calibration)`) also failed once on this PR with a new
+signature — 33 turns, $1.64 real cost, `is_error: true`, `permission_denials_count: 10` — distinct
+from both signatures MEH-1844 already tracks (clean no-op vs. clean success). Logged there as
+additive evidence, not chased further; the check is non-required and blocks nothing regardless.
+
+Sapir armed auto-merge (`merge` method) partway through; the PR completed on its own once both
+required gates read green on a synced head. Merged `11688f6`, flip-checked: MEH-1516 stays
+`Backlog` (DoD explicitly requires Sapir to apply the staged `e2e.yml` patch — not done, correctly
+not claimed as complete).
+
+## 7 · Final full-domain sweep (loop-ending check)
+
+Fresh `list_issues` across all three tracks, no filter, run after #2878 merged:
+
+- **In Progress / cc-queue:** MEH-215 (still blocked on MEH-1968), MEH-1911 (still Sapir-pending,
+  unchanged), MEH-217 and MEH-2040 both flipped to `In Progress` **during this session's own
+  queries**, with no branch yet for either at time of check — live parallel claims, not this
+  session's. Everything else in the list is Lane A/B domain (backend, frontend product code).
+- **Todo:** swept in full; every remaining card is either label-excluded (`not-cc`/`needs-sapir`),
+  title-excluded (`[HIGH-RISK`), out of Lane C's file domain, or (MEH-1981, privacy-compliance
+  audit) already mid-flight across multiple prior sessions/PRs with a state history that shows
+  active, recent churn — not a fresh pickup.
+- **Backlog:** the eight candidates from §2/§4 are now fully resolved one way or another. One
+  further candidate surfaced this pass, MEH-1748 (Zod-from-OpenAPI codegen spike) — its own
+  09/08 groom note explicitly declined to write the next round's prompt as "out of scope for this
+  groom," and the actual codegen work would land in `frontend/lib/schemas.js`, core Lane B
+  application code consumed by every producer-rendering component — not a clean Lane C pickup.
+
+**Zero eligible, unclaimed Lane C cards remain as of this check.** The ledger (this session's
+in-flight PRs) is empty — #2878, #2883 both merged and flip-checked; this document's own carrier
+(#2884-class, MEH-2066) is the only open item, and it is this file's own PR.
+
+## 8 · What the next Lane C session should know in one paragraph
 
 State verification from the resume held with no corrections. MEH-215 is fully chunked but not
 closeable (blocked on MEH-1968). MEH-1249's multi-session conversion run stays parked until
 MEH-1909 (Release #2) lands — check that card's status before touching MEH-1249. MEH-1873 is
-closed out with a real (if scope-reduced) finding: no repo-side checkout-hang fix indicated. Eight
-Backlog candidates (§2) still need a B3 pass before the next session claims one. MEH-2053/#2868
-(Lane A's carrier) was still open at last check — read-only, not Lane C's to advance.
+closed out with a real (if scope-reduced) finding: no repo-side checkout-hang fix indicated.
+MEH-1516 shipped (PR #2878 merged); MEH-1514/1517/1526 have Phase-0/0b findings posted and
+correctly stopped short of a Sapir-gated decision — check each card fresh before assuming those
+findings are still the latest word. MEH-1755/1962/2040/1706-chunk-B/217/1748 were checked and are
+correctly not-mine-right-now for reasons that are none of them a label — re-verify each on its own
+card. MEH-2053/#2868 (Lane A's carrier) was still open at last check — read-only, not Lane C's to
+advance. A full three-track sweep at end-of-segment found zero further eligible candidates.
