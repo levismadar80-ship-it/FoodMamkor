@@ -24,6 +24,19 @@ import { BRAND_NAME } from "@/lib/constants";
 // MEH-1267: canonical public domain (MEH-1242 PR4). mehamakor.online is the
 // staging alias — never the public-facing address; SITE_URL is mehamakor.co.il.
 import { SITE_URL } from "@/lib/env";
+// MEH-2043: the same committed binaries app/fonts.js feeds to next/font/local
+// (MEH-2029 provenance: byte-for-byte copies of what next/font/google last
+// emitted — see app/fonts/README.md). Canvas 2D's `font` property can't go
+// through next/font/local itself (it publishes a CSS variable + class, not a
+// URL a FontFace can load), so this imports the raw files directly — Next's
+// static-asset loader resolves each import to its build URL. Both Frank Ruhl
+// Libre subsets are loaded under the SAME family name below, exactly like
+// fonts.js's dual-call pattern, so the browser's own glyph-coverage matching
+// picks hebrew vs. latin per character — the business name is Hebrew and
+// MUST resolve to the hebrew-subset file, not fall back to a system font.
+import frankRuhlLibreHebrewUrl from "@/app/fonts/frank-ruhl-libre-hebrew.woff2";
+import frankRuhlLibreLatinUrl from "@/app/fonts/frank-ruhl-libre-latin.woff2";
+import dmSansLatinUrl from "@/app/fonts/dm-sans-latin.woff2";
 
 const W = 1080;
 const H = 1920;
@@ -31,17 +44,22 @@ const H = 1920;
 const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 
 async function loadFonts() {
-  const families = [
-    ["Frank Ruhl Libre", "https://fonts.gstatic.com/s/frankruhllibre/v21/j8_36_fAw7jrcalD7Aa2ZIf3AkKt.woff2"],
-    ["DM Sans", "https://fonts.gstatic.com/s/dmsans/v14/rP2Hp2ywxg089UriCZOIHQ.woff2"],
+  // Same family name twice (hebrew + latin subsets) is deliberate — see the
+  // import comment above. DM Sans stays latin-only: that mirrors fonts.js
+  // (city/category text already fell back to the system Hebrew font for
+  // Hebrew glyphs before this change; unrelated to what this ticket fixes).
+  const faces = [
+    ["Frank Ruhl Libre", frankRuhlLibreHebrewUrl],
+    ["Frank Ruhl Libre", frankRuhlLibreLatinUrl],
+    ["DM Sans", dmSansLatinUrl],
   ];
-  for (const [name, url] of families) {
+  for (const [name, url] of faces) {
     try {
       const f = new FontFace(name, `url(${url})`);
       await f.load();
       document.fonts.add(f);
     } catch {
-      // fall back to system font if Google Fonts unreachable
+      // fall back to system font if a local font file fails to load
     }
   }
 }
