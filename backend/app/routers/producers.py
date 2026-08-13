@@ -40,7 +40,10 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import ViewContext, hash_ip, track_producer_view
 from app.services.license_validation import ensure_license_for_categories
-from app.services.producer_listing import build_producers_query
+from app.services.producer_listing import (
+    build_producers_query,
+    catalog_default_availability_condition,
+)
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_count,
@@ -116,6 +119,13 @@ def list_producers(
     # semantics; see producer_listing._delivery_day_condition). Validated
     # below with the router's manual-422 pattern (cf. sort).
     delivery_day: str | None = None,
+    # MEH-2036: OR over several days — repeatable ?delivery_days=שישי&delivery_days=רביעי.
+    # Same whitelist + same same-row EXISTS as the singular above, just an IN on
+    # the day column. Takes PRECEDENCE over delivery_day when both are sent (the
+    # singular is now only a back-compat deep-link); the service de-duplicates
+    # and caps the list at the seven canonical days.
+    # REUSES: delivery_cities:113 (repeatable list param) + category:106.
+    delivery_days: list[str] | None = Query(None),
     has_delivery: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
@@ -172,11 +182,19 @@ def list_producers(
         raise HTTPException(status_code=422, detail="ערך מיון לא חוקי")
     # MEH-1645: whitelist the day param against the canonical vocabulary —
     # same list DeliveryAreaCreate validates on the write path (MEH-1644).
-    if delivery_day is not None and delivery_day not in DELIVERY_DAYS:
-        raise HTTPException(
-            status_code=422,
-            detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
-        )
+    # MEH-2036: the plural is validated with the SAME whitelist and the SAME
+    # Hebrew 422 — one bad member rejects the whole request rather than being
+    # silently dropped, so a hand-edited URL can never quietly return a result
+    # set that doesn't match what it asked for. (The FRONTEND drops unknown
+    # values on hydration instead; that asymmetry is intentional and matches
+    # MEH-1645 — the URL bar is untrusted input to the API but a recoverable
+    # typo in the browser.)
+    for value in [delivery_day, *(delivery_days or [])]:
+        if value is not None and value not in DELIVERY_DAYS:
+            raise HTTPException(
+                status_code=422,
+                detail="יום משלוח לא מוכר — יש לבחור יום בעברית (ראשון עד שבת)",
+            )
     results, total_count = build_producers_query(
         db,
         lat=lat,
@@ -187,6 +205,7 @@ def list_producers(
         delivery_city=delivery_city,
         delivery_cities=delivery_cities,
         delivery_day=delivery_day,
+        delivery_days=delivery_days,  # MEH-2036
         has_delivery=has_delivery,
         verified=verified,
         kosher=kosher,
@@ -222,9 +241,20 @@ def list_producers(
 @router.get("/producers/count")
 @limiter.limit("60/minute")
 def producers_count(request: Request, db: Session = Depends(get_db)):
-    """MEH-159 — lightweight total count for keeping pagination fresh client-side."""
+    """MEH-159 — lightweight total count for keeping pagination fresh client-side.
+
+    MEH-1986: applies the catalog's default-hide rule, so this number and the
+    ``X-Total-Count`` header of ``GET /producers`` are the same number. They
+    feed the same "X מתוך Y" counter (``ProducersClient.jsx:378``), and before
+    this they disagreed by every producer on vacation.
+    """
     count = (
-        db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar()
+        db.query(func.count(Producer.id))
+        .filter(
+            Producer.status == "approved",
+            catalog_default_availability_condition(),
+        )
+        .scalar()
         or 0
     )
     return {"count": count}
@@ -240,11 +270,17 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
     are computed live from the DB — never hardcoded (over-claim guard MEH-519).
     Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
     The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
+
+    MEH-1986: the empty-region guard now also covers availability. It existed
+    for blank city names only, so a city whose every producer was on vacation
+    still published a chip — and the catalog behind that chip returns nothing.
+    A city drops out entirely once its last non-vacation producer does.
     """
     rows = (
         db.query(Producer.city, func.count(Producer.id).label("count"))
         .filter(
             Producer.status == "approved",
+            catalog_default_availability_condition(),
             Producer.city.isnot(None),
             func.trim(Producer.city) != "",
         )
@@ -266,10 +302,18 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
     DECLARED BEFORE ``/producers/{producer_id}`` on purpose: FastAPI matches in
     declaration order, and "random" would otherwise 422 against the UUID path
     param. Mirrors the ordering of /count, /cities, /by-slug above.
+
+    MEH-1986: draws from the same set the catalog shows. "Surprise me" landing
+    on a business the catalog deliberately hides is the one case where the
+    default-hide is not merely inconsistent but actively wrong — the button
+    promises a business the visitor could have found by browsing.
     """
     row = (
         db.query(Producer.id, Producer.slug)
-        .filter(Producer.status == "approved")
+        .filter(
+            Producer.status == "approved",
+            catalog_default_availability_condition(),
+        )
         .order_by(func.random())
         .limit(1)
         .first()

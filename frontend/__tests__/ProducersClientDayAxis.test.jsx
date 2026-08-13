@@ -20,8 +20,11 @@ const { apiGet } = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
   useSearchParams: () => ({
-    get: (k) => (k in params ? params[k] : null),
-    getAll: (k) => (k in params ? [params[k]] : []),
+    // MEH-2036: a repeated key is expressed as an ARRAY value in `params`.
+    // get() returns the first member (URLSearchParams semantics); getAll()
+    // returns the whole list, flattened — NOT a nested array.
+    get: (k) => (k in params ? (Array.isArray(params[k]) ? params[k][0] ?? null : params[k]) : null),
+    getAll: (k) => (k in params ? [params[k]].flat() : []),
   }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
@@ -111,6 +114,8 @@ const listingCalls = () =>
   apiGet.mock.calls.filter(([url]) => url === "/producers").map(([, cfg]) => cfg?.params ?? {});
 
 const urlParam = (k) => new URLSearchParams(window.location.search).get(k);
+/** MEH-2036: the day axis serializes as REPEATED ?delivery_days= keys. */
+const urlParams = (k) => new URLSearchParams(window.location.search).getAll(k);
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
@@ -129,7 +134,10 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "false");
     expect(screen.queryByTestId("delivery-day-hint")).toBeNull();
     // And the mount fetch carried BOTH params.
-    expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה", delivery_day: "שלישי" });
+    // MEH-2036: the legacy SINGULAR ?delivery_day= is still accepted on
+    // hydration (back-compat for old shared links) — it just becomes a
+    // one-member set, and the fetch uses the plural param name.
+    expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה", delivery_days: ["שלישי"] });
   });
 
   it("tapping the active day clears it and removes the URL param", () => {
@@ -140,11 +148,11 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
 
     expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
-    expect(urlParam("delivery_day")).toBeNull();
+    expect(urlParams("delivery_days")).toEqual([]);
     expect(urlParam("city")).toBe("חיפה");
     // The refetch keeps the city and drops the day.
     expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה" });
-    expect(listingCalls()[0]).not.toHaveProperty("delivery_day");
+    expect(listingCalls()[0]).not.toHaveProperty("delivery_days");
   });
 
   it("tapping an inactive day sets it and writes it to the URL", () => {
@@ -155,8 +163,61 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
 
     expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
-    expect(urlParam("delivery_day")).toBe("שישי");
-    expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה", delivery_day: "שישי" });
+    expect(urlParams("delivery_days")).toEqual(["שישי"]);
+    expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה", delivery_days: ["שישי"] });
+  });
+
+  // ---- MEH-2036: multi-select on the canonical listing surface ----
+
+  it("tapping a SECOND day adds it — both pressed, both in URL and fetch", () => {
+    params = { city: "חיפה", delivery_day: "שלישי" };
+    render(<ProducersClient {...PROPS} />);
+    apiGet.mockClear();
+
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
+
+    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
+    expect(urlParams("delivery_days")).toEqual(["שלישי", "שישי"]);
+    expect(listingCalls()[0]).toMatchObject({
+      delivery_city: "חיפה",
+      delivery_days: ["שלישי", "שישי"],
+    });
+  });
+
+  it("un-toggling one of two days removes ONLY that day", () => {
+    params = { city: "חיפה" };
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
+    apiGet.mockClear();
+
+    fireEvent.click(screen.getByTestId("delivery-day-pill-שלישי"));
+
+    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
+    expect(urlParams("delivery_days")).toEqual(["שישי"]);
+  });
+
+  it("hydrates a repeated ?delivery_days=, dropping invalid and duplicate members", () => {
+    params = { city: "חיפה", delivery_days: ["רביעי", "רביעי", "nope", "שישי"] };
+    render(<ProducersClient {...PROPS} />);
+
+    expect(screen.getByTestId("delivery-day-pill-רביעי")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
+    expect(listingCalls()[0]).toMatchObject({
+      delivery_city: "חיפה",
+      delivery_days: ["רביעי", "שישי"],
+    });
+  });
+
+  it("the PLURAL wins over the legacy singular when a URL carries both", () => {
+    params = { city: "חיפה", delivery_day: "שלישי", delivery_days: ["שישי"] };
+    render(<ProducersClient {...PROPS} />);
+
+    expect(screen.getByTestId("delivery-day-pill-שישי")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("delivery-day-pill-שלישי")).toHaveAttribute("aria-pressed", "false");
+    expect(listingCalls()[0]).toMatchObject({ delivery_days: ["שישי"] });
   });
 
   // The precondition, stated three ways. Each of these is a distinct route by
@@ -178,8 +239,8 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
 
     // The city still filters; the bogus day does not ride along (no 422).
     expect(listingCalls()[0]).toMatchObject({ delivery_city: "חיפה" });
-    expect(listingCalls()[0]).not.toHaveProperty("delivery_day");
-    expect(urlParam("delivery_day")).toBeNull();
+    expect(listingCalls()[0]).not.toHaveProperty("delivery_days");
+    expect(urlParams("delivery_days")).toEqual([]);
   });
 
   it("a ghost pill tap opens the LocationModal instead of filtering", () => {
@@ -189,7 +250,7 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     fireEvent.click(screen.getByTestId("delivery-day-pill-שישי"));
 
     expect(screen.getByTestId("location-modal")).toBeInTheDocument();
-    expect(urlParam("delivery_day")).toBeNull();
+    expect(urlParams("delivery_days")).toEqual([]);
     expect(listingCalls()).toHaveLength(0);
   });
 
@@ -201,7 +262,7 @@ describe("ProducersClient delivery-day axis (MEH-1825)", () => {
     fireEvent.click(screen.getByTestId("chip-city"));
 
     expect(urlParam("city")).toBeNull();
-    expect(urlParam("delivery_day")).toBeNull();
+    expect(urlParams("delivery_days")).toEqual([]);
     expect(screen.getByTestId("delivery-day-row")).toHaveAttribute("data-ghost", "true");
   });
 });

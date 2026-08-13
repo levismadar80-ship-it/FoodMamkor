@@ -608,6 +608,101 @@ One park, one signature. Nothing quarantined; the 3-park threshold is not reache
 
 ---
 
+# Parked 2026-08-12 — lane C (CI/tests/docs). Two cards, both on **Sapir's hands**, neither on a failure.
+
+Neither hit the timebox and neither failed. Both are parked because their one
+remaining DoD item is an action CC is mechanically denied from taking —
+`.github/workflows/**` (MEH-1837) or a required-gate marker (rule 30). Parking
+them is the honest state; leaving them "In Progress" would imply CC is still
+working them.
+
+## MEH-1868 — Knip ratchet · chunk 2 MERGED (`be1ba20e`), chunk 3 is Sapir's
+
+**Landed:** `scripts/checks/lint-ratchet.mjs`, baseline frozen at 46 findings /
+24 `(file, rule)` pairs, a real-payload fixture, and 21 self-test assertions each
+shown failing against its own break.
+
+**Blocked on:** applying `docs/ci/meh-1868-knip-ratchet.patch.md`. Four changes;
+the substantive finding is that `frontend-knip` carries **both** swallows
+(`continue-on-error: true` at `:555` *and* `|| true` at `:574`), so removing
+either alone buys nothing — `continue-on-error` makes `needs.frontend-knip.result`
+resolve to `success` regardless, which is why the aggregator's existing `check()`
+passes today.
+
+**Open question for Sapir:** does `frontend-knip` become genuinely merge-blocking
+(all four changes, incl. `check` → `check_ran`), or stay a non-blocking honest
+red (1–3)? Recommendation in the patch is all four, with the escape hatch
+(`--allow-increase`) documented.
+
+**Deliberately NOT closed.** The merge auto-closed it via `Closes`; CC reopened
+it. The card's own headline complains that *chunk 0 merged while the gate stayed
+a non-gate* — chunk 2 is now in exactly that state (the ratchet is on `staging`
+and has run **zero times** in CI). Marking it Done would bury the same complaint
+twice on the same card.
+
+## MEH-1980 — coverage ratchet · PR #2813 open, blocked by a marker CC may not clear
+
+**Landed on the branch:** `scripts/checks/coverage-ratchet.mjs` (the suite prints
+its own `ran.length` — this line said "16" and was measured at 23 by the CI
+reviewer, then 29 after the shrink-routing and baseline-banking cases; do not
+re-hardcode it), every guard shown red against its own deletion before being
+claimed, baseline frozen at **66.77%** lines
+(8,139/12,188, 339 files), `docs/reports/coverage-baseline.md`, and
+`docs/ci/meh-1980-coverage-ratchet.patch.md`.
+
+**Blocked on two things, both Sapir's:**
+
+1. **`DO-NOT-MERGE marker gate` is red — CC tripped it with its own PR body.**
+   The sentence *"Do not merge this as complete."* matches the gate's regex. Not
+   a deliberate marker; prose that happens to match, the documented PR #2511 /
+   MEH-1844 precedent. **CC did not edit it out**: rule 30 covers this case by
+   name — *"the marker is not cleared by whoever concludes the block is stale…
+   CC's own marker is still Sapir's to clear."*
+2. **The `docs/ci/` patch**, which carries its own decision: the backend's
+   `--cov-fail-under=70` is a static floor with a **7-point dead zone** below the
+   77% baseline. Threshold deliberately left as a PLACEHOLDER — backend coverage
+   is unmeasurable from the CC sandbox (no postgres, no `backend/.venv`), and the
+   two figures on record disagree by 3,400 statements (77%/5,529 in the workflow
+   comment vs 89%/8,923 in MEH-1911's proof). Read `TOTAL` from a current pytest
+   job; do not reuse either.
+
+**Also worth knowing:** auto-merge was armed on #2813 **twice**, both times with
+method `merge`, by an actor that was not this session. CC disabled it once (rule
+32 permits acting unasked only in the constraint-adding direction) and it was
+re-armed. The accidental DNM marker is currently the only thing holding it.
+
+**Still genuinely outstanding on the card** (not blocked, just not done): three
+template-07 test tickets for the top risks, and the MEH-1961 license-scanning
+rider.
+
+## Circuit breaker
+
+Two parks, two signatures — both `blocked-by-CC-deny`, neither a failure class.
+The 3-park threshold is not reached and nothing is quarantined.
+
+## MEH-1625 — matrix extension DELIVERED (PR #2816), the live run is blocked
+
+The card splits into two parts with two timelines and says so.
+
+**Part 1 — the matrix extension — is done.** The maximal persona is in
+`docs/MANUAL_TESTING.md` as **P6**, not P5: the card calls it *"P5 (חדשה)"* and
+lists only P1–P4 as existing, which was true on 27/07 and is not true now —
+`P5` is already the resubmit-loop persona, with its own `TestPersona5ResubmitLoop`
+and UI spec. Two personas under one label, in the column that maps persona to
+covering test, is the one thing that table cannot afford.
+
+**Part 2 — the actual manual run of the personas on staging — is blocked**, and
+the card already says so: staging backend returning non-2xx (10/08) plus a
+working demo-admin account for the approval step. Neither is CC's to fix; the
+demo-admin credential is Sapir's.
+
+**P6's automation cell reads "אין עדיין" deliberately.** Every other row cites a
+real pytest class or Playwright spec. That column is what a reader trusts to
+know whether a persona is genuinely covered, so a plausible-looking reference
+there would be worse than an admission.
+
+---
+
 ## PARKED: MEH-1511 — rule 23 amendment. **The block reproduced in a fresh session.**
 
 **Status: parked, `needs-sapir`. The work is DONE and staged; only the write is
