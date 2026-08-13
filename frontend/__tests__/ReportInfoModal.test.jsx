@@ -126,3 +126,52 @@ describe("ReportInfoModal (MEH-1443)", () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+/**
+ * MEH-2039 — the dialog contract, guarded at the vitest gate.
+ *
+ * Added after the CI reviewer on PR #2847 noted the asymmetry: the sibling
+ * CategoryRequestModal got these three, while this file's identical trap and
+ * scroll-lock code was covered only by a hand-run QA script that no CI job
+ * executes. A guard nothing runs is not a guard.
+ *
+ * Discriminates by construction: jsdom implements no native Tab focus
+ * movement, so focus only moves if the component's own handler runs.
+ */
+describe("ReportInfoModal dialog contract (MEH-2039)", () => {
+  it("traps Tab inside the panel — wraps last→first and first→last", () => {
+    render(<ReportInfoModal open={true} onClose={vi.fn()} producerSlug={SLUG} />);
+    const panel = screen.getByRole("dialog");
+    const focusables = panel.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(first);
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("locks body scroll while open and restores it on unmount", () => {
+    document.body.style.overflow = "auto";
+    const { unmount } = render(
+      <ReportInfoModal open={true} onClose={vi.fn()} producerSlug={SLUG} />,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    unmount();
+    expect(document.body.style.overflow).toBe("auto");
+  });
+
+  it("puts role=dialog on the panel, not on the full-screen overlay", () => {
+    render(<ReportInfoModal open={true} onClose={vi.fn()} producerSlug={SLUG} />);
+    const panel = screen.getByRole("dialog");
+    expect(panel.parentElement.getAttribute("role")).toBe("presentation");
+    expect(panel.className).not.toContain("inset-0");
+    expect(panel).toHaveAttribute("aria-modal", "true");
+  });
+});
