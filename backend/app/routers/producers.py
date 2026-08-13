@@ -127,6 +127,13 @@ def list_producers(
     # REUSES: delivery_cities:113 (repeatable list param) + category:106.
     delivery_days: list[str] | None = Query(None),
     has_delivery: bool | None = None,
+    # MEH-2046: "offers self-pickup". The param keeps the column's name because
+    # that is the user-facing axis, but the predicate reads pickup /
+    # market_stand rows on producer_locations, NOT the near-dead
+    # Producer.pickup_points column — see _pickup_condition for why.
+    # OR-ed with the delivery axes (a service group), never a rung on their
+    # precedence ladder.
+    pickup_points: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
     # organic is no longer a filter (חוק תוצרת אורגנית 2005). See producer_listing.py.
@@ -207,6 +214,7 @@ def list_producers(
         delivery_day=delivery_day,
         delivery_days=delivery_days,  # MEH-2036
         has_delivery=has_delivery,
+        pickup_points=pickup_points,  # MEH-2046
         verified=verified,
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881

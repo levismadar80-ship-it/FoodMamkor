@@ -245,14 +245,38 @@ describe("allBadges", () => {
     ).toEqual(["kosher"]);
   });
 
-  it("delivery — via delivery_count > 0", () => {
-    expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
+  // MEH-2046: the badge reads the server-computed `delivers` — the result of
+  // producer_listing._has_delivery_condition() — instead of the old
+  // `has_delivery || delivery_count > 0` heuristic. These three replace the
+  // two that asserted the heuristic's operands directly.
+  it("delivery — via the server-computed delivers flag", () => {
+    expect(allBadges({ delivers: true }).map((b) => b.key)).toEqual(["delivery"]);
   });
 
-  it("delivery — via has_delivery flag when delivery_count is 0", () => {
-    expect(allBadges({ delivery_count: 0, has_delivery: true }).map((b) => b.key)).toEqual(
-      ["delivery"],
-    );
+  it("delivery — the MEH-1836 nationwide case now earns the badge", () => {
+    // A business that delivers everywhere holds ZERO delivery_areas rows under
+    // the XOR data model, and the legacy column is not set. Both old operands
+    // are therefore falsy while the business genuinely delivers — it passed the
+    // ?has_delivery filter and rendered no delivery badge. That is the exact
+    // divergence this ticket closes, so it is pinned here as a payload shape.
+    expect(
+      allBadges({ delivers: true, has_delivery: false, delivery_count: 0 }).map(
+        (b) => b.key,
+      ),
+    ).toEqual(["delivery"]);
+  });
+
+  it("delivery — the legacy operands alone no longer earn it", () => {
+    // The inverse pin. `has_delivery` is a column no backend delivery predicate
+    // consults, and `delivery_count` counts delivery_areas rows — neither is
+    // the filter's answer, so neither may light the badge on its own. Without
+    // this, quietly restoring either as a fallback would go unnoticed and
+    // reintroduce the drift.
+    expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({ has_delivery: true }).map((b) => b.key)).toEqual([]);
+    expect(
+      allBadges({ has_delivery: true, delivery_count: 9 }).map((b) => b.key),
+    ).toEqual([]);
   });
 
   // MEH-1841 — specific supersedes generic. ProducerCard renders its own
@@ -264,6 +288,11 @@ describe("allBadges", () => {
     const deliveryOnly = {
       has_physical_location: false,
       offers_delivery: true,
+      // MEH-2046: `delivers` is what earns the badge now, so the suppression
+      // below is only meaningful against a payload that would otherwise earn
+      // it. The legacy operands are kept alongside to prove they are inert:
+      // with suppression lifted it is `delivers` doing the work, not these.
+      delivers: true,
       has_delivery: true,
       delivery_count: 4,
     };
@@ -273,12 +302,17 @@ describe("allBadges", () => {
       expect(allBadges(deliveryOnly)).toEqual([]);
     });
 
-    it("suppression holds when only delivery_count drives the badge", () => {
+    it("suppression holds for a nationwide delivery-only business", () => {
+      // MEH-2046: the old form of this case set `delivery_count: 4`, which a
+      // nationwide business never has. Expressed through `delivers`, the
+      // suppression now covers the shape that previously slipped past the
+      // badge entirely.
       expect(
         allBadges({
           has_physical_location: false,
           offers_delivery: true,
-          delivery_count: 4,
+          delivers: true,
+          delivery_count: 0,
         }).map((b) => b.key),
       ).toEqual([]);
     });
@@ -288,7 +322,7 @@ describe("allBadges", () => {
         allBadges({
           has_physical_location: true,
           offers_delivery: true,
-          has_delivery: true,
+          delivers: true,
         }).map((b) => b.key),
       ).toContain("delivery");
     });
@@ -297,11 +331,11 @@ describe("allBadges", () => {
       // Backend defaults has_physical_location to True (schemas/schemas.py:1772);
       // only an explicit `false` suppresses. A partial payload must not silently
       // lose its delivery indication.
-      expect(allBadges({ has_delivery: true }).map((b) => b.key)).toContain(
+      expect(allBadges({ delivers: true }).map((b) => b.key)).toContain(
         "delivery",
       );
       expect(
-        allBadges({ has_physical_location: null, has_delivery: true }).map(
+        allBadges({ has_physical_location: null, delivers: true }).map(
           (b) => b.key,
         ),
       ).toContain("delivery");
@@ -315,7 +349,7 @@ describe("allBadges", () => {
         allBadges({
           has_physical_location: false,
           offers_delivery: false,
-          has_delivery: true,
+          delivers: true,
         }).map((b) => b.key),
       ).toContain("delivery");
     });
@@ -348,7 +382,7 @@ describe("allBadges", () => {
   it("returns badges in priority order regardless of field order", () => {
     const badges = allBadges({
       products_count: 10,
-      has_delivery: true,
+      delivers: true,
       kashrut_verified_at: "2026-01-01T00:00:00Z",
       grass_fed: true,
       has_gluten_free_products: true,
@@ -388,7 +422,7 @@ describe("topBadges", () => {
     verification_tier: "verified",
     is_recommended: true,
     days_since_created: 10,
-    has_delivery: true,
+    delivers: true,
     products_count: 5,
   };
 
@@ -423,7 +457,7 @@ describe("topBadges", () => {
     const p = {
       verification_tier: "verified",
       grass_fed: true,
-      has_delivery: true,
+      delivers: true,
     };
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
@@ -495,7 +529,7 @@ describe("badgeCount", () => {
         verification_tier: "verified",
         is_recommended: true,
         days_since_created: 5,
-        has_delivery: true,
+        delivers: true,
         products_count: 7,
       }),
     ).toBe(4);

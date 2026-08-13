@@ -174,6 +174,42 @@ def attach_badge_fields(producer):
             exc_info=True,
         )
         producer.delivery_count = 0
+    # MEH-2046: `delivers` / `offers_pickup` — the two fulfillment booleans the
+    # consumer surfaces read (schemas.py ProducerListOut). Each mirrors ONE
+    # listing predicate and must not drift from it:
+    #   delivers      ↔ producer_listing._has_delivery_condition()
+    #   offers_pickup ↔ producer_listing._pickup_condition() with no city
+    # The mirror is two forms of one rule (SQL for the filter, Python for the
+    # payload) because this module cannot import producer_listing — that module
+    # imports THIS one. What holds them together is not this comment: it is
+    # test_fulfillment_flags_match_filter_membership, which seeds the shape
+    # matrix and asserts, per shape, that the serialized boolean equals actual
+    # membership in the filtered result set. Change a predicate without changing
+    # its mirror and that test reds.
+    # Both are UNSCOPED (no city) — they describe the business, not the query.
+    try:
+        producer.delivers = bool(producer.offers_delivery) and (
+            producer.delivery_count > 0 or bool(producer.delivery_nationwide)
+        )
+    except Exception:
+        logger.debug(
+            "[producers] delivers computation failed, defaulting to False",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
+        producer.delivers = False
+    try:
+        producer.offers_pickup = any(
+            getattr(loc, "kind", None) in ("pickup", "market_stand")
+            for loc in (producer.locations or [])
+        )
+    except Exception:
+        logger.debug(
+            "[producers] locations lazy-load failed, offers_pickup defaulting to False",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
+        producer.offers_pickup = False
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
         producer.days_since_created = max(0, delta.days)

@@ -2019,6 +2019,23 @@ class ProducerListOut(BaseModel):
     has_low_carb_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
+    # MEH-2046: the two fulfillment booleans the consumer surfaces read. Both are
+    # computed by attach_badge_fields — NOT columns, so there is no migration —
+    # and each mirrors the listing predicate of the same name exactly:
+    #   delivers      ↔ producer_listing._has_delivery_condition()
+    #   offers_pickup ↔ producer_listing._pickup_condition()  (unscoped form)
+    # They exist because the card and the filter had already drifted: the badge
+    # read the legacy `has_delivery` column OR delivery_count, so a nationwide
+    # business (offers_delivery + delivery_nationwide, zero delivery_areas rows)
+    # passed the delivery filter while showing no delivery badge — MEH-1836's
+    # divergence, visible to a user as "I filtered for delivery and this card
+    # says nothing about delivery". `delivery_nationwide` is not serialized, so
+    # the client cannot re-derive the predicate; the server answers instead.
+    # Unscoped on purpose: these describe the BUSINESS (Label Scope Contract
+    # scope=business), not the current query, so a city filter must not change
+    # what a card claims about itself.
+    delivers: bool = False
+    offers_pickup: bool = False
     # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut

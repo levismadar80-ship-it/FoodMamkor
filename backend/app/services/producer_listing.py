@@ -322,6 +322,37 @@ def _has_delivery_condition():
     )
 
 
+def _pickup_condition(cities: list[str] | None = None):
+    """MEH-2046 — "offers self-pickup": at least one pickup / market_stand
+    location row. Covers market stands deliberately, per the ticket.
+
+    The `pickup_points` COLUMN is deliberately NOT consulted. MEH-1856 closed
+    the owner write path because the column duplicates
+    ProducerLocation.kind='pickup', so only admin.py and producer_import.py
+    write it, while every consumer surface reads the ROWS — the map layer
+    (frontend/lib/producerPoints.js), DeliveryBlock, and the pinnable predicate
+    at :197-202. Filtering the column would hide a business whose owner added a
+    pickup point in LocationsEditor, which is the only pickup editor that
+    exists. Sapir measured zero businesses holding the column with no matching
+    row on staging (13/08), so ignoring it loses no row.
+
+    `cities` scopes the arm when a delivery city is active. The kind test and
+    the city test must hold on the SAME row (one EXISTS) — otherwise a business
+    with a pickup point in one city would match a query for another city on the
+    strength of an unrelated row. Same same-row reasoning as
+    _delivery_day_condition below. Without a city the arm is unscoped:
+    "has pickup anywhere".
+
+    # REUSES: _build_base_queries:197-202 — the kind IN (...) EXISTS shape.
+    """
+    conds = [ProducerLocation.kind.in_(("pickup", "market_stand"))]
+    if cities:
+        # `.lower()` on both sides mirrors _delivery_city_condition:274 so the
+        # two city axes match case-identically.
+        conds.append(func.lower(ProducerLocation.city).in_([c.lower() for c in cities]))
+    return Producer.locations.any(and_(*conds))
+
+
 # MEH-2036: the OR-list cap for ?delivery_days=. Unlike _MAX_DELIVERY_CITIES
 # (40, headroom over the largest region) this bound is EXACT: the vocabulary is
 # closed at seven, so a longer list can only be duplicates or junk.
@@ -578,23 +609,34 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     delivery_days = _normalize_delivery_days(
         filters.get("delivery_days"), filters.get("delivery_day")
     )
+    # MEH-2046: the four delivery axes below still resolve to AT MOST ONE
+    # condition — their precedence ladder is unchanged — but that result is now
+    # held rather than applied, because pickup is a PEER of the whole ladder,
+    # not another rung on it. Both arms are OR-ed and applied once at the end.
+    # Two consequences, both deliberate:
+    #   - `?pickup_points=true` can no longer be swallowed by a city/day filter
+    #     the way `has_delivery` silently was (it was the last elif).
+    #   - with pickup absent, exactly one condition is applied and the emitted
+    #     SQL is byte-identical to the pre-2046 chain.
+    delivery_scope_cond = None
+    # The cities that scope the pickup arm (MEH-2046 decision 4). `city`
+    # (Producer.city) is deliberately NOT one of them: that axis is AND-ed
+    # separately below and says where the business IS, not where it serves.
+    scope_cities = None
     if delivery_city:
+        scope_cities = [delivery_city]
         if delivery_days:
-            city_cond = _delivery_day_condition(delivery_days, delivery_city)
+            delivery_scope_cond = _delivery_day_condition(delivery_days, delivery_city)
         else:
             # MEH-1255: nationwide producers now match any delivery_city EXCEPT
             # their exclusion list ("לכל הארץ חוץ מ:"). EXISTS (.any()) is used
             # so the OR branch isn't swallowed by join semantics; for area-based
             # producers the result set is identical. Extracted to
             # _delivery_city_condition so MEH-1487's OR-list reuses it verbatim.
-            city_cond = _delivery_city_condition(delivery_city)
-        q = q.filter(city_cond)
-        count_q = count_q.filter(city_cond)
+            delivery_scope_cond = _delivery_city_condition(delivery_city)
     elif delivery_days:
         # Day(s) without a city — every explicit row on any selected day, any city.
-        day_cond = _delivery_day_condition(delivery_days)
-        q = q.filter(day_cond)
-        count_q = count_q.filter(day_cond)
+        delivery_scope_cond = _delivery_day_condition(delivery_days)
     elif delivery_cities:
         # MEH-1487: region fallback — OR the SAME per-city condition across
         # the region's cities (nationwide-minus-excluded honoured per city).
@@ -606,16 +648,25 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         # Cap + empty-strip guard bound a hostile / malformed list.
         cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
         if cities:
-            city_cond = or_(*[_delivery_city_condition(c) for c in cities])
-            q = q.filter(city_cond)
-            count_q = count_q.filter(city_cond)
+            scope_cities = cities
+            delivery_scope_cond = or_(*[_delivery_city_condition(c) for c in cities])
     elif has_delivery:
         # MEH-1836: was a bare delivery_areas.any(), which nationwide producers
         # can never satisfy — see _has_delivery_condition for why the exclusion
         # list is not consulted on this axis.
-        delivery_cond = _has_delivery_condition()
-        q = q.filter(delivery_cond)
-        count_q = count_q.filter(delivery_cond)
+        delivery_scope_cond = _has_delivery_condition()
+
+    pickup_cond = _pickup_condition(scope_cities) if filters.get("pickup_points") else None
+    service_conds = [c for c in (delivery_scope_cond, pickup_cond) if c is not None]
+    if service_conds:
+        # or_() over a single clause would render it unchanged, but the explicit
+        # branch keeps "one filter sent → pre-2046 SQL" true by construction
+        # rather than by trusting a library detail.
+        service_group = (
+            or_(*service_conds) if len(service_conds) > 1 else service_conds[0]
+        )
+        q = q.filter(service_group)
+        count_q = count_q.filter(service_group)
 
     city = filters.get("city")
     if city:

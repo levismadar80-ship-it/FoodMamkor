@@ -593,7 +593,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
           kashrut_verified_at: "2026-01-01T00:00:00Z",
           grass_fed: true,
           has_gluten_free_products: true,
-          has_delivery: true,
+          // MEH-2046: the delivery badge reads `delivers` (the server-computed
+          // predicate result), not the legacy `has_delivery` column.
+          delivers: true,
         }}
       />,
     );
@@ -620,7 +622,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     kashrut_verified_at: "2026-01-01T00:00:00Z",
     grass_fed: true,
     has_gluten_free_products: true,
-    has_delivery: true,
+    // MEH-2046: see the note on the fixture above — `delivers`, not the
+    // legacy column, is what earns the delivery badge.
+    delivers: true,
   };
 
   it("+N is an interactive disclosure button (MEH-1547)", () => {
