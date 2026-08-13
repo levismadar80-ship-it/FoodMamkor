@@ -18,7 +18,7 @@
  *           (default http://localhost:3000).
  */
 import { chromium } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 const BASE = process.env.QA_BASE_URL || "http://localhost:3000";
 const OUT = "qa-artifacts/ci-screenshots";
@@ -88,7 +88,6 @@ async function shot(browser, { path, file, vp }) {
   }
 
   // Manifest for the workflow step to read back without re-parsing stdout.
-  const { writeFileSync } = await import("node:fs");
   writeFileSync(`${OUT}/manifest.json`, JSON.stringify(results, null, 2));
 
   // Never fail the job — this is review evidence, not a gate (matches the
