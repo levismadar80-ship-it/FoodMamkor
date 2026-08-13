@@ -118,10 +118,32 @@ async function main() {
     await trigger.scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${OUT}/diet-definitions-${label}-2-open.png`, fullPage: false });
 
-    // State 3 — the chip row itself (PR-B evidence: no "דל פחמימות").
-    const lowCarbChips = await page.getByRole("button", { name: "דל פחמימות", exact: true }).count();
     const panelText = (await page.locator("#add-diet-definitions").textContent()) || "";
+
+    // State 3 — the chip row at rest (PR-B evidence: no "דל פחמימות").
+    //
+    // The disclosure is CLOSED again first, and that is the whole point of this
+    // line. An earlier version captured state 3 straight after state 2 without
+    // touching anything, so the two PNGs were byte-identical: two labelled
+    // states, one frame, and a PR body claiming both. Caught by the CI reviewer
+    // comparing git blob hashes, not by this harness — which is why the
+    // assertion below now exists.
+    await trigger.click();
+    await page.waitForTimeout(250);
+    const lowCarbChips = await page.getByRole("button", { name: "דל פחמימות", exact: true }).count();
     await page.screenshot({ path: `${OUT}/diet-definitions-${label}-3-chip-row.png`, fullPage: false });
+
+    // Two files named for two states must not BE one state. A label is not a
+    // capture, and nothing else in this run would notice if it were.
+    const [openBytes, restBytes] = [
+      fs.readFileSync(`${OUT}/diet-definitions-${label}-2-open.png`),
+      fs.readFileSync(`${OUT}/diet-definitions-${label}-3-chip-row.png`),
+    ];
+    if (openBytes.equals(restBytes)) {
+      throw new Error(
+        `[${label}] states 2 and 3 are the same frame — one of them was never captured`,
+      );
+    }
 
     findings.push({
       label,

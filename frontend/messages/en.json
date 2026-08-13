@@ -4784,7 +4784,6 @@
         "diet_vegetarian": "Vegetarian",
         "diet_lactose_free": "Lactose-free",
         "diet_no_added_sugar": "No added sugar",
-        "diet_low_carb": "Low carb",
         "diet_helper": "Tagging a product lists your business under the matching filter on the search and map pages.",
         "diet_definitions_cta": "What do these tags mean?",
         "diet_def_gluten_free": "The product contains no gluten-bearing ingredients — wheat, barley, rye, or oats that are not gluten-free.",
@@ -5188,20 +5187,6 @@
           {
             "question": "What counts as no added sugar?",
             "answer": "Products the business marked as having no sugar, honey or syrups added during preparation. Natural sweetness from fruit or milk may still be present."
-          },
-          {
-            "question": "How do I find businesses that deliver?",
-            "answer": "Filter with the delivery chip, or open the map page."
-          }
-        ]
-      },
-      "low_carb": {
-        "meta_description": "Local businesses that marked low-carb products in their catalog — nut breads, flourless desserts and protein-rich dishes. Marked by the business itself.",
-        "intro": "Breads based on nuts and seeds, desserts without flour or sugar, and dishes where protein and fat do the work. Every business here marked at least one product in its catalog as low-carb — suitable for those building a ketogenic menu, and for anyone simply looking for fewer carbohydrates day to day.",
-        "faq": [
-          {
-            "question": "What counts as low-carb?",
-            "answer": "Products the business marked as low in carbohydrates — usually without wheat flour, sugar or added starch. Exact values vary between businesses, so ask about a specific product."
           },
           {
             "question": "How do I find businesses that deliver?",
