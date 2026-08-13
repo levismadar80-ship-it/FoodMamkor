@@ -162,6 +162,53 @@ def _apply_approval_state(producer: Producer) -> None:
     producer.changes_requested_at = None
 
 
+def _assert_approvable(
+    db: Session, producer: Producer, allow_without_license: bool, admin_id
+) -> None:
+    """Both approval gates, in one owner, run against the row being written.
+
+    MEH-2017. These lived inline in `approve_producer` and therefore ran only
+    against the object fetched at the top of that handler. `_persist_approval`'s
+    retry path re-reads the row after a rollback, so a producer whose photos or
+    license number were cleared inside that window could be approved by the
+    retry although the main path would have rejected it — and `_persist_approval`
+    was the only place in the codebase able to approve without passing a gate.
+
+    One function called twice, deliberately not a validator layer or a
+    decorator: there are two call sites and no third is expected.
+
+    The override warning lives HERE rather than in the handler so the retry path
+    is audited too. A silent override on the one path this function exists to
+    protect would be the same defect wearing a smaller diff.
+    """
+    # MEH-799: approval gate — a business never goes public without at least
+    # one photo. Validation only (no schema change); registration/publish
+    # flows untouched — the gate lives at the moment of approval.
+    if not producer.images:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
+        )
+    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
+    # of register-time ensure_license_for_categories. 422 matches the photo gate
+    # above (not MEH-769's 409, which is for status transitions).
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    needs_license = categories_require_license(db, category_ids) and license_missing
+    if needs_license and not allow_without_license:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+        )
+    if needs_license and allow_without_license:
+        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
+        logger.warning(
+            "approve_producer: license-pending override for producer %s by admin %s",
+            producer.id,
+            admin_id,
+        )
+
+
 SLUG_UNIQUE_CONSTRAINT = "producers_slug_key"
 
 
@@ -193,7 +240,13 @@ def _is_slug_collision(exc: IntegrityError) -> bool:
     return SLUG_UNIQUE_CONSTRAINT in str(orig or exc)
 
 
-def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Producer:
+def _persist_approval(
+    db: Session,
+    producer_id: UUID,
+    producer: Producer,
+    allow_without_license: bool,
+    admin_id,
+) -> Producer:
     """Mint the slug and commit, retrying once on a unique-slug collision.
 
     `producers.slug` is UNIQUE (`models/models.py:112`) and `_ensure_unique_slug`
@@ -229,19 +282,12 @@ def _persist_approval(db: Session, producer_id: UUID, producer: Producer) -> Pro
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
-    # KNOWN LIMIT, stated rather than left for the next reader to find: the
-    # re-read below does NOT re-run the MEH-799 no-image gate or the MEH-971
-    # license gate. Those ran in `approve_producer` against the object fetched
-    # before the collision; this row is fresh from the DB. If another
-    # transaction stripped the images or the license number inside the rollback
-    # window, the retry approves without re-validating.
-    #
-    # Not closed here, and the reason is scope rather than dismissal: this is a
-    # compound race — two admins approving same-named businesses in the same
-    # instant AND a third mutation landing between them — on an admin-only
-    # endpoint. Re-checking would put a second copy of both gates in this
-    # function, which is the duplication `_apply_approval_state` exists to
-    # avoid. The gates belong in one place; moving them there is its own change.
+    # MEH-2017: the gates run on BOTH paths. This row is fresh from the database
+    # and is the one about to be committed, so it is re-validated rather than
+    # trusted from the pre-collision fetch — if another transaction stripped the
+    # images or the license number inside the rollback window, this raises 422
+    # exactly as the main path would have. One owner, called twice.
+    _assert_approvable(db, producer, allow_without_license, admin_id)
     _apply_approval_state(producer)
     _mint_slug_if_absent(db, producer)
     db.commit()
@@ -656,38 +702,18 @@ def approve_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-799: approval gate — a business never goes public without at least
-    # one photo. Validation only (no schema change); registration/publish
-    # flows untouched — the gate lives at the moment of approval.
-    if not producer.images:
-        raise HTTPException(
-            status_code=422,
-            detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
-        )
-    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
-    # of register-time ensure_license_for_categories. 422 matches the photo gate
-    # above (not MEH-769's 409, which is for status transitions).
-    category_ids = [c.id for c in producer.categories]
-    license_missing = not (producer.producer_license_number or "").strip()
-    needs_license = categories_require_license(db, category_ids) and license_missing
-    if needs_license and not allow_without_license:
-        raise HTTPException(
-            status_code=422,
-            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
-        )
-    if needs_license and allow_without_license:
-        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
-        logger.warning(
-            "approve_producer: license-pending override for producer %s by admin %s",
-            producer_id,
-            user.id,
-        )
+    # MEH-2017: both approval gates (MEH-799 photo, MEH-971 license) live in
+    # _assert_approvable, which _persist_approval also calls after its re-read
+    # so the retry path cannot approve a row this path would have rejected.
+    _assert_approvable(db, producer, allow_without_license, user.id)
     # MEH-1817: the approval column writes live in _apply_approval_state so the
     # retry path below can re-apply exactly the same set after a rollback.
     _apply_approval_state(producer)
     # MEH-1817: slug mint + commit, extracted so this handler stays under the
     # C901 ceiling. See _persist_approval for why the commit is retried.
-    producer = _persist_approval(db, producer_id, producer)
+    producer = _persist_approval(
+        db, producer_id, producer, allow_without_license, user.id
+    )
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
@@ -702,9 +728,7 @@ def approve_producer(
         _send_notification_email(
             producer_user.email,
             f'מהמקור - העסק "{p_name}" אושר!',
-            f'שלום,\n\nהעסק שלך "{p_name}" אושר במהמקור!\n'
-            f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_approved_body(p_name),
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
@@ -740,15 +764,13 @@ def reject_producer(
     producer.changes_requested_at = None
     db.commit()
 
-    reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
+    reason_text = _rejection_reason_suffix(reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
         _send_notification_email(
             producer_user.email,
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            f'שלום,\n\nלצערנו הבקשה לרישום העסק "{producer.name}" במהמקור לא אושרה.{reason_text}\n\n'
-            f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_rejected_body(producer.name, reason),
         )
 
     # Notify admin via WhatsApp
@@ -812,13 +834,7 @@ def request_producer_changes(
         _send_notification_email(
             producer_user.email,
             f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
-            f"שלום,\n\n"
-            f'הבקשה לרישום "{p_name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
-            f"בית העסק, נשאר להשלים:\n\n"
-            f"{feedback}\n\n"
-            f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
-            f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
-            f"בברכה,\nצוות מהמקור",
+            _producer_changes_requested_body(p_name, feedback, dashboard_link),
         )
 
     # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
@@ -1023,6 +1039,56 @@ def seed_cities(
         inserted += result.rowcount
     db.commit()
     return {"seeded": inserted}
+
+
+# MEH-2027: the three PRODUCER-facing bodies below were inline f-strings inside
+# their route handlers, which put them out of reach of the copy contract in
+# tests/test_meh1965_email_copy_contract.py — rendering one meant standing up a
+# request, a DB row and an authenticated admin. They are pure functions of their
+# arguments so the contract can render them directly. Behaviour is unchanged:
+# the strings are byte-identical to the f-strings they replace.
+#
+# These go to producer_user.email — the business owner, NOT an admin — so they
+# are brand touchpoints and the contract's four axes (absolute links, no
+# masculine address to the reader, RTL on any HTML part, real text fallback)
+# apply to them in full.
+
+
+def _rejection_reason_suffix(reason: str) -> str:
+    """The optional "סיבת הדחייה" tail, shared by the email body and the admin
+    WhatsApp line so the two cannot drift apart (workflow.md Smell #1)."""
+    return f"\nסיבת הדחייה: {reason}" if reason else ""
+
+
+def _producer_approved_body(name: str) -> str:
+    return (
+        f'שלום,\n\nהעסק שלך "{name}" אושר במהמקור!\n'
+        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_rejected_body(name: str, reason: str) -> str:
+    return (
+        f'שלום,\n\nלצערנו הבקשה לרישום העסק "{name}" במהמקור לא אושרה.'
+        f"{_rejection_reason_suffix(reason)}\n\n"
+        f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+
+
+def _producer_changes_requested_body(
+    name: str, feedback: str, dashboard_link: str
+) -> str:
+    return (
+        f"שלום,\n\n"
+        f'הבקשה לרישום "{name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
+        f"בית העסק, נשאר להשלים:\n\n"
+        f"{feedback}\n\n"
+        f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
+        f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
 
 
 def _send_notification_email(to_email: str, subject: str, body: str):
