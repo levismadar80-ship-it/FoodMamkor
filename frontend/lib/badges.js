@@ -14,7 +14,10 @@
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   no_added_sugar (manual) — has_no_added_sugar_products (any product is_no_added_sugar, MEH-1934)
- *   low_carb     (manual)  — has_low_carb_products     (any product is_low_carb,     MEH-1934)
+ *   (low_carb REMOVED — MEH-2047: a nutrition claim no standard defines;
+ *    EU/UK 1924/2006 does not permit it and ת"י 1145 does not cover
+ *    carbohydrates. has_low_carb_products is still served by the API and is
+ *    still declared in lib/schemas.js — it simply lights no badge.)
  *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
  *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0, SUPPRESSED for a
  *                            delivery-only business (MEH-1841 — specific supersedes generic)
@@ -23,7 +26,7 @@
  *    diluted the badges that do. products_count itself is unchanged.)
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > no_added_sugar > low_carb > kosher > delivery
+ *   verified > license > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > no_added_sugar > kosher > delivery
  *   (MEH-1934: the two new diet badges join the diet run, after lactose_free.
  *    They therefore outrank kosher and delivery, which is how every other diet
  *    badge already sits — consistency with the existing group, not a claim
@@ -124,18 +127,13 @@ export const BADGE_CONFIG = {
     tooltip: "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     color: "muted",
   },
-  // MEH-1934: tooltips carry any-product semantics (MEH-1439) — "לעסק יש
+  // MEH-1934: tooltip carries any-product semantics (MEH-1439) — "לעסק יש
   // מוצרים … מסומנים בקטלוג", never a whole-business claim. Sapir-LOCKED copy.
+  // (Its low_carb sibling was withdrawn in MEH-2047 — see the header note.)
   no_added_sugar: {
     key: "no_added_sugar",
     label: "ללא סוכר מוסף",
     tooltip: "לעסק יש מוצרים ללא סוכר מוסף מסומנים בקטלוג.",
-    color: "muted",
-  },
-  low_carb: {
-    key: "low_carb",
-    label: "דל פחמימות",
-    tooltip: "לעסק יש מוצרים דלי פחמימות מסומנים בקטלוג.",
     color: "muted",
   },
   kosher: {
@@ -194,7 +192,6 @@ export const BADGE_PRIORITY = [
   // `toHaveLength` pin in badges.test.js is what catches that, and it caught
   // exactly this omission during MEH-1934.
   "no_added_sugar",
-  "low_carb",
   "kosher",
   "delivery",
   // MEH-1846: products removed — see the BADGE_CONFIG note above.
@@ -247,12 +244,10 @@ function earnsBadge(producer, key) {
       return !!producer.has_vegan_products;
     case "lactose_free":
       return !!producer.has_lactose_free_products;
-    // MEH-1934: plain aggregates. Unlike vegetarian (which folds in is_vegan),
-    // neither of these is implied by any other axis.
+    // MEH-1934: a plain aggregate. Unlike vegetarian (which folds in is_vegan),
+    // it is not implied by any other axis.
     case "no_added_sugar":
       return !!producer.has_no_added_sugar_products;
-    case "low_carb":
-      return !!producer.has_low_carb_products;
     case "kosher":
       // MEH-986 ch2 (P0 legal — חוק איסור הונאה בכשרות): the public kosher badge
       // must render ONLY for admin-verified kashrut, never from the free-text
