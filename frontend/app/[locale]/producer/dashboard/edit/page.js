@@ -777,21 +777,6 @@ function EditPageInner() {
       >
         {backLink}
 
-        {/* ⓪ MEH-1872: business-name editor. First in the group because the
-            name is the most fundamental field — and the ONLY card here that
-            files a REQUEST rather than writing its value. The public name does
-            not move until an admin approves (MEH-1851 removed `name` from
-            _PRODUCER_WRITABLE_FIELDS; this is the sanctioned route back). */}
-        <EditAccordionCard
-          anchorId="business-name"
-          title={tName("heading")}
-          summary={tName("accordion_summary")}
-          open={openKey === "businessName"}
-          onToggle={() => toggleKey("businessName")}
-        >
-          <BusinessNameCard profile={profile} />
-        </EditAccordionCard>
-
         {/* ① Edit-tab chunk B — producer-facing gallery images editor */}
         <EditAccordionCard
           anchorId="images"
@@ -913,6 +898,25 @@ function EditPageInner() {
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
           />
+        </EditAccordionCard>
+
+        {/* MEH-2063: business-name editor moved LAST in the group — renaming
+            is a rare, request-based action (files a REQUEST rather than
+            writing its value; the public name does not move until an admin
+            approves — MEH-1851 removed `name` from _PRODUCER_WRITABLE_FIELDS,
+            this is the sanctioned route back, MEH-1872) and sits below the
+            content cards edited every week, not above them (industry
+            convention: frequent content actions first, rare administrative
+            actions last — GitHub "Danger Zone" / Shopify store details).
+            anchorId unchanged (deep-link contract MEH-1106). */}
+        <EditAccordionCard
+          anchorId="business-name"
+          title={tName("heading")}
+          summary={tName("accordion_summary")}
+          open={openKey === "businessName"}
+          onToggle={() => toggleKey("businessName")}
+        >
+          <BusinessNameCard profile={profile} />
         </EditAccordionCard>
       </div>
 
