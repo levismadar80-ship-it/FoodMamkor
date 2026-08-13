@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -299,6 +299,48 @@ def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> 
         )
 
 
+# MEH-2007: namespace for the (int4, int4) form of pg_advisory_xact_lock, so
+# this lock cannot collide with an advisory lock taken elsewhere for an
+# unrelated purpose. The second half is derived from the producer UUID; two
+# different producers can in principle fold onto the same 31-bit value, which
+# costs them one avoidable wait and nothing else — correctness does not depend
+# on the derivation being injective.
+_PRODUCER_UPDATE_LOCK_NAMESPACE = 2007
+
+
+def _lock_producer_updates(db, producer_id) -> None:
+    """Serialize concurrent owner PUTs on one producer, until this commit.
+
+    MEH-2007. `update_my_producer` reads `was_approvable` before mutating and
+    re-evaluates it after `db.commit()`, firing the review-ready ping on the
+    false→true edge. Under READ COMMITTED two overlapping PUTs that each attach
+    the first image both read False, both see True afterwards, and the admin is
+    pinged twice for one transition.
+
+    WHY AN ADVISORY LOCK AND NOT `with_for_update` ON THE PRODUCER ROW: both are
+    transaction-scoped, so the hold time is identical and neither is "cheaper"
+    on that axis. What differs is the blast radius. A row lock blocks every
+    concurrent writer of that row for the whole request — admin approve
+    (`admin.py`), the OTP confirm below, `producer_import.py`. This key is taken
+    in exactly one place, so the only thing it can block is another PUT on the
+    same producer, which is the pair that has to serialize for the ping to be
+    correct.
+
+    MUST be taken BEFORE the producer is loaded. Taken after, the loser wakes
+    holding the row it read *before* the winner committed, snapshots a stale
+    `was_approvable=False`, and fires anyway — the same bug wearing a lock.
+    """
+    if producer_id is None:
+        return
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(:ns, :key)"),
+        {
+            "ns": _PRODUCER_UPDATE_LOCK_NAMESPACE,
+            "key": UUID(str(producer_id)).int % 2**31,
+        },
+    )
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -308,6 +350,12 @@ def update_my_producer(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-2007: held until this request's commit, so the snapshot below and the
+    # write it is compared against are one atomic unit against another PUT on
+    # this producer. Deliberately above the load — see the helper's docstring
+    # for why after-the-load is not a weaker fix but a non-fix.
+    _lock_producer_updates(db, user.producer_id)
+
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
