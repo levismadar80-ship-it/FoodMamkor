@@ -2,7 +2,7 @@
  * The four brand typefaces, self-hosted from files committed in this repo.
  *
  * MEH-1831 moved these off `fonts.googleapis.com` at RUNTIME. MEH-2029 moves
- * them off `fonts.gstatic.com` at BUILD time, which is the half that was still
+ * them off Google's font CDN at BUILD time, which is the half that was still
  * on the network: `next/font/google` downloads every (family × subset) file on
  * every build — 60 binary fetches, which the `subsets:` option does not reduce —
  * and any one of them failing fails the build. It did, non-deterministically:
