@@ -37,11 +37,14 @@ const intlMiddleware = createMiddleware(routing);
 
 // MEH-1899: the failure this exists for ran with ZERO observability — no log,
 // no Sentry — and was found only because an E2E spec happened to bite on it.
-// `console.error` and not Sentry deliberately: whether Edge Middleware can
-// reach Sentry at all is still an open Phase 0 question on MEH-1521, and a
-// report that depends on an unverified transport is not a report. Vercel
-// captures middleware console output in runtime logs, which is available today.
-// If MEH-1521 establishes a Sentry path, this is the one place to change.
+// `console.error` and not Sentry deliberately: MEH-1521's Phase 0 confirmed
+// Edge Middleware CAN reach Sentry (sentry.edge.config.js exists and inits),
+// but wiring an unverified Sentry.capture* call here would violate
+// .claude/rules/observability.md's dashboard-receipt requirement, which this
+// sandbox cannot perform. Vercel captures middleware console output in
+// runtime logs, which is available today and satisfies the DoD's log
+// requirement unconditionally. Whoever can run the dashboard-receipt check
+// is the one to add Sentry here.
 function report(message, err) {
   console.error(`[middleware/producerExists] ${message}`, err ?? "");
 }
