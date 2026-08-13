@@ -32,8 +32,17 @@ import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
+// MEH-1977: the draft's on-disk rules (envelope, 7-day expiry, what counts as
+// content) live in one module so they can be tested without rendering this
+// wizard. What is NOT there: which step a restored draft may land on — that
+// depends on auth state, which only this component knows.
+import {
+  DRAFT_KEY,
+  hasDraftContent,
+  packDraft,
+  parseDraft,
+} from "@/lib/register-draft";
 
-const DRAFT_KEY = "producer_registration_draft";
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
 // MEH-435: readable step labels for funnel events (numeric step is
@@ -84,26 +93,29 @@ const CROSS_STEP_REQUIRED = [
   },
 ];
 
-// MEH-1769: a stored draft only earns the resume banner when the seller
-// actually entered something. Every field write mirrors the WHOLE form to
-// localStorage (setAndSave → saveDraft, :~281), so the stored object is
-// normally EMPTY_FORM-shaped with empty strings — its mere presence proves
-// nothing about whether there is anything to resume.
-// The pre-1769 condition tested 3 of the 12 fields
-// (`producer_name || name || email`) and was wrong in both directions: a
-// draft where the seller had only picked a city or typed a phone never
-// offered a resume, and every field added to EMPTY_FORM since was invisible
-// to it by default. Checking every persisted value closes both.
-// `password` is stripped before the write (saveDraft, :~239) so it can never
-// appear here; the guard is defensive, not load-bearing.
-function hasDraftContent(parsed) {
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
-  return Object.entries(parsed).some(([field, value]) => {
-    if (field === "password") return false;
-    if (typeof value === "string") return value.trim() !== "";
-    if (Array.isArray(value)) return value.length > 0;
-    return Boolean(value);
-  });
+/**
+ * MEH-1977: which step may a restored draft land on?
+ *
+ * The card asks for "restore lands on step 3 with data". That is safe on the
+ * upgrade path and UNSAFE on the signup path, and the reason is the other half
+ * of this same feature: **the password is deliberately never persisted**
+ * (`packDraft` strips it). A signed-out seller dropped straight onto STORY
+ * would carry an empty `form.password` into the submit body — and `password`
+ * is not in CROSS_STEP_REQUIRED, so nothing bounces her back to ACCOUNT. She
+ * would get a backend rejection pointing at no field, two frames from the
+ * input that caused it. That is worse than re-typing three fields, which is
+ * the whole thing the resume was for.
+ *
+ * So: with a token, the account frame is skipped anyway (`:318`) and any
+ * collected step is reachable. Without one, ACCOUNT must be crossed on foot.
+ * CONFIRM is never a resume target under either — it is the post-submit
+ * acknowledgement frame, reached only from a 200 (`:613`).
+ */
+function safeResumeStep(storedStep, hasToken) {
+  if (!hasToken) return null;
+  if (typeof storedStep !== "number") return null;
+  if (storedStep < STEP.DETAILS || storedStep > STEP.STORY) return null;
+  return storedStep;
 }
 
 const EMPTY_FORM = {
@@ -357,11 +369,27 @@ function RegisterProducerPageBody() {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
-        // MEH-1769: hasDraftContent (:~46) replaces the 3-field truthiness
-        // test. An empty-storage visit never reaches here at all (getItem
-        // returns null); a draft that exists but holds nothing the seller
-        // typed no longer earns a banner promising a "מילוי קודם".
-        if (hasDraftContent(JSON.parse(saved))) setShowDraftBanner(true);
+        const draft = parseDraft(saved, Date.now());
+        if (!draft) {
+          // MEH-1977: expired, garbage, or a shape we no longer understand.
+          // Deleting is the point rather than the cleanup — a draft holding a
+          // seller's name, phone and address should not sit on a shared
+          // machine indefinitely just because nobody came back for it.
+          localStorage.removeItem(DRAFT_KEY);
+        } else {
+          // MEH-1977: a pre-envelope draft has no recoverable age, so it is
+          // grandfathered exactly once — re-written as v2 stamped now, after
+          // which it expires normally. See parseDraft's LEGACY note for why
+          // this beats deleting it.
+          if (draft.restamp) {
+            localStorage.setItem(DRAFT_KEY, packDraft(draft.form, null, Date.now()));
+          }
+          // MEH-1769: hasDraftContent replaces the 3-field truthiness test. An
+          // empty-storage visit never reaches here at all (getItem returns
+          // null); a draft that exists but holds nothing the seller typed no
+          // longer earns a banner promising a "מילוי קודם".
+          if (hasDraftContent(draft.form)) setShowDraftBanner(true);
+        }
       }
     } catch {}
   }, []);
@@ -383,10 +411,13 @@ function RegisterProducerPageBody() {
       .catch(() => setPrefillApplied(true));
   }, [prefillToken, prefillApplied]);
 
-  const saveDraft = (updated) => {
+  // MEH-1977: `step` is captured so a resumed draft can land where the seller
+  // left off. It is written on every field change, so it tracks the frame the
+  // keystroke happened on — not the furthest frame ever reached, which would
+  // promise progress the form fields do not actually hold.
+  const saveDraft = (updated, atStep) => {
     try {
-      const { password, ...safe } = updated;
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+      localStorage.setItem(DRAFT_KEY, packDraft(updated, atStep, Date.now()));
     } catch {}
   };
 
@@ -394,18 +425,16 @@ function RegisterProducerPageBody() {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate shape — reject anything that isn't a plain object,
-        // or that has a non-array category_ids. Drop garbage drafts so
-        // we don't merge stale schemas (e.g. from before category_ids
-        // existed) into form state.
-        const shapeOk =
-          parsed &&
-          typeof parsed === "object" &&
-          !Array.isArray(parsed) &&
-          (parsed.category_ids === undefined || Array.isArray(parsed.category_ids));
-        if (shapeOk) {
-          setForm((prev) => ({ ...prev, ...parsed }));
+        const draft = parseDraft(saved, Date.now());
+        if (draft) {
+          setForm((prev) => ({ ...prev, ...draft.form }));
+          // MEH-1977: only ever forward, and only where the seller can
+          // actually finish from — see safeResumeStep for why a signed-out
+          // resume must still cross the account frame.
+          let hasToken = false;
+          try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
+          const resumeAt = safeResumeStep(draft.step, hasToken);
+          if (resumeAt) setStep(resumeAt);
         } else {
           localStorage.removeItem(DRAFT_KEY);
         }
@@ -439,7 +468,7 @@ function RegisterProducerPageBody() {
   const setAndSave = (updater) => {
     setForm((prev) => {
       const next = updater(prev);
-      saveDraft(next);
+      saveDraft(next, step);
       return next;
     });
   };
