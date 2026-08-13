@@ -43,19 +43,37 @@ const H = 1920;
 // Bare host for on-card display (SITE_URL is the full https:// origin).
 const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 
+// Same two ranges app/fonts.js declares for this family's next/font/local
+// calls (`declarations: [{ prop: "unicode-range", ... }]`) — literal, not
+// imported: a FontFace() descriptor isn't under next/font/local's
+// static-serialization constraint, but duplicating the exact values (rather
+// than sharing a constant) matches how fonts.js already repeats this same
+// latin range across its own calls, for a different but adjacent reason.
+const FRANK_RUHL_LIBRE_HEBREW_RANGE =
+  "U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F";
+const LATIN_RANGE =
+  "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
+
 async function loadFonts() {
   // Same family name twice (hebrew + latin subsets) is deliberate — see the
-  // import comment above. DM Sans stays latin-only: that mirrors fonts.js
-  // (city/category text already fell back to the system Hebrew font for
-  // Hebrew glyphs before this change; unrelated to what this ticket fixes).
+  // import comment above. Each FontFace carries an explicit `unicodeRange`
+  // descriptor (3rd constructor arg): without one it defaults to the full
+  // codespace, so BOTH faces would claim to cover every character and which
+  // one wins for a given glyph is unspecified — exactly the ambiguity
+  // fonts.js's own unicode-range declarations exist to remove for the CSS
+  // path, and the reason a same-model review flagged this as a real gap
+  // rather than a cosmetic one. DM Sans stays latin-only, no range needed:
+  // that mirrors fonts.js (city/category text already fell back to the
+  // system Hebrew font for Hebrew glyphs before this change; unrelated to
+  // what this ticket fixes).
   const faces = [
-    ["Frank Ruhl Libre", frankRuhlLibreHebrewUrl],
-    ["Frank Ruhl Libre", frankRuhlLibreLatinUrl],
-    ["DM Sans", dmSansLatinUrl],
+    ["Frank Ruhl Libre", frankRuhlLibreHebrewUrl, FRANK_RUHL_LIBRE_HEBREW_RANGE],
+    ["Frank Ruhl Libre", frankRuhlLibreLatinUrl, LATIN_RANGE],
+    ["DM Sans", dmSansLatinUrl, undefined],
   ];
-  for (const [name, url] of faces) {
+  for (const [name, url, unicodeRange] of faces) {
     try {
-      const f = new FontFace(name, `url(${url})`);
+      const f = new FontFace(name, `url(${url})`, unicodeRange ? { unicodeRange } : undefined);
       await f.load();
       document.fonts.add(f);
     } catch {
