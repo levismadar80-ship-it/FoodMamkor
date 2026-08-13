@@ -39,11 +39,21 @@ export default function ProducerDashboardInsightsPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
   const [analytics, setAnalytics] = useState(null);
+  // MEH-1777: a rejected analytics fetch used to leave `analytics` null
+  // forever, and the loading gate below can't tell "still in flight" from
+  // "failed" apart — so it rendered the loading string permanently, with no
+  // way out. analyticsError + analyticsAttempt is the same distinct-error +
+  // retry-counter shape dashboard/page.js already uses for this exact class.
+  const [analyticsError, setAnalyticsError] = useState(false);
+  const [analyticsAttempt, setAnalyticsAttempt] = useState(0);
   // MEH-1101: the analytics payload has no approved/published flag — the
   // status signal comes from /producers/me (same source as the Overview's
   // isApproved, page.js). null = unknown → banner stays hidden (fail-quiet).
   // profileSettled gates render so the banner doesn't pop in after an
   // analytics-only first paint (layout shift on every pending producer).
+  // A rejected /producers/me fetch is left as this fail-quiet null on
+  // purpose (MEH-1777 audit): it only hides the pre-publish banner below,
+  // never blocks the page, so it does not get the same error+retry treatment.
   const [profile, setProfile] = useState(null);
   const [profileSettled, setProfileSettled] = useState(false);
 
@@ -53,15 +63,45 @@ export default function ProducerDashboardInsightsPage() {
       router.push("/login");
       return;
     }
-    api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
+    setAnalyticsError(false);
+    api
+      .get("/producers/me/analytics")
+      .then((r) => setAnalytics(r.data))
+      .catch(() => {
+        setAnalytics(null);
+        setAnalyticsError(true);
+      });
     api
       .get("/producers/me")
       .then((r) => setProfile(r.data))
       .catch(() => setProfile(null))
       .finally(() => setProfileSettled(true));
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, analyticsAttempt]);
 
   if (authLoading || !user || user.role !== "producer") return null;
+
+  // MEH-956 precedent (dashboard/page.js): the error branch precedes the
+  // loading branch so a failure never falls through and reads as "loading".
+  if (analyticsError) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        <div
+          data-testid="insights-load-error"
+          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          role="alert"
+        >
+          <p className="text-fg-muted mb-4">{t("section_errors.analytics")}</p>
+          <button
+            type="button"
+            onClick={() => setAnalyticsAttempt((n) => n + 1)}
+            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+          >
+            {t("section_errors.retry_cta")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!analytics || !profileSettled) {
     return (
