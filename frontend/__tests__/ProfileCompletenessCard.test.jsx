@@ -132,8 +132,9 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     expect(hrefs(container)).toEqual(
       expect.arrayContaining([
         `${EDIT}#profile-images`,
-        // MEH-1165 item 4: the location row lands on the location card.
-        `${EDIT}#location`,
+        // MEH-1165 item 4 / MEH-2058: the location row lands on
+        // LocationsEditor (the duplicate LocationCard target was deleted).
+        `${EDIT}#locations`,
         `${EDIT}#profile-products`,
         `${EDIT}#profile-contact`,
         `${EDIT}#hours`,
@@ -205,8 +206,8 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     // location todo → 4/5 → 80%, and the location step is the top remaining.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "80");
     const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
-    // MEH-1165 item 4: the location step's CTA lands on the location card.
-    expect(cta).toHaveAttribute("href", `${EDIT}#location`);
+    // MEH-1165 item 4 / MEH-2058: the location step's CTA lands on LocationsEditor.
+    expect(cta).toHaveAttribute("href", `${EDIT}#locations`);
   });
 });
 
