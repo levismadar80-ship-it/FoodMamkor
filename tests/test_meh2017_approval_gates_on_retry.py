@@ -125,7 +125,7 @@ def test_retry_path_re_runs_the_photo_gate(client, db, monkeypatch):
 
     # --- the actual contract ------------------------------------------------
     assert resp.status_code == 422, (
-        "the retry approved a producer with no photos — the MEH-799 gate ran "
+        "the retry approved a producer with no photos — the photo gate ran "
         "only on the main path. Response: " + resp.text
     )
 
