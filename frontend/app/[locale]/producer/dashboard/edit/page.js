@@ -43,13 +43,13 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-// MEH-1158: MapPin + per-channel glyphs feed the header previews below.
+// MEH-1158: per-channel glyphs feed the header previews below.
 // MEH-1408: CaretLeft — the "back to all sections" link's inline-start indicator
 // (base points inline-start in LTR; rtl:rotate-180 flips it to inline-start in RTL).
-// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.)
+// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.
+//  MapPin dropped MEH-2058 — its only use was the deleted "location" header preview.)
 import {
   Warning,
-  MapPin,
   CaretLeft,
   WhatsappLogo,
   Phone,
@@ -77,7 +77,7 @@ import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, HoursCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -106,7 +106,11 @@ const ANCHOR_TO_KEY = {
   // MEH-1167: kashrut-request card (badge request + cert photo + status).
   kashrut: "kashrut",
   images: "images",
-  location: "location",
+  // MEH-2058: LocationsEditor's own anchorId — was unregistered while the
+  // now-deleted LocationCard (anchor "location", singular) sat beside it as
+  // the checklist deep-link target. Registering it keeps
+  // ProfileCompletenessCard's "location" step CTA working.
+  locations: "locations",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
@@ -162,7 +166,7 @@ const KEY_TO_ANCHOR = {
   license: "license",
   kashrut: "kashrut",
   images: "images",
-  location: "location",
+  locations: "locations",
   products: "products",
   pricing: "pricing",
   delivery: "delivery",
@@ -194,7 +198,10 @@ const KEY_TO_GROUP = {
   ownerStory: "profile",
   license: "trust",
   kashrut: "trust",
-  location: "location",
+  // MEH-2058: not a GROUP_MEMBERS entry (LocationsEditor was never part of
+  // the hub's "{done}/{total}" count, before or after this chunk) — only
+  // registered here so a #locations deep link resolves to the right group.
+  locations: "location",
   delivery: "location",
   hours: "location",
   orderWindow: "location",
@@ -217,8 +224,7 @@ const OPEN_KEY_FOR = (key) =>
   key === "license" || key === "kashrut" ? "trust" : key;
 
 // Ordered member card keys per group — for the hub completion count + the
-// next-step marker placement (location is filtered out below for delivery-only
-// profiles, whose location card isn't mounted).
+// next-step marker placement.
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "products", "pricing", "ownerStory"],
   trust: ["license", "kashrut"],
@@ -228,7 +234,11 @@ const GROUP_MEMBERS = {
   // 2/3 and nudge them to maintain hours they never asked for (the exact
   // GBP-staleness risk the ticket cites). It still belongs to the location
   // group via KEY_TO_GROUP, so #order-window deep-links resolve normally.
-  location: ["location", "delivery", "hours"],
+  // MEH-2058: "location" was a member of this group before its card (the
+  // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
+  // the group's only location-writing surface and isn't tracked here (see
+  // MEH-1544's note above for why an opt-in-shaped field stays out of the count).
+  location: ["delivery", "hours"],
   contact: ["contact", "questions"],
 };
 
@@ -254,7 +264,6 @@ const HUB_PREVIEW_KEYS = new Set([
   "images", // PreviewThumbs — fixed 40px squares
   "categories", // PreviewChips — closed vocabulary, capped at 3 (MEH-1297)
   "license", // masked "•••1234" chip (MEH-1258)
-  "location", // MapPin + city name
   "contact", // channel glyph + channel label
 ]);
 
@@ -489,8 +498,7 @@ function EditPageInner() {
   // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
   // whose summary signal reads empty gets a single 8px accent dot — so the
   // owner always knows where to start. Derived from the SAME profile fields
-  // the summaries above compute (no producer-completeness import, no fetch);
-  // location is skipped for delivery-only profiles (its card isn't mounted).
+  // the summaries above compute (no producer-completeness import, no fetch).
   // Falls through to null when nothing is missing → no marker at all.
   const productsForMarker = productsCount ?? profile.products?.length ?? 0;
   const nextStepKey =
@@ -498,15 +506,13 @@ function EditPageInner() {
       ? "images"
       : (profile.categories?.length ?? 0) === 0
         ? "categories"
-        : profile.has_physical_location !== false && !(profile.city || "").trim()
-          ? "location"
-          : !(profile.description || "").trim() || isDefaultDescription(profile.description)
-            ? "bio"
-            : productsForMarker < 3
-              ? "products"
-              : !(profile.phone || "").trim()
-                ? "contact"
-                : null;
+        : !(profile.description || "").trim() || isDefaultDescription(profile.description)
+          ? "bio"
+          : productsForMarker < 3
+            ? "products"
+            : !(profile.phone || "").trim()
+              ? "contact"
+              : null;
   // ADR-019 / ADR-024: incomplete-affordance is gold (bg-accent = #896714),
   // never red — a partial profile is progress. role=img + aria-label so the
   // marker is announced; RTL logical margin-start (ms-*) keeps it beside the
@@ -558,14 +564,6 @@ function EditPageInner() {
       ) : (
         <PreviewEmpty />
       ),
-    location: (profile.city || "").trim() ? (
-      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
-        <MapPin size={16} aria-hidden="true" className="shrink-0" />
-        <span className="truncate">{profile.city}</span>
-      </span>
-    ) : (
-      <PreviewEmpty />
-    ),
     bio: bioFirstLine ? (
       <span className="block text-xs font-normal text-fg-muted truncate">
         {bioFirstLine}
@@ -632,7 +630,6 @@ function EditPageInner() {
     ),
     license: Boolean(licenseRaw),
     kashrut: (profile.kashrut_badges || []).length > 0,
-    location: Boolean((profile.city || "").trim()),
     delivery:
       profile.has_physical_location !== false ||
       Boolean(profile.offers_delivery),
@@ -645,12 +642,9 @@ function EditPageInner() {
 
   // MEH-1408: hub-tile props per group — completion "{done}/{total}", the
   // next-step dot when the next step lands in this group, and up to two of the
-  // group's existing filled previews (MEH-1158 peek). The location card drops
-  // out of the membership for delivery-only profiles (it isn't mounted).
+  // group's existing filled previews (MEH-1158 peek).
   const groupTile = (g) => {
-    const members = GROUP_MEMBERS[g].filter(
-      (k) => !(k === "location" && profile.has_physical_location === false)
-    );
+    const members = GROUP_MEMBERS[g];
     const done = members.filter((k) => cardFilled[k]).length;
     const withPreview = members.filter((k) => cardFilled[k] && previews[k]);
     // MEH-1920: hub tiles take only fixed-shape previews (see HUB_PREVIEW_KEYS).
@@ -679,7 +673,6 @@ function EditPageInner() {
     images: t("images.heading"),
     categories: t("categories.heading"),
     license: t("license.heading"),
-    location: t("location.heading"),
     bio: t("description_card.heading"),
     products: tProducts("section_heading"),
     contact: t("contact_channels.heading"),
@@ -691,7 +684,7 @@ function EditPageInner() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "delivery", "hours", "orderWindow", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1019,7 +1012,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: location — location, delivery, hours ===== */}
+      {/* ===== GROUP: location — locations, delivery, hours ===== */}
       <div
         hidden={group !== "location"}
         className="space-y-6"
@@ -1027,27 +1020,9 @@ function EditPageInner() {
       >
         {backLink}
 
-        {/* ③ Edit-tab chunk C — producer-facing location/coords editor.
-            MEH-213: only physical-location producers have a map pin; delivery-only
-            businesses intentionally have no lat/lng, so the card is hidden for
-            them (has_physical_location === false). */}
-        {profile.has_physical_location !== false && (
-          <EditAccordionCard
-            anchorId="location"
-            title={t("location.heading")}
-            summary={profile.city || tAcc("location_missing")}
-            preview={previews.location}
-            marker={nextStepKey === "location" ? nextStepDot : undefined}
-            open={openKey === "location"}
-            onToggle={() => toggleKey("location")}
-          >
-            <LocationCard
-              profile={profile}
-              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-              reportDirty={reportDirty}
-            />
-          </EditAccordionCard>
-        )}
+        {/* MEH-2058: the duplicate "מיקום על המפה" card (owner-facing
+            Producer.lat/lng/city editor) was removed here — LocationsEditor
+            below is now the section's only location-writing surface. */}
 
         {/* MEH-1421 (MEH-1388 chunk 4a): multi-location editor (branch / pickup /
             market_stand). NOT gated on has_physical_location — a delivery-only
