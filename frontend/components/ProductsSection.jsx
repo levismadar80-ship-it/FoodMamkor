@@ -43,10 +43,19 @@ import Input from "@/components/ui/Input";
 // is In Progress on exactly that surface — stating either here would pre-empt
 // its decision with copy nobody ratified.
 //
-// This is what the owner form offers minus `low_carb`, which is being withdrawn
-// as an undefined claim (MEH-2047 PR-B, MEH-1259 precedent). PR-A leaves that
-// chip standing and gives it no definition; PR-B removes the chip, at which
-// point this list is again exactly the chip row.
+// This list is now exactly the chip row. "דל פחמימות" was withdrawn from the
+// form in the second half of MEH-2047 — a claim with no defined standard in
+// EU/UK 1924/2006 or ת"י 1145, so no honest definition could be written for it
+// and a small business could not substantiate one without a lab analysis. The
+// `products.is_low_carb` column and every value already stored in it are
+// untouched; only the surfaces are gone. Same shape as the MEH-1259 organic
+// removal, whose comments in lib/badges.js and lib/map-chips.js are the
+// precedent this followed.
+//
+// Note the form no longer SENDS is_low_carb at all: the product update handler
+// (backend/app/routers/producer_me.py:1445) uses model_dump(exclude_unset=True),
+// so an omitted field is not written and an existing marking survives an edit
+// untouched. Sending `false` instead would have silently cleared it.
 const DIET_DEFINITION_KEYS = ["gluten_free", "vegan", "vegetarian", "lactose_free", "no_added_sugar"];
 
 // MEH-1809: unified submit-validation — every required/range check runs
@@ -97,7 +106,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, is_low_carb: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -192,11 +201,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
         is_no_added_sugar: form.is_no_added_sugar,  // MEH-1934
-        is_low_carb: form.is_low_carb,              // MEH-1934
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, is_low_carb: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch {
@@ -219,7 +227,6 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
       is_no_added_sugar: !!product.is_no_added_sugar,  // MEH-1934
-      is_low_carb: !!product.is_low_carb,              // MEH-1934
     });
     setError("");
     setEditFormErrors({});
@@ -304,7 +311,6 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
         is_no_added_sugar: !!editForm.is_no_added_sugar,  // MEH-1934
-        is_low_carb: !!editForm.is_low_carb,              // MEH-1934
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -501,7 +507,6 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                     <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                     {/* MEH-1934: appended last so the existing diet order is unchanged. No new chip-icons entry — same as vegetarian, which renders iconless. */}
                     <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={!!editForm.is_no_added_sugar} onToggle={() => setEditForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
-                    <DietChip iconKey="low_carb" label={tForm("diet_low_carb")} pressed={!!editForm.is_low_carb} onToggle={() => setEditForm((f) => ({ ...f, is_low_carb: !f.is_low_carb }))} />
                   </div>
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
                       surfaces the business in the matching public filter. */}
@@ -671,7 +676,6 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                 {/* MEH-1934 */}
                 <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={form.is_no_added_sugar} onToggle={() => setForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
-                <DietChip iconKey="low_carb" label={tForm("diet_low_carb")} pressed={form.is_low_carb} onToggle={() => setForm((f) => ({ ...f, is_low_carb: !f.is_low_carb }))} />
               </div>
               {/* MEH-1439: tell the owner what marking a diet flag does — it
                   surfaces the business in the matching public filter. */}
