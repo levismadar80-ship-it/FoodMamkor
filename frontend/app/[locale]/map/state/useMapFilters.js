@@ -8,7 +8,7 @@ import {
   resolveCategoryId,
 } from "@/lib/map-chips";
 import { haversineKm } from "@/lib/distance";
-import { producerInBounds } from "@/lib/producerPoints";
+import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
 /**
  * Pure client-side ordering for the /map card list — the sort dropdown's
@@ -31,10 +31,15 @@ import { producerInBounds } from "@/lib/producerPoints";
 export function sortProducers(list, sortBy, userLoc) {
   if (!Array.isArray(list) || list.length < 2) return list ?? [];
   if (sortBy === "nearest" && userLoc) {
-    const dist = (p) =>
-      typeof p.lat === "number" && typeof p.lng === "number"
-        ? haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng)
+    // MEH-1938 chunk 3: distance to the CLOSEST point via producerPoints()
+    // instead of Producer.lat/lng directly (mirrors ProducerCard.jsx /
+    // the backend's haversine_min_km COALESCE).
+    const dist = (p) => {
+      const pts = producerPoints(p);
+      return pts.length > 0
+        ? Math.min(...pts.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng)))
         : Infinity;
+    };
     return [...list].sort((a, b) => dist(a) - dist(b));
   }
   if (sortBy === "rating") {
@@ -119,6 +124,7 @@ export function useMapFilters({
     categoryKeys: [],
     organic: false,
     has_delivery: false,
+    pickup_points: false,  // MEH-2046
     verified: false,
     kosher: false,
     grass_fed: false,
@@ -164,45 +170,53 @@ export function useMapFilters({
     setActiveProducerId(null);
   };
 
-  const onToggleChipClick = (key) => {
-    if (key === "has_delivery" && !chipState.has_delivery && !userCity) {
-      setShowCityPicker(true);
-      return;
-    }
-    cancelPendingSheetFetch();
+  // MEH-2046 (Option C — non-blocking). The משלוח chip used to return EARLY
+  // here: no state change, no fetch, chip visibly dead until a city was picked.
+  // On /map that was its primary flow, so the chip's own `?has_delivery=true`
+  // never reached the API — and, because the modal then sent `delivery_city`,
+  // the parameter was discarded by the service ladder anyway.
+  // Now the toggle always applies first and the modal is offered AFTER, as an
+  // optional refinement. Dismissing it (MapClient.jsx `onClose` only clears
+  // `showCityPicker`) therefore leaves the chip ON and unscoped — "delivers
+  // anywhere" — which is a real, useful answer rather than a dead end.
+  const applyToggle = (key, { fetch }) => {
     const next = { ...chipState, [key]: !chipState[key] };
     setChipState(next);
-    loadProducers(buildParams(next));
+    fetch(next);
     setCommittedBounds(null);
     setMapMoved(false);
     setSelectedProducer(null);
     setActiveProducerId(null);
+    if (key === "has_delivery" && next.has_delivery && !userCity) {
+      setShowCityPicker(true);
+    }
+  };
+
+  const onToggleChipClick = (key) => {
+    cancelPendingSheetFetch();
+    applyToggle(key, { fetch: (next) => loadProducers(buildParams(next)) });
   };
 
   // MEH-1075: sheet-originated toggles — chipState updates IMMEDIATELY (one
   // shared state; the quick chips sync live) but the refetch is debounced so
   // ticking several chips in the open sheet fires one request, not one per
   // click. Quick-chip clicks outside the sheet keep the instant fetch above.
-  // has_delivery still routes through onToggleChipClick's CityPickerModal
-  // guard shape — duplicated here because the fetch path differs.
+  // MEH-2046: both entry points now share `applyToggle`, so the Option C
+  // behaviour cannot drift between the chip row and the sheet — the previous
+  // shape duplicated the guard in two places and relied on both being edited
+  // together. Only the fetch differs: instant here, debounced there.
   const SHEET_FETCH_DEBOUNCE_MS = 300;
 
   const onSheetToggleChip = (key) => {
-    if (key === "has_delivery" && !chipState.has_delivery && !userCity) {
-      setShowCityPicker(true);
-      return;
-    }
-    const next = { ...chipState, [key]: !chipState[key] };
-    setChipState(next);
-    clearTimeout(sheetFetchTimer.current);
-    sheetFetchTimer.current = setTimeout(
-      () => loadProducers(buildParams(next)),
-      SHEET_FETCH_DEBOUNCE_MS,
-    );
-    setCommittedBounds(null);
-    setMapMoved(false);
-    setSelectedProducer(null);
-    setActiveProducerId(null);
+    applyToggle(key, {
+      fetch: (next) => {
+        clearTimeout(sheetFetchTimer.current);
+        sheetFetchTimer.current = setTimeout(
+          () => loadProducers(buildParams(next)),
+          SHEET_FETCH_DEBOUNCE_MS,
+        );
+      },
+    });
   };
 
   // MEH-1075: "ניקוי הכל" inside FilterSheet — resets the 7 toggles only.
@@ -215,6 +229,7 @@ export function useMapFilters({
       ...chipState,
       organic: false,
       has_delivery: false,
+      pickup_points: false,  // MEH-2046
       verified: false,
       kosher: false,
       grass_fed: false,
@@ -248,6 +263,7 @@ export function useMapFilters({
       categoryKeys: [],
       organic: false,
       has_delivery: false,
+      pickup_points: false,  // MEH-2046
       verified: false,
       kosher: false,
       grass_fed: false,
