@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.email import send_email
+from app.services.producer_listing import catalog_default_availability_condition
 from app.database import get_db
 from app.models import (
     Category,
@@ -87,8 +88,18 @@ def decode_unsubscribe_token(token: str) -> str | None:
 @router.get("/stats", response_model=StatsOut)
 @limiter.limit("60/minute")
 def get_stats(request: Request, db: Session = Depends(get_db)):
+    # MEH-1986: same default-hide rule as the catalog. This is the count the
+    # home page publishes as "how many businesses are on the site"
+    # (use-home-page.js:258), so it has to be the number a visitor can then
+    # actually browse to. Converting /producers/count without this one would
+    # not have fixed the disagreement, only moved it between the two.
     producers_count = (
-        db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar()
+        db.query(func.count(Producer.id))
+        .filter(
+            Producer.status == "approved",
+            catalog_default_availability_condition(),
+        )
+        .scalar()
         or 0
     )
     categories_count = db.query(func.count(Category.id)).scalar() or 0
