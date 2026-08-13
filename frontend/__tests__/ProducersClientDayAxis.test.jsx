@@ -40,6 +40,8 @@ vi.mock("@phosphor-icons/react", () => ({
   CaretDown: (p) => <span {...p} />,
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
+  // MEH-2046: chip-icons maps pickup_points -> Package.
+  Package: (p) => <span {...p} />,
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
