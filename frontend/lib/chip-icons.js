@@ -23,6 +23,7 @@
 import {
   SealCheck,
   Truck,
+  Package,
   Certificate,
   Leaf,
   GrainsSlash,
@@ -36,6 +37,7 @@ import {
 const CHIP_ICON_COMPONENTS = {
   verified: SealCheck,
   has_delivery: Truck,
+  pickup_points: Package,  // MEH-2046
   kosher: Certificate,
   vegan: Leaf,
   gluten_free: GrainsSlash,

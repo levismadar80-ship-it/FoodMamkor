@@ -61,8 +61,12 @@ function chipSubtext(chip) {
 // (has_delivery) per spec — a FilterSheet-LOCAL presentation reorder that leaves
 // lib/map-chips.js TOGGLE_CHIPS untouched (scope lock: the array order there
 // still drives /producers + every other consumer).
+// MEH-2046: pickup_points appended AFTER has_delivery, so the MEH-1478 order
+// above (verified leads, משלוח trails) is extended rather than disturbed — and
+// the sheet's service group now mirrors the promoted row's pairing
+// (משלוח then איסוף עצמי) instead of splitting the two apart.
 const GROUP_CHIP_ORDER = {
-  service: ["verified", "has_delivery"],
+  service: ["verified", "has_delivery", "pickup_points"],
 };
 // MEH-1862: the chip SET is now a parameter, so /producers can mount this sheet
 // with its own axes. `source` defaults to TOGGLE_CHIPS, which is what /map has
