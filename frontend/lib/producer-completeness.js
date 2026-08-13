@@ -7,6 +7,13 @@
 //   yellow — visible but incomplete
 //   green  — every required field is filled
 
+// MEH-1938 chunk 3: reads through producerPoints() instead of Producer.lat/lng
+// directly, so a producer whose only coordinates live in a producer_locations
+// row (no Producer.lat/lng) counts as having coords too — that case used to
+// read red by mistake. producerPoints() still falls back to Producer.lat/lng
+// when there is no usable location row, so today's producers are unaffected.
+import { producerPoints } from "./producerPoints.js";
+
 // MEH-831: the canonical Hebrew field labels this heuristic emits in `missing`.
 // Single source of truth — ProfileCompletenessCard imports these to build its
 // label→slug map instead of mirroring the strings (which would drift silently
@@ -41,12 +48,15 @@ export function isDefaultDescription(text) {
 export function producerCompleteness(p) {
   const missing = [];
   const isDeliveryOnly = p.has_physical_location === false && p.offers_delivery;
+  // MEH-1938 chunk 3: true when the producer has a usable point through
+  // either a producer_locations row or the Producer.lat/lng fallback.
+  const hasCoords = producerPoints(p).length > 0;
 
   if (!p.city) missing.push(COMPLETENESS_FIELDS.city);
 
   // MEH-213: delivery-only producers intentionally have no lat/lng.
   // Flag missing coords only when there IS a physical location.
-  if (!isDeliveryOnly && (p.lat == null || p.lng == null)) {
+  if (!isDeliveryOnly && !hasCoords) {
     missing.push(COMPLETENESS_FIELDS.coords);
   }
 
@@ -93,7 +103,7 @@ export function producerCompleteness(p) {
 
   let priority = "green";
   const redCondition = !p.city
-    || (!isDeliveryOnly && (p.lat == null || p.lng == null))
+    || (!isDeliveryOnly && !hasCoords)
     || noContact;
   if (redCondition) {
     priority = "red";
