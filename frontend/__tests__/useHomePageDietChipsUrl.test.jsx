@@ -74,13 +74,14 @@ describe("homepage attribute chips → /producers deep-link (MEH-1774)", () => {
       // with no error. Assert the VALUE, parsed the way the listing parses it.
       expect(new URL(href, "http://x").searchParams.get(chip.key)).toBe("1");
     }
-    // MEH-1934: 7 → 9 (no_added_sugar + low_carb). This number is NOT here to
+    // MEH-1934: 7 → 9 (no_added_sugar + low_carb); MEH-2047: 9 → 8 (low_carb
+    // withdrawn). This number is NOT here to
     // be bumped — it is the leak detector, and it caught exactly this change
     // putting two chips onto the home row, because CHIPS_CONFIG is shared with
     // /producers. So the count is now asserted TOGETHER with the gate: every
     // shared chip must be either a pre-MEH-1934 one or declared in
     // GATED_DIET_KEYS. Bumping the number alone fails the second half.
-    expect(CHIPS_CONFIG).toHaveLength(9);
+    expect(CHIPS_CONFIG).toHaveLength(8);
     const UNGATED = [
       "kosher", "vegan", "vegetarian", "gluten_free",
       "lactose_free", "has_delivery", "verified",
@@ -229,7 +230,7 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
     expect(params.get("city")).toBe("ירושלים");
   });
 
-  it("context rides along for ALL 9 chip keys, not just משלוח", () => {
+  it("context rides along for ALL 8 chip keys, not just משלוח", () => {
     withContext("חיפה", "שלישי");
     const { result } = renderHook(() => useHomePage());
 
@@ -241,6 +242,6 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
       expect(params.get("city")).toBe("חיפה");
       expect(params.getAll("delivery_days")).toEqual(["שלישי"]);
     }
-    expect(CHIPS_CONFIG).toHaveLength(9);  // MEH-1934
+    expect(CHIPS_CONFIG).toHaveLength(8);  // MEH-1934, MEH-2047
   });
 });

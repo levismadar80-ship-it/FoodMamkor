@@ -97,8 +97,9 @@ export const TOGGLE_CHIPS = [
   { key: "lactose_free",  ...ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
   // MEH-1934: appended AFTER lactose_free so the MEH-1438 diet order
   // (טבעוני · צמחוני · ללא גלוטן · ללא לקטוז) does not shift.
+  // MEH-2047: "דל פחמימות" removed from this row — undefined claim, column and
+  // stored values kept. Same treatment organic got in MEH-1259 above.
   { key: "no_added_sugar", ...ATTRIBUTE_LABELS.no_added_sugar, group: "diet" },
-  { key: "low_carb",      ...ATTRIBUTE_LABELS.low_carb,      group: "diet" },
 ];
 
 // MEH-1468: QUICK_CHIP_KEYS + countActiveSheetOnlyFilters were removed here.

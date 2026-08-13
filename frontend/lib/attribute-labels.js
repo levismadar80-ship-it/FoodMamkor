@@ -101,13 +101,12 @@ export const ATTRIBUTE_LABELS = {
     evidence: "self-declared",
     subtext: "עסקים עם מוצרים ללא לקטוז בקטלוג",
   },
-  // MEH-1934: fifth + sixth diet axes. Same any-product / self-declared pair as
-  // the four above — an EXISTS subquery over products, never a whole-business
+  // MEH-1934: fifth diet axis (a sixth, low_carb, was withdrawn — see below).
+  // Same any-product / self-declared shape as — an EXISTS subquery over products, never a whole-business
   // property. Copy is Sapir-LOCKED (MEH-1934 §hebrew_copy): do not paraphrase.
   //
-  // The label names the NEED, not a trend: "דל פחמימות", never "קטו". And
-  // "מתאים לסוכרתיים" is banned on every surface — it is a medical claim, and
-  // this label is a self-declaration about a product, which is the exact
+  // "מתאים לסוכרתיים" stays banned on every surface — it is a medical claim,
+  // and this label is a self-declaration about a product, which is the exact
   // over-claim the MEH-1507 contract exists to prevent.
   no_added_sugar: {
     label: "ללא סוכר מוסף",
@@ -115,10 +114,11 @@ export const ATTRIBUTE_LABELS = {
     evidence: "self-declared",
     subtext: "עסקים עם מוצרים ללא סוכר מוסף בקטלוג",
   },
-  low_carb: {
-    label: "דל פחמימות",
-    scope: "any-product",
-    evidence: "self-declared",
-    subtext: "עסקים עם מוצרים דלי פחמימות בקטלוג",
-  },
+  // MEH-2047: "דל פחמימות" removed — unlike every label above it, no standard
+  // defines it. EU/UK 1924/2006 does not permit a "low carb" claim at all and
+  // ת"י 1145 regulates ללא/דל/מופחת only for named nutrients, carbohydrates not
+  // among them. A scope+evidence pair cannot rescue a term with no referent:
+  // "self-declared" would have described who said it while leaving what they
+  // said undefined. Column + stored values kept, exactly as MEH-1259 did for
+  // organic.
 };
