@@ -254,9 +254,20 @@ def test_pickup_row_without_a_city_is_not_placed(client, db):
 
 def test_pickup_survives_delivery_days(client, db):
     """Days constrain the delivery arm only — a pickup point has no delivery
-    day, so day-filtering must not delete the pickup arm from the union."""
+    day, so day-filtering must not delete the pickup arm from the union.
+
+    The third business is the exclusion witness, and this test went in without
+    one: both of the others match (make_producer hardcodes
+    `delivery_day="ראשון"`, conftest.py:334), so a filter that returned the
+    whole feed produced this exact list and the assertion passed for the wrong
+    reason. It discriminated against the pre-2046 ladder but not against an
+    inert service group — two different failure modes, and the module docstring
+    claims coverage of both. Caught by the CI reviewer on PR #2855, after a
+    correction pass over this same file had already fixed four siblings.
+    """
     _with_pickup(db, "איסוף בלבד")
     make_producer(db, name="משלוח בראשון", delivery_cities=["חיפה"])
+    make_producer(db, name="בתיאום אישי")
 
     resp = client.get("/producers", params={**BOTH, "delivery_days": "ראשון"})
     assert resp.status_code == 200, resp.text
@@ -374,6 +385,35 @@ def test_control_delivery_city_alone_is_unchanged(client, db):
     make_producer(db, name="משלוח לעכו", delivery_cities=["עכו"])
 
     resp = client.get("/producers", params={"delivery_city": "חיפה"})
+    assert resp.status_code == 200, resp.text
+    assert _names(resp) == ["משלוח לחיפה"]
+
+
+def test_control_delivery_days_alone_is_unchanged(client, db):
+    """The `delivery_days` rung moved from an inline `.filter()` to a held
+    `delivery_scope_cond`. Logically identical, but the docstring above promises
+    a control for EVERY refactored branch and this one had none — the promise
+    was covering two of four. (tests/test_meh1645_delivery_day_filter.py is the
+    real depth here; this is the isolation guard for the refactor itself.)"""
+    make_producer(db, name="משלוח בראשון", delivery_cities=["חיפה"])
+    _with_pickup(db, "איסוף בלבד")
+    make_producer(db, name="בתיאום אישי")
+
+    resp = client.get("/producers", params={"delivery_days": "ראשון"})
+    assert resp.status_code == 200, resp.text
+    # Pickup alone must NOT satisfy a day filter when no pickup flag is sent.
+    assert _names(resp) == ["משלוח בראשון"]
+
+
+def test_control_delivery_cities_alone_is_unchanged(client, db):
+    """Same reasoning for the `delivery_cities` region-fallback rung."""
+    make_producer(db, name="משלוח לחיפה", delivery_cities=["חיפה"])
+    make_producer(db, name="משלוח לאילת", delivery_cities=["אילת"])
+    _with_pickup(db, "איסוף בלבד")
+
+    resp = client.get(
+        "/producers", params=[("delivery_cities", "חיפה"), ("delivery_cities", "עכו")]
+    )
     assert resp.status_code == 200, resp.text
     assert _names(resp) == ["משלוח לחיפה"]
 
