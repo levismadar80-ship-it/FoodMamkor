@@ -26,16 +26,59 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   // with a path forward (pick a city) instead of a browser dead-end dialog.
   const [geoError, setGeoError] = useState("");
   const overlayRef = useRef(null);
+  // MEH-2039: the trap needs the PANEL, not the overlay — the overlay is
+  // fixed inset-0 and contains the backdrop, so scoping the focusables query
+  // to it would be scoping to "the whole screen".
+  const panelRef = useRef(null);
+  const closeRef = useRef(null);
 
+  // Already present before MEH-2039 — NOT duplicated. The ticket's audit table
+  // marked focus-return absent for this file; the code disagreed and the code wins.
   useFocusReturn(open);
 
+  // MEH-2039: Esc (pre-existing) + Tab trap + initial focus + body scroll lock.
+  // REUSES: LoginPromptModal.jsx:42-77 — the same four concerns in one effect,
+  // copied rather than reinvented.
   useEffect(() => {
     // Modal stays mounted (renders null) when closed, so state survives a
     // close/reopen — clear any stale inline geo error on close (MEH-1192).
     if (!open) { setGeoError(""); return; }
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+
+      const focusables = panelRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+
+    // Initial focus goes to the CLOSE button, not the city field. Focusing a
+    // text input here would raise the on-screen keyboard the instant the modal
+    // opens on mobile — the primary surface. Matches CertModal
+    // (KashrutBadgeStrip.jsx), which focuses its close control for the same
+    // reason. The city field still receives focus on a geolocation failure,
+    // where the user has been given an explicit reason to type.
+    closeRef.current?.focus();
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -113,11 +156,16 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
       className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
+      {/* MEH-2039: aria-label -> aria-labelledby. The panel HAS a visible <h2>,
+          and APG/MDN both say the accessible name should come from it rather
+          than from a parallel string a screen-reader user cannot see change. */}
       <div
+        ref={panelRef}
         className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full max-w-md p-6 relative animate-[slide-up_0.2s_ease-out]"
         role="dialog"
         aria-modal="true"
-        aria-label={t("aria_label")}
+        aria-labelledby="location-modal-title"
+        aria-describedby="location-modal-subtitle"
       >
         {/* MEH-2038: end-4 (visual LEFT in RTL) — the X mirrors to the END of
             the reading direction. At start-4 it sat exactly where the Hebrew
@@ -126,6 +174,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
             tailwind.tokens.json and rendered transparent — see PR for the
             measured contrast ratios. */}
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
           className="absolute top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 flex items-center justify-center text-text transition-colors"
@@ -137,10 +186,13 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         {/* MEH-2038: pe-10 (40px) reserves the button's footprint — it spans
             16→60px from the card edge while the p-6 content box starts at 24px,
             so 36px of overlap needs clearing. REUSES: OnboardingTip.jsx:55. */}
-        <h2 className="font-headline-md text-xl font-bold text-text mb-1 pe-10">
+        <h2
+          id="location-modal-title"
+          className="font-headline-md text-xl font-bold text-text mb-1 pe-10"
+        >
           {t("title")}
         </h2>
-        <p className="text-fg-muted text-sm mb-5 pe-10">
+        <p id="location-modal-subtitle" className="text-fg-muted text-sm mb-5 pe-10">
           {t("subtitle")}
         </p>
 
