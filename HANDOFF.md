@@ -3,6 +3,36 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-13 (evening) — MEH-2046: /map fulfillment IA, 4 code PRs merged + docs
+
+**Last PRs merged:** #2855 (`d9492f24`), #2880 (`fd5ba9f0`), #2894 (`33e193ef`), #2903 (`19136dd7`) — all four **merge commits**, per Sapir's chain-wide amendment overriding the ticket's "squash". This entry ships in the docs-only PR on `feature/meh-2046-pr5-docs`.
+
+**Branch:** `feature/meh-2046-pr5-docs`, cut off `origin/staging` after PR-4 landed.
+
+**What's done:**
+- **PR-1** — `?pickup_points=true`, a composable OR service group (EXISTS over `ProducerLocation`, city-scoped pickup arm), and `delivers`/`offers_pickup` computed on `ProducerListOut`. No column, no Alembic. 22 tests through the public endpoint, each with an exclusion witness.
+- **PR-2** — fixed `ServiceChipRow` (משלוח · איסוף עצמי · סינון) and Option C: the delivery chip applies immediately, the city modal became an optional refinement.
+- **PR-3** — always-present fulfillment tag block on `MapProducerCard`, 4 cells, reading the two server predicates only. Uniform height preserved (measured: 5 rows × 112px).
+- **PR-4** — layer toggle moved into the map's control corners (icon-only, 44px) plus the hidden-businesses reminder line.
+- **E2E on merged staging** — run `31742596841` on `19136dd7`: `executed=271 · passed=262 · failed=6 · flaky=3 · skipped=29`. The six failures are identical to the pre-chain baseline on `bba96eb5` (run `31708662372`); the chain added none.
+
+**What's pending (Sapir):**
+- **`/map` VRT baselines** — `parity.spec.ts` `map` (desktop + mobile) has been red since PR-2; PR-3 and PR-4 changed the same frame again. **One regen now covers all three.** `.github/workflows/**` is CC-deny.
+- **MEH-2046 stays in Backlog** — its DoD includes preview verification Sapir has not run. Rule 29b checked in both directions after every merge: the card never left Backlog and was never wrongly closed.
+- **A lint gap, reported not fixed:** `no-restricted-syntax` inspects string-literal `className`s only, so a physical directional class inside a template literal is invisible to it. `check-rtl.sh` + the `rtl-ok` marker is what actually covers that case.
+
+**Decisions made this session:**
+| Decision | Why |
+|---|---|
+| Merge commits for the whole chain, not squash | Sapir's amendment — a mixed tree across one feature is worse than either method consistently applied |
+| `pickup_points` label stays `/map`-local, out of `ATTRIBUTE_LABELS` | that map is the cross-surface contract; adding it there silently conscripts `/producers` into growing a chip this ticket scopes out (same call MEH-1507 made for `grass_fed`) |
+| `hiddenWhenSecondaryOff` composes `producerPoints` rather than reimplementing rule 3 | keeps MEH-1670 semantics in one place |
+| Layer button joins the **locate** corner, not a "bottom cluster with +/−" | Leaflet's +/− sit at the top of the canvas; no single cluster contains both |
+
+**Known issues discovered, not filed:**
+- The E2E `30-login-journey-c` C2 and `32-register-journey-b-oauth` B1 failures are pre-existing on staging and unexplained. Not chased inside this chain, per instruction.
+- PR-4's body cites the "TEMPORARY — local adversarial review" section of `workflow.md`, which PR #2897 removed the same evening. The local review did run; the citation is what went stale.
+
 ## 2026-08-13 — Close-out batch: 4 items dispatched, 3 merged, 1 handed to Sapir
 
 **Last PRs merged:** #2895 (MEH-1855 chunk 1, `b90e917f`), #2898 (MEH-1855 chunk 2 Phase 1/2, `c8feb00d`), #2897 (MEH-1844 docs, `41766370`). MEH-2045 (#2860) was already merged before this batch started — verified only.
