@@ -1319,7 +1319,14 @@
       "verified": "מאומת",
       "distance_prefix": "ל",
       "wa_message": "היי! הגעתי דרך מהמקור — {name}",
-      "full_profile": "פרופיל מלא"
+      "full_profile": "פרופיל מלא",
+      "fulfillment": {
+        "delivery": "משלוח",
+        "pickup": "איסוף עצמי",
+        "delivery_only": "משלוח בלבד",
+        "pickup_only": "איסוף עצמי בלבד",
+        "arranged": "בתיאום אישי"
+      }
     },
     "mini": {
       "default_label": "מיקום",
