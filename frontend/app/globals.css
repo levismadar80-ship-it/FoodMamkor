@@ -217,8 +217,14 @@ body {
      chain; without the variables this rule matches no @font-face at all,
      because next/font's faces are named generatively. The DM-Sans-then-Heebo
      order is the pre-existing one and must not be swapped — DM Sans carries no
-     Hebrew glyphs, so Heebo is what actually renders Hebrew body text. */
-  font-family: var(--font-body), var(--font-hebrew), 'DM Sans', 'Heebo', sans-serif;
+     Hebrew glyphs, so Heebo is what actually renders Hebrew body text.
+     MEH-2029: --font-hebrew is Heebo's hebrew subset and --font-hebrew-latin is
+     its latin one, split because next/font/local applies one unicode-range per
+     call. The latin half goes LAST because it is the half that carries Heebo's
+     size-adjusted fallback face, and that face has no unicode-range — ahead of
+     --font-hebrew it would swallow every Hebrew glyph. */
+  font-family: var(--font-body), var(--font-hebrew), var(--font-hebrew-latin),
+    'DM Sans', 'Heebo', sans-serif;
   /* docs/archive/LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay
      at 3% opacity. Adds organic "texture" without affecting legibility.
      Inline SVG keeps it CSS-only (no extra HTTP request). */
@@ -228,7 +234,10 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: var(--font-headline), 'Frank Ruhl Libre', serif;
+  /* MEH-2029: hebrew subset, then latin — and the latin half last because it
+     carries the adjusted fallback face. See the body rule above. */
+  font-family: var(--font-headline), var(--font-headline-latin),
+    'Frank Ruhl Libre', serif;
 }
 
 .font-english {
