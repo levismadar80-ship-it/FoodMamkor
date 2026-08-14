@@ -19,11 +19,18 @@
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // Hardcoded — see the note in qa-meh1854-mockapi.mjs. An env read here reds the
 // required Env drift gate as an undocumented variable.
 const BASE = "http://localhost:3000";
-const OUT = "qa-artifacts/MEH-1854";
+// Resolved against THIS FILE, not the caller's cwd. As a relative path it wrote
+// a second, uncompressed copy of every artifact to the repo root when the
+// harness was run from there — silently, since the run still exits 0 and the
+// screenshots still look right. Where evidence lands must not depend on where
+// the operator happened to be standing.
+const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "qa-artifacts/MEH-1854");
 
 // The matrix. Each row names the state it exercises and what the OLD code did.
 const FIXTURES = [
