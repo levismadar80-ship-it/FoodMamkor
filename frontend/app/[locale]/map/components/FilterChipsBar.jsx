@@ -5,6 +5,7 @@ import { Faders } from "@phosphor-icons/react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { CATEGORY_ICONS } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
+import DeliveryContextBanner from "./DeliveryContextBanner";
 import ServiceChipRow from "./ServiceChipRow";
 
 /**
@@ -33,6 +34,9 @@ export default function FilterChipsBar({
   activeFilterTags,
   resetAllFilters,
   activeAttributeCount,
+  // MEH-2046 PR-6: the active city refinement, needed only to gate + address
+  // the day-bridge banner below (Option C refined state = delivery + city).
+  cityFilter,
 }) {
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -61,6 +65,10 @@ export default function FilterChipsBar({
   // is enough to exclude a no-service business.
   const serviceFilterActive =
     !!chipState.has_delivery || !!chipState.pickup_points;
+  // MEH-2046 PR-6: Option C's REFINED state — the משלוח chip is on AND a city
+  // was set (the optional refinement, MEH-2046 decision 1). Unscoped delivery
+  // (chip on, no city) gets no banner — there is no single city to caption.
+  const showDeliveryContextBanner = !!chipState.has_delivery && !!cityFilter;
   return (
     <div dir="rtl" className="min-w-0">
       {/* MEH-1368: consolidated to ONE row — the scrollable category chips
@@ -134,6 +142,14 @@ export default function FilterChipsBar({
         >
           {t("map.filter.arranged_hidden")}
         </p>
+      )}
+      {/* MEH-2046 PR-6: joins this cluster deliberately — the ticket asked
+          for the day-bridge banner beside the counter/explanation line, one
+          chrome block, not a second floating element over the map canvas.
+          `key={cityFilter}` resets the banner's local dismiss state when the
+          refinement city changes, so a new city gets its own explanation. */}
+      {showDeliveryContextBanner && (
+        <DeliveryContextBanner key={cityFilter} city={cityFilter} />
       )}
       {activeFilterTags.length > 0 && (
         <div
