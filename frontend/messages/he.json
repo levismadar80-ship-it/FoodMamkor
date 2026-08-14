@@ -814,7 +814,7 @@
         "vacation_return": "{label} — ניתן להשאיר הודעה",
         "vacation_back": "חוזרת ב-{date}",
         "vacation_back_soon": "חוזרת בקרוב",
-        "new_mark": "חדש",
+        "new_mark": "אין ביקורות עדיין",
         "since_prefix": "מאז",
         "status": {
           "open": "פתוח להזמנות",

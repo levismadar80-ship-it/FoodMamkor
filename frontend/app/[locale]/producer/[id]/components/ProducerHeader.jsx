@@ -180,9 +180,12 @@ export default function ProducerHeader({
         </p>
       )}
 
-      {/* Group 3 — rating anchor (#reviews, MEH-1048) or the "חדש" fallback.
-          "חדש" sits in the rating's slot (Airbnb pattern — a fallback, not
-          another badge). Rating decimal stays dir="ltr" + .numeric so RTL
+      {/* Group 3 — rating anchor (#reviews, MEH-1048) or the empty-reviews
+          fallback. It sits in the rating's slot (Airbnb pattern — a fallback,
+          not another badge). MEH-1746: the string is "אין ביקורות עדיין", NOT
+          "חדש" — that word is reserved for the tenure claim on the card badge
+          (badges.js), and using it here made a two-year-old business with no
+          reviews read as new. Rating decimal stays dir="ltr" + .numeric so RTL
           can't flip "4.8" → "8.4" (MEH-763). */}
       {producer.reviews_count > 0 ? (
         <a
