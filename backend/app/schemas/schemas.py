@@ -2482,6 +2482,28 @@ class RequestChangesIn(BaseModel):
     feedback: str | None = Field(None, max_length=2000)
 
 
+class ProducerRejectIn(BaseModel):
+    """MEH-226: admin "reject" payload — preset key + optional free text.
+
+    REUSES: schemas.py:2473 RequestChangesIn — same shape (optional free text
+    emailed to the producer verbatim, handler owns the emptiness rule). The
+    added `preset_key` selects one of the five canonical rejection reasons;
+    the label itself lives in the BACKEND
+    (`admin.py::PRODUCER_REJECTION_PRESETS`), not here and not in the
+    frontend, so the persisted text, the email and the admin UI cannot drift
+    apart (workflow.md Smell #1). Key validity is checked in the handler
+    alongside the "other requires free text" rule, mirroring
+    request_producer_changes' handler-side 400.
+
+    Back-compatible with the pre-MEH-226 body `{"reason": "..."}` — the
+    endpoint took `reason: str = Body("", embed=True)`, which parses into
+    this model unchanged.
+    """
+
+    preset_key: str | None = None
+    reason: str | None = Field(None, max_length=2000)
+
+
 # --- User ---
 class UserOut(BaseModel):
     id: UUID

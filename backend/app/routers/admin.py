@@ -34,6 +34,7 @@ from app.schemas.schemas import (
     GrantVerifiedIn,
     ProducerAdminCreate,
     ProducerAdminOut,
+    ProducerRejectIn,
     ProducerUpdate,
     RequestChangesIn,
     StoryCardUploadRequest,
@@ -774,17 +775,81 @@ def approve_producer(
     return {"detail": "Producer approved"}
 
 
+# MEH-226: the five canonical rejection reasons. This dict is the SINGLE
+# source of truth for the labels — the admin UI fetches them from
+# GET /admin/producers/rejection-presets rather than carrying its own copy,
+# so the string the admin clicks, the string persisted to
+# producers.rejection_reason, and the string in the producer's email are the
+# same object (workflow.md Smell #1: two owners for one fact).
+# Insertion order is the display order.
+PRODUCER_REJECTION_PRESETS: dict[str, str] = {
+    "missing_docs": "מסמכים חסרים / לא קריאים",
+    "missing_image": "תמונה ראשית חסרה",
+    "incomplete_info": "מידע עסקי לא מלא (כתובת / טלפון / תיאור)",
+    "not_eligible": "עסק לא עומד בתנאי הפלטפורמה",
+    "other": "אחר (פירוט חופשי)",
+}
+
+
+def _compose_rejection_reason(preset_key: str | None, reason: str) -> str:
+    """Join the preset label with the admin's free text into the ONE string
+    that is persisted, emailed and sent to the admin WhatsApp line.
+
+    `other` deliberately yields the free text ALONE — its label reads
+    "אחר (פירוט חופשי)", which is a UI affordance describing the input, not a
+    reason. Prefixing it would put "סיבה: אחר (פירוט חופשי) — ..." in a
+    business owner's inbox. Every other preset prefixes its label and appends
+    the free text only when the admin actually typed some.
+
+    No preset (legacy callers, and the pre-MEH-226 `{"reason": ...}` body)
+    falls through to the free text unchanged.
+    """
+    if preset_key is None or preset_key == "other":
+        return reason
+    label = PRODUCER_REJECTION_PRESETS[preset_key]
+    return f"{label} — {reason}" if reason else label
+
+
+@router.get("/producers/rejection-presets")
+def list_rejection_presets(user: User = Depends(require_admin)):
+    """MEH-226: the reject-modal's radio options. Serving them from the same
+    dict the handler composes with is what keeps the admin UI from growing a
+    second copy of the Hebrew labels."""
+    return [
+        {"key": key, "label": label}
+        for key, label in PRODUCER_REJECTION_PRESETS.items()
+    ]
+
+
 @router.post("/producers/{producer_id}/reject")
 def reject_producer(
     producer_id: UUID,
-    reason: str = Body("", embed=True),
+    body: ProducerRejectIn = Body(default_factory=ProducerRejectIn),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    # MEH-226: validate BEFORE mutating — an unknown preset must not leave the
+    # producer rejected with an empty reason. Mirrors request_producer_changes'
+    # handler-side 400 (admin.py:829).
+    preset_key = body.preset_key
+    if preset_key is not None and preset_key not in PRODUCER_REJECTION_PRESETS:
+        raise HTTPException(status_code=400, detail="סיבת דחייה לא מוכרת")
+    reason = (body.reason or "").strip()
+    if preset_key == "other" and not reason:
+        raise HTTPException(
+            status_code=400, detail="יש לפרט את סיבת הדחייה כשנבחר 'אחר'"
+        )
+
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    composed_reason = _compose_rejection_reason(preset_key, reason)
     producer.status = "rejected"
+    # MEH-226: the reason is persisted in the SAME commit as the status flip —
+    # before this it lived only in the email body, so a rejected owner saw
+    # "נדחה" with no reason on her dashboard (the banner reads
+    # producer_rejection_reason off GET /auth/me).
+    producer.rejection_reason = composed_reason or None
     # MEH-1011: clear any request-changes trail on reject — a rejected producer
     # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
     # with approve_producer's clearing.
@@ -792,13 +857,15 @@ def reject_producer(
     producer.changes_requested_at = None
     db.commit()
 
-    reason_text = _rejection_reason_suffix(reason)
+    # MEH-226: email fires post-commit only — a Resend failure must not roll
+    # back a decision the admin already made.
+    reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
         _send_notification_email(
             producer_user.email,
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            _producer_rejected_body(producer.name, reason),
+            _producer_rejected_body(producer.name, composed_reason),
         )
 
     # Notify admin via WhatsApp
@@ -808,7 +875,12 @@ def reject_producer(
             f'❌ העסק "{producer.name}" נדחה.{reason_text}',
         )
 
-    return {"detail": "Producer rejected"}
+    return {
+        "detail": "Producer rejected",
+        "id": str(producer.id),
+        "status": producer.status,
+        "rejection_reason": producer.rejection_reason,
+    }
 
 
 # MEH-1011: producer request-changes — non-terminal "please complete" path.
