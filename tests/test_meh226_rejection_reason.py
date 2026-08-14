@@ -202,6 +202,63 @@ def test_rejected_owner_sees_the_reason_on_auth_me(client, db):
     assert body["producer_rejection_reason"] == expected
 
 
+# --- the email's recovery line must stay true -------------------------------
+
+
+def test_rejected_owner_can_still_edit_her_details(client, db):
+    """The approved rejection email says "אפשר לתקן את הפרטים בלוח הבקרה".
+
+    That sentence is a claim about the product, and nothing else in the repo
+    holds it up: `require_producer` (auth.py:363-368) gates on role only and
+    `update_my_producer` (producer_me.py:379-381) checks status nowhere, so
+    the door is open by absence rather than by decision. If someone later adds
+    a status gate to the owner PUT — a reasonable-looking change — the email
+    starts telling rejected business owners to do something that 403s, with no
+    other test going red.
+
+    Deliberately NOT asserting the copy string itself: that would only prove
+    the sentence exists. This asserts the capability the sentence promises.
+    """
+    producer = make_producer(db, status="pending")
+    owner = make_user(db, role="producer")
+    owner.producer_id = producer.id
+    db.commit()
+
+    assert (
+        _reject(client, producer.id, _admin(db), preset_key="missing_image").status_code
+        == 200
+    )
+    db.refresh(producer)
+    assert producer.status == "rejected"
+
+    resp = client.put(
+        "/producers/me",
+        json={"description": "עדכנו את התיאור אחרי הדחייה כדי לתקן את מה שחסר"},
+        headers=auth_header(owner),
+    )
+    assert resp.status_code == 200, (
+        "a rejected owner must still be able to edit — the rejection email "
+        f"tells her to. Got {resp.status_code}: {resp.text}"
+    )
+    db.refresh(producer)
+    assert producer.description == "עדכנו את התיאור אחרי הדחייה כדי לתקן את מה שחסר"
+    assert producer.status == "rejected", "editing must not change the status"
+
+
+def test_retired_resubmit_promise_is_not_in_the_email(client, db):
+    """The RETIRED line, kept as a named string so it cannot quietly return.
+
+    "הגישי שוב מהדף האישי" was the ticket's original copy and it promises a
+    flow that 409s (producer_me.py:1392). This is not a restatement of the
+    body — it is the one assertion that goes red if a future edit reinstates
+    the sentence, which is exactly the change nothing else would catch."""
+    body = admin_module._producer_rejected_body("מאפיית הדגן", "מסמכים חסרים")
+
+    assert "להגיש שוב" not in body, body
+    assert "הדף האישי" not in body, body
+    assert "אפשר לתקן את הפרטים בלוח הבקרה" in body, body
+
+
 # --- the presets endpoint the admin UI consumes -----------------------------
 
 

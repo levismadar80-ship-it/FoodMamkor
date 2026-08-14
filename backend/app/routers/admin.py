@@ -1155,9 +1155,18 @@ def seed_cities(
 
 
 def _rejection_reason_suffix(reason: str) -> str:
-    """The optional "סיבת הדחייה" tail, shared by the email body and the admin
-    WhatsApp line so the two cannot drift apart (workflow.md Smell #1)."""
-    return f"\nסיבת הדחייה: {reason}" if reason else ""
+    """The optional reason tail, shared by the email body and the admin
+    WhatsApp line so the two cannot drift apart (workflow.md Smell #1).
+
+    MEH-226: the label was "סיבת הדחייה" and is now "הסיבה", per the approved
+    email copy. The admin WhatsApp line changes with it BY DESIGN — one owner
+    is the whole point of this helper, and splitting it to keep the WhatsApp
+    wording frozen would rebuild exactly the drift it exists to prevent.
+
+    Still returns "" for an empty reason, so the rejected-without-a-reason
+    email omits the line rather than shipping a dangling "הסיבה:".
+    """
+    return f"\nהסיבה: {reason}" if reason else ""
 
 
 def _producer_approved_body(name: str) -> str:
@@ -1169,10 +1178,30 @@ def _producer_approved_body(name: str) -> str:
 
 
 def _producer_rejected_body(name: str, reason: str) -> str:
+    """MEH-226: copy approved by Sapir 14.08.2026, shipped verbatim.
+
+    The recovery line is the conditional half of that ruling. It reads "תקני
+    בלוח הבקרה" rather than the retired "הגישי שוב מהדף האישי" because the
+    resubmit flow does not exist for a rejected business —
+    `producer_me.py:1392` gates POST /producers/me/request-review to
+    pending/pending_whatsapp, so a rejected owner gets 409. Editing, by
+    contrast, IS open to her, which is what licenses this wording:
+
+      * `auth.py:363-368` — `require_producer` gates on role only, no status
+      * `producer_me.py:379-381` — `update_my_producer` 404s on a missing
+        producer and checks status nowhere
+      * `frontend/app/[locale]/producer/dashboard/edit/page.js` — no
+        producer-status gate; the only redirect is 401 → /login
+
+    `tests/test_meh226_rejection_reason.py::test_rejected_owner_can_still_edit_her_details`
+    holds that open, so this sentence stops being true loudly rather than
+    silently.
+    """
     return (
-        f'שלום,\n\nלצערנו הבקשה לרישום העסק "{name}" במהמקור לא אושרה.'
+        f"שלום {name},\n\n"
+        f"תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה."
         f"{_rejection_reason_suffix(reason)}\n\n"
-        f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
+        f"אפשר לתקן את הפרטים בלוח הבקרה ולהשיב למייל הזה — ונבחן את הבקשה מחדש.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
 
