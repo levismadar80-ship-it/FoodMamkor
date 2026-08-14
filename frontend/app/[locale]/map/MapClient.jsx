@@ -559,6 +559,7 @@ export default function MapPage() {
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
       activeAttributeCount={filters.activeAttributeCount}
+      cityFilter={filters.cityFilter}
     />
   );
 

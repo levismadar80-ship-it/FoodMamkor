@@ -1269,7 +1269,10 @@
         "remove": "הסירו סינון {label}"
       },
       "clear_all": "× נקו הכל",
-      "arranged_hidden": "בתי עסק בתיאום אישי לא מוצגים בסינון הזה"
+      "arranged_hidden": "בתי עסק בתיאום אישי לא מוצגים בסינון הזה",
+      "delivery_context_banner": "בתי עסק שמחלקים ל{city}. הסימון במפה הוא מקום העסק — לא אזור המשלוח",
+      "banner_dismiss_aria": "סגירת ההסבר",
+      "day_bridge_cta": "לסינון לפי יום משלוח בכל בתי העסק"
     },
     "card_list": {
       "empty": {
