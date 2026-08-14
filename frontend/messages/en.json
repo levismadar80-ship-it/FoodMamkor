@@ -1294,7 +1294,8 @@
       "show_all": "Show all",
       "pickup_layer": {
         "label": "Self-pickup",
-        "aria": "Show or hide self-pickup and market stands on the map"
+        "aria": "Show or hide self-pickup and market stands on the map",
+        "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
       }
     },
     "page": {
@@ -1321,7 +1322,14 @@
       "verified": "✓ Verified",
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
-      "full_profile": "Full profile"
+      "full_profile": "Full profile",
+      "fulfillment": {
+        "delivery": "Delivery",
+        "pickup": "Self-pickup",
+        "delivery_only": "Delivery only",
+        "pickup_only": "Self-pickup only",
+        "arranged": "By arrangement"
+      }
     },
     "mini": {
       "default_label": "Location",
@@ -3973,6 +3981,7 @@
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
+        "tools": "We couldn't load your data",
         "retry_cta": "Try again"
       },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
