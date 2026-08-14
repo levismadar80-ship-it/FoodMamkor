@@ -3336,7 +3336,7 @@
       "step3_title": "Your page goes live",
       "step3_text": "Usually within a day or two your business appears on the site.",
       "step4_title": "Customers reach you directly",
-      "step4_text": "The WhatsApp button on your page opens a direct conversation with you. Contact and payment stay between you and your customers.",
+      "step4_text": "The contact button on the page opens a direct conversation with you — WhatsApp, phone, or another channel. Contact and payment stay strictly between you and your customers.",
       "process_link": "The full acceptance process"
     },
     "prepare": {
@@ -4625,7 +4625,7 @@
   "sweep_tail": {
     "messages": {
       "meta_title": "Messages | Mehamakor",
-      "meta_description": "Communication on Mehamakor happens directly on WhatsApp with the business.",
+      "meta_description": "Every business on Mehamakor chooses how you reach it — WhatsApp, phone, or another channel that suits them.",
       "heading": "How communication works on Mehamakor",
       "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a direct-contact button — WhatsApp, phone, or another channel the business chose — that connects you directly to the business owner.",
       "why_heading": "Why this way?",
