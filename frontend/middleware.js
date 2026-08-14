@@ -67,8 +67,25 @@ function report(message, err) {
 // occurrence also gets reported.
 const _reportedFiveHundredUrls = new Set();
 
+// The Set is bounded, because it is keyed by URL and the URL space is
+// attacker-reachable: every slug-shaped path is a distinct key, so a scanner
+// walking random slugs during a backend outage would grow it without a
+// ceiling inside a long-lived warm instance.
+//
+// On reaching the cap we CLEAR and carry on rather than stop reporting. The
+// obvious guard — `if (size >= CAP) return;` — bounds memory by going SILENT,
+// and going silent under a large multi-slug 5xx storm is precisely the state
+// this whole change exists to make visible (MEH-1906; "fail open, never fail
+// silent"). Clearing costs at most one repeat alert per slug per 1000 distinct
+// failing URLs, which is far cheaper than losing the signal exactly when the
+// outage is widest.
+const REPORTED_URLS_CAP = 1000;
+
 function reportFiveHundredToSentry(url, status) {
   if (_reportedFiveHundredUrls.has(url)) return;
+  if (_reportedFiveHundredUrls.size >= REPORTED_URLS_CAP) {
+    _reportedFiveHundredUrls.clear();
+  }
   _reportedFiveHundredUrls.add(url);
   Sentry.captureMessage("producerExists: backend 5xx — failing open", {
     level: "error",
