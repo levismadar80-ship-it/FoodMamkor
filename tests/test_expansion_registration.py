@@ -25,6 +25,11 @@ def _payload(category_ids, *, license_number=None, declaration_accepted=True,
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "עסק הרחבה",
         "phone": "0501234567",
+        # MEH-2015 chunk B: city is now required (ProducerRegister.city has no
+        # default) — added here for the same reason category_ids is, so this
+        # local payload builder doesn't 422 on a field none of these tests
+        # exercise.
+        "city": "תל אביב",
         "category_ids": category_ids,
         "primary_contact_method": "whatsapp",
         "declaration_accepted": declaration_accepted,

@@ -605,7 +605,17 @@ class ProducerRegister(BaseModel):
     producer_name: SanitizedBusinessNameField
     description: str | None = None
     short_description: str | None = Field(default=None, max_length=160)
-    city: str | None = None
+    # MEH-2015 chunk B: required on BOTH paths (new registration + MEH-143
+    # upgrade) — Sapir's 14.8.2026 ruling revokes MEH-951's visual-only
+    # exception. City is the discovery axis (map + filter), not a profile
+    # field: unenforced, it shipped empty. Twin of ExperienceCreate.city /
+    # EventCreate.city (MEH-2013's Field(..., min_length=1, max_length=100)
+    # shape) — but NOT byte-identical: adversarial review on this PR found
+    # `min_length=1` alone accepts a whitespace-only value ("   " has length
+    # 3), which those two siblings still carry unfixed. Closed here with the
+    # bleach→letter-floor validator pair below; not backported to the
+    # siblings (out of scope for this PR — they're unmodified elsewhere).
+    city: str = Field(..., min_length=1, max_length=100)
     address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
@@ -702,6 +712,16 @@ class ProducerRegister(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
 
+    # MEH-2015 chunk B (adversarial-review finding): city is public-rendered
+    # (map + filter), so bleach it like every other free-text field on this
+    # schema — sanitize_text also collapses a whitespace-only input to None,
+    # which is what lets the letter-floor validator below reject it cleanly
+    # instead of `Field(min_length=1)` silently accepting "   ".
+    @field_validator("city")
+    @classmethod
+    def _sanitize_city(cls, v):
+        return sanitize_text(v, max_length=100)
+
     # MEH-870: reject punctuation-only values on the PUBLIC registration path,
     # which collected short_description (tagline) + address with only the bleach
     # strip above. Stacked AFTER the sanitize validators (bleach first, then the
@@ -729,6 +749,17 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_address_alnum(cls, v):
         return _min_alnum_validator(v)
+
+    # MEH-2015 chunk B: city's floor, min_count=1 (not the ≥3 used for
+    # names/taglines above) — a legitimate short Hebrew city name ("בת ים",
+    # "לוד") must clear it. `_min_letters_validator(None)` coerces the
+    # bleach-emptied case to "" internally and raises (HOT-003 path), so no
+    # None-guard is needed here — unlike short_description, city is required,
+    # not optional, so a stripped-to-nothing value is exactly what must 422.
+    @field_validator("city")
+    @classmethod
+    def _validate_city_letters(cls, v):
+        return _min_letters_validator(v, min_count=1)
 
     @field_validator("primary_contact_method")
     @classmethod

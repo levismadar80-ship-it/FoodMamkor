@@ -40,6 +40,9 @@ def _register_payload(
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "עסק לדוגמה",
         "phone": "0501234567",
+        # MEH-2015 chunk B: city is now required, unrelated to what this file
+        # tests (license gating) — added for the same reason declaration_accepted is.
+        "city": "תל אביב",
         "category_ids": category_ids,
         "primary_contact_method": "whatsapp",
         "declaration_accepted": True,  # MEH-759: mandatory binding declaration

@@ -694,6 +694,10 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     await fillAccountToDetails();
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    // MEH-2015 chunk B: city joined the DETAILS-step cross-step gate — fill it
+    // so this test's own subject (the CATEGORY selector) is what blocks the
+    // advance, not an unrelated empty city.
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("register-details-next"));
     await screen.findByTestId("register-frame-category");
     // advance with zero categories picked
@@ -923,10 +927,12 @@ describe("RegisterProducerClient — address location confirmation (MEH-1808)", 
     expect(hint.className).not.toMatch(/text-error|text-red/);
     expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
 
-    // and the step still advances with the address left unpicked (MEH-1807 gate
-    // covers producer_name + phone only — address is NOT required)
+    // and the step still advances with the address left unpicked (the
+    // MEH-1807/MEH-2015 chunk B gate covers producer_name + phone + city —
+    // address is NOT required)
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
   });
@@ -952,6 +958,7 @@ describe("RegisterProducerClient — address location confirmation (MEH-1808)", 
     // picking before it would be testing the clear-on-type path by accident.
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
     fireEvent.click(screen.getByTestId("address-pick"));
     await screen.findByTestId("register-address-confirm");
     fireEvent.click(nextBtn()); // → CATEGORY
