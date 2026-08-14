@@ -37,14 +37,27 @@ const intlMiddleware = createMiddleware(routing);
 
 // MEH-1899: the failure this exists for ran with ZERO observability — no log,
 // no Sentry — and was found only because an E2E spec happened to bite on it.
-// `console.error` and not Sentry deliberately: whether Edge Middleware can
-// reach Sentry at all is still an open Phase 0 question on MEH-1521, and a
-// report that depends on an unverified transport is not a report. Vercel
-// captures middleware console output in runtime logs, which is available today.
-// If MEH-1521 establishes a Sentry path, this is the one place to change.
+// `console.error` and not Sentry deliberately: MEH-1521's Phase 0 confirmed
+// Edge Middleware CAN reach Sentry (sentry.edge.config.js exists and inits),
+// but wiring an unverified Sentry.capture* call here would violate
+// .claude/rules/observability.md's dashboard-receipt requirement, which this
+// sandbox cannot perform. Vercel captures middleware console output in
+// runtime logs, which is available today and satisfies the DoD's log
+// requirement unconditionally. Whoever can run the dashboard-receipt check
+// is the one to add Sentry here.
 function report(message, err) {
   console.error(`[middleware/producerExists] ${message}`, err ?? "");
 }
+
+// MEH-1521: an unreachable backend already fails open (see the catch below),
+// but a SLOW backend previously had no bound at all — the edge request would
+// hang for as long as the platform's own connect/read timeout, which is far
+// longer than any user should wait for routing. AbortSignal.timeout() turns
+// "slow" into "unreachable" at a fixed 3s, which then rides the identical
+// fail-open path. 3s chosen to comfortably exceed a healthy backend response
+// (typically <200ms) while bounding the worst case to something a page nav
+// can absorb.
+const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 
 async function producerExists(url) {
   try {
@@ -55,7 +68,10 @@ async function producerExists(url) {
     // producers API. Abuse is bounded by the backend's slowapi rate limiting, not
     // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
     // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(EXISTENCE_CHECK_TIMEOUT_MS),
+    });
     if (res.ok) return true;
 
     // MEH-1899: 404 is the ONLY status that answers the question we asked.
