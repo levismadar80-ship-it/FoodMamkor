@@ -3,6 +3,22 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-2077: שער ה-contract probe מאדים עכשיו כשהוא לא רואה כלום
+
+**מוזג:** `66733b16` (#2929, **squash מאומת** — הורה אחד). **MEH-2077 נשאר Backlog** — אומת אחרי המיזוג בשני הכיוונים (כלל 29b): `stateHistory` רשומה אחת, `endedAt: null`. **וזה נכון** — chunk 2 (bypass, ספיר) פתוח.
+
+**התיקון האמיתי לא היה מה שהכרטיס שיער.** הפרוב לא עקב אחרי redirects (`allow_redirects=False` כבר היה שם); תנאי הכישלון היחיד היה `404` מילולי, ולכן 159 מסלולים שכולם החזירו 302 עברו. מדוד על היעד החי: הקוד הישן **exit 0**, החדש **exit 1**.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **‏`API contract probe (staging)` אדום עכשיו בכל דחיפה ל-staging, וזה מתוכנן.** ריצה `31813533767`: `PROBE FAILED — 159 of 159`, exit 1. **אל תחלישי את `ACCEPTED_STATUSES` ואל תרחיבי את החוזה כדי להוריק אותו.** הוא יוריק כשספיר תנחית את chunk 2 (Vercel Protection Bypass · `x-vercel-set-bypass-cookie: true`).
+2. **האדום הזה אינו חוסם merge.** ‏`Deploy gate (required)` הסתיים success ב-15:15:20, לפני שה-probe התחיל ב-15:16:01. גלוי, לא חוסם — החלטה של ספיר אם לחבר אותו לשער.
+3. **כשה-bypass ינחת, צפויות דחיות אמיתיות שאינן תקלת סביבה:** מסלולים שמחזירים `HTTPException(404)` על UUID שאינו קיים (למשל `POST /producers/{_}/whatsapp-click`). זו התנהגות קיימת (גם הכלל הישן נכשל על 404) ומתועדת ב-`docs/AUDIT-API-CONTRACT.md` תחת Assumptions — תצטרך הכרעה, לא ריכוך אוטומטי.
+4. **chunk 3 ממתין לספיר:** `docs/ci/meh-2077-branch-name-delete.patch.md`. הקובץ (`.claude/hooks/check-branch-name.sh`) הוא CC-deny; ה-patch מדוד מול 10 מקרים, `mismatches: 0`, כולל שתי בקרות שממשיכות להיחסם.
+5. **הסוקר האדוורסרי עשה no-op פעמיים על PR #2929** (`num_turns: 1`, `total_cost_usd: 0`, `duration_ms` ~400, `ANTHROPIC_API_KEY` ריק) — כלומר מחלקת ה-outage שתועדה כ"נסגרה ב-13/08" **חזרה**. ה-PR מוזג בלי סקירה אדוורסרית; זה נאמר במפורש בגוף ה-PR ולא הוסתר.
+
+**ה-aggregate סופר סטטוסים נדחים בלבד** ולא כל non-2xx, אחרי שהגרסה הראשונה נכשלה בבקרה הירוקה על 57% מסלולי `401` לגיטימיים. הסטייה מנוסח ה-DoD מכוונת ומתועדת.
+
 ## 2026-08-14 — MEH-1748 שלב 1: codegen מ-OpenAPI נחת לצד הסכימות הידניות (additive-only)
 
 **מוזג:** `73992a12` (#2923, **squash מאומת** — הורה אחד, תבנית `<title> (#2923)`). ריצות staging אחרי המיזוג ירוקות.
