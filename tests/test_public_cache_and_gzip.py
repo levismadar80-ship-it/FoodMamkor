@@ -196,7 +196,7 @@ def test_a_streaming_re_emitter_still_sits_outside_gzip():
     assert "GZipMiddleware" in names, names
     # user_middleware is ordered outer -> inner.
     assert names[-1] == "GZipMiddleware", f"GZip must be innermost: {names}"
-    outside = [n for n in names[: names.index("GZipMiddleware")]]
+    outside = names[: names.index("GZipMiddleware")]
     assert "BaseHTTPMiddleware" in outside, (
         "No streaming re-emitter outside GZip — if this is a deliberate "
         "removal, the MEH-1833 ordering rationale needs rewriting, not this "
