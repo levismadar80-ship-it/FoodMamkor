@@ -131,6 +131,16 @@ _CORPUS = [
     # a corpus carrying only the with-reason case would leave the empty-reason
     # body — the one an admin sends by clicking reject without typing anything
     # — unasserted while the file list said "rejected is covered".
+    #
+    # MEH-226 (14.08.2026) rewrote `_producer_rejected_body` to Sapir's
+    # approved copy and relabelled the reason tail "סיבת הדחייה" → "הסיבה".
+    # Both entries below render the NEW body with no edit here, which is the
+    # design: the corpus calls the shipping function rather than duplicating
+    # its strings, so approved-copy changes are covered the moment they land.
+    # The two MEH-226-specific claims that this contract does NOT make — that
+    # the retired resubmit promise stays out, and that the recovery line it
+    # replaced is actually true — are held by
+    # tests/test_meh226_rejection_reason.py.
     ("producer-approved", admin, lambda: admin._send_notification_email(
         "her@example.com", "subject-not-asserted",
         admin._producer_approved_body("חוות הבר"))),
