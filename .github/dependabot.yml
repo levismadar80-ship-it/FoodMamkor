@@ -21,10 +21,27 @@ updates:
       timezone: "Asia/Jerusalem"
     target-branch: "staging"
     open-pull-requests-limit: 3
-    # MEH-1518: intentionally NO pip group. Every pip bump drifts uv.lock
-    # (dependabot updates pyproject.toml but not the lock — MEH-1332/1527/#1531);
-    # grouping would concentrate the drift into one PR, not fix it. Blocked on
-    # MEH-1527 Chunk 2b (a lock-regen step).
+    # MEH-2078: pip grouping RELEASED — mirrors npm-minor-patch /
+    # github-actions-minor-patch. The MEH-1518 freeze here read "intentionally
+    # NO pip group … blocked on MEH-1527 Chunk 2b"; that block is gone. Strict
+    # `require branches to be up to date` is ON (05/08) and the post-merge
+    # `uv lock --check` net is live and green on staging (09/08), so a grouped
+    # PR that drifts the lock is now caught at the gate before merge and by the
+    # net after it.
+    #
+    # What did NOT change: dependabot still does not regenerate uv.lock in this
+    # repo (it edits pyproject.toml only — MEH-1332/1527/#1531). Grouping does
+    # not fix that; it reduces the number of drifting PRs from N to 1. Fix flow
+    # for any grouped pip PR: run `uv lock` on the PR branch before merging —
+    # the CI gate enforces it, so an un-regenerated lock cannot land.
+    #
+    # Majors stay individual PRs (they need human review anyway).
+    groups:
+      pip-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # schemathesis 4.24 slows the fuzz suite past the pytest job timeout
       # (MEH-1529). Dev-only test tool, no CVE — hold minor/patch bumps.

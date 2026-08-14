@@ -7,7 +7,7 @@ import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
 from app.config import settings
@@ -34,7 +34,9 @@ from app.schemas.schemas import (
     GrantVerifiedIn,
     ProducerAdminCreate,
     ProducerAdminOut,
+    ProducerRejectIn,
     ProducerUpdate,
+    RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
 )
@@ -42,6 +44,7 @@ from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
 )
+from app.services.producer_queries import attach_badge_fields
 from app.slug_utils import RESERVED_SLUGS
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -325,6 +328,10 @@ def list_producers(
         joinedload(Producer.categories),
         joinedload(Producer.products),
         joinedload(Producer.delivery_areas),
+        # MEH-2060: needed by attach_badge_fields' pickup_points/offers_pickup
+        # derivation below. selectinload (not joinedload) — a 4th collection
+        # joinedload here would widen the existing 3-way cartesian.
+        selectinload(Producer.locations),
     )
     if status and status != "all":
         if status == "pending":
@@ -339,7 +346,16 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
-    return q.order_by(Producer.created_at.desc()).all()
+    results = q.order_by(Producer.created_at.desc()).all()
+    # MEH-2060: this endpoint never called attach_badge_fields before, so
+    # pickup_points (and every other computed badge field) silently defaulted
+    # to Pydantic's False/0 in this response — a pre-existing gap, not
+    # something this change introduces. Calling it here is what makes
+    # AdminProducersTable.jsx's pickup badge (:128) agree with every other
+    # consumer surface instead of reading a raw, no-longer-authoritative column.
+    for p in results:
+        attach_badge_fields(p)
+    return results
 
 
 @router.post("/producers", response_model=ProducerAdminOut, status_code=201)
@@ -388,7 +404,9 @@ def admin_create_producer(
         grass_fed=data.grass_fed,
         organic_certified=data.organic_certified,
         has_delivery=data.has_delivery,
-        pickup_points=data.pickup_points,
+        # MEH-2060: pickup_points stopped being written here — it's derived
+        # from producer_locations rows now (attach_badge_fields below), and a
+        # freshly-created producer has none yet regardless of this form field.
         kosher=data.kosher,
         producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
@@ -430,6 +448,7 @@ def admin_create_producer(
 
     db.commit()
     db.refresh(producer)
+    attach_badge_fields(producer)
     return producer
 
 
@@ -451,6 +470,11 @@ def admin_update_producer(
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
     payload.pop("delivery_cities", None)
+    # MEH-2060: same no-op-pop pattern, same reason — pickup_points is derived
+    # from producer_locations rows now (attach_badge_fields below); ProducerForm
+    # still has a checkbox that sends this field (frontend out of scope for this
+    # ticket, flagged separately), but the bulk setattr loop must not write it.
+    payload.pop("pickup_points", None)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
@@ -517,6 +541,7 @@ def admin_update_producer(
             context="admin.admin_update_producer images",
         )
 
+    attach_badge_fields(producer)
     return producer
 
 
@@ -676,17 +701,22 @@ async def import_producers_excel(
 def pending_producers(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    return (
+    results = (
         db.query(Producer)
         .options(
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-2060: see list_producers above — same derivation, same reason.
+            selectinload(Producer.locations),
         )
         .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .all()
     )
+    for p in results:
+        attach_badge_fields(p)
+    return results
 
 
 @router.post("/producers/{producer_id}/approve")
@@ -746,17 +776,88 @@ def approve_producer(
     return {"detail": "Producer approved"}
 
 
+# MEH-226: the five canonical rejection reasons. This dict is the SINGLE
+# source of truth for the labels — the admin UI fetches them from
+# GET /admin/producers/rejection-presets rather than carrying its own copy,
+# so the string the admin clicks, the string persisted to
+# producers.rejection_reason, and the string in the producer's email are the
+# same object (workflow.md Smell #1: two owners for one fact).
+# Insertion order is the display order.
+PRODUCER_REJECTION_PRESETS: dict[str, str] = {
+    "missing_docs": "מסמכים חסרים / לא קריאים",
+    "missing_image": "תמונה ראשית חסרה",
+    "incomplete_info": "מידע עסקי לא מלא (כתובת / טלפון / תיאור)",
+    "not_eligible": "עסק לא עומד בתנאי הפלטפורמה",
+    "other": "אחר (פירוט חופשי)",
+}
+
+
+def _compose_rejection_reason(preset_key: str | None, reason: str) -> str:
+    """Join the preset label with the admin's free text into the ONE string
+    that is persisted, emailed and sent to the admin WhatsApp line.
+
+    `other` deliberately yields the free text ALONE — its label reads
+    "אחר (פירוט חופשי)", which is a UI affordance describing the input, not a
+    reason. Prefixing it would put "סיבה: אחר (פירוט חופשי) — ..." in a
+    business owner's inbox. Every other preset prefixes its label and appends
+    the free text only when the admin actually typed some.
+
+    No preset (legacy callers, and the pre-MEH-226 `{"reason": ...}` body)
+    falls through to the free text unchanged.
+
+    PRECONDITION: `preset_key` is None or a key of PRODUCER_REJECTION_PRESETS —
+    the route handler 400s on anything else BEFORE calling this. The lookup
+    below is therefore deliberately undefended: a KeyError here would mean an
+    internal caller skipped that validation, and crashing loudly at the one
+    line that noticed beats composing a rejection reason out of a key nobody
+    recognises and mailing it to a business owner.
+    """
+    if preset_key is None or preset_key == "other":
+        return reason
+    label = PRODUCER_REJECTION_PRESETS[preset_key]
+    return f"{label} — {reason}" if reason else label
+
+
+@router.get("/producers/rejection-presets", response_model=list[RejectionPresetOut])
+def list_rejection_presets(user: User = Depends(require_admin)):
+    """MEH-226: the reject-modal's radio options. Serving them from the same
+    dict the handler composes with is what keeps the admin UI from growing a
+    second copy of the Hebrew labels."""
+    return [
+        {"key": key, "label": label}
+        for key, label in PRODUCER_REJECTION_PRESETS.items()
+    ]
+
+
 @router.post("/producers/{producer_id}/reject")
 def reject_producer(
     producer_id: UUID,
-    reason: str = Body("", embed=True),
+    body: ProducerRejectIn = Body(default_factory=ProducerRejectIn),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    # MEH-226: validate BEFORE mutating — an unknown preset must not leave the
+    # producer rejected with an empty reason. Mirrors request_producer_changes'
+    # handler-side 400 (admin.py:829).
+    preset_key = body.preset_key
+    if preset_key is not None and preset_key not in PRODUCER_REJECTION_PRESETS:
+        raise HTTPException(status_code=400, detail="סיבת דחייה לא מוכרת")
+    reason = (body.reason or "").strip()
+    if preset_key == "other" and not reason:
+        raise HTTPException(
+            status_code=400, detail="יש לפרט את סיבת הדחייה כשנבחר 'אחר'"
+        )
+
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    composed_reason = _compose_rejection_reason(preset_key, reason)
     producer.status = "rejected"
+    # MEH-226: the reason is persisted in the SAME commit as the status flip —
+    # before this it lived only in the email body, so a rejected owner saw
+    # "נדחה" with no reason on her dashboard (the banner reads
+    # producer_rejection_reason off GET /auth/me).
+    producer.rejection_reason = composed_reason or None
     # MEH-1011: clear any request-changes trail on reject — a rejected producer
     # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
     # with approve_producer's clearing.
@@ -764,13 +865,15 @@ def reject_producer(
     producer.changes_requested_at = None
     db.commit()
 
-    reason_text = _rejection_reason_suffix(reason)
+    # MEH-226: email fires post-commit only — a Resend failure must not roll
+    # back a decision the admin already made.
+    reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
         _send_notification_email(
             producer_user.email,
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            _producer_rejected_body(producer.name, reason),
+            _producer_rejected_body(producer.name, composed_reason),
         )
 
     # Notify admin via WhatsApp
@@ -780,7 +883,12 @@ def reject_producer(
             f'❌ העסק "{producer.name}" נדחה.{reason_text}',
         )
 
-    return {"detail": "Producer rejected"}
+    return {
+        "detail": "Producer rejected",
+        "id": str(producer.id),
+        "status": producer.status,
+        "rejection_reason": producer.rejection_reason,
+    }
 
 
 # MEH-1011: producer request-changes — non-terminal "please complete" path.
@@ -1055,9 +1163,18 @@ def seed_cities(
 
 
 def _rejection_reason_suffix(reason: str) -> str:
-    """The optional "סיבת הדחייה" tail, shared by the email body and the admin
-    WhatsApp line so the two cannot drift apart (workflow.md Smell #1)."""
-    return f"\nסיבת הדחייה: {reason}" if reason else ""
+    """The optional reason tail, shared by the email body and the admin
+    WhatsApp line so the two cannot drift apart (workflow.md Smell #1).
+
+    MEH-226: the label was "סיבת הדחייה" and is now "הסיבה", per the approved
+    email copy. The admin WhatsApp line changes with it BY DESIGN — one owner
+    is the whole point of this helper, and splitting it to keep the WhatsApp
+    wording frozen would rebuild exactly the drift it exists to prevent.
+
+    Still returns "" for an empty reason, so the rejected-without-a-reason
+    email omits the line rather than shipping a dangling "הסיבה:".
+    """
+    return f"\nהסיבה: {reason}" if reason else ""
 
 
 def _producer_approved_body(name: str) -> str:
@@ -1069,10 +1186,30 @@ def _producer_approved_body(name: str) -> str:
 
 
 def _producer_rejected_body(name: str, reason: str) -> str:
+    """MEH-226: copy approved by Sapir 14.08.2026, shipped verbatim.
+
+    The recovery line is the conditional half of that ruling. It reads "תקני
+    בלוח הבקרה" rather than the retired "הגישי שוב מהדף האישי" because the
+    resubmit flow does not exist for a rejected business —
+    `producer_me.py:1392` gates POST /producers/me/request-review to
+    pending/pending_whatsapp, so a rejected owner gets 409. Editing, by
+    contrast, IS open to her, which is what licenses this wording:
+
+      * `auth.py:363-368` — `require_producer` gates on role only, no status
+      * `producer_me.py:379-381` — `update_my_producer` 404s on a missing
+        producer and checks status nowhere
+      * `frontend/app/[locale]/producer/dashboard/edit/page.js` — no
+        producer-status gate; the only redirect is 401 → /login
+
+    `tests/test_meh226_rejection_reason.py::test_rejected_owner_can_still_edit_her_details`
+    holds that open, so this sentence stops being true loudly rather than
+    silently.
+    """
     return (
-        f'שלום,\n\nלצערנו הבקשה לרישום העסק "{name}" במהמקור לא אושרה.'
+        f"שלום {name},\n\n"
+        f"תודה על הבקשה להצטרף למהמקור. בשלב זה לא אישרנו אותה."
         f"{_rejection_reason_suffix(reason)}\n\n"
-        f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
+        f"אפשר לתקן את הפרטים בלוח הבקרה ולהשיב למייל הזה — ונבחן את הבקשה מחדש.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
 

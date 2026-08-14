@@ -54,7 +54,10 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
 )
-from app.services.auth_notifications import notify_admin_producer_review_ready
+from app.services.auth_notifications import (
+    notify_admin_producer_review_ready,
+    notify_admin_producer_sensitive_edit,
+)
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -288,6 +291,87 @@ def _pending_and_approvable(db, producer) -> bool:
     return producer.status == "pending" and _is_approvable(db, producer)
 
 
+# MEH-2073: fields whose change is worth telling the admin about after a
+# business is already approved — identity (city, phone) and the trust
+# declarations MEH-1508 cross-checks at approval time (the diet scopes). ONE
+# constant; the Hebrew labels live with the sender in auth_notifications.py.
+#
+# Deliberately NOT the whole writable set: description / short_description /
+# owner_bio / links change often and legitimately, and a ping that fires on
+# every copy edit is a ping the admin learns to ignore.
+#
+# Every member is verified present in _PRODUCER_WRITABLE_FIELDS below — a name
+# that drifts out of that set would make this silently un-pingable, which is
+# what `test_sensitive_fields_are_all_writable` exists to catch.
+SENSITIVE_FIELDS = frozenset(
+    {"city", "phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+)
+
+
+def _snapshot_sensitive(producer) -> dict:
+    """Read the sensitive fields BEFORE the setattr loop mutates them.
+
+    Mirrors the `was_approvable` idiom above: the comparison has to happen
+    against values captured on a row read under the same advisory lock
+    (MEH-2007), or two overlapping PUTs can each miss the other's write.
+    """
+    return {field: getattr(producer, field, None) for field in SENSITIVE_FIELDS}
+
+
+def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None:
+    """MEH-2073: one ping per PUT, listing every sensitive field that actually
+    changed, and only for a producer that is ALREADY approved.
+
+    `status == "approved"` is read AFTER the commit deliberately — this endpoint
+    never changes status, so before and after agree; reading it after keeps the
+    check on the same object the diff is computed from.
+
+    Compares values, not "was this key in the payload": a save that submits
+    `city` unchanged (which the dashboard form does on every save, since it
+    posts the whole card) must not ping. That is the difference between a
+    signal and noise, and it is what the no-op test pins down.
+    """
+    if producer.status != "approved":
+        return
+    changed = sorted(
+        field
+        for field in SENSITIVE_FIELDS
+        if before.get(field) != getattr(producer, field, None)
+    )
+    if not changed:
+        return
+    background_tasks.add_task(_sensitive_edit_task, producer.name, changed)
+
+
+def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
+    """The fail-open boundary for the MEH-2073 ping.
+
+    `notify_admin_producer_sensitive_edit` guards WhatsApp and email in
+    separate try blocks, but its preamble — `_sanitize_wa_param(name)`, the
+    label join, the f-string — sits outside both, so the function is not
+    total. Under Starlette a BackgroundTask that raises propagates AFTER the
+    response has begun, which turns an owner's successful save into an error
+    she cannot act on and did not cause.
+
+    `add_task` alone therefore does NOT satisfy the fail-open contract
+    (MEH-1051/977); this wrapper is what does. Proven by
+    `test_notification_failure_does_not_affect_the_200`, which patches the
+    notifier to raise — without this it fails, which is how the gap was found.
+
+    NOT retrofitted onto `_maybe_fire_review_ready` (MEH-1351) or the resubmit
+    ping: same latent shape, but they are outside this ticket's
+    notification-only scope. Reported rather than widened.
+    """
+    try:
+        notify_admin_producer_sensitive_edit(producer_name, changed)
+    except Exception:  # noqa: BLE001 — fire-and-forget; the 200 is already out
+        log.exception(
+            "[NOTIFY] sensitive-edit ping failed for '%s' (fields=%s)",
+            producer_name,
+            changed,
+        )
+
+
 def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> None:
     """MEH-1351: review-ready ping on the false→true approvability transition
     of a pending producer (first image / license completed). Fire-and-forget
@@ -337,6 +421,18 @@ def _lock_producer_updates(db, producer_id) -> None:
     MUST be taken BEFORE the producer is loaded. Taken after, the loser wakes
     holding the row it read *before* the winner committed, snapshots a stale
     `was_approvable=False`, and fires anyway — the same bug wearing a lock.
+
+    MEH-2051 — THE SECOND CALLER, and the one exception to the line above.
+    `confirm_phone_otp` also completes the review-ready transition, so it takes
+    this same key; without it a PUT and a confirm each compute the false→true
+    edge independently and the admin is pinged twice for one transition. It
+    CANNOT take the lock before its producer load, because MEH-1820's token
+    claim has to be the first thing that blocks a rival confirm — so it takes
+    the lock late and pays the freshness debt explicitly with `db.expire`,
+    which is what the paragraph above is really asking for. The rule is
+    therefore "the snapshot must be computed on a row read under this lock",
+    and taking it before the load is the cheap way to satisfy it, not the only
+    one. See the call site for the full reasoning.
     """
     if producer_id is None:
         return
@@ -371,6 +467,10 @@ def update_my_producer(
     # MEH-1351: snapshot approvability BEFORE mutation — the review-ready ping
     # fires only on the false→true transition of a pending producer (below).
     was_approvable = _pending_and_approvable(db, producer)
+    # MEH-2073: same idiom, different question — the sensitive-field values as
+    # they stand before the setattr loop, so the post-commit diff can tell an
+    # actual change from a form resubmitting an unchanged value.
+    sensitive_before = _snapshot_sensitive(producer)
 
     _PRODUCER_WRITABLE_FIELDS = {
         "contact_name",
@@ -572,6 +672,9 @@ def update_my_producer(
         )
 
     _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
+    # MEH-2073: notification only — runs after the commit above, adds a
+    # BackgroundTask, and touches neither the response nor any column.
+    _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
 
     return producer
 
@@ -1257,6 +1360,50 @@ def confirm_phone_otp(
     if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
+    # MEH-2051: serialize against a concurrent PUT /producers/me, which is the
+    # OTHER handler able to complete the review-ready transition. Without this
+    # the two compute the same false→true edge independently and the admin is
+    # pinged twice for one flip — measured on origin/staging, guarded by
+    # tests/test_otp_put_ping_race.py.
+    #
+    # WHY HERE AND NOT AT THE TOP OF THE HANDLER, which is where the helper's
+    # own docstring points: taking it before the producer load would make a
+    # rival confirm block HERE instead of on the token row lock inside the
+    # conditional UPDATE above. That was not reasoned about and left at that —
+    # it was BUILT and MEASURED, twice, because the failure it causes is the
+    # kind that reads as success:
+    #
+    #   lock at top + atomic claim intact  -> codes == [200, 200]
+    #   lock at top + atomic claim REVERTED -> codes == [200, 200]
+    #
+    # Byte-identical. Under that placement the loser hits the `phone_verified`
+    # early-return before ever reaching the UPDATE, so MEH-1820's test reports
+    # the SAME thing whether its guard works or not — it stops being a guard.
+    # Both runs are red today, which sounds safe; the trap is that the obvious
+    # way to clear that red is to relax the assertion to [200, 200], and doing
+    # so would permanently blind the atomic claim with nothing announcing it.
+    # It also changes the API: the loser would return 200 "כבר מאומת" instead
+    # of the 400 MEH-1820 deliberately chose, a contract change smuggled in as
+    # a concurrency fix.
+    #
+    # With the lock HERE, that same reverted-claim run still reports
+    # [200, 200] vs the required [200, 400] — the guard keeps discriminating.
+    # That is the measurement this placement rests on, not the argument above.
+    #
+    # WHY THE EXPIRE IS LOAD-BEARING, not tidiness: `producer` was loaded above,
+    # possibly before the PUT we are now waiting behind committed. `expire`
+    # forces the snapshot below to be computed on a row read *under* this lock —
+    # without it the loser evaluates a stale row, concludes the edge is still
+    # ahead of it, and fires the duplicate ping anyway. That is precisely the
+    # "same bug wearing a lock" the helper warns about.
+    #
+    # NO DEADLOCK: the only lock ordering here is token row → advisory key. The
+    # PUT takes the advisory key alone and never touches phone_otp_tokens, so
+    # there is no cycle. Two confirms for different tokens of one producer take
+    # different rows and then serialize on the key, which is plain waiting.
+    _lock_producer_updates(db, producer.id)
+    db.expire(producer)
+
     producer.phone_verified = True
     # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
     # PUT /producers/me does at :259 — this is the SECOND mutation site able to
@@ -1274,6 +1421,17 @@ def confirm_phone_otp(
     # window" and the test degrades into either a no-op that passes on broken
     # code or a five-second timeout — neither of which announces itself. Move
     # this and re-read that test's docstring.
+    #
+    # MEH-2051 added the lock+expire pair above INTO that gap, so the warning
+    # deserves its worked example rather than being quietly falsified. It is
+    # safe for one specific reason, and the reason is not "a lock is cheap":
+    # in the OTP-vs-OTP race the rival confirm never gets past the conditional
+    # UPDATE, so it never reaches either the new lock or this barrier, and the
+    # barrier still marks exactly what its docstring says it marks. That was
+    # verified by re-running MEH-1820's test with the atomic claim reverted and
+    # confirming it still goes red. Anything added here that a RIVAL CONFIRM
+    # can actually reach would break that property — the test is what tells
+    # you, and only if you re-run it against the broken claim.
     was_approvable = _pending_and_approvable(db, producer)
     # MEH-745: self-registered producers wait in pending_whatsapp until the
     # business phone is verified; a successful OTP confirm is the gate that

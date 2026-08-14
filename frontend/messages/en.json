@@ -787,6 +787,9 @@
           },
           "sheet_open_aria": "Details about {name}",
           "sheet_close_aria": "Close product details",
+          "sheet_prev_aria": "Previous product",
+          "sheet_next_aria": "Next product",
+          "sheet_counter_aria": "Product {current} of {total}",
           "sheet_cta": "Ask about this product on WhatsApp",
           "sheet_secondary_wa": "Or ask about this product on WhatsApp",
           "sheet_wa_prefill": "Hi, I saw “{name}” on your Mehamakor page and would love to hear more"
@@ -1267,7 +1270,11 @@
       "aria": {
         "remove": "Remove filter {label}"
       },
-      "clear_all": "× Clear all"
+      "clear_all": "× Clear all",
+      "arranged_hidden": "Businesses arranged personally aren't shown in this filter",
+      "delivery_context_banner": "Businesses that deliver to {city}. The map pin is the business location — not the delivery area",
+      "banner_dismiss_aria": "Close this explanation",
+      "day_bridge_cta": "Filter by delivery day across all businesses"
     },
     "card_list": {
       "empty": {
@@ -1290,7 +1297,8 @@
       "show_all": "Show all",
       "pickup_layer": {
         "label": "Self-pickup",
-        "aria": "Show or hide self-pickup and market stands on the map"
+        "aria": "Show or hide self-pickup and market stands on the map",
+        "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
       }
     },
     "page": {
@@ -1317,7 +1325,14 @@
       "verified": "✓ Verified",
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
-      "full_profile": "Full profile"
+      "full_profile": "Full profile",
+      "fulfillment": {
+        "delivery": "Delivery",
+        "pickup": "Self-pickup",
+        "delivery_only": "Delivery",
+        "pickup_only": "Self-pickup",
+        "arranged": "By arrangement"
+      }
     },
     "mini": {
       "default_label": "Location",
@@ -1532,7 +1547,8 @@
           "story_card_title": "Create Instagram card",
           "story_card": "Story",
           "delete": "Delete",
-          "menu_aria": "More actions"
+          "menu_aria": "More actions",
+          "reject": "Reject"
         },
         "columns": {
           "name": "Name",
@@ -1695,7 +1711,19 @@
         }
       },
       "toast_approved": "Business approved",
-      "toast_status_updated": "Status updated"
+      "toast_status_updated": "Status updated",
+      "reject": {
+        "modal_title": "Reject business application",
+        "preset_legend": "Rejection reason",
+        "free_text_label_required": "Details (required)",
+        "free_text_label_optional": "Additional details (optional)",
+        "free_text_placeholder": "You can add details that help the business fix this…",
+        "submit": "Reject and send email",
+        "confirm": "This will send an email to the business. Continue?",
+        "presets_error": "We couldn't load the rejection reasons. Refresh the page and try again.",
+        "invalid_input": "Choose a reason, and add details when 'Other' is selected.",
+        "toast_rejected": "The application was rejected and the email was sent."
+      }
     },
     "users": {
       "title": "Users",
@@ -3308,7 +3336,7 @@
       "step3_title": "Your page goes live",
       "step3_text": "Usually within a day or two your business appears on the site.",
       "step4_title": "Customers reach you directly",
-      "step4_text": "The WhatsApp button on your page opens a direct conversation with you. Contact and payment stay between you and your customers.",
+      "step4_text": "The contact button on the page opens a direct conversation with you — WhatsApp, phone, or another channel. Contact and payment stay strictly between you and your customers.",
       "process_link": "The full acceptance process"
     },
     "prepare": {
@@ -3969,6 +3997,7 @@
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
+        "tools": "We couldn't load your data",
         "retry_cta": "Try again"
       },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
@@ -4596,7 +4625,7 @@
   "sweep_tail": {
     "messages": {
       "meta_title": "Messages | Mehamakor",
-      "meta_description": "Communication on Mehamakor happens directly on WhatsApp with the business.",
+      "meta_description": "Every business on Mehamakor chooses how you reach it — WhatsApp, phone, or another channel that suits them.",
       "heading": "How communication works on Mehamakor",
       "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a direct-contact button — WhatsApp, phone, or another channel the business chose — that connects you directly to the business owner.",
       "why_heading": "Why this way?",

@@ -2018,6 +2018,10 @@ class ProducerListOut(BaseModel):
     has_no_added_sugar_products: bool = False
     has_low_carb_products: bool = False
     has_delivery: bool = False
+    # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
+    # this attribute with `offers_pickup` before serialization (same mechanism
+    # as the has_*_products fields below) — see producer_queries.py. The DB
+    # column stays (MEH-1259 keep-column pattern); it just isn't read anymore.
     pickup_points: bool = False
     # MEH-2046: the two fulfillment booleans the consumer surfaces read. Both are
     # computed by attach_badge_fields — NOT columns, so there is no migration —
@@ -2476,6 +2480,41 @@ class RequestChangesIn(BaseModel):
     """
 
     feedback: str | None = Field(None, max_length=2000)
+
+
+class ProducerRejectIn(BaseModel):
+    """MEH-226: admin "reject" payload — preset key + optional free text.
+
+    REUSES: schemas.py:2473 RequestChangesIn — same shape (optional free text
+    emailed to the producer verbatim, handler owns the emptiness rule). The
+    added `preset_key` selects one of the five canonical rejection reasons;
+    the label itself lives in the BACKEND
+    (`admin.py::PRODUCER_REJECTION_PRESETS`), not here and not in the
+    frontend, so the persisted text, the email and the admin UI cannot drift
+    apart (workflow.md Smell #1). Key validity is checked in the handler
+    alongside the "other requires free text" rule, mirroring
+    request_producer_changes' handler-side 400.
+
+    Back-compatible with the pre-MEH-226 body `{"reason": "..."}` — the
+    endpoint took `reason: str = Body("", embed=True)`, which parses into
+    this model unchanged.
+    """
+
+    preset_key: str | None = None
+    reason: str | None = Field(None, max_length=2000)
+
+
+class RejectionPresetOut(BaseModel):
+    """MEH-226: one row of GET /admin/producers/rejection-presets.
+
+    Typed rather than a bare dict so the MEH-1748 codegen chain emits a real
+    schema for this route — an untyped handler generates `zod.unknown()`,
+    which makes the drift guard structurally unable to notice the shape
+    changing.
+    """
+
+    key: str
+    label: str
 
 
 # --- User ---
