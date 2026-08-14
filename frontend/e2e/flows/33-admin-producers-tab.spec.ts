@@ -43,7 +43,7 @@
  * a fixed Tailwind class per status). A class comparison survives a copy
  * change to the label; a text comparison would not.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 import fs from "node:fs";
 import path from "node:path";
 

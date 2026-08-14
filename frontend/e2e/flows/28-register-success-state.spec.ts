@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 /**
  * Module:   28-register-success-state

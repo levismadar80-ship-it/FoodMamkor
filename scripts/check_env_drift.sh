@@ -50,7 +50,14 @@ cd "$ROOT"
 # working defaults (localhost:3000, Playwright's own bundled browser) when
 # unset; listing them in .env.example would tell a developer they're theirs
 # to configure, which they aren't.
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|PATH|HOME|USER|PYTHONPATH)$'
+# E2E_CLOUDINARY_STUB / E2E_CLOUDINARY_COUNT (MEH-1925): same class again —
+# knobs for frontend/e2e/flows/_cloudinary-stub.ts (the Playwright fixture
+# that stubs Cloudinary image delivery in flows/**). Neither is set in CI;
+# the committed default is "stub, don't count." STUB=0 switches one local
+# measurement run to the unstubbed baseline arm, COUNT points it at a file
+# to log matched requests to. Not application config — the app never reads
+# either.
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|E2E_CLOUDINARY_STUB|E2E_CLOUDINARY_COUNT|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 // Public, unauthenticated content pages must render their hero <h1> and a
 // <main> landmark without crashing. No data dependency — these are static

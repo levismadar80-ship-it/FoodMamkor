@@ -16,7 +16,7 @@
  * e2e/auth-fixture.ts, because it governs flows/19 and 22 as well and its
  * absence from those two is what made a token-only reuse look correct.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 import { fixtureExists, fixturePath } from "../auth-fixture";
 
 const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL;
