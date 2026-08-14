@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-1748 (Zod-from-OpenAPI spike) Lane C Phase 0 scoping — comment posted, STOP, no code touched
+
+**Branch:** `feature/meh-1748-zod-openapi-scope`, cut off fresh `origin/staging` (re-cut from the harness-provided `claude/meh-1748-zod-openapi-scope-t9tnf9` per workflow rule 3 — divergence was 0 against `origin/staging` by the time of the recut, so no lost work). This entry ships in the same docs-only branch — no code PR, per the task brief ("read-only on application code, docs-only carrier PR for the session log is the only PR allowed", rule 31).
+
+**What's done:** posted a full Phase 0 scoping comment on MEH-1748 (Linear). Read MEH-1748 + its whole dependency chain (MEH-1750/1751/1752/1891/1896/1897) live, re-derived every field count against current code rather than trusting cached numbers in the tickets, and unshallowed the clone (`git rev-parse --is-shallow-repository` was `true`) before citing any file history.
+
+**Key findings (full evidence in the Linear comment):**
+- The `KNOWN_UNDECLARED` baseline in `backend-contract-parity.test.js` is **46 fields today, not 47** as MEH-1897's card text says — `order_window` was declared and removed from the baseline after MEH-1897 was written; MEH-1897 itself is still Backlog/not started, so this had never been caught.
+- MEH-1751's bundle measurement (the number the 28/07 spike used to argue against codegen) **inverted under a real `next build`**: −45,192 B under esbuild became +2,073 B worse under the real bundler, reproduced byte-identical on a control rebuild. MEH-1752's own resolution text already says the bundle axis carries no evidence either direction — nobody has ever measured actual generated-vs-hand schema code under a real production build.
+- A recurrence **8** (MEH-2046, `delivers`/`offers_pickup`) and a nested-object recurrence outside the original "7" count (MEH-1942, `delivery_areas[].delivery_fee`) both happened since the spike was written — the first was caught pre-merge by the MEH-1891 parity guard (evidence the guard works), the second shipped and was fixed manually because the guard is provably top-level-only (`nested-schema-stripping.md:130-133`).
+- MEH-1896 (nested stripping, Backlog, `needs-sapir`) and MEH-1748 converged independently on the same structural answer — MEH-1896's own audit names MEH-1748's codegen as the fix that would make its own options א/ב/ג moot. The two decisions are coupled and neither ticket currently says so.
+
+**Verdict:** MEH-1748 is not a runnable CC prompt as currently scoped — it needs a single Sapir architecture ruling (adopt OpenAPI→Zod generation, yes/no, and if yes with what override/CI mechanism), coupled to MEH-1896's pending decision. Recommended MEH-1897 (Backlog, unblocked, 🟢 GREEN reasoning tier) as the one card in the chain actually ready to run today if Sapir wants incremental value without deciding the bigger question. Did not self-authorize either decision — flagged per the task's own stop condition.
+
+**What's pending (Sapir):** the adopt/don't-adopt call on MEH-1748, and the א/ב/ג call on MEH-1896 — both now cross-referenced to each other via the Linear comment on MEH-1748.
+
+**No code touched.** `git status` on `backend/` and `frontend/` clean for the whole session; this HANDOFF entry is the only file this branch carries.
+
 ## 2026-08-13/14 — MEH-1938 (SoT for producer location) chunk sequence: 3 merged, 3 blocked-with-named-gate, queue fully drained
 
 **Last PRs merged:** #2889 (MEH-2057, squash `bba96eb5`), #2896 (MEH-2058, squash `4f692999`), #2905 (MEH-2060, squash `92f3ce52`) — all three squash merges, each confirmed by re-fetching `origin/staging` and checking the tip commit immediately after its own merge call.
