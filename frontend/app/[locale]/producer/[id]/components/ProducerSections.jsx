@@ -156,7 +156,15 @@ export default function ProducerSections({
     };
   }, [producer?.slug]);
 
-  const hasSignature = !!(producer.top_product_name || producer.starting_price_label);
+  // MEH-1855: price_range is the canonical field (models.py:121 documents
+  // starting_price_label as its legacy alias) — read price_range first, fall
+  // back to the alias so producers who only ever filled the canonical field
+  // are no longer invisible on their own page.
+  const hasSignature = !!(
+    producer.top_product_name ||
+    producer.price_range ||
+    producer.starting_price_label
+  );
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -213,18 +221,20 @@ export default function ProducerSections({
     [sheetTotal],
   );
 
-  // MEH-1463: when the signature product was deduped out of the grid and the
-  // free-text starting_price_label is empty, surface the matched product's own
-  // price/description on the highlight card so the info the dedup removed isn't
-  // lost. starting_price_label keeps priority when present (unchanged). Numeric
-  // price → canonical formatPriceRange (MEH-1140) with dir="ltr" bidi isolation;
-  // free-text price_range is DATA (MEH-1305 F) rendered in natural direction.
+  // MEH-1463: when the signature product was deduped out of the grid and
+  // neither producer-level price field (MEH-1855: price_range canonical,
+  // starting_price_label legacy alias) is set, surface the matched product's
+  // own price/description on the highlight card so the info the dedup
+  // removed isn't lost. Either producer-level field keeps priority when
+  // present (unchanged). Numeric price → canonical formatPriceRange
+  // (MEH-1140) with dir="ltr" bidi isolation; free-text price_range is DATA
+  // (MEH-1305 F) rendered in natural direction.
   const signatureNumericPrice =
-    !producer.starting_price_label && signatureProduct?.price_min != null
+    !(producer.price_range || producer.starting_price_label) && signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
   const signatureFreeTextPrice =
-    !producer.starting_price_label && !signatureNumericPrice
+    !(producer.price_range || producer.starting_price_label) && !signatureNumericPrice
       ? signatureProduct?.price_range || null
       : null;
 
@@ -309,8 +319,10 @@ export default function ProducerSections({
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
-                {producer.starting_price_label ? (
-                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                {producer.price_range || producer.starting_price_label ? (
+                  <p className="text-accent font-semibold mt-0.5">
+                    {producer.price_range || producer.starting_price_label}
+                  </p>
                 ) : signatureNumericPrice ? (
                   <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
