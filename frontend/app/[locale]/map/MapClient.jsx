@@ -9,7 +9,7 @@ import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { geocodeCity } from "@/lib/places";
-import { producerPoints } from "@/lib/producerPoints";
+import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -569,6 +569,15 @@ export default function MapPage() {
   // (useMapSync handleCardClick + handleMarkerClick set it together).
   const focusedProducerId = filters.selectedProducer?.id ?? null;
 
+  // MEH-2046: is the layer toggle currently costing the user businesses? Read
+  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
+  // never claim something the visible map contradicts. Short-circuits while the
+  // layer is on, which is the default and the common case.
+  const secondaryHidden = useMemo(
+    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
+    [showSecondaryLayer, filters.filteredByCategory],
+  );
+
   const mapPane = (
     <MapPane
       producers={filters.filteredByCategory}
@@ -582,6 +591,7 @@ export default function MapPage() {
       visitedIds={hints.visitedIds}
       showSecondaryLayer={showSecondaryLayer}
       onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
+      secondaryHidden={secondaryHidden}
       focusedProducerId={focusedProducerId}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}

@@ -142,6 +142,147 @@ def test_pickup_ignores_the_legacy_column(client, db):
     assert _names(resp) == []
 
 
+# ── MEH-2060: the SERIALIZED pickup_points field, not just the filter ─────────
+#
+# The tests above prove the ?pickup_points=true FILTER already ignores the
+# column (MEH-2046). These prove the field every response body carries —
+# DeliveryBlock.jsx, ProducerSections.jsx, ProducerDetail.jsx and
+# AdminProducersTable.jsx all still read `producer.pickup_points` directly —
+# is now derived the same way, not read off the stored column. The three
+# states the card's DoD names explicitly: row-without-column,
+# column-without-row, both.
+
+
+def test_pickup_points_field_true_with_row_and_no_column(client, db):
+    """A pickup row with the legacy column at its False default must still
+    serialize pickup_points=True — this is the case that used to be silently
+    dropped (a producer whose only fulfillment signal is a location row, and
+    whose owner has no write path to the column at all per MEH-1856)."""
+    producer = _with_pickup(db, "רק שורה")
+    assert producer.pickup_points is False, "the column itself is untouched"
+
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    row = _by_name(resp, "רק שורה")
+    assert row["pickup_points"] is True
+    assert row["pickup_points"] == row["offers_pickup"], (
+        "single source of truth — the two fields must never disagree"
+    )
+
+
+def test_pickup_points_field_false_with_column_and_no_row(client, db):
+    """The mirror of test_pickup_ignores_the_legacy_column, but on the
+    serialized field instead of the filter — a stale True column with no
+    backing row must read False, not leak the column's own value."""
+    producer = make_producer(db, name="עמודה בלי שורה שוב")
+    producer.pickup_points = True
+    db.commit()
+
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    row = _by_name(resp, "עמודה בלי שורה שוב")
+    assert row["pickup_points"] is False
+    assert row["pickup_points"] == row["offers_pickup"]
+
+
+def test_pickup_points_field_true_with_both_row_and_column(client, db):
+    """Both present → True. NOT discriminating on its own — the stale column
+    happens to already agree with the derived value here, so pre-fix code
+    (which just read the column) passes this one too. Kept as a third matrix
+    cell and a consistency check (pickup_points == offers_pickup even in the
+    agreeing case); the discriminating coverage for "column lies" is the two
+    tests above, where old and new code diverge."""
+    producer = _with_pickup(db, "שניהם")
+    producer.pickup_points = True  # matches the row — coincidental, not asserted
+    db.commit()
+
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    row = _by_name(resp, "שניהם")
+    assert row["pickup_points"] is True
+    assert row["pickup_points"] == row["offers_pickup"]
+
+
+def test_pickup_points_field_false_with_neither(client, db):
+    """Baseline: no row, no column override → reads False. Same caveat as
+    above — pre-fix code (reading the False-default column) also passes this,
+    so it's a sanity/regression check for the matrix's fourth cell, not
+    evidence for the fix on its own."""
+    make_producer(db, name="שום דבר")
+
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    row = _by_name(resp, "שום דבר")
+    assert row["pickup_points"] is False
+    assert row["offers_pickup"] is False
+
+
+def test_pickup_points_field_on_producer_detail_endpoint(client, db):
+    """The public detail endpoint (ProducerDetail.jsx/ProducerSections.jsx/
+    DeliveryBlock.jsx's actual data source) goes through a SEPARATE query
+    builder from the listing above (producers.py, not producer_listing.py) —
+    assert it independently rather than trusting the listing's coverage to
+    imply it."""
+    producer = _with_pickup(db, "פרטים")
+
+    resp = client.get(f"/producers/{producer.id}")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["pickup_points"] is True
+
+
+def test_pickup_points_field_on_admin_producers_list(client, db):
+    """AdminProducersTable.jsx's own endpoint (admin.py, ProducerAdminOut) —
+    a third, independent code path that never called attach_badge_fields
+    before this ticket. Proven failing pre-fix: before MEH-2060,
+    list_producers returned the raw column with no eager-load of `locations`
+    at all, so a pickup-row-only business here would have serialized
+    pickup_points=False — the exact drift this ticket exists to close."""
+    from tests.conftest import auth_header, make_user
+
+    admin = make_user(db, role="admin", email="meh2060-admin@example.com")
+    _with_pickup(db, "אדמין רואה איסוף")
+    make_producer(db, name="אדמין בלי איסוף")
+
+    resp = client.get(
+        "/admin/producers",
+        params={"search": "אדמין"},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    rows = {r["name"]: r for r in resp.json()}
+    assert rows["אדמין רואה איסוף"]["pickup_points"] is True
+    assert rows["אדמין בלי איסוף"]["pickup_points"] is False
+
+
+def test_admin_update_does_not_write_pickup_points_column(client, db):
+    """The admin PUT payload can still send pickup_points (ProducerForm.jsx's
+    checkbox is unchanged, out of scope for this ticket) — assert the bulk
+    setattr no longer persists it to the column, mirroring the existing
+    delivery_cities no-op-pop this line was modeled on."""
+    from tests.conftest import auth_header, make_user
+
+    admin = make_user(db, role="admin", email="meh2060-admin2@example.com")
+    producer = make_producer(db, name="לא נכתב")
+    assert producer.pickup_points is False
+
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"pickup_points": True},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    # The response reads False despite the payload claiming True — this
+    # producer has no ProducerLocation row, so the derived value is False
+    # regardless of what the (no-op'd) write payload said.
+    assert resp.json()["pickup_points"] is False
+
+    db.refresh(producer)
+    assert producer.pickup_points is False, (
+        "the column itself must be untouched by the write — "
+        "if this is True, the payload reached setattr and the pop failed"
+    )
+
+
 def test_branch_row_is_not_pickup(client, db):
     """A plain branch is where the business IS, not a self-pickup offer."""
     _with_pickup(db, "סניף רגיל", kind="branch")
