@@ -1271,7 +1271,10 @@
         "remove": "Remove filter {label}"
       },
       "clear_all": "× Clear all",
-      "arranged_hidden": "Businesses arranged personally aren't shown in this filter"
+      "arranged_hidden": "Businesses arranged personally aren't shown in this filter",
+      "delivery_context_banner": "Businesses that deliver to {city}. The map pin is the business location — not the delivery area",
+      "banner_dismiss_aria": "Close this explanation",
+      "day_bridge_cta": "Filter by delivery day across all businesses"
     },
     "card_list": {
       "empty": {
