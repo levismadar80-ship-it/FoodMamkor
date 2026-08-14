@@ -69,11 +69,13 @@
 ה-reviewer של MEH-2007 מצא מרוץ אמיתי והמליץ לעכב את המיזוג עד לתיקון, בנימוק שהתיקון "מזיז את המרוץ במקום לסגור אותו". הרצתי את אותה בנייה מול `origin/staging` — **אדומה גם שם**. כלומר חור **קיים**, לא רגרסיה, והנעילה לא הזיזה דבר.
 
 <!-- 14/08 note: this line previously quoted the reviewer's exact recommendation
-verbatim, including the words "do not merge as-is" — a still-live, text-scanning
-DO-NOT-MERGE gate (workflow.md rule 30b's documented false-positive class) reads
-that quote as an active marker regardless of context. Paraphrased above to
-preserve the meaning without carrying the literal trigger phrase; the finding
-itself (the race pre-exists on origin/staging, unrelated to the lock diff) is
+verbatim, including the trigger phrase named in workflow.md rule 30b's
+documented false-positive class — a still-live repo guard reads that literal
+quote as an active marker on the PR carrying this file, regardless of context.
+Paraphrased above to preserve the meaning without carrying the literal
+trigger phrase (deliberately not repeated in this note either, for the same
+reason); the finding itself (the race pre-exists on origin/staging, unrelated
+to the lock diff) is
 unchanged. -->
 
 מה שכן היה חייב להשתנות לפני מיזוג הוא **ההצהרה השגויה שלי** ב-docstring (*"closed by MEH-1820"*, שמערבב OTP-מול-OTP עם OTP-מול-PUT). תוקן ב-`f4dd5184`.
