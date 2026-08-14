@@ -45,6 +45,31 @@ def test_register_null_city_returns_422(client, db):
     assert resp.status_code == 422, resp.text
 
 
+def test_register_whitespace_only_city_returns_422(client, db):
+    """Adversarial-review finding on this PR: `Field(..., min_length=1)` alone
+    counts raw length, so "   " (length 3) would pass it — the exact shape of
+    a whitespace-only submission that ships an effectively-empty city. Closed
+    by the sanitize→letter-floor validator pair (mirrors MEH-870's address /
+    short_description floors); this test is what proves it."""
+    payload = valid_producer_register_payload() | {"phone": "0501234567", "city": "   "}
+    resp = client.post("/auth/register/producer", json=payload)
+    assert resp.status_code == 422, resp.text
+
+
+def test_register_punctuation_only_city_returns_422(client, db):
+    payload = valid_producer_register_payload() | {"phone": "0501234567", "city": "---"}
+    resp = client.post("/auth/register/producer", json=payload)
+    assert resp.status_code == 422, resp.text
+
+
+def test_register_short_legitimate_city_name_accepted(client, db):
+    """The letter floor is min_count=1, not the ≥3 used for names/taglines —
+    a real short Hebrew city name ("לוד") must not be over-rejected."""
+    payload = valid_producer_register_payload() | {"phone": "0501234567", "city": "לוד"}
+    resp = client.post("/auth/register/producer", json=payload)
+    assert resp.status_code in (200, 201), resp.text
+
+
 # ---------- MEH-143 upgrade path (authenticated) ----------
 
 

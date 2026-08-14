@@ -1222,10 +1222,10 @@ function RegisterProducerPageBody() {
               <button
                 data-testid="register-details-next"
                 onClick={() => {
-                  // MEH-1807: producer_name + phone are validated HERE now, on
-                  // the step that owns them, instead of two frames later next to
-                  // the submit button. runRequiredGate focuses the first
-                  // offender; a blocked advance is the whole point.
+                  // MEH-1807: producer_name + phone + city (MEH-2015 chunk B) are
+                  // validated HERE now, on the step that owns them, instead of two
+                  // frames later next to the submit button. runRequiredGate focuses
+                  // the first offender; a blocked advance is the whole point.
                   const offenders = runRequiredGate(
                     CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.DETAILS),
                   );
@@ -1664,13 +1664,14 @@ function RegisterProducerPageBody() {
                   // to "stick" across submit attempts even after the user
                   // fixes one field).
                   setError("");
-                  // MEH-1807: the three cross-step required fields are still
-                  // checked here — a restored draft can blank one while the
-                  // seller is already on STORY, so the per-step gates are not a
-                  // complete guarantee. What changed is the OUTCOME: instead of
-                  // painting "יש למלא שם עסק" next to a button two frames away
-                  // from the field, send the seller to the step that owns the
-                  // first offender, focused on it, with the message inline.
+                  // MEH-1807: all CROSS_STEP_REQUIRED fields (four as of MEH-2015
+                  // chunk B) are still checked here — a restored draft can blank
+                  // one while the seller is already on STORY, so the per-step
+                  // gates are not a complete guarantee. What changed is the
+                  // OUTCOME: instead of painting "יש למלא שם עסק" next to a
+                  // button two frames away from the field, send the seller to
+                  // the step that owns the first offender, focused on it, with
+                  // the message inline.
                   const offenders = runRequiredGate(CROSS_STEP_REQUIRED, {
                     isSubmit: true,
                   });
