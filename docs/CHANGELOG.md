@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+- **14/08 — MEH-226 (admin rejection reason, end-to-end): שני PRs נחתו, docs backfill. `producers.rejection_reason` נכתב עכשיו ל-DB, לא רק נשלח במייל.**
+  - **PR 1/2 (`#2922`, backend):** `reject_producer` כותב את הסיבה ל-`producer.rejection_reason` באותו commit עם ה-status flip. חמישה preset reasons + freetext ל"אחר", מוגשים דרך `GET /admin/producers/rejection-presets` — מקור אמת יחיד; ה-frontend וגוף המייל שניהם קוראים אותו, בלי עותק מקומי (מונע את המחלקה מ-`workflow.md` Smell #1).
+  - **PR 2/2 (`#2926`, frontend):** פריט "דחייה" (tone: danger) ב-kebab של `AdminProducersTable`, pending-only. מודאל: 5 preset radio + textarea ל"אחר" → אישור → `POST /admin/producers/{id}/reject`. הוכחות דיסקרימינציה הודגמו לשני הכיוונים (MEH-1619).
+  - **לא בוצע, במפורש:** preview URL לא נשלח (Vercel Hobby rate-limited, `[preview]` opt-in לא נכלל) — **QA בנייד נותר פתוח**, מדווח כאן ולא בשקט. MEH-217 admin E2E specs לא צוטטו כראייה — אדומים על staging מסיבה לא-קשורה (500 על `by-slug`, MEH-1906).
+  - **docs/ADMIN.md** ו-**docs/MANUAL_TESTING.md** עודכנו בתוך PR 2/2 (9 סעיפי בדיקה). זהו ה-docs-only PR שהובטח בגוף שני ה-PRs ("CHANGELOG/HANDOFF … בסוף הבאצ'") — CHANGELOG + HANDOFF בלבד, כלל 31.
+
 - **14/08 — MEH-2077 chunks 1+3: ה-API contract probe הפסיק לדווח ירוק בלי לאמת. נחת ב-`66733b16` (PR #2929, squash מאומת — הורה אחד). chunk 3 חסום ל-CC ומועבר לספיר.**
   - **המנגנון האמיתי שונה ממה שהכרטיס שיער — וזה הממצא העיקרי.** הכרטיס תיאר "עוקב אחרי redirects בשקט"; הפרוב **לא עקב** — `allow_redirects=False` כבר היה שם. הירוק השקרי הגיע מ-`_print_probe`, שתנאי הכישלון היחיד שלו היה `if str(status) == "404"`, ולכן 302 · 500 · שגיאת תעבורה כולם החזירו `0`.
   - **דיסקרימינציה על היעד החי, לא על fixture:** מול `staging.mehamakor.online` הקוד שלפני השינוי מחזיר **exit 0** והקוד שאחריו **exit 1**, באותו חלון זמן. הישן הודפס 159 שורות `302` ואפס `404` — ולכן עבר.
