@@ -54,7 +54,10 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
 )
-from app.services.auth_notifications import notify_admin_producer_review_ready
+from app.services.auth_notifications import (
+    notify_admin_producer_review_ready,
+    notify_admin_producer_sensitive_edit,
+)
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -288,6 +291,87 @@ def _pending_and_approvable(db, producer) -> bool:
     return producer.status == "pending" and _is_approvable(db, producer)
 
 
+# MEH-2073: fields whose change is worth telling the admin about after a
+# business is already approved — identity (city, phone) and the trust
+# declarations MEH-1508 cross-checks at approval time (the diet scopes). ONE
+# constant; the Hebrew labels live with the sender in auth_notifications.py.
+#
+# Deliberately NOT the whole writable set: description / short_description /
+# owner_bio / links change often and legitimately, and a ping that fires on
+# every copy edit is a ping the admin learns to ignore.
+#
+# Every member is verified present in _PRODUCER_WRITABLE_FIELDS below — a name
+# that drifts out of that set would make this silently un-pingable, which is
+# what `test_sensitive_fields_are_all_writable` exists to catch.
+SENSITIVE_FIELDS = frozenset(
+    {"city", "phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+)
+
+
+def _snapshot_sensitive(producer) -> dict:
+    """Read the sensitive fields BEFORE the setattr loop mutates them.
+
+    Mirrors the `was_approvable` idiom above: the comparison has to happen
+    against values captured on a row read under the same advisory lock
+    (MEH-2007), or two overlapping PUTs can each miss the other's write.
+    """
+    return {field: getattr(producer, field, None) for field in SENSITIVE_FIELDS}
+
+
+def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None:
+    """MEH-2073: one ping per PUT, listing every sensitive field that actually
+    changed, and only for a producer that is ALREADY approved.
+
+    `status == "approved"` is read AFTER the commit deliberately — this endpoint
+    never changes status, so before and after agree; reading it after keeps the
+    check on the same object the diff is computed from.
+
+    Compares values, not "was this key in the payload": a save that submits
+    `city` unchanged (which the dashboard form does on every save, since it
+    posts the whole card) must not ping. That is the difference between a
+    signal and noise, and it is what the no-op test pins down.
+    """
+    if producer.status != "approved":
+        return
+    changed = sorted(
+        field
+        for field in SENSITIVE_FIELDS
+        if before.get(field) != getattr(producer, field, None)
+    )
+    if not changed:
+        return
+    background_tasks.add_task(_sensitive_edit_task, producer.name, changed)
+
+
+def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
+    """The fail-open boundary for the MEH-2073 ping.
+
+    `notify_admin_producer_sensitive_edit` guards WhatsApp and email in
+    separate try blocks, but its preamble — `_sanitize_wa_param(name)`, the
+    label join, the f-string — sits outside both, so the function is not
+    total. Under Starlette a BackgroundTask that raises propagates AFTER the
+    response has begun, which turns an owner's successful save into an error
+    she cannot act on and did not cause.
+
+    `add_task` alone therefore does NOT satisfy the fail-open contract
+    (MEH-1051/977); this wrapper is what does. Proven by
+    `test_notification_failure_does_not_affect_the_200`, which patches the
+    notifier to raise — without this it fails, which is how the gap was found.
+
+    NOT retrofitted onto `_maybe_fire_review_ready` (MEH-1351) or the resubmit
+    ping: same latent shape, but they are outside this ticket's
+    notification-only scope. Reported rather than widened.
+    """
+    try:
+        notify_admin_producer_sensitive_edit(producer_name, changed)
+    except Exception:  # noqa: BLE001 — fire-and-forget; the 200 is already out
+        log.exception(
+            "[NOTIFY] sensitive-edit ping failed for '%s' (fields=%s)",
+            producer_name,
+            changed,
+        )
+
+
 def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> None:
     """MEH-1351: review-ready ping on the false→true approvability transition
     of a pending producer (first image / license completed). Fire-and-forget
@@ -383,6 +467,10 @@ def update_my_producer(
     # MEH-1351: snapshot approvability BEFORE mutation — the review-ready ping
     # fires only on the false→true transition of a pending producer (below).
     was_approvable = _pending_and_approvable(db, producer)
+    # MEH-2073: same idiom, different question — the sensitive-field values as
+    # they stand before the setattr loop, so the post-commit diff can tell an
+    # actual change from a form resubmitting an unchanged value.
+    sensitive_before = _snapshot_sensitive(producer)
 
     _PRODUCER_WRITABLE_FIELDS = {
         "contact_name",
@@ -584,6 +672,9 @@ def update_my_producer(
         )
 
     _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
+    # MEH-2073: notification only — runs after the commit above, adds a
+    # BackgroundTask, and touches neither the response nor any column.
+    _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
 
     return producer
 
