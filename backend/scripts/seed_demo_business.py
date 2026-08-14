@@ -643,9 +643,7 @@ def _delete_existing(db) -> None:
         # Deleting them here keeps the session identity map clean, exactly as
         # the Event and ProducerLocation deletes above do. The commits go with
         # them via cascade="all, delete-orphan" on GroupBuy.commits.
-        for gb in (
-            db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).all()
-        ):
+        for gb in db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).all():
             db.delete(gb)
         # MEH-1432: producer_locations rows carry ON DELETE CASCADE, so
         # db.delete(producer) removes them too; the explicit ORM delete keeps the

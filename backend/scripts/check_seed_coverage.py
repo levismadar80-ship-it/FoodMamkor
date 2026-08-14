@@ -87,11 +87,23 @@ SEEDED_SURFACES = [
         "where": "reply IS NOT NULL",
     },
     {"surface": "recipes", "table": "producer_recipes", "where": None},
-    {"surface": "recipes/product_link", "table": "producer_recipe_products", "where": None},
+    {
+        "surface": "recipes/product_link",
+        "table": "producer_recipe_products",
+        "where": None,
+    },
     {"surface": "events", "table": "events", "where": None},
     # --- MEH-1706 §2 item 2: experiences + the moderation queue ---
-    {"surface": "experiences/approved", "table": "experiences", "where": "status = 'approved'"},
-    {"surface": "experiences/pending", "table": "experiences", "where": "status = 'pending'"},
+    {
+        "surface": "experiences/approved",
+        "table": "experiences",
+        "where": "status = 'approved'",
+    },
+    {
+        "surface": "experiences/pending",
+        "table": "experiences",
+        "where": "status = 'pending'",
+    },
     {
         "surface": "experiences/changes_requested",
         "table": "experiences",
@@ -113,11 +125,27 @@ SEEDED_SURFACES = [
         "where": "cardinality(kashrut_badges) > 0",
     },
     # --- MEH-1706 §2 item 3: order window ---
-    {"surface": "order_window", "table": "producers", "where": "order_window IS NOT NULL"},
+    {
+        "surface": "order_window",
+        "table": "producers",
+        "where": "order_window IS NOT NULL",
+    },
     # --- MEH-1706 §2 item 5: contact channels (MEH-296) ---
-    {"surface": "contact/website", "table": "producers", "where": "website IS NOT NULL"},
-    {"surface": "contact/facebook", "table": "producers", "where": "facebook IS NOT NULL"},
-    {"surface": "contact/instagram", "table": "producers", "where": "instagram IS NOT NULL"},
+    {
+        "surface": "contact/website",
+        "table": "producers",
+        "where": "website IS NOT NULL",
+    },
+    {
+        "surface": "contact/facebook",
+        "table": "producers",
+        "where": "facebook IS NOT NULL",
+    },
+    {
+        "surface": "contact/instagram",
+        "table": "producers",
+        "where": "instagram IS NOT NULL",
+    },
     {
         "surface": "contact/external_order_form",
         "table": "producers",
@@ -128,14 +156,22 @@ SEEDED_SURFACES = [
         "table": "producers",
         "where": "whatsapp_group IS NOT NULL",
     },
-    {"surface": "contact/email", "table": "producers", "where": "contact_email IS NOT NULL"},
+    {
+        "surface": "contact/email",
+        "table": "producers",
+        "where": "contact_email IS NOT NULL",
+    },
     # --- MEH-1706 §2 items 6-7: google rating row + OwnerCard ---
     {
         "surface": "google_place_id",
         "table": "producers",
         "where": "google_place_id IS NOT NULL",
     },
-    {"surface": "owner_card/bio", "table": "producers", "where": "owner_bio IS NOT NULL"},
+    {
+        "surface": "owner_card/bio",
+        "table": "producers",
+        "where": "owner_bio IS NOT NULL",
+    },
     {
         "surface": "owner_card/photo",
         "table": "producers",
