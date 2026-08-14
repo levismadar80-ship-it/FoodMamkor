@@ -136,7 +136,12 @@ describe("ExperienceForm — location_type is a real choice (MEH-2013)", () => {
     fillEverythingElse();
     fireEvent.click(submitButton());
 
-    const group = screen.getByRole("group", { name: T.field_location_type });
+    // MEH-2015 chunk B: the group's accessible name now also carries the
+    // sr-only "(required)" suffix (accessibility fix — screen readers
+    // previously heard nothing marking this group required). A RegExp keeps
+    // this assertion about the group being findable by its label text, not
+    // about the exact string, which isn't this test's subject.
+    const group = screen.getByRole("group", { name: new RegExp(T.field_location_type) });
     const describedBy = group.getAttribute("aria-describedby");
     expect(document.getElementById(describedBy)).toHaveTextContent(
       T.error_location_type_required,
