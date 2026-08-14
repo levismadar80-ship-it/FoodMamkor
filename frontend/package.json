@@ -14,7 +14,8 @@
     "lint:ratchet": "node ../scripts/checks/lint-ratchet.mjs",
     "lint:ratchet:baseline": "node ../scripts/checks/lint-ratchet.mjs --update-baseline",
     "design:lint": "design.md lint ../docs/DESIGN.md",
-    "design:export": "design.md export --format tailwind ../docs/DESIGN.md > tailwind.tokens.json"
+    "design:export": "design.md export --format tailwind ../docs/DESIGN.md > tailwind.tokens.json",
+    "codegen": "bash ../scripts/checks/openapi-codegen-drift-guard.sh --write"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -60,6 +61,7 @@
     "jiti": "^2.7.0",
     "jsdom": "^29.1.1",
     "knip": "^6.32.0",
+    "orval": "8.24.0",
     "postcss": "^8.5.25",
     "tailwindcss": "^3.4.13",
     "vitest": "^4.1.8"
