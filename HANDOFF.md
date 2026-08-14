@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 (later, backfill MEH-2086) — MEH-1925: Cloudinary E2E bandwidth stub
+
+**מוזג:** #2950 — `frontend/e2e/flows/_cloudinary-stub.ts`, שכל 36 ה-flow specs מייבאים ממנו במקום מ-`@playwright/test`.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **שני יעדי יירוט, לא אחד.** `res.cloudinary.com` ישיר **וגם** `/_next/image` (parsing של `url` param) — `next/image` מעביר את בקשת Cloudinary דרך שרת ה-Next, בלתי-נראה ל-`page.route()` על host בלבד. נמדד: 79% מהתנועה עברה בדיוק במסלול הזה. אם מישהו "מפשט" את ה-stub ליעד אחד — זה יחזיר את רוב ה-bandwidth.
+2. **`e2e/visual/**` לא נגע בכוונה.** VRT צריך פיקסלים אמיתיים; אל תייבאי את ה-stub לשם.
+3. **המספרים: 773/773 (100%) → 0/808 (0%)**, אותו corpus, נמדד מקומית מול `next start` + backend מקומי (Railway חסום מה-sandbox).
+4. **MEH-1925 נסגר אוטומטית משם הענף במיזוג** (כלל 29b) — אומת שזה נכון (לא הונח): חצי ה-Console טופל כבר ב-13/08 ע"י ספיר. comment מפורש על הכרטיס עם הנימוק המלא.
+5. **תגובה נפרדת תוקנה על MEH-1905** (לא קשור ל-Cloudinary הזה): טענה שגויה ש-`BACKEND_SENTRY_DSN` לא מוגדר תוקנה ב-thread reply, לפי אימות ישיר של ספיר ב-Railway (מוגדר בשתי הסביבות). לא נמחקה התגובה המקורית — תוקנה בשרשור, לשמור על עקבה.
+
+---
 ## 2026-08-14 (backfill, MEH-2082) — MEH-2015 chunk B · MEH-1968 · MEH-2053
 
 **מוזג:** #2945 (MEH-2015 chunk B) · #2934 (MEH-1968) · #2868 (MEH-2053). שלושתם נחתו מוקדם באותו יום — לפני הסשן ש-§ הקודמת (MEH-1706 chunks B+C) שייכת אליו — והתור הזה רק עכשיו רושם אותם ל-CHANGELOG/HANDOFF (rule 31: קובץ נפרד, docs-only, כי הם נחתו על ענפי קוד).
