@@ -3,6 +3,29 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-2067 (bug sweep v5): v4 close-out complete, 5-ID frozen list drained
+
+**Phase A (v4 close-out) — complete.** All 3 PRs left armed at v4's own SYNC confirmed merged via `pull_request_read`: #2885 (MEH-1521, 16:01:18Z 08/13), #2887 (MEH-1777, 15:50:26Z 08/13), #2890 (MEH-1526, 14:40:50Z 08/13), plus #2892 (v4 docs PR, 14:44:14Z 08/13). Per rule 29b (non-deterministic branch-name auto-close): MEH-1521's Linear status was already correct (Done); **MEH-1777 and MEH-1526 were still Backlog despite being merged** — both PR bodies used `Refs MEH-XXXX` rather than `Closes`, so the auto-close integration never fired. Corrected both to Done via `save_issue` (state param + prepended evidence note, re-read via the same call's response to confirm it held — no separate round-trip needed). MEH-2023 closed Done with a one-line close-out note prepended to its SYNC.
+
+**Phase B — all 5 frozen-list IDs resolved, zero third state:**
+
+| ID | Outcome | Evidence |
+|---|---|---|
+| MEH-2040 | **Already Done** | Completed 20:12Z 08/13 — after the list was frozen (14:40Z) but before this session started. No action taken. |
+| MEH-1838 | **Parked** | Its own Phase-0 premise was false: the registration endpoint (`ProducerRegister` schema, `auth.py:416`) does not accept the 4 delivery-shape fields — only `ProducerAdminCreate`/`ProducerUpdate` do. Building the frontend step against it would silently no-op (Pydantic drops unknown fields). Zero files touched, per the card's own explicit STOP instruction. Needs a backend-first ticket. |
+| MEH-2032 | **PR #2909 open, auto-merge armed (squash), CI in progress at time of writing** | `bg-accent/10` → `bg-surface-card` fix for the same AA-contrast class MEH-2025 already fixed on the icon-chip in the same file. Contrast math re-derived from live `tailwind.tokens.json` values (4.07:1 → 5.19:1), matching the ticket's own numbers exactly. Regression test proven discriminating (red on old code, green on the fix — both runs recorded, not just asserted). `npm run build` exit 0, `npx vitest run` 2957 passed / 0 failed. Sibling instances found in `EventsClient.jsx` and `AboutProcessClient.jsx` via the mandatory grep — filed separately as MEH-2069 rather than bundled (unverified page backgrounds, scope discipline). |
+| MEH-1755 | **Status corrected to Done** | PR #2864 already merged 08/13 (workflow rule 33: an agent checks a DoD box only when it can cite the command/artifact that verifies it). Two items explicitly deferred in the PR body (30-day count, mechanical CI guard — both named, not silently dropped) don't block the rule itself being in force. |
+| MEH-1523 | **Parked (needs-sapir)** | PR #2846 already merged 08/13 (text-scanning → label-based DO-NOT-MERGE gate, code side complete). Status flipped Done→Backlog 94 seconds after merge with no visible actor — another live instance of the rule-29b reopen anomaly already documented for MEH-1872. Left parked rather than force-corrected to Done, because the merged PR's own "Not done" section says the mechanism isn't live: Sapir still needs to create the `do-not-merge` label and apply the staged workflow YAML patch (CC-deny on `.github/workflows/**`). Labeled `needs-sapir` with the exact remaining steps spelled out on the card. |
+
+**What's pending Sapir:**
+- MEH-1838: decide whether to split into a backend-first ticket (extend `ProducerRegister` + validator, wire `register_producer` to persist) followed by the frontend step, or scope both together. Worth a second look: `schemas.py:1532-1534`'s comment suggests the *current* XOR guard on `ProducerAdminCreate` validates against `delivery_area_cities`, not a flat `delivery_cities` array — check which is the live storage path before extending `ProducerRegister`.
+- MEH-1523: create the `do-not-merge` label, apply `docs/ci/meh-1523-dnm-label-gate.patch.md`, run one warn-only cycle then flip to blocking, verify on a real PR.
+- MEH-2069 (new, Backlog, Low): verify the actual page background behind the `EventsClient`/`AboutProcessClient` chips before assuming the same cream-background fix applies.
+
+**Known issue reconfirmed, not new:** rule 29b's branch-name auto-close/reopen non-determinism fired twice more this session (MEH-1777/MEH-1526 never auto-closed at all; MEH-1523 auto-closed then reopened 94s later) — same class already documented for MEH-1872 (5-second reopen). No new mitigation attempted; this session just re-verified live status per-ID as the existing protocol requires.
+
+**Session-wide verification:** `npm run build` exit 0, `npx vitest run` 2957 passed / 0 failed / 3 skipped (post-merge with concurrent staging churn from an unrelated MEH-1938 chunk sequence landing during this session).
+
 ## 2026-08-13/14 — MEH-1938 (SoT for producer location) chunk sequence: 3 merged, 3 blocked-with-named-gate, queue fully drained
 
 **Last PRs merged:** #2889 (MEH-2057, squash `bba96eb5`), #2896 (MEH-2058, squash `4f692999`), #2905 (MEH-2060, squash `92f3ce52`) — all three squash merges, each confirmed by re-fetching `origin/staging` and checking the tip commit immediately after its own merge call.
