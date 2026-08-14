@@ -3,6 +3,38 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-1703 (nav registry, HIGH-RISK): כל 4 ה-chunks הקודיים נחתו
+
+**מוזג:** chunk 1 `15cc35e02` (#2853) · chunk 2 `619ca6d82` (#2881) · chunk 3 `e4924ac8d` (#2899) · chunk 4 `d44279c51` (#2911). בנוסף #2876 (docs) ו-#2877 (טסטי `suppressOnRoute`).
+
+**מה יש עכשיו:** `frontend/lib/nav-registry.js` הוא המקור היחיד לשאלה **אילו** פריטי ניווט קיימים, ה-`href` שלהם ומפתח ה-i18n. שלוש המעטפות — `Header.jsx` (‏`header` + `headerMenu`), `BottomNav.jsx` (‏`bottomNav`), `AccountSheet.jsx` (‏`accountSheet`) — נגזרות ממנו. **סדר, אייקונים ו-markup נשארו מקומיים בכוונה** ("consolidate, don't fuse"): ה-Header מרנדר home/map/experiences/about וה-pill מרנדר home/map/about, ולכן שום סדר הצהרתי אחד לא מתאר את שניהם — גזירת סדר הייתה בעצמה שינוי ויזואלי.
+
+**ה-guard (`__tests__/NavCrossShellGuard.test.jsx`) הוא הנקודה של כל הכרטיס.** התכונה שהוא טוען: סימטריה בין פלטפורמות היא או קיימת, או **מוצהרת במפורש** עם `only` + `note`. מדידה שמראה למה זה לא כפילות של ה-parity הקיים — מחיקת surface אחד של `accountSheet` בכל פעם:
+
+| ה-surface שנמחק | `NavRegistryParity` | ה-guard החדש |
+|---|---|---|
+| `favorites` | אדום | אדום |
+| `settings` | אדום | אדום |
+| `logout` | אדום | אדום |
+| **`producerDashboard`** | **ירוק — 31 עברו** | **אדום** |
+| **`login`** | **ירוק — 31 עברו** | **אדום** |
+
+ה-parity תופס 3 מתוך 5, ורק כי טסטים ידניים מקבעים אותם **בשם**. ה-guard תופס 5 מתוך 5.
+
+**מה שהבא אחריי צריך לדעת:**
+- **7 פריטים חד-פלטפורמיים מצהירים על כך.** אחד מהם, `admin`, הוא **פער ידוע ולא החלטת עיצוב** — אין לאדמינית מסלול ל-`/admin` בנייד. ה-note שלו אומר את זה במפורש כדי שההצהרה לא תיקרא כאישור. סגירת הפער היא MEH-1701, לא הרג'יסטרי.
+- **הוספת פריט ניווט חדש** = רשומה אחת ב-`NAV_ITEMS` + סדר במעטפת. אם הוא רק על פלטפורמה אחת, ה-guard ידרוש `only` + `note` — וזאת המטרה, לא חיכוך מקרי.
+- **`showBiz` כבר לא קיים** כ-prop של `AccountSheet`; שער MEH-669 הוא קהל `consumer` ברג'יסטרי.
+- **`BottomNav.jsx` — ההדחיה הוחלפה, לא נמחקה.** ה-ticket הזה איחד פריטי ניווט ולא התנהגות גלילה, ולכן ההעתקה של מאזין הגלילה מ-`Header.jsx:91-116` עדיין מכוונת. מי שיחלץ hook משותף פותח scope חדש.
+
+**מה שלא נעשה, במפורש:** אין בדיקת מובייל ואין preview URL — שום דבר לא מרונדר אחרת (הוכח ב-3 chunks: 10 + 60 + 120 תאי HTML זהים-בייט, ושני diff פיקסלים בסף 0 ב-1440 וב-375), ו-Vercel חסום היום ב-`api-deployments-free-per-day`.
+
+**הממצא ששווה יותר מהכרטיס עצמו:** ה-control של chunk 3 — שורת ניווט מוחלפת באמת — הוא **6,070 px** מול תקציב **6,689 px** של `maxDiffPixelRatio: 0.02` בפרויקט המובייל. **91% מהתקציב, מתחתיו.** ריצת VRT תקנית הייתה מדווחת ניווט מובייל מוחלף לגמרי כירוק. זו MEH-1765 שנמדדה על המשטח הזה, לא צוטטה — ולכן כל ההוכחות כאן הן diff בסף 0 ולא `toHaveScreenshot` עובר.
+
+**§29b:** אף אחד מארבעת המיזוגים לא סגר את הכרטיס אוטומטית (‏`Refs`, לא `Closes`) — נבדק אחרי כל מיזוג, ‏`Refs` עומד עכשיו על 1 מתוך 5 בכרטיס הזה.
+
+---
+
 ## 2026-08-14 — MEH-2067 (bug sweep v5): v4 close-out complete, 5-ID frozen list drained
 
 **Phase A (v4 close-out) — complete.** All 3 PRs left armed at v4's own SYNC confirmed merged via `pull_request_read`: #2885 (MEH-1521, 16:01:18Z 08/13), #2887 (MEH-1777, 15:50:26Z 08/13), #2890 (MEH-1526, 14:40:50Z 08/13), plus #2892 (v4 docs PR, 14:44:14Z 08/13). Per rule 29b (non-deterministic branch-name auto-close): MEH-1521's Linear status was already correct (Done); **MEH-1777 and MEH-1526 were still Backlog despite being merged** — both PR bodies used `Refs MEH-XXXX` rather than `Closes`, so the auto-close integration never fired. Corrected both to Done via `save_issue` (state param + prepended evidence note, re-read via the same call's response to confirm it held — no separate round-trip needed). MEH-2023 closed Done with a one-line close-out note prepended to its SYNC.
