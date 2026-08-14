@@ -3,6 +3,49 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-1906 (by-slug RecursionError): chunk 1 נחת · chunk 2 פתוח וחסום
+
+**מוזג:** chunk 1 — `89c3f0c8` (#2913, **merge commit** ולא squash).
+**chunk 2 — #2914** (`feature/meh-1906-failopen-alerting`). מוזג בהכרעת ספיר מעל `E2E gate` אדום — ראו למטה.
+
+**מה יש עכשיו:** `SentryRequestScopeMiddleware` היא **pure ASGI** (`backend/app/middleware.py:122-157`), לא עוד `BaseHTTPMiddleware`. כל 9 ההתנהגויות נשמרו 1:1 (מיפוי `file:line` מלא בגוף #2913). סדר הרישום ב-`install_middlewares` לא זז, ו-`main.py` לא נגע כלל.
+
+> **הניסוח המדויק, ואל תשנו אותו: "frame eliminated, root cause not proven".** ה-frame שהופיע ב-RecursionError איננו. **אין ראיה שהבאג נעלם.** אם הוא חוזר — ה-trace יהיה חדש ואינפורמטיבי, וזה כל מה שההמרה קנתה.
+
+### 🔴 מה שהבא אחריי חייב לדעת — שלושה פערי אימות
+
+1. **ה-QA שאחרי המיזוג על by-slug לא בוצע, ואי אפשר לבצע אותו מ-CC.** שני חסמים **נפרדים**, שניהם נמדדו 14/08:
+   - `*.up.railway.app` — חסום ב-egress (המגבלה המוכרת).
+   - `staging.mehamakor.online` — **כל** נתיב מחזיר `302 → vercel.com/sso-api` (Vercel Deployment Protection), ו-`vercel.com` נחסם ע"י ה-proxy ב-`403 CONNECT`. נמדד על `/`, `/he`, `/he/<slug>`.
+
+   **ה-fallback שהכרטיס הניח (E2E) אינו תחליף:** `e2e.yml:224` מריץ מול `http://localhost:3000`, כלומר לא נוגע בבקאנד הפרוס. **לא נצפה 5xx — וגם לא נצפה 200.** מי שיכולה להריץ את זה: ספיר, מהטרמינל שלה או מדפדפן עם גישת SSO.
+2. **`API contract probe (staging)` הוא ירוק עם שתי סיבות — אל תסתמכו עליו.** ב-run `31789573043` דיווח `success` בזמן ש**כל ~160 המסלולים החזירו `302`**. הוא עובר גם כשה-API חסום לגמרי, ו-`/producers/by-slug/*` אינו ברשימה שלו. `.github/workflows/**` הוא CC-deny — לא תוקן, מדווח.
+3. **`dashboard-receipt` ל-chunk 2 לא בוצע.** נדרש אירוע אמיתי ב-Sentry לפני שהכרטיס נסגר.
+
+   **וכשהוא ירוץ — לבדוק דבר אחד נוסף (הצעת ה-CI reviewer על #2914):** ה-rate-guard הוא `Set` ברמת המודול (`middleware.js:68`) שנשען על מיחזור אותו V8 isolate בין בקשות במופע חם. **ההנחה הזו לא אומתה.** להריץ פרץ בקשות חוזרות לאותו slug כושל ולוודא **אירוע אחד בדיוק** לחלון חם; יותר מאחד ⇒ בידוד per-request, וה-guard צריך אחסון חוצה-בקשות.
+
+   *(ה-`Minor` של אותו reviewer — `global.fetch` בהשמה ישירה במקום `vi.stubGlobal` ב-`MiddlewareSlugErrorSeparation.test.jsx:187` — נבדק ולא שונה: הוא תואם את `backendReturns` הקיים באותו קובץ (`:62`), והוא מודה שאין כשל היום. נרשם, לא תוקן.)*
+
+### #2914 — CC עצרה, ספיר הכריעה
+
+`CI gate` ✅ · `Deploy gate` ✅ · **`E2E gate` ❌**. ההוראה הייתה לא למזג על אדום, ולכן עצרתי.
+
+**האדום אינו של ה-diff — נמדד מול ה-base:** ריצת `staging 8ee9e607` (run `31787179223`, לפני שה-PR נוצר) = **14 נכשלו**; ריצת ה-PR = **12 נכשלו**, כולם נכשלים גם על ה-base. ההפרש היחיד (`[desktop] 33-admin-producers-tab:160`) מופיע בריצת ה-base תחת `3 flaky`. הכשלים שייכים ל-MEH-215 · MEH-217 · MEH-991.
+
+**וטיעון מנגנוני:** `producerExists` נקרא רק על נתיב סגמנט-יחיד שאינו ב-`STATIC_ROUTES` (`middleware.js:142-147`), ולכן על `/admin/producers` (2 סגמנטים) ועל `/login`·`/register`·`/map` הוא **לא נקרא בכלל**. `31-favorites-journey-d:265` — היחיד שטוען עמוד פרטים — נכשל על ה-base ו**עבר** ב-PR.
+
+**התיקון של ששת ה-specs חורג מה-scope** (שלושה כרטיסים אחרים). ‏CC **לא מיזגה** — פרסמה את הראיות כתגובה על ה-PR והשאירה את ההחלטה. **ספיר הורתה `MERGE`**, ו-auto-merge חומש עם `merge_method: "merge"` (אותה בחירה נעשתה שלוש פעמים בסשן; לא פורקה שוב). **הכשלים עצמם לא נעלמו — הם עדיין אדומים על staging ושייכים לשלושת הכרטיסים האחרים.**
+
+### שני לקחים שכדאי לשמור
+
+- **ה-`/adversarial-review` תפס שסוויטת הרגרסיה שלי הייתה ירוקה גם כשה-middleware **לא רשום בכלל** (16/16).** התיקון קורא את `full_app.user_middleware`. זה בדיוק ה-presence-only מ-`testing.md`, והוא נתפס רק כי הרצתי את הבקרה.
+- **גוף ה-PR של #2913 טען בטעות שה-guard על non-`http` הוא התנהגות חדשה.** `base.py:101-104` מראה שהוא היה שם כל הזמן. תוקן לפני המיזוג — אבל זו תזכורת שטענה על דיף צריכה קריאת מקור, לא היגיון.
+
+### מצב הכרטיס
+
+**MEH-1906 נשאר `In Progress`** — מיזוג #2913 **לא** סגר אותו (`completedAt: null`), למרות ששם הענף נשא `meh-1906` ושהגוף כלל `Refs`. נקודת נתונים רביעית לטבלת `Refs` בכלל 29b: כעת **1 מתוך 4**.
+
+---
 ## 2026-08-14 — pre-launch batch v6 (MEH-2068): 9 פריטים, אפס מצב שלישי
 
 **פתוח כרגע:** PR **#2916** (MEH-1906, auto-merge חמוש squash) · PR **#2918** (MEH-1854 chunk 1, **auto-merge לא חמוש בכוונה** — ראו למטה).
