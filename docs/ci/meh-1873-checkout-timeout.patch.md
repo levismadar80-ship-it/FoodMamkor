@@ -80,6 +80,17 @@ stall, so any checkout slowdown goes straight through the ceiling.
 | 06/08 | #2636, #2645 | `Repo guards` | 3m05s / 3m18s vs 14s healthy — **during a repo-wide GitHub Actions service incident** (`Failed to resolve action download info: Service Unavailable`) |
 | 13/08 | — | Phase 0 census | **zero** matching hangs in 299 runs / 63 cancellations over ~21h (`docs/audits/2026-08-13-meh1873-checkout-cancel-baseline.md`) |
 
+**Provenance of the numbers above, because a patch doc gets read as first-hand measurement.**
+Only two things in this file were re-derived from the repo for this patch: the **line anchors**
+(`:82`, `:503`, `:65`, `:723`) and the **job/timeout/checkout inventory** in the scope table, both
+read from `origin/staging` @ `03eab298`. Everything in the incident table — the 31/07 and 03/08
+timestamps, the "zero guards run" observations, the 7-second comparison, the 3m05s/3m18s figures —
+is **inherited from the card's own contemporaneous measurements** (its §1 and its 06/08 addendum),
+which quote the run logs verbatim. The 13/08 row is from PR #2870's audit doc. None of the incident
+figures were re-verified against the live Actions history for this patch; those runs are 11 days
+old and several are likely past retention. If any of them becomes load-bearing for a decision
+beyond "raise a timeout", re-derive it first.
+
 Two facts constrain the reading, and they point in opposite directions:
 
 - **Not supersession.** Verified per incident: `run_attempt: 1`, no newer run for the head
