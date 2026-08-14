@@ -230,6 +230,21 @@ describe("BadgeRow", () => {
       expect(btn.textContent).toBe(""); // seal glyph only — the name stays the hero
     });
 
+    // MEH-2032: text-accent (#896714) on bg-accent/10 composited over the cream
+    // page background computes 4.07:1 — below the 4.5:1 AA floor for this
+    // text-xs (12px) chip. bg-surface-card (solid #fffefb) gets it to 5.19:1,
+    // the same usage-level fix already applied to the iconOnly seal above
+    // (MEH-2025/#2825). Asserts the FIXED class is present and the FAILING one
+    // is gone — a presence-only check on bg-surface-card alone couldn't
+    // distinguish "fixed" from "never had the bug", so both sides are pinned.
+    it("hero-surface textual chip uses the AA-passing bg-surface-card, not bg-accent/10", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} />);
+      const btn = screen.getByRole("button", { name: /מאומת/ });
+      const pill = btn.querySelector("span");
+      expect(pill.className).toContain("bg-surface-card");
+      expect(pill.className).not.toContain("bg-accent/10");
+    });
+
     // MEH-1170: the S12 "מוצהר" chip contradicted ADR-022 ("tier 2 = no
     // badge") and was removed. Declared renders no tier badge on ANY surface;
     // the affirmative declared_explainer moved to ProducerHeader as visible copy.
