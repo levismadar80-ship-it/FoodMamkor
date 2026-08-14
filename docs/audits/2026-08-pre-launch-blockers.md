@@ -1,6 +1,6 @@
 # Pre-launch blocker audit (MEH-2085)
 
-> **swept 26 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
+> **swept 28 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
 
 **Method.** Source of truth is Linear LIVE via `get_issue`, one card at a time.
 `list_issues` is used ONLY as the index (IDs, titles, labels, state, priority):
@@ -16,7 +16,7 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 2. **DEFER** — real work, no user harm at launch.
 3. **MOOT** — the premise depends on data, history or scale that does not exist.
 
-**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 15 · MOOT 0 · FLAGGED 1
+**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 17 · MOOT 0 · FLAGGED 1
 
 ---
 
@@ -61,6 +61,8 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 | **MEH-2077** | 🟢🔴 שערי אימות מדווחים ירוק בלי לאמת — contract probe עובר על ~160 מסלו | Third recurrence of the false-green class: the contract probe reported success while ~160 routes returned 302 to Vercel SSO. Chunk 1 (harden the probe to assert the status it saw) already landed — PRs #2929/#2930. What remains is chunk 2, the Vercel Protection Bypass secret, which is Sapir-only Vercel settings. A verification gate, not a consumer surface. |
 | **MEH-1854** | 🏁 MEH-291 Phase 4 באמת — readers→enum, backfill+desync count, drop שתי | In flight with a Sapir-set schedule at the BOTTOM (14/08): chunk 1 = PR #2918, gated on self-QA screenshots, soaking until Mon 17/8 so a live Friday exercises the at-risk pill; chunks 2-3 are RED (Alembic column drops) and explicitly must not open before then, with a desync count and a fresh backup as preconditions. The residual user-visible edge (the Friday pill reading is_available_today unconditionally) is an availability-badge nuance, not blocking harm. NOTE: chunks 2-3 dropping legacy columns should NOT run pre-launch — their own gates say so. |
 | **MEH-2046** | 🗺️ /map fulfillment IA — צ'יפי משלוח+איסוף מקודמים, תגי כרטיס, העברת ש | Large /map fulfillment IA chain, and mostly ALREADY LANDED — PRs #2855, #2880, #2894, #2903, #2904 and #2919 are attached. Discovery/IA improvement: promote delivery+pickup to a fixed chip row, fulfillment tags on cards, move the layer control. It does close the MEH-1836 divergence (a nationwide business passes the delivery filter but renders no badge), which is a real discovery defect — but that is being fixed inside this chain, not blocked on it. |
+| **MEH-1896** | 🕳️ .loose() הוא top-level בלבד — אובייקטים מקוננים עדיין מסולקים, ושער | Bottom (14/08) closed the design fork: option ג only — extend the parity gate, do not hand-add .loose() to nested sites, because MEH-1748 decided to adopt codegen and a generated schema reflects nested objects automatically. Critically, the ONE live bug the audit found (delivery_areas[].delivery_fee) was already fixed under MEH-1942, Done, PR #2693 with a fail-to-pass test. What remains (locations[].opening_hours/.phone, categories[].producer_count) is latent or wholly inert — no consumer reads them. |
+| **MEH-2052** | 🔓 הוק ה-bash-safety: הרגקס של sed -i נעצר בתו > הראשון — כל sed שנוגע  | Real coverage gap in CC's own guardrail: check-bash-safety.sh:136 uses [^>]* which stops at the first '>', so any sed -i editing a version constraint (>=, <=) escapes the deny — proven WITH a control (the same sed without '>' IS blocked, which is what rules out 'the file simply is not covered'). Protects the repo from the agent, not users from harm: zero consumer surface. Sapir-only either way — .claude/hooks/** is hard-deny in both directions (rule 32 corollary). |
 
 ---
 
