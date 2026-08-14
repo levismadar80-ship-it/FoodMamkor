@@ -3,6 +3,122 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-13/14 — MEH-1938 (SoT for producer location) chunk sequence: 3 merged, 3 blocked-with-named-gate, queue fully drained
+
+**Last PRs merged:** #2889 (MEH-2057, squash `bba96eb5`), #2896 (MEH-2058, squash `4f692999`), #2905 (MEH-2060, squash `92f3ce52`) — all three squash merges, each confirmed by re-fetching `origin/staging` and checking the tip commit immediately after its own merge call.
+
+**Branch:** worked five branches in sequence off fresh `origin/staging` cuts each time (`feature/meh-2057-migrate-latlng-readers`, `feature/meh-2058-remove-locationcard`, `feature/meh-2059-admin-form-locations` [abandoned, no commits — genuine STOP], `feature/meh-2060-pickup-points-derived`, `feature/meh-1959-security-headers` [abandoned, no commits — genuine STOP]). This entry ships from `feature/meh-1938-session-docs-backfill`, docs-only per rule 31.
+
+**Bundled merge authority:** Sapir granted same-day (13/08) bundled go for chunks 2→3→4→4b, recorded live in MEH-1938's Linear description — this session merged its own PRs after self-QA + CI green, no per-chunk wait.
+
+**What's done:**
+
+- **MEH-2057 (chunk 3) — merged.** Six frontend readers (`ProducerCard.jsx`, `MapProducerCard.jsx`, `useMapFilters.js`, `MapClient.jsx`'s near-me check, `HomepageMiniMap.jsx`, `lib/seo.js`) migrated from direct `Producer.lat/lng` reads to `producerPoints()`. Phase-0 found 2 readers missing from the original card's file list (`HomepageMiniMap.jsx`, `lib/seo.js`) and one stale citation (`MapClient.jsx`'s near-me reader had moved). Self-caught adversarial-review finding: `producerPoints(p)[0]` isn't guaranteed primary (`Producer.locations` has no `order_by`) — fixed to prefer `is_primary` in both single-point readers, with a discriminating regression test. `ProducerSections.jsx`'s `parseHasLocation()` deliberately left un-migrated — entangled with a real MEH-213 incident guard in `MiniMap.jsx`, flagged for a dedicated follow-up rather than touched.
+- **MEH-2058 (chunk 4) — merged.** Deleted `LocationCard` ("מיקום על המפה") from the producer edit page; `LocationsEditor` is now the only location-writing surface. Found + fixed a real bug during cleanup: `ProfileCompletenessCard`'s checklist deep-linked to the deleted card's `#location` anchor, and `LocationsEditor`'s own anchor had **never** been registered in the page's hash-resolution system at all — proven with a test shown failing (registry entries reverted → red) before the fix. CI reviewer flagged a real, narrow gap (`ProfileCompletenessCard.jsx:159`'s `has("city")` check has no edit-page write path once `LocationCard` is gone) — verified low-impact (registration sets `city` at signup) and documented as a follow-up, not fixed in-PR (explicit STOP scope on LocationsEditor/backend changes). Resynced against churning `staging` 3× while open; one sync hit a genuine content conflict against a parallel MEH-2063 PR in the same test file — resolved keeping both sides.
+- **MEH-2060 (chunk 6) — merged.** `Producer.pickup_points` stops being read as an independent column; mirrors `offers_pickup` (MEH-2046's same-day derivation) instead of writing a second, narrower one — the card's own title said `kind='pickup'` only, but the established predicate deliberately includes `market_stand`, and diverging would have recreated MEH-2046's exact bug. Phase-0 found the four named readers are fed by **three** separate backend paths and only one already called `attach_badge_fields`; fixed all three (`producer_listing.py` already did, `producers.py`'s detail endpoints already did, `admin.py`'s `list_producers`/`pending_producers` **never did** — fixed). `producer_import.py`'s write deliberately **kept**, not stopped: it creates no `ProducerLocation` row, so popping the write would be real data loss with no reader-side evidence to back the DoD's no-op branch — documented inline, flagged as a follow-up. Full backend `tests/` suite run in synchronous batches after the container restarted mid-run 4× (progress verified via a scratchpad log file that survives restarts) — ~2645 tests, 0 failures.
+- **MEH-2056 (chunk 2, parallel track) — blocked, Backlog.** Entry condition needs a DB row count unreachable from the CC sandbox (Railway unreachable + `alembic upgrade` denied). Posted the exact query as a Linear comment; continued the main queue per the card's own fallback instruction.
+- **MEH-2059 (chunk 4b) — blocked, Backlog.** Phase-0 confirmed (grep + reading MEH-1421's actual shipped scope, not just its title) that no admin-side locations CRUD interface exists — MEH-1421 shipped only a read-only dedup **badge**, not an editor. This is the card's own documented STOP branch ("if it doesn't exist, ask before building a new interface — scope expansion"). Posted the finding + a 3-option question to Sapir; no code touched.
+- **MEH-1959 (security headers, non-MEH-1938) — blocked, Backlog. Card's entire premise was false.** Phase-0 found the full header set it asks for (HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy, CSP) already ships on **both** frontend (`next.config.js:54-117`) and backend (`middleware.py:45-57`), and has since **2026-04-08** (`37b39940e`, unshallowed to verify — repo was a shallow clone) — four months before this card was created. Worse: the existing CSP already **enforces** (not Report-Only, what the card asks for), so implementing the card literally would have been a security *downgrade*. Documented with full file:line + commit evidence, recommended closing as already-resolved rather than reopening as new work.
+
+**What's pending (Sapir):**
+- MEH-2056: the DB row count query (posted on the card).
+- MEH-2059: 3-option question — new admin locations-CRUD card (recommended) / interim keep-lat/lng-fields-as-is / other (posted on the card).
+- MEH-1959: whether to close as already-resolved, or reframe as a different forward-looking ask (audit the *existing* enforcing CSP, or tighten `'unsafe-inline'`/`'unsafe-eval'`) — posted on the card.
+- MEH-2058's follow-up: `LocationsEditor` doesn't write `Producer.city`, so a producer needing to *correct* (not set — registration already sets it) their city post-registration has no edit-page path. Narrow, not urgent.
+- MEH-2060's follow-up: `producer_import.py` should learn to create a `ProducerLocation(kind="pickup")` row when its CSV column J says yes, mirroring `persist_registration_delivery_areas` — currently the signal is written to the (now-unread) column and nowhere else.
+
+**Known issues discovered, not filed:**
+- The non-required "Adversarial review (calibration)" CI job reported `failure` on PR #2905 (MEH-2060) with its own internal steps showing `success` and no comment posted — looks like an infra hiccup, not a real verdict. Not chased; not in the required-check set.
+
+**Session-wide verification, cumulative:** across the 3 merged PRs — full backend `tests/` suite (not just `test_api.py`) run to completion at least once per PR (~2645+ tests, 0 failures cumulative), `npx vitest run` (2939 passed / 3 skipped, consistent across runs), `npm run build` green every time. Container restarted repeatedly mid-session (7+ times) — background long-running commands got killed each time; recovered by switching to synchronous batches under the tool's timeout window rather than continuing to fight the instability.
+
+## 2026-08-13 (evening) — MEH-2046: /map fulfillment IA, 4 code PRs merged + docs
+
+**Last PRs merged:** #2855 (`d9492f24`), #2880 (`fd5ba9f0`), #2894 (`33e193ef`), #2903 (`19136dd7`) — all four **merge commits**, per Sapir's chain-wide amendment overriding the ticket's "squash". This entry ships in the docs-only PR on `feature/meh-2046-pr5-docs`.
+
+**Branch:** `feature/meh-2046-pr5-docs`, cut off `origin/staging` after PR-4 landed.
+
+**What's done:**
+- **PR-1** — `?pickup_points=true`, a composable OR service group (EXISTS over `ProducerLocation`, city-scoped pickup arm), and `delivers`/`offers_pickup` computed on `ProducerListOut`. No column, no Alembic. 22 tests through the public endpoint, each with an exclusion witness.
+- **PR-2** — fixed `ServiceChipRow` (משלוח · איסוף עצמי · סינון) and Option C: the delivery chip applies immediately, the city modal became an optional refinement.
+- **PR-3** — always-present fulfillment tag block on `MapProducerCard`, 4 cells, reading the two server predicates only. Uniform height preserved (measured: 5 rows × 112px).
+- **PR-4** — layer toggle moved into the map's control corners (icon-only, 44px) plus the hidden-businesses reminder line.
+- **E2E on merged staging** — run `31742596841` on `19136dd7`: `executed=271 · passed=262 · failed=6 · flaky=3 · skipped=29`. The six failures are identical to the pre-chain baseline on `bba96eb5` (run `31708662372`); the chain added none.
+
+**What's pending (Sapir):**
+- **`/map` VRT baselines** — `parity.spec.ts` `map` (desktop + mobile) has been red since PR-2; PR-3 and PR-4 changed the same frame again. **One regen now covers all three.** `.github/workflows/**` is CC-deny.
+- **MEH-2046 stays in Backlog** — its DoD includes preview verification Sapir has not run. Rule 29b checked in both directions after every merge: the card never left Backlog and was never wrongly closed.
+- **A lint gap, reported not fixed:** `no-restricted-syntax` inspects string-literal `className`s only, so a physical directional class inside a template literal is invisible to it. `check-rtl.sh` + the `rtl-ok` marker is what actually covers that case.
+
+**Decisions made this session:**
+| Decision | Why |
+|---|---|
+| Merge commits for the whole chain, not squash | Sapir's amendment — a mixed tree across one feature is worse than either method consistently applied |
+| `pickup_points` label stays `/map`-local, out of `ATTRIBUTE_LABELS` | that map is the cross-surface contract; adding it there silently conscripts `/producers` into growing a chip this ticket scopes out (same call MEH-1507 made for `grass_fed`) |
+| `hiddenWhenSecondaryOff` composes `producerPoints` rather than reimplementing rule 3 | keeps MEH-1670 semantics in one place |
+| Layer button joins the **locate** corner, not a "bottom cluster with +/−" | Leaflet's +/− sit at the top of the canvas; no single cluster contains both |
+
+**Known issues discovered, not filed:**
+- The E2E `30-login-journey-c` C2 and `32-register-journey-b-oauth` B1 failures are pre-existing on staging and unexplained. Not chased inside this chain, per instruction.
+- PR-4's body cites the "TEMPORARY — local adversarial review" section of `workflow.md`, which PR #2897 removed the same evening. The local review did run; the citation is what went stale.
+
+## 2026-08-13 — Close-out batch: 4 items dispatched, 3 merged, 1 handed to Sapir
+
+**Last PRs merged:** #2895 (MEH-1855 chunk 1, `b90e917f`), #2898 (MEH-1855 chunk 2 Phase 1/2, `c8feb00d`), #2897 (MEH-1844 docs, `41766370`). MEH-2045 (#2860) was already merged before this batch started — verified only.
+
+**Branch:** worked from `feature/meh-1855-price-contract` (MEH-1855 chunk 2), now sitting at `origin/staging` tip `c8feb00d`. Docs PR for this entry: `feature/meh-1855-close-out-docs`.
+
+**What's done:**
+- MEH-2045 — DoD re-verified, moved to Done.
+- MEH-1855 chunks 1+2 — both merged, in the ticket's intended order (chunk 1 before chunk 2, confirmed via `git log` before merging chunk 2). Ticket stays **In Progress**, not Done — Phase 2/4 (column drop) is separate future work gated on a 7-day staging soak from today. Post-deploy absence-assertion + real CI conflict/backfill counts posted as Linear comments (corrected once, when a bigger `tail_lines` on `get_job_logs` surfaced the real numbers instead of the truncated 500-line default).
+- MEH-1925 — no code fix possible from this sandbox (Cloudinary Console/billing action only); posted the exact click-path + verification `curl` for Sapir, left as Todo.
+- MEH-1844 — docs-only PR removed the resolved "TEMPORARY" section from `workflow.md`, archived its history to `docs/audits/`. Auto-closed to Done on merge (branch-name mechanism).
+
+**What's pending (Sapir):**
+- MEH-1925: Cloudinary Console decision (upgrade plan or migrate host) — see the ticket's latest comment for the exact steps + verification command.
+- MEH-1855: real staging-DB conflict/backfill count only visible in Railway's boot log (sandbox can't reach Railway) — informational only, not blocking.
+
+**Known issue found, not fixed (out of this batch's scope):** `qa-meh2045-product-sheet-nav.mjs`'s photo-square-sizing check fails reproducibly at 375px for the first non-signature product (renders as the no-photo fallback band height instead of a square); desktop-1440 and the other two test photos are fine. Not caused by anything in this batch — none of the 4 items touched `ProductSheet.jsx`. Needs its own investigation to confirm real vs. a local image-load timing artifact before filing.
+
+**Next task:** none pre-selected — resume via the normal queue (workflow.md "Working the queue", Lane A then Lane B).
+## 2026-08-13 — MEH-1855 chunk 1 + MEH-2063: שני מיזוגים, וסשן מקביל תפס את chunk 2 מחוץ להיקף
+
+**שורה אחת:** שני PRs מוזגו — **#2895** (MEH-1855 chunk 1, `b90e917f`) ו-**#2900** (MEH-2063, `6fd25857`) · MEH-1855 **נשאר In Progress** בלינר (chunk 2 עדיין לא סגור), MEH-2063 **Done** · סשן מקביל אחר תפס את chunk 2 Phase 1 (PR #2898, `c8feb00d`) **מחוץ לסמכות שהוענקה לסשן הזה** ("chunk 2 = RED. Do NOT start.").
+
+### MEH-1855 chunk 1 — הבאג נסגר
+
+חמישה אתרי קריאה (לא ארבעה, כפי שהכרטיס טען) הפכו מ-`starting_price_label`-בלבד ל-`price_range || starting_price_label`: `hasSignature` (השער הקריטי — קובע אם כל בלוק החתימה מוצג), שני שומרי fallback, הרינדור, וגם `ProducerDetail.jsx:184` (שער נראות טאב המוצרים — לא נמנה בכרטיס). עסק שמילא רק `price_range` עבר מבלתי-נראה לגמרי למוצג. אפס alias-בלבד ב-`frontend/` (grep). שני shaping points (Pydantic, Zod) נבדקו — שניהם משמרים את השדה.
+
+5 טסטים חדשים הוצגו נכשלים על הקוד הישן לפני שהתיקון הוחזר (guard-test discrimination).
+
+### MEH-2063 — סדר כרטיסים
+
+"שינוי שם העסק" עבר מראשון לאחרון בקבוצת ה-profile. `anchorId` לא השתנה; המפות (`ANCHOR_TO_KEY` וכו') הן מפתח־ערך, לא סדר — אין תלות. שני טסטים חדשים (סדר + deep-link) הוצגו: הראשון נכשל על הקוד הישן, השני עבר ללא שינוי (מוכיח שהעוגן לא תלוי בסדר). LocationCard (MEH-2058, PR #2896 עדיין פתוח) לא נגע — קבוצה נפרדת לגמרי בקובץ.
+
+### ⚠️ סשן מקביל תפס את chunk 2, מחוץ להיקף שהוענק
+
+הסמכות שקיבל הסשן הזה כללה במפורש: *"Chunk 2 (backfill + column drop) = RED. Do NOT start. Do NOT create its branch."* בזמן שהסשן הזה עבד על chunk 1 + MEH-2063, session אחר (session id שונה, נראה ב-PR footer) פתח PR נפרד ל-chunk 2, צמצם את ההיקף בעצמו לפי ADR-007 (Expand-Contract — backfill בלבד, בלי מחיקת עמודה, `downgrade()` מתועד כ-no-op גלוי), ומוזג (`sapirschnapp`, 16:24:30, `c8feb00d`). MEH-1855 עדיין **In Progress** — נבדק, לא נסגר אוטומטית — כי Phase 2 (מחיקת העמודה, אחרי 7 ימי soak) עדיין לא בוצע.
+
+**זה לא נעשה ע"י הסשן הזה** — נרשם כאן לשקיפות, לא כדיווח על עבודה שביצעתי.
+
+### ⚠️ ממצא CI reviewer על PR #2895 (מוזג, לא תוקן בסבב הזה)
+
+`ProducerDetail.jsx:184`'s tab-visibility gate לא נבדק ישירות (רק עקיף דרך `ProducerSections`). פער כיסוי קדם-קיים שגדל בשדה אחד. מדווח, לא תוקן — מחוץ להיקף שתי המשימות שהוגדרו.
+
+### אימות סופי, על ה-staging tip אחרי שני המיזוגים
+
+`npm run build` יצא 0 · frontend `npx vitest run` מלא **2941 עברו / 3 דולגו** (324 קבצים) · `pytest tests/test_api.py` **267 עברו / 4 דולגו** · QA חי בדפדפן אמיתי (`next start`, מוק API) על ה-tip הסופי: 6/6 ו-6/6 (0 כשלים, 375px+1440px). בדיקת רגרסיה חזותית ל-`/producers`+`/map`: אפס שגיאות console חדשות; ה-`ERR_TUNNEL_CONNECTION_FAILED` שנראה ב-`/map` הוא חסימת רשת ידועה של ה-sandbox (אותה מחלקה כמו חסימת `res.cloudinary.com`), לא רגרסיה מהדיף.
+
+### פתוח לספיר
+
+1. **בדיקת נייד סופית** — self-QA שלי ב-375/1440px בוצע (screenshots ב-`frontend/qa-artifacts/MEH-1855/` ו-`MEH-2063/`); preview URL חסום ע"י `api-deployments-free-per-day` (Vercel quota — מצב, לא תקלה).
+2. **MEH-1855 chunk 2 Phase 2** (מחיקת עמודת ה-alias) — נשאר אחרי 7 ימי soak מ-`b90e917f`.
+3. **הממצא של ה-CI reviewer** על `ProducerDetail.jsx:184` — טסט חסר, לא Must Fix.
+
+### הצעד הבא
+
+אין PR קוד נוסף מהסשן הזה — שתי המשימות שהוזמנו הושלמו. PR הזה עצמו הוא docs-only (CHANGELOG + HANDOFF, כלל 31).
+
 ## 2026-08-13 — MEH-2023 bug sweep v4: 14/14 resolved, שלוש שגיאות `save_issue` full-replace באותו סשן, ופער תיעוד ב-#2882
 
 **שורה אחת:** כל 14 ה-IDs ברשימה הקפואה הגיעו למצב סופי — 7 היו כבר Done לפני תחילת הסשן, 2 נסגרו/הוסקו (MEH-1991 canceled, MEH-1873 Phase 0 שהושאר Backlog בכוונה), 1 parked כהלכה (MEH-2015, חסום על חתימת ספיר), 1 backed off על התנגשות אמיתית (MEH-217), 1 נסגר בלי שינוי קוד אחרי מדידה שהפריכה את ההשערה (MEH-1434), ו-3 PRs נפתחו עם auto-merge חמוש (squash) וממתינים ל-staging שמזיז מהר מאוד (#2885, #2887, #2890).
