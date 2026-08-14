@@ -165,3 +165,40 @@ def test_small_response_is_not_gzipped(client, db):
 
     assert res.status_code == 200
     assert res.headers.get("content-encoding") != "gzip"
+
+
+def test_a_streaming_re_emitter_still_sits_outside_gzip():
+    """MEH-1906 — the reason GZip must stay INNERMOST is still live.
+
+    `test_small_response_is_not_gzipped` above proves the size gate works
+    today, but it cannot say WHY the ordering is required, so it would keep
+    passing right up until someone moved GZip outward and then start failing
+    for a reason the failure message does not name.
+
+    The hazard: any BaseHTTPMiddleware re-emits the response as a STREAM
+    (`more_body=True`), and Starlette's GZipResponder skips compression only
+    when it sees the whole body in ONE message. So with GZip outside such a
+    middleware, the size gate never applies and every response is compressed.
+
+    MEH-1906 converted SentryRequestScopeMiddleware to pure ASGI, which
+    removed the example the MEH-1833 comment named — but NOT the hazard.
+    `app.middleware("http")` wraps `add_security_headers` and
+    `record_request_metrics` in BaseHTTPMiddleware and both sit OUTERMOST.
+    Measured on the merged conversion: 2 such instances outside GZip.
+
+    This asserts the structural fact rather than the symptom, so "GZip is
+    innermost by accident" and "GZip is innermost because it must be" stop
+    looking identical.
+    """
+    from app.main import app
+
+    names = [m.cls.__name__ for m in app.user_middleware]
+    assert "GZipMiddleware" in names, names
+    # user_middleware is ordered outer -> inner.
+    assert names[-1] == "GZipMiddleware", f"GZip must be innermost: {names}"
+    outside = names[: names.index("GZipMiddleware")]
+    assert "BaseHTTPMiddleware" in outside, (
+        "No streaming re-emitter outside GZip — if this is a deliberate "
+        "removal, the MEH-1833 ordering rationale needs rewriting, not this "
+        f"assertion deleting. Stack: {names}"
+    )
