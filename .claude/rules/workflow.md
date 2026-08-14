@@ -1326,7 +1326,7 @@ Tasks auto-expire after 7 days.
     which is what an unvalidated instrument does. The next step belongs in
     Linear's settings, not in this repo.
 
-    ### Row 10 — `Refs` is now 1 of 3, and the branch slug is NOT the discriminator (measured 2026-08-13)
+    ### Row 10 — `Refs` was 1 of 3 here (2 of 4 after row 11 below), and the branch slug is NOT the discriminator (measured 2026-08-13)
 
     | PR | branch | body | before → after |
     |---|---|---|---|
@@ -1343,11 +1343,18 @@ Tasks auto-expire after 7 days.
     |---|---|
     | none (#2706, #2708, #2710) | **3 / 3** ✅ |
     | a closing magic word (#2745, #2776, #2780, #2782) | **4 / 4** ✅ |
-    | **`Refs`** (#2784 ❌ · #2795 ✅ · **#2813** ❌) | **1 / 3** |
+    | **`Refs`** (#2784 ❌ · #2795 ✅ · #2813 ❌ · **#2927** ✅) | **2 / 4** |
 
     So `Refs` is the **only** inconsistent class, and it now leans the *other*
     way. The root cause is still unknown and is still not to be chased by
     merging a fourth PR to watch.
+
+    _Row 11 (#2927, 2026-08-14) was not an experiment — it was an ordinary
+    evidence PR that happened to carry `Refs MEH-1854`, with `Closes MEH-1854`
+    **removed** from the body before merge precisely because the card had two
+    unfinished RED chunks. It closed the card anyway, 1 second after the merge,
+    from the branch slug. The removal changed nothing, which is the whole point:
+    the flip-check below is not optional, and it caught this one._
 
     #### ⛔ A cause that sounds right and is refuted by this repo's own rows
 
