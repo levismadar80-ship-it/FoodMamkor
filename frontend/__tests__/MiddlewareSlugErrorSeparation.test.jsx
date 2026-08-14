@@ -198,5 +198,39 @@ describe("middleware slug check — only a 404 means the business is absent", ()
       await middleware(req());
       expect(captureMessage).toHaveBeenCalledTimes(1);
     });
+
+    // The guard's Set is keyed by URL, and the URL space is attacker-reachable
+    // (every slug-shaped path is a distinct key), so it must be bounded. This
+    // asserts the bound WITHOUT going silent — which is the half that matters:
+    //
+    //   `if (size >= CAP) return` (the obvious guard) -> FAILS assertion 1,
+    //        because reporting stops dead at the cap. That is the fail-silent
+    //        state MEH-1906 exists to remove.
+    //   an UNBOUNDED Set -> FAILS assertion 2, because an early URL would
+    //        still be remembered after the storm.
+    //
+    // Assertion 2 is how boundedness is observed without exporting the Set:
+    // eviction of an early key IS the bound, visible from the outside.
+    it("stays bounded under a many-slug storm AND keeps reporting past the cap", async () => {
+      backendReturns(500);
+      const CAP = 1000;
+      for (let i = 0; i < CAP + 5; i++) {
+        await middleware(requestFor(`/he/meh-1906-storm-${i}`));
+      }
+      // 1 — the cap must not silence the alert.
+      expect(captureMessage).toHaveBeenCalledTimes(CAP + 5);
+
+      // 2 — an EARLY url must have been evicted, which is only true if the
+      //     Set is bounded. Unbounded ⇒ still remembered ⇒ no re-report ⇒ red.
+      captureMessage.mockClear();
+      await middleware(requestFor("/he/meh-1906-storm-0"));
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+
+      // 3 — and it is still a real guard, not a no-op: the url just reported
+      //     is now remembered.
+      captureMessage.mockClear();
+      await middleware(requestFor("/he/meh-1906-storm-0"));
+      expect(captureMessage).not.toHaveBeenCalled();
+    });
   });
 });
