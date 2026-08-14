@@ -366,7 +366,9 @@ def seed():
         # DO NOT reintroduce a positional id here, and do not "keep ids stable"
         # by appending to CATEGORIES — the ordering of that list is now a
         # presentation detail, not an identity contract.
-        categories_by_name = {name: cid for name, cid in db.query(Category.name, Category.id)}
+        categories_by_name = {
+            name: cid for name, cid in db.query(Category.name, Category.id)
+        }
         seeded_names = {n for p in PRODUCERS for n in p["category_names"]}
         missing = sorted(seeded_names - categories_by_name.keys())
         if missing:
