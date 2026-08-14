@@ -329,6 +329,38 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     expect(rendered.map((l) => l.href)).not.toContain("/login");
   });
 
+  /**
+   * The register record declares TWO suppression entries — `"/register"`
+   * (exact) and `"/register/"` (prefix) — mirroring the two arms of
+   * `Header.jsx:200-201`. Only the prefix arm was exercised; these two cover
+   * the other one, and the SECOND is the one that discriminates.
+   *
+   * `/register` alone cannot tell the arms apart: it is suppressed under an
+   * exact match AND under a bare `startsWith("/register")`. `/register-cafe`
+   * separates them — exact keeps the link (correct), a bare prefix would eat
+   * it. That is not hypothetical: `lib/slug.js` reserves the exact word
+   * `register`, so `register-cafe` is a legal producer slug and a legal
+   * `/[slug]` route, and `Header.jsx:193-199` records the near-miss.
+   */
+  it("suppresses the register link on /register itself — the exact-match arm", () => {
+    pathnameRef.current = "/register";
+    userRef.current = null;
+    const { container } = render(<Header />);
+    const rendered = sortLinks(renderedLinks(container));
+    expect(rendered).toEqual(sortLinks(expectedLinks("header", STATES.guest)));
+    expect(rendered.map((l) => l.href)).not.toContain("/register");
+  });
+
+  it("KEEPS the register link on /register-cafe — a legal producer slug, not a prefix match", () => {
+    pathnameRef.current = "/register-cafe";
+    userRef.current = null;
+    const { container } = render(<Header />);
+    const rendered = sortLinks(renderedLinks(container));
+    expect(rendered).toEqual(sortLinks(expectedLinks("header", STATES.guest)));
+    // The assertion that fails if either side degrades to a bare startsWith.
+    expect(rendered.map((l) => l.href)).toContain("/register");
+  });
+
   it("suppresses the register link on /register/producer, per suppressOnRoute", () => {
     pathnameRef.current = "/register/producer";
     userRef.current = null;
@@ -413,16 +445,16 @@ describe("MEH-1703 — AccountSheet matches the registry", () => {
   for (const name of ["guest", "consumer", "producer", "admin"]) {
     it(`accountSheet surface, ${name}`, () => {
       const state = STATES[name];
-      // BottomNav.jsx:133 — showBiz is the MEH-669 consumer gate, and the
-      // registry spells the same predicate as audience "consumer".
-      const showBiz = state.role !== "producer" && state.role !== "admin";
+      // MEH-1703 chunk 3: `showBiz` is gone. The MEH-669 consumer gate is
+      // audience "consumer" on the registry's registerProducer record, and
+      // AccountSheet reads it from `user` — so this renders the real input
+      // rather than pre-computing the answer next to the assertion.
       const { container } = render(
         <AccountSheet
           open
           onClose={() => {}}
           user={state.user}
           logout={() => {}}
-          showBiz={showBiz}
         />,
       );
       expect(sortLinks(renderedLinks(container))).toEqual(
@@ -438,7 +470,6 @@ describe("MEH-1703 — AccountSheet matches the registry", () => {
         onClose={() => {}}
         user={STATES.consumer.user}
         logout={() => {}}
-        showBiz
       />,
     );
     expect(screen.getAllByTestId("language-toggle")).toHaveLength(1);
@@ -452,7 +483,6 @@ describe("MEH-1703 — AccountSheet matches the registry", () => {
         onClose={() => {}}
         user={null}
         logout={() => {}}
-        showBiz
       />,
     );
     expect(screen.queryByText("account.menu.logout")).toBeNull();
@@ -470,7 +500,7 @@ describe("MEH-1703 — recorded asymmetries hold as described", () => {
    */
   it("favorites/settings are ungated in the sheet but auth-gated in the dropdown", () => {
     const { container } = render(
-      <AccountSheet open onClose={() => {}} user={null} logout={() => {}} showBiz />,
+      <AccountSheet open onClose={() => {}} user={null} logout={() => {}} />,
     );
     const guestSheetHrefs = renderedLinks(container).map((l) => l.href);
     expect(guestSheetHrefs).toContain("/favorites");
@@ -497,7 +527,6 @@ describe("MEH-1703 — recorded asymmetries hold as described", () => {
         onClose={() => {}}
         user={STATES.admin.user}
         logout={() => {}}
-        showBiz={false}
       />,
     );
     expect(renderedLinks(sheet.container).map((l) => l.href)).not.toContain("/admin");
