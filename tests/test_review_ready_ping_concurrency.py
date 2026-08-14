@@ -37,10 +37,11 @@ costs nothing — neither outcome depends on thread scheduling luck.
 Touches:  producers table only, via the standard test session. No Cloudinary
           (the destroy step at producer_me.py:540 is post-commit and the
           gallery only grows here), no Resend/WhatsApp (the ping is mocked).
-Does NOT: cover a PUT racing `confirm_phone_otp`. **That race is real, still
-          open, and measured — see the warning below.** This file covers
-          PUT-vs-PUT only.
-History:  MEH-2007 (creation).
+Does NOT: cover a PUT racing `confirm_phone_otp`. That race is real and was
+          measured — it is now CLOSED by MEH-2051 and guarded by
+          tests/test_otp_put_ping_race.py. This file covers PUT-vs-PUT only.
+History:  MEH-2007 (creation); MEH-2051 (the OTP-vs-PUT hole below was closed —
+          this docstring's own request, answered).
 
 ⚠️ WHAT THIS FILE DOES NOT CLOSE, stated because the first version of this
 docstring claimed the opposite. It read "that is the sibling site, closed by
@@ -50,23 +51,34 @@ MEH-1820" — which conflates two different races:
                   CLOSED by MEH-1820's conditional UPDATE on the token row;
                   guarded by tests/test_otp_confirm_concurrency.py.
     OTP-vs-PUT    a PUT and a confirm each computing the SAME snapshot
-                  independently. NOT closed by anything, including this file.
+                  independently. CLOSED by MEH-2051's advisory lock in
+                  `confirm_phone_otp`; guarded by
+                  tests/test_otp_put_ping_race.py. Still not covered HERE — the
+                  three races have three files, deliberately.
 
-The second one reproduces deterministically. A producer sitting in
+The second one reproduced deterministically. A producer sitting in
 `pending_whatsapp` WITH an image is already `_is_approvable`; the only thing
 missing is the status flip that the OTP confirm performs. A PUT touching an
 unrelated field snapshots `was_approvable=False`, the confirm commits the flip
 and fires, and the PUT's post-commit re-check then sees the committed flip and
 fires a SECOND ping for a transition it played no part in.
 
-Measured on this branch: **2 pings**, and — the part that matters for reading
-this correctly — **2 pings on `origin/staging` too**. It is a pre-existing hole
-that MEH-2007 neither opened nor closed, not a regression from the lock. The
-lock is deliberately taken in `update_my_producer` alone; extending it to
-`confirm_phone_otp` would change *why* MEH-1820's concurrency test passes (its
-loser would block on the advisory lock instead of on the token row lock its
-docstring describes), so it needs its own fail-by-construction proof rather
-than a line smuggled in here.
+Measured when this file was written: **2 pings**, and — the part that mattered
+for reading it correctly — **2 pings on `origin/staging` too**. It was a
+pre-existing hole that MEH-2007 neither opened nor closed, not a regression
+from the lock.
+
+HOW MEH-2051 CLOSED IT WITHOUT THE COST THIS DOCSTRING PREDICTED. The warning
+here was that extending the lock to `confirm_phone_otp` would change *why*
+MEH-1820's test passes — its loser blocking on the advisory lock instead of the
+token row lock. That was correct for the obvious placement (top of the handler)
+and was confirmed by construction: with the lock there, MEH-1820's test reports
+`[200, 200]` whether its atomic claim works or not, i.e. it stops
+discriminating entirely. MEH-2051 therefore takes the lock AFTER the token
+claim instead, so a rival confirm still blocks on the row lock exactly as
+before. Re-verified by reverting the atomic claim and watching MEH-1820's test
+go red with the lock in place. See `producer_me.py` at the `_lock_producer_updates`
+call inside `confirm_phone_otp` for the full measurement.
 """
 
 import threading

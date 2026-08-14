@@ -337,6 +337,18 @@ def _lock_producer_updates(db, producer_id) -> None:
     MUST be taken BEFORE the producer is loaded. Taken after, the loser wakes
     holding the row it read *before* the winner committed, snapshots a stale
     `was_approvable=False`, and fires anyway — the same bug wearing a lock.
+
+    MEH-2051 — THE SECOND CALLER, and the one exception to the line above.
+    `confirm_phone_otp` also completes the review-ready transition, so it takes
+    this same key; without it a PUT and a confirm each compute the false→true
+    edge independently and the admin is pinged twice for one transition. It
+    CANNOT take the lock before its producer load, because MEH-1820's token
+    claim has to be the first thing that blocks a rival confirm — so it takes
+    the lock late and pays the freshness debt explicitly with `db.expire`,
+    which is what the paragraph above is really asking for. The rule is
+    therefore "the snapshot must be computed on a row read under this lock",
+    and taking it before the load is the cheap way to satisfy it, not the only
+    one. See the call site for the full reasoning.
     """
     if producer_id is None:
         return
@@ -1257,6 +1269,50 @@ def confirm_phone_otp(
     if not claimed:
         raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
 
+    # MEH-2051: serialize against a concurrent PUT /producers/me, which is the
+    # OTHER handler able to complete the review-ready transition. Without this
+    # the two compute the same false→true edge independently and the admin is
+    # pinged twice for one flip — measured on origin/staging, guarded by
+    # tests/test_otp_put_ping_race.py.
+    #
+    # WHY HERE AND NOT AT THE TOP OF THE HANDLER, which is where the helper's
+    # own docstring points: taking it before the producer load would make a
+    # rival confirm block HERE instead of on the token row lock inside the
+    # conditional UPDATE above. That was not reasoned about and left at that —
+    # it was BUILT and MEASURED, twice, because the failure it causes is the
+    # kind that reads as success:
+    #
+    #   lock at top + atomic claim intact  -> codes == [200, 200]
+    #   lock at top + atomic claim REVERTED -> codes == [200, 200]
+    #
+    # Byte-identical. Under that placement the loser hits the `phone_verified`
+    # early-return before ever reaching the UPDATE, so MEH-1820's test reports
+    # the SAME thing whether its guard works or not — it stops being a guard.
+    # Both runs are red today, which sounds safe; the trap is that the obvious
+    # way to clear that red is to relax the assertion to [200, 200], and doing
+    # so would permanently blind the atomic claim with nothing announcing it.
+    # It also changes the API: the loser would return 200 "כבר מאומת" instead
+    # of the 400 MEH-1820 deliberately chose, a contract change smuggled in as
+    # a concurrency fix.
+    #
+    # With the lock HERE, that same reverted-claim run still reports
+    # [200, 200] vs the required [200, 400] — the guard keeps discriminating.
+    # That is the measurement this placement rests on, not the argument above.
+    #
+    # WHY THE EXPIRE IS LOAD-BEARING, not tidiness: `producer` was loaded above,
+    # possibly before the PUT we are now waiting behind committed. `expire`
+    # forces the snapshot below to be computed on a row read *under* this lock —
+    # without it the loser evaluates a stale row, concludes the edge is still
+    # ahead of it, and fires the duplicate ping anyway. That is precisely the
+    # "same bug wearing a lock" the helper warns about.
+    #
+    # NO DEADLOCK: the only lock ordering here is token row → advisory key. The
+    # PUT takes the advisory key alone and never touches phone_otp_tokens, so
+    # there is no cycle. Two confirms for different tokens of one producer take
+    # different rows and then serialize on the key, which is plain waiting.
+    _lock_producer_updates(db, producer.id)
+    db.expire(producer)
+
     producer.phone_verified = True
     # MEH-1816: snapshot approvability BEFORE the flip below, exactly as
     # PUT /producers/me does at :259 — this is the SECOND mutation site able to
@@ -1274,6 +1330,17 @@ def confirm_phone_otp(
     # window" and the test degrades into either a no-op that passes on broken
     # code or a five-second timeout — neither of which announces itself. Move
     # this and re-read that test's docstring.
+    #
+    # MEH-2051 added the lock+expire pair above INTO that gap, so the warning
+    # deserves its worked example rather than being quietly falsified. It is
+    # safe for one specific reason, and the reason is not "a lock is cheap":
+    # in the OTP-vs-OTP race the rival confirm never gets past the conditional
+    # UPDATE, so it never reaches either the new lock or this barrier, and the
+    # barrier still marks exactly what its docstring says it marks. That was
+    # verified by re-running MEH-1820's test with the atomic claim reverted and
+    # confirming it still goes red. Anything added here that a RIVAL CONFIRM
+    # can actually reach would break that property — the test is what tells
+    # you, and only if you re-run it against the broken claim.
     was_approvable = _pending_and_approvable(db, producer)
     # MEH-745: self-registered producers wait in pending_whatsapp until the
     # business phone is verified; a successful OTP confirm is the gate that
