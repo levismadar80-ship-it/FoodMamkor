@@ -6,7 +6,7 @@
 ## 2026-08-14 — MEH-1906 (by-slug RecursionError): chunk 1 נחת · chunk 2 פתוח וחסום
 
 **מוזג:** chunk 1 — `89c3f0c8` (#2913, **merge commit** ולא squash).
-**פתוח ולא מוזג:** chunk 2 — #2914 (`feature/meh-1906-failopen-alerting`, head `28e1544`).
+**chunk 2 — #2914** (`feature/meh-1906-failopen-alerting`). מוזג בהכרעת ספיר מעל `E2E gate` אדום — ראו למטה.
 
 **מה יש עכשיו:** `SentryRequestScopeMiddleware` היא **pure ASGI** (`backend/app/middleware.py:122-157`), לא עוד `BaseHTTPMiddleware`. כל 9 ההתנהגויות נשמרו 1:1 (מיפוי `file:line` מלא בגוף #2913). סדר הרישום ב-`install_middlewares` לא זז, ו-`main.py` לא נגע כלל.
 
@@ -22,7 +22,11 @@
 2. **`API contract probe (staging)` הוא ירוק עם שתי סיבות — אל תסתמכו עליו.** ב-run `31789573043` דיווח `success` בזמן ש**כל ~160 המסלולים החזירו `302`**. הוא עובר גם כשה-API חסום לגמרי, ו-`/producers/by-slug/*` אינו ברשימה שלו. `.github/workflows/**` הוא CC-deny — לא תוקן, מדווח.
 3. **`dashboard-receipt` ל-chunk 2 לא בוצע.** נדרש אירוע אמיתי ב-Sentry לפני שהכרטיס נסגר.
 
-### למה #2914 לא מוזג
+   **וכשהוא ירוץ — לבדוק דבר אחד נוסף (הצעת ה-CI reviewer על #2914):** ה-rate-guard הוא `Set` ברמת המודול (`middleware.js:68`) שנשען על מיחזור אותו V8 isolate בין בקשות במופע חם. **ההנחה הזו לא אומתה.** להריץ פרץ בקשות חוזרות לאותו slug כושל ולוודא **אירוע אחד בדיוק** לחלון חם; יותר מאחד ⇒ בידוד per-request, וה-guard צריך אחסון חוצה-בקשות.
+
+   *(ה-`Minor` של אותו reviewer — `global.fetch` בהשמה ישירה במקום `vi.stubGlobal` ב-`MiddlewareSlugErrorSeparation.test.jsx:187` — נבדק ולא שונה: הוא תואם את `backendReturns` הקיים באותו קובץ (`:62`), והוא מודה שאין כשל היום. נרשם, לא תוקן.)*
+
+### #2914 — CC עצרה, ספיר הכריעה
 
 `CI gate` ✅ · `Deploy gate` ✅ · **`E2E gate` ❌**. ההוראה הייתה לא למזג על אדום, ולכן עצרתי.
 
@@ -30,7 +34,7 @@
 
 **וטיעון מנגנוני:** `producerExists` נקרא רק על נתיב סגמנט-יחיד שאינו ב-`STATIC_ROUTES` (`middleware.js:142-147`), ולכן על `/admin/producers` (2 סגמנטים) ועל `/login`·`/register`·`/map` הוא **לא נקרא בכלל**. `31-favorites-journey-d:265` — היחיד שטוען עמוד פרטים — נכשל על ה-base ו**עבר** ב-PR.
 
-**התיקון של ששת ה-specs חורג מה-scope** (שלושה כרטיסים אחרים). **ההחלטה אם למזג מעל אדום שאינו שלנו היא של ספיר.** auto-merge לא חומש על #2914; הראיות פורסמו כתגובה על ה-PR.
+**התיקון של ששת ה-specs חורג מה-scope** (שלושה כרטיסים אחרים). ‏CC **לא מיזגה** — פרסמה את הראיות כתגובה על ה-PR והשאירה את ההחלטה. **ספיר הורתה `MERGE`**, ו-auto-merge חומש עם `merge_method: "merge"` (אותה בחירה נעשתה שלוש פעמים בסשן; לא פורקה שוב). **הכשלים עצמם לא נעלמו — הם עדיין אדומים על staging ושייכים לשלושת הכרטיסים האחרים.**
 
 ### שני לקחים שכדאי לשמור
 
