@@ -6,11 +6,13 @@ arriving in Sentry) is verified once MEH-500 wires sentry_sdk.init —
 see verify-on-SDK-land contract in MEH-493 PR body.
 """
 
+import asyncio
 from unittest.mock import MagicMock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import middleware as mw
 from app.middleware import (
@@ -147,3 +149,54 @@ def test_extract_user_id_empty_bearer():
 
 def test_extract_user_id_malformed_jwt():
     assert _try_extract_user_id(_FakeRequest("Bearer not.a.real.jwt")) is None
+
+
+# ─────────────────────────────────────────────
+# MEH-1906 — pure ASGI conversion
+# ─────────────────────────────────────────────
+
+
+def test_middleware_is_not_a_base_http_middleware():
+    """MEH-1906: the whole point of the conversion.
+
+    A boot-dependent RecursionError on /producers/by-slug/* carried a
+    frame inside this class while it subclassed BaseHTTPMiddleware —
+    the component class Starlette steers away from and that sentry-python
+    has documented pathological interactions with. If someone
+    re-inherits it, this reds.
+    """
+    instance = SentryRequestScopeMiddleware(app=_build_app())
+    assert not isinstance(instance, BaseHTTPMiddleware)
+    assert not issubclass(SentryRequestScopeMiddleware, BaseHTTPMiddleware)
+    # Pure-ASGI shape: a 3-arg __call__, no dispatch hook.
+    assert not hasattr(instance, "dispatch")
+
+
+def test_request_still_reaches_handler_through_the_pure_asgi_middleware(monkeypatch):
+    """Equivalence check for the conversion: with the middleware
+    installed, a real request still returns the handler's response.
+    """
+    monkeypatch.setattr(mw, "_sentry_sdk", None)
+    client = TestClient(_build_app())
+    r = client.get("/ping")
+    assert r.status_code == 200
+    assert r.json() == {"ok": True}
+
+
+def test_non_http_scope_passes_through_untouched():
+    """Lifespan/websocket scopes must be delegated without touching the
+    Sentry scope — a pure ASGI middleware sees scope types that
+    BaseHTTPMiddleware filtered out for us.
+    """
+    seen = {}
+
+    async def inner_app(scope, receive, send):
+        seen["type"] = scope["type"]
+
+    instance = SentryRequestScopeMiddleware(app=inner_app)
+
+    async def _noop():  # pragma: no cover — never awaited in this path
+        return {}
+
+    asyncio.run(instance({"type": "lifespan"}, _noop, _noop))
+    assert seen["type"] == "lifespan"
