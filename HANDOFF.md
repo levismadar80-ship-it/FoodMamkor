@@ -3,6 +3,29 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-1748 שלב 1: codegen מ-OpenAPI נחת לצד הסכימות הידניות (additive-only)
+
+**מוזג:** `73992a12` (#2923, **squash מאומת** — הורה אחד, תבנית `<title> (#2923)`). ריצות staging אחרי המיזוג ירוקות.
+**MEH-1748 נשאר Backlog ולא נסגר — וזה נכון**, כי שלב 2 לא בוצע. אומת אחרי המיזוג (כלל 29b, **שני הכיוונים**): `stateHistory` מכיל רשומה אחת בלבד, `endedAt: null`. אין מה להחזיר.
+
+**מה יש עכשיו:** `backend/openapi.json` (152 paths · 123 schemas) כארטיפקט חוזה מקומט, `frontend/lib/generated/api.zod.js` (Zod Mini + pure annotations), `frontend/orval.config.js` (orval **8.24.0 מוצמד**), ו-`scripts/checks/openapi-codegen-drift-guard.sh`. **אפס קבצים מייבאים את הפלט. `lib/schemas.js` ו-`lib/api-schemas.js` לא נגעו.**
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **שלב 2 אינו מאושר, והוא HIGH-RISK.** לפני שמחליפים ולו call site אחד — שלושה ממצאים ב-[`docs/audits/codegen-phase1-comparison.md`](./docs/audits/codegen-phase1-comparison.md) §7:
+   - **הסכימות המיוצרות מחמירות יותר מהידניות.** נמדד: `{id: "not-a-uuid", name: "…"}` מתקבל ביד ו**נדחה** במיוצרת (`zod.uuid()` מול `z.union([z.string(), z.number()])`, שהוא הגנה **מכוונת ומתועדת** מפני מיגרציית int→uuid). על ה-parse הכל-או-כלום של `useProducersFeed`, החלפה נאיבית הופכת שורה פגומה אחת ל**פיד ריק**. זו החלטה per-call-site, והיא שינוי התנהגות.
+   - **`order_window` מיוצר כ-`looseObject({})` ריק** — ה-spec מצהיר עליו `{"type":"object"}` בלי properties. **כאן הסכימה הידנית נושאת יותר מידע מהמיוצרת.** התיקון upstream במודל Pydantic, לא במחולל.
+   - **79 מתוך 188 (42%) מ-exports ה-response הם `zod.unknown()`** — כל route בלי `response_model` מוצהר. לוודא שה-operation שמחליפים אינו אחד מהם.
+2. **⚠️ השער אינו מכסה את החוליה הראשונה, ואל תסיקו כיסוי שאינו קיים.** `Pydantic → openapi.json` **אינו נאכף ב-CI**: ה-spec וה-manifest מסכימים זה עם זה בזמן ששניהם חלוקים על האפליקציה, ו-Tier A לא יכול לראות את זה. **הסיבה מבנית:** job ה-Repo guards הוא `actions/checkout` + קריאת bash אחת, בלי `npm ci`, בלי `uv sync`, בלי רשת — שער regenerate-and-diff לא יכול לרוץ שם. ב-CI השער מדפיס `WARN` שאומר בדיוק מה לא נבדק; זו ההתנהגות המתוכננת, לא תקלה.
+   **התיקון (שלב 1.5, לא נבנה):** pytest שמייצר מחדש את ה-spec ונכשל אם המקומט מיושן, על רגל ה-`Backend tests (pytest)` שבה ה-venv כבר קיים — בדיוק צורת `tests/test_producer_contract_snapshot.py`. קובץ חדש מחוץ לרשימה המאושרת של הכרטיס, ולכן הומלץ ולא הוברח פנימה.
+3. **לייצר מחדש = פקודה אחת:** `npm run codegen` (או `bash scripts/checks/openapi-codegen-drift-guard.sh --write`). היא מייצרת את ה-spec, מייצרת את ה-Zod, וחותמת מחדש את ה-manifest — שלושתם יחד. **לעולם לא לערוך ידנית את `lib/generated/`**; השער תופס עריכה כזו והייצור הבא ידרוס אותה.
+4. **בחירת הכלי אינה סגורה לנצח, והציר החלש נרשם:** orval מקרא סכימות **פר operation** ומטמיע — `kashrut_badges` מופיע **11 פעמים** (406 KB) מול 4 אצל `openapi-zod-client` (177 KB). הכלי הנגדי נפסל על תלות **runtime** (`@zodios/core`) + `.ts` בלבד + Zod 3, אז ההכרעה עומדת — אבל שלב 2 צריך **adapter ממופה-שם** ולא ייבוא ישיר של שמות operation לתוך קומפוננטות.
+5. **שתי ההחרגות המכוונות** (`delivery_cities`, `organic_certified`) — ההמלצה היא **adapter sibling**, לא `.omit()` ולא `override.transformer`. נמדד: קובץ שיושב ליד המיוצר **שורד ייצור מחדש בייט-בבייט**. זו התשובה המעשית לנקודה 4 בהכרעת ספיר.
+
+**מה שלא נעשה, במפורש:** `/adversarial-review` לא הורץ. אין preview (Vercel `Ignored` כמוגדר — לא תקלה) ואין בדיקת מובייל: אפס שינוי UI, אפס קבצים מייבאים את הפלט. **`knip` מדווח כעת על `api.zod.js` ועל `orval` כלא-בשימוש — שתיהן אמת ושתיהן מכוונות בשלב 1**; ה-job הוא `continue-on-error` וכבר יצא 1 על staging נקי, ו-`knip.json` לא נגע (מחוץ ל-scope).
+
+---
+
 ## 2026-08-14 — MEH-1906 (by-slug RecursionError): chunk 1 נחת · chunk 2 פתוח וחסום
 
 **מוזג:** chunk 1 — `89c3f0c8` (#2913, **merge commit** ולא squash).
