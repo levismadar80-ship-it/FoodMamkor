@@ -172,6 +172,23 @@ def test_middleware_is_not_a_base_http_middleware_instance():
     assert not issubclass(SentryRequestScopeMiddleware, BaseHTTPMiddleware)
 
 
+def test_middleware_is_actually_registered_on_the_app():
+    """The two assertions around this one both pass with the middleware
+    completely UNREGISTERED — measured, by deleting the `add_middleware`
+    call and re-running: 16/16 still green. A suite that cannot tell
+    "converted to pure ASGI" from "deleted entirely" is not evidence for
+    either, so this pins the registration itself.
+
+    Reads `user_middleware` — the list `add_middleware` appends to — so it
+    fails on removal, and would also fail if the class were swapped back
+    for a BaseHTTPMiddleware subclass of a different name.
+    """
+    registered = [m.cls for m in full_app.user_middleware]
+    assert SentryRequestScopeMiddleware in registered, (
+        f"SentryRequestScopeMiddleware missing from the chain: {registered}"
+    )
+
+
 def test_app_boots_and_by_slug_returns_200(db, client: TestClient):
     """Full app boot (app.main.app, same instance install_middlewares runs
     against) + a real GET /producers/by-slug/<known> round trip through the
