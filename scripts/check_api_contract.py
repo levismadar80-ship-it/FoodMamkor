@@ -12,7 +12,7 @@ import argparse
 import json
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -274,6 +274,118 @@ def run_static():
     }
 
 
+# --- Probe verdict contract (MEH-2077) -------------------------------------
+#
+# The probe used to fail on ONE literal status: `if str(status) == "404"`. Every
+# other answer — 302, 500, a transport error — printed and returned exit 0. On
+# 2026-08-14 all ~160 routes against staging returned 302 (Vercel Deployment
+# Protection redirecting to `vercel.com/sso-api`); nothing was verified and the
+# gate reported success. "Didn't 404" is not "passed", the same defect as
+# AsyncHttpClient#1421 where a test passed because it only proved the request
+# had not timed out.
+#
+# So the probe now states, per route, which statuses it will ACCEPT, and treats
+# everything else as a failure that names itself.
+#
+# What the contract accepts: an answer only a served route can produce. The
+# probe sends no credentials and a placeholder UUID, so the app's legitimate
+# replies include the auth layer (401/403), the validation layer (400/422), a
+# conflict (409) and the rate limiter (429) — each proves the request reached
+# the router. What it rejects, and why each is not "noise to tolerate":
+#
+#   3xx  never expected. `grep -rn "RedirectResponse\|status_code=30" backend/app/`
+#        returns nothing (2026-08-14), so NO route in this app redirects by
+#        design. A 3xx therefore means something IN FRONT of the app answered —
+#        which is exactly the MEH-2077 case. Requests are sent with
+#        allow_redirects=False (see run_probe), so this is the status of the
+#        route itself, not of whatever it pointed at.
+#   404  the path is not served — deploy drift. The original, kept.
+#   405  the path is served under a different verb — a method mismatch, the
+#        same defect static mode reports.
+#   5xx  the app errored (e.g. MEH-1906's by-slug 500 on staging).
+#   ERR  no HTTP response at all — DNS, TLS, timeout.
+#
+# If a route ever legitimately redirects, give _verdict an explicit per-route
+# exception with the route named; do not widen ACCEPTED_STATUSES.
+ACCEPTED_STATUSES = frozenset({200, 201, 202, 204, 400, 401, 403, 409, 422, 429})
+
+# Share of probed routes answering with the SAME non-2xx status above which the
+# verdict is about the ENVIRONMENT, not about N individually broken routes.
+UNIFORM_FAILURE_RATIO = 0.20
+
+
+def _is_2xx(status: object) -> bool:
+    return isinstance(status, int) and 200 <= status < 300
+
+
+def _verdict(method: str, path: str, status: object) -> tuple[bool, str]:
+    """Decide, for THIS route, whether `status` is an answer the app may give.
+
+    Returns (accepted, reason). `reason` is empty when accepted.
+    """
+    if not isinstance(status, int):
+        return False, f"no HTTP response ({status})"
+    if 300 <= status < 400:
+        return False, (
+            "unexpected redirect — the probe does not follow redirects, so this "
+            "is the route's own status; no route in this app redirects by design"
+        )
+    if status == 404:
+        return False, "path not served by this deployment (deploy drift)"
+    if status == 405:
+        return False, f"path is served but not for {method} (method mismatch)"
+    if status >= 500:
+        return False, "server error"
+    if status in ACCEPTED_STATUSES:
+        return True, ""
+    return False, "status outside the accepted contract"
+
+
+def _aggregate_alarms(rows) -> list[str]:
+    """Environment-level verdicts that per-route checks cannot express.
+
+    A uniform answer across the surface means the environment is unreachable or
+    walled off — one fact, not N.
+
+    Counted over REJECTED statuses only, and that restriction is measured, not
+    assumed. The first version of this counted every non-2xx status, on the
+    reasoning that a wall of 401s is still a wall. Run against a target that
+    answers correctly, it failed: 91 of 159 routes (57%) legitimately answer 401
+    and 38 (24%) answer 422, because most routes in this app are behind auth and
+    the probe sends no credentials. A guard that reds every healthy run is not a
+    strict guard — it is one that gets weakened the first time it blocks a merge.
+
+    The auth-walled case it gave up is recovered by the zero-2xx alarm below,
+    which is specific to it and does not fire on a healthy mix.
+    """
+    total = len(rows)
+    if total == 0:
+        return [
+            "probe covered ZERO routes — nothing was verified. An empty run is "
+            "not a pass; the frontend-call extraction is broken or the filter "
+            "matched nothing."
+        ]
+    alarms = []
+    counts = Counter(
+        str(s) for m, p, s, _ in rows if not _verdict(m, p, s)[0]
+    )
+    for status, n in counts.most_common():
+        if n > total * UNIFORM_FAILURE_RATIO:
+            alarms.append(
+                f"{n} of {total} probed routes ({n / total:.0%}) returned "
+                f"{status} — above the {UNIFORM_FAILURE_RATIO:.0%} uniform-failure "
+                f"threshold. That is one environment-level fact (unreachable or "
+                f"redirected), not {n} broken routes."
+            )
+    if not any(_is_2xx(s) for _, _, s, _ in rows):
+        alarms.append(
+            f"not one of {total} probed routes returned 2xx — no route answered "
+            f"successfully. Every public GET returning 2xx is the baseline of a "
+            f"reachable deployment; a run with none is walled off, not verified."
+        )
+    return alarms
+
+
 def _probe_url(base: str, path: str) -> str:
     return base.rstrip("/") + "/api" + path.replace("{_}", SAFE_UUID)
 
@@ -288,6 +400,13 @@ def run_probe(base_url: str, static_result):
     for method, path in unique:
         url = _probe_url(base_url, path)
         try:
+            # allow_redirects=False is load-bearing, not a default: requests
+            # follows redirects for every verb except HEAD, and a followed
+            # redirect would report the STATUS OF THE DESTINATION (200 from
+            # vercel.com/sso-api) as though the route had answered it. Keep it
+            # explicit — _verdict's 3xx branch assumes the status is the route's
+            # own. If a redirect is ever followed deliberately, assert the final
+            # status; do not assert that a response arrived.
             r = session.request(method, url, timeout=10, allow_redirects=False)
             status: object = r.status_code
         except Exception as exc:
@@ -349,13 +468,50 @@ def _print_static(result, *, json_output: bool) -> int:
 
 
 def _print_probe(rows) -> int:
-    any_404 = False
-    print(f"{'STATUS':<10} {'METHOD':<6} PATH")
+    """Report what was actually seen, then decide. Counts are derived, never
+    stated — a summary line that cannot go stale (testing.md)."""
+    total = len(rows)
+    failures = [
+        (method, path, status, reason)
+        for method, path, status, _ in rows
+        for accepted, reason in [_verdict(method, path, status)]
+        if not accepted
+    ]
+    alarms = _aggregate_alarms(rows)
+
+    print(f"Routes probed: {total}")
+    print(f"Accepted:      {total - len(failures)}")
+    print(f"Failed:        {len(failures)}")
+    print("\nStatus breakdown:")
+    counts = Counter(str(s) for _, _, s, _ in rows)
+    for status, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
+        share = f"{n / total:.0%}" if total else "—"
+        print(f"  {status:<12} {n:>4}  ({share})")
+
+    print(f"\n{'VERDICT':<8} {'STATUS':<10} {'METHOD':<6} PATH")
     for method, path, status, _ in rows:
-        if str(status) == "404":
-            any_404 = True
-        print(f"{str(status):<10} {method:<6} {path}")
-    return 1 if any_404 else 0
+        accepted, _reason = _verdict(method, path, status)
+        print(f"{'ok' if accepted else 'FAIL':<8} {str(status):<10} {method:<6} {path}")
+
+    if failures:
+        print(f"\nFailing routes ({len(failures)}):")
+        for method, path, status, reason in failures:
+            print(f"  {status:<10} {method:<6} {path}  — {reason}")
+    if alarms:
+        print("\nAGGREGATE:")
+        for a in alarms:
+            print(f"  {a}")
+
+    if failures or alarms:
+        print(
+            f"\nPROBE FAILED — {len(failures)} of {total} route(s) answered "
+            f"outside the contract"
+            + (f"; {len(alarms)} aggregate alarm(s)" if alarms else "")
+            + "."
+        )
+        return 1
+    print(f"\nPROBE OK — {total} route(s) probed, all within the contract.")
+    return 0
 
 
 def _print_cross_env(rows) -> int:
@@ -367,8 +523,101 @@ def _print_cross_env(rows) -> int:
             drift += 1
             tag = "  ← DEPLOY DRIFT" if str(s) in ("200", "204") and str(p) == "404" else "  ← mismatch"
         print(f"{method:<6} {str(s):<10} {str(p):<10} {path}{tag}")
-    print(f"\nDrift count: {drift}")
-    return 1 if drift else 0
+    print(f"\nRoutes compared: {len(rows)}")
+    print(f"Drift count: {drift}")
+
+    # Drift alone is a false green here for the same reason 404-only was in
+    # probe mode: two environments that BOTH answer 302 to everything agree
+    # perfectly, so drift is 0 and the gate passes having compared nothing.
+    # Each side is judged on its own before their difference means anything.
+    alarms = []
+    for label, idx in (("staging", 2), ("prod", 3)):
+        side = [(r[0], r[1], r[idx], "") for r in rows]
+        alarms += [f"{label}: {a}" for a in _aggregate_alarms(side)]
+    if alarms:
+        print("\nAGGREGATE:")
+        for a in alarms:
+            print(f"  {a}")
+
+    return 1 if drift or alarms else 0
+
+
+def probe_self_test() -> int:
+    """Known-answer check of the probe's verdict classifier (MEH-2077).
+
+    Run this FIRST: if the classifier cannot tell a served route from a wall of
+    redirects, nothing the probe reports afterwards is worth reading. The
+    discrimination case at the end is the load-bearing one — it proves the new
+    rule is red where the rule it REPLACES was green, which a suite of
+    accept/reject cases alone does not establish (testing.md, MEH-1619).
+    """
+    failures = []
+    ran = []
+
+    # 302 is the MEH-2077 case; 500 is MEH-1906's by-slug on staging.
+    STATUS_CASES = (
+        [(s, True) for s in (200, 204, 401, 403, 422, 429)]
+        + [(s, False) for s in (301, 302, 307, 404, 405, 500, 503, "ERR:ConnectionError")]
+    )
+    for status, accepted in STATUS_CASES:
+        ran.append(status)
+        got, _ = _verdict("GET", "/producers", status)
+        if got is not accepted:
+            failures.append(
+                f"status {status!r}: accepted={got}, expected accepted={accepted}"
+            )
+    # 405 must name the verb it was refused for, not just fail.
+    if "method mismatch" not in _verdict("POST", "/producers", 405)[1]:
+        failures.append("405 verdict no longer explains itself as a method mismatch")
+
+    all_302 = [("GET", f"/r{i}", 302, "u") for i in range(10)]
+    all_200 = [("GET", f"/r{i}", 200, "u") for i in range(10)]
+    one_404 = [("GET", "/r0", 404, "u")] + [("GET", f"/r{i}", 200, "u") for i in range(1, 10)]
+    # The shape of a REAL healthy answer, taken from the control run against a
+    # correctly-answering target: mostly 401 (authed routes, no credentials
+    # sent), some 422 (POST/PUT with no body), the rest 200. This case is why
+    # the aggregate counts rejected statuses only — the first version failed it.
+    healthy_mix = (
+        [("GET", f"/a{i}", 401, "u") for i in range(6)]
+        + [("POST", f"/b{i}", 422, "u") for i in range(2)]
+        + [("GET", f"/c{i}", 200, "u") for i in range(2)]
+    )
+    all_401 = [("GET", f"/r{i}", 401, "u") for i in range(10)]
+
+    if not _aggregate_alarms(all_302):
+        failures.append("uniform 302 raised no aggregate alarm")
+    if _aggregate_alarms(all_200):
+        failures.append("all-2xx raised an aggregate alarm")
+    if _aggregate_alarms(one_404):
+        failures.append("1-in-10 404 tripped the 20% uniform-failure threshold")
+    if _aggregate_alarms(healthy_mix):
+        failures.append(
+            "a healthy 401/422/200 mix raised an aggregate alarm — the guard "
+            "would red every good run"
+        )
+    if not _aggregate_alarms(all_401):
+        failures.append("an all-401 wall (zero 2xx anywhere) raised no alarm")
+    if not _aggregate_alarms([]):
+        failures.append("a zero-route probe reported no alarm — an empty run must not pass")
+
+    # Discrimination against the implementation this replaces. The old rule was
+    # `any(str(status) == "404")`; on the all-302 fixture it is GREEN. If this
+    # case ever stops holding, the self-test has stopped testing the change.
+    if any(str(s) == "404" for _, _, s, _ in all_302):
+        failures.append("fixture bug: the all-302 rows contain a 404")
+    if not [r for r in all_302 if not _verdict(r[0], r[1], r[2])[0]]:
+        failures.append("all-302 fixture produced no per-route failure")
+
+    if failures:
+        print("PROBE SELF-TEST FAILED")
+        for f in failures:
+            print("  -", f)
+        return 1
+    print(
+        f"probe self-test OK — {len(ran)} status cases, 6 aggregate cases, "
+        "1 discrimination case against the 404-only rule this replaces"
+    )
+    return 0
 
 
 def main() -> int:
@@ -378,7 +627,15 @@ def main() -> int:
     ap.add_argument("--staging", metavar="URL")
     ap.add_argument("--prod", metavar="URL")
     ap.add_argument("--json", action="store_true", help="Machine-readable static output")
+    ap.add_argument(
+        "--self-test",
+        action="store_true",
+        help="Known-answer check of the probe verdict classifier (no network)",
+    )
     args = ap.parse_args()
+
+    if args.self_test:
+        return probe_self_test()
 
     static_result = run_static()
     if args.cross_env:
