@@ -734,7 +734,22 @@ POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified
 GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
 POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
-POST   /admin/producers/{id}/reject            admin — with reason (terminal → status=rejected)
+GET    /admin/producers/rejection-presets      admin — MEH-226: the 5 canonical rejection reasons as [{key,label}].
+                                               Backend is the single owner of the Hebrew labels; the admin reject
+                                               modal renders this list rather than carrying its own copy, so the
+                                               label shown, the label persisted and the label emailed cannot drift.
+POST   /admin/producers/{id}/reject            admin — terminal → status=rejected. Body {preset_key?, reason?}
+                                               (pre-MEH-226 bare {reason} still accepted). MEH-226: PERSISTS the
+                                               composed text to producers.rejection_reason in the SAME commit as
+                                               the status flip — previously the reason lived only in the email
+                                               body and the column stayed NULL, so a rejected owner's dashboard
+                                               banner showed "נדחה" with no reason. Composition: preset label,
+                                               plus " — {reason}" when free text was typed; preset_key="other"
+                                               yields the free text ALONE (its label describes the input box).
+                                               400 on an unknown preset_key, and on "other" with no free text —
+                                               validated BEFORE any mutation, so a bad body leaves the producer
+                                               pending. Email fires post-commit only. Returns
+                                               {detail, id, status, rejection_reason}.
 POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status ∉ pending/pending_whatsapp, MEH-769 precedent); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
 POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 

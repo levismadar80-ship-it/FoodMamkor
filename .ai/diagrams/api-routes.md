@@ -120,7 +120,8 @@ graph TD
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
-    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️]
+    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit]
+    Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]

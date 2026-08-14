@@ -337,17 +337,6 @@
         "title": "Body_import_producers_excel_admin_producers_import_post",
         "type": "object"
       },
-      "Body_reject_producer_admin_producers__producer_id__reject_post": {
-        "properties": {
-          "reason": {
-            "default": "",
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "title": "Body_reject_producer_admin_producers__producer_id__reject_post",
-        "type": "object"
-      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -8449,6 +8438,36 @@
         "title": "ProducerRegister",
         "type": "object"
       },
+      "ProducerRejectIn": {
+        "description": "MEH-226: admin \"reject\" payload — preset key + optional free text.\n\nREUSES: schemas.py:2473 RequestChangesIn — same shape (optional free text\nemailed to the producer verbatim, handler owns the emptiness rule). The\nadded `preset_key` selects one of the five canonical rejection reasons;\nthe label itself lives in the BACKEND\n(`admin.py::PRODUCER_REJECTION_PRESETS`), not here and not in the\nfrontend, so the persisted text, the email and the admin UI cannot drift\napart (workflow.md Smell #1). Key validity is checked in the handler\nalongside the \"other requires free text\" rule, mirroring\nrequest_producer_changes' handler-side 400.\n\nBack-compatible with the pre-MEH-226 body `{\"reason\": \"...\"}` — the\nendpoint took `reason: str = Body(\"\", embed=True)`, which parses into\nthis model unchanged.",
+        "properties": {
+          "preset_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset Key"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "title": "ProducerRejectIn",
+        "type": "object"
+      },
       "ProducerUpdate": {
         "properties": {
           "active_offer": {
@@ -9586,6 +9605,25 @@
           "detail"
         ],
         "title": "RegisterAck",
+        "type": "object"
+      },
+      "RejectionPresetOut": {
+        "description": "MEH-226: one row of GET /admin/producers/rejection-presets.\n\nTyped rather than a bare dict so the MEH-1748 codegen chain emits a real\nschema for this route — an untyped handler generates `zod.unknown()`,\nwhich makes the drift guard structurally unable to notice the shape\nchanging.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "RejectionPresetOut",
         "type": "object"
       },
       "ReportCreate": {
@@ -11902,6 +11940,37 @@
         ]
       }
     },
+    "/admin/producers/rejection-presets": {
+      "get": {
+        "description": "MEH-226: the reject-modal's radio options. Serving them from the same\ndict the handler composes with is what keeps the admin UI from growing a\nsecond copy of the Hebrew labels.",
+        "operationId": "list_rejection_presets_admin_producers_rejection_presets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RejectionPresetOut"
+                  },
+                  "title": "Response List Rejection Presets Admin Producers Rejection Presets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Rejection Presets",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}": {
       "delete": {
         "operationId": "admin_delete_producer_admin_producers__producer_id__delete",
@@ -12183,7 +12252,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_reject_producer_admin_producers__producer_id__reject_post"
+                "$ref": "#/components/schemas/ProducerRejectIn"
               }
             }
           }
