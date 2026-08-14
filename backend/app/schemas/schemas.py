@@ -2504,6 +2504,19 @@ class ProducerRejectIn(BaseModel):
     reason: str | None = Field(None, max_length=2000)
 
 
+class RejectionPresetOut(BaseModel):
+    """MEH-226: one row of GET /admin/producers/rejection-presets.
+
+    Typed rather than a bare dict so the MEH-1748 codegen chain emits a real
+    schema for this route — an untyped handler generates `zod.unknown()`,
+    which makes the drift guard structurally unable to notice the shape
+    changing.
+    """
+
+    key: str
+    label: str
+
+
 # --- User ---
 class UserOut(BaseModel):
     id: UUID

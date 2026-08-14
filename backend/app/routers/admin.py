@@ -36,6 +36,7 @@ from app.schemas.schemas import (
     ProducerAdminOut,
     ProducerRejectIn,
     ProducerUpdate,
+    RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
 )
@@ -803,6 +804,13 @@ def _compose_rejection_reason(preset_key: str | None, reason: str) -> str:
 
     No preset (legacy callers, and the pre-MEH-226 `{"reason": ...}` body)
     falls through to the free text unchanged.
+
+    PRECONDITION: `preset_key` is None or a key of PRODUCER_REJECTION_PRESETS —
+    the route handler 400s on anything else BEFORE calling this. The lookup
+    below is therefore deliberately undefended: a KeyError here would mean an
+    internal caller skipped that validation, and crashing loudly at the one
+    line that noticed beats composing a rejection reason out of a key nobody
+    recognises and mailing it to a business owner.
     """
     if preset_key is None or preset_key == "other":
         return reason
@@ -810,7 +818,7 @@ def _compose_rejection_reason(preset_key: str | None, reason: str) -> str:
     return f"{label} — {reason}" if reason else label
 
 
-@router.get("/producers/rejection-presets")
+@router.get("/producers/rejection-presets", response_model=list[RejectionPresetOut])
 def list_rejection_presets(user: User = Depends(require_admin)):
     """MEH-226: the reject-modal's radio options. Serving them from the same
     dict the handler composes with is what keeps the admin UI from growing a

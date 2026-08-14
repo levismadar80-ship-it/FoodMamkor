@@ -10,7 +10,6 @@ Contract exercised here:
 
 | body                                   | status | rejection_reason           |
 |----------------------------------------|--------|----------------------------|
-| {preset_key: "missing_docs"}           | 400 ✗  | — (preset alone is fine)   |
 | {preset_key: "missing_docs"}           | 200    | the preset label           |
 | {preset_key: "missing_docs", reason:x} | 200    | "<label> — x"              |
 | {preset_key: "other", reason: x}       | 200    | x alone (label is a UI     |
