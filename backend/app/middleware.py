@@ -9,8 +9,7 @@ from fastapi.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
 from app.rate_limit import limiter
@@ -73,24 +72,34 @@ async def record_request_metrics(request: Request, call_next) -> Response:
             log.debug("[metrics] record_request failed (non-fatal)", exc_info=True)
 
 
-class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
+class SentryRequestScopeMiddleware:
     """MEH-483 + MEH-493: bind request_id + route + method tags, plus
     request_info structured context, plus best-effort user.id, to the
     current Sentry scope on every request.
 
-    Plan B middleware ordering (locked): registered AFTER
-    ``CorrelationIdMiddleware`` in ``add_middleware`` order. Starlette
-    wraps middleware in reverse, so the later ``add_middleware`` call
-    becomes INNER on request-in. Request flow:
+    Pure ASGI middleware (MEH-1906 — converted off ``BaseHTTPMiddleware``:
+    that base class is what Starlette's own docs flag as problem-prone,
+    and it's implicated in a boot-dependent RecursionError on
+    ``/producers/by-slug/*`` on staging — see MEH-1906. The frame is
+    eliminated by this conversion; the RecursionError's root cause was
+    NOT proven, so this is not claimed as a fix. Patterned after
+    Starlette's own shipped middlewares, e.g.
+    ``starlette/middleware/cors.py:78-96`` (chain-of-ASGI-apps,
+    non-``http`` scopes delegated untouched).
+
+    Plan B middleware ordering (locked, unchanged by this conversion):
+    registered AFTER ``CorrelationIdMiddleware`` in ``add_middleware``
+    order. Starlette wraps middleware in reverse, so the later
+    ``add_middleware`` call becomes INNER on request-in. Request flow:
 
         CORS  →  CorrelationId (sets contextvar)
               →  SentryRequestScope (reads contextvar, tags Sentry scope)
               →  SlowAPI  →  handler
 
-    By tagging on request-in (before ``call_next``), any handler
-    exception that bubbles into Sentry already carries the bindings.
-    No-ops cleanly when ``sentry_sdk`` isn't installed (current state —
-    SDK init tracked in MEH-500). The MEH-493 additions
+    By tagging on request-in (before delegating to ``self.app``), any
+    handler exception that bubbles into Sentry already carries the
+    bindings. No-ops cleanly when ``sentry_sdk`` isn't installed (current
+    state — SDK init tracked in MEH-500). The MEH-493 additions
     (``set_context("request_info", ...)`` + ``set_user({"id": sub})``)
     follow the same fail-open posture: any extraction failure is
     swallowed, the request continues unaffected.
@@ -108,19 +117,24 @@ class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+        self.app = app
 
-    async def dispatch(self, request: Request, call_next):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
         if _sentry_sdk is not None:
+            request = Request(scope, receive=receive)
             rid = correlation_id.get()
             try:
-                with _sentry_sdk.configure_scope() as scope:
+                with _sentry_sdk.configure_scope() as sentry_scope:
                     if rid:
-                        scope.set_tag("request_id", rid)
-                    scope.set_tag("route", request.url.path)
-                    scope.set_tag("method", request.method)
+                        sentry_scope.set_tag("request_id", rid)
+                    sentry_scope.set_tag("route", request.url.path)
+                    sentry_scope.set_tag("method", request.method)
                     # MEH-493 — request_info structured context.
-                    scope.set_context(
+                    sentry_scope.set_context(
                         "request_info",
                         {
                             "url": str(request.url),
@@ -136,10 +150,11 @@ class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
                     # cold-import path for unauthenticated routes.
                     user_id = _try_extract_user_id(request)
                     if user_id is not None:
-                        scope.set_user({"id": user_id})
+                        sentry_scope.set_user({"id": user_id})
             except Exception:  # pragma: no cover — defensive only
                 log.debug("[sentry] scope tag bind failed", exc_info=True)
-        return await call_next(request)
+
+        await self.app(scope, receive, send)
 
 
 def _try_extract_user_id(request: Request) -> str | None:
@@ -199,7 +214,7 @@ def install_middlewares(app: FastAPI) -> None:
     - CorrelationId must wrap SlowAPI so 429 responses carry
       ``X-Request-ID`` (pre-existing invariant — MEH-XXX).
     - SentryRequestScope must be INNER to CorrelationId so the
-      ``request_id`` contextvar is populated when its ``dispatch``
+      ``request_id`` contextvar is populated when its ``__call__``
       runs. Reading the contextvar from a decorator-style
       (outermost) middleware before ``call_next`` returns empty —
       that mistake was caught in code review and locked here.
@@ -212,12 +227,17 @@ def install_middlewares(app: FastAPI) -> None:
     # test. Starlette's GZipResponder skips compression only when it sees the
     # WHOLE body in one `http.response.body` message —
     # `len(body) < minimum_size and not more_body`. It never consults
-    # Content-Length. `SentryRequestScopeMiddleware` is a BaseHTTPMiddleware,
-    # which re-emits the response as a STREAM (`more_body=True`), so with GZip
-    # anywhere outside it that condition is never true and every response is
+    # Content-Length. At the time this comment was written,
+    # `SentryRequestScopeMiddleware` was a BaseHTTPMiddleware, which re-emits
+    # the response as a STREAM (`more_body=True`), so with GZip anywhere
+    # outside it that condition was never true and every response was
     # compressed regardless of size — measured: a few-byte `/producers/count`
     # payload came back `content-encoding: gzip`. Innermost, GZip receives the
     # handler's single complete chunk and the 1 KB floor actually applies.
+    # MEH-1906 converted SentryRequestScopeMiddleware to pure ASGI (plain
+    # pass-through, no re-emission), which makes that specific hazard moot —
+    # but the position below is left unchanged since it remains correct and
+    # nothing requires moving it.
     # Still outside the route handler, so the Cache-Control the two catalog
     # GETs set is written before GZip rewrites body + Content-Length.
     # Trade-off accepted: SlowAPI's 429 short-circuits outside this layer and
