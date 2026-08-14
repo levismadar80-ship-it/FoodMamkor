@@ -47,7 +47,15 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
     Product,
     ProducerRecipe,
 )
-from app.models.models import ProducerReview, Event, Experience, User  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.models.models import (  # noqa: E402  # imports must follow sys.path.insert (script shim)
+    Event,
+    Experience,
+    GroupBuy,
+    GroupBuyCommit,
+    KashrutBadgeRequest,
+    ProducerReview,
+    User,
+)
 
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
@@ -81,7 +89,49 @@ DEMO_PRODUCER = {
     "lng": 34.9519,
     "phone": "050-0000001",  # fictional — swap before staging run
     "instagram": "@ruach_hasadeh",
+    # MEH-1706 §2 item 5 — all seven contact channels (MEH-296). Before this,
+    # only `instagram` was seeded, so the multi-channel routing UI had exactly
+    # one row to render on the flagship business and every other branch of it
+    # was unreachable on staging.
+    "website": "https://ruach-hasadeh.example.co.il",
+    "facebook": "https://www.facebook.com/ruach.hasadeh.demo",
+    "external_order_form": "https://forms.example.com/ruach-hasadeh-order",
+    "whatsapp_group": "https://chat.whatsapp.com/DemoRuachHasadeh0000",
+    "contact_email": "hello@ruach-hasadeh.example.co.il",
     "primary_contact_method": "whatsapp",
+    # MEH-1706 §2 item 6 — MEH-1490's Google rating row is live-fetch and
+    # data-gated on this column, so with it NULL the row is silent on the
+    # flagship. Syntactically valid placeholder: real Place IDs are opaque
+    # `ChIJ`-prefixed strings, and nothing here calls the Google API.
+    "google_place_id": "ChIJDemoRuachHasadeh0000000000",
+    # MEH-1706 §2 item 7 — OwnerCard (MEH-1335). `owner_bio` caps at 300 chars
+    # at the app layer; this is well under.
+    "owner_bio": (
+        "נועה לביא, דור שני למאפייה. למדה אפייה בצרפת, חזרה לזכרון יעקב "
+        "ופתחה מאפייה קטנה שבה כל לחם עולה לתנור באותו בוקר שבו הוא נמכר."
+    ),
+    "owner_photo_url": (
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-owner"
+    ),
+    # MEH-1706 §2 item 3 — order_window (MEH-1543 column, MEH-1869 value shape).
+    # CANONICAL shape is a LIST of ranges per day (schemas.py:87-118); the legacy
+    # single-dict form is still accepted on write but every new row writes the
+    # list. Friday carries two ranges so the multi-range branch is exercised,
+    # not just the single-range one. Days ascending, non-overlapping, <= 3.
+    "order_window": {
+        "sunday": [{"open": "07:00", "close": "14:00"}],
+        "monday": [{"open": "07:00", "close": "14:00"}],
+        "tuesday": [{"open": "07:00", "close": "14:00"}],
+        "wednesday": [{"open": "07:00", "close": "14:00"}],
+        "thursday": [{"open": "07:00", "close": "14:00"}],
+        "friday": [
+            {"open": "06:30", "close": "10:00"},
+            {"open": "11:00", "close": "13:00"},
+        ],
+    },
+    # MEH-1706 §2 item 4 — the badge array. The verified/expiry timestamps are
+    # relative and therefore set on the Producer(...) call, not here.
+    "kashrut_badges": ["badatz_beit_yosef"],
     "opening_hours": "א'-ה' 07:00-14:00, ו' 06:30-13:00",
     "kosher": "כשר",
     "producer_license_number": "10-000001",  # fictional — admin-only surface
@@ -210,6 +260,75 @@ DEMO_EXPERIENCES = [
         "price_per_person": 160,
     },
 ]
+
+# MEH-1706 §2 item 2 — the moderation queue. The three DEMO_EXPERIENCES above
+# are all status="approved" ON PURPOSE (MEH-1918: GET /experiences filters on
+# approved+APPROVED+future+active, and the nav threshold needs them), so the
+# non-approved states get their own rows rather than reusing those.
+#
+# Hosted by the DEMO CONSUMER, per the ticket. That user is NOT in
+# _delete_existing's email set, so unlike the owner-hosted rows these do not
+# cascade away on --refresh — they are torn down explicitly there. Without that
+# they would survive and duplicate on every re-run.
+DEMO_MODERATION_EXPERIENCES = [
+    {
+        "title": "סדנת לחם לילדות — ממתינה לאישור",
+        "description": (
+            "שעה וחצי של לישה, גלגול ואפייה לילדות מגיל שש. כל אחת חוזרת "
+            "עם לחמנייה משלה. הסדנה ממתינה לאישור צוות מהמקור."
+        ),
+        "days_ahead": 33,
+        "status": "pending",
+        "moderation_status": "PENDING",
+    },
+    {
+        "title": "ערב פיצות בטאבון — נדרשים תיקונים",
+        "description": (
+            "ערב פיצות בטאבון החצר. הוגש עם פרטי מיקום חסרים, והמנחה "
+            "התבקשה להשלים אותם לפני פרסום."
+        ),
+        "days_ahead": 40,
+        "status": "changes_requested",
+        "moderation_status": "REJECTED",
+    },
+]
+
+# MEH-1706 §2 item 1 — group buy. `deadline` is relative (§2.3 idiom), and
+# min_participants sits BELOW the seeded commit count so the funded path is
+# reachable on the demo rather than permanently short of its threshold.
+DEMO_GROUP_BUY = {
+    "title": "רכישה קבוצתית: שק קמח כוסמין מלא",
+    "description": (
+        "שק קמח כוסמין מלא מטחינת אבן, ישירות מהטחנה. מתחלקות בשק ומוזילות "
+        "את המחיר לקילו. איסוף מהמאפייה בזכרון יעקב."
+    ),
+    "product_name": "קמח כוסמין מלא, טחינת אבן",
+    "unit": 'ק"ג',
+    "price_per_unit_regular": 18,
+    "price_per_unit_group": 13,
+    "min_participants": 2,
+    "max_participants": 20,
+    "days_ahead": 14,
+    "fulfillment_note": "איסוף מהמאפייה, יום ה' שאחרי סגירת הקבוצה, 08:00-13:00.",
+}
+
+# Two commits, so the count (2) meets min_participants (2) and the funded path
+# is live. Both reuse EXISTING seeded users — the ticket forbids new emails, and
+# the UNIQUE (group_buy_id, user_id) constraint makes a duplicate a hard error
+# rather than a silent no-op.
+DEMO_GROUP_BUY_COMMIT_QUANTITIES = [2, 3]
+
+# MEH-1706 §2 item 4 — the approved badge request that carries the certificate
+# image. MEH-1672 shipped "tap the badge to see the certificate" with ZERO
+# cert_url anywhere in the seed, so the feature merged invisible (§2.1).
+DEMO_KASHRUT_REQUEST = {
+    "badge_code": "badatz_beit_yosef",
+    "cert_url": (
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-kashrut-cert"
+    ),
+    "status": "approved",
+    "notes": "אושר אוטומטית בזריעת הדמו (MEH-1706). תעודה לדוגמה, לא מסמך אמיתי.",
+}
 
 DEMO_EVENT = {
     "title": "יום פתוח במאפייה — בוקר מחמצת",
@@ -464,6 +583,30 @@ DIETARY_SCOPE_DEMOS = [
 DIETARY_DEMO_IMAGE = "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
 DIETARY_DEMO_CITY = "זכרון יעקב"
 
+# MEH-1706 §2 item 9 — the two availability states the demo never exercised.
+# Every seeded producer was `accepting_orders`, so the "full this week" and
+# "on vacation" branches of the card, the header and the detail page had no row
+# to render anywhere on staging. `vacation_until` is relative (§2.3 idiom) —
+# hardcoding it means the vacation silently ends and the surface goes dark again.
+AVAILABILITY_DEMOS = [
+    {
+        "slug": "demo-availability-full",
+        "name": "מאפיית שבוע עמוס (דמו)",
+        "contact_name": "דנה עמוס",
+        "short_description": "בית עסק לדוגמה שסימן שהשבוע מלא — לבדיקת מצב הזמינות.",
+        "availability_state": "full_this_week",
+        "vacation_days_ahead": None,
+    },
+    {
+        "slug": "demo-availability-vacation",
+        "name": "מאפיית חופשה (דמו)",
+        "contact_name": "יעל חופש",
+        "short_description": "בית עסק לדוגמה שנמצא בחופשה — לבדיקת מצב הזמינות.",
+        "availability_state": "on_vacation",
+        "vacation_days_ahead": 18,
+    },
+]
+
 
 def _assert_not_production() -> None:
     """Refuse to run against anything that is not localhost or Railway staging.
@@ -493,6 +636,17 @@ def _delete_existing(db) -> None:
     producer = db.query(Producer).filter(Producer.slug == DEMO_SLUG).first()
     if producer:
         db.query(Event).filter(Event.producer_id == producer.id).delete()
+        # MEH-1706: group buys need an EXPLICIT delete. `GroupBuy` reaches
+        # Producer through a plain `backref`, whose default cascade is
+        # save-update/merge — NOT delete — so db.delete(producer) leaves the ORM
+        # unaware of them and only the DB's ON DELETE CASCADE reaps the rows.
+        # Deleting them here keeps the session identity map clean, exactly as
+        # the Event and ProducerLocation deletes above do. The commits go with
+        # them via cascade="all, delete-orphan" on GroupBuy.commits.
+        for gb in (
+            db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).all()
+        ):
+            db.delete(gb)
         # MEH-1432: producer_locations rows carry ON DELETE CASCADE, so
         # db.delete(producer) removes them too; the explicit ORM delete keeps the
         # session identity map clean on re-seed (same reasoning as the Event
@@ -518,6 +672,21 @@ def _delete_existing(db) -> None:
         .all()
     ):
         db.delete(diet)
+    # MEH-1706: the availability-state demos, same contract as the dietary ones.
+    for avail in (
+        db.query(Producer)
+        .filter(Producer.slug.in_([a["slug"] for a in AVAILABILITY_DEMOS]))
+        .all()
+    ):
+        db.delete(avail)
+    # MEH-1706: the CONSUMER-hosted moderation experiences. The owner-hosted
+    # ones cascade away when the owner user is deleted below
+    # (Experience.host_user_id is ON DELETE CASCADE), but the demo consumer is
+    # deliberately NOT in the delete set — so without this, a --refresh leaves
+    # them behind and the next run inserts a second copy of each.
+    consumer = db.query(User).filter(User.email == DEMO_CONSUMER_EMAIL).first()
+    if consumer:
+        db.query(Experience).filter(Experience.host_user_id == consumer.id).delete()
     # MEH-1528: DEMO_ADMIN_EMAIL joins the owner in the delete set (both are
     # recreated by seed_demo_business); the display reviewers stay by convention.
     emails = [r["email"] for r in DEMO_REVIEWS] + [DEMO_OWNER_EMAIL, DEMO_ADMIN_EMAIL]
@@ -527,6 +696,107 @@ def _delete_existing(db) -> None:
     for user in db.query(User).filter(User.email.in_(emails)).all():
         db.delete(user)
     db.commit()
+
+
+def _seed_kashrut_request(db, producer) -> None:
+    """MEH-1706 §2 item 4 — the approved badge request carrying the certificate.
+
+    MEH-1672 shipped "tap the badge to see the certificate" with ZERO `cert_url`
+    anywhere in the seed, so the feature merged and was invisible on staging
+    (§2.1). No teardown is needed in `_delete_existing`: `kashrut_requests` uses
+    `passive_deletes=True` and defers to the DB's ON DELETE CASCADE, so deleting
+    the producer removes this row.
+    """
+    db.add(
+        KashrutBadgeRequest(
+            producer_id=producer.id,
+            reviewed_by=None,
+            **DEMO_KASHRUT_REQUEST,
+        )
+    )
+
+
+def _seed_group_buy(db, producer) -> None:
+    """MEH-1706 §2 item 1 — one open group buy, funded by its own commits.
+
+    Extracted rather than inlined because the loop and its guard pushed
+    `seed_demo_business` past Ruff's C901 complexity ceiling (13 > 10).
+    """
+    group_buy = GroupBuy(
+        producer_id=producer.id,
+        title=DEMO_GROUP_BUY["title"],
+        description=DEMO_GROUP_BUY["description"],
+        product_name=DEMO_GROUP_BUY["product_name"],
+        unit=DEMO_GROUP_BUY["unit"],
+        price_per_unit_regular=DEMO_GROUP_BUY["price_per_unit_regular"],
+        price_per_unit_group=DEMO_GROUP_BUY["price_per_unit_group"],
+        min_participants=DEMO_GROUP_BUY["min_participants"],
+        max_participants=DEMO_GROUP_BUY["max_participants"],
+        deadline=datetime.utcnow() + timedelta(days=DEMO_GROUP_BUY["days_ahead"]),
+        city=DEMO_PRODUCER["city"],
+        fulfillment_note=DEMO_GROUP_BUY["fulfillment_note"],
+        status="open",
+        # DO NOT set funded_notified_at here — it is a one-way latch for the
+        # open->funded notification pair (models.py). Seeding it pre-armed means
+        # the demo can never demonstrate that notification.
+    )
+    db.add(group_buy)
+    db.flush()
+
+    # Committers reuse users this script already seeds: the QA consumer and the
+    # first review author. No new emails (ticket constraint), and each user
+    # appears once — UNIQUE (group_buy_id, user_id) makes a repeat a hard error.
+    committer_emails = [DEMO_CONSUMER_EMAIL, DEMO_REVIEWS[0]["email"]]
+    for email, quantity in zip(committer_emails, DEMO_GROUP_BUY_COMMIT_QUANTITIES):
+        committer = db.query(User).filter(User.email == email).first()
+        if committer is None:
+            # Loud rather than silent: a missing committer leaves the group buy
+            # below min_participants, which reads as a product state rather than
+            # a broken seed.
+            sys.exit(f"Group-buy committer '{email}' not found — seed order changed?")
+        db.add(
+            GroupBuyCommit(
+                group_buy_id=group_buy.id,
+                user_id=committer.id,
+                quantity=quantity,
+                phone=DEMO_PRODUCER["phone"],
+            )
+        )
+
+
+def _seed_moderation_experiences(db) -> None:
+    """MEH-1706 §2 item 2 — the non-approved experiences (the moderation queue).
+
+    The three DEMO_EXPERIENCES are all `approved` on purpose (MEH-1918), so
+    these are ADDITIVE rather than a re-status of those: turning two of the
+    three into pending/changes_requested would drop `GET /experiences` back
+    under the nav threshold MEH-1918 exists to clear.
+    """
+    consumer = db.query(User).filter(User.email == DEMO_CONSUMER_EMAIL).first()
+    if consumer is None:
+        sys.exit(
+            f"Demo consumer '{DEMO_CONSUMER_EMAIL}' not found — seed order changed?"
+        )
+    for ex in DEMO_MODERATION_EXPERIENCES:
+        db.add(
+            Experience(
+                host_user_id=consumer.id,
+                title=ex["title"],
+                description=ex["description"],
+                image_url=DEMO_EVENT["image_url"],
+                category="אפייה",
+                event_date=date.today() + timedelta(days=ex["days_ahead"]),
+                event_time=datetime.strptime("17:00", "%H:%M").time(),
+                duration_minutes=90,
+                location_type="public",
+                city=DEMO_PRODUCER["city"],
+                max_participants=10,
+                price_per_person=120,
+                status=ex["status"],
+                moderation_status=ex["moderation_status"],
+                is_active=True,
+            )
+        )
 
 
 def seed_demo_business(db, refresh: bool = False) -> Producer | None:
@@ -554,6 +824,11 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
         verified_at=now,
         verification_doc_type="license",
         phone_verified=True,
+        # MEH-1706 §2 item 4 — relative, per the DEMO_EVENT["days_ahead"] idiom
+        # (§2.3): a hardcoded expiry silently lapses and the badge stops
+        # rendering months later with nothing pointing at the seed as the cause.
+        kashrut_verified_at=now,
+        kashrut_expires_at=now + timedelta(days=300),
         availability_state="accepting_orders",
         has_physical_location=True,
         offers_delivery=True,
@@ -633,6 +908,29 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
     # commits once at the end.
     db.flush()
 
+    # MEH-1706: the QA consumer, get-or-create. Until now this user was created
+    # ONLY by the --sync-users path, so on a fresh database the main seed left
+    # it absent — measured, not assumed: the group-buy committer lookup below
+    # exited with "not found" on the first --refresh run against a clean DB.
+    # Both new surfaces need it (group-buy commits and the consumer-hosted
+    # moderation experiences), and it is an existing constant rather than a new
+    # email, so the ticket's "no new user emails" rule is unaffected.
+    # Deliberately NOT added to _delete_existing's email set: --sync-users owns
+    # this user's password lifecycle, and get-or-create is idempotent either way.
+    consumer = db.query(User).filter(User.email == DEMO_CONSUMER_EMAIL).first()
+    if consumer is None:
+        consumer = User(
+            email=DEMO_CONSUMER_EMAIL,
+            name=DEMO_CONSUMER_NAME,
+            password_hash=hash_password(
+                os.getenv("DEMO_CONSUMER_PASSWORD") or secrets.token_urlsafe(16)
+            ),
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(consumer)
+        db.flush()
+
     # MEH-1918: the experiences themselves. status="approved" +
     # moderation_status="APPROVED" + a future event_date + is_active — i.e.
     # every condition GET /experiences (and /experiences/count) filters on, so
@@ -696,6 +994,10 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
             )
         )
 
+    _seed_kashrut_request(db, producer)
+    _seed_group_buy(db, producer)
+    _seed_moderation_experiences(db)
+
     # MEH-1432: the delivery-only-with-pickup demo producer. No own lat/lng — it
     # reappears on /map SOLELY because it owns a pickup location (chunk-2 MEH-213
     # reversal). A zero-location delivery-only producer stays hidden (unchanged).
@@ -706,6 +1008,11 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
         has_physical_location=False,
         offers_delivery=True,
         delivery_nationwide=True,
+        # MEH-1706 §2 item 8 — MEH-1255's exclusion mode ("משלוחים לכל הארץ חוץ
+        # מ:"). The DB CHECK `delivery_excluded_requires_nationwide` only permits
+        # a non-empty list when delivery_nationwide is true, which it is above —
+        # so this producer is the only correct home for the surface.
+        delivery_excluded_cities=["אילת", "קצרין"],
         has_delivery=True,
         lat=None,
         lng=None,
@@ -722,6 +1029,54 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
         f"(producer {delivery_only.id}, 1 pickup, no own lat/lng)"
     )
     return producer
+
+
+def seed_availability_demos(db) -> int:
+    """MEH-1706 §2 item 9 — the `full_this_week` / `on_vacation` producers.
+
+    Per-slug skip-if-exists, mirroring seed_dietary_scope_demos, so a re-run
+    without --refresh inserts nothing. --refresh clears them via
+    _delete_existing before this recreates them. Returns rows inserted.
+    """
+    category = db.query(Category).filter(Category.name == DEMO_CATEGORY_NAME).first()
+    if not category:
+        sys.exit(
+            f"Category '{DEMO_CATEGORY_NAME}' not found — run backend/seed_data.py first."
+        )
+
+    inserted = 0
+    for spec in AVAILABILITY_DEMOS:
+        if db.query(Producer).filter(Producer.slug == spec["slug"]).first():
+            print(f"Availability demo '{spec['slug']}' already exists — skipping.")
+            continue
+        days = spec["vacation_days_ahead"]
+        producer = Producer(
+            name=spec["name"],
+            contact_name=spec["contact_name"],
+            slug=spec["slug"],
+            short_description=spec["short_description"],
+            description=spec["short_description"],
+            city=DIETARY_DEMO_CITY,
+            primary_contact_method="whatsapp",
+            status="approved",
+            admin_notes=ADMIN_NOTE,
+            images=[DIETARY_DEMO_IMAGE],
+            has_physical_location=True,
+            availability_state=spec["availability_state"],
+            vacation_until=(date.today() + timedelta(days=days)) if days else None,
+        )
+        db.add(producer)
+        db.flush()
+        db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
+        db.commit()
+        inserted += 1
+        print(
+            f"Availability demo seeded: /{spec['slug']} "
+            f"(state={spec['availability_state']}, vacation_until={producer.vacation_until})"
+        )
+    if inserted == 0:
+        print("Availability demos: all present — nothing to insert.")
+    return inserted
 
 
 def seed_dietary_scope_demos(db) -> int:
@@ -905,6 +1260,9 @@ def main() -> None:
             # dietary demos even when the main business already existed (the
             # skip-if-exists path above returns before creating anything).
             seed_dietary_scope_demos(db)
+            # MEH-1706: same contract as the dietary demos — idempotent
+            # per-slug, so it runs even when the main business already existed.
+            seed_availability_demos(db)
     finally:
         db.close()
 
