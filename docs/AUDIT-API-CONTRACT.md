@@ -40,8 +40,19 @@ CI-integrated.
 | Mode | Command | What it catches | Exit non-zero when |
 |---|---|---|---|
 | `static` (default) | `python scripts/check_api_contract.py` | Frontend calls with no backend route; method mismatches; dead backend routes. | Orphan frontend calls exist or a method mismatch is found. |
-| `probe` | `python scripts/check_api_contract.py --probe https://…` | Runtime 404 against a running instance — including deploy drift. | Any probed path returns `404`. |
-| `cross-env` | `python scripts/check_api_contract.py --cross-env --staging https://… --prod https://…` | Deploy drift: routes that respond on staging but 404 on production. | Any probe result differs between the two environments. |
+| `probe` | `python scripts/check_api_contract.py --probe https://…` | Any route that does not answer within the status contract — deploy drift (`404`), method mismatch (`405`), server error (`5xx`), an unexpected redirect (`3xx`), or no response at all. | A probed path answers outside `ACCEPTED_STATUSES`, **or** one rejected status covers >20% of routes, **or** no route returned `2xx`, **or** zero routes were probed. |
+| `cross-env` | `python scripts/check_api_contract.py --cross-env --staging https://… --prod https://…` | Deploy drift: routes that respond on staging but 404 on production. | Any probe result differs between the two environments, **or** either side trips an aggregate alarm on its own. |
+| `self-test` | `python scripts/check_api_contract.py --self-test` | A probe verdict classifier that has stopped discriminating. No network. | Any known-answer case disagrees with the classifier. |
+
+> **Probe mode fails on 3xx, and that is the point (MEH-2077).** Until
+> 2026-08-14 the only failing status was a literal `404`; every other answer
+> printed and exited `0`. All ~160 routes against staging were returning `302`
+> to `vercel.com/sso-api` (Vercel Deployment Protection) and the gate reported
+> success, having verified nothing. Requests are sent with
+> `allow_redirects=False`, so a `3xx` is the route's own status — and no route
+> in `backend/app/` redirects by design. **Do not widen the contract to get a
+> green run**: against protected staging this probe is *supposed* to be red
+> until a Protection Bypass secret is configured (MEH-2077 chunk 2).
 
 All three modes are standalone; `requests` is imported lazily and is only
 needed for `--probe` / `--cross-env`.
@@ -68,8 +79,15 @@ needed for `--probe` / `--cross-env`.
   `/admin/group-buys` are parameter-free. For parameter-based routes,
   rely on static mode + cross-env drift, not the raw probe status.
 - Rate-limited endpoints (`@limiter.limit(...)`) can return `429` during
-  a probe burst. `429` is not `404` so the tool still exits `0`; treat
-  any `429` in output as "inconclusive, re-probe later".
+  a probe burst. `429` is inside `ACCEPTED_STATUSES` — the rate limiter
+  answering proves the request reached the router — so the tool still
+  exits `0`; treat any `429` in output as "inconclusive, re-probe later".
+- The aggregate alarm counts **rejected** statuses only, not every non-2xx.
+  Most routes in this app are behind auth and the probe sends no
+  credentials, so a healthy run is majority-`401` (measured: 91 of 159,
+  57%). Counting those would red every good run — which is how a guard
+  gets weakened the first time it blocks a merge. The auth-walled case is
+  covered instead by the separate "no route returned 2xx" alarm.
 
 ---
 
