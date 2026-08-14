@@ -284,6 +284,19 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             grass_fed=parsed.data["grass_fed"],
             organic_certified=parsed.data["organic_certified"],
             has_delivery=parsed.data["has_delivery"],
+            # MEH-2060: deliberately KEPT, unlike admin.py's two writers. Every
+            # consumer surface now derives "offers pickup" from a
+            # ProducerLocation(kind="pickup"/"market_stand") row — but this
+            # importer creates no such row (no ProducerLocation import in this
+            # module at all). Popping this write, the way admin.py's PUT does,
+            # would silently make column J ("pickup=yes" in the sheet)
+            # unrepresentable for every future import — a real data-loss
+            # regression, not a documented no-op, since there is no reader-side
+            # evidence to back the "no-op" branch of this ticket's DoD. Left
+            # writing the (now-unread) column so the raw intent survives in the
+            # DB even though nothing displays it; follow-up: teach this
+            # importer to also create the location row (mirrors
+            # persist_registration_delivery_areas below for delivery_areas).
             pickup_points=parsed.data["pickup_points"],
             kosher=parsed.data["kosher"],
             admin_notes=parsed.data["admin_notes"],
