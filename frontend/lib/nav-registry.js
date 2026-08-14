@@ -65,6 +65,37 @@ export const NAV_SURFACES = Object.freeze({
 });
 
 /**
+ * Which platform each surface belongs to. MEH-1703 chunk 4.
+ *
+ * This is the axis the ticket is actually about. `NAV_SURFACES` has four
+ * entries, but they pair up: two shells render on desktop and two on mobile,
+ * and the three incidents that motivated this registry were all a nav item
+ * present on ONE platform and absent from the other.
+ */
+export const NAV_PLATFORMS = Object.freeze({
+  header: "desktop",
+  headerMenu: "desktop",
+  bottomNav: "mobile",
+  accountSheet: "mobile",
+});
+
+/**
+ * The platforms an item actually appears on, derived from its `surfaces` map.
+ * @returns {{desktop: boolean, mobile: boolean}}
+ */
+export function platformsForItem(item) {
+  const on = { desktop: false, mobile: false };
+  for (const surface of Object.keys(item.surfaces)) {
+    const platform = NAV_PLATFORMS[surface];
+    if (!platform) {
+      throw new Error(`nav-registry: item "${item.id}" declares unknown surface "${surface}"`);
+    }
+    on[platform] = true;
+  }
+  return on;
+}
+
+/**
  * Audience predicates, as data. The shells evaluate the equivalent condition
  * inline today; these names describe it without prescribing how it is read.
  *
@@ -139,6 +170,7 @@ export const NAV_ITEMS = Object.freeze([
      * public experiences. Absent, never disabled.
      */
     dataGate: "experiences-supply",
+    only: "desktop",
     note:
       "Desktop only. use-experiences-nav-gate.js says the BottomNav is out of " +
       "scope because its four slots are full (MEH-1918).",
@@ -153,6 +185,11 @@ export const NAV_ITEMS = Object.freeze([
       // it. The two mounts differ only in wrapper classes, which stay local.
       header: { labelKey: "nav.search_label", audience: "all", mounts: 2 },
     },
+    only: "desktop",
+    note:
+      "Desktop only in the nav sense: the Header owns search at BOTH widths " +
+      "(its mobile mount is still Header.jsx), and no mobile shell renders a " +
+      "search affordance of its own.",
   },
   {
     id: "language",
@@ -189,6 +226,7 @@ export const NAV_ITEMS = Object.freeze([
         suppressOnRoute: ["/register", "/register/"],
       },
     },
+    only: "desktop",
     note: "Desktop only — no mobile shell offers consumer registration (MEH-1964).",
   },
   {
@@ -198,6 +236,7 @@ export const NAV_ITEMS = Object.freeze([
     surfaces: {
       accountSheet: { labelKey: "account.sheet.biz_cta", audience: "consumer" },
     },
+    only: "mobile",
     note:
       "Mobile only. MEH-907 removed the Header's add-business CTA on purpose; " +
       "the supply-side entry lives on the homepage CTA, the Footer and here.",
@@ -246,6 +285,7 @@ export const NAV_ITEMS = Object.freeze([
     },
     /** Dropped entirely when the producer has no linked id (Header.jsx:573-575). */
     dataGate: "producer-id-present",
+    only: "desktop",
     note: "Desktop only — the mobile sheet has no public-page row (MEH-1226 / MEH-1228).",
   },
   {
@@ -255,10 +295,14 @@ export const NAV_ITEMS = Object.freeze([
     surfaces: {
       headerMenu: { labelKey: "account.menu.admin", audience: "admin" },
     },
+    only: "desktop",
     note:
       "Desktop only. The mobile sheet offers an admin no route into /admin — " +
       "the same shape as MEH-1701, which found the admin queue counters " +
-      "missing on mobile. Recorded, not changed.",
+      "missing on mobile. Recorded, not changed. THIS IS THE ONE `only` FLAG " +
+      "THAT MARKS A KNOWN GAP RATHER THAN A DELIBERATE DESIGN — it is " +
+      "declared so the guard passes on today's shipped state, and closing it " +
+      "is MEH-1701's job, not this registry's.",
   },
   {
     id: "account",
@@ -269,6 +313,11 @@ export const NAV_ITEMS = Object.freeze([
       // signed in, and nav.account for guests (BottomNav.jsx:449).
       bottomNav: { labelKey: "nav.account", audience: "all" },
     },
+    only: "mobile",
+    note:
+      "Mobile only, and correctly so: it is the sheet's toggle, and desktop " +
+      "has no sheet — the avatar dropdown (headerMenu) plays that role there. " +
+      "A counterpart would be a second desktop menu, not a missing item.",
   },
   {
     id: "logout",

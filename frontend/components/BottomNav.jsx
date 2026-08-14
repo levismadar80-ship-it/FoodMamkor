@@ -80,9 +80,17 @@ export default function BottomNav() {
   const downAccRef = useRef(0);
   const upAccRef = useRef(0);
 
-  // MEH-1014: rAF-throttled scroll listener. Still mirrored inline from
-  // Header.jsx:91-116 (MEH-29/734) — intentional copy, a shared hook
-  // extraction is a separate ticket; do NOT DRY this against Header here.
+  // MEH-1014: rAF-throttled scroll listener, mirrored inline from
+  // Header.jsx:91-116 (MEH-29/734) — an intentional copy.
+  //
+  // MEH-1703 removed the deferral that used to sit here ("a shared hook
+  // extraction is a separate ticket; do NOT DRY this against Header"). That
+  // pointer is spent: MEH-1703 WAS the separate ticket, and it landed — but
+  // it unified nav ITEMS (lib/nav-registry.js), not scroll behaviour. So the
+  // duplication below is still deliberate and still un-unified; what is gone
+  // is the promise that some future ticket would address it. Anyone extracting
+  // a shared scroll hook is opening new scope, not completing MEH-1703's.
+  //
   // Clamp kills iOS rubber-band overscroll (negative y / y past the max
   // producing phantom deltas); asymmetric accumulators give minimize a
   // longer runway (24px) than expand (8px) so it settles instead of
