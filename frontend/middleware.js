@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
@@ -12,17 +13,24 @@ import staticRoutes from "./lib/static-routes.json";
  *           page-level notFound() at 200 — measured MEH-918/1398) and rewritten
  *           to an unmatched path so experimental.globalNotFound (PR #1995)
  *           renders a real 404.
+ * Touches:  Sentry (edge runtime, sentry.edge.config.js) — MEH-1906 added a
+ *           captureMessage on the backend-5xx fail-open branch only, so that
+ *           path stops being silent past a Vercel runtime log line.
  * Does NOT: own the 404 status for VALID pages (those pass straight through).
  *           Does NOT existence-check /[locale]/producer/<id> — the edge is
  *           permanently unauthenticated, so that check could not distinguish
  *           the owner of a pending business from a stranger and hard-404'd her
  *           own page (MEH-1632; full reasoning at the call site below).
  *           Producer data-loading + not-found UI still live in [slug]/page.js +
- *           producer/[id]/page.js.
+ *           producer/[id]/page.js. Does NOT alert on 429 or on a network
+ *           exception (unreachable backend) — MEH-1906 scoped the new Sentry
+ *           event to 5xx responses only; both other fail-open causes still
+ *           only log via `report()`, unchanged.
  * Related:  lib/static-routes.json (the guarded manifest this skips),
  *           app/global-not-found.js (real-404 renderer), lib/slug.js.
  * History:  MEH-1398 (creation — middleware existence-check);
- *           MEH-1632 (dropped the /producer/<id> branch — owner-facing 404).
+ *           MEH-1632 (dropped the /producer/<id> branch — owner-facing 404);
+ *           MEH-1906 (5xx fail-open now also reports to Sentry).
  */
 
 // Real static route segments under app/[locale]/ (excluding the [slug]
@@ -37,16 +45,35 @@ const intlMiddleware = createMiddleware(routing);
 
 // MEH-1899: the failure this exists for ran with ZERO observability — no log,
 // no Sentry — and was found only because an E2E spec happened to bite on it.
-// `console.error` and not Sentry deliberately: MEH-1521's Phase 0 confirmed
-// Edge Middleware CAN reach Sentry (sentry.edge.config.js exists and inits),
-// but wiring an unverified Sentry.capture* call here would violate
-// .claude/rules/observability.md's dashboard-receipt requirement, which this
-// sandbox cannot perform. Vercel captures middleware console output in
-// runtime logs, which is available today and satisfies the DoD's log
-// requirement unconditionally. Whoever can run the dashboard-receipt check
-// is the one to add Sentry here.
+// `console.error` (not Sentry) covers every branch below unconditionally —
+// Vercel captures middleware console output in runtime logs, which satisfies
+// the DoD's log requirement regardless of Sentry reachability. MEH-1906
+// layered a Sentry event ON TOP of this, but only for the 5xx branch (see
+// reportFiveHundredToSentry below) — the observability.md dashboard-receipt
+// step for THAT addition could not be run from the CC sandbox (no live
+// deploy reachable) and is called out unverified in the MEH-1906 PR body;
+// this function itself is unchanged from MEH-1521/1899.
 function report(message, err) {
   console.error(`[middleware/producerExists] ${message}`, err ?? "");
+}
+
+// MEH-1906: the 5xx branch of the fail-open below was silent past the
+// console.error above — no Sentry event, same unmonitored-log gap MEH-1899's
+// comment already named for this file. Scoped to 5xx only (not 429, not the
+// unreachable-backend catch) per the ticket. Rate-guarded per URL per warm
+// Edge Function instance — a Set that resets on cold start — so a slug the
+// backend keeps failing on doesn't storm the dashboard on every repeat hit;
+// this does not change the fail-open decision itself, only whether THIS
+// occurrence also gets reported.
+const _reportedFiveHundredUrls = new Set();
+
+function reportFiveHundredToSentry(url, status) {
+  if (_reportedFiveHundredUrls.has(url)) return;
+  _reportedFiveHundredUrls.add(url);
+  Sentry.captureMessage("producerExists: backend 5xx — failing open", {
+    level: "error",
+    extra: { url, status },
+  });
 }
 
 // MEH-1521: an unreachable backend already fails open (see the catch below),
@@ -91,6 +118,7 @@ async function producerExists(url) {
     // edge cache, so a burst from one IP is rate-limited by slowapi — and a 429
     // was previously indistinguishable from "this business does not exist".
     report(`backend answered ${res.status} for ${url} — failing open`);
+    if (res.status >= 500) reportFiveHundredToSentry(url, res.status);
     return true;
   } catch (err) {
     // Backend unreachable → fail OPEN (let the page handle it) rather than

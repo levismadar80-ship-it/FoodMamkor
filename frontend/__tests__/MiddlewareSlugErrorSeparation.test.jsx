@@ -38,6 +38,11 @@ vi.mock("next/server", () => ({
   },
 }));
 
+const captureMessage = vi.fn();
+vi.mock("@sentry/nextjs", () => ({
+  captureMessage: (...a) => captureMessage(...a),
+}));
+
 import middleware from "@/middleware";
 
 const SLUG = "lehem-vezman";
@@ -65,6 +70,7 @@ const wasNotFound = (res) => Boolean(res?.__rewrite) && res.status === 404;
 
 beforeEach(() => {
   rewrite.mockClear();
+  captureMessage.mockClear();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -143,5 +149,54 @@ describe("middleware slug check — only a 404 means the business is absent", ()
     const res = await middleware(requestFor(`/he/${SLUG}`));
     expect(wasNotFound(res)).toBe(false);
     expect(console.error).toHaveBeenCalled();
+  });
+
+  // ── MEH-1906: the 5xx fail-open branch also reports to Sentry — scoped to
+  //    5xx only, so 429 and the unreachable-backend catch must NOT trigger it
+  //    (those are the discriminating cases: without the `res.status >= 500`
+  //    guard every one of these would also report, which is the bug this
+  //    suite must catch). Each case below uses its own slug so the per-URL
+  //    rate-guard (module-level Set) can't leak a call count across tests
+  //    that share this file's single middleware import.
+  describe("MEH-1906 — Sentry reporting scoped to 5xx, rate-guarded per URL", () => {
+    it("backend 500 → Sentry.captureMessage called once, with the status", async () => {
+      backendReturns(500);
+      await middleware(requestFor("/he/meh-1906-report-slug-a"));
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+      const [message, opts] = captureMessage.mock.calls[0];
+      expect(message).toMatch(/5xx/i);
+      expect(opts.level).toBe("error");
+      expect(opts.extra.status).toBe(500);
+    });
+
+    it("backend 503 → Sentry.captureMessage called (5xx is not just 500)", async () => {
+      backendReturns(503);
+      await middleware(requestFor("/he/meh-1906-report-slug-b"));
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it("backend 429 → Sentry.captureMessage NOT called (still fails open, still logs via report())", async () => {
+      backendReturns(429);
+      const res = await middleware(requestFor("/he/meh-1906-report-slug-c"));
+      expect(wasNotFound(res)).toBe(false);
+      expect(console.error).toHaveBeenCalled();
+      expect(captureMessage).not.toHaveBeenCalled();
+    });
+
+    it("a thrown fetch (unreachable backend) → Sentry.captureMessage NOT called", async () => {
+      global.fetch = vi.fn(async () => {
+        throw new Error("ECONNREFUSED");
+      });
+      await middleware(requestFor("/he/meh-1906-report-slug-d"));
+      expect(captureMessage).not.toHaveBeenCalled();
+    });
+
+    it("rate-guards per URL: a second 500 for the same slug does not re-report", async () => {
+      backendReturns(500);
+      const req = () => requestFor("/he/meh-1906-report-slug-e");
+      await middleware(req());
+      await middleware(req());
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+    });
   });
 });
