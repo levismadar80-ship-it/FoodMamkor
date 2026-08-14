@@ -177,13 +177,19 @@ describe("fulfillment copy — asserted against messages/he.json itself", () => 
 
   it("reuses the MEH-1461 locked pickup string verbatim", async () => {
     // "איסוף עצמי" is language-LOCKED (MEH-1461) and is reused here, not
-    // re-worded. The exclusive variant extends it rather than replacing it.
+    // re-worded. MEH-2075 (MEH-2046 decision 12) dropped the "בלבד" qualifier
+    // from both single-axis cells — the single-axis and both-axes wordings
+    // are now IDENTICAL by design (Google's positive-attribute pattern: the
+    // tag names what's true, not what's exclusive). testId still
+    // distinguishes the cells (map-fulfillment-delivery_only vs
+    // map-fulfillment-delivery), so the "both" test above still proves the
+    // exclusive tag doesn't ALSO render when both axes are true.
     const he = (await import("@/messages/he.json")).default.map.producer_card.fulfillment;
 
     expect(he.pickup).toBe("איסוף עצמי");
-    expect(he.pickup_only).toBe("איסוף עצמי בלבד");
+    expect(he.pickup_only).toBe("איסוף עצמי");
     expect(he.delivery).toBe("משלוח");
-    expect(he.delivery_only).toBe("משלוח בלבד");
+    expect(he.delivery_only).toBe("משלוח");
     expect(he.arranged).toBe("בתיאום אישי");
   });
 });
