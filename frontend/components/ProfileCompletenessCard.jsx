@@ -158,9 +158,11 @@ function buildSteps(producer, missingLabels) {
       // (city + coords/delivery) filled.
       done: has("category") && has("city") && has(locationSlug),
       // MEH-1165 item 4: was #profile-categories — the location row must land
-      // on the location card (#location, edit/page.js KEY_TO_ANCHOR), not the
-      // categories card.
-      href: `${EDIT_HUB}#location`,
+      // on the location editor, not the categories card. MEH-2058: the
+      // owner-facing coords editor is LocationsEditor (#locations,
+      // edit/page.js KEY_TO_ANCHOR) — the old #location target
+      // (LocationCard, the duplicate map-pin editor) was deleted.
+      href: `${EDIT_HUB}#locations`,
     },
     {
       key: "products",

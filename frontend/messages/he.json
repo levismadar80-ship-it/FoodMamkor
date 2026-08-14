@@ -782,6 +782,9 @@
           },
           "sheet_open_aria": "פרטים על {name}",
           "sheet_close_aria": "סגירת פרטי המוצר",
+          "sheet_prev_aria": "המוצר הקודם",
+          "sheet_next_aria": "המוצר הבא",
+          "sheet_counter_aria": "מוצר {current} מתוך {total}",
           "sheet_cta": "שאלי על המוצר בוואטסאפ",
           "sheet_secondary_wa": "או שאלי על המוצר בוואטסאפ",
           "sheet_wa_prefill": "היי, ראיתי את ״{name}״ בעמוד שלכם במהמקור ואשמח לשמוע פרטים"
@@ -1265,7 +1268,8 @@
       "aria": {
         "remove": "הסירו סינון {label}"
       },
-      "clear_all": "× נקו הכל"
+      "clear_all": "× נקו הכל",
+      "arranged_hidden": "בתי עסק בתיאום אישי לא מוצגים בסינון הזה"
     },
     "card_list": {
       "empty": {
@@ -1288,7 +1292,8 @@
       "show_all": "הציגו הכל",
       "pickup_layer": {
         "label": "איסוף עצמי",
-        "aria": "הצגה או הסתרה של איסוף עצמי ודוכני שוק על המפה"
+        "aria": "הצגה או הסתרה של איסוף עצמי ודוכני שוק על המפה",
+        "hidden_notice": "שכבת נקודות האיסוף כבויה — חלק מבתי העסק לא מוצגים"
       }
     },
     "page": {
@@ -1315,7 +1320,14 @@
       "verified": "מאומת",
       "distance_prefix": "ל",
       "wa_message": "היי! הגעתי דרך מהמקור — {name}",
-      "full_profile": "פרופיל מלא"
+      "full_profile": "פרופיל מלא",
+      "fulfillment": {
+        "delivery": "משלוח",
+        "pickup": "איסוף עצמי",
+        "delivery_only": "משלוח בלבד",
+        "pickup_only": "איסוף עצמי בלבד",
+        "arranged": "בתיאום אישי"
+      }
     },
     "mini": {
       "default_label": "מיקום",
@@ -3986,6 +3998,7 @@
       "section_errors": {
         "analytics": "לא הצלחנו לטעון את הסטטיסטיקות",
         "profile": "לא הצלחנו לטעון את פרטי העסק",
+        "tools": "לא הצלחנו לטעון את הנתונים",
         "retry_cta": "נסו שוב"
       },
       "error_availability_update": "לא הצלחנו לעדכן את מצב הזמינות — נסו שוב בעוד רגע",

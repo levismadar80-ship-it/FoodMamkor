@@ -38,6 +38,12 @@ export default function ProducerDashboardToolsPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
+  // MEH-1777: a rejected fetch used to leave `data` null forever, and
+  // `if (!data)` can't tell "still in flight" from "failed" apart — so it
+  // rendered the loading string permanently. Same distinct-error +
+  // retry-counter shape as dashboard/page.js's loadError/analyticsError.
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
@@ -45,10 +51,40 @@ export default function ProducerDashboardToolsPage() {
       router.push("/login");
       return;
     }
-    api.get("/producers/me/dashboard").then((r) => setData(r.data)).catch(() => setData(null));
-  }, [user, authLoading, router]);
+    setLoadError(false);
+    api
+      .get("/producers/me/dashboard")
+      .then((r) => setData(r.data))
+      .catch(() => {
+        setData(null);
+        setLoadError(true);
+      });
+  }, [user, authLoading, router, attempt]);
 
   if (authLoading || !user || user.role !== "producer") return null;
+
+  // The error branch precedes the loading branch so a failure never falls
+  // through and reads as "loading" (MEH-956 precedent, dashboard/page.js).
+  if (loadError) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        <div
+          data-testid="tools-load-error"
+          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          role="alert"
+        >
+          <p className="text-fg-muted mb-4">{t("section_errors.tools")}</p>
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+          >
+            {t("section_errors.retry_cta")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!data) {
     return (

@@ -108,3 +108,46 @@ CTA at the same breakpoint.
 
 **Rule:** sidebar WhatsApp is canonical. Sticky bar is mobile-only.
 Never render both at the same breakpoint.
+
+---
+
+## The MEH-1398 hard-404 is backend-conditional — verifying it needs a live backend (MEH-1521)
+
+**Pattern:** `frontend/middleware.js`'s `producerExists()` existence-checks
+`/[locale]/<slug>` against the backend before deciding whether to rewrite to
+a real HTTP 404. On any non-2xx-that-isn't-404, or an unreachable/slow
+backend, it deliberately **fails open** (serves the page) rather than
+minting a false 404 — a transient backend blip must not deindex a real
+business (MEH-1899 discriminates this from the old `return res.ok`, which
+collapsed 500/503/429 onto the same 404 as a genuine miss).
+
+**The trap this causes:** any 404 verification run WITHOUT a live backend —
+sandboxed CC session, backend down, backend unreachable from the test
+runner — will see `200` on every route, including genuinely-missing slugs,
+and can be misread as "the 404 regressed" when the real cause is "the
+backend wasn't reachable from where I measured." MEH-1521 itself nearly
+reached that wrong conclusion once (23/07).
+
+**Rule:** before trusting any 404/200 measurement on a `/[locale]/<slug>`
+route, confirm the backend was live and reachable from the same vantage
+point as the request. `curl -I` both branches (a real miss AND a healthy
+hit) in the same session — a single status code proves nothing on its own.
+
+**Bounded, not indefinite:** the existence check now carries an explicit
+3s `AbortSignal.timeout()` (`middleware.js` — `EXISTENCE_CHECK_TIMEOUT_MS`)
+so a slow backend degrades to the same fail-open path within a bounded
+window instead of hanging the edge request for however long the platform's
+own connect timeout is.
+
+**Observability:** every fail-open fires `console.error` (captured in
+Vercel's middleware runtime logs) via the `report()` helper in
+`middleware.js`, tagged with the response status or thrown error. **Not
+wired to Sentry** despite `sentry.edge.config.js` existing (Edge Middleware
+CAN reach Sentry — that part of MEH-1521's Phase 0 is answered) — adding an
+unverified `Sentry.capture*` call here would violate
+[.claude/rules/observability.md](../.claude/rules/observability.md)'s
+dashboard-receipt requirement, which cannot be performed from a sandboxed
+CC session with no live backend/Sentry access. Left for a session that can
+verify a real event lands in the dashboard before claiming Done.
+
+**Regression spec:** `frontend/__tests__/MiddlewareSlugErrorSeparation.test.jsx`.
