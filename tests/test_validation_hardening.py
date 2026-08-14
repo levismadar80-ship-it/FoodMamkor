@@ -214,7 +214,7 @@ def test_producer_register_validated_field_count():
     """MEH-1623's count pin, re-aimed by MEH-1626 chunk 1 — updated, never
     deleted.
 
-    Two things changed under it, both deliberate:
+    Three things changed under it, all deliberate:
 
     1. HOW fields are validated. `producer_name` moved from a pair of inline
        @field_validators to the shared `SanitizedBusinessNameField`. Counting
@@ -223,8 +223,13 @@ def test_producer_register_validated_field_count():
        which is the property MEH-1623 actually cared about.
     2. HOW MANY. Chunk 1 brought `name` (the account holder's person name)
        under `SanitizedPersonNameField`, so the real number is 12 + 1 = 13.
-       Bumping the constant is only legitimate BECAUSE a field was added to
-       the validated set; it must never be bumped to chase a red test.
+    3. MEH-2015 chunk B added `city`'s bleach→letter-floor validator pair
+       (`_sanitize_city` / `_validate_city_letters`) — an adversarial-review
+       finding that `Field(..., min_length=1)` alone accepts a whitespace-only
+       city. 13 + 1 = 14.
+
+    Bumping the constant is only legitimate BECAUSE a field was added to the
+    validated set; it must never be bumped to chase a red test.
 
     Renamed from test_producer_register_has_exactly_12_validated_fields — the
     old name would have become a lie.
@@ -234,7 +239,8 @@ def test_producer_register_validated_field_count():
     fields = _validated_fields(ProducerRegister)
     assert "producer_name" in fields, sorted(fields)
     assert "name" in fields, sorted(fields)
-    assert len(fields) == 13, sorted(fields)
+    assert "city" in fields, sorted(fields)
+    assert len(fields) == 14, sorted(fields)
 
 
 def test_producer_name_is_validated_by_type_not_decorator():
