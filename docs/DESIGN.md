@@ -353,8 +353,10 @@ front matter for the normative token bindings.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
-  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or **"חדש"**
-  at zero reviews — a rating-slot fallback, not a badge] · [meta line
+  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or
+  **"אין ביקורות עדיין"** at zero reviews — a rating-slot fallback, not a badge.
+  The word "חדש" is reserved for the *tenure* claim on the card badge
+  (`badges.js`); it never appears in this slot (MEH-1746)] · [meta line
   city · category · **status** + one quiet kosher line]. The page's ONLY order
   status is colored text in the meta line — open=`primary`,
   "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
