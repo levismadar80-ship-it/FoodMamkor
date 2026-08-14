@@ -115,6 +115,8 @@ def test_producer_register_website_also_normalizes():
     must inherit the change too — the whole point of fixing it in one place."""
     reg = ProducerRegister(
         producer_name="מאפיית שקד",
+        # MEH-2015 chunk B: city is now required (no default) on this schema.
+        city="תל אביב",
         category_ids=[1],
         declaration_accepted=True,
         website="",

@@ -42,7 +42,9 @@ const BASELINE = new Set([
   "auth.register.producer.fields.address_map_privacy_hint",
   // MEH-1127: auth.register.producer.fields.city translated to en (placeholder
   // "e.g. Zikhron Ya'akov") — removed from the baseline per the honesty test.
-  "auth.register.producer.fields.city_required_marker",
+  // MEH-2015 chunk B: city_required_marker deleted outright (the copy it held
+  // was the anti-pattern the ticket revoked) — removed from the baseline per
+  // the honesty test, same as MEH-1127 above.
   "auth.register.producer.fields.license_pending_optin_hint",
   "auth.register.producer.fields.license_pending_optin_label",
   "auth.register.producer.fields.license_what_is_it",

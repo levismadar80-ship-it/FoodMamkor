@@ -324,6 +324,7 @@
           "phone_required": "Please enter a valid phone number",
           "phone_invalid": "Invalid phone number",
           "phone_valid": "✓ Valid number",
+          "city_required": "Please enter a city",
           "category_required": "Please select at least one category",
           "terms_required": "Please accept the Terms of Use before joining",
           "declaration_required": "Please confirm the declaration before joining",
@@ -2530,6 +2531,7 @@
       "field_duration": "Duration (minutes)",
       "field_duration_placeholder": "180",
       "field_location_type": "Location type",
+      "required_sr": "(required)",
       "location_home": "Private home",
       "location_public": "Public venue",
       "field_city": "City",
@@ -2907,6 +2909,7 @@
     },
     "category_selector": {
       "label": "Category",
+      "required_sr": "(required)",
       "search_label": "Search category",
       "search_placeholder": "e.g. cheese, bread, soap",
       "popular_descs": {
