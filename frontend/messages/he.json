@@ -1327,8 +1327,8 @@
       "fulfillment": {
         "delivery": "משלוח",
         "pickup": "איסוף עצמי",
-        "delivery_only": "משלוח בלבד",
-        "pickup_only": "איסוף עצמי בלבד",
+        "delivery_only": "משלוח",
+        "pickup_only": "איסוף עצמי",
         "arranged": "בתיאום אישי"
       }
     },
