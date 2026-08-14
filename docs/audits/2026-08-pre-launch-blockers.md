@@ -1,6 +1,6 @@
 # Pre-launch blocker audit (MEH-2085)
 
-> **swept 24 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
+> **swept 26 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
 
 **Method.** Source of truth is Linear LIVE via `get_issue`, one card at a time.
 `list_issues` is used ONLY as the index (IDs, titles, labels, state, priority):
@@ -16,7 +16,7 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 2. **DEFER** — real work, no user harm at launch.
 3. **MOOT** — the premise depends on data, history or scale that does not exist.
 
-**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 13 · MOOT 0 · FLAGGED 1
+**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 15 · MOOT 0 · FLAGGED 1
 
 ---
 
@@ -59,6 +59,8 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 | **MEH-2034** | 💔 ‏/favorites הוא משטח המועדפים היחיד שלא מנוי למטמון המשותף — ביטול מ | CLOSE. Measured defect, not inferred: FavoritesClient.jsx:95/138 holds favorites in local useState with a one-shot fetch and never calls subscribeFavorites, while CardHeart and FavoriteButton both do — so un-favouriting on /favorites leaves the row until refresh (44 polls over 20s, run 31620486228). Rejected for BLOCKS: the DELETE succeeds server-side, nothing public is misrepresented, the surface is a logged-in secondary page, and a re-click is idempotent. Sapir already ruled the contract on 12/08 and the e2e assertion is staged to flip. |
 | **MEH-1907** | 🚦 האגרגטור ממפה cancelled ל-FAIL — ביטול אינו כישלון, ומה שמחליט מיזוג | CI aggregator maps cancelled (an absence of measurement) to FAIL, the mirror of MEH-1582's skip-green; plus the finding that E2E gate is not a required context so 'wait for two green runs' is structurally unenforceable with auto-merge armed. Patch staged as PR #2867. Merge-machinery correctness — no live-site user surface. |
 | **MEH-2077** | 🟢🔴 שערי אימות מדווחים ירוק בלי לאמת — contract probe עובר על ~160 מסלו | Third recurrence of the false-green class: the contract probe reported success while ~160 routes returned 302 to Vercel SSO. Chunk 1 (harden the probe to assert the status it saw) already landed — PRs #2929/#2930. What remains is chunk 2, the Vercel Protection Bypass secret, which is Sapir-only Vercel settings. A verification gate, not a consumer surface. |
+| **MEH-1854** | 🏁 MEH-291 Phase 4 באמת — readers→enum, backfill+desync count, drop שתי | In flight with a Sapir-set schedule at the BOTTOM (14/08): chunk 1 = PR #2918, gated on self-QA screenshots, soaking until Mon 17/8 so a live Friday exercises the at-risk pill; chunks 2-3 are RED (Alembic column drops) and explicitly must not open before then, with a desync count and a fresh backup as preconditions. The residual user-visible edge (the Friday pill reading is_available_today unconditionally) is an availability-badge nuance, not blocking harm. NOTE: chunks 2-3 dropping legacy columns should NOT run pre-launch — their own gates say so. |
+| **MEH-2046** | 🗺️ /map fulfillment IA — צ'יפי משלוח+איסוף מקודמים, תגי כרטיס, העברת ש | Large /map fulfillment IA chain, and mostly ALREADY LANDED — PRs #2855, #2880, #2894, #2903, #2904 and #2919 are attached. Discovery/IA improvement: promote delivery+pickup to a fixed chip row, fulfillment tags on cards, move the layer control. It does close the MEH-1836 divergence (a nationwide business passes the delivery filter but renders no badge), which is a real discovery defect — but that is being fixed inside this chain, not blocked on it. |
 
 ---
 
