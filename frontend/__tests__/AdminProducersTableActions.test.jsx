@@ -116,6 +116,8 @@ const AMBASSADOR_OFF_KEY = "admin.producers.table.actions.set_ambassador_title";
 const AMBASSADOR_ON_KEY = "admin.producers.table.actions.remove_ambassador_title";
 const STORY_KEY = "admin.producers.table.actions.story_card";
 const DELETE_KEY = "admin.common.delete";
+// MEH-226: pending-only terminal reject (kebab, danger tone).
+const REJECT_KEY = "admin.producers.table.actions.reject";
 
 function renderRow(producer, { isBusy } = {}) {
   const handlers = {
@@ -124,6 +126,7 @@ function renderRow(producer, { isBusy } = {}) {
     onToggleStatus: vi.fn(),
     onToggleAmbassador: vi.fn(),
     onDeleteProducer: vi.fn(),
+    onReject: vi.fn(),
     onToggleStoryCard: vi.fn(),
   };
   render(
@@ -148,12 +151,34 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     expect(screen.getByRole("menuitem", { name: DELETE_KEY })).toBeInTheDocument();
   });
 
-  it("pending row: menu contains only delete (status/ambassador/story guards hold)", () => {
+  // MEH-226 changed this row's expected contents: reject joined delete in the
+  // kebab for pending producers. Kept as an EXACT count naming both items —
+  // relaxing it to "contains delete" would stop catching a stray third entry,
+  // which is the whole property this case was written for.
+  it("pending row: menu contains exactly reject + delete (status/ambassador/story guards hold)", () => {
     renderRow({ id: "p1", status: "pending", name: "חוה" });
     openMenu();
     const items = screen.getAllByRole("menuitem");
-    expect(items).toHaveLength(1);
-    expect(items[0]).toHaveTextContent(DELETE_KEY);
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent(REJECT_KEY);
+    expect(items[1]).toHaveTextContent(DELETE_KEY);
+  });
+
+  it("approved row: reject is absent (it is a pending-only action)", () => {
+    renderRow({ id: "p1", status: "approved", slug: "farm", name: "חוה" });
+    openMenu();
+    expect(screen.queryByRole("menuitem", { name: REJECT_KEY })).not.toBeInTheDocument();
+  });
+
+  it("reject item carries danger tone and fires onReject with the producer", () => {
+    const producer = { id: "p1", status: "pending", name: "חוה" };
+    const h = renderRow(producer);
+    openMenu();
+    const reject = screen.getByRole("menuitem", { name: REJECT_KEY });
+    expect(reject).toHaveClass("text-red-600");
+    fireEvent.click(reject);
+    // the whole producer, not just the id — RejectModal renders its name.
+    expect(h.onReject).toHaveBeenCalledWith(expect.objectContaining({ id: "p1", name: "חוה" }));
   });
 
   it("inactive row: menu shows activate (toggle-status guard unchanged)", () => {
