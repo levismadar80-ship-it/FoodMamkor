@@ -4,6 +4,10 @@ Covers the no-op-shim + PII redaction surface that ships in this PR.
 Dashboard receipt (request_info context, user.id, redacted email tags
 arriving in Sentry) is verified once MEH-500 wires sentry_sdk.init —
 see verify-on-SDK-land contract in MEH-493 PR body.
+
+MEH-1906 added the BaseHTTPMiddleware -> pure-ASGI regression coverage
+below (app boots, GET /producers/by-slug/<known> still 200, and the
+middleware is no longer a BaseHTTPMiddleware instance).
 """
 
 from unittest.mock import MagicMock
@@ -11,13 +15,16 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import middleware as mw
+from app.main import app as full_app
 from app.middleware import (
     SentryRequestScopeMiddleware,
     _redact_email,
     _try_extract_user_id,
 )
+from tests.conftest import make_producer
 
 
 # ─────────────────────────────────────────────
@@ -147,3 +154,53 @@ def test_extract_user_id_empty_bearer():
 
 def test_extract_user_id_malformed_jwt():
     assert _try_extract_user_id(_FakeRequest("Bearer not.a.real.jwt")) is None
+
+
+# ─────────────────────────────────────────────
+# MEH-1906 — pure-ASGI conversion regression coverage
+# ─────────────────────────────────────────────
+
+
+def test_middleware_is_not_a_base_http_middleware_instance():
+    """The class under app.middleware is registered as pure ASGI, not the
+    BaseHTTPMiddleware subclass that shipped a RecursionError frame on
+    staging (MEH-1906). Reading the class directly (not an app instance) —
+    Starlette wraps whatever `add_middleware` is given in a `Middleware`
+    holder, so an app-level isinstance check would see the wrapper, not
+    the middleware class itself.
+    """
+    assert not issubclass(SentryRequestScopeMiddleware, BaseHTTPMiddleware)
+
+
+def test_middleware_is_actually_registered_on_the_app():
+    """The two assertions around this one both pass with the middleware
+    completely UNREGISTERED — measured, by deleting the `add_middleware`
+    call and re-running: 16/16 still green. A suite that cannot tell
+    "converted to pure ASGI" from "deleted entirely" is not evidence for
+    either, so this pins the registration itself.
+
+    Reads `user_middleware` — the list `add_middleware` appends to — so it
+    fails on removal, and would also fail if the class were swapped back
+    for a BaseHTTPMiddleware subclass of a different name.
+    """
+    registered = [m.cls for m in full_app.user_middleware]
+    assert SentryRequestScopeMiddleware in registered, (
+        f"SentryRequestScopeMiddleware missing from the chain: {registered}"
+    )
+
+
+def test_app_boots_and_by_slug_returns_200(db, client: TestClient):
+    """Full app boot (app.main.app, same instance install_middlewares runs
+    against) + a real GET /producers/by-slug/<known> round trip through the
+    full middleware chain. Guards the MEH-1906 regression directly: this
+    exact route crashed on staging with a RecursionError attributed to the
+    old BaseHTTPMiddleware-based SentryRequestScopeMiddleware.
+    """
+    assert client.app is full_app
+    producer = make_producer(db)
+    producer.slug = "meh-1906-by-slug-regression"
+    db.add(producer)
+    db.commit()
+    r = client.get(f"/producers/by-slug/{producer.slug}")
+    assert r.status_code == 200
+    assert r.json()["slug"] == producer.slug
