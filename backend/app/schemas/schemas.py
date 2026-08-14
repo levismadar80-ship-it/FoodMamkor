@@ -2018,6 +2018,10 @@ class ProducerListOut(BaseModel):
     has_no_added_sugar_products: bool = False
     has_low_carb_products: bool = False
     has_delivery: bool = False
+    # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
+    # this attribute with `offers_pickup` before serialization (same mechanism
+    # as the has_*_products fields below) — see producer_queries.py. The DB
+    # column stays (MEH-1259 keep-column pattern); it just isn't read anymore.
     pickup_points: bool = False
     # MEH-2046: the two fulfillment booleans the consumer surfaces read. Both are
     # computed by attach_badge_fields — NOT columns, so there is no migration —

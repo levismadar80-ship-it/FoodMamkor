@@ -42,7 +42,6 @@ import EditAccordionCard from "@/components/EditAccordionCard";
 // instead of its own flat checkbox grid. Same selection contract (category_ids).
 import CategorySelector from "@/components/CategorySelector";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
-import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
@@ -457,114 +456,6 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       <button
         onClick={handleSave}
         disabled={saving || uploading || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
-      >
-        <span aria-live="polite" aria-atomic="true">
-          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-        </span>
-      </button>
-    </div>
-  );
-}
-
-// ============================================================
-// Edit-tab chunk C: producer-facing location/coords editor (gated).
-// Mirrors ContactChannelsCard (card/save/dirty/inline-error). The owner types
-// an address into AddressSearch (Nominatim geocode, no Leaflet); onSelect
-// returns {lat,lng,city}; Save persists them via PUT /producers/me. Rendered
-// only for physical-location producers (gated at the mount, MEH-213) — no map,
-// no pin-drag, no radius.
-// REUSES: components/AddressSearch.jsx (onSelect {street,neighborhood,city,lat,lng}).
-// ============================================================
-
-// Exported for isolation tests (EditTabLocationCard.test.jsx) — see CategoriesCard.
-export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
-  const t = useTranslations("dashboard.producer.location");
-  const seedLat = profile?.lat ?? null;
-  const seedLng = profile?.lng ?? null;
-  const seedCity = profile?.city ?? "";
-  const [coords, setCoords] = useState({ lat: seedLat, lng: seedLng, city: seedCity });
-  const [addressText, setAddressText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  const dirty =
-    coords.lat !== seedLat || coords.lng !== seedLng || coords.city !== seedCity;
-  // MEH-1100: lift to the page-level unsaved-changes aggregate.
-  useEffect(() => {
-    reportDirty("location", dirty);
-    return () => reportDirty("location", false);
-  }, [dirty, reportDirty]);
-
-  const handleSelect = (picked) => {
-    setSaved(false);
-    setErrorMsg(null);
-    // Keep the seeded city if Nominatim doesn't resolve one (never clobber).
-    setCoords({
-      lat: picked.lat,
-      lng: picked.lng,
-      city: picked.city || coords.city,
-    });
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    setErrorMsg(null);
-    try {
-      await api.put("/producers/me", {
-        lat: coords.lat,
-        lng: coords.lng,
-        city: coords.city || null,
-      });
-      onSave({ lat: coords.lat, lng: coords.lng, city: coords.city });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const hasCoords = coords.lat != null && coords.lng != null;
-
-  return (
-    <div>
-      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
-      {/* MEH-1306: back-link to the public map block. */}
-      <ViewOnPageLink producerId={profile?.id} anchor="section-location" />
-
-      {hasCoords && (
-        <p className="text-xs text-fg-muted mb-3">
-          {t("current_prefix")}{" "}
-          <span className="text-text">
-            {coords.city ? `${coords.city} · ` : ""}
-            <span dir="ltr">{coords.lat}, {coords.lng}</span>
-          </span>
-        </p>
-      )}
-
-      <AddressSearch
-        id="producer-location-address"
-        label={t("heading")}
-        value={addressText}
-        onChange={setAddressText}
-        onSelect={handleSelect}
-      />
-
-      {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
-          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
-          {errorMsg}
-        </p>
-      )}
-
-      <button
-        onClick={handleSave}
-        disabled={saving || !dirty}
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         <span aria-live="polite" aria-atomic="true">

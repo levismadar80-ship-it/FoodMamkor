@@ -79,6 +79,25 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
 }
 
 /**
+ * MEH-2046: does this producer disappear from the map when the secondary
+ * (pickup / market_stand) layer is switched off?
+ *
+ * True exactly when it has points today and none of them survives rule 2 —
+ * i.e. every usable row it owns is a pickup or a market stand. Rule 3 is what
+ * makes such a business vanish outright rather than falling back to its own
+ * coordinates, and that is deliberate (it mirrors the backend COALESCE), so
+ * the honest fix is to TELL the user the layer is hiding businesses rather
+ * than to change the rule.
+ *
+ * Composes `producerPoints` twice and reads its results; it does not
+ * reimplement or alter any of the three rules. MEH-1670 semantics unchanged.
+ */
+export function hiddenWhenSecondaryOff(producer) {
+  if (producerPoints(producer).length === 0) return false;
+  return producerPoints(producer, { includeSecondary: false }).length === 0;
+}
+
+/**
  * Is any of the producer's points inside `bounds`?
  *
  * `bounds` is the /map `committedBounds` shape ({north, south, east, west}).
