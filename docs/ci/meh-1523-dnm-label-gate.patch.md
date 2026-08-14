@@ -5,6 +5,25 @@ cannot apply this. Everything below was measured against a live fixture corpus
 before this doc was written, and that corpus ships as a guard —
 `scripts/checks/dnm-matcher-guard.sh`, third mode `label`.
 
+> **Anchors re-verified 2026-08-14 against `origin/staging` @ `7cddbb8` (MEH-1603
+> lane).** Edit 1's range (67–77), Edit 2's line 27 and Edit 3's line 40 are all
+> **unchanged and still exact**. One anchor had drifted and is corrected in this
+> pass: `ci-gate`'s `needs:` entry read *line 696*, actual is **709**
+> (`ci-gate:` at 704) — §3.1's table and §6 step 3 both updated. The two other
+> numeric claims in §3.1 were re-measured and **hold**: 13 job-level `if:`
+> conditions, and `github.event.action` appears exactly once.
+>
+> **⚠️ One thing this patch does NOT survive on its own: a merge queue.** In
+> `merge_group` context there is no `pull_request` object, so Edit 1's
+> `PR_LABELS` expression yields nothing and `jq -r '.[]'` errors — which under
+> this step's deliberate `set -euo pipefail` **fails the gate on every merge
+> group**, and the queue could never drain. The fix is hunk 4 of
+> [`meh-1603-merge-queue.patch.md`](./meh-1603-merge-queue.patch.md), which is
+> written against the post-this-patch shape of the step. **Apply this patch
+> first, that one second** — order and reasoning in
+> [`meh-1603-runbook.md`](./meh-1603-runbook.md). Nothing else about this patch
+> changes; it remains correct and safe for the no-queue repository we have today.
+
 **Relationship to [`dnm-gate-regex.patch.md`](./dnm-gate-regex.patch.md)
 (MEH-1922) — this one SUPERSEDES it.** That patch narrows the regex and keeps
 text scanning; this one deletes text scanning. They are alternatives, not a
@@ -240,7 +259,7 @@ re-run, so this is not an unprecedented shape. It roughly doubles the exposure.
 | | **Option A** — in place (§3 as written) | **Option B** — its own workflow ⭐ |
 |---|---|---|
 | Edits | 3, all in `pr-checks.yml` | 1 new file; delete the step from `pr-checks.yml` |
-| Ruleset change | **none** — job keeps its name and its place in `ci-gate`'s `needs:` (line 696) | **one** — add the new context to ruleset 15240090 |
+| Ruleset change | **none** — job keeps its name and its place in `ci-gate`'s `needs:` (line 709) | **one** — add the new context to ruleset 15240090 |
 | CI cost per label toggle | **a full pipeline** | **one ~10-second job** |
 | Edit 3 (concurrency surgery) | required | **unnecessary** — the new workflow owns its own group |
 
@@ -428,8 +447,9 @@ gate is a no-op that cannot false-positive.
 2. **Apply all three edits** in §3. Dropping edit 2 leaves a gate that cannot
    fire; dropping edit 3 risks false reds on unrelated PRs.
 3. **No ruleset change needed.** The job keeps its name
-   (`DO-NOT-MERGE marker gate`) and stays in `ci-gate`'s `needs:` at line 696,
-   so the required context `CI gate (required)` is unchanged.
+   (`DO-NOT-MERGE marker gate`) and stays in `ci-gate`'s `needs:` at line 709
+   (`ci-gate:` itself begins at line 704), so the required context
+   `CI gate (required)` is unchanged.
 4. **Verify, on a real PR** (this is DoD item *"אומת על PR אמיתי"*):
    - add the label → `DO-NOT-MERGE marker gate` goes red within ~30 s, and the
      run is triggered by `labeled`;
