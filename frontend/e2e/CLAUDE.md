@@ -64,6 +64,44 @@ Mirror this shape for new flows; keep timeouts explicit, not implicit.
     skips its localhost target and does not run in CI in practice. Widening
     the no-mocks rule's exception is preferred over quietly losing coverage.
 
+## Cloudinary image delivery is stubbed suite-wide in `flows/` (MEH-1925)
+
+Every spec under `e2e/flows/` imports `test`/`expect` from
+`flows/_cloudinary-stub.ts` rather than from `@playwright/test`. That fixture
+intercepts Cloudinary image delivery and fulfils a 1×1 PNG. **`e2e/visual/**` is
+untouched and keeps real images** — a VRT baseline cannot be compared against a
+placeholder.
+
+**This is a STUB, and the clause above is what says so.** Per *"Distinguish a
+stub from a mock — do not conflate them"*: an interception is a stub when
+removing it *"would change nothing about what the spec is asserting"*, and needs
+"no justification against the three conditions above." No flow spec asserts on
+image bytes, `naturalWidth`/`naturalHeight`, `toHaveScreenshot`, or a rendered
+`src` — verified by grep across all 36 specs before the fixture was written. Image
+delivery is incidental to every one of them, so this never reaches the
+three-condition mock exception.
+
+**It intercepts two things, not one, and the second is the non-obvious half.**
+`next.config.js` lists `res.cloudinary.com` under `images.remotePatterns`, so
+`next/image` (which `ImageWithFallback.jsx` wraps, and which most producer and
+product imagery goes through) does **not** let the browser fetch Cloudinary
+directly: the browser requests `/_next/image?url=…` and the **Next.js server**
+fetches the origin image. That server-side fetch is invisible to `page.route()`.
+A `res.cloudinary.com`-only route therefore catches only CSS `background-image`
+and bare `<img>` cases and misses the bulk of the bandwidth. The fixture also
+routes `/_next/image`, parses its own `url` param, and stubs only when that
+param points at Cloudinary — `images.unsplash.com` falls through via
+`route.continue()`.
+
+**Why it exists:** Cloudinary was at 506% of plan (126/25 credits) on 181,681
+impressions in 30 days against near-zero real users, tracking CI activity
+on and off (0 on quiet days, ~19k on batch-sweep days). Free/Plus/Advanced do not
+bill overage — they disable the account, and it had already blocked once.
+
+**Adding a spec to `flows/`:** import from `./_cloudinary-stub`, not
+`@playwright/test`. A spec that imports directly still runs and still passes —
+it just silently opts out of the stub and bills real bandwidth.
+
 ## Authenticated specs — where that coverage actually runs (MEH-999)
 
 `global-setup.ts` provisions `e2e/.auth/{producer,consumer,admin}.json` from the
