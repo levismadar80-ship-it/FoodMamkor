@@ -21,6 +21,22 @@ coverage/
 # had node_modules. The only consumer is tsconfig.json's `include`, which
 # `next build` reads AFTER regenerating the file.
 next-env.d.ts
+# Auto-written by `next dev` on every start (generate-agent-files.js) — same
+# class as next-env.d.ts above: a build-tool-regenerated file whose own header
+# says it's re-added automatically. Its own comment suggests committing it
+# ("keeps the tree clean"), but that's generic upstream Next.js advice, not
+# this repo's convention — next-env.d.ts already established gitignore over
+# commit for exactly this failure mode (committed blob goes stale against the
+# pinned Next version, every local `next dev`/`next build` re-dirties the tree
+# for any session with node_modules). Following that precedent rather than
+# the file's own suggestion.
+#
+# Anchored with a leading slash — deliberately, not by habit. A bare
+# `CLAUDE.md`/`AGENTS.md` pattern here would also match
+# `components/CLAUDE.md` and `e2e/CLAUDE.md`, both real tracked docs, since
+# gitignore patterns with no `/` match at any depth.
+/AGENTS.md
+/CLAUDE.md
 # MEH-1241: per-role auth storageState written by e2e/global-setup.ts — each
 # file embeds a LIVE JWT, so it must never be committed ("no credentials in repo").
 e2e/.auth/

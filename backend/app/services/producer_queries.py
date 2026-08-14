@@ -210,6 +210,16 @@ def attach_badge_fields(producer):
             exc_info=True,
         )
         producer.offers_pickup = False
+    # MEH-2060: `pickup_points` was an independent Boolean column — the exact
+    # write-your-own-truth duplication MEH-1856 already closed the owner path
+    # for ("duplicates ProducerLocation.kind='pickup'"). It now mirrors
+    # `offers_pickup` instead of the stored column value, so every surface that
+    # still reads `producer.pickup_points` (DeliveryBlock.jsx, ProducerSections,
+    # ProducerDetail, AdminProducersTable) gets the SAME answer as the pickup
+    # filter with zero reader-side changes. The column itself is untouched in
+    # the DB (MEH-1259 keep-column pattern) — this only changes what gets
+    # serialized.
+    producer.pickup_points = producer.offers_pickup
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
         producer.days_since_created = max(0, delta.days)
