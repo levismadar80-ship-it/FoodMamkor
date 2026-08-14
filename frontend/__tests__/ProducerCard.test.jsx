@@ -36,6 +36,11 @@ vi.mock("next-intl", () => ({
       // Match the HE plural rendering for `{count} שמרו` (one/two/other).
       return `${values.count} שמרו`;
     }
+    // MEH-1678: mirrors the real he.json shape ("משלוח: {amount}") so the
+    // component's AMOUNT_SENTINEL split behaves identically under test —
+    // interpolating the sentinel here, not returning a pre-split literal.
+    if (key === "group_buys.delivery.fee") return `משלוח: ${values.amount}`;
+    if (key === "group_buys.delivery.fee_free") return "משלוח חינם";
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
@@ -516,6 +521,37 @@ describe("ProducerCard — Phase B anatomy", () => {
     const article = container.querySelector("article");
     expect(article.className).toMatch(/ring-primary/);
     expect(article.className).toMatch(/border-primary/);
+  });
+});
+
+// MEH-1678: producer-level delivery_fee row. Three states — a positive fee,
+// the fee=0 "free delivery" value, and the null/absent case — because 0 is a
+// value here and not an absence (same distinction DeliveryBlock.jsx and
+// MEH-1942 already pin for the per-area field); a truthiness check would
+// silently render the free case as "nothing to show".
+describe("ProducerCard — delivery fee row (MEH-1678)", () => {
+  it("renders the fee amount when delivery_fee is a positive number", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 15 }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח: 15₪");
+  });
+
+  it("renders 'free delivery' — not '0₪' — when delivery_fee is exactly 0", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 0 }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם");
+    expect(row).not.toHaveTextContent("0₪");
+  });
+
+  it("renders no row at all when delivery_fee is null (not stated)", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null }} />);
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+
+  it("renders no row at all when delivery_fee is undefined (field absent from the payload)", () => {
+    const { delivery_fee: _omit, ...withoutFee } = { ...fullProducer, delivery_fee: 15 };
+    render(<ProducerCard producer={withoutFee} />);
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
   });
 });
 
