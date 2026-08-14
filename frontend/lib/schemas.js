@@ -259,6 +259,25 @@ export const ProducerListSchema = z.object({
     .record(z.string(), z.union([OrderWindowRange, z.array(OrderWindowRange)]).nullable())
     .nullable()
     .optional(),
+  // MEH-1678: the producer-level pair from ProducerListOut
+  // (backend/app/schemas/schemas.py:2125-2135) — DISTINCT from
+  // `delivery_areas[].delivery_fee` above, which is a per-area OVERRIDE of
+  // this value (MEH-1772). Declared here for the same reason as every field
+  // in this recurring block (MEH-826/901/902/1704/1719/1823/1880): an
+  // undeclared key is stripped by z.object, so ProducerCard would never see
+  // it on the two Zod-parsed feeds (home grid + /map) though the backend
+  // already serializes it at LIST level specifically so the card could
+  // (schemas.py:2126-2128, "ProducerCard would render a fee from a field the
+  // list response never carried").
+  //
+  // `.nullable()`, not a truthiness-friendly default: delivery_fee=0 is a
+  // VALUE ("משלוח חינם"), not an absence — same distinction DeliveryBlock.jsx
+  // and MEH-1942 already pin for the per-area field. Both declared even
+  // though ProducerCard only renders delivery_fee (free_delivery_above stays
+  // a detail-page-only display, PR body §"card scope") — declaring is what
+  // stops the strip; a field can be declared without being rendered here.
+  delivery_fee: z.number().nullable().optional(),
+  free_delivery_above: z.number().nullable().optional(),
 });
 
 // MEH-1752: the detail contract — `GET /producers/{producer_id}` and
