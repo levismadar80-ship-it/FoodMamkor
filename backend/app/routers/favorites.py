@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
@@ -29,9 +29,13 @@ def get_favorites(
             joinedload(Favorite.producer).joinedload(Producer.categories),
             # MEH-1660: products + delivery_areas must be eager-loaded so the
             # enrichment loop below stays N+1-free (mirrors the list query in
-            # producer_listing.py:126-127).
+            # producer_listing.py:126-127). MEH-2060: locations joins the same
+            # reasoning — attach_badge_fields now reads it for every producer
+            # to derive pickup_points/offers_pickup, so it was already an N+1
+            # here (silently, since MEH-2046 added that read without this line).
             joinedload(Favorite.producer).selectinload(Producer.products),
             joinedload(Favorite.producer).selectinload(Producer.delivery_areas),
+            joinedload(Favorite.producer).selectinload(Producer.locations),
         )
         .filter(Favorite.user_id == user.id)
         .all()

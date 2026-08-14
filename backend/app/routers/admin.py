@@ -7,7 +7,7 @@ import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
 from app.config import settings
@@ -42,6 +42,7 @@ from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
 )
+from app.services.producer_queries import attach_badge_fields
 from app.slug_utils import RESERVED_SLUGS
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -325,6 +326,10 @@ def list_producers(
         joinedload(Producer.categories),
         joinedload(Producer.products),
         joinedload(Producer.delivery_areas),
+        # MEH-2060: needed by attach_badge_fields' pickup_points/offers_pickup
+        # derivation below. selectinload (not joinedload) — a 4th collection
+        # joinedload here would widen the existing 3-way cartesian.
+        selectinload(Producer.locations),
     )
     if status and status != "all":
         if status == "pending":
@@ -339,7 +344,16 @@ def list_producers(
             Producer.name.ilike(like, escape=LIKE_ESCAPE)
             | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         )
-    return q.order_by(Producer.created_at.desc()).all()
+    results = q.order_by(Producer.created_at.desc()).all()
+    # MEH-2060: this endpoint never called attach_badge_fields before, so
+    # pickup_points (and every other computed badge field) silently defaulted
+    # to Pydantic's False/0 in this response — a pre-existing gap, not
+    # something this change introduces. Calling it here is what makes
+    # AdminProducersTable.jsx's pickup badge (:128) agree with every other
+    # consumer surface instead of reading a raw, no-longer-authoritative column.
+    for p in results:
+        attach_badge_fields(p)
+    return results
 
 
 @router.post("/producers", response_model=ProducerAdminOut, status_code=201)
@@ -388,7 +402,9 @@ def admin_create_producer(
         grass_fed=data.grass_fed,
         organic_certified=data.organic_certified,
         has_delivery=data.has_delivery,
-        pickup_points=data.pickup_points,
+        # MEH-2060: pickup_points stopped being written here — it's derived
+        # from producer_locations rows now (attach_badge_fields below), and a
+        # freshly-created producer has none yet regardless of this form field.
         kosher=data.kosher,
         producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
@@ -430,6 +446,7 @@ def admin_create_producer(
 
     db.commit()
     db.refresh(producer)
+    attach_badge_fields(producer)
     return producer
 
 
@@ -451,6 +468,11 @@ def admin_update_producer(
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
     payload.pop("delivery_cities", None)
+    # MEH-2060: same no-op-pop pattern, same reason — pickup_points is derived
+    # from producer_locations rows now (attach_badge_fields below); ProducerForm
+    # still has a checkbox that sends this field (frontend out of scope for this
+    # ticket, flagged separately), but the bulk setattr loop must not write it.
+    payload.pop("pickup_points", None)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
@@ -517,6 +539,7 @@ def admin_update_producer(
             context="admin.admin_update_producer images",
         )
 
+    attach_badge_fields(producer)
     return producer
 
 
@@ -676,17 +699,22 @@ async def import_producers_excel(
 def pending_producers(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    return (
+    results = (
         db.query(Producer)
         .options(
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-2060: see list_producers above — same derivation, same reason.
+            selectinload(Producer.locations),
         )
         .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .all()
     )
+    for p in results:
+        attach_badge_fields(p)
+    return results
 
 
 @router.post("/producers/{producer_id}/approve")
