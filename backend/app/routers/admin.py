@@ -44,7 +44,11 @@ from app.services.license_validation import (
     categories_require_license,
     ensure_license_for_categories,
 )
-from app.services.producer_queries import attach_badge_fields
+from app.services.producer_queries import (
+    attach_badge_fields,
+    create_primary_branch_location,
+    upsert_primary_branch_location,
+)
 from app.slug_utils import RESERVED_SLUGS
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -446,6 +450,19 @@ def admin_create_producer(
     if data.delivery_area_cities and "offers_delivery" not in data.model_fields_set:
         producer.offers_delivery = True
 
+    # MEH-2059 (MEH-1938 chunk 4b): the admin half of the dual-write. Same
+    # helper the four signup paths call (producer_queries.py:351), so this is
+    # the SIXTH create-from-payload site and the field contract cannot drift
+    # between them. Declines by itself when a coordinate is missing.
+    #
+    # This site can only ever create: the producer was flushed six lines up, so
+    # it owns no locations yet — `upsert_...` would find nothing and delegate
+    # here anyway. Calling the create helper directly says that out loud.
+    #
+    # REUSES: backend/app/services/producer_queries.py:449 — the same call, in
+    # the same position (after flush, before commit), on the public-create path.
+    create_primary_branch_location(db, producer)
+
     db.commit()
     db.refresh(producer)
     attach_badge_fields(producer)
@@ -526,6 +543,22 @@ def admin_update_producer(
         _apply_categories(db, producer, category_ids)
     if delivery_area_cities is not None:
         _apply_delivery_cities(db, producer, delivery_area_cities)
+
+    # MEH-2059 (MEH-1938 chunk 4b): the admin EDIT half of the dual-write.
+    # Gated on the payload rather than on the resulting values, because
+    # `exclude_unset=True` above means an admin editing only the name must not
+    # re-mirror `Producer.address` over a location row the OWNER authored in
+    # the dashboard. An explicit `lat: null` IS in the payload, so clearing the
+    # coordinates still reaches the helper — which mirrors the clear instead of
+    # leaving a stale point behind.
+    #
+    # Runs AFTER the setattr loop on purpose: the helper reads the producer
+    # instance, so it must see the post-update values. That is the same reason
+    # MEH-1939 takes the flushed Producer rather than five loose fields
+    # (producer_queries.py:378-383) — the row is a mirror, and reading the
+    # mirror's source off the instance is what makes them unable to drift.
+    if "lat" in payload or "lng" in payload:
+        upsert_primary_branch_location(db, producer)
 
     db.commit()
     db.refresh(producer)
