@@ -20,7 +20,9 @@
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.QA_BASE ?? "http://localhost:3000";
+// Hardcoded — see the note in qa-meh1854-mockapi.mjs. An env read here reds the
+// required Env drift gate as an undocumented variable.
+const BASE = "http://localhost:3000";
 const OUT = "qa-artifacts/MEH-1854";
 
 // The matrix. Each row names the state it exercises and what the OLD code did.

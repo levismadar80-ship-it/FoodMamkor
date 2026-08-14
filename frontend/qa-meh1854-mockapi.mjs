@@ -61,7 +61,16 @@ const FIXTURES = [
   reviews_count: 0,
 }));
 
-const PORT = Number(process.env.MOCK_PORT ?? 4010);
+// Hardcoded, not read from the environment. `scripts/check_env_drift.sh` scans
+// this file too, so an env read here is a genuinely new variable with no
+// `.env.example` entry, and it reds the required Env drift gate (measured on
+// this PR's first run). A one-off probe does not need to be configurable, and
+// documenting a harness knob in the app's env contract would be the wrong fix.
+//
+// The scanner matches the read pattern anywhere in the file, comments included
+// — naming the removed variable in this note was itself enough to keep the gate
+// red on the second run. Do not spell it out here.
+const PORT = 4010;
 
 createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
