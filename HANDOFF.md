@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 (backfill, MEH-2082) — MEH-2015 chunk B · MEH-1968 · MEH-2053
+
+**מוזג:** #2945 (MEH-2015 chunk B) · #2934 (MEH-1968) · #2868 (MEH-2053). שלושתם נחתו מוקדם באותו יום — לפני הסשן ש-§ הקודמת (MEH-1706 chunks B+C) שייכת אליו — והתור הזה רק עכשיו רושם אותם ל-CHANGELOG/HANDOFF (rule 31: קובץ נפרד, docs-only, כי הם נחתו על ענפי קוד).
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **MEH-2015 (city חובה) פתח פער מוכר ולא סגר אותו בכל מקום.** `_sanitize_city`+`_validate_city_letters` (בלי-רווחים-בלבד) קיים עכשיו ב-`ProducerRegister.city`, אבל לא הועתק ל-`ExperienceCreate.city`/`EventCreate.city` — אותו פער תיאורטי נשאר שם, לא תוקן, מחוץ ל-scope של ה-PR.
+2. **MEH-1968 מסיר חסימה מ-MEH-215** (מסע OAuth הרשמה E2E) — עדיין לא התחיל אף session.
+3. **מחלקת false-positive חדשה ב-DO-NOT-MERGE gate (מ-#2868), שווה לזכור לפעם הבאה:** ציטוט של ביטוי "do not merge" בתוך prose היסטורי (או תיאור-עצמי של תיקון) מפיל את השער באותה חוזקה כמו סימון פעיל — אין הבחנה. ותיקון PR body דרך *rerun* לא עוזר: rerun משחזר את ה-payload המקורי, רק push חדש (`synchronize`) קולט עריכה.
+4. **`docs/session-state.md` הצטרף לענף הזה** (היה קובץ לא-מחויב על `staging`, נגרר לכאן במקום להישאר חשוף ל-`git checkout`). זה docs-only, לא קוד — לא שובר rule 31.
+5. **אין QA נייד לשלושתם** — DoD exception: tests-only per the dispatch that requested this backfill; `npm run build`/`vitest`/`pytest` המספרים המדויקים רשומים ב-CHANGELOG.md מתחת לתאריך הזה.
+
+---
 ## 2026-08-14 (מאוחר יותר) — MEH-1706 chunks B+C · MEH-1854 סגירת ראיות · MEH-1517 מפרט secret
 
 **פתוח:** PR **#2931** (MEH-1706 chunks B+C) — `feature/meh-1706-seed-coverage-contract`. **מוזג:** #2927 (ראיות MEH-1854 chunk 1).
