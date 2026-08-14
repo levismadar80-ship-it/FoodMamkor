@@ -3,6 +3,32 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — Lane A: MEH-2051 מוזג · chunks 4b + 2 של MEH-1938 חסומים על ספיר
+
+**מוזג:** PR #2915, squash `71354880` — MEH-2051, מרוץ `PUT /producers/me` מול `confirm_phone_otp` שירה פינג «מוכן לאישור» כפול. הכרטיס נסגר Done אוטומטית 3 שניות אחרי המיזוג מ-`Closes MEH-2051` (flip-check בוצע).
+
+**מה השתנה בקוד:** שתי שורות רצות ב-`confirm_phone_otp` — `_lock_producer_updates(db, producer.id)` ו-`db.expire(producer)` (‏`producer_me.py:1313-1314` על `origin/staging`). כל השאר בקובץ הזה הוא הערות. בנוסף: `tests/test_otp_put_ping_race.py` חדש (263 שורות) ועדכון docstring ב-`tests/test_review_ready_ping_concurrency.py`.
+
+**🔴 הלקח שכדאי לקרוא לפני שנוגעים שוב באזור הזה.** ההצבה של הנעילה היא כל העבודה, לא הנעילה. הכרטיס הציע אותה **לפני טעינת השורה**; מדדתי את הגרסה הזאת ומצאתי שהיא הורסת את השומר של MEH-1820 בשקט:
+
+| בנייה | `test_otp_confirm_concurrency` מדווח |
+|---|---|
+| נעילה לפני הטעינה + ה-claim האטומי שלם | `[200, 200]` |
+| נעילה לפני הטעינה + ה-claim **מוחזר** ל-SELECT-then-set | `[200, 200]` |
+
+זהה בייט-בייט. המפסיד מגיע ל-early-return של `phone_verified` לפני שהוא נוגע ב-conditional UPDATE, ולכן הטסט מפסיק להבחין בין שומר עובד לשומר שבור. **שתי הריצות אדומות**, וזו המלכודת — הדרך הטבעית לנקות אדום כזה היא לרכך את ה-assertion, וזה מעוור את השומר לצמיתות. ההצבה שנחתה (אחרי תביעת ה-token) שומרת על ההבחנה: הרצה חוזרת עם ה-claim מוחזר עדיין אדומה.
+
+**חסום — שני הפריטים ממתינים לספיר, לא ל-CC:**
+
+1. **MEH-2059 (chunk 4b)** — ה-STOP מ-13/08 אומת ונמצא **חמור יותר**: ארבעת נתיבי ה-CRUD של locations הם `require_producer` בלבד (`producer_me.py:1676/1692/1720/1759`), וה-dep מחזיר **403** לכל role שאינו producer (`auth.py:363-368`). אין API שדרכו admin נוגע ב-locations של עסק אחר — ולכן מסלול (א) דורש backend חדש, שהכרטיס עצמו אוסר. שאלת א/ב/ג פתוחה בכרטיס.
+2. **MEH-2056 (chunk 2)** — שאילת הספירה עדיין לא ניתנת למדידה מ-CC. **שתי** דלתות נבדקו: Railway ישירות (‏`CONNECT tunnel 403`) והדומיין של staging דרך ה-rewrite ב-`next.config.js:158-177` — האחרונה פתוחה ברשת ונחסמת ע"י **Vercel SSO** (302 ל-`vercel.com/sso-api`). הסיבה שתועדה ב-13/08 כיסתה רק את הראשונה.
+
+**⚠️ סשנים מקבילים — מצב שראוי לדעת עליו.** בזמן הסשן הזה רצו לפחות שלושה lanes נוספים: MEH-1906 (‏`feature/meh-1906-pure-asgi-middleware`, נמזג ל-staging באמצע העבודה שלי — משכתי אותו והרצתי הכל מחדש מעליו), MEH-1678, ו-MEH-1748. ה-batch של MEH-2068 עצר עצמו ב-09:32 בדיוק בגלל זה (bootstrap צעד 3). עבדתי תחת הוראת back-off פר-כרטיס ולא תחת ה-STOP הגלובלי שלו — B4 נבדק לפני הכרטיס ונמצא נקי.
+
+**⚠️ אין preview URL בסשן הזה.** Vercel מחזיר `api-deployments-free-per-day` (מכסה יומית ברמת החשבון, MEH-2062). שום commit לא מתקן את זה, ובדיף הזה גם אין מה לרנדר.
+
+**הצעד הבא:** אין פריט backend/tests כשיר ולא-תפוס שנותר בתור אחרי הסוויפ (In Progress / Todo / Backlog, שלושתם). מה שנשאר בדומיין חסום על ספיר (MEH-2059, MEH-2056, MEH-1911 שה-patch שלו הוא PR #2661 שלה), על כרטיסים שה-v6 הקפיא בסדר קשיח, או על ענף זר חי.
+
 ## 2026-08-14 — MEH-1703 (nav registry, HIGH-RISK): כל 4 ה-chunks הקודיים נחתו
 
 **מוזג:** chunk 1 `15cc35e02` (#2853) · chunk 2 `619ca6d82` (#2881) · chunk 3 `e4924ac8d` (#2899) · chunk 4 `d44279c51` (#2911). בנוסף #2876 (docs) ו-#2877 (טסטי `suppressOnRoute`).
