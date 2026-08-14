@@ -329,6 +329,38 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     expect(rendered.map((l) => l.href)).not.toContain("/login");
   });
 
+  /**
+   * The register record declares TWO suppression entries — `"/register"`
+   * (exact) and `"/register/"` (prefix) — mirroring the two arms of
+   * `Header.jsx:200-201`. Only the prefix arm was exercised; these two cover
+   * the other one, and the SECOND is the one that discriminates.
+   *
+   * `/register` alone cannot tell the arms apart: it is suppressed under an
+   * exact match AND under a bare `startsWith("/register")`. `/register-cafe`
+   * separates them — exact keeps the link (correct), a bare prefix would eat
+   * it. That is not hypothetical: `lib/slug.js` reserves the exact word
+   * `register`, so `register-cafe` is a legal producer slug and a legal
+   * `/[slug]` route, and `Header.jsx:193-199` records the near-miss.
+   */
+  it("suppresses the register link on /register itself — the exact-match arm", () => {
+    pathnameRef.current = "/register";
+    userRef.current = null;
+    const { container } = render(<Header />);
+    const rendered = sortLinks(renderedLinks(container));
+    expect(rendered).toEqual(sortLinks(expectedLinks("header", STATES.guest)));
+    expect(rendered.map((l) => l.href)).not.toContain("/register");
+  });
+
+  it("KEEPS the register link on /register-cafe — a legal producer slug, not a prefix match", () => {
+    pathnameRef.current = "/register-cafe";
+    userRef.current = null;
+    const { container } = render(<Header />);
+    const rendered = sortLinks(renderedLinks(container));
+    expect(rendered).toEqual(sortLinks(expectedLinks("header", STATES.guest)));
+    // The assertion that fails if either side degrades to a bare startsWith.
+    expect(rendered.map((l) => l.href)).toContain("/register");
+  });
+
   it("suppresses the register link on /register/producer, per suppressOnRoute", () => {
     pathnameRef.current = "/register/producer";
     userRef.current = null;
