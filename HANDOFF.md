@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-14 — MEH-226: סיבת הדחייה נכתבת ל-DB, לא רק נשלחת במייל — docs backfill
+
+**מוזג:** PR 1/2 `#2922` (backend persist) + PR 2/2 `#2926` (admin UI, kebab). שני PRs, שניהם על staging.
+
+**מה יש עכשיו:** `POST /admin/producers/{id}/reject` כותב `rejection_reason` ל-DB באותו commit עם ה-status flip (לפני כן: המייל בלבד נשא את הסיבה, ה-DB נשאר NULL). חמישה preset reasons + "אחר" freetext, מוגשים מ-endpoint יחיד (`GET /admin/producers/rejection-presets`) שגם ה-UI וגם גוף המייל קוראים ממנו — אין עותק שני של הרשימה. UI: פריט "דחייה" ב-kebab (tone danger, MEH-1023), pending-only, מודאל עם אישור לפני שליחה.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **QA בנייד לא בוצע.** Vercel Hobby rate-limited (`api-deployments-free-per-day`) ופיצ'ר-branch previews הם opt-in (`[preview]`, MEH-1900) — לא נכלל. זהו שינוי UI אדמין נראה, אז זה פער אמיתי, לא סעיף פורמלי. מי שיכולה: לפתוח `/admin/producers` בנייד ולבדוק את זרימת הדחייה.
+2. **אימות מייל לא בוצע.** אף session לא בדקה Gmail "Show original" עם הסיבה בפועל.
+3. **MEH-217 admin E2E specs אינם ראייה לשינוי הזה** — אדומים על staging מסיבה לא-קשורה: `/producers/by-slug/*` מחזיר 500 (MEH-1906), וה-seed המקומי מכיל רק `approved` producers כך שהוא לא יכול להגיע לפריט ה-kebab הזה כלל (אותו פער ש-`33-admin-producers-tab.spec.ts` §2C כבר מתעד, בבעלות MEH-1706).
+4. **מסלול ביטול-דחייה (mistaken reject)** נסגר ב-Phase 0 של PR 1/2 — קיים דרך admin PUT קיים, לא נבנה sibling.
+
 ## 2026-08-14 — MEH-2077: שער ה-contract probe מאדים עכשיו כשהוא לא רואה כלום
 
 **מוזג:** `66733b16` (#2929, **squash מאומת** — הורה אחד). **MEH-2077 נשאר Backlog** — אומת אחרי המיזוג בשני הכיוונים (כלל 29b): `stateHistory` רשומה אחת, `endedAt: null`. **וזה נכון** — chunk 2 (bypass, ספיר) פתוח.
