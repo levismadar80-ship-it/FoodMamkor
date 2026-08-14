@@ -406,6 +406,104 @@ def create_primary_branch_location(
     return location
 
 
+def _demote_other_primaries(db: Session, producer_id, keep_id) -> None:
+    """Enforce the single-primary invariant in application code.
+
+    There is NO database constraint behind this — `producer_locations` has no
+    partial unique index on `is_primary` (models.py:848-858 declares only the
+    two CHECKs, and a9f4c2e7b1d3 creates only the plain city/producer indexes).
+    The invariant is upheld by every writer, so a writer that skips it corrupts
+    it silently. `producer_me.py:1827` (`_clear_other_primaries`) is the owner
+    path's copy of this; a service cannot import a router's private, so the
+    logic is restated rather than shared.
+
+    Rows are mutated through the ORM rather than a bulk `.update()` so the
+    identity map stays consistent for anything already loaded in this session.
+    """
+    stale = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer_id,
+            ProducerLocation.is_primary.is_(True),
+            ProducerLocation.id != keep_id,
+        )
+        .all()
+    )
+    for row in stale:
+        row.is_primary = False
+
+
+def upsert_primary_branch_location(
+    db: Session, producer: Producer
+) -> ProducerLocation | None:
+    """MEH-2059 (MEH-1938 chunk 4b) — the ADMIN half of the dual-write.
+
+    `create_primary_branch_location` above covers creation-from-signup. This
+    covers the admin EDIT path, where the producer may already own a primary
+    row (registration wrote one, or the owner made one in the dashboard).
+
+    Why it exists at all: the epic's §"הבעיה / הקשר" left `admin.py` writing
+    `lat/lng` directly on the grounds that "admin+import are covered by the
+    backfill". That backfill was MEH-2056, CANCELED 14/08 after its entry
+    condition measured 0 rows, so the coverage the epic assumed does not
+    exist. Harmless while there are no real businesses, but the next producer
+    an admin creates would be born with coordinates and no location row.
+
+    Three cases, and the third is a judgement call recorded here because the
+    ruling did not settle it:
+
+    1. No primary row yet  → delegate to `create_primary_branch_location`,
+       which itself declines when a coordinate is missing. Identical contract,
+       one implementation.
+    2. Primary row exists  → UPDATE it in place. Never insert a second one;
+       that is what makes a repeated save idempotent.
+    3. Coordinates cleared → mirror the clear onto the row (lat/lng → NULL)
+       and KEEP the row. Chosen over deleting it: `ProducerLocation` also
+       carries owner-authored `label`, `opening_hours` and `phone` that no
+       admin coordinate edit should destroy, and both columns are nullable so
+       the cleared state is representable. A coordinate-less row is invisible
+       to `producerPoints()` and to the geo query alike — the same end state
+       as case 1's "no row" — so nothing is left pointing at a stale point.
+       The alternative, leaving the old coordinates behind, is precisely the
+       drift this epic exists to remove.
+
+    `location_precision` is set only on creation (by the helper above, to
+    "exact"). An existing row keeps whatever it has: the owner may have
+    downgraded it to "approximate" deliberately, and an admin editing
+    coordinates is not a statement about precision.
+
+    `city` and `address` ARE re-mirrored, because coordinates that move
+    without their address are the drift case again. This can overwrite an
+    address the owner typed in the dashboard — accepted, and the reason the
+    caller only fires this when the admin payload actually touches lat/lng.
+
+    Does NOT commit — same contract as its sibling; the caller owns the
+    transaction.
+
+    # DO NOT widen this to `kind='pickup'` rows — `offers_pickup`
+    # (producer_queries.py:202-205) keys on kind in ('pickup','market_stand'),
+    # so a branch row must never masquerade as one (MEH-2060).
+    """
+    existing = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .order_by(ProducerLocation.created_at.asc())
+        .first()
+    )
+    if existing is None:
+        return create_primary_branch_location(db, producer)
+
+    existing.city = producer.city
+    existing.address = producer.address
+    existing.lat = producer.lat
+    existing.lng = producer.lng
+    _demote_other_primaries(db, producer.id, keep_id=existing.id)
+    return existing
+
+
 def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
     """Create a pending producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
