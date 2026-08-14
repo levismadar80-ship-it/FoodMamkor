@@ -1549,7 +1549,8 @@
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "סטורי",
           "delete": "מחקי",
-          "menu_aria": "פעולות נוספות"
+          "menu_aria": "פעולות נוספות",
+          "reject": "דחייה"
         },
         "columns": {
           "name": "שם",
@@ -1712,7 +1713,19 @@
         }
       },
       "toast_approved": "העסק אושר",
-      "toast_status_updated": "הסטטוס עודכן"
+      "toast_status_updated": "הסטטוס עודכן",
+      "reject": {
+        "modal_title": "דחיית בקשת בית עסק",
+        "preset_legend": "סיבת הדחייה",
+        "free_text_label_required": "פירוט (חובה)",
+        "free_text_label_optional": "פירוט נוסף (רשות)",
+        "free_text_placeholder": "אפשר להוסיף פרטים שיעזרו לבית העסק לתקן…",
+        "submit": "דחה ושלח מייל",
+        "confirm": "פעולה זו תשלח מייל לבית העסק. להמשיך?",
+        "presets_error": "לא הצלחנו לטעון את סיבות הדחייה. רענני את הדף ונסי שוב.",
+        "invalid_input": "יש לבחור סיבה, ולפרט כשנבחר 'אחר'.",
+        "toast_rejected": "הבקשה נדחתה והמייל נשלח."
+      }
     },
     "users": {
       "title": "משתמשים",
