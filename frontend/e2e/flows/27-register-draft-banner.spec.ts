@@ -164,3 +164,72 @@ test.describe("MEH-1769 — draft-resume banner render condition", () => {
     await expect(page.getByTestId("register-account-email")).toHaveValue("sapir.qa@example.com");
   });
 });
+
+/**
+ * MEH-1977 — the draft now carries its own age, and expires at 7 days.
+ *
+ * The expiry rule itself is proven deterministically in
+ * `__tests__/register-draft.test.js`, which injects the clock rather than
+ * mocking one. What only a real browser can show is the two halves that touch
+ * actual storage: that an expired draft is DELETED rather than merely hidden,
+ * and that a draft written before this envelope existed is still honoured.
+ *
+ * Note tests B–E above seed the pre-envelope flat shape and are untouched —
+ * they are now also the backward-compatibility coverage, which is why they were
+ * left as they are instead of being migrated to the new shape.
+ */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Seed a v2 envelope written `ageDays` ago, then enter the wizard. */
+async function seedEnvelopeAndEnter(
+  page: Page,
+  form: Record<string, unknown>,
+  ageDays: number,
+) {
+  await page.goto("/register/producer");
+  await page.evaluate(
+    ([key, value]) => localStorage.setItem(key, value),
+    [
+      DRAFT_KEY,
+      JSON.stringify({ v: 2, savedAt: Date.now() - ageDays * DAY_MS, step: 2, form }),
+    ] as [string, string],
+  );
+  await page.reload();
+  await enterWizard(page);
+}
+
+test.describe("MEH-1977 — draft expiry", () => {
+  test("F — a draft written 6 days ago is still offered", async ({ page }) => {
+    // The other side of the boundary. Without this, G would pass just as well
+    // against a build that expired every draft on sight.
+    await seedEnvelopeAndEnter(page, { city: "תל אביב" }, 6);
+    await expect(banner(page)).toBeVisible();
+  });
+
+  test("G — a draft written 8 days ago is gone, not merely hidden", async ({ page }) => {
+    await seedEnvelopeAndEnter(page, { city: "תל אביב" }, 8);
+    await expect(banner(page)).toHaveCount(0);
+    // The assertion that makes this about privacy rather than tidiness: a
+    // stale draft holding a seller's name, phone and address must not stay on
+    // a shared machine because nobody came back for it.
+    expect(
+      await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY),
+      "an expired draft must be deleted from storage, not just left unoffered",
+    ).toBeNull();
+  });
+
+  test("H — a pre-envelope draft is grandfathered and re-stamped, not dropped", async ({ page }) => {
+    // Sellers mid-registration when this deploys hold the flat shape. Its age
+    // is unrecoverable, so it is honoured once and stamped, after which it ages
+    // normally — the alternative would have eaten real work on deploy day.
+    await seedDraftAndEnter(page, { city: "תל אביב" });
+    await expect(banner(page)).toBeVisible();
+
+    const stored = JSON.parse(
+      (await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY)) as string,
+    );
+    expect(stored.v, "a legacy draft must be upgraded in place").toBe(2);
+    expect(typeof stored.savedAt).toBe("number");
+    expect(stored.form.city, "the seller's data must survive the upgrade").toBe("תל אביב");
+  });
+});

@@ -52,6 +52,8 @@ vi.mock("@phosphor-icons/react", () => ({
   CaretDown: (p) => <span {...p} />,
   SealCheck: (p) => <span {...p} />,
   Truck: (p) => <span {...p} />,
+  // MEH-2046: chip-icons maps pickup_points -> Package.
+  Package: (p) => <span {...p} />,
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
@@ -259,14 +261,14 @@ describe("MEH-1862 — the /map surface is not disturbed", () => {
     // the config without a group would land in the wrong section silently.
     const grouped = withChipGroups(PRODUCERS_CHIPS_CONFIG);
     const diet = grouped.filter((c) => c.group === "diet").map((c) => c.key);
-    // The six diet axes are the ones a fallback would visibly swallow.
+    // The five diet axes are the ones a fallback would visibly swallow.
+    // MEH-2047 withdrew a sixth (low_carb) with the claim itself.
     expect(diet).toEqual([
       "vegan",
       "vegetarian",
       "gluten_free",
       "lactose_free",
       "no_added_sugar",
-      "low_carb",
     ]);
   });
 });

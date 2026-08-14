@@ -19,7 +19,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 // MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
 // currentColor, aria-hidden) instead of a baked-in emoji — same source the
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
@@ -32,6 +32,39 @@ import { showToast } from "@/lib/toast";
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+
+// MEH-2047: the diet tags that carry a definition, in the order the chip row
+// above them renders. Each key resolves BOTH strings — the term from the chip's
+// own `diet_<key>` label (one owner, so the disclosure can never name a tag
+// differently from the chip beside it) and the body from `diet_def_<key>`.
+//
+// The definitions are INGREDIENT-level only, deliberately. Facility scope
+// (shared vs dedicated line) and "100%" declarations belong to MEH-1508, which
+// is In Progress on exactly that surface — stating either here would pre-empt
+// its decision with copy nobody ratified.
+//
+// This list is now exactly the chip row. "דל פחמימות" was withdrawn from the
+// form in the second half of MEH-2047 — a claim with no defined standard in
+// EU/UK 1924/2006 or ת"י 1145, so no honest definition could be written for it
+// and a small business could not substantiate one without a lab analysis. The
+// `products.is_low_carb` column and every value already stored in it are
+// untouched; only the surfaces are gone. Same shape as the MEH-1259 organic
+// removal, whose comments in lib/badges.js and lib/map-chips.js are the
+// precedent this followed.
+//
+// Note the form no longer SENDS is_low_carb at all: `update_my_product` (the
+// PUT /products/{product_id} handler in backend/app/routers/producer_me.py)
+// applies model_dump(exclude_unset=True), so an omitted field is not written
+// and an existing marking survives an edit untouched. Sending `false` instead
+// would have silently cleared it.
+//
+// Cited by SYMBOL, not by line number, and that is the correction rather than
+// an incidental style choice: this comment first read `producer_me.py:1445`,
+// which was accurate when written and was 56 lines stale within the hour as
+// staging moved. It had drifted onto the POST decorator — a real line, wrong
+// handler — which reads as a working citation and is worse than a dangling
+// one. `grep update_my_product` cannot rot that way.
+const DIET_DEFINITION_KEYS = ["gluten_free", "vegan", "vegetarian", "lactose_free", "no_added_sugar"];
 
 // MEH-1809: unified submit-validation — every required/range check runs
 // together (not one-at-a-time via a setError chain) and lands on its field.
@@ -81,7 +114,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, is_low_carb: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -176,11 +209,10 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
         is_no_added_sugar: form.is_no_added_sugar,  // MEH-1934
-        is_low_carb: form.is_low_carb,              // MEH-1934
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, is_low_carb: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch {
@@ -203,7 +235,6 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
       is_no_added_sugar: !!product.is_no_added_sugar,  // MEH-1934
-      is_low_carb: !!product.is_low_carb,              // MEH-1934
     });
     setError("");
     setEditFormErrors({});
@@ -288,7 +319,6 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
         is_no_added_sugar: !!editForm.is_no_added_sugar,  // MEH-1934
-        is_low_carb: !!editForm.is_low_carb,              // MEH-1934
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -485,11 +515,13 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                     <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                     {/* MEH-1934: appended last so the existing diet order is unchanged. No new chip-icons entry — same as vegetarian, which renders iconless. */}
                     <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={!!editForm.is_no_added_sugar} onToggle={() => setEditForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
-                    <DietChip iconKey="low_carb" label={tForm("diet_low_carb")} pressed={!!editForm.is_low_carb} onToggle={() => setEditForm((f) => ({ ...f, is_low_carb: !f.is_low_carb }))} />
                   </div>
                   {/* MEH-1439: tell the owner what marking a diet flag does — it
                       surfaces the business in the matching public filter. */}
                   <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
+                  {/* MEH-2047: …and what each tag MEANS. Per-product id — see
+                      the DietDefinitions doc comment. */}
+                  <DietDefinitions id={`edit-diet-definitions-${product.id}`} tForm={tForm} />
                 </div>
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
@@ -652,11 +684,12 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                 <DietChip iconKey="lactose_free" label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                 {/* MEH-1934 */}
                 <DietChip iconKey="no_added_sugar" label={tForm("diet_no_added_sugar")} pressed={form.is_no_added_sugar} onToggle={() => setForm((f) => ({ ...f, is_no_added_sugar: !f.is_no_added_sugar }))} />
-                <DietChip iconKey="low_carb" label={tForm("diet_low_carb")} pressed={form.is_low_carb} onToggle={() => setForm((f) => ({ ...f, is_low_carb: !f.is_low_carb }))} />
               </div>
               {/* MEH-1439: tell the owner what marking a diet flag does — it
                   surfaces the business in the matching public filter. */}
               <p className="text-xs text-fg-muted mt-2">{tForm("diet_helper")}</p>
+              {/* MEH-2047: …and what each tag MEANS. */}
+              <DietDefinitions id="add-diet-definitions" tForm={tForm} />
             </div>
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its
@@ -761,6 +794,51 @@ function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, r
       startAdornment="₪"
       error={error}
     />
+  );
+}
+
+/**
+ * MEH-2047: "מה הסימונים אומרים?" — one collapsed disclosure under the chip
+ * row, listing what each tag MEANS.
+ *
+ * Distinct from the MEH-1439 helper line directly above it, which stays: that
+ * one states the tag's EFFECT ("marking it lists you in the matching filter"),
+ * and an owner who knows the effect can still mis-mark a product because she
+ * read "ללא לקטוז" as "ללא חלב". Meaning and effect are two questions.
+ *
+ * One disclosure rather than a ⓘ per chip (Sapir, 13/08): six icons on a
+ * six-chip row is the noise the DoorDash/Deliveroo pattern avoids by putting
+ * the definitions one tap away instead of beside every control.
+ *
+ * `id` is required and must be unique per mount — the edit form renders one of
+ * these PER PRODUCT, so a constant would duplicate the id across every open
+ * editor and point every trigger's aria-controls at the first panel.
+ */
+function DietDefinitions({ id, tForm }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="inline-flex items-center gap-1 rounded-md text-xs text-fg-muted underline underline-offset-2 focus-ring"
+      >
+        {tForm("diet_definitions_cta")}
+        {open ? <CaretUp size={14} aria-hidden="true" /> : <CaretDown size={14} aria-hidden="true" />}
+      </button>
+      {open && (
+        <dl id={id} className="mt-2 space-y-1.5 text-xs text-fg-muted">
+          {DIET_DEFINITION_KEYS.map((key) => (
+            <div key={key}>
+              <dt className="inline font-medium">{tForm(`diet_${key}`)}:</dt>{" "}
+              <dd className="inline">{tForm(`diet_def_${key}`)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
   );
 }
 

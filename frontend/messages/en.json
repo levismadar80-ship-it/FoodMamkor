@@ -787,6 +787,9 @@
           },
           "sheet_open_aria": "Details about {name}",
           "sheet_close_aria": "Close product details",
+          "sheet_prev_aria": "Previous product",
+          "sheet_next_aria": "Next product",
+          "sheet_counter_aria": "Product {current} of {total}",
           "sheet_cta": "Ask about this product on WhatsApp",
           "sheet_secondary_wa": "Or ask about this product on WhatsApp",
           "sheet_wa_prefill": "Hi, I saw “{name}” on your Mehamakor page and would love to hear more"
@@ -1267,7 +1270,11 @@
       "aria": {
         "remove": "Remove filter {label}"
       },
-      "clear_all": "× Clear all"
+      "clear_all": "× Clear all",
+      "arranged_hidden": "Businesses arranged personally aren't shown in this filter",
+      "delivery_context_banner": "Businesses that deliver to {city}. The map pin is the business location — not the delivery area",
+      "banner_dismiss_aria": "Close this explanation",
+      "day_bridge_cta": "Filter by delivery day across all businesses"
     },
     "card_list": {
       "empty": {
@@ -1290,7 +1297,8 @@
       "show_all": "Show all",
       "pickup_layer": {
         "label": "Self-pickup",
-        "aria": "Show or hide self-pickup and market stands on the map"
+        "aria": "Show or hide self-pickup and market stands on the map",
+        "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
       }
     },
     "page": {
@@ -1317,7 +1325,14 @@
       "verified": "✓ Verified",
       "distance_prefix": "·",
       "wa_message": "Hi! I found you on Mehamakor — {name}",
-      "full_profile": "Full profile"
+      "full_profile": "Full profile",
+      "fulfillment": {
+        "delivery": "Delivery",
+        "pickup": "Self-pickup",
+        "delivery_only": "Delivery",
+        "pickup_only": "Self-pickup",
+        "arranged": "By arrangement"
+      }
     },
     "mini": {
       "default_label": "Location",
@@ -1532,7 +1547,8 @@
           "story_card_title": "Create Instagram card",
           "story_card": "Story",
           "delete": "Delete",
-          "menu_aria": "More actions"
+          "menu_aria": "More actions",
+          "reject": "Reject"
         },
         "columns": {
           "name": "Name",
@@ -1695,7 +1711,19 @@
         }
       },
       "toast_approved": "Business approved",
-      "toast_status_updated": "Status updated"
+      "toast_status_updated": "Status updated",
+      "reject": {
+        "modal_title": "Reject business application",
+        "preset_legend": "Rejection reason",
+        "free_text_label_required": "Details (required)",
+        "free_text_label_optional": "Additional details (optional)",
+        "free_text_placeholder": "You can add details that help the business fix this…",
+        "submit": "Reject and send email",
+        "confirm": "This will send an email to the business. Continue?",
+        "presets_error": "We couldn't load the rejection reasons. Refresh the page and try again.",
+        "invalid_input": "Choose a reason, and add details when 'Other' is selected.",
+        "toast_rejected": "The application was rejected and the email was sent."
+      }
     },
     "users": {
       "title": "Users",
@@ -3969,6 +3997,7 @@
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
+        "tools": "We couldn't load your data",
         "retry_cta": "Try again"
       },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
@@ -4784,8 +4813,13 @@
         "diet_vegetarian": "Vegetarian",
         "diet_lactose_free": "Lactose-free",
         "diet_no_added_sugar": "No added sugar",
-        "diet_low_carb": "Low carb",
         "diet_helper": "Tagging a product lists your business under the matching filter on the search and map pages.",
+        "diet_definitions_cta": "What do these tags mean?",
+        "diet_def_gluten_free": "The product contains no gluten-bearing ingredients — wheat, barley, rye, or oats that are not gluten-free.",
+        "diet_def_vegan": "No animal-derived ingredients at all — including eggs, dairy, and honey.",
+        "diet_def_vegetarian": "No meat, poultry, or fish. May contain eggs and dairy.",
+        "diet_def_lactose_free": "The product contains no lactose. Note: this does not necessarily mean \"dairy-free\" — a dairy product without lactose counts.",
+        "diet_def_no_added_sugar": "No sugar was added during production — including honey, silan, syrups, and fruit concentrates. The product may contain naturally occurring sugars, so this is not \"sugar-free\".",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",
@@ -5182,20 +5216,6 @@
           {
             "question": "What counts as no added sugar?",
             "answer": "Products the business marked as having no sugar, honey or syrups added during preparation. Natural sweetness from fruit or milk may still be present."
-          },
-          {
-            "question": "How do I find businesses that deliver?",
-            "answer": "Filter with the delivery chip, or open the map page."
-          }
-        ]
-      },
-      "low_carb": {
-        "meta_description": "Local businesses that marked low-carb products in their catalog — nut breads, flourless desserts and protein-rich dishes. Marked by the business itself.",
-        "intro": "Breads based on nuts and seeds, desserts without flour or sugar, and dishes where protein and fat do the work. Every business here marked at least one product in its catalog as low-carb — suitable for those building a ketogenic menu, and for anyone simply looking for fewer carbohydrates day to day.",
-        "faq": [
-          {
-            "question": "What counts as low-carb?",
-            "answer": "Products the business marked as low in carbohydrates — usually without wheat flour, sugar or added starch. Exact values vary between businesses, so ask about a specific product."
           },
           {
             "question": "How do I find businesses that deliver?",

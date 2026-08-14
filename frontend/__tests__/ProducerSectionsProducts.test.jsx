@@ -37,6 +37,10 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
   // LEFT in RTL) and the sheet's own icons load through this same mock.
   CaretLeft: (props) => <span data-testid="row-chevron" className={props.className} />,
+  // MEH-2045: the sheet's "previous" chevron in RTL. Loaded through this mock
+  // for the same reason CaretLeft is — paging itself is asserted in
+  // ProductSheetNavigation.test.jsx.
+  CaretRight: (props) => <span data-testid="sheet-caret-right" className={props.className} />,
   MapPin: () => <span data-testid="map-pin" />,
   WhatsappLogo: () => <span data-testid="wa-logo" />,
   X: () => <span data-testid="x-icon" />,
@@ -289,6 +293,96 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
     // the product's own numeric price must not appear (label wins)
     expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+  });
+
+  // MEH-1855: price_range is the canonical field (models.py:121) but every
+  // public reader only ever consulted the legacy starting_price_label alias —
+  // an owner who filled ONLY price_range saw nothing on her own page,
+  // including no signature block at all (hasSignature gated on the alias).
+  describe("MEH-1855 — price_range (canonical) read with starting_price_label (alias) fallback", () => {
+    it("price_range-only, NO top_product_name: the signature block still renders (was fully invisible)", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            // no top_product_name, no starting_price_label — only the
+            // canonical field the owner actually filled in.
+            price_range: "מ-₪20",
+            products: [],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+    });
+
+    it("price_range-only signature card WITH a matching top product: price line renders", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            price_range: "מ-₪20",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+    });
+
+    it("starting_price_label-only (alias, no price_range): unchanged — still renders", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            starting_price_label: "החל מ-25₪",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+    });
+
+    it("both set: price_range (canonical) wins over starting_price_label (alias)", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            price_range: "מ-₪20",
+            starting_price_label: "החל מ-25₪",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+      expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
+    });
+
+    it("price_range set blocks the product-price fallback (same priority rule as the alias)", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            price_range: "מ-₪20",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null, price_min: 99 }],
+          }}
+        />,
+      );
+      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
+      expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+    });
   });
 
   it("no stray indicator/dot renders on an imageless card", () => {

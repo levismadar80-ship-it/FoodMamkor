@@ -12,6 +12,7 @@ import OfferBadge from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { formatPrice } from "@/lib/utils";
 // MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
 // the canonical Israel-local "HH:MM" formatter and the card interpolates it
 // into the very same `orders_open` string the page renders — a second copy here
@@ -21,7 +22,9 @@ import { getOrderWindowStatus } from "@/lib/orderWindow";
 import { israelTime } from "@/app/[locale]/producer/[id]/lib/order-status";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
+import { producerPoints } from "@/lib/producerPoints";
 import { allBadges, badgeCount } from "@/lib/badges";
+import { deriveAvailability, isAvailableToday } from "@/lib/availability";
 import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -36,19 +39,29 @@ import {
 import api from "@/lib/api";
 import { humanTime } from "@/lib/time-format";
 
+// MEH-1678: bidi-safe amount interpolation, mirroring the pattern
+// DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
+// amount sits INSIDE a Hebrew sentence ("משלוח: {amount}"), so it needs a
+// `<bdi>` wrapper rather than the whole string forced `dir="ltr"`, which
+// would reorder the surrounding Hebrew words. Not imported from
+// DeliveryBlock.jsx because it isn't exported there and duplicating five
+// lines is cheaper than widening that file's public surface for one caller.
+const AMOUNT_SENTINEL = "\u0000";
+function splitAroundAmount(text) {
+  const [before, after = ""] = text.split(AMOUNT_SENTINEL);
+  return { before, after };
+}
+
 // MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
 // available_today → primary (brand green); on_vacation / full_this_week →
 // fg-muted (recedes, no separate status color); accepting_orders → no dot.
 // Continues the MEH-717 line (eliminated the multi-color status palette);
 // v4 routes non-available states through fg-muted. Returns a token class.
 function availabilityDot(producer) {
-  const status =
-    producer.availability_state ||
-    (producer.availability_status === "vacation"
-      ? "on_vacation"
-      : producer.is_available_today
-        ? "available_today"
-        : "accepting_orders");
+  // MEH-1854: enum-first via the shared helper. This chain previously omitted
+  // the legacy "full" rung, so a full-this-week business on legacy-only data
+  // fell through to accepting_orders and rendered no dot.
+  const status = deriveAvailability(producer);
   let cls = null;
   if (status === "available_today") cls = "bg-primary";
   else if (status === "on_vacation" || status === "full_this_week") cls = "bg-fg-muted";
@@ -197,10 +210,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
+  // MEH-1938 chunk 3: distance to the CLOSEST point (mirrors the backend's
+  // haversine_min_km COALESCE, producer_queries.py:100-115), read through
+  // producerPoints() instead of Producer.lat/lng directly — producerPoints
+  // still falls back to Producer.lat/lng when there is no usable location row.
+  const points = producerPoints(producer);
   const distanceLabel =
-    userLoc && producer.lat != null && producer.lng != null
+    userLoc && points.length > 0
       ? formatDistance(
-          haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+          Math.min(...points.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng))),
           { unit: locale === "he" ? "he" : "latin" },
         )
       : null;
@@ -562,7 +580,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        {fridayMode && producer.is_available_today && (
+        {/* MEH-1854: reads the derived state, not the legacy column. A business
+            whose enum says available_today but whose legacy flag was never
+            written showed no Friday pill at all before this. */}
+        {fridayMode && isAvailableToday(producer) && (
           <span className="inline-flex w-fit items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
             {t("producer.card.badges.available_today")}
           </span>
@@ -579,6 +600,48 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
             <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
             {t("producer.card.favorites_count_short", { count: localFavCount })}
+          </p>
+        )}
+
+        {/* MEH-1678: producer-level delivery fee, a row (not a BADGE_CONFIG
+            entry — see PR body for why: MEH-1753's labels-contract scope
+            doesn't cover this object, and a plain text row needs no
+            disclosure popover under labels.md's indicator rule the way a
+            truncated badge would).
+
+            NOT the MEH-1210 "no price on discovery cards" case below: that
+            rule is about product/menu pricing ("how much does the bread
+            cost"), which stays a marketplace signal reserved for the
+            product level inside /producer. A delivery fee is logistics
+            information about reaching the business at all — the same
+            category DoorDash/Wolt show at listing level (MEH-1577's own
+            evidence) — not a price on what she sells. Distinguished
+            explicitly here so a future reader doesn't read this as MEH-1210
+            being quietly reversed.
+
+            `!= null`, not truthy: delivery_fee=0 is a VALUE ("משלוח חינם"),
+            not an absence (same distinction DeliveryBlock.jsx's AreaRow and
+            MEH-1942 already pin for the per-area field). Renders nothing
+            when delivery_fee is null/undefined — no "no delivery" row. */}
+        {producer.delivery_fee != null && (
+          <p className="flex items-center gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
+            <Truck size={14} className="shrink-0" aria-hidden="true" />
+            {producer.delivery_fee === 0 ? (
+              t("group_buys.delivery.fee_free")
+            ) : (
+              (() => {
+                const { before, after } = splitAroundAmount(
+                  t("group_buys.delivery.fee", { amount: AMOUNT_SENTINEL }),
+                );
+                return (
+                  <>
+                    {before}
+                    <bdi>{formatPrice(producer.delivery_fee)}</bdi>
+                    {after}
+                  </>
+                );
+              })()
+            )}
           </p>
         )}
 

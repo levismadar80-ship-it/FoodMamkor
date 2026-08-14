@@ -92,12 +92,73 @@ describe("CategoryRequestModal (MEH-141)", () => {
     expect(showToast.error).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it("calls onClose when backdrop clicked", () => {
+  // MEH-2039: this used to read `screen.getByRole("dialog")` and click it,
+  // which worked only because role="dialog" sat on the full-screen OVERLAY —
+  // i.e. the test's handle on "the backdrop" WAS the bug the ticket fixes. The
+  // role now lives on the inner panel, so the backdrop has to be addressed as
+  // the backdrop: the dialog's parent element.
+  //
+  // Strictly stronger than before — it now pins both halves of the behaviour,
+  // where the old version could not distinguish them at all.
+  it("calls onClose when the backdrop is clicked, and NOT when the panel is", () => {
     const onClose = vi.fn();
     render(<CategoryRequestModal open={true} onClose={onClose} />);
-    const backdrop = screen.getByRole("dialog");
-    fireEvent.click(backdrop);
-    expect(onClose).toHaveBeenCalled();
+    const panel = screen.getByRole("dialog");
+
+    // Clicking inside the panel must not close it.
+    fireEvent.click(panel);
+    expect(onClose).not.toHaveBeenCalled();
+
+    // Clicking the overlay behind it must.
+    fireEvent.click(panel.parentElement);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // MEH-2039. This modal is the one of the four the Playwright keyboard pass
+  // could NOT reach — it mounts behind a multi-step registration wizard that
+  // needs a live backend to advance — so its trap evidence lives here instead,
+  // against the real component rather than a stand-in.
+  //
+  // Why this discriminates by construction: jsdom does not implement native Tab
+  // focus movement. Nothing moves focus on a Tab keydown unless the component's
+  // own handler runs and calls .focus() itself. So if the trap were absent, the
+  // active element would simply stay put and both assertions would fail — the
+  // pass is only reachable through the code under test.
+  it("traps Tab inside the panel — wraps last→first and first→last", () => {
+    render(<CategoryRequestModal open={true} onClose={vi.fn()} />);
+    const panel = screen.getByRole("dialog");
+    const focusables = panel.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    last.focus();
+    expect(document.activeElement).toBe(last);
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(first);
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("locks body scroll while open and restores it on unmount", () => {
+    document.body.style.overflow = "auto";
+    const { unmount } = render(<CategoryRequestModal open={true} onClose={vi.fn()} />);
+    expect(document.body.style.overflow).toBe("hidden");
+    unmount();
+    expect(document.body.style.overflow).toBe("auto");
+  });
+
+  it("puts role=dialog on the panel, not on the full-screen overlay", () => {
+    render(<CategoryRequestModal open={true} onClose={vi.fn()} />);
+    const panel = screen.getByRole("dialog");
+    // The overlay is the parent; it must NOT also claim the dialog role, or the
+    // whole page sits inside the dialog boundary (MDN).
+    expect(panel.parentElement.getAttribute("role")).toBe("presentation");
+    expect(panel.className).not.toContain("inset-0");
+    expect(panel).toHaveAttribute("aria-modal", "true");
   });
 
   it("calls onClose on Escape key — WCAG 2.1 §2.1.2", () => {

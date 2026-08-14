@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
@@ -12,17 +13,24 @@ import staticRoutes from "./lib/static-routes.json";
  *           page-level notFound() at 200 — measured MEH-918/1398) and rewritten
  *           to an unmatched path so experimental.globalNotFound (PR #1995)
  *           renders a real 404.
+ * Touches:  Sentry (edge runtime, sentry.edge.config.js) — MEH-1906 added a
+ *           captureMessage on the backend-5xx fail-open branch only, so that
+ *           path stops being silent past a Vercel runtime log line.
  * Does NOT: own the 404 status for VALID pages (those pass straight through).
  *           Does NOT existence-check /[locale]/producer/<id> — the edge is
  *           permanently unauthenticated, so that check could not distinguish
  *           the owner of a pending business from a stranger and hard-404'd her
  *           own page (MEH-1632; full reasoning at the call site below).
  *           Producer data-loading + not-found UI still live in [slug]/page.js +
- *           producer/[id]/page.js.
+ *           producer/[id]/page.js. Does NOT alert on 429 or on a network
+ *           exception (unreachable backend) — MEH-1906 scoped the new Sentry
+ *           event to 5xx responses only; both other fail-open causes still
+ *           only log via `report()`, unchanged.
  * Related:  lib/static-routes.json (the guarded manifest this skips),
  *           app/global-not-found.js (real-404 renderer), lib/slug.js.
  * History:  MEH-1398 (creation — middleware existence-check);
- *           MEH-1632 (dropped the /producer/<id> branch — owner-facing 404).
+ *           MEH-1632 (dropped the /producer/<id> branch — owner-facing 404);
+ *           MEH-1906 (5xx fail-open now also reports to Sentry).
  */
 
 // Real static route segments under app/[locale]/ (excluding the [slug]
@@ -37,14 +45,63 @@ const intlMiddleware = createMiddleware(routing);
 
 // MEH-1899: the failure this exists for ran with ZERO observability — no log,
 // no Sentry — and was found only because an E2E spec happened to bite on it.
-// `console.error` and not Sentry deliberately: whether Edge Middleware can
-// reach Sentry at all is still an open Phase 0 question on MEH-1521, and a
-// report that depends on an unverified transport is not a report. Vercel
-// captures middleware console output in runtime logs, which is available today.
-// If MEH-1521 establishes a Sentry path, this is the one place to change.
+// `console.error` (not Sentry) covers every branch below unconditionally —
+// Vercel captures middleware console output in runtime logs, which satisfies
+// the DoD's log requirement regardless of Sentry reachability. MEH-1906
+// layered a Sentry event ON TOP of this, but only for the 5xx branch (see
+// reportFiveHundredToSentry below) — the observability.md dashboard-receipt
+// step for THAT addition could not be run from the CC sandbox (no live
+// deploy reachable) and is called out unverified in the MEH-1906 PR body;
+// this function itself is unchanged from MEH-1521/1899.
 function report(message, err) {
   console.error(`[middleware/producerExists] ${message}`, err ?? "");
 }
+
+// MEH-1906: the 5xx branch of the fail-open below was silent past the
+// console.error above — no Sentry event, same unmonitored-log gap MEH-1899's
+// comment already named for this file. Scoped to 5xx only (not 429, not the
+// unreachable-backend catch) per the ticket. Rate-guarded per URL per warm
+// Edge Function instance — a Set that resets on cold start — so a slug the
+// backend keeps failing on doesn't storm the dashboard on every repeat hit;
+// this does not change the fail-open decision itself, only whether THIS
+// occurrence also gets reported.
+const _reportedFiveHundredUrls = new Set();
+
+// The Set is bounded, because it is keyed by URL and the URL space is
+// attacker-reachable: every slug-shaped path is a distinct key, so a scanner
+// walking random slugs during a backend outage would grow it without a
+// ceiling inside a long-lived warm instance.
+//
+// On reaching the cap we CLEAR and carry on rather than stop reporting. The
+// obvious guard — `if (size >= CAP) return;` — bounds memory by going SILENT,
+// and going silent under a large multi-slug 5xx storm is precisely the state
+// this whole change exists to make visible (MEH-1906; "fail open, never fail
+// silent"). Clearing costs at most one repeat alert per slug per 1000 distinct
+// failing URLs, which is far cheaper than losing the signal exactly when the
+// outage is widest.
+const REPORTED_URLS_CAP = 1000;
+
+function reportFiveHundredToSentry(url, status) {
+  if (_reportedFiveHundredUrls.has(url)) return;
+  if (_reportedFiveHundredUrls.size >= REPORTED_URLS_CAP) {
+    _reportedFiveHundredUrls.clear();
+  }
+  _reportedFiveHundredUrls.add(url);
+  Sentry.captureMessage("producerExists: backend 5xx — failing open", {
+    level: "error",
+    extra: { url, status },
+  });
+}
+
+// MEH-1521: an unreachable backend already fails open (see the catch below),
+// but a SLOW backend previously had no bound at all — the edge request would
+// hang for as long as the platform's own connect/read timeout, which is far
+// longer than any user should wait for routing. AbortSignal.timeout() turns
+// "slow" into "unreachable" at a fixed 3s, which then rides the identical
+// fail-open path. 3s chosen to comfortably exceed a healthy backend response
+// (typically <200ms) while bounding the worst case to something a page nav
+// can absorb.
+const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 
 async function producerExists(url) {
   try {
@@ -55,7 +112,10 @@ async function producerExists(url) {
     // producers API. Abuse is bounded by the backend's slowapi rate limiting, not
     // by an edge cache. (The hint is kept so the fetch can still ride Vercel's
     // edge respect of the backend's Cache-Control, if any — best-effort, not relied on.)
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(EXISTENCE_CHECK_TIMEOUT_MS),
+    });
     if (res.ok) return true;
 
     // MEH-1899: 404 is the ONLY status that answers the question we asked.
@@ -75,6 +135,7 @@ async function producerExists(url) {
     // edge cache, so a burst from one IP is rate-limited by slowapi — and a 429
     // was previously indistinguishable from "this business does not exist".
     report(`backend answered ${res.status} for ${url} — failing open`);
+    if (res.status >= 500) reportFiveHundredToSentry(url, res.status);
     return true;
   } catch (err) {
     // Backend unreachable → fail OPEN (let the page handle it) rather than

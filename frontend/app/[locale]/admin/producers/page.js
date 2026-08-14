@@ -6,6 +6,7 @@ import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
 import RequestChangesModal from "./RequestChangesModal";
+import RejectModal from "./RejectModal";
 import { useAdminProducers } from "./use-admin-producers";
 import { useReviewChecklist } from "./use-review-checklist";
 import { ADMIN_REVIEW_APPROVE_CONFIRM } from "@/lib/admin-review-checklist";
@@ -173,6 +174,7 @@ function ProducersAdminPage() {
         onSetStoryCardOpenId={h.setStoryCardOpenId}
         onQuickApprove={checklist.attemptApprove}
         onRequestChanges={h.openRequestChanges}
+        onReject={h.openReject}
         onToggleStatus={h.toggleStatus}
         onToggleAmbassador={h.toggleAmbassador}
         onDeleteProducer={h.deleteProducer}
@@ -196,6 +198,24 @@ function ProducersAdminPage() {
         onClose={h.closeRequestChanges}
         onSubmit={h.submitRequestChanges}
         submitting={h.modalProducer ? h.isBusy(`request-changes:${h.modalProducer.id}`) : false}
+      />
+
+      {/* MEH-226: terminal reject composer — preset reasons fetched from the
+          backend, then a confirm step because submitting emails the owner. */}
+      <RejectModal
+        producer={h.rejectProducer}
+        presets={h.presets}
+        presetsError={h.presetsError}
+        presetKey={h.presetKey}
+        setPresetKey={h.setPresetKey}
+        freeText={h.rejectText}
+        setFreeText={h.setRejectText}
+        confirming={h.rejectConfirming}
+        onRequestConfirm={h.requestRejectConfirm}
+        onCancelConfirm={h.cancelRejectConfirm}
+        onClose={h.closeReject}
+        onSubmit={h.submitReject}
+        submitting={h.rejectProducer ? h.isBusy(`reject:${h.rejectProducer.id}`) : false}
       />
 
       {/* MEH-1027 Chunk B: context-rich delete confirm (was native confirm()). */}

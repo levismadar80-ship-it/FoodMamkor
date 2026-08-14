@@ -91,6 +91,24 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     render(<MapProducerCard producer={{ ...producer, lat: null, lng: null }} />);
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
+
+  // MEH-1938 chunk 3 — the discriminating case: distance now reads through
+  // producerPoints(), so a producer whose only coordinates live in a
+  // producer_locations row (no Producer.lat/lng) still shows a distance.
+  it("renders distance from a locations[] row when Producer.lat/lng are both null", () => {
+    window.localStorage.setItem("user_location", JSON.stringify(GEO));
+    render(
+      <MapProducerCard
+        producer={{
+          ...producer,
+          lat: null,
+          lng: null,
+          locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("map-distance-pill").textContent).toBe('54 ק"מ');
+  });
 });
 
 describe("MapProducerCard — meta line (🔒 §3 category-first, distance-last)", () => {
