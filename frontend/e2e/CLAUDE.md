@@ -31,6 +31,38 @@ Mirror this shape for new flows; keep timeouts explicit, not implicit.
     which is exactly what MEH-417 protects. Do not generalise it: mocking a
     flow spec reintroduces the MEH-417 regression. Currently applied in
     `e2e/visual/parity.spec.ts` (`producer detail`).
+  - **Second, narrow exception — intercepting a specific endpoint inside a
+    `flows/` spec (MEH-1968, ruling 14/08/2026, Sapir delegated: "Option A").**
+    Permitted **only** when all three conditions hold (AND, not OR):
+    1. The spec does not assert any backend **behaviour** — it exercises a
+       frontend state machine (which screen renders, what the UI does with a
+       fixed response), never "did the backend compute the right answer."
+    2. The mocked endpoint's contract is stable and documented — a Pydantic
+       response model, an OpenAPI entry, or an existing test pinning its shape.
+    3. The unmocked alternative burns a **shared resource** — e.g. the
+       `/auth/register` rate limiter on shared GitHub Actions runner IPs
+       across concurrent PRs.
+    Precedents this codifies rather than invents: `flows/28-register-success-state.spec.ts`
+    (mocks `POST /auth/register/producer`, `/auth/me`, `/categories` — the
+    question under test is which screen wins the render, not whether
+    registration itself succeeded) and `flows/29-register-journey-a.spec.ts`
+    (mocks `POST /auth/register`).
+  - **Distinguish a stub from a mock — do not conflate them.** A **stub** that
+    removes an *incidental* network call unrelated to what the spec asserts
+    (e.g. `flows/29`'s intercept of `POST /auth/check-password`, the
+    debounced strength-check `PasswordInput` fires on every keystroke past
+    12 characters) is not this exception and needs no justification against
+    the three conditions above — it isn't hiding an approved call, it's
+    preventing an incidental, timing-dependent one from flaking the test.
+    A **mock** that hides a call the spec's own subject depends on is what
+    conditions 1–3 gate. If removing the interception would change nothing
+    about what the spec is asserting, it's a stub; if it would remove the
+    thing under test, it's a mock and needs all three conditions stated in
+    the spec file.
+  - **Rejected: routing both merged specs to a separate, deploy-target-gated
+    suite instead.** `flows/22` already demonstrates where that leads — it
+    skips its localhost target and does not run in CI in practice. Widening
+    the no-mocks rule's exception is preferred over quietly losing coverage.
 
 ## Authenticated specs — where that coverage actually runs (MEH-999)
 
