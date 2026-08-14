@@ -550,7 +550,17 @@ GET    /users/me/following                        auth
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
-PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422
+PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422.
+                                                  MEH-2073: notification-only admin ping when an ALREADY-APPROVED producer changes a
+                                                  sensitive field — SENSITIVE_FIELDS = {city, phone, vegan_scope, vegetarian_scope,
+                                                  gluten_free_facility} (producer_me.py). Values are snapshotted before the setattr
+                                                  loop and diffed post-commit, so a form resubmitting an unchanged value does NOT
+                                                  ping; one BackgroundTask per PUT listing every changed field. Persistence,
+                                                  status, requested_changes and the response shape are all untouched — this closes
+                                                  the MEH-1508 hole where a business could pass the dietary cross-check at approval
+                                                  and edit vegan_scope the next day unobserved. Fail-open at the task boundary
+                                                  (_sensitive_edit_task), because the notifier's preamble sits outside its own
+                                                  per-channel try blocks and a raising BackgroundTask would break the owner's 200.
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
