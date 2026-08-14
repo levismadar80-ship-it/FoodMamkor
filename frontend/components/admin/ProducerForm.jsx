@@ -16,6 +16,7 @@ import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
+import { deriveAvailability } from "@/lib/availability";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -269,15 +270,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-1255: nationwide exclusion list.
         delivery_excluded_cities: initial.delivery_excluded_cities ?? [],
         // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
-        availability_state:
-          initial.availability_state ??
-          (initial.availability_status === "vacation"
-            ? "on_vacation"
-            : initial.availability_status === "full"
-              ? "full_this_week"
-              : initial.is_available_today
-                ? "available_today"
-                : "accepting_orders"),
+        // MEH-1854 — this chain was the most complete of the four and became
+        // the shared helper; it now calls it rather than restating it.
+        availability_state: deriveAvailability(initial),
         vacation_until: initial.vacation_until ?? "",
       });
     }

@@ -24,6 +24,7 @@ import { getVacationReturnDate } from "../lib/producer-format";
 // docs/CLAUDE-REVIEW.md rule 5.)
 import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
 import { humanTime } from "@/lib/time-format";
+import { isFullThisWeek } from "@/lib/availability";
 
 /**
  * Main-column header block for the producer detail page.
@@ -102,12 +103,12 @@ export default function ProducerHeader({
 
   const showAlerts = Boolean(favorited && user);
 
-  // MEH-1334: 3-state status. `full` is the legacy availability_status twin of
-  // full_this_week (MEH-291 7-day overlap contract, same as isVacation in
-  // ProducerDetail.jsx). Anything not closed/vacation reads as open — matches
-  // the old ContactCard OPEN_STATES default-open behavior.
-  const availState = producer.availability_state || producer.availability_status;
-  const isClosed = !isVacation && (availState === "full_this_week" || availState === "full");
+  // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
+  // matches the old ContactCard OPEN_STATES default-open behavior.
+  // MEH-1854: the helper returns the CANONICAL enum, so the legacy "full"
+  // twin is already normalised to full_this_week and no longer needs its own
+  // comparison here.
+  const isClosed = !isVacation && isFullThisWeek(producer);
   const vacationDate = getVacationReturnDate(producer, locale);
 
   // MEH-1546: order_window status is time-derived, so it must not run during
