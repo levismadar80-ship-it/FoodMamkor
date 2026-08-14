@@ -1195,6 +1195,19 @@ export const PendingProducersAdminProducersPendingGetResponse = /*#__PURE__*/ zo
 
 
 /**
+ * MEH-226: the reject-modal's radio options. Serving them from the same
+ * dict the handler composes with is what keeps the admin UI from growing a
+ * second copy of the Hebrew labels.
+ * @summary List Rejection Presets
+ */
+export const ListRejectionPresetsAdminProducersRejectionPresetsGetResponseItem = /*#__PURE__*/ zod.object({
+  "key": /*#__PURE__*/ zod.string(),
+  "label": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-226: one row of GET \/admin\/producers\/rejection-presets.\n\nTyped rather than a bare dict so the MEH-1748 codegen chain emits a real\nschema for this route — an untyped handler generates `zod.unknown()`,\nwhich makes the drift guard structurally unable to notice the shape\nchanging.'))
+export const ListRejectionPresetsAdminProducersRejectionPresetsGetResponse = /*#__PURE__*/ zod.array(ListRejectionPresetsAdminProducersRejectionPresetsGetResponseItem)
+
+
+/**
  * @summary Admin Delete Producer
  */
 export const AdminDeleteProducerAdminProducersProducerIdDeleteResponse = /*#__PURE__*/ zod.unknown()
