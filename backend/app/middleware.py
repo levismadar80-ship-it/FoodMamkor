@@ -80,9 +80,11 @@ class SentryRequestScopeMiddleware:
     Pure ASGI middleware (MEH-1906 — converted off ``BaseHTTPMiddleware``:
     that base class is what Starlette's own docs flag as problem-prone,
     and it's implicated in a boot-dependent RecursionError on
-    ``/producers/by-slug/*`` on staging — see MEH-1906. The frame is
-    eliminated by this conversion; the RecursionError's root cause was
-    NOT proven, so this is not claimed as a fix. Patterned after
+    ``/producers/by-slug/*`` on staging — see MEH-1906. The
+    ``BaseHTTPMiddleware`` machinery is eliminated by this conversion (the
+    anyio task group, the ``call_next`` hop, the streaming re-emit); the
+    RecursionError's root cause was NOT proven, so this is not claimed as
+    a fix. Patterned after
     Starlette's own shipped middlewares, e.g.
     ``starlette/middleware/cors.py:78-96`` (chain-of-ASGI-apps,
     non-``http`` scopes delegated untouched).
@@ -114,6 +116,18 @@ class SentryRequestScopeMiddleware:
         (``backend/app/auth.py:38-57``) does not include email — the
         helper ships ready for MEH-500's ``before_send`` hook to
         enrich from the User row if desired.
+
+    **What this conversion does NOT remove — measured, not assumed
+    (MEH-1906 follow-up).** Sentry's span wrapper still applies to this
+    class. ``patch_middlewares`` (sentry_sdk/integrations/starlette.py:411)
+    patches ``Middleware.__init__`` so that EVERY class passed to
+    ``add_middleware`` gets ``_enable_span_for_middleware``, regardless of
+    base class. Measured against the merged conversion with the FastAPI
+    integration initialised, ``SentryRequestScopeMiddleware.__call__``
+    ``.__name__`` is still ``_create_span_call``. So Sentry remains in the
+    frame; what changed is the frame's SHAPE, which is precisely the value
+    here — the next occurrence yields a differently-shaped trace instead of
+    one identical to itself.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -235,9 +249,16 @@ def install_middlewares(app: FastAPI) -> None:
     # payload came back `content-encoding: gzip`. Innermost, GZip receives the
     # handler's single complete chunk and the 1 KB floor actually applies.
     # MEH-1906 converted SentryRequestScopeMiddleware to pure ASGI (plain
-    # pass-through, no re-emission), which makes that specific hazard moot —
-    # but the position below is left unchanged since it remains correct and
-    # nothing requires moving it.
+    # pass-through, no re-emission), which removes THAT middleware as the
+    # example — but NOT the hazard, and the position below is still
+    # load-bearing rather than merely harmless. `app.middleware("http")` at
+    # the bottom of this function wraps `add_security_headers` and
+    # `record_request_metrics` in BaseHTTPMiddleware, and both sit OUTERMOST,
+    # so a streaming re-emitter still exists outside GZip. Measured on the
+    # merged conversion: 2 such instances. DO NOT move GZip outward on the
+    # basis that the Sentry middleware no longer streams.
+    # Pinned by tests/test_public_cache_and_gzip.py
+    # ::test_a_streaming_re_emitter_still_sits_outside_gzip.
     # Still outside the route handler, so the Cache-Control the two catalog
     # GETs set is written before GZip rewrites body + Content-Length.
     # Trade-off accepted: SlowAPI's 429 short-circuits outside this layer and
