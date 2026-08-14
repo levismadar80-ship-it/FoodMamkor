@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useOnboarding } from "@/lib/use-onboarding";
 import AccountSheet from "@/components/AccountSheet";
+import { itemsForSurface } from "@/lib/nav-registry";
 
 /**
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).
@@ -47,6 +48,17 @@ const HIDE_DELTA = 24; // accumulated downward px before compacting
 const REVEAL_DELTA = 8; // accumulated upward px before expanding
 const TOP_THRESHOLD = 60; // scrollY under this → always expanded
 
+// MEH-1703 chunk 3: the pill's destination sequence. Order lives HERE and not
+// in the registry because it genuinely differs per shell — the Header renders
+// home/map/experiences/about, this pill renders home/map/about, and no single
+// declaration order describes both (the chunk-0 finding; see the SHAPE NOTE in
+// lib/nav-registry.js). The registry supplies identity — which items exist,
+// their hrefs and their i18n keys — and this array supplies sequence.
+const BOTTOM_NAV_ORDER = ["home", "map", "about"];
+// Icons stay shell-local for the same reason: the pill's 22px Phosphor set is
+// a rendering decision, not an identity one, and the Header uses none of them.
+const BOTTOM_NAV_ICONS = { home: Compass, map: MapTrifold, about: Flower };
+
 export default function BottomNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -68,9 +80,17 @@ export default function BottomNav() {
   const downAccRef = useRef(0);
   const upAccRef = useRef(0);
 
-  // MEH-1014: rAF-throttled scroll listener. Still mirrored inline from
-  // Header.jsx:91-116 (MEH-29/734) — intentional copy, a shared hook
-  // extraction is a separate ticket; do NOT DRY this against Header here.
+  // MEH-1014: rAF-throttled scroll listener, mirrored inline from
+  // Header.jsx:91-116 (MEH-29/734) — an intentional copy.
+  //
+  // MEH-1703 removed the deferral that used to sit here ("a shared hook
+  // extraction is a separate ticket; do NOT DRY this against Header"). That
+  // pointer is spent: MEH-1703 WAS the separate ticket, and it landed — but
+  // it unified nav ITEMS (lib/nav-registry.js), not scroll behaviour. So the
+  // duplication below is still deliberate and still un-unified; what is gone
+  // is the promise that some future ticket would address it. Anyone extracting
+  // a shared scroll hook is opening new scope, not completing MEH-1703's.
+  //
   // Clamp kills iOS rubber-band overscroll (negative y / y past the max
   // producing phantom deltas); asymmetric accumulators give minimize a
   // longer runway (24px) than expand (8px) so it settles instead of
@@ -126,11 +146,17 @@ export default function BottomNav() {
     setCompact(false);
   }, []);
 
-  // MEH-669: hide the business entry from producers + admins (defense-in-depth;
-  // auth.py:432 is the server authority). Threaded into the sheet as showBiz.
-  const isProducer = user?.role === "producer";
-  const isAdmin = user?.role === "admin";
-  const showAddBusinessCta = !isProducer && !isAdmin;
+  // MEH-1703 chunk 3: the registry answers which items this surface offers for
+  // the current audience. MEH-669's "hide the business entry from producers and
+  // admins" gate moved WITH the row it gates — it is audience "consumer" on the
+  // registry's registerProducer record, read by AccountSheet itself, so the
+  // `isProducer`/`isAdmin`/`showAddBusinessCta` locals and the `showBiz` prop
+  // are gone. (auth.py:432 is still the server authority; this was always
+  // defense-in-depth.)
+  const navState = { signedIn: !!user, role: user?.role ?? null };
+  const byId = new Map(
+    itemsForSurface("bottomNav", navState).map((entry) => [entry.item.id, entry]),
+  );
   const hasAvatar = !!user?.avatar_url;
   const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
@@ -138,12 +164,35 @@ export default function BottomNav() {
     href === "/" ? (pathname || "/") === "/" : (pathname || "").startsWith(href);
 
   // 3 destination links + the account tab (rendered separately — it toggles
-  // the sheet instead of navigating).
-  const destinations = [
-    { id: "discover", href: "/", Icon: Compass, label: t("nav.discover") },
-    { id: "map", href: "/map", Icon: MapTrifold, label: t("nav.map") },
-    { id: "about", href: "/about", Icon: Flower, label: t("nav.about") },
-  ];
+  // the sheet instead of navigating). Identity from the registry, sequence
+  // from BOTTOM_NAV_ORDER, icons from BOTTOM_NAV_ICONS.
+  //
+  // `nav.discover` (not the Header's `nav.explore`) still labels home here —
+  // the registry keeps a separate record per surface precisely so this stays
+  // true. Both render "גלו" in he.json, so a fused key would have been
+  // invisible in Hebrew and wrong on /en (nav-registry.js:107-109).
+  const destinations = BOTTOM_NAV_ORDER.map((id) => byId.get(id))
+    .filter(Boolean)
+    .map((entry) => ({
+      id: entry.item.id,
+      href: entry.item.href,
+      Icon: BOTTOM_NAV_ICONS[entry.item.id],
+      label: t(entry.surface.labelKey),
+    }));
+  // The fourth tab. Unlike `destinations` above it is NOT dropped when absent:
+  // this tab is the sheet's only trigger, so a missing record is a registry
+  // error rather than a runtime state, and it is asserted here so the failure
+  // is loud and UNIFORM.
+  //
+  // Without this, the only read of the record sits in the guest arm of the
+  // aria-label ternary below — so deleting it would crash guests and leave
+  // signed-in users working, which is the worst of both worlds: an
+  // audience-dependent failure that a logged-in developer would not see.
+  // `itemsForSurface` throws on an unknown surface for the same reason.
+  const accountTab = byId.get("account");
+  if (!accountTab) {
+    throw new Error('nav-registry: the bottomNav surface is missing its "account" record');
+  }
 
   // MEH-852: single directional liquid-stretch indicator. A nav-level capsule
   // (not a per-tab layoutId) measures the ACTIVE route tab's rect and animates
@@ -412,7 +461,11 @@ export default function BottomNav() {
               onClick={() => setSheetOpen((v) => !v)}
               aria-haspopup="dialog"
               aria-expanded={sheetOpen}
-              aria-label={user ? t("account.menu.aria", { name: user.name }) : t("nav.account")}
+              aria-label={
+                user
+                  ? t("account.menu.aria", { name: user.name })
+                  : t(accountTab.surface.labelKey)
+              }
               className={tabCls(sheetOpen)}
             >
               {/* MEH-843: same quiet tint as the route tabs, but static — the
@@ -454,12 +507,14 @@ export default function BottomNav() {
         </nav>
       </div>
 
+      {/* MEH-1703 chunk 3: no `showBiz` — the sheet reads the MEH-669 gate off
+          the registry itself (audience "consumer"), so the predicate has one
+          owner instead of being computed here and threaded across a prop. */}
       <AccountSheet
         open={sheetOpen}
         onClose={closeSheet}
         user={user}
         logout={logout}
-        showBiz={showAddBusinessCta}
       />
     </>
   );

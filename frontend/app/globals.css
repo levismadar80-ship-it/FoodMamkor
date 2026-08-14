@@ -225,11 +225,18 @@ body {
      --font-hebrew it would swallow every Hebrew glyph. */
   font-family: var(--font-body), var(--font-hebrew), var(--font-hebrew-latin),
     'DM Sans', 'Heebo', sans-serif;
-  /* docs/archive/LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay
-     at 3% opacity. Adds organic "texture" without affecting legibility.
-     Inline SVG keeps it CSS-only (no extra HTTP request). */
+  /* docs/archive/LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay.
+     Adds organic "texture" without affecting legibility. Inline SVG keeps it
+     CSS-only (no extra HTTP request).
+     MEH-1990: opacity brought down from 0.035 to the audit-locked ≤2% ceiling
+     (MEH-537 R-D, split via MEH-972) — flat grain only, never gradient/blur/
+     glass. This is a value correction, not a new texture: the grain already
+     existed (landed 2026-04-08, LAUNCH_CHECKLIST fix 3), predating the
+     MEH-537 audit that later re-recommended adding one — the audit scored
+     the home page with this exact layer already live and apparently was not
+     aware of it. See PR body for the full Phase 0 finding. */
   background-color: #F5F0E8;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
   color: #1C1A17;
 }
 
