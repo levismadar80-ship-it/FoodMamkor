@@ -65,8 +65,11 @@ const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 // button. Before this, all three were checked ONLY inside the submit handler,
 // so a blank business name surfaced as "יש למלא שם עסק" next to "הצטרפו" on the
 // last step — two frames away from the field, with no way back to it.
-// The predicates are the SAME ones that ran there; they were moved, not added
-// (city stays ungated — MEH-951 made its marker visual-only on purpose).
+// The predicates are the SAME ones that ran there; they were moved, not added.
+// MEH-2015 chunk B: `city` joined this list — MEH-951's visual-only exception
+// (city carried a `required` marker that gated nothing) is revoked per
+// Sapir's 14.8.2026 ruling; city is the discovery axis (map + filter), not a
+// profile field.
 // Order is wizard order: the first offender decides which step a bounced
 // submit lands on.
 const CROSS_STEP_REQUIRED = [
@@ -83,6 +86,13 @@ const CROSS_STEP_REQUIRED = [
     focusId: "producer-phone",
     messageKey: "phone_required",
     isMissing: (f) => !f.phone || !validateIsraeliPhone(f.phone),
+  },
+  {
+    field: "city",
+    step: STEP.DETAILS,
+    focusId: "producer-city",
+    messageKey: "city_required",
+    isMissing: (f) => !f.city,
   },
   {
     field: "category_ids",
@@ -1025,9 +1035,12 @@ function RegisterProducerPageBody() {
                 autocomplete (MEH-213: free-text city forbidden). CitySearch
                 emits a string, so it can't use the event-based set() helper. */}
             <div data-testid="register-details-city">
-            {/* MEH-2015 chunk A: `required` here preserves today's VISUAL state
-                only — the marker predates this change and stays visual-only per
-                MEH-951 until chunk B's verdict. The field still gates nothing. */}
+            {/* MEH-2015 chunk B: `required` now gates — MEH-951's visual-only
+                exception is revoked (Sapir's 14.8.2026 ruling). CROSS_STEP_REQUIRED
+                blocks the DETAILS→CATEGORY advance and the final submit on an
+                empty city. CitySearch is passthrough-only for aria-invalid/
+                aria-describedby (MEH-2022) — the caller renders the message,
+                same pattern as the phone field above. */}
             <CitySearch
               id="producer-city"
               labelVisible
@@ -1035,12 +1048,16 @@ function RegisterProducerPageBody() {
               label={t("auth.register.producer.fields.city_label")}
               placeholder={t("auth.register.producer.fields.city")}
               value={form.city}
-              onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
+              onChange={(v) => {
+                clearFieldError("city");
+                setAndSave((prev) => ({ ...prev, city: v }));
+              }}
+              aria-invalid={fieldErrors.city ? "true" : undefined}
+              aria-describedby={fieldErrors.city ? "register-city-error" : undefined}
             />
-            {/* MEH-951: visual-only required marker — no submit-gating change. */}
-            <p className="text-xs text-fg-muted mt-1 text-start">
-              {t("auth.register.producer.fields.city_required_marker")}
-            </p>
+            {fieldErrors.city && (
+              <p id="register-city-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{fieldErrors.city}</p>
+            )}
             </div>
 
             {/* address is optional (no "*", not gated at submit) — label carries
@@ -1113,7 +1130,7 @@ function RegisterProducerPageBody() {
               />
               {/* MEH-951 map-privacy reassurance — same copy, moved out of the
                   Input helperText slot it used to ride; class recipe mirrors the
-                  city required-marker at :708. */}
+                  address_optional_hint paragraph directly below. */}
               <p className="text-xs text-fg-muted mt-1 text-start">
                 {t("auth.register.producer.fields.address_map_privacy_hint")}
               </p>

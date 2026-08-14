@@ -172,6 +172,12 @@ class TestProducerRegistrationUpgradePath:
         upgrade_payload = {
             "producer_name": "חוות השדרוג",
             "category_ids": [category.id],
+            # MEH-2015 chunk B: city is now required — this is a 401-guard
+            # test (Regression rule 6: a schema-invalid body proves nothing
+            # about the guard, since a 422 from body validation wins over the
+            # dependency's 401 when the body param precedes it in the
+            # handler signature). Keep the body schema-valid.
+            "city": "תל אביב",
             "primary_contact_method": "whatsapp",
             "phone": "0501234567",
             "declaration_accepted": True,

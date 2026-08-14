@@ -605,7 +605,13 @@ class ProducerRegister(BaseModel):
     producer_name: SanitizedBusinessNameField
     description: str | None = None
     short_description: str | None = Field(default=None, max_length=160)
-    city: str | None = None
+    # MEH-2015 chunk B: required on BOTH paths (new registration + MEH-143
+    # upgrade) — Sapir's 14.8.2026 ruling revokes MEH-951's visual-only
+    # exception. City is the discovery axis (map + filter), not a profile
+    # field: unenforced, it shipped empty. Twin of ExperienceCreate.city /
+    # EventCreate.city (MEH-2013's identical Field(..., min_length=1,
+    # max_length=100) shape).
+    city: str = Field(..., min_length=1, max_length=100)
     address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None

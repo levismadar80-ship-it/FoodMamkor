@@ -85,6 +85,10 @@ def test_normalize_instagram(raw, expected):
                 email="owner@example.com",
                 name="ספיר ניסוי",
                 producer_name="חוות הניסוי",
+                # MEH-2015 chunk B: city is now required (no default) on this
+                # schema; unrelated to what this test exercises (instagram
+                # normalization).
+                city="תל אביב",
                 instagram=ig,
                 category_ids=[1],
                 licensing_declaration_confirmed=True,
