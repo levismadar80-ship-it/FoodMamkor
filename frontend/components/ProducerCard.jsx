@@ -23,6 +23,7 @@ import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
 import { allBadges, badgeCount } from "@/lib/badges";
+import { deriveAvailability, isAvailableToday } from "@/lib/availability";
 import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -43,13 +44,10 @@ import { humanTime } from "@/lib/time-format";
 // Continues the MEH-717 line (eliminated the multi-color status palette);
 // v4 routes non-available states through fg-muted. Returns a token class.
 function availabilityDot(producer) {
-  const status =
-    producer.availability_state ||
-    (producer.availability_status === "vacation"
-      ? "on_vacation"
-      : producer.is_available_today
-        ? "available_today"
-        : "accepting_orders");
+  // MEH-1854: enum-first via the shared helper. This chain previously omitted
+  // the legacy "full" rung, so a full-this-week business on legacy-only data
+  // fell through to accepting_orders and rendered no dot.
+  const status = deriveAvailability(producer);
   let cls = null;
   if (status === "available_today") cls = "bg-primary";
   else if (status === "on_vacation" || status === "full_this_week") cls = "bg-fg-muted";
@@ -568,7 +566,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        {fridayMode && producer.is_available_today && (
+        {/* MEH-1854: reads the derived state, not the legacy column. A business
+            whose enum says available_today but whose legacy flag was never
+            written showed no Friday pill at all before this. */}
+        {fridayMode && isAvailableToday(producer) && (
           <span className="inline-flex w-fit items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
             {t("producer.card.badges.available_today")}
           </span>
