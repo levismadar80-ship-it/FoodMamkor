@@ -422,7 +422,11 @@ function EntryRow({ entry, freeLabel }) {
   const Icon = CATEGORY_ICON[entry.category] ?? CalendarBlank;
   const accentText = isExp ? "text-accent" : "text-primary";
   const tickBg = isExp ? "bg-accent" : "bg-primary";
-  const catChip = isExp ? "bg-accent/10 text-accent" : "bg-green-50 text-primary";
+  // MEH-2069: bg-accent/10 on the page background (cream, #f5f0e8) computed
+  // 4.07:1 — AA fail for text-xs (12px). Same usage-level fix already applied
+  // twice (MEH-2025/#2825, MEH-2032/#2909): solid bg-surface-card gets
+  // text-accent to 5.19:1.
+  const catChip = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
