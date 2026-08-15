@@ -73,6 +73,7 @@ from app.schemas.schemas import (
     AppleAuthRequest,
     AppleAuthResponse,
     CheckPasswordRequest,
+    DeliveryAreaCreate,
     ForgotPasswordRequest,
     GoogleAuthRequest,
     GoogleAuthResponse,
@@ -543,6 +544,19 @@ async def register_producer(
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
+            # MEH-1838 chunk A: delivery shape, previously never captured at
+            # registration — every producer landed on the column defaults
+            # (physical-only) regardless of what the business actually is.
+            # delivery_cities is deliberately NOT written here — Phase 0 found
+            # MEH-903 A already retired that flat column (admin.py:427-429,
+            # :486-489 pop it out on both create and update); producer_listing.py
+            # :258's delivery-city match reads delivery_areas rows exclusively.
+            # The city list is instead folded into the delivery_areas write
+            # below, the same live mechanism admin.py/producer_me.py's own
+            # _apply_delivery_cities use for a flat city list.
+            has_physical_location=data.has_physical_location,
+            offers_delivery=data.offers_delivery,
+            delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
         db.flush()
@@ -562,7 +576,16 @@ async def register_producer(
         # by one owner — this loop used to omit the flag, so a business that
         # registered WITH delivery areas was excluded from the משלוח chip by
         # the MEH-1848 conjunct. Same call in the new-email branch below.
-        persist_registration_delivery_areas(db, producer, data.delivery_areas)
+        # MEH-1838 chunk A: data.delivery_cities (the new flat city-list field)
+        # is folded in here as bare DeliveryAreaCreate(city=...) rows — same
+        # shape _apply_delivery_cities (admin.py/producer_me.py) builds for the
+        # identical input, so a nationwide vs. city-list registration is
+        # visible to the same delivery_areas.any() match producer_listing.py
+        # uses for every other producer.
+        delivery_areas = list(data.delivery_areas) + [
+            DeliveryAreaCreate(city=c) for c in data.delivery_cities if c and c.strip()
+        ]
+        persist_registration_delivery_areas(db, producer, delivery_areas)
         # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
         # This is the UPGRADE branch, and it is the one every OAuth signup
         # lands on — `/auth/register/producer/oauth` creates a consumer and a
@@ -716,6 +739,11 @@ async def register_producer(
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
+            # MEH-1838 chunk A: see the upgrade branch above — same fields,
+            # same reason (delivery_cities NOT written — see the note there).
+            has_physical_location=data.has_physical_location,
+            offers_delivery=data.offers_delivery,
+            delivery_nationwide=data.delivery_nationwide,
         )
         db.add(producer)
         db.flush()
@@ -734,7 +762,11 @@ async def register_producer(
         # MEH-1921: see the upgrade branch above — same call, same reason. The
         # two branches are the only Producer writers on this route and each
         # built its own rows, so fixing one would have left the other broken.
-        persist_registration_delivery_areas(db, producer, data.delivery_areas)
+        # MEH-1838 chunk A: see the upgrade branch above — same city-list fold.
+        delivery_areas = list(data.delivery_areas) + [
+            DeliveryAreaCreate(city=c) for c in data.delivery_cities if c and c.strip()
+        ]
+        persist_registration_delivery_areas(db, producer, delivery_areas)
 
         # MEH-1939 (MEH-1938 chunk 1): dual-write the primary branch location.
         # This is the NEW-EMAIL branch (password signup). Its twin is the
