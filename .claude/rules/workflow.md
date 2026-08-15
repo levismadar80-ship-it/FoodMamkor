@@ -1776,3 +1776,37 @@ Tasks auto-expire after 7 days.
     one that isn't load-bearing. This applies with the same force to boxes a
     PR marks **N/A** — state the reason (docs-only, no UI touched, no schema
     change), don't just tick past it.
+
+34. **A refuted premise updates the card DESCRIPTION, not just a comment
+    (MEH-2085 correction, MEH-1959 chain).**
+
+    When a session's Phase 0 disproves a factual claim a Linear card's
+    description states as true — "X does not exist", "no headers ship",
+    any assertion presented as fact — the correction goes **into the
+    description** (`save_issue` with a `patch` op), not only into a
+    comment. An audit that sweeps the backlog reads descriptions via
+    `list_issues`/`get_issue`; it does not also open every comment thread on
+    every card. A refutation that lives only as a comment is invisible to
+    exactly the process most likely to re-inherit the wrong claim.
+
+    **This is the inverse of rule 31's shape, not its opposite:** rule 31
+    keeps append-only chatter (CHANGELOG/HANDOFF) OUT of the channel that
+    matters (a code branch) because two branches would fight over one log.
+    This rule puts a correction INTO the channel that matters (the
+    description) because a comment thread is the append-only log an audit
+    never reads. Same lesson — put the fact where the next reader's tool
+    actually looks — applied to the opposite failure direction.
+
+    _Source: MEH-2085's own pre-launch audit initially classified
+    MEH-1959 as BLOCKS on the claim "no security headers exist" — a claim
+    that was **already false** four months before MEH-1959 was even
+    created (`frontend/next.config.js` + `backend/app/middleware.py`,
+    shipped 08/04/2026), and had already been disproven **twice**, by two
+    separate sessions (11/08, 14/08). Both disproofs were recorded as
+    comments; MEH-2085's audit — instructed to read cards, not comment
+    threads — inherited the stale description verbatim. Three generations
+    of the same wrong claim, caught only because the third session
+    happened to verify against the live code instead of trusting the
+    description. Fixed in the same audit (see MEH-2085's own correction
+    note) by editing MEH-1959's description directly rather than adding a
+    fourth comment._
