@@ -3,6 +3,32 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-15 — Lane G batch sweep + day-wide backfill (carrier MEH-2091)
+
+**מוזג היום (6):** #2952 (אודיט 175 כרטיסים) · #2954 (פער EN) · #2955 (ניגודיות a11y) · #2956 (כלל 34) · #2957 (patch doc ל-railway.json) · #2958 (tier C false-green).
+**פתוח במכוון (2):** #2953 · #2959.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **⭐ שלוש תפיסות Phase 0 היום, ואותה צורה בשלושתן: ה-prescription של הכרטיס הייתה שגויה, ומימוש מילולי היה עובר את ה-DoD ומשגר רגרסיה.** ‏(א) headers אבטחה — CSP כבר **אוכף** ו-HSTS עם preload מ-08/04; ביצוע הכרטיס היה **downgrade** לפרודקשן חיה. (ב) צורת משלוח — העמודה `delivery_cities` מתה, ההתאמה הצרכנית קוראת רק `delivery_areas`; כתיבה "לפי הכרטיס" הייתה נראית תקינה בשורה ובלתי-נראית בחיפוש. (ג) tier C — הכשלת `Repo guards` הייתה מאדימה **כל PR ברפו לתמיד**, כי ל-job אין venv מעצם התכנון. **ההרגל שתפס את שלושתן: לעקוב עד הצרכן בפועל (query layer / runtime / job definition), לא לעצור ב"הדבר קיים".**
+
+2. **‏#2953 (security headers) מוחזק לספיר — אל תמזגי אותו כ-CC.** tier RED בתחום security. אם את פותחת אותו: **אל תממשי את הכרטיס כלשונו**, הוא היה מוריד אבטחה. הפער האמיתי היחיד שנשאר הוא `'unsafe-inline'`/`'unsafe-eval'` ב-`script-src` (`next.config.js:84`), והדרך הנכונה היא nonce ב-Report-Only **לצד** ה-CSP האוכף הקיים, לא במקומו.
+
+3. **‏#2959 (chunk A) לא מוזג — וה-description של הכרטיס שלו כבר טוען שכן.** הבלוק העליון שם נפתח ב"אחרי מיזוג Chunk A (PR #2959)". אומת ב-`pull_request_read`: `merged: false`, `mergeable_state: behind`. **לפני chunk B — לסנכרן ולמזג את A, ולא להסתמך על ה-description.** וכשתגיעי ל-chunk B: מסך שמציג "אילו ערים נבחרו" חייב לקרוא `producer.delivery_areas`, לעולם לא `producer.delivery_cities` (תמיד ריק).
+
+4. **🚦 הכרעת E2E שנקבעה היום — אודם ב-`E2E gate` אינו חוסם רק כששלושת התנאים מתקיימים יחד:** (1) שוחזר מחוץ לענף (`staging` עצמו ו/או ענפים לא-קשורים) · (2) אפס קוד ריצה בדיף, **נבדק ולא משוער** · (3) אינו ב-required-context set. **שניים מתוך שלושה = עצירה.** אודם שלא שוחזר מחוץ לענף הוא הדיף שלך עד שיוכח אחרת, גם כשהשער אינו נדרש. היום שלושתם התקיימו (500 מ-backend staging על `by-slug`, דיף של 3 קבצים ללא קוד ריצה, ו-`protect-staging` דורש `CI gate`+`Deploy gate` בלבד) — ולכן מוזג.
+
+5. **כלל 34 חדש ב-`workflow.md`.** סשן שמפריך טענה עובדתית ב-description של כרטיס — מעדכן את ה-**description**, לא רק הערה. נולד משרשרת של **שלושה דורות** של אותה טענה שגויה, ששרדה כי שתי ההפרכות הקודמות נרשמו בהערות והאודיט קורא כרטיסים.
+
+6. **מכניקת מיזוג:** ‏405 עם `"2 of 2 required status checks are expected"` = `mergeable_state: behind`, לא כשל. ה-ruleset דורש ענף מעודכן. `git merge origin/staging` מקומית + push אמיתי (לא `update_pull_request_branch`, כדי להבטיח הפעלת workflows), להמתין לשערים, ואז למזג. קרה בשלושת ה-PRs.
+
+7. **שני כרטיסי-נשא נשארו פתוחים בכוונה** — ה-PRs שלהם (#2917, #2869) **לא** מוזגו, חסומים רק על סטטוס Vercel לא-נדרש ("Deployment rate limited", מתאפס יומית). דורש קליק מיזוג של ספיר, אין מה לתקן בדיף.
+
+8. **‏`Refs` עומד על 2 מתוך 6** בטבלת כלל 29b — עוד אי-סגירה היום, נסגר ידנית. **לאמת אחרי כל מיזוג, בשני הכיוונים** (גם "סגר מה שלא היה צריך" וגם "לא סגר מה שהיה צריך").
+
+9. **ממתין לספיר, מסודר לפי מה שחוסם:** ה-flip של `railway.json:8` ל-`/health/readiness` — ה-patch doc נחת ב-#2957, שער הסדר נפתח (תיקון ה-seed מוזג), **אבל לאמת ש-`/health/readiness` בפרודקשן מחזיר 200 לפני ההחלה** (המדידה של 503 קודמת לתיקון, ו-Railway חסום מה-sandbox) · הכרעת charset ב-slug (וקטור homograph אמיתי אך מוגבל להתחזות חזותית) · שני קליקי מיזוג לעיל.
+
+---
 ## 2026-08-14 (later, backfill MEH-2086) — MEH-1925: Cloudinary E2E bandwidth stub
 
 **מוזג:** #2950 — `frontend/e2e/flows/_cloudinary-stub.ts`, שכל 36 ה-flow specs מייבאים ממנו במקום מ-`@playwright/test`.
