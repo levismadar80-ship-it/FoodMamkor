@@ -1,6 +1,6 @@
 # Pre-launch blocker audit (MEH-2085)
 
-> **swept 28 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
+> **swept 37 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
 
 **Method.** Source of truth is Linear LIVE via `get_issue`, one card at a time.
 `list_issues` is used ONLY as the index (IDs, titles, labels, state, priority):
@@ -16,7 +16,7 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 2. **DEFER** — real work, no user harm at launch.
 3. **MOOT** — the premise depends on data, history or scale that does not exist.
 
-**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 17 · MOOT 0 · FLAGGED 1
+**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 25 · MOOT 0 · FLAGGED 2
 
 ---
 
@@ -63,6 +63,14 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 | **MEH-2046** | 🗺️ /map fulfillment IA — צ'יפי משלוח+איסוף מקודמים, תגי כרטיס, העברת ש | Large /map fulfillment IA chain, and mostly ALREADY LANDED — PRs #2855, #2880, #2894, #2903, #2904 and #2919 are attached. Discovery/IA improvement: promote delivery+pickup to a fixed chip row, fulfillment tags on cards, move the layer control. It does close the MEH-1836 divergence (a nationwide business passes the delivery filter but renders no badge), which is a real discovery defect — but that is being fixed inside this chain, not blocked on it. |
 | **MEH-1896** | 🕳️ .loose() הוא top-level בלבד — אובייקטים מקוננים עדיין מסולקים, ושער | Bottom (14/08) closed the design fork: option ג only — extend the parity gate, do not hand-add .loose() to nested sites, because MEH-1748 decided to adopt codegen and a generated schema reflects nested objects automatically. Critically, the ONE live bug the audit found (delivery_areas[].delivery_fee) was already fixed under MEH-1942, Done, PR #2693 with a fail-to-pass test. What remains (locations[].opening_hours/.phone, categories[].producer_count) is latent or wholly inert — no consumer reads them. |
 | **MEH-2052** | 🔓 הוק ה-bash-safety: הרגקס של sed -i נעצר בתו > הראשון — כל sed שנוגע  | Real coverage gap in CC's own guardrail: check-bash-safety.sh:136 uses [^>]* which stops at the first '>', so any sed -i editing a version constraint (>=, <=) escapes the deny — proven WITH a control (the same sed without '>' IS blocked, which is what rules out 'the file simply is not covered'). Protects the repo from the agent, not users from harm: zero consumer surface. Sapir-only either way — .claude/hooks/** is hard-deny in both directions (rule 32 corollary). |
+| **MEH-2070** | 📱 לאדמינית אין נתיב נייד ל-/admin — הגאפ ש-MEH-1701 לא כיסה: הכרעה A ( | The admin has no mobile entry point to /admin — nav-registry declares admin as desktop-only with an in-code comment saying it is a known gap, not a design decision. Affects the ADMIN's operating convenience, not a consumer: desktop access works, and manual approval (the LOCK) is still performable. Needs a Sapir A/B decision before any code. |
+| **MEH-1908** | 🔤 `show_all` — מחרוזת אחת משרתת שלושה צרכנים ושוגה בשניהם: ריבוי קשיח  | Live consumer-visible copy defect on producer pages: show_all has no ICU plural so count=1 renders 'הצג עוד 1 ערים', and the same string labels PICKUP POINTS as 'ערים' — wrong at every count, not just at 1. Reachable at 16 cities / 4 pickup points / 7 areas. Kept out of BLOCKS: it is wording quality, the criterion excludes 'looks unpolished', nothing functional breaks, and it is gated on Sapir's verbatim copy approval (rule 22) which is already drafted in the 09/08 ruling. |
+| **MEH-2073** | 🔔 עסק מאושר עורך שדות רגישים בלי סיגנל — ping אדמין notification-only  | Notification-only admin ping when an APPROVED business edits city/phone/dietary-scope; PR #2928 attached. The underlying gap is real — MEH-1508 cross-checks dietary declarations AT approval, and the owner can change vegan_scope the next day with no signal. Kept out of BLOCKS because the label contract already presents diet flags to consumers as self-declared (labels.md), so the consumer is not told these were verified, and this card explicitly does not block the edit — it only signals. |
+| **MEH-2076** | 🛡️ Review conflict-of-interest guard — חסימת ביקורת על בית עסק מאותה ק | Explicitly post-launch by Sapir's own 14/08 ruling recorded in the card. Closes the last conflict-of-interest hole in reviews (a business owner reviewing a same-category competitor). Real integrity work; the existing owner-guard, WhatsApp-click gate and Haiku moderation are already in place, so the surface is not unguarded at launch. |
+| **MEH-1615** | 🔗 branch-name auto-link מנוגד ל-branch-name gate ב-PRs docs-only — MEH | Folded into MEH-1949 by the 09/08 orchestrator ruling — one guard fix (extend check-linear-mentions.sh to branch names), not three separate ones, and the root fix (disabling branch-name auto-link at Linear workspace level) is a Sapir integration setting. Ticket-hygiene tooling: it corrupts Linear statuses, never the live site. |
+| **MEH-1736** | ⚔️ branch-name gate × rule 29 — סתירה מבנית: כל PR המשך לטיקט Done מהפ | Structural contradiction between the branch-name gate (requires meh-NNNN in the slug) and rule 29 (forbids a Done ticket's identifier), with 9 measured instances in BOTH directions — including the dangerous one where an OPEN card with a live Alembic human gate was auto-closed to Done three times. Sapir already decided the shape on 02/08 (disable branch-name auto-link at Linear workspace level) and 09/08 folded it into MEH-1949. Corrupts Linear status, never the live site. |
+| **MEH-1943** | 🌐 קופי משתמש כתוב ב-backend — מחרוזות עברית קשיחות ב-HTTPException מצב | Chunk A landed (PR #2833). Three live occurrences remain: delivery_validation.py:44,78 quotes UI labels inside backend strings, producer_me.py:653 leaks the AVAILABILITY_STATES enum into a Hebrew sentence, producer_recipes.py:86 emits English plus raw UUIDs straight to screen. Error-copy quality on owner-facing forms — confusing, but nothing is blocked and nothing material is misrepresented. The one instance that DID point at a renamed UI label was already fixed under MEH-1940. |
+| **MEH-1514** | 🫥 VRT /about מצלם עמוד שקוף — scroll-reveal נשאר opacity:0 אך תופס גוב | Test-infra coverage gap: /about VRT shoots a 5732px page of which ~1000px is visible, because FadeInSection uses whileInView (IntersectionObserver) and parity.css only neutralises CSS animation — so sections sit at opacity:0 while holding full layout height. The spec measures HEIGHT, not content, and a regression inside editors-pick/verification/tips would pass silently. No user harm; the scroll-reveal works correctly for real users. DISCOVERED sub-item carried to the discovered section: the founder portrait renders as a magenta block in every baseline and CC could not determine why — unverified whether it also happens on the live site. |
 
 ---
 
@@ -79,3 +87,16 @@ Not guessed into a bucket, per the card's own instruction.
 | ID | Title | Evidence |
 |---|---|---|
 | **MEH-2020** | 🔤 decision-first — איזה charset מותר ב-slug ציבורי? היום ערבית/קירילית | CANNOT CLASSIFY without a test I did not run. Measured behaviour is real: _slugify uses Python 3 \w which is Unicode-aware, so Arabic/Cyrillic/CJK slugs are served in production today by regex default, not by decision. The charset policy itself is a Sapir product decision (DEFER-shaped). BUT the card records an UNVERIFIED homograph vector against RESERVED_SLUGS — if a look-alike character can claim a reserved path, that is security and BLOCKS. TO RESOLVE: test whether the RESERVED_SLUGS comparison is homograph-safe. Not guessed into a bucket. |
+| **MEH-2069** | ♿ שני מופעי אחות ל-MEH-2032 — bg-accent/10 + text-accent על טקסט קטן ב | CANNOT CLASSIFY from the card — and the card itself says so. The sibling (MEH-2032) measured bg-accent/10 + text-accent at 4.07:1, an AA failure, but ONLY when that chip sits on the cream #f5f0e8 background. Whether EventsClient.jsx:425/467 and AboutProcessClient.jsx:96 render on cream or on white (#ffffff) is explicitly unverified, and on white the number changes and may pass. TO RESOLVE: measure the computed background behind each chip in a real DOM. If cream → AA failure → IS 5568 / Israeli accessibility law is regulatory exposure and this is BLOCKS. If white → close with no code change. |
+
+---
+
+## 5 · Discovered along the way
+
+Findings surfaced by the sweep that are **not** one of the 175 cards. Per this
+card's scope, none of these was opened as a Linear issue — they are listed for
+Sapir to decide on.
+
+| Surfaced by | Finding |
+|---|---|
+| MEH-1514 | Founder portrait (AboutClient.jsx:166, IMG-01) renders as a solid MAGENTA block in every /about VRT baseline, including human-reviewed ones. `onError` did not fire, so this is NOT the coded fallback path. Whether it also happens on the LIVE site was never checked. If it does, it is a product bug on a consumer page, not a test-environment artifact. Not opened as a card (this audit does not open cards) — needs one look at live /about. |
