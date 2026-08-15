@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 test.describe("Search", () => {
   test("submitting hero search navigates to /producers?q=", async ({ page }) => {
