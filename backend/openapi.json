@@ -8256,6 +8256,19 @@
             "title": "Delivery Areas",
             "type": "array"
           },
+          "delivery_cities": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Cities",
+            "type": "array"
+          },
+          "delivery_nationwide": {
+            "default": false,
+            "title": "Delivery Nationwide",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -8278,6 +8291,11 @@
               }
             ],
             "title": "Email"
+          },
+          "has_physical_location": {
+            "default": true,
+            "title": "Has Physical Location",
+            "type": "boolean"
           },
           "instagram": {
             "anyOf": [
@@ -8327,6 +8345,11 @@
               }
             ],
             "title": "Name"
+          },
+          "offers_delivery": {
+            "default": false,
+            "title": "Offers Delivery",
+            "type": "boolean"
           },
           "password": {
             "anyOf": [
