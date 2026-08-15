@@ -688,6 +688,20 @@ class ProducerRegister(BaseModel):
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
+    # MEH-1838 chunk A: delivery-shape fields — registration previously
+    # captured NO axis at all (has_physical_location/offers_delivery both
+    # silently defaulted at the DB layer), so every new business landed
+    # identical regardless of shape. has_physical_location/offers_delivery/
+    # delivery_nationwide map onto their Producer columns directly
+    # (models.py:251-256). delivery_cities does NOT — see the Phase 0 note
+    # on the model_validator below (MEH-903 A): the router folds it into
+    # delivery_areas rows instead of the legacy flat column. Defaults match
+    # the Producer model's own column defaults, so an existing caller that
+    # omits these fields is unaffected.
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
@@ -822,6 +836,35 @@ class ProducerRegister(BaseModel):
     def _require_categories(cls, v):
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
+
+    # MEH-1838 chunk A: same physical-or-delivery / nationwide-XOR-cities
+    # semantic as ProducerAdminCreate._validate_location_mode (:1560-1582) —
+    # NOT a verbatim copy. Phase 0 (required before this chunk) found the
+    # naive read wrong twice over:
+    #   1. ProducerAdminCreate's own XOR checks delivery_area_cities, not the
+    #      flat delivery_cities the DB CHECK (models.py:447-453,
+    #      delivery_nationwide_xor_cities) is written against — MEH-903 A.
+    #   2. The flat column MEH-903 A's comment points at is itself legacy:
+    #      admin.py:427-429/486-489 pop it out of every write on purpose, and
+    #      producer_listing.py:258's "delivers to <city>" match reads
+    #      delivery_areas rows exclusively — the flat column is dead weight
+    #      kept only because dropping it needs its own Alembic chunk.
+    # This validator still checks self.delivery_cities (the PAYLOAD field —
+    # correct, matches what the frontend sends and what the DB CHECK guards
+    # semantically), but the router folds a non-empty list into delivery_areas
+    # rows rather than the column, so the city list is actually visible to the
+    # live filter. See the router-side comment at auth.py for the write.
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        if not self.has_physical_location and not self.offers_delivery:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        if self.delivery_nationwide and not self.offers_delivery:
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
+        return self
 
 
 class GoogleAuthRequest(BaseModel):
