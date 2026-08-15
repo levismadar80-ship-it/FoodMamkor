@@ -1,6 +1,6 @@
 # Pre-launch blocker audit (MEH-2085)
 
-> **swept 50 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
+> **swept 64 of 175, chunk 2 of 3** — a resuming session reads this line and continues from it; it does not restart.
 
 **Method.** Source of truth is Linear LIVE via `get_issue`, one card at a time.
 `list_issues` is used ONLY as the index (IDs, titles, labels, state, priority):
@@ -16,7 +16,17 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 2. **DEFER** — real work, no user harm at launch.
 3. **MOOT** — the premise depends on data, history or scale that does not exist.
 
-**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 38 · MOOT 0 · FLAGGED 2
+**Where the DEFER/MOOT line was drawn, stated so it can be argued with.** The
+criterion is applied *in order*, so DEFER is tested before MOOT. A card that is
+merely **trigger-gated** on scale — "revisit at 15+ businesses", "audit 30 days
+after launch", "check when there is session-recording data" — still describes
+real work with a real downstream deliverable, so it lands in DEFER even though
+the scale it names does not exist yet. MOOT is reserved for a premise that is
+**void or refuted**: the card's suspect was measured and is not there, or the
+entity it acts on does not exist at all. Drawn the other way, MOOT would swallow
+every post-launch card and stop meaning anything.
+
+**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 51 · MOOT 1 · FLAGGED 2
 
 ---
 
@@ -84,12 +94,72 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 | **MEH-2036** | 🚚 פילטר ימי משלוח multi-select (OR) — pills מרובים, המשך MEH-1645/1771 | Delivery-day filter goes multi-select (OR); PR #2840 attached. Discovery enhancement — the single-select version works today. The card's own context says the value grows with supply density (~8 businesses per city now), which is the argument for later, not now. |
 | **MEH-2048** | 🧹 pickup_points — עצירת שני נתיבי הכתיבה (admin+import) שמייצרים בוליא | Two write paths (admin.py:345, producer_import.py:287) set the pickup_points boolean that no consumer surface reads once MEH-2046's rows-only predicate lands, which makes the admin checkbox a control that lies. NOT MOOT: the write paths exist regardless of data. Harm is bounded today — Sapir measured count=0 businesses in the boolean-without-rows state on 13/08 — so nothing is currently mis-displayed; the risk is any future import or admin save creating one. |
 | **MEH-2064** | 🧹 [RED · אחרי soak] drop products.price_range הלגסי — ה-follow-up שהמי | RED column drop that migration e4790e538aa2 promised as a follow-up in May and nobody opened until 13/08. Real work independent of data: the frontend fallbacks in ProductsSection.jsx / ProducerSections.jsx must go before the drop (reader-then-contract, ADR-007). NOTE the one part I cannot settle — the entry-condition count (products with price_range NOT NULL AND price_min NULL) needs a DB query; if it is >0 a backfill decision is Sapir's, and free-text like ₪45/ק"ג cannot be parsed automatically per the migration's own note. |
+| **MEH-2043** | 🔤 StoryCardCanvas מוריד שני .woff2 מ-fonts.gstatic.com בזמן ריצה — זו  | StoryCardCanvas.jsx:35-36 fetches two .woff2 from fonts.gstatic.com AT RUNTIME in the user's browser, with version-pinned URLs (v21/v14) that Google can stop serving with no warning — while byte-identical local copies have been in the repo since PR #2838. Degrades the exported story card to a default font; it does not block anything, and the export surface is owner-facing. PR #2862 attached. The trap worth keeping: the local file is latin-only, and the canvas draws a HEBREW business name, so a careless fix breaks silently. |
+| **MEH-1767** | 🛡️ Canonical-component guard — שער lint נגד שדות כתובת/עיר שנכתבים ידנ | ESLint guard against hand-rolled address/city fields instead of AddressSearch/CitySearch — the class shipped twice (MEH-1455, MEH-1766), so a guard is justified. Warn-only ratchet, zero product code, staged for Sapir as PR #2863 and labelled not-cc. Prevents a future recurrence; fixes nothing currently broken. |
+| **MEH-903** | 🧹 Decommission `delivery_cities` dual-write column → migrate reads+wri | Chunk A merged (#1449); Chunk B closed with Q1=0 on BOTH staging and prod (Sapir, 03/07). All that remains is Chunk C — dropping the `delivery_cities` column (RED, Expand-Contract) — which the card itself explicitly parks until after launch. The dead column is read by no user path and written by none, so leaving it costs a consumer nothing. |
+| **MEH-1625** | 📋 הרחבת מטריצת ה-personas ב-MANUAL_TESTING — P5 (מקסימלי + תווי קצה +  | The documentation half already shipped (PRs #2816, #2828 — the persona was renamed P5 to P6 because P5 was taken). What remains is the physical execution of runs P1-P5, blocked on the staging backend returning non-2xx. That is QA debt on a test environment, not a defect a production user meets. |
+| **MEH-1428** | ✨ "בקשו ביקורת" — קישור ביקורת חתום שבעלת העסק שולחת בעצמה (מודל Thumb | New feature (signed «בקשו ביקורת» review-request link, Thumbtack model) with no existing defect. Worth flagging: it is the technical dependency of MEH-409 item ה' (3-5 seed reviews per business before public launch), so if Sapir chooses to collect those through the product rather than by hand, the timing becomes pre-launch. Still DEFER — seed reviews can be collected manually, so this is not a hard dependency. |
+| **MEH-1272** | 🤖 [Post-launch] V2 אימות רישיון אוטומטי — הצלבה מול dataset פתוח של מש | Explicitly labelled post-launch and decision-first, with a stated trigger of 15+ active businesses (or a felt manual-verification load). No execution prompt was written on purpose. Automates what MEH-1271 does by hand; the manual baseline stays the guarantee, and its own DoD forbids auto-rejection (the manual-approval LOCK survives). Nothing here can harm a launch-day user. |
+| **MEH-1399** | 🗂️ Admin review checklist — Phase 2 (DB-editable + per-producer audit  | Phase 2 of the admin review checklist — moving the 7 items from static config into two new tables plus a per-approval audit trail. The 09/08 groom note at the bottom records the blocker clearing: Phase 1 shipped in PR #1998, so this is ready but unprioritised. Admin-internal surface with a working Phase 1 underneath; a consumer sees none of it. RED migration, so it needs Sapir's hands regardless. |
+| **MEH-1430** | 🎨 LocationModal Refresh — C hybrid: bottom-sheet בנייד + dialog ב-desk | Approved mockup (21/07) restyling LocationModal into a mobile bottom-sheet + desktop dialog. The card's own words: "שכבה ויזואלית בלבד, אפס שינויי התנהגות" — every behavioural contract (useFocusReturn, Esc, MEH-1192 inline geoError, z-[9000], onSelectCity) is to be preserved verbatim. This is squarely the criterion's excluded case: a surface that "would look unpolished" is not a blocker. |
+| **MEH-1529** | 🧪 schemathesis 4.21→4.24 — pytest נהרג בטיימאאוט; post-launch (מחליף א | Card is explicitly post-launch in its own title and dependency block ("⏸️ post-launch. לא להתחיל לפני"). schemathesis is a test-fuzzing tool with zero product code; the lock sits on a working 4.21.1 and the bump is a floor raise, not a CVE. Note for Sapir, not a blocker: without MEH-1518 Phase E's declarative dependabot ignore, the bump reopens itself weekly. |
+| **MEH-2049** | 🔗 /map — סנכרון פילטרים↔URL (אין deep-links, רענון מאפס הכל) [post-lau | /map filters have no URL representation at all (verified by grep in MEH-2046 Phase 0: zero searchParams/router.push under app/[locale]/map/**), so a refresh loses them and no filtered map can be shared. Real gap, but it is friction and a missed SEO/deep-link opportunity, not harm — nothing is misrepresented and no task is blocked. Also hard-blocked by MEH-2046, which fixes the final filter set the URL must encode. |
+| **MEH-263** | 📋 LocationModal z-index חוסם GPS button — לבדוק אחרי launch: UX אמיתי  | Observation card, not a task — its own text says "זהו תיעוד בלבד" and gates on 50+ businesses plus session-recording data that does not exist yet. The measured fact is real (LocationModal fixed inset-0 z-[9000] covers the GPS button at z-[1000]) but the card deliberately declines to rule whether that is the intended flow or a defect, and answering it needs production traffic. NOTE ON THE LINE DRAWN: trigger-gated research cards like this are DEFER, not MOOT — the criterion is applied in order, and there IS a downstream deliverable once the trigger fires. MOOT is reserved for a premise that is void or refuted. |
+| **MEH-569** | 📊 Adversarial-review effectiveness audit — 30-day post-launch (TP/FP/F | A 30-day post-launch effectiveness audit of /adversarial-review, by definition unrunnable before launch + 30 days — a schedule, not a missing premise. The 09/08 groom note at the top usefully widens what it must measure: MEH-1844 found the CI reviewer INTERMITTENT, so PRs that got a silent no-op are "no data", not false negatives, and need their own field rather than being absorbed into TP/FP/FN. (That intermittency was itself later reported resolved in workflow.md, 13/08 — worth re-deriving when the audit runs rather than inheriting either claim.) |
+| **MEH-725** | feat: tokenize 5 #e8e0d0 icon-fill literals (skeleton shimmer + empty- | Five #e8e0d0 literals used as icon fills (skeleton shimmer + empty-star tint), deferred pending a brand ruling on whether a disabled/muted-surface token should exist. The card states the key fact itself: there is no visual bug — the sites render at #e8e0d0 today and would render identically after any of the three options. Pure internal consistency; zero rendered difference for a user. |
+
+### MEH-1456 — its own paragraph, as the card requires
+
+**Verdict: DEFER. Recommendation: land chunks 0–2b before launch anyway, and the
+single next action is Sapir's, not CC's.** Those are two different questions and
+the card asks for both, so they are answered separately here.
+
+**Why DEFER by the criterion.** Categories are keyed on their Hebrew display
+name instead of a stable `slug`. No live-site user is harmed by that today —
+nothing is misrepresented, no page fails, no data is lost by simply leaving it.
+It was considered for BLOCKS and rejected because the foot-gun needs an **admin
+action** to fire; it is not spontaneous user harm.
+
+**Why the recommendation still points the other way, and this is the part worth
+reading.** The foot-gun is armed *right now*, not hypothetically. MEH-1530
+Chunk 1 merged 26/07 15:43Z and made `seed_categories` insert-only, which opened
+an exposure window that stays open until **this** card's Chunk 2 lands. Inside
+that window, renaming a category in the admin panel produces **two** faults at
+once: the rename sticks *and* the canonical name reappears as a second row
+beside it, and the renamed row falls through to `DEFAULT` in `category-registry`
+and loses its icon (the MEH-1268 pattern). Both cards carry the same operational
+note — **do not rename a category in the admin panel** — and that note is free,
+costs nothing to honour, and is the cheapest mitigation available today.
+
+Sapir already ruled on the timing on 24/07: chunks 0, 0b, 1, 2 and 2b run
+**before** launch; only chunk 3 (re-keying the frontend under a "zero visual
+change" contract, during launch QA) is post-launch. The reasoning she approved
+is that migration risk is driven by **data volume and live traffic**, both of
+which are zero right now and neither of which will ever be lower — after launch
+the same migration touches a taxonomy that real businesses are linked to. That
+is a cost argument, and it is a good one; it is simply not the same question as
+"does a user get harmed at launch", which is what this audit ranks on.
+
+**The gate is a measurement only Sapir can take.** Chunks 0, 1 and 2 are blocked
+on measuring **production**'s `categories` table — the five SQL queries written
+out in MEH-1530 §2.9, run in the Railway SQL editor. CC cannot do it: all
+`*.up.railway.app` egress is blocked from the sandbox and there is no Postgres
+MCP. Everything measured so far (holes at ids 1, 5, 13, 15; sequence safe;
+zero admin/stale rows) is **staging**, and MEH-1530 records two separate
+occasions where a Railway screenshot was nearly attributed to prod by mistake.
+The decisive query is the third one: if `id=k` equals the k-th item of
+`CATEGORIES` for every k in 1..18, the positional renames already committed on
+prod and the live taxonomy is corrupted — which is a materially worse finding
+than this card, and nobody knows either way. **Chunk 0b (proving the `emoji`
+column dead) is read-only and is not blocked by any of this** — it can run now.
 
 ---
 
 ## 3 · MOOT
 
-_(none yet in this pass)_
+| ID | Title | Evidence |
+|---|---|---|
+| **MEH-1434** | 🐛 דף הבית — חלל אנכי מת בסקשן "בתי עסק מקומיים" (retargeted מ-/produce | PREMISE MEASURED AND REFUTED — this is the failing precondition, named precisely: the card assumes a reproducible dead vertical band caused by grid cards stuck at opacity:0 because whileInView never fires. Phase 0 (13/08) built a probe against a real Chromium with 8 synthetic producers and measured the opposite at BOTH viewports — 1440x900 and 375x812 — 8 of 8 cards transition opacity 0 to 1 after scroll+settle, correctly positioned. The counter-to-grid gap is a consistent 70px, far smaller than any meaningful band. The suspect does not exist. What is NOT refuted is that Sapir saw something real in the original crop; the residue is a possible transient frame (category d), which the card's own DoD says is a STOP, not an edit. |
 
 ---
 
@@ -114,3 +184,4 @@ Sapir to decide on.
 |---|---|
 | MEH-1514 | Founder portrait (AboutClient.jsx:166, IMG-01) renders as a solid MAGENTA block in every /about VRT baseline, including human-reviewed ones. `onError` did not fire, so this is NOT the coded fallback path. Whether it also happens on the LIVE site was never checked. If it does, it is a product bug on a consumer page, not a test-environment artifact. Not opened as a card (this audit does not open cards) — needs one look at live /about. |
 | the sweep | **Part of the 175 is not work.** At least 4 open Backlog cards (MEH-2054, MEH-2061, MEH-2066, MEH-2074) are spent "Carrier" tickets: they exist only so a docs-only session log can satisfy the `Branch name gate` (which requires `meh-NNNN` in every legal branch slug), and every one of their PRs (#2869, #2883, #2893, #2917) is already merged. Closing them costs nothing and shrinks the backlog's apparent size. Root cause is the same gate-vs-auto-link tension tracked by MEH-1736/1615/1949 — if the branch-name auto-link is turned off at workspace level, carrier tickets stop being necessary at all. |
+| MEH-1456 / MEH-1530 | **A Done, archived card is holding an open pre-launch blocker, and nothing surfaces it.** MEH-1530 was auto-closed by the GitHub integration 2 seconds after PR #2138 merged (26/07 15:43:21Z) — its own §10.7 says so plainly: "merge closes the code, not the verification". Three of its DoD items are still unticked, all of them observed effects on staging (zero-row delta, `[bg 2/2] seed OK` in the Railway log, `/health/readiness` → 200), plus the **production `categories` measurement** (five queries, §2.9) that blocks MEH-1456 chunks 0/1/2 — the pre-launch work Sapir approved on 24/07. A Done card is invisible to every queue query, so this blocker is parked where nobody will find it. Not opened as a card (this audit does not open cards); it belongs either on MEH-1456 as an explicit dependency line or reopened on MEH-1530. |
