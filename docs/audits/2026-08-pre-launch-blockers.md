@@ -1,6 +1,6 @@
 # Pre-launch blocker audit (MEH-2085)
 
-> **swept 43 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
+> **swept 50 of 175, chunk 1 of 3** — a resuming session reads this line and continues from it; it does not restart.
 
 **Method.** Source of truth is Linear LIVE via `get_issue`, one card at a time.
 `list_issues` is used ONLY as the index (IDs, titles, labels, state, priority):
@@ -16,7 +16,7 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 2. **DEFER** — real work, no user harm at launch.
 3. **MOOT** — the premise depends on data, history or scale that does not exist.
 
-**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 31 · MOOT 0 · FLAGGED 2
+**Counts so far:** BLOCKS 9 · BLOCKS-COND 1 · DEFER 38 · MOOT 0 · FLAGGED 2
 
 ---
 
@@ -77,6 +77,13 @@ the verdict. Bulk-fetched descriptions are not admissible here.
 | **MEH-1742** | 🧪 שערים חייבים לאשר שמדדו לפני שידווחו מה מדדו — skip שמגיע לאגרגטור ח | Generalises the rule that a gate must assert it MEASURED before reporting what it measured, and that a skip reaching an aggregator must carry a reason so 'filtered, expected' and 'did not run, unexpected' stop arriving as the same token. Patch staged as PR #2866; the working precedent already exists at e2e.yml:224-249 (E2E coverage floor, EXECUTED > 0). CI semantics — the damage it prevents is misdiagnosis, not user harm. |
 | **MEH-1897** | 📉 47 שדות backend בלי מקבילה ב-Zod — סיווג וצמצום הבסיס ששער MEH-1891  | CAVEAT WORTH READING: the frozen half is bookkeeping, but the half that still runs is a LIVE BUG HUNT — classifying which of the 46 undeclared fields are actually CONSUMED by a component today, i.e. read by the UI and silently stripped at parse. The precedent for what that finds is MEH-1704: 13 of 14 badge fields stripped, 11 of 12 badges dead in the grid. So this card could yet surface a BLOCKS-class defect; it has not been run. Count corrected 47 to 46 on 14/08 (order_window was declared). Declaration half frozen because MEH-1748's codegen will emit 44 of 46 automatically. |
 | **MEH-2041** | 📧 עוד שני שולחים פונים-למשתמשת מחוץ לחוזה הקופי — newsletter welcome ( | Two more user-facing email bodies sit outside the copy contract's _CORPUS: the newsletter welcome (consumer-facing, with a full HTML part) and the pending nudge (to a business owner). Notably the original MEH-1965 grep SHOULD have caught both — they call send_email( directly — so the gap was in what was admitted to the corpus, not in the search. Adding assertions may red on copy that is LOCKED verbatim by Sapir (pending_nudge.py:66-71); the card correctly says that outcome is a finding for her, not a licence to edit. |
+| **MEH-2054** | 📝 Carrier — session log Lane A 13/08 מקטע 3 (docs-only, כלל 31) | SPENT CARRIER — no work remains. Exists only because Branch name gate requires meh-NNNN in every legal branch slug, so a docs-only session log needs a ticket to hang a branch on. Its PR (#2869) is merged. Should simply be closed; it is backlog noise, not a launch consideration. |
+| **MEH-2061** | 📝 Carrier — session log update, Lane C 13/08 continuation (docs-only,  | SPENT CARRIER — no work remains. Docs-only session log for Lane C 13/08; PR #2883 merged. Same branch-name-gate mechanic as MEH-2054. |
+| **MEH-2066** | 📝 Carrier — session log final sweep, Lane C 13/08 (docs-only, rule 31) | SPENT CARRIER — no work remains. Docs-only session log final sweep, Lane C 13/08; PR #2893 merged. |
+| **MEH-2074** | 📝 Carrier — session log Lane A 14/08 (docs-only, כלל 31) | SPENT CARRIER — no work remains. Docs-only CHANGELOG+HANDOFF for Lane A 14/08; PR #2917 merged. Its own body notes MEH-2059 and MEH-2056 are blocked, but those are separate cards, not work carried here. |
+| **MEH-2036** | 🚚 פילטר ימי משלוח multi-select (OR) — pills מרובים, המשך MEH-1645/1771 | Delivery-day filter goes multi-select (OR); PR #2840 attached. Discovery enhancement — the single-select version works today. The card's own context says the value grows with supply density (~8 businesses per city now), which is the argument for later, not now. |
+| **MEH-2048** | 🧹 pickup_points — עצירת שני נתיבי הכתיבה (admin+import) שמייצרים בוליא | Two write paths (admin.py:345, producer_import.py:287) set the pickup_points boolean that no consumer surface reads once MEH-2046's rows-only predicate lands, which makes the admin checkbox a control that lies. NOT MOOT: the write paths exist regardless of data. Harm is bounded today — Sapir measured count=0 businesses in the boolean-without-rows state on 13/08 — so nothing is currently mis-displayed; the risk is any future import or admin save creating one. |
+| **MEH-2064** | 🧹 [RED · אחרי soak] drop products.price_range הלגסי — ה-follow-up שהמי | RED column drop that migration e4790e538aa2 promised as a follow-up in May and nobody opened until 13/08. Real work independent of data: the frontend fallbacks in ProductsSection.jsx / ProducerSections.jsx must go before the drop (reader-then-contract, ADR-007). NOTE the one part I cannot settle — the entry-condition count (products with price_range NOT NULL AND price_min NULL) needs a DB query; if it is >0 a backfill decision is Sapir's, and free-text like ₪45/ק"ג cannot be parsed automatically per the migration's own note. |
 
 ---
 
@@ -106,3 +113,4 @@ Sapir to decide on.
 | Surfaced by | Finding |
 |---|---|
 | MEH-1514 | Founder portrait (AboutClient.jsx:166, IMG-01) renders as a solid MAGENTA block in every /about VRT baseline, including human-reviewed ones. `onError` did not fire, so this is NOT the coded fallback path. Whether it also happens on the LIVE site was never checked. If it does, it is a product bug on a consumer page, not a test-environment artifact. Not opened as a card (this audit does not open cards) — needs one look at live /about. |
+| the sweep | **Part of the 175 is not work.** At least 4 open Backlog cards (MEH-2054, MEH-2061, MEH-2066, MEH-2074) are spent "Carrier" tickets: they exist only so a docs-only session log can satisfy the `Branch name gate` (which requires `meh-NNNN` in every legal branch slug), and every one of their PRs (#2869, #2883, #2893, #2917) is already merged. Closing them costs nothing and shrinks the backlog's apparent size. Root cause is the same gate-vs-auto-link tension tracked by MEH-1736/1615/1949 — if the branch-name auto-link is turned off at workspace level, carrier tickets stop being necessary at all. |
