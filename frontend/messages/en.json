@@ -371,7 +371,7 @@
           "generic": "Connection error — please try again."
         },
         "success": {
-          "title": "Welcome to Mehamakor",
+          "title": "You're signed up — one step to go",
           "body": "You're registered! Next step: complete your profile in the dashboard and send it for review.",
           "next": "Two quick steps in your dashboard speed up approval: verifying your WhatsApp number with a short code, and uploading a first photo.",
           "cta": "To my dashboard",
