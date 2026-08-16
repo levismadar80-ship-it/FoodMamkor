@@ -513,15 +513,27 @@ const run = async () => {
   fs.mkdirSync(OUT, { recursive: true });
   // The CC sandbox pins a Chromium build that Playwright's own resolver does not
   // find; every other machine has the opposite problem. Hard-coding the sandbox
-  // path made this file crash for everyone else — which directly contradicted the
-  // reason it exists, that these numbers can be re-run and falsified by anyone.
-  // Prefer an explicit override, then the sandbox build IF PRESENT, else let
-  // Playwright resolve its own. (CI reviewer, PR #2990.)
-  const SANDBOX_CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-  const executablePath =
-    process.env.CHROMIUM_PATH || (fs.existsSync(SANDBOX_CHROME) ? SANDBOX_CHROME : undefined);
+  // path made this file crash for everyone else — which contradicted the reason
+  // it exists, that these numbers can be re-run and falsified by anyone.
+  //
+  // REUSES: frontend/e2e/qa-meh1619-visual-noop.mjs:64 — use the sandbox build
+  // only IF PRESENT, else let Playwright resolve its own. That is the house
+  // pattern across ~20 harnesses here.
+  //
+  // An env-var override was written first (the CI reviewer's suggested form) and
+  // reverted: it reddened `Env drift (.env.example)`, which flags any env var
+  // read in code but undocumented. Documenting it would mean adding an env var,
+  // and regression rule 8 requires those be listed and confirmed first — for a
+  // portability fallback the repo already solves without one.
+  // `check_env_drift.sh:60` excludes PLAYWRIGHT_CHROMIUM_PATH, not this name.
+  //
+  // Do not spell that override out here, even in prose: `check_env_drift.sh:89`
+  // greps the raw text for an env read and cannot tell code from a comment, so
+  // naming it literally re-reds the gate. Writing the sentence that way is what
+  // failed the second attempt.
+  const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
   const browser = await chromium.launch({
-    ...(executablePath ? { executablePath } : {}),
+    ...(fs.existsSync(CHROMIUM_PATH) ? { executablePath: CHROMIUM_PATH } : {}),
     args: ["--ssl-version-max=tls1.2"],
   });
   let allOk = true;
