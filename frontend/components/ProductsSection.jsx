@@ -671,7 +671,11 @@ export default function ProductsSection({
               </div>
               {/* MEH-2094: the signature-product choice, in the row of the
                   product it names. aria-pressed carries the radio state to
-                  assistive tech; the label names the ACTION, not the state. */}
+                  assistive tech; the label names the ACTION, not the state.
+                  Rendered only when the mount site supplied a handler — a star
+                  that cannot persist anything is a dead control, the same thing
+                  the zero-products branch above exists to avoid. */}
+              {onTopProductChange && (
               <button
                 type="button"
                 onClick={() => handleToggleTop(product)}
@@ -695,6 +699,7 @@ export default function ProductsSection({
                   aria-hidden="true"
                 />
               </button>
+              )}
               <button
                 onClick={() => startEdit(product)}
                 aria-label={t("card.edit_aria_template", { name: product.name })}
