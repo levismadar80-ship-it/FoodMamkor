@@ -81,6 +81,26 @@ class Producer(Base):
     # (pending_whatsapp is written at auth.py:509 and auth.py:624; an earlier
     # version of this comment omitted it and misled MEH-1587's Phase 0.)
     status = Column(String(20), default="pending")
+    # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
+    # moved draft -> pending. That instant, NOT created_at, is when the
+    # 3-business-day review SLA starts once the submit gate ships.
+    #
+    # Nullable, NO default, NO server_default, NO backfill — an HONEST NULL
+    # in the MEH-762 verified_at / MEH-1291 updated_at sense: the column
+    # stays NULL until a real submission writes it, so "never submitted" is
+    # representable and is not silently rendered as "submitted at signup".
+    # Two populations carry NULL legitimately and permanently: a producer
+    # still in draft, and any row seeded before revision e2a7c9d41b06
+    # (staging fixtures — production had no businesses, Sapir 16/08).
+    #
+    # Readers that need a submission instant use
+    # `submitted_for_review_at or created_at`; that fallback is what makes a
+    # backfill unnecessary rather than merely deferred.
+    #
+    # tz-aware (DateTime(timezone=True)), written with
+    # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
+    # Paired migration: e2a7c9d41b06.
+    submitted_for_review_at = Column(DateTime(timezone=True), nullable=True)
     images = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
