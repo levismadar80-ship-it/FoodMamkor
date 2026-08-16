@@ -87,7 +87,20 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
     failure into a loud outage, which is strictly worse than the bug.
     """
     try:
+        # MEH-2114: THIS call is the report that carries the stack trace
+        # (Sentry group MEHAMAKOR-BACKEND-N, 670 events, culprit /auth/register).
         capture_background_exception(exc, task=_SENTRY_TASK)
+        # MEH-2114 — DO NOT remove this log line to fix the double-report.
+        # sentry-sdk's default LoggingIntegration captures stdlib `logging`
+        # records at ERROR as events, so this line was ALSO reaching Sentry as a
+        # second, stack-trace-less copy of the same failure (group
+        # MEHAMAKOR-BACKEND-M, 670 events — an exact twin of the count above).
+        # The twin is now dropped in `sentry.py:_drop_reason` ("duplicate-log-twin",
+        # keyed on logger name `app.services.email` + absence of an exception
+        # payload), which keeps the trace-bearing report and removes the copy.
+        # The line below is untouched on purpose: it is the ONLY record of the
+        # failure in Railway stdout, and MEH-1613 exists because this module used
+        # to be silent there.
         logger.error(
             "[EMAIL] NOT SENT (%s) to %s — subject=%r — %s: %s",
             stage,
