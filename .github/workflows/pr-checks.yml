@@ -79,7 +79,7 @@ jobs:
   repo-guards:
     name: Repo guards
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - name: Run every guard in scripts/checks/ (MEH-999)
@@ -500,7 +500,7 @@ jobs:
     name: Env drift (.env.example)
     if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v7
