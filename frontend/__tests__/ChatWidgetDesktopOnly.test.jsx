@@ -77,9 +77,12 @@ describe("ChatWidget copy lock (MEH-1617)", () => {
     expect(he.chat.launcher_pill).toBe("שאלה? שאלו אותי");
     expect(he.chat.input_placeholder).toBe("הקלידו שאלה...");
     expect(he.chat.prompts.register).toBe("איך נרשמים כבית עסק?");
-    // Embedded newline, not a literal backslash-n — the escape-decoding bug
-    // this move originally shipped and then fixed.
-    expect(he.chat.answers.register).toContain("\n");
+    // MEH-2100: the answer is ONE line now (the register flow gained a step,
+    // and the copy was rewritten as a single sentence), so the embedded-newline
+    // assertion no longer applies. The half that still matters is kept: a
+    // LITERAL backslash-n must never appear — that was the actual
+    // escape-decoding bug this move shipped and then fixed, and it is
+    // orthogonal to how many lines the string has.
     expect(he.chat.answers.register).not.toContain("\\n");
   });
 });

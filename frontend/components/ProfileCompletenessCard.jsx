@@ -150,10 +150,44 @@ function buildSteps(producer, missingLabels) {
 
   const has = (slug) => !missingLabels.has(COMPLETENESS_FIELDS[slug]);
 
+  // MEH-2100: `required` marks the items the SUBMIT GATE blocks on
+  // (backend/app/services/submission_gate.py), as distinct from the ones that
+  // only move the completeness ring. Opening hours are the single recommended
+  // step — Google precedent, Sapir 16/08 — and a business can be sent for
+  // review without them.
+  //
+  // CONTACT IS REQUIRED, BUT `has("contact")` IS NOT THE GATE'S CONDITION.
+  // This comment previously justified the flag with "there is nothing to
+  // verify without a phone" — true, and not what the gate checks. The gate
+  // blocks on `phone_verified`; `has("contact")` is
+  // `p.phone || p.instagram` (producer-completeness.js:74), so an
+  // Instagram-only business satisfies it with no phone at all, and a business
+  // that typed a phone but never ran the OTP satisfies it too.
+  //
+  // The consequence is a real one and it is NOT fixed here: a business that
+  // typed a phone but never ran the OTP reads «פרטי קשר ✓ חובה» in this
+  // checklist while the banner below it still blocks on «אימות וואטסאפ». Two
+  // surfaces on one page, disagreeing about whether a required item is done.
+  //
+  // Conjoining this row's done-signal with `phone_verified` was tried and
+  // REVERTED, because it is not the small fix it looks like: `done` feeds
+  // `doneCount`, the percentage, the ring, and the `isComplete` collapse, so
+  // the change lowers the completeness score of every producer with an
+  // unverified phone and reddened 12 existing assertions in
+  // ProfileCompletenessCard.test.jsx. That is a product decision about what
+  // the ring measures, which MEH-2100 has no mandate over — and rewriting a
+  // dozen fixtures to match would have hidden it.
+  //
+  // The alternative, retitling the step so it stops implying gate-readiness,
+  // is user-facing copy and belongs to Sapir (workflow rule 22). Raised on
+  // the PR with both options rather than silently picking one.
+  // .claude/rules/labels.md is the frame: a label must not over-claim, and
+  // this one currently does.
   return [
-    { key: "image", done: has("image"), href: `${EDIT_HUB}#profile-images` },
+    { key: "image", done: has("image"), required: true, href: `${EDIT_HUB}#profile-images` },
     {
       key: "location",
+      required: true,
       // "Categories + location" = category filled AND the location pair
       // (city + coords/delivery) filled.
       done: has("category") && has("city") && has(locationSlug),
@@ -166,15 +200,44 @@ function buildSteps(producer, missingLabels) {
     },
     {
       key: "products",
+      required: true,
       done: productsCount >= CHECKLIST_PRODUCTS_MIN,
       href: `${EDIT_HUB}#profile-products`,
     },
-    { key: "contact", done: has("contact"), href: `${EDIT_HUB}#profile-contact` },
+    { key: "contact", done: has("contact"), required: true, href: `${EDIT_HUB}#profile-contact` },
+    {
+      // MEH-2100, Sapir 16/08 — the SPLIT that resolves the contact/gate
+      // mismatch, and it is deliberately neither of the two options that were
+      // on the table.
+      //
+      // The problem: the submit gate blocks on `phone_verified`, while
+      // `has("contact")` is `p.phone || p.instagram`
+      // (producer-completeness.js:74). So a business with a typed-but-
+      // unverified number — or with Instagram and no phone at all — read
+      // «פרטי קשר ✓ חובה» here while the banner below still blocked her.
+      //
+      // Conjoining the two was rejected: `done` feeds doneCount, the
+      // percentage, the ring and the isComplete collapse, so it would have
+      // silently demoted every producer who had legitimately supplied contact
+      // details. Retitling the row was rejected too — it would have made an
+      // earned ✓ disappear. Both options paid for the fix by taking something
+      // away from a business that had done nothing wrong.
+      //
+      // Splitting costs nothing instead: presence keeps its ✓, verification
+      // gets its own row, and the two stop pretending to be one fact.
+      key: "phone_verified",
+      required: true,
+      done: !!producer?.phone_verified,
+      // The OTP card lives in the dashboard banner, not the edit hub — both
+      // the draft banner and the pending_whatsapp banner carry this anchor,
+      // and only one of them renders for any given status.
+      href: "#phone-verify",
+    },
     // MEH-1895: hours reads the SAME heuristic slug that mounts this card
     // (producer-completeness.js:91-92, MEH-1884) — no second condition to
     // drift. Anchor is the KEY_TO_ANCHOR value (edit/page.js:164), the form
     // MEH-1165 established for the location row.
-    { key: "hours", done: has("hours"), href: `${EDIT_HUB}#hours` },
+    { key: "hours", done: has("hours"), required: false, href: `${EDIT_HUB}#hours` },
   ];
 }
 
@@ -250,6 +313,20 @@ export default function ProfileCompletenessCard({ producer }) {
                   </span>
                   <span className={s.done ? "text-text" : "text-fg-muted"}>
                     {t(`steps.${s.key}`)}
+                  </span>
+                  {/* MEH-2100: חובה / מומלץ. Rendered for EVERY row, done or
+                      not — the owner needs to know which items gate the
+                      submit button before she finishes them, and a chip that
+                      appears only while incomplete tells her that too late. */}
+                  <span
+                    data-testid={`completeness-chip-${s.key}`}
+                    className={`shrink-0 rounded-full px-2 text-xs ${
+                      s.required
+                        ? "bg-primary/10 text-primary"
+                        : "bg-border/60 text-fg-muted"
+                    }`}
+                  >
+                    {s.required ? t("chip_required") : t("chip_recommended")}
                   </span>
                   <span className="sr-only">
                     {s.done ? t("checklist_done") : t("checklist_todo")}
