@@ -13,6 +13,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import AddressSearch from "@/components/AddressSearch";
 import CategorySelector from "@/components/CategorySelector";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
@@ -155,6 +156,23 @@ const EMPTY_FORM = {
   // answer revealed only when "other" is chosen.
   referral_source: "",
   referral_source_other: "",
+  // MEH-1838 chunk B: the delivery axis. Until this shipped the registration
+  // form captured NO axis at all, so every business arrived identically and the
+  // difference only surfaced if someone opened the dashboard and corrected it.
+  //
+  // Defaults mirror the payload contract byte for byte (schemas.py:701-704), so
+  // a draft restored from before this block existed posts exactly what the
+  // backend already defaults to — physical-only, no delivery — instead of a
+  // shape the validator would reject.
+  //
+  // `delivery_cities` is the PAYLOAD field (schemas.py:704), NOT the legacy flat
+  // Producer column of the same name. The router folds a non-empty list into
+  // delivery_areas rows (auth.py:586-588) — the only store the consumer filter
+  // reads (producer_listing.py:258). The column is never written (auth.py:550).
+  has_physical_location: true,
+  offers_delivery: false,
+  delivery_nationwide: false,
+  delivery_cities: [],
 };
 
 // MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels
@@ -609,7 +627,25 @@ function RegisterProducerPageBody() {
         // stamped. Distinct from declaration_accepted directly above: that is
         // the LICENSING declaration, recorded on the producer row.
         terms_accepted: agreedToTerms,
+        // MEH-1838 chunk B: the delivery axis finally reaches the endpoint.
+        // Chunk A (#2959) added all four to ProducerRegister (schemas.py:701-704);
+        // until this line they were never sent — and Pydantic drops unknown
+        // fields silently, so the form "succeeded" while every business landed
+        // on the same default shape. That silence is why this needs a test that
+        // reads the POST body, not one that asserts the request returned 200.
+        has_physical_location: form.has_physical_location,
+        offers_delivery: form.offers_delivery,
+        delivery_nationwide: form.delivery_nationwide,
       };
+      // Sent only when non-empty: a physical-only registration posts no empty
+      // array (the card's own acceptance criterion) and the server default is
+      // `[]` regardless. The router folds a non-empty list into delivery_areas
+      // ROWS (auth.py:586-588) — the only store the consumer filter reads
+      // (producer_listing.py:258). It never writes the legacy flat column of the
+      // same name (auth.py:550).
+      if (form.offers_delivery && form.delivery_cities.length > 0) {
+        body.delivery_cities = form.delivery_cities;
+      }
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {
         body.email = form.email;
@@ -1215,6 +1251,117 @@ function RegisterProducerPageBody() {
               )}
             </div>
 
+            {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a
+                location question and sits with city/address above. Idiom mirrors
+                the admin ProducerForm block (ProducerForm.jsx:811-880) rather
+                than inventing one — same fields, same order, same nesting, and
+                every string is that block's own key reused verbatim (rule 22).
+
+                The keys are read as `admin.producers.form.fields.*`: the admin
+                form reaches them as `producers.form.fields.*` only because it
+                scopes `useTranslations("admin")` (ProducerForm.jsx:57). This
+                component's `t` is UNSCOPED, so copying the admin call verbatim
+                would silently render the key name instead of the string. */}
+            <div className="pt-1 space-y-3" data-testid="register-delivery-axis">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.has_physical_location}
+                  data-testid="register-has-physical-location"
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setAndSave((prev) => ({ ...prev, has_physical_location: on }));
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+                {t("admin.producers.form.fields.has_physical_location")}
+              </label>
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.offers_delivery}
+                  data-testid="register-offers-delivery"
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    // MEH-1879 (inherited from ProducerForm.jsx:829-845): the
+                    // block below is CONDITIONALLY RENDERED, and unmounting it
+                    // leaves its state untouched — so unticking here would post
+                    // delivery_nationwide=true alongside offers_delivery=false,
+                    // which the validator rejects (schemas.py:857+) and which the
+                    // DB CHECK producer_nationwide_requires_delivery (MEH-1849)
+                    // turns into a 500 further down. Both owned fields are
+                    // cleared: leaving cities would write delivery_areas rows for
+                    // a business declaring no delivery — a cross-table
+                    // contradiction no CHECK can express.
+                    setAndSave((prev) => ({
+                      ...prev,
+                      offers_delivery: on,
+                      ...(on ? {} : { delivery_nationwide: false, delivery_cities: [] }),
+                    }));
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+                {t("admin.producers.form.fields.offers_delivery")}
+              </label>
+
+              {!form.has_physical_location && !form.offers_delivery && (
+                <p className="text-xs text-red-600" data-testid="register-delivery-axis-error">
+                  {t("admin.producers.form.fields.type_validation")}
+                </p>
+              )}
+
+              {form.offers_delivery && (
+                <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.delivery_nationwide}
+                      data-testid="register-delivery-nationwide"
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        // Entering nationwide clears the city list — the XOR the
+                        // validator enforces (schemas.py:857+) and the DB CHECK
+                        // delivery_nationwide_xor_cities is written against.
+                        setAndSave((prev) => ({
+                          ...prev,
+                          delivery_nationwide: on,
+                          ...(on ? { delivery_cities: [] } : {}),
+                        }));
+                      }}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    {t("admin.producers.form.fields.delivery_nationwide")}
+                  </label>
+
+                  {!form.delivery_nationwide && (
+                    <div>
+                      <span className="block text-sm text-muted mb-1">
+                        {t("admin.producers.form.fields.delivery_cities_label")}
+                      </span>
+                      <div data-testid="register-delivery-cities">
+                        <CitiesAutocomplete
+                          value={form.delivery_cities}
+                          onChange={(cities) =>
+                            setAndSave((prev) => ({ ...prev, delivery_cities: cities }))
+                          }
+                          showRegionChips
+                        />
+                      </div>
+                      {form.delivery_cities.length === 0 && (
+                        <p
+                          className="text-xs text-red-600 mt-1"
+                          data-testid="register-delivery-cities-error"
+                        >
+                          {t("admin.producers.form.fields.delivery_cities_required")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3">
               {!isUpgrade && (
                 <button data-testid="register-details-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
@@ -1230,6 +1377,29 @@ function RegisterProducerPageBody() {
                     CROSS_STEP_REQUIRED.filter((c) => c.step === STEP.DETAILS),
                   );
                   if (offenders.length > 0) return;
+                  // MEH-1838 chunk B: mirror the server validator client-side
+                  // (schemas.py:857+ _validate_location_mode) rather than relying
+                  // on it. A 422 two frames later names a field the seller can no
+                  // longer see; blocking the advance is the whole point, same as
+                  // the runRequiredGate above.
+                  if (!form.has_physical_location && !form.offers_delivery) {
+                    setStepError(t("admin.producers.form.fields.type_validation"));
+                    return;
+                  }
+                  // "לכל הארץ" with zero cities is valid; a city list without
+                  // nationwide is valid. Delivery declared with NEITHER is the
+                  // hole — it would post offers_delivery=true and no rows, so the
+                  // business claims delivery the consumer filter can never match
+                  // (producer_listing.py:258 reads delivery_areas rows).
+                  if (
+                    form.offers_delivery &&
+                    !form.delivery_nationwide &&
+                    form.delivery_cities.length === 0
+                  ) {
+                    setStepError(t("admin.producers.form.fields.delivery_cities_required"));
+                    return;
+                  }
+                  setStepError("");
                   setStep(STEP.CATEGORY);
                 }}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
