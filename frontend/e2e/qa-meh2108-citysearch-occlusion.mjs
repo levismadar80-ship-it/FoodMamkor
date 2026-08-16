@@ -280,9 +280,13 @@ const measure = async (page, listSelector, mapSelector, tag) => {
   // the scroll because both origins move.
   let listBox = await list.boundingBox().catch(() => null);
   let mapBox = await map.boundingBox().catch(() => null);
-  const vh = page.viewportSize().height;
+  // viewportSize() returns null when no explicit viewport is set. Every caller
+  // here goes through newPage(), which always sets one, so this is belt-and-braces
+  // — but an unguarded deref would throw rather than degrade, and a harness that
+  // dies on an unrelated call path is a harness nobody reruns. (CI reviewer.)
+  const vh = page.viewportSize()?.height ?? 0;
   const pre = intersect(listBox, mapBox);
-  if (pre && pre.y + pre.height > vh - 8) {
+  if (vh && pre && pre.y + pre.height > vh - 8) {
     await page.evaluate((dy) => window.scrollBy(0, dy), pre.y + pre.height - vh + 60);
     await page.waitForTimeout(350);
     listBox = await list.boundingBox().catch(() => null);
@@ -627,17 +631,24 @@ const run = async () => {
     await input.click({ timeout: 8_000 }).catch(() => {});
     await input.fill("תל").catch(() => {});
     await page.waitForTimeout(500);
+    // Same first-DOM-match vs first-RENDERED-match divergence REFEREE finding 6
+    // fixed inside measure(). It survived here because doAbsence does not call
+    // measure() — a fix applied at the site a review named, not to the class.
+    // (CI reviewer found the residual; "when a reviewer names two sites, grep
+    // for the third".) These routes carry no map and one listbox, so it changes
+    // no number reported so far — it removes the way it could silently change one.
     const listSel = "ul[role=listbox]";
     const has = await page.locator(listSel).count();
     console.log(`\n──────── absence ${path} @ ${w} [${LABEL}] ────────`);
     if (!has) { console.log("  list did not open — no assertion possible (NOT a pass)"); await page.close(); return; }
-    await assertForcedZ(page, listSel);
-    const z = await page.evaluate((sl) => getComputedStyle(document.querySelector(sl)).zIndex, listSel);
-    const occ = await findContestedOccluders(page, listSel);
+    const resolved = await markList(page, await firstVisible(page, listSel));
+    await assertForcedZ(page, resolved);
+    const z = await page.evaluate((sl) => getComputedStyle(document.querySelector(sl)).zIndex, resolved);
+    const occ = await findContestedOccluders(page, resolved);
     console.log(`  list z-index: ${z}`);
     console.log(`  contested band [1000..1009] overlapping the list: ${occ.length}`);
     for (const o of occ) {
-      const st = o.inViewport ? classify(await stackAt(page, o.cx, o.cy, listSel)) : "off-screen";
+      const st = o.inViewport ? classify(await stackAt(page, o.cx, o.cy, resolved)) : "off-screen";
       console.log(`      z=${o.z} ${o.desc} -> ${st === "list" ? "LIST ON TOP" : st.toUpperCase()}`);
     }
     measured += 1;
