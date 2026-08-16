@@ -19,7 +19,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { CaretDown, CaretUp, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phosphor-icons/react";
 // MEH-1472: diet chips render the canonical MEH-1418 attribute icon (Phosphor,
 // currentColor, aria-hidden) instead of a baked-in emoji — same source the
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
@@ -106,7 +106,24 @@ function clearFieldError(setErrors, field) {
 // header owns them); `onCountChange` reports the live product count up for the
 // accordion's one-line summary. Display-only props — save logic untouched.
 // Default (no props) rendering is byte-identical to before.
-export default function ProductsSection({ embedded = false, onCountChange } = {}) {
+// MEH-2094: `topProductName` + `onTopProductChange` move the signature-product
+// choice OUT of a free-text field (edit/cards.jsx PricingCard) and INTO the row
+// of the product it names — the string is now COPIED from a product the owner
+// already owns instead of retyped. Same column (producers.top_product_name),
+// same PUT /producers/me, no schema change (MEH-1564 owns the FK; this only
+// makes its future backfill a trivial JOIN).
+//
+// The value is NOT held in local state on purpose: the mount site (edit/page.js)
+// owns `profile`, and its completeness checklist reads `profile.top_product_name`
+// (page.js:596/:627/:866). Driving the toggle from the prop and patching upward
+// keeps one owner, so marking a product updates the checklist in the same tick
+// instead of leaving it stale until reload.
+export default function ProductsSection({
+  embedded = false,
+  onCountChange,
+  topProductName = null,
+  onTopProductChange = null,
+} = {}) {
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
@@ -137,6 +154,53 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // would blank every sibling when a single image 401s (MEH-1925).
   const [failedThumbs, setFailedThumbs] = useState({});
   const [reloadKey, setReloadKey] = useState(0);
+  // MEH-2094: id of the row whose top-product PUT is in flight (disables that
+  // one toggle only — a shared boolean would freeze every sibling, the
+  // MEH-1976 failedThumbs lesson applied to a different control).
+  const [topSavingId, setTopSavingId] = useState(null);
+
+  // MEH-2094 LEGACY SAFETY — this is the single most important non-regression
+  // in the ticket. The match is exact-after-trim and read-only: a stored
+  // top_product_name that names NO current product simply marks no row. It is
+  // never cleared, never migrated, never auto-repaired, and no request is sent
+  // on render. That mirrors the public page's own matcher
+  // (app/[locale]/producer/[id]/components/ProducerSections.jsx:174-177), so a
+  // row marked here is exactly a row the public page will feature.
+  //
+  // Two products with the SAME name both light up. That is inherent to a
+  // free-text column — MEH-1564's FK is what fixes it; do not add a tiebreak
+  // here (it would have to invent an ordering the column cannot store).
+  const normalizedTop = (topProductName || "").trim();
+  const isTopProduct = (product) =>
+    normalizedTop !== "" && (product.name || "").trim() === normalizedTop;
+
+  // Radio semantics: marking B replaces A (one column, one value), and marking
+  // the already-marked row clears it to null.
+  const handleToggleTop = async (product) => {
+    if (!onTopProductChange) return;
+    // Single-flight. The `disabled` attribute below already blocks this in the
+    // UI; the guard is here too because `disabled` is a rendering concern and
+    // this is a correctness one — a second write must not start while the
+    // first can still revert on top of it.
+    if (topSavingId !== null) return;
+    const previous = topProductName ?? null;
+    const next = isTopProduct(product) ? null : product.name;
+    setError("");
+    setTopSavingId(product.id);
+    // Optimistic: patch upward first so the row and the completeness checklist
+    // both move immediately.
+    onTopProductChange({ top_product_name: next });
+    try {
+      await api.put("/producers/me", { top_product_name: next });
+    } catch (err) {
+      // MEH-1261 F1 family: never fail open. Put the previous value back AND
+      // say so — a toggle that silently snaps back reads as a UI bug.
+      onTopProductChange({ top_product_name: previous });
+      setError(detailToMessage(err?.response?.data?.detail) || tErr("top_product_failed"));
+    } finally {
+      setTopSavingId(null);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -385,6 +449,16 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
           name, description and price all surface in the same public list. */}
       <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
 
+      {/* MEH-2094: the toggle's own guidance line (MEH-1539 principle 4 — a
+          dashboard field states what it is AND where it appears). With zero
+          products there is nothing to mark, so the affordance says what to do
+          first instead of rendering a control that cannot act. */}
+      {onTopProductChange && products !== null && !loadError && (
+        <p className="text-xs text-fg-muted mb-3" data-testid="top-product-hint">
+          {t(products.length === 0 ? "top_product_empty_hint" : "top_product_hint")}
+        </p>
+      )}
+
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
       {/* MEH-1261 F1: load failure gets its own state — never the EmptyState
@@ -554,7 +628,18 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               </div>
             </form>
           ) : (
-            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
+            <div
+              key={product.id}
+              data-testid={isTopProduct(product) ? "product-row-top" : "product-row"}
+              // MEH-2094: the marked row is distinguishable AT REST (ring +
+              // tinted fill), not only on hover — a hover-only cue is invisible
+              // on touch, which is the primary surface here.
+              className={`flex items-center gap-3 p-3 rounded-[10px] ${
+                isTopProduct(product)
+                  ? "bg-primary/5 ring-2 ring-primary"
+                  : "bg-green-50"
+              }`}
+            >
               {product.image_url && failedThumbs[product.id] !== product.image_url ? (
                 <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
                   <Image
@@ -578,6 +663,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-text truncate">{product.name}</p>
+                {isTopProduct(product) && (
+                  <p className="text-[11px] font-medium text-primary">{t("card.top_product_badge")}</p>
+                )}
                 {(() => {
                   if (product.price_min != null)
                     return <p className="text-xs text-accent">{formatPriceRange(product.price_min, product.price_max)}</p>;
@@ -586,6 +674,43 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   return null;
                 })()}
               </div>
+              {/* MEH-2094: the signature-product choice, in the row of the
+                  product it names. aria-pressed carries the radio state to
+                  assistive tech; the label names the ACTION, not the state.
+                  Rendered only when the mount site supplied a handler — a star
+                  that cannot persist anything is a dead control, the same thing
+                  the zero-products branch above exists to avoid. */}
+              {onTopProductChange && (
+                <button
+                  type="button"
+                  onClick={() => handleToggleTop(product)}
+                  // MEH-2094: EVERY star is disabled while ANY toggle is in
+                  // flight, not just this row's. There is one column, so two
+                  // overlapping writes race: the second click would capture the
+                  // OPTIMISTIC value as its `previous`, and a failure of the
+                  // first would then revert on top of the second's committed
+                  // write — UI showing null while the server holds a product.
+                  disabled={topSavingId !== null}
+                  aria-pressed={isTopProduct(product)}
+                  aria-label={t(
+                    isTopProduct(product)
+                      ? "card.top_product_unmark_aria_template"
+                      : "card.top_product_mark_aria_template",
+                    { name: product.name },
+                  )}
+                  className={`p-1.5 rounded-[6px] transition disabled:opacity-40 ${
+                    isTopProduct(product)
+                      ? "text-primary hover:bg-primary/10"
+                      : "text-fg-muted hover:text-primary hover:bg-primary/5"
+                  }`}
+                >
+                  <Star
+                    size={16}
+                    weight={isTopProduct(product) ? "fill" : "regular"}
+                    aria-hidden="true"
+                  />
+                </button>
+              )}
               <button
                 onClick={() => startEdit(product)}
                 aria-label={t("card.edit_aria_template", { name: product.name })}
