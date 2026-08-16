@@ -99,13 +99,58 @@ describe("pending-producers queue — the four branches (MEH-2096)", () => {
 
 describe("no fail-open catch survives under admin/ (MEH-2096)", () => {
   const ADMIN = path.resolve(__dirname, "..", "app", "[locale]", "admin");
-  // `\(\w*\)` and not `\(\)`: the catch may name its error param. The first
-  // version of this regex matched only `() =>`, so `.catch((err) => setX([]))`
-  // walked straight past a guard whose docstring promised to catch "a NEW
-  // fail-open added later" — the assertion claimed more coverage than it had.
-  // Caught by the CI reviewer on this PR; the control below now pins both forms.
-  const FAIL_OPEN =
-    /\.catch\(\(\w*\)\s*=>\s*set[A-Za-z]+\(\[\]\)\)|\.catch\(\(\w*\)\s*=>\s*set[A-Za-z]+\(null\)\)|\.catch\(\(\w*\)\s*=>\s*\[\]\)|\.catch\(\(\w*\)\s*=>\s*null\)/;
+
+  /**
+   * Extract the full argument text of every `.catch( … )`, by balancing
+   * parentheses from the opening one.
+   *
+   * This deliberately does NOT enumerate arrow-function spellings. Two earlier
+   * versions did, and each was defeated by a spelling it had not listed: first
+   * a named error param, then a block body. The reviewer's second catch is the
+   * useful signal — a regex over arrow syntax will always be one shape behind,
+   * and the control cannot reveal the gap because it is written from the same
+   * list of shapes. Reading the argument itself removes the class: `() =>`,
+   * `(err) =>`, `async (e) => { … }`, multi-line bodies and future shapes all
+   * arrive here as plain text.
+   */
+  function catchArgs(src) {
+    const out = [];
+    for (const m of src.matchAll(/\.catch\(/g)) {
+      let depth = 0;
+      const from = m.index + m[0].length - 1; // at the '('
+      for (let i = from; i < src.length; i++) {
+        if (src[i] === "(") depth++;
+        else if (src[i] === ")") {
+          depth--;
+          if (depth === 0) { out.push({ text: src.slice(from + 1, i), index: m.index }); break; }
+        }
+      }
+    }
+    return out;
+  }
+
+  /**
+   * A catch is fail-open when it empties/nulls the result AND does not record
+   * the failure anywhere.
+   *
+   * The second half is load-bearing and was missing at first: the stronger
+   * scanner immediately flagged two catches that null state *deliberately*
+   * while setting an error flag beside it — `admin/layout.js` (counts stay
+   * null so no number is fabricated, `setCountsError(true)` carries the
+   * distinction) and `producers/[id]/edit` (`setProducer(null)` only on a real
+   * 404, `setLoadError(true)` otherwise). Nulling is not the defect. Nulling
+   * **and staying silent** is.
+   */
+  const EMPTIES = /set[A-Za-z]+\(\s*(\[\]|null)\s*\)/;
+  const RETURNS_EMPTY = /=>\s*(\[\]|null)\s*$/;
+  // Deliberately NOT console.warn/error: a log is invisible to the admin, who
+  // still sees an empty list. The control pins this — an earlier version of
+  // this set counted console logging as "recorded" and the synthetic
+  // `console.warn(err); setReviews([])` case immediately went green, which is
+  // precisely the swallow this ticket exists to remove.
+  const RECORDS_ERROR = /set[A-Za-z]*(Error|Failed)[A-Za-z]*\(|showToast\.error/;
+  const isFailOpen = (arg) =>
+    (EMPTIES.test(arg) || RETURNS_EMPTY.test(arg.trim())) && !RECORDS_ERROR.test(arg);
 
   const files = [];
   (function walk(dir) {
@@ -116,28 +161,50 @@ describe("no fail-open catch survives under admin/ (MEH-2096)", () => {
     }
   })(ADMIN);
 
-  it("CONTROL — the scanner matches a known fail-open string", () => {
-    // Without this, an empty result below could mean "the tree is clean" OR
-    // "the regex matches nothing at all". Run it first.
-    expect(FAIL_OPEN.test(".catch(() => setUsers([]))")).toBe(true);
-    expect(FAIL_OPEN.test(".catch(() => setProducer(null))")).toBe(true);
-    expect(FAIL_OPEN.test(".catch(() => [])")).toBe(true);
-    // The named-error-param form is the same defect wearing a different shape,
-    // and it is the one the first version of this regex let through.
-    expect(FAIL_OPEN.test(".catch((err) => setReports([]))")).toBe(true);
-    expect(FAIL_OPEN.test(".catch((e) => setProducer(null))")).toBe(true);
-    expect(FAIL_OPEN.test(".catch((error) => [])")).toBe(true);
-    // ...and does not fire on the shape that replaced them.
-    expect(FAIL_OPEN.test(".catch(() => setLoadError(true))")).toBe(false);
+  it("CONTROL — the scanner reads catch bodies, not one arrow spelling", () => {
+    // Every shape below is the SAME defect. A guard that catches some of them
+    // and not others reports clean on the ones it cannot see.
+    for (const shape of [
+      ".catch(() => setUsers([]))",
+      ".catch((err) => setReports([]))",
+      ".catch((e) => setProducer(null))",
+      ".catch(() => [])",
+      ".catch((error) => null)",
+      ".catch((err) => { setUsers([]); })",
+      ".catch(async (err) => { console.warn(err); setReviews([]); })",
+      ".catch((err) => {\n  logIt(err);\n  setProducers([]);\n})",
+    ]) {
+      const args = catchArgs(shape);
+      expect(args.length, `scanner found no catch in: ${shape}`).toBe(1);
+      expect(isFailOpen(args[0].text), `missed a fail-open shape: ${shape}`).toBe(true);
+    }
+
+    // ...and must NOT fire on the shapes that replaced them, or on unrelated
+    // catches that genuinely surface the failure.
+    for (const ok of [
+      ".catch(() => setLoadError(true))",
+      ".catch(() => showToast.error(t('load_error')))",
+      ".catch((err) => { setLoadError(true); })",
+      // Both of these are REAL shapes lifted from this repo, not invented ones.
+      // A predicate validated only on shapes I made up would have rejected them.
+      ".catch(() => { setPendingModCount(null); setPendingKashrutCount(null); setCountsError(true); })",
+      ".catch((err) => { if (err?.response?.status === 404) setProducer(null); else setLoadError(true); })",
+    ]) {
+      expect(isFailOpen(catchArgs(ok)[0].text), `false positive on: ${ok}`).toBe(false);
+    }
+
     expect(files.length).toBeGreaterThan(10);
   });
 
   it("no admin file swallows a load failure into an empty result", () => {
     const hits = [];
     for (const f of files) {
-      fs.readFileSync(f, "utf8").split("\n").forEach((line, i) => {
-        if (FAIL_OPEN.test(line)) hits.push(`${path.relative(ADMIN, f)}:${i + 1}`);
-      });
+      const src = fs.readFileSync(f, "utf8");
+      for (const { text, index } of catchArgs(src)) {
+        if (!isFailOpen(text)) continue;
+        const line = src.slice(0, index).split("\n").length;
+        hits.push(`${path.relative(ADMIN, f)}:${line}`);
+      }
     }
     expect(hits, `fail-open catches still present:\n${hits.join("\n")}`).toEqual([]);
   });
