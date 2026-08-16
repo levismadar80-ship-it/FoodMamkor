@@ -47,7 +47,8 @@ const base = {
   has_physical_location: true,
   short_description: "גבינות עיזים מהחווה",
   // MEH-1895: hours joined the checklist as step 5, so a "complete" fixture
-  // must declare them or every green case below silently drops to 80%.
+  // must declare them or every green case below silently drops one step
+  // (83% under the six-step model — see the phone_verified note below).
   opening_hours: "א׳-ה׳ 9:00-17:00",
   // MEH-2100: verification split off from "contact" into its own step
   // (Sapir 16/08), so a "complete" fixture must declare it too — the same
@@ -130,7 +131,8 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     const { container } = render(
       <ProfileCompletenessCard producer={{ ...base, products: [] }} />,
     );
-    // image/location/contact/hours done, products todo → 80%.
+    // image/location/contact/phone_verified/hours done, products todo →
+    // 5 of 6 → 83%.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
     const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-products`);
