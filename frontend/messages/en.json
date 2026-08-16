@@ -461,8 +461,7 @@
     "stats": {
       "businesses": "businesses joined so far",
       "categories": "categories",
-      "countrywide": "across Israel",
-      "fallback": "Starting now · across Israel"
+      "countrywide": "across Israel"
     },
     "trust": {
       "lead": "No middleman in between · pickup or delivery, straight from the business",
@@ -517,10 +516,6 @@
       "geo_empty": "No businesses found nearby — showing all businesses",
       "region_fallback_header": "No deliveries to {city} yet — businesses that reach the {region} area:"
     },
-    "founder_quote": {
-      "text": "Real food, from real people, right next door.",
-      "attribution": "Sapir, founder of Mehamakor →"
-    },
     "recent": {
       "heading": "Recently viewed"
     },
@@ -545,21 +540,6 @@
       "heading": "Upcoming events",
       "all_events": "All events →",
       "free": "Free"
-    },
-    "marquee": {
-      "tag_unprocessed": "Unprocessed",
-      "tag_pasture": "Pasture-raised",
-      "tag_organic": "Organic",
-      "tag_sourdough": "Sourdough",
-      "tag_extra_virgin": "Extra virgin",
-      "tag_fresh_real": "Fresh and real",
-      "tag_verified": "Verified",
-      "tag_local": "Local"
-    },
-    "story_block": {
-      "founder_quote": "Once you know where to buy from — there's no going back.",
-      "founder_attribution": "— Sapir, founder of Mehamakor",
-      "seasonal_heading": "Every season — a different flavor"
     }
   },
   "common": {
