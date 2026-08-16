@@ -22,6 +22,7 @@ import { useProducerData } from "./hooks/useProducerData";
 import { useStickyBar } from "./hooks/useStickyBar";
 import { useTabScroll } from "./hooks/useTabScroll";
 import { buildShareUrl, getRenderableImages } from "./lib/producer-format";
+import { isOnVacation } from "@/lib/availability";
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -90,10 +91,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   }
 
   const shareUrl = buildShareUrl(producer);
-  // MEH-291 — read from new availability_state with legacy fallback during the 7-day overlap.
-  const isVacation =
-    producer.availability_state === "on_vacation" ||
-    (!producer.availability_state && producer.availability_status === "vacation");
+  // MEH-291 — enum-first with legacy fallback during the overlap.
+  // MEH-1854 — routed through the shared helper so all surfaces agree.
+  const isVacation = isOnVacation(producer);
   // MEH-815: imageless profiles render the Tinted Masthead hero (name as h1);
   // ProducerHeader omits its own name h1 in that case to keep the name singular.
   // MEH-1121 (Task D): blank/whitespace image entries are filtered out so a
@@ -181,7 +181,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 key: "products",
                 label: t("producer.detail.tabs.products"),
                 Icon: Package,
-                show: !!(producer.products?.length > 0 || producer.top_product_name || producer.starting_price_label),
+                // MEH-1855: price_range is the canonical field; starting_price_label
+                // is its legacy alias — either can make the products tab relevant.
+                show: !!(
+                  producer.products?.length > 0 ||
+                  producer.top_product_name ||
+                  producer.price_range ||
+                  producer.starting_price_label
+                ),
               },
               {
                 key: "delivery",

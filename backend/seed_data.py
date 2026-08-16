@@ -36,8 +36,14 @@ CATEGORIES = [
     ("תבלינים וצמחי תיבול", "🌶️"),
     ("שוקולד וממתקים בוטיק", "🍫"),
     # MEH-743: honey split off from "שמנים ודבש" — dedicated license regime
-    # (צו הפיקוח, תשל"ז-1977). Appended at end so existing seed-id slots
-    # (1-18) stay stable; downstream sample-producer category_ids unchanged.
+    # (צו הפיקוח, תשל"ז-1977). Appended at end.
+    #
+    # MEH-2081: the original note here said it was appended "so existing seed-id
+    # slots (1-18) stay stable; downstream sample-producer category_ids
+    # unchanged." That contract NO LONGER EXISTS and must not be restored:
+    # PRODUCERS now references categories by NAME, and this list's order is a
+    # presentation detail. Rows are inserted without explicit ids, so position
+    # here has never guaranteed the id anyway — that mismatch is the bug.
     ("דבש", "🍯"),
     # MEH-927: "דגים" split off from "בשר ודגים" (now standalone "בשר").
     # Appended at end so mid-list seed-ids stay stable; sample producers
@@ -57,7 +63,7 @@ PRODUCERS = [
         "lng": 35.3035,
         "phone": "050-1234567",
         "instagram": "@galil_farm",
-        "category_ids": [1],  # בשר (MEH-927: was "בשר ודגים")
+        "category_names": ["בשר"],  # MEH-927: was "בשר ודגים"
         "products": [
             {"name": "סטייק אנטריקוט", "price_range": '120-180₪/ק"ג'},
             {"name": "בשר טחון", "price_range": '70-90₪/ק"ג'},
@@ -81,7 +87,7 @@ PRODUCERS = [
         "phone": "052-9876543",
         "instagram": "@golan_cheese",
         "website": "https://golan-cheese.co.il",
-        "category_ids": [2],  # חלב וגבינות
+        "category_names": ["חלב וגבינות"],
         "products": [
             {"name": "גבינת עיזים מיושנת", "price_range": "65₪/יח'"},
             {"name": "לאבנה ביתית", "price_range": "35₪/יח'"},
@@ -125,7 +131,7 @@ PRODUCERS = [
         "lng": 34.7818,
         "phone": "054-5551234",
         "instagram": "@dana_sourdough",
-        "category_ids": [4],  # לחמים ואפייה
+        "category_names": ["לחמים ואפייה"],
         "products": [
             {"name": "לחם מחמצת כוסמין", "price_range": "45₪"},
             {"name": "פוקאצ'ה זעתר", "price_range": "35₪"},
@@ -148,7 +154,7 @@ PRODUCERS = [
         "lng": 35.2137,
         "phone": "050-7778899",
         "instagram": "@tases_ferments",
-        "category_ids": [8],  # מותססים וכבושים
+        "category_names": ["מותססים וכבושים"],
         "products": [
             {"name": "קימצ'י קוריאני מסורתי", "price_range": "45₪/צנצנת"},
             {"name": "כרוב כבוש קלאסי", "price_range": "35₪/צנצנת"},
@@ -172,7 +178,7 @@ PRODUCERS = [
         "phone": "053-3334455",
         "instagram": "@teva_pure",
         "website": "https://tevapure.co.il",
-        "category_ids": [11, 12],  # סבונים + קוסמטיקה טבעית
+        "category_names": ["סבונים טבעיים", "קוסמטיקה טבעית"],
         "products": [
             {"name": "סבון שמן זית ולבנדר", "price_range": "35₪"},
             {"name": "קרם פנים אלוורה", "price_range": "85₪"},
@@ -345,6 +351,33 @@ def seed():
         # Seed categories — insert-only; renames/deletes are migrations (MEH-1530).
         seed_categories(db)
 
+        # MEH-2081: resolve category ids BY NAME, from the database, after the
+        # categories exist. NEVER hardcode a category id in PRODUCERS.
+        #
+        # seed_categories inserts without an explicit id (autoincrement), and its
+        # own docstring records that staging's id sequence has HOLES (1, 5, 13,
+        # 15) with 'בשר' living at id 22. MEH-1530 removed the `id = index + 1`
+        # assumption from that function — but PRODUCERS kept the same assumption
+        # as literals (`"category_ids": [1]`), so seeding a producer raised a
+        # ForeignKeyViolation on a category id that does not exist. That
+        # exception is caught in startup.py:167 and latches
+        # db_init_status="failed" for the life of the process (startup.py:193).
+        #
+        # DO NOT reintroduce a positional id here, and do not "keep ids stable"
+        # by appending to CATEGORIES — the ordering of that list is now a
+        # presentation detail, not an identity contract.
+        categories_by_name = {
+            name: cid for name, cid in db.query(Category.name, Category.id)
+        }
+        seeded_names = {n for p in PRODUCERS for n in p["category_names"]}
+        missing = sorted(seeded_names - categories_by_name.keys())
+        if missing:
+            raise ValueError(
+                "seed(): PRODUCERS references category names absent from the "
+                f"categories table: {missing}. Add them to CATEGORIES, or land a "
+                "rename as an Alembic migration — do not silently skip the link."
+            )
+
         # Seed producers. Keyed by slug — the stable identity column (unique,
         # public URL). DO NOT key this on Producer.name: name is display text an
         # admin can edit at runtime, and a rename would make this lookup miss its
@@ -379,8 +412,14 @@ def seed():
             db.add(producer)
             db.flush()
 
-            for cid in p_data["category_ids"]:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+            # MEH-2081: name → id, resolved above from the DB. Never a literal.
+            for cname in p_data["category_names"]:
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id,
+                        category_id=categories_by_name[cname],
+                    )
+                )
 
             for prod in p_data["products"]:
                 db.add(

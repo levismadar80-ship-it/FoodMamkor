@@ -13,7 +13,7 @@ from pydantic-settings init order.
 
 Verify-on-staging contract: dashboard receipt is verified manually
 (see PR #552 body / MEH-500 DoD). Local CC sandbox cannot reach
-Sentry's ingest host (MEH-360).
+Sentry's ingest host (MEH-2090).
 """
 
 import logging

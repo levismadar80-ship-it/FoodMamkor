@@ -150,6 +150,63 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     expect(routerStub.replace).not.toHaveBeenCalled();
   });
 
+  // MEH-2058: ProfileCompletenessCard's "location" checklist step now deep-links
+  // to #locations (LocationsEditor) instead of the deleted LocationCard's
+  // #location. Discriminating: before ANCHOR_TO_KEY/KEY_TO_GROUP/KEY_TO_ANCHOR
+  // registered "locations", this hash resolved to no key and applyHash returned
+  // early (the same silent no-op #location now falls into) — the accordion
+  // would never reach aria-expanded="true" and this assertion would time out.
+  it("opens + scrolls the card for an in-group #locations deep link", async () => {
+    const scrollSpy = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy;
+    window.requestAnimationFrame = (cb) => cb();
+    params.group = "location";
+    window.location.hash = "#locations";
+    mount();
+    await waitFor(() =>
+      expect(screen.getByTestId("accordion-locations")).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      ),
+    );
+    expect(scrollSpy).toHaveBeenCalled();
+    expect(routerStub.replace).not.toHaveBeenCalled();
+  });
+
+  // MEH-2063: "שינוי שם העסק" moved from first to last in the profile group —
+  // renaming is a rare, request-based action that belongs below the content
+  // cards edited every week, not above them.
+  it("MEH-2063: business-name card is LAST in the profile group order", async () => {
+    params.group = "profile";
+    mount();
+    const group = await screen.findByTestId("group-profile");
+    const accordionIds = Array.from(
+      group.querySelectorAll('[data-testid^="accordion-"]'),
+    ).map((el) => el.getAttribute("data-testid"));
+    expect(accordionIds[accordionIds.length - 1]).toBe("accordion-business-name");
+    // Still present, just no longer first.
+    expect(accordionIds[0]).not.toBe("accordion-business-name");
+    expect(accordionIds).toContain("accordion-business-name");
+  });
+
+  it("MEH-2063: a #business-name deep link still resolves and opens the card (anchorId unchanged)", async () => {
+    const scrollSpy = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy;
+    window.requestAnimationFrame = (cb) => cb();
+    params.group = "profile";
+    window.location.hash = "#business-name";
+    mount();
+    await waitFor(() =>
+      expect(screen.getByTestId("accordion-business-name")).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      ),
+    );
+    expect(scrollSpy).toHaveBeenCalled();
+    // Already in the profile group — no group switch needed.
+    expect(routerStub.replace).not.toHaveBeenCalled();
+  });
+
   it("composes license + kashrut as one unified trust card (no separate cards)", async () => {
     params.group = "trust";
     mount();

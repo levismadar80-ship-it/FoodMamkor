@@ -605,7 +605,17 @@ class ProducerRegister(BaseModel):
     producer_name: SanitizedBusinessNameField
     description: str | None = None
     short_description: str | None = Field(default=None, max_length=160)
-    city: str | None = None
+    # MEH-2015 chunk B: required on BOTH paths (new registration + MEH-143
+    # upgrade) — Sapir's 14.8.2026 ruling revokes MEH-951's visual-only
+    # exception. City is the discovery axis (map + filter), not a profile
+    # field: unenforced, it shipped empty. Twin of ExperienceCreate.city /
+    # EventCreate.city (MEH-2013's Field(..., min_length=1, max_length=100)
+    # shape) — but NOT byte-identical: adversarial review on this PR found
+    # `min_length=1` alone accepts a whitespace-only value ("   " has length
+    # 3), which those two siblings still carry unfixed. Closed here with the
+    # bleach→letter-floor validator pair below; not backported to the
+    # siblings (out of scope for this PR — they're unmodified elsewhere).
+    city: str = Field(..., min_length=1, max_length=100)
     address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
@@ -678,6 +688,20 @@ class ProducerRegister(BaseModel):
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
+    # MEH-1838 chunk A: delivery-shape fields — registration previously
+    # captured NO axis at all (has_physical_location/offers_delivery both
+    # silently defaulted at the DB layer), so every new business landed
+    # identical regardless of shape. has_physical_location/offers_delivery/
+    # delivery_nationwide map onto their Producer columns directly
+    # (models.py:251-256). delivery_cities does NOT — see the Phase 0 note
+    # on the model_validator below (MEH-903 A): the router folds it into
+    # delivery_areas rows instead of the legacy flat column. Defaults match
+    # the Producer model's own column defaults, so an existing caller that
+    # omits these fields is unaffected.
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
@@ -701,6 +725,16 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
+
+    # MEH-2015 chunk B (adversarial-review finding): city is public-rendered
+    # (map + filter), so bleach it like every other free-text field on this
+    # schema — sanitize_text also collapses a whitespace-only input to None,
+    # which is what lets the letter-floor validator below reject it cleanly
+    # instead of `Field(min_length=1)` silently accepting "   ".
+    @field_validator("city")
+    @classmethod
+    def _sanitize_city(cls, v):
+        return sanitize_text(v, max_length=100)
 
     # MEH-870: reject punctuation-only values on the PUBLIC registration path,
     # which collected short_description (tagline) + address with only the bleach
@@ -729,6 +763,17 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_address_alnum(cls, v):
         return _min_alnum_validator(v)
+
+    # MEH-2015 chunk B: city's floor, min_count=1 (not the ≥3 used for
+    # names/taglines above) — a legitimate short Hebrew city name ("בת ים",
+    # "לוד") must clear it. `_min_letters_validator(None)` coerces the
+    # bleach-emptied case to "" internally and raises (HOT-003 path), so no
+    # None-guard is needed here — unlike short_description, city is required,
+    # not optional, so a stripped-to-nothing value is exactly what must 422.
+    @field_validator("city")
+    @classmethod
+    def _validate_city_letters(cls, v):
+        return _min_letters_validator(v, min_count=1)
 
     @field_validator("primary_contact_method")
     @classmethod
@@ -791,6 +836,35 @@ class ProducerRegister(BaseModel):
     def _require_categories(cls, v):
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
+
+    # MEH-1838 chunk A: same physical-or-delivery / nationwide-XOR-cities
+    # semantic as ProducerAdminCreate._validate_location_mode (:1560-1582) —
+    # NOT a verbatim copy. Phase 0 (required before this chunk) found the
+    # naive read wrong twice over:
+    #   1. ProducerAdminCreate's own XOR checks delivery_area_cities, not the
+    #      flat delivery_cities the DB CHECK (models.py:447-453,
+    #      delivery_nationwide_xor_cities) is written against — MEH-903 A.
+    #   2. The flat column MEH-903 A's comment points at is itself legacy:
+    #      admin.py:427-429/486-489 pop it out of every write on purpose, and
+    #      producer_listing.py:258's "delivers to <city>" match reads
+    #      delivery_areas rows exclusively — the flat column is dead weight
+    #      kept only because dropping it needs its own Alembic chunk.
+    # This validator still checks self.delivery_cities (the PAYLOAD field —
+    # correct, matches what the frontend sends and what the DB CHECK guards
+    # semantically), but the router folds a non-empty list into delivery_areas
+    # rows rather than the column, so the city list is actually visible to the
+    # live filter. See the router-side comment at auth.py for the write.
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        if not self.has_physical_location and not self.offers_delivery:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        if self.delivery_nationwide and not self.offers_delivery:
+            raise ValueError(
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+            )
+        return self
 
 
 class GoogleAuthRequest(BaseModel):
@@ -2018,7 +2092,28 @@ class ProducerListOut(BaseModel):
     has_no_added_sugar_products: bool = False
     has_low_carb_products: bool = False
     has_delivery: bool = False
+    # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
+    # this attribute with `offers_pickup` before serialization (same mechanism
+    # as the has_*_products fields below) — see producer_queries.py. The DB
+    # column stays (MEH-1259 keep-column pattern); it just isn't read anymore.
     pickup_points: bool = False
+    # MEH-2046: the two fulfillment booleans the consumer surfaces read. Both are
+    # computed by attach_badge_fields — NOT columns, so there is no migration —
+    # and each mirrors the listing predicate of the same name exactly:
+    #   delivers      ↔ producer_listing._has_delivery_condition()
+    #   offers_pickup ↔ producer_listing._pickup_condition()  (unscoped form)
+    # They exist because the card and the filter had already drifted: the badge
+    # read the legacy `has_delivery` column OR delivery_count, so a nationwide
+    # business (offers_delivery + delivery_nationwide, zero delivery_areas rows)
+    # passed the delivery filter while showing no delivery badge — MEH-1836's
+    # divergence, visible to a user as "I filtered for delivery and this card
+    # says nothing about delivery". `delivery_nationwide` is not serialized, so
+    # the client cannot re-derive the predicate; the server answers instead.
+    # Unscoped on purpose: these describe the BUSINESS (Label Scope Contract
+    # scope=business), not the current query, so a city filter must not change
+    # what a card claims about itself.
+    delivers: bool = False
+    offers_pickup: bool = False
     # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
@@ -2459,6 +2554,41 @@ class RequestChangesIn(BaseModel):
     """
 
     feedback: str | None = Field(None, max_length=2000)
+
+
+class ProducerRejectIn(BaseModel):
+    """MEH-226: admin "reject" payload — preset key + optional free text.
+
+    REUSES: schemas.py:2473 RequestChangesIn — same shape (optional free text
+    emailed to the producer verbatim, handler owns the emptiness rule). The
+    added `preset_key` selects one of the five canonical rejection reasons;
+    the label itself lives in the BACKEND
+    (`admin.py::PRODUCER_REJECTION_PRESETS`), not here and not in the
+    frontend, so the persisted text, the email and the admin UI cannot drift
+    apart (workflow.md Smell #1). Key validity is checked in the handler
+    alongside the "other requires free text" rule, mirroring
+    request_producer_changes' handler-side 400.
+
+    Back-compatible with the pre-MEH-226 body `{"reason": "..."}` — the
+    endpoint took `reason: str = Body("", embed=True)`, which parses into
+    this model unchanged.
+    """
+
+    preset_key: str | None = None
+    reason: str | None = Field(None, max_length=2000)
+
+
+class RejectionPresetOut(BaseModel):
+    """MEH-226: one row of GET /admin/producers/rejection-presets.
+
+    Typed rather than a bare dict so the MEH-1748 codegen chain emits a real
+    schema for this route — an untyped handler generates `zod.unknown()`,
+    which makes the drift guard structurally unable to notice the shape
+    changing.
+    """
+
+    key: str
+    label: str
 
 
 # --- User ---

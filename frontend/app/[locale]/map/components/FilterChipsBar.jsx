@@ -5,6 +5,8 @@ import { Faders } from "@phosphor-icons/react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { CATEGORY_ICONS } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
+import DeliveryContextBanner from "./DeliveryContextBanner";
+import ServiceChipRow from "./ServiceChipRow";
 
 /**
  * The /map filter bar: one category chip row + a "סינון" button + a
@@ -32,6 +34,9 @@ export default function FilterChipsBar({
   activeFilterTags,
   resetAllFilters,
   activeAttributeCount,
+  // MEH-2046 PR-6: the active city refinement, needed only to gate + address
+  // the day-bridge banner below (Option C refined state = delivery + city).
+  cityFilter,
 }) {
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -55,6 +60,15 @@ export default function FilterChipsBar({
   // Stable ref (PR #1565 review): an inline arrow would retrigger the sheet's
   // [open, onClose] keydown effect on every chipState re-render.
   const closeSheet = useCallback(() => setSheetOpen(false), []);
+  // MEH-2046: either promoted service axis being on is what surfaces the
+  // "בתיאום אישי" explanation below — the two are OR-ed server-side, so one
+  // is enough to exclude a no-service business.
+  const serviceFilterActive =
+    !!chipState.has_delivery || !!chipState.pickup_points;
+  // MEH-2046 PR-6: Option C's REFINED state — the משלוח chip is on AND a city
+  // was set (the optional refinement, MEH-2046 decision 1). Unscoped delivery
+  // (chip on, no city) gets no banner — there is no single city to caption.
+  const showDeliveryContextBanner = !!chipState.has_delivery && !!cityFilter;
   return (
     <div dir="rtl" className="min-w-0">
       {/* MEH-1368: consolidated to ONE row — the scrollable category chips
@@ -71,9 +85,16 @@ export default function FilterChipsBar({
           onChipClick={onCategoryChipClick}
           className="flex-1"
         />
+      </div>
+      {/* MEH-2046 row 2: the two promoted service chips. The "סינון" trigger
+          moves down onto this line with them — it is passed as children rather
+          than rebuilt inside ServiceChipRow so the `relative` anchor below stays
+          the element FilterSheet's md+ panel positions against. */}
+      <ServiceChipRow chipState={chipState} onToggleChip={onToggleChipClick}>
         {/* Anchor wrapper — FilterSheet's md+ panel positions off this
-            `relative` wrapper. */}
-        <div className="relative shrink-0">
+            `relative` wrapper. `ms-auto` pushes it to the inline-END (left in
+            RTL), which is where it sat when it shared row 1. */}
+        <div className="relative shrink-0 ms-auto">
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
@@ -102,7 +123,34 @@ export default function FilterChipsBar({
             onClearAll={clearSheetFilters}
           />
         </div>
-      </div>
+      </ServiceChipRow>
+      {/* MEH-2046 decision 8: a business with neither axis ("בתיאום אישי") is
+          excluded by either service filter — correctly, the filter is literal.
+          Say so rather than hiding silently.
+          The ticket asked for this "under the result counter"; /map has no such
+          element (the only count is inside FilterSheet's apply button), so it
+          sits under the row that was just toggled. It renders whenever a service
+          filter is active rather than gating on a hidden COUNT, because the
+          excluded businesses are dropped server-side and never reach the client
+          — the count is not cheaply derivable here, and inventing one would be
+          worse than omitting it. */}
+      {serviceFilterActive && (
+        <p
+          className="mt-2 text-[11px] text-fg-muted"
+          data-testid="service-filter-note"
+          aria-live="polite"
+        >
+          {t("map.filter.arranged_hidden")}
+        </p>
+      )}
+      {/* MEH-2046 PR-6: joins this cluster deliberately — the ticket asked
+          for the day-bridge banner beside the counter/explanation line, one
+          chrome block, not a second floating element over the map canvas.
+          `key={cityFilter}` resets the banner's local dismiss state when the
+          refinement city changes, so a new city gets its own explanation. */}
+      {showDeliveryContextBanner && (
+        <DeliveryContextBanner key={cityFilter} city={cityFilter} />
+      )}
       {activeFilterTags.length > 0 && (
         <div
           dir="rtl"
