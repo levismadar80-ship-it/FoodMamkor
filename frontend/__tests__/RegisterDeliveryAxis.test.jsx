@@ -247,6 +247,12 @@ describe("MEH-1838 chunk B — the client-side gate mirrors the server validator
     fireEvent.click(nextBtn());
 
     expect(screen.getByText(`${K}.steps.business.title`)).toBeInTheDocument();
+    // The inline error renders under exactly this condition, so assert it too —
+    // otherwise a refactor that drops the error element while keeping the
+    // advance-block still passes, and the seller is left with a button that
+    // silently does nothing. The sibling test above asserts its own error for
+    // the same reason.
+    expect(screen.getByTestId("register-delivery-cities-error")).toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
   });
 
@@ -335,9 +341,13 @@ describe("MEH-1838 chunk B — the i18n keys actually resolve", () => {
       expect(typeof fields[key], `${locale}: ${key} is not a string`).toBe("string");
       expect(fields[key].trim().length, `${locale}: ${key} is empty`).toBeGreaterThan(0);
     }
-    // Derived, never stated — a count literal goes stale the moment a key is
-    // added to KEYS above (MEH-1976).
-    expect(KEYS.filter((k) => k in fields)).toHaveLength(KEYS.length);
+    // A `KEYS.filter(k => k in fields)` length check stood here and was removed:
+    // it was ENTAILED by the loop above (a missing key already fails
+    // `toBe("string")` on `typeof undefined`), so it read as coverage while
+    // being underivable from anything the loop had not already proven. Its
+    // comment claimed it guarded against a stale count literal — there was no
+    // literal. Deleted rather than reformulated, per testing.md; the
+    // reformulation of an entailed assertion tends to be entailed too.
   });
 
   it("the wrong namespace really is wrong — the trap this guards is live", () => {
