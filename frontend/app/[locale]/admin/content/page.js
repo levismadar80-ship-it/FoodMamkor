@@ -151,7 +151,7 @@ function CategoriesEditor() {
 
       {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
           <div
             role="dialog"
             aria-modal="true"
