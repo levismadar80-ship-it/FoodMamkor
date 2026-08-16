@@ -69,10 +69,29 @@ def _slugify(text: str) -> str:
 
     **Not Hebrew-specific either** (measured 2026-08-11). `\\w` is Unicode-aware
     in Python 3, so every script survives, not just Hebrew: "мосты", "مزرعة" and
-    "農場" pass through unchanged, and "Café Crème" → "café-crème". The explicit
-    `\\u0590-\\u05FF` range is therefore redundant — `\\w` alone returns the
-    identical string on Hebrew input. It is left in place on purpose: this
-    change is comment-only, and the range still records the intent.
+    "農場" pass through unchanged, and "Café Crème" → "café-crème".
+
+    **The explicit `\\u0590-\\u05FF` range is NOT redundant. Do not remove it.**
+    This docstring said the opposite between MEH-1813 and MEH-2021, and the
+    claim was false: **81 of the 112 codepoints in `U+0590-U+05FF` are not
+    `\\w`** (measured 2026-08-16) and survive *only* because the range is here —
+    51 combining marks (ניקוד), 24 unassigned, the maqaf `־` (U+05BE), and 5
+    punctuation marks including geresh `׳` (U+05F3) and gershayim `״` (U+05F4).
+
+    Dropping the range is therefore a **behaviour change on real business
+    names**, not a cleanup: "מאפיית ״שקד״" → "מאפיית-שקד", "צ׳יפס" → "ציפס",
+    "לחם־כוסמין" → "לחםכוסמין", and any name carrying ניקוד loses it. Those are
+    different slugs, so they are different public URLs.
+
+    **Why the earlier claim looked true:** it was measured on a single input,
+    "חוות" — letters only, the one case where both forms agree. A sample of one
+    settled a question about 81 characters. `tests/test_slugify_charclass_equivalence.py`
+    now pins a corpus that separates them (7 of 14 inputs diverge) so the next
+    reader gets a red test instead of a reassuring comment.
+
+    Whether keeping these characters in a public URL is *desirable* is a
+    separate, open question — MEH-2020 owns the charset ruling. Until it lands,
+    the measured behaviour above is the contract.
 
     **Returns "" when nothing survives** — "!!!" → "". The empty string is not a
     slug and must not be stored: `_ensure_unique_slug` passes an empty base
