@@ -34,6 +34,19 @@ def _has_mojibake(value: str | None) -> bool:
 
 
 def _slugify(text: str) -> str:
+    """Third copy of the slug helper — mirrors `slug_utils.slugify` byte for byte.
+
+    MEH-2021 found this one by grep: the card named two sites and there are
+    **three**. Kept as-is rather than de-duplicated here, because collapsing
+    three slug generators is a behaviour-adjacent refactor on public URLs and
+    this change is docstring-only.
+
+    **The `\\u0590-\\u05FF` range is not redundant — do not remove it.** 81 of
+    its 112 codepoints are not `\\w` (ניקוד, maqaf, geresh, gershayim), so
+    dropping it silently rewrites slugs for real business names. Full
+    measurement in `admin.py::_slugify`; corpus pinned in
+    `tests/test_slugify_charclass_equivalence.py`.
+    """
     if not text:
         return ""
     s = str(text).strip().lower()
