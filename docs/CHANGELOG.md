@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+- **16/08 — Release #2 + Release #3 לפרודקשן. שער ה-seed חי; ה-webhook נתפס רק ב-Sentry, לא ב-CI. carrier: MEH-1909 / MEH-2092.**
+  - **Release #2** (‏PR #2480, `7f0a7703`) — 1,822 commits · 2,093 files · 19 alembic revisions · head `97669fe803f5`. **‏Railway מעולם לא קיבל את ה-webhook**: `railway redeploy` ב-`deploy.yml` דיווח success בזמן שפרס את `857ea5bc` — ה-commit **הקודם**, ה-parent הראשון של המיזוג. אובחן דרך `release=857ea5bc` ב-Sentry, לא דרך ה-CI. תוקן ב-Disconnect+Connect על הענף.
+  - **Release #3** (‏PR #2965, `16a38b22`) — נושא את שער ה-seed. `backend/seed_data.py:479`: `if settings.env.lower() != "production":` חוסם את בלוק עסקי הדמו. אומת בשני boots רצופים: **קטלוג 0 בשניהם**; `scripts/checks/smoke_production.py` — **0 FAIL**.
+  - **גם נפתר:** `db_init_failed` בפרודקשן (שורש MEH-2081, MEH-1905 עודכן).
+  - **תשתית CI:** `protect-main` עבר מ-6 בדיקות בודדות לשני aggregators (`CI gate` + `Deploy gate`), ו-"require up to date" כובה — בדיקות נדרשות ש-skip נשארו `Expected` וחסמו כל release (ראיית MEH-1603).
+  - **3 פערים פתוחים, לא חוסמים, רשומים על MEH-2092:** נתיב Cloudinary לא אומת · structlog שקט בפרודקשן (השורה לא מוכיחה/שוללת ריצת השער — הראיה היא ספירת הקטלוג) · `staging-smoke.yml:103` מריץ `DELETE FROM producers` מול DB חי (מוגבל ל-`workflow_dispatch`, נשלל כגורם ל-16/08 כי ל-fixtures אין שורת בעלים לתת-השאילתה שלו).
+  - **מה שמחק את חמש השורות המקוריות ב-08:15–08:45 UTC — עדיין לא ידוע מהקוד.** תשעה נתיבים נשללו עם file:line; `DELETE /admin/producers/{id}` הוא הנתיב היחיד שתואם את מה שנצפה, ואם נקרא בפועל היא שאלה ראנטיים (לוגי Railway / `pg_stat_user_tables` / היסטוריית volume). השער עוצר את ההחייאה, לא את המחיקה.
+
 - **15/08 — יום מלא: 6 PRs מוזגו, 2 נשארו פתוחים במכוון, אודיט 175 כרטיסים, וכלל 34 חדש. carrier: MEH-2091.**
   - **מה נחת (לפי סדר מיזוג):** #2952 אודיט חוסמי-השקה (175 כרטיסים) · #2954 סגירת פער EN (30 מפתחות `en.json`) · #2955 שני אחים של ניגודיות accent-on-tint · #2956 כלל 34 ב-`workflow.md` · #2957 patch doc ל-`railway.json` · #2958 סגירת ה-false-green של tier C.
   - **מה נשאר פתוח במכוון:** **#2953** (headers אבטחה) — מוחזק לספיר, tier RED בתחום security, לא מוזג ע"י CC. **#2959** (chunk A של צורת משלוח בהרשמה) — `mergeable_state: behind`, ממתין לסנכרון ומיזוג. **שימי לב:** ה-description של הכרטיס ההוא כבר כתוב כאילו chunk A מוזג ("אחרי מיזוג Chunk A") — **הוא לא**. אומת ב-`pull_request_read`, לא הונח.
