@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+- **16/08 — Release #2 + Release #3 לפרודקשן. שער ה-seed חי; ה-webhook נתפס רק ב-Sentry, לא ב-CI. carrier: MEH-1909 / MEH-2092.**
+  - **Release #2** (‏PR #2480, `7f0a7703`) — 1,822 commits · 2,093 files · 19 alembic revisions · head `97669fe803f5`. **‏Railway מעולם לא קיבל את ה-webhook**: `railway redeploy` ב-`deploy.yml` דיווח success בזמן שפרס את `857ea5bc` — ה-commit **הקודם**, ה-parent הראשון של המיזוג. אובחן דרך `release=857ea5bc` ב-Sentry, לא דרך ה-CI. תוקן ב-Disconnect+Connect על הענף.
+  - **Release #3** (‏PR #2965, `16a38b22`) — נושא את שער ה-seed. `backend/seed_data.py:479`: `if settings.env.lower() != "production":` חוסם את בלוק עסקי הדמו. אומת בשני boots רצופים: **קטלוג 0 בשניהם**; `scripts/checks/smoke_production.py` — **0 FAIL**.
+  - **גם נפתר:** `db_init_failed` בפרודקשן (שורש MEH-2081, MEH-1905 עודכן).
+  - **תשתית CI:** `protect-main` עבר מ-6 בדיקות בודדות לשני aggregators (`CI gate` + `Deploy gate`), ו-"require up to date" כובה — בדיקות נדרשות ש-skip נשארו `Expected` וחסמו כל release (ראיית MEH-1603).
+  - **3 פערים פתוחים, לא חוסמים, רשומים על MEH-2092:** נתיב Cloudinary לא אומת · structlog שקט בפרודקשן (השורה לא מוכיחה/שוללת ריצת השער — הראיה היא ספירת הקטלוג) · `staging-smoke.yml:103` מריץ `DELETE FROM producers` מול DB חי (מוגבל ל-`workflow_dispatch`, נשלל כגורם ל-16/08 כי ל-fixtures אין שורת בעלים לתת-השאילתה שלו).
+  - **מה שמחק את חמש השורות המקוריות ב-08:15–08:45 UTC — עדיין לא ידוע מהקוד.** תשעה נתיבים נשללו עם file:line; `DELETE /admin/producers/{id}` הוא הנתיב היחיד שתואם את מה שנצפה, ואם נקרא בפועל היא שאלה ראנטיים (לוגי Railway / `pg_stat_user_tables` / היסטוריית volume). השער עוצר את ההחייאה, לא את המחיקה.
 - **16/08 — MEH-1838 chunk B נחת (#2966): ההרשמה סוף-סוף לוכדת ציר משלוח. שתי מלכודות שם נתפסו ב-Phase 0, ואחת מהן היא מלכודת שהכרטיס עצמו הזהיר מפניה.**
   - **מה נחת:** ארבע עריכות ב-`RegisterProducerClient.jsx` — ‏`EMPTY_FORM` +4 שדות, בלוק ציר-משלוח על שלב `DETAILS`, שער client-side שמשקף את `_validate_location_mode` (`schemas.py:857+`), ו-payload. ‏**אפס מפתחות i18n חדשים** — כל שש המחרוזות מוחזרו מילה-במילה מ-`admin.producers.form.fields.*` (כלל 22), ולכן אין משטח en-parity ואין קופי לא-מאושר.
   - **מלכודת 1 — שני דברים באותו שם.** ה-**payload field** `delivery_cities` (`schemas.py:704`) חי; ה-**עמודה** באותו שם מתה ולא נכתבת (`auth.py:550`). ה-router מקפל רשימה לא-ריקה לשורות `delivery_areas` (`auth.py:586-588`), והן היחידות שהפילטר הצרכני קורא (`producer_listing.py:258`). ההוראה שהגיעה לסשן אמרה לוודא `delivery_areas` ב-payload — **מימוש מילולי היה שולח את הצורה הלא נכונה ולא מדליק אף דגל.**
