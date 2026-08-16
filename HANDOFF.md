@@ -3,6 +3,21 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-08-16 — ‏z-index של רשימת יישובים (#2984) + Phase 0 של שער סדר-התיעוד
+
+**מוזג:** ‏#2984 (`090be650`) — squash אומת (parent אחד, תבנית `<title> (#N)`, ההודעה שלמה עם `Builder-Model:` ו-`Closes`).
+**ענף:** `feature/meh-2102-cities-autocomplete-z` מ-`origin/staging` טרי.
+**נבדק:** build exit 0 · vitest **3073 עברו / 3 דילגו** · `ZTokenLedgerSync` ירוק (`n` 1→2) · ESLint 0 errors · rtl 0 מאפיינים פיזיים · `run-all.sh` 15/15 · צילומי 375px שנפתחו ונצפו · ה-CI reviewer `None` בשלוש הקטגוריות.
+
+### 🔴 מה שהבא אחריי חייב לדעת
+
+1. **אל תסמכי על «ארבעה צרכנים ל-`CitySearch`» — הם 13.** המספר הזה מופיע בגוף #2984 **ובהודעת ה-squash שעל staging**, והוא שגוי. ‏`MapClient.jsx` (**central component**) מרנדר את `CitySearch` **פעמיים** — `:675` desktop, `:777` mobile. השורש: grep שהסתיים ב-`| head`. **הרשימה הנכונה נמצאת ב-MEH-2108 ובתגובת התיקון על #2984.** לפני כל מנייה: `wc -l`, ולא `head`.
+2. **הבאג האמיתי לא תוקן, ובכוונה — הוא MEH-2108.** ‏`CitySearch.jsx:196` על `z-[1000]` = בדיוק תקרת פקדי Leaflet; סדר DOM מכריע; **72px חפיפה נמדדה**, נראית בצילום ב-`qa-artifacts/MEH-2102/375-citysearch-open.webp`. ‏#2984 תיקן את **התאום שאין לו באג** (`CitiesAutocomplete`) — יישור ledger בלבד. אל תקראי ל-#2984 «התיקון».
+3. **ה-harness ב-`frontend/e2e/qa-meh2102-dropdown-vs-map.mjs` — השתמשי בו, אל תכתבי חדש.** הוא כבר תפס שתי שגיאות של עצמו (השוואת קופסאות בין שתי מערכות צירים; stub קצר מול רשימה חסומת-גובה) ונושא control שדוחה `null` **וגם** גודל אפס. אינו ב-`testMatch`, לכן לא רץ ב-CI.
+4. **‏MEH-2103 עצר אחרי Phase 0 כמתוכנן, וממתין להכרעת ספיר.** שיעור בסיס **2/30 (6.7%)**, המלצה **warn-only** עם trailer `Describes-PRs:` (פרסור `#NNNN` נמדד **95.9% false-positive**). **נתיב RED יחיד וחוסם:** ‏`pr-checks.yml:84` — ה-job ‏`repo-guards` עושה `actions/checkout` **בלי** `fetch-depth`, כלומר clone רדוד; שער שפותר «האם #N מוזג» ילך על `git log origin/staging`, לא ימצא היסטוריה, **ויאדים כל הפניה בלי להתריע**. התבנית לתיקון כבר קיימת ב-job שמתחתיו (`qa-artifacts-size`, `:93-95`).
+5. **‏actor מקביל חימש auto-merge פעמיים על #2984 עם `merge_method: merge`, תחת STOP מוצהר.** הושבת פעמיים. אם את רואה auto-merge חמוש על PR שלא חימשת — בדקי את השיטה: `merge` קובר את הודעת ה-squash. ראיה נוספת ל-MEH-1603.
+6. **‏E2E על staging לא יציב היום** — מתחלף ירוק/אדום בין commits עוקבים, 500 מה-backend על כל `/producers/by-slug`. לפני שמאשימים דיף: להריץ את הבקרה — האם ה-commit של הבסיס עצמו נכשל. וגם: `E2E gate` ממפה `cancelled → FAIL`, אז דחיפות רצופות מייצרות «כשלונות» שהן בעצם supersession.
+
 ## 2026-08-16 — שני תיקוני קופי סדרתיים ב-`he.json` (#2983 · #2985)
 
 **מוזג:** ‏#2983 (`7f7541b7`) · #2985 (`d0ad922e`) — שניהם squash (תבנית `<title> (#N)`, אומת).
