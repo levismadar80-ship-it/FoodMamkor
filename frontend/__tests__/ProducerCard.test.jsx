@@ -36,6 +36,11 @@ vi.mock("next-intl", () => ({
       // Match the HE plural rendering for `{count} שמרו` (one/two/other).
       return `${values.count} שמרו`;
     }
+    // MEH-1678: mirrors the real he.json shape ("משלוח: {amount}") so the
+    // component's AMOUNT_SENTINEL split behaves identically under test —
+    // interpolating the sentinel here, not returning a pre-split literal.
+    if (key === "group_buys.delivery.fee") return `משלוח: ${values.amount}`;
+    if (key === "group_buys.delivery.fee_free") return "משלוח חינם";
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
@@ -369,6 +374,29 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(distance).not.toHaveAttribute("dir");
   });
 
+  // MEH-1938 chunk 3 — the discriminating case: distance now reads through
+  // producerPoints(), so a producer whose only coordinates live in a
+  // producer_locations row (no Producer.lat/lng) still shows a distance.
+  // This would render nothing against the pre-chunk-3 direct p.lat/p.lng read.
+  it("renders distance from a locations[] row when Producer.lat/lng are both null", () => {
+    window.localStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          lat: null,
+          lng: null,
+          locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 31.7683, lng: 35.2137 }],
+        }}
+      />,
+    );
+    const distance = screen.getByTestId("distance-pill");
+    expect(distance.textContent).toMatch(/ק"מ$/);
+  });
+
   it("prefers short_description over top_product_name", () => {
     render(<ProducerCard producer={fullProducer} />);
     const desc = screen.getByTestId("card-description");
@@ -496,6 +524,37 @@ describe("ProducerCard — Phase B anatomy", () => {
   });
 });
 
+// MEH-1678: producer-level delivery_fee row. Three states — a positive fee,
+// the fee=0 "free delivery" value, and the null/absent case — because 0 is a
+// value here and not an absence (same distinction DeliveryBlock.jsx and
+// MEH-1942 already pin for the per-area field); a truthiness check would
+// silently render the free case as "nothing to show".
+describe("ProducerCard — delivery fee row (MEH-1678)", () => {
+  it("renders the fee amount when delivery_fee is a positive number", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 15 }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח: 15₪");
+  });
+
+  it("renders 'free delivery' — not '0₪' — when delivery_fee is exactly 0", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 0 }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם");
+    expect(row).not.toHaveTextContent("0₪");
+  });
+
+  it("renders no row at all when delivery_fee is null (not stated)", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null }} />);
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+
+  it("renders no row at all when delivery_fee is undefined (field absent from the payload)", () => {
+    const { delivery_fee: _omit, ...withoutFee } = { ...fullProducer, delivery_fee: 15 };
+    render(<ProducerCard producer={withoutFee} />);
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+});
+
 describe("ProducerCard — heart (Phase C)", () => {
   it("renders an unfilled heart for guests", () => {
     render(<ProducerCard producer={fullProducer} />);
@@ -593,7 +652,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
           kashrut_verified_at: "2026-01-01T00:00:00Z",
           grass_fed: true,
           has_gluten_free_products: true,
-          has_delivery: true,
+          // MEH-2046: the delivery badge reads `delivers` (the server-computed
+          // predicate result), not the legacy `has_delivery` column.
+          delivers: true,
         }}
       />,
     );
@@ -620,7 +681,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     kashrut_verified_at: "2026-01-01T00:00:00Z",
     grass_fed: true,
     has_gluten_free_products: true,
-    has_delivery: true,
+    // MEH-2046: see the note on the fixture above — `delivers`, not the
+    // legacy column, is what earns the delivery badge.
+    delivers: true,
   };
 
   it("+N is an interactive disclosure button (MEH-1547)", () => {

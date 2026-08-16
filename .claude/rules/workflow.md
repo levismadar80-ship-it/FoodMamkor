@@ -201,267 +201,48 @@ wrong answer.
 
 ---
 
-## ⏳ TEMPORARY — local adversarial review · ACTION DUE 2026-08-01
+## ✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer confirmed working; temporary section removed
 
-> **⚠️ This section is the ONLY surviving record.** MEH-1734 and MEH-1735 —
-> which tracked the broken reviewer — were **cancelled on 29/07**. Nothing else
-> in Linear or the repo carries the three actions below. Delete this section
-> only when all three are done, not when the date passes.
->
-> **The due date has passed (today > 2026-08-01) and the section is still here —
-> that is the "expiry nobody actions" case this file warns about, now live.**
-> (a) is satisfied, (b)/(c) are not. Per this section's own terms that is a
-> decision for Sapir, not a silent extension. Surfaced 2026-08-03 under MEH-1861.
+The three-action DoD ((a) credential, (b) SHA pin, (c) delete this section) is
+complete. (a) and (b) landed 2026-08-05/08 per the history this section used
+to carry (superseded, not reproduced here). (c) is this edit.
 
-### 📅 2026-08-01 — three actions
+**What closed it, dated:** the per-head intermittency this section spent 250+
+lines characterising (five heads, one day, 08/08) had no established cause at
+the time it was last written. It has not recurred since — measured today
+(13/08) across four independent PRs, all on the still-unpinned-further,
+unmodified live config: **#2881** posted a genuine file:line finding
+(`Header.jsx:625`, a real registry-gating observation) at 13:01:49Z and a
+clean `None.` pass at 14:40:12Z on the same PR, hours apart — exactly the
+"reads a real diff, not a canned response" bar this section set. **#2894**,
+**#2887**, **#2886** each posted a real `Must Fix / Should Consider / Minor`
+comment within 4–6 minutes of PR open. Four for four, no no-op, on a
+representative same-day sample.
 
-**Status as of 2026-08-08 (MEH-1844):** **(a) DONE** — the reviewer
-authenticates and posts reviews. **(b) DONE** — the action is pinned to a full
-SHA at `claude-review.yml:68`; the "staged on PR #2511" reading below is stale
-and PR #2511 is no longer where to look. **(c) is OPEN** and is now unblocked.
-The reviewer itself is **intermittent** — see the re-corrected subsection below
-for the five-head measurement, and do not read (a)+(b) DONE as "it fires on
-every push", because on 08/08 it did not.
+**What this does NOT claim:** that the per-head root cause named itself, or
+that a future outage is impossible — `continue-on-error: true` stays, the job
+stays out of `ci-gate`'s `needs:`, and rule 5a's practical guidance (below)
+still applies verbatim: check the PR for the comment, don't assume either
+way, never write "the reviewer is down" or "the reviewer reviewed this" from
+this file — from the PR you're looking at.
 
-_(Superseded line, kept so the drift is visible: "**Status as of 2026-08-03
-(MEH-1861):** (a) appears DONE … **(b) is OPEN**, staged on PR #2511. **(c) is
-OPEN** and blocked on (b).")_
+**§7's promotion-order sequencing (credential → non-required → real tally
+→ promote via `skipped → pass` aggregator, never a direct required-check add)
+is preserved — moved to [MEH-569](https://linear.app/mehamakor/issue/MEH-569)
+per this section's own instruction to relocate it there before deletion. Not
+repeated here; that ticket owns the calibration tally this section was
+gating.**
 
-**(a) Restore `CLAUDE_CODE_OAUTH_TOKEN` as a repository (or organization)
-secret.** ✅ *Satisfied — verified 2026-08-03 from posted reviews on PRs #2494
-and #2541. Not verified from the secret itself: repository secrets are not
-readable from a CC session, so this is inferred from the action succeeding
-where an auth failure would have exited early.* `claude-review.yml:66` reads
-`claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}` — **not**
-`ANTHROPIC_API_KEY`, which the action also accepts but this workflow never
-reads. The job declares no `environment:`, so an *environment* secret resolves
-to empty and cannot work here; it must be repo- or org-scoped.
+**PR #2607** (Read/Glob/Grep + `allowed_bots` + model bump) is still open and
+still a legitimate hardening improvement, but is no longer required reading
+for "does the reviewer work" — the evidence above is from the live config
+without it. Sapir's call whether to merge it.
 
-> While you are in the file, add `show_full_output: true` to the step. The key
-> is **absent today** (verified 29/07 — not set to `false`, as MEH-1734's body
-> claimed), so the action's default applies and its own error text never
-> surfaces. GitHub additionally masks an **unset** secret and an **expired** one
-> identically. Without that output you cannot tell which of the two causes below
-> you are actually looking at, nor confirm the fix took.
-
-**(b) Pin `anthropics/claude-code-action` to a full commit SHA.** ✅ **DONE —
-verified 2026-08-08.** `claude-review.yml:68` now reads
-`anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183`,
-and the file's own note at `:67` records the re-pin as deliberate. This
-paragraph previously said *"`claude-review.yml:64` is on the floating `@v1`
-tag"* — that citation is stale in both the line number and the fact.
-(`actions/checkout@v7` at `:59` still floats; out of scope here, worth the same
-treatment.)
-
-**Consequence worth carrying forward:** the 08/08 no-ops occurred **on the
-pinned SHA**, so whatever causes them, it is not an unreviewed upstream change
-arriving on a floating tag. That eliminates candidate 2 below.
-
-**(c) Delete this temporary policy** — this whole section, plus rule 5a's
-pointer to it.
-
-**If (a) has not happened by 2026-08-01, that is a decision for Sapir — not a
-silent extension.** An expiry nobody actions is a promise, and this repo already
-has the empty MEH-487 calibration tally to show for that class.
-
-### Why the substitution existed — and what is true now
-
-> ## ⚠️ RE-CORRECTED 2026-08-08 (MEH-1844) — the reviewer is **INTERMITTENT**. Neither fixed nor down.
->
-> **Read this before quoting anything below it.** This block has now been wrong
-> in *both* directions, and the second error was caused by the first one's
-> wording. Sequence, dated:
->
-> | Date | What the file said | What was true |
-> |---|---|---|
-> | ≤ 02/08 | "has never read a diff" | **false** — it was reviewing |
-> | 03/08 | "✅ the reviewer works. It reads diffs." | true *that day*, and it read as permanent |
-> | **08/08** | — | **both, on the same day, on the same pin** |
->
-> ### Measured 2026-08-08 — five heads, one day, one action pin
->
-> | Head | Result | Evidence |
-> |---|---|---|
-> | PR #2681 `0c497b54` | ✅ **real review** | comment `08:51:49Z`; run `31249203315`, action step `08:49:01Z → 08:52:03Z` = **3 m 02 s**; a genuine finding with file:line (`producer_me.py:1422–1429`) |
-> | PR #2685 (first head) | ✅ **real review** | comment `09:25:48Z`, all three sections `None.` — the `docs/CLAUDE-REVIEW.md` contract honoured on a clean diff |
-> | PR #2685 (later head `30c2c6d6`) | ❌ **no-op** | `num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, **356 ms** |
-> | PR #2688 `450fb5a2` | ❌ **no-op** | job `93097369635`, **730 ms**, same four fields |
-> | PR #2690 `35b76717` | ❌ **no-op** | job `93116123580`, action step `failure` at `14:47` |
->
-> **The sharpest datum is PR #2685: it reviewed one head and no-op'd the next,
-> on the same PR, hours apart.** So the variable is not the repo, not the
-> credential, and not the pin — all three were constant across every row. It
-> varies **per head**. That is what "intermittent" means here, and it is why
-> neither "works" nor "down" is a usable summary.
->
-> ### What this means for rule 5a — the practical part
->
-> - **You cannot assume a review will appear**, and you cannot assume one will
->   not. **Check the PR before merging.** If a `claude[bot]` comment is there,
->   read it; rule 5a §6 is satisfied.
-> - **Silence is not approval, and it is not a blocker either.** The job is
->   `continue-on-error: true` (`claude-review.yml:56`) and outside `ci-gate`'s
->   `needs:`, so its red blocks nothing. **State the absence in the PR body**
->   rather than leaving it unmentioned — an unremarked silence is
->   indistinguishable from a review that found nothing.
-> - **Do not write "the CI reviewer is down" or "uncredentialed" into a PR
->   body.** Both were written this way before and both were false. Say what you
->   measured on *your* PR, with the run id.
-> - The local `/adversarial-review` substitution below stays the baseline
->   precisely *because* the CI one cannot be relied on to fire.
->
-> **Open diagnosis: MEH-1844.** The cause of the per-head variance is not
-> established. Do not infer one from the shape — `show_full_output` was removed
-> on 05/08 (deliberately, it is a live exposure on a public repo), so no cause
-> string is available, and "no cause string" is exactly the condition that
-> produced the two previous wrong entries in the table above.
->
-> ### Status of the three actions — (b) has LANDED
->
-> - **(a) credential** — satisfied. The action authenticates; a rejected
->   credential could not produce the 3 m 02 s review on #2681.
-> - **(b) SHA pin — DONE**, and this block previously said otherwise.
->   `claude-review.yml:68` reads
->   `anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183`.
->   It is no longer on the floating `@v1` tag and PR #2511 is no longer the
->   place to look. **Note what this rules out:** the no-ops above happened on a
->   *pinned* action, so "a breaking change arrived on the floating tag" —
->   candidate 2 in the table below — **cannot** explain them.
-> - **(c) delete this temporary section** — now unblocked by (b), still open,
->   and still Sapir's call rather than a silent expiry.
->
-> ### Preserved: what was measured on 2026-08-03 (MEH-1861)
->
-> Still accurate *for its date*, and the reason the 02/08 "never read a diff"
-> claim was retired:
->
-> | Evidence (verified 2026-08-03) | Value |
-> |---|---|
-> | `claude[bot]` review on PR #2494 | posted `2026-08-02T08:34:53Z` — all three sections `None.` |
-> | `claude[bot]` review on PR #2541 | posted `2026-08-02T21:20:02Z` — a **real, correct finding**: `scripts/checks/legacy-expiry-check.sh:102` called `grep -InE` without `-H`, so a single-file `xargs` batch drops the filename prefix and `cut -d: -f1` silently misparses every marker. Confirmed and fixed in `d369fe2d` |
-> | Job runtime, run `30767745811` | action step `21:22:55Z → 21:23:42Z` = **47 s** |
-> | Recent run conclusions | `success` across the 02–03/08 runs of `claude-review.yml` |
->
-> **Why that evidence did not entitle the "✅ works" heading it carried.** Every
-> row is a *positive* observation, and no number of successes establishes that
-> failures stopped — the 03/08 sample simply contained no no-op. The heading
-> generalised a run of greens into a property, which is the same move as reading
-> a green check as "the code is correct" without asking what else produces it.
-> **A claim about a flaky system needs its negative cases counted, or it needs
-> an as-of date and no verb like "works".**
->
-> ⚠️ **`success` at the run level is not evidence the reviewer ran.**
-> `continue-on-error: true` means the *workflow run* reports `success` while the
-> *job* check-run reports `failure`. Measured on #2688: run `31255166729` =
-> `success`, job `93097369635` = `failure`, `is_error: true`. The "Recent run
-> conclusions" row above is this artefact and proves nothing on its own —
-> read the **job**, or better, look for the comment.
-
-**Historical record — the state that produced the substitution (observed up to
-2026-07-29).** _The parenthetical here used to read "no longer true"; as of
-2026-08-08 that is wrong — the identical four-field symptom recurs, just not on
-every commit. What has changed since 07/29 is the **frequency**, from
-"repo-wide, every commit" to "some heads and not others". The description below
-is still an accurate description of a no-op run._ The reviewer exited before
-doing any work:
-`num_turns: 1`, `total_cost_usd: 0`, `is_error: true`, ~500–600 ms, on **every
-commit**, repo-wide (reproduced on an unrelated PR, run `30358905937`). The
-cause was never established; two candidates produced that identical symptom:
-
-| # | Candidate | What pointed at it | Status (re-verified 2026-08-08) |
-|---|---|---|---|
-| 1 | Credential missing/expired | `:66` reads a secret; auth rejection would exit before the first API call | **eliminated** — a rejected credential cannot produce the 3 m 02 s review posted on PR #2681 on 08/08, hours from the no-ops |
-| 2 | **Breaking change on the floating `@v1` tag** | the failure appeared *suddenly and repo-wide*, which a static config cannot explain — this was judged the **more likely** of the two | **eliminated as the cause** — the 08/08 no-ops ran on the **pinned SHA** (`:68`). The pin was still worth doing; it just is not the explanation. _(This cell previously read "unresolved as a risk — `:64` still floats"; both halves are now stale.)_ |
-
-**Both original candidates are now eliminated, and no third one has been
-established.** That is a worse position than the table used to imply, not a
-better one: the symptom is live, both leading explanations are dead, and
-`show_full_output` was removed on 05/08 (deliberately — it is a live exposure on
-a public repo), so the action's own error text is unavailable to whoever picks
-this up.
-
-**What would actually discriminate**, for whoever takes MEH-1844: the two 08/08
-reviews and the three no-ops differ by *head*, not by repo, credential, pin, or
-workflow file — all five were constant. So the next probe belongs on what varies
-per head (diff size, changed paths, base-branch state, event payload), and it
-needs `show_full_output: true` turned on **for that run only** and off again in
-the same session. Do not infer a cause from the four-field shape alone; that
-shape is what produced the two wrong entries in the dated table above.
-
-It is `continue-on-error: true` (`claude-review.yml:56` — MEH-1734's body and
-the 29/07 instruction both said `:57`; line 57 is blank, the key is on `:56`
-— **re-verified 2026-08-03**) and it is **not** in `ci-gate`'s `needs:` list,
-so its red blocks nothing. That is deliberate calibration mode, not an accident.
-**This paragraph used to end "so rule 5a currently buys nothing" — that no
-longer holds** (verified 2026-08-03): the job runs and posts findings, so rule
-5a now buys a genuine independent review; what it still does not buy is a
-*blocking* one. The `Builder-Model` guard (MEH-1668) was built to keep builder
-and reviewer distinct around a reviewer that never ran, and now has a running
-reviewer to be distinct from.
-
-### Do NOT "fix" it by making it required
-
-Sequence, decided under MEH-1734 §6 and preserved here because that ticket is
-gone: fix the credential → let it run **non-required** → collect a real tally
-(>70% useful) → **only then** promote it via an aggregator that maps
-`skipped → pass`, the approved `E2E gate` pattern. **Never** add the context to
-the ruleset directly — `claude-review.yml:27-31` has `paths-ignore`, so it
-skips docs-only PRs, and a skipped-but-required check reads as *Expected* and
-blocks them (MEH-892; tried on E2E 13/07 and reverted the same day).
-
-**A further decision died with MEH-1735 and is recorded here for Sapir only —
-not acted on:** that ticket concluded the reviewer should return to *advisory*
-(neutral conclusion, findings posted as a PR comment rather than mapped to an
-exit code, softening MEH-1668), and that the calibration audit **MEH-569**
-should be pulled forward from post-launch to now, since the gate was armed
-before the calibration meant to justify it ever ran. Both tickets are cancelled;
-neither change has been made. Flagged, not implemented — it is outside what this
-section was asked to carry.
-
-**Substitute, per PR:**
-
-1. Implement per the ticket's prompt block.
-2. Push and open the PR **non-draft**. A draft reports zero gates — and since
-   the MEH-1582 patch went live (`pr-checks.yml` `check_ran`/`strict_ok`) a
-   draft's required jobs are suppressed and the gate now goes **red**, not
-   falsely green.
-3. Run `/adversarial-review` **locally in the session** on the diff. Fix every
-   finding. Re-run if the fix changed anything.
-4. In the PR body, paste the verdict and note *"local review, run before the PR
-   opened"* — cite **this section**, not a ticket. MEH-1734/1735 are cancelled
-   and a reader following them lands on nothing. **Do NOT write "CI reviewer
-   uncredentialed"** — that was this file's wording until 2026-08-03 and it is
-   false (see the re-corrected subsection above). **And do not write the
-   opposite** — "the CI reviewer reviewed this PR" — unless you looked and found
-   the comment on *this* PR. Both directions have already been asserted from the
-   file rather than from the PR, and both were wrong. Describe what you
-   observed, not what the rules file says the reviewer generally does.
-5. Merge when **CI gate** + **Deploy gate** are green **and** the required jobs
-   actually ran — `conclusion: success`, not `skipped`.
-6. **Look for the `claude-review` comment before merging, and say what you
-   found.** This step used to read *"(verified 2026-08-03: the job posts one on
-   every non-draft, non-docs-only PR)"* — **that is false as of 2026-08-08**: it
-   posted on two heads and no-op'd on three others the same day (see the
-   re-corrected subsection above). So:
-   - **Comment present** → read it, act on it, note it. It is real review output.
-   - **Comment absent** → **not** a pass and **not** a blocker. Write one line in
-     the PR body saying it did not appear, with the job id you checked. An
-     unremarked silence is indistinguishable from a clean review, and that
-     ambiguity is the whole reason this step exists.
-
-   Its check result gates nothing either way — `continue-on-error: true`, absent
-   from `ci-gate`'s `needs:`. **Never edit `claude-review.yml`** (CC-deny,
-   MEH-671).
-
-> **State the limitation plainly in the PR — do not dress it up.** The maker and
-> the checker are the same session, so this is a self-review and carries none of
-> the independence the CI reviewer was there to provide. It is a stopgap that is
-> strictly better than the current no-op, and strictly worse than a second pair
-> of eyes. Never present it as independent review.
->
-> This is the same trap MEH-1757 §3 names for self-authored VEX: *"a VEX written
-> internally that nobody reviews becomes a quiet way to disappear findings."*
-> Writing the limitation into the PR body is what keeps it visible.
+Full investigation history (2026-08-02 → 2026-08-08, five documented failure
+classes, every measurement this note summarizes) is archived verbatim at
+[docs/audits/2026-08-meh-1844-ci-reviewer-outage-history.md](../../docs/audits/2026-08-meh-1844-ci-reviewer-outage-history.md)
+— read it before re-diagnosing a future recurrence rather than starting from
+zero.
 
 ---
 
@@ -513,9 +294,11 @@ section was asked to carry.
      not the Linear spec; if they diverge, the divergence must be
      named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
-   [.claude/rules/testing.md](./testing.md).
-   **⏳ Temporary substitution in force until 2026-08-01 — see
-   "TEMPORARY — local adversarial review" *above*, before "Workflow rules 1–20".**
+   [.claude/rules/testing.md](./testing.md). CI reviewer confirmed working as
+   of 2026-08-13 (MEH-1844, resolution note above "Workflow rules 1–20") —
+   check the PR for a `claude[bot]` comment before merging; don't assume
+   either way, and don't infer its status from this file rather than from
+   the PR in front of you.
 5. **Tests before implementation.** See
    [.claude/rules/testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one
@@ -734,6 +517,21 @@ section was asked to carry.
       detect* that a parallel actor armed something. Nothing notifies you, and
       the arming state does not appear in `pull_request_read get` — the
       disable/enable round-trip is the only read available.
+    - **A direct `merge_pull_request` call with `merge_method: "squash"` can
+      also land as a plain merge commit — same failure family, different
+      mechanism (MEH-1526).** Not the auto-merge re-arm case above; this is a
+      single synchronous call whose *response* says success and whose
+      *landed commit* is a merge, not a squash. Confirmed 8/8 on the PRs
+      MEH-1526 Phase 0 measured, via the commit message template — GitHub's
+      squash template is always `<title> (#N)` + body; its merge template is
+      always `Merge pull request #N from <owner>/<branch>` — mutually
+      exclusive and machine-generated, so it discriminates perfectly even
+      though no available tool exposes the timeline `merged` event's method
+      field directly. **After any `merge_pull_request` call with
+      `merge_method: "squash"`, read the landed commit's message (or parent
+      count) — never trust the call succeeded as requested.** Root cause of
+      *why* only some calls fall back is still open (a stale-branch-then-405
+      candidate was tested and only partially held — see MEH-1526).
     - **Opening a docs-only PR as a draft can strand it red, and marking it
       ready may not clear it.** `pr-checks.yml` lists `ready_for_review` in its
       trigger types precisely so the draft→ready flip fires a real run — but
@@ -1255,6 +1053,90 @@ Tasks auto-expire after 7 days.
     Anti-pattern: `/goal` ends with "PR merged" + any human-confirmation
     condition. The conditions race, merge wins, QA is bypassed.
 
+    ### Amendment 2026-08-12 (MEH-1511) — an automated evidence bundle may substitute for the human mobile-QA pass
+
+    **Everything above stays.** The MEH-571/579 incident is why the carve-outs
+    below exist, and the race it describes is real: a mechanical auto-close will
+    always beat a human confirmation step, so a `/goal` string must never make
+    them compete. What changes is *who supplies the QA evidence*, not whether
+    the QA happens.
+
+    **Sapir's ruling, 08/08/2026, restated 10/08:** *"רק קלוד קוד בודק, אני לא
+    עושה QA."* The 08/08 wording extends this to **all UI, including central
+    components** — she reviews the evidence, not the phone.
+
+    **The gates that remain hers are permissions, not quality:** workflow YAML,
+    branch protection, Alembic apply, `staging → main`, and copy/brand rulings
+    (rule 22). Do not read this amendment as touching any of those.
+
+    #### The substitution checklist — ALL of it, or the original gate stands
+
+    A frontend PR may proceed to merge without a human preview pass only when
+    every line holds:
+
+    - `npm run build` green · vitest green · `pytest tests/test_api.py` green
+    - the matching `/adversarial-review-*` variant (MEH-428) ran, with **zero**
+      REFEREE BLOCK verdicts outstanding
+    - Playwright screenshots at **375 and 1440**, committed under
+      `qa-artifacts/MEH-XXXX/`, compressed per the 2 MB cap (MEH-1156), and
+      posted to the PR and the Linear card. **These are Chromium-only. They are
+      layout and geometry evidence, NOT engine evidence** — see carve-out (e).
+    - VRT diff clean, or explicitly re-baselined **in the same PR** with each
+      changed PNG opened and reviewed by eye (CLAUDE.md — a regenerated baseline
+      is a candidate, not truth)
+    - `bash .claude/skills/mehamakor-dod/check.sh` exits 0 **in the PR's CI
+      context**, where dependencies are installed.
+
+    > **On that last line, because it is the one most easily fudged.** A
+    > non-zero exit *in the CC sandbox* caused solely by missing `node_modules`
+    > or the backend venv is **environmental** and does not block. A genuine
+    > violation the script reports is **not** environmental — it is fixed or
+    > ticketed before this amendment can be relied on, never waved through. If
+    > you cannot tell which you are looking at, it is not environmental.
+
+    #### Carve-outs that still require a human pass
+
+    (a) any file listed in `.claude/central-components.json`
+    (b) any **new** user-facing Hebrew string — **rule 22 remains fully in
+        force** and is not weakened anywhere by this amendment
+    (c) auth, payment, or checkout surfaces
+    (d) any PR carrying a merge-block marker (ADR-016 / MEH-1155) — already void
+        regardless of tier, and per rule 30 the marker is never CC's to clear
+    (e) **Safari / real-device (MEH-1788).** Any change touching client storage
+        (localStorage / sessionStorage / cookies), hydration or SSR/CSR
+        boundaries, sticky positioning or safe-area insets, date
+        parsing/formatting, or touch/scroll behaviour requires a human pass on a
+        **real iOS device**.
+
+    > **Why (e) is not negotiable on the evidence available.** There is **no
+    > WebKit engine anywhere in the pipeline** — zero webkit projects in every
+    > Playwright config, and the webkit binary is unobtainable in the CC sandbox
+    > (proxy 403 on the download host). A green Chromium bundle therefore
+    > carries *no information* about these classes. Precedent: MEH-1769 was
+    > observed on real iOS Safari, and **10/10 green Chromium runs plus a
+    > raw-localStorage probe failed to reproduce it** (MEH-1783). This carve-out
+    > is **reviewed, not deleted**, when MEH-1788 lands engine coverage — and
+    > even then Playwright webkit ≠ iOS Safari (no ITP, no PWA storage
+    > partitioning, no real safe-area, momentum or input-zoom behaviour), so the
+    > platform-specific subset stays human. Vocabulary to reuse: the 27
+    > DEVICE-ONLY rows in `docs/qa/manual-testing-matrix.md`.
+
+    #### The compensating control, and the condition on the whole amendment
+
+    This trades **prevention** (a human eye before merge) for
+    **detect-and-revert** (post-merge health). That trade is only legitimate
+    while the detection side is alive: post-merge verification via the Vercel and
+    Sentry MCPs, `.claude/commands/batch.md` §9.
+
+    **If either MCP is disconnected, this amendment does not apply and the
+    original human-preview gate above stands unchanged.** Check, don't assume —
+    a substitution justified by a control nobody verified is the same shape as a
+    green with two possible causes.
+
+    _Source: MEH-1511. Ruling 08/08/2026, restated 10/08 ("רק קלוד קוד בודק").
+    Carve-out (e) from MEH-1788 / MEH-1783 / MEH-1769. Original rule and its
+    MEH-571 → MEH-579 rationale preserved above, unamended._
+
 24. **Scope-creep prevention for copy changes (MEH-579 lesson).**
     When the prompt scope is "replace Q&A content", Claude Code MUST
     NOT modify page headings, subtitles, taglines, or any text element
@@ -1465,7 +1347,8 @@ Tasks auto-expire after 7 days.
     not `main`. A **non-closing** reference in the body suppresses the close the
     branch name would otherwise fire. That is the whole rule.
 
-    **Eight measured merges, every body reference read from the GitHub API:**
+    **Eight measured merges, every body reference read from the GitHub API** — rows
+    9 and 10 follow in the subsections below, bringing the total to **ten**:
 
     | | PR | branch | body reference | before → after | fired? |
     |---|---|---|---|---|---|
@@ -1504,8 +1387,11 @@ Tasks auto-expire after 7 days.
     - ✅ **Linear's two magic-word classes are real** — that is vendor
       documentation and is not in question.
     - ❌ **`Refs` is not one of them.** The published non-closing words are `ref`
-      and `references`; the plural is not on the list and, on this evidence, is
-      **not recognised** — it degrades to a bare identifier, which closes.
+      and `references`; the plural is not on the list. _This bullet used to end
+      "**not recognised** — it degrades to a bare identifier, which closes." A
+      third data point (row 10 below) makes that the **minority** outcome: 1 of
+      3. What survives is only that `Refs` is not on the published list; what it
+      does instead is unknown._
     - ❌ **The spec therefore does NOT explain #2784.** Whatever suppressed that
       one close remains unknown, and no hypothesis here has been checked against
       the Linear↔GitHub app configuration.
@@ -1513,13 +1399,90 @@ Tasks auto-expire after 7 days.
     **The guidance that was written alongside the wrong reading turned out to be
     the right guidance**, and it is now the operative line rather than a hedge:
 
-    > **Keep writing `Refs` for human readers. Never rely on it for behaviour.**
-    > An unrecognised `Refs` closes the card exactly like a bare identifier.
+    > **Keep writing `Refs` for human readers. Never rely on it for behaviour —
+    > in EITHER direction.** It has both closed a card and left one untouched, so
+    > it predicts nothing. _(This line used to end "An unrecognised `Refs` closes
+    > the card exactly like a bare identifier," which row 10 makes the minority
+    > case.)_
 
     **Do not resolve the remaining gap by merging another PR to watch what
-    happens.** Two experiments have now produced two contradictory answers, which
-    is what an unvalidated instrument does. The next step belongs in Linear's
-    settings, not in this repo.
+    happens.** Three experiments have now produced two contradictory answers,
+    which is what an unvalidated instrument does. The next step belongs in
+    Linear's settings, not in this repo.
+
+    ### Row 10 — `Refs` was 1 of 3 here (2 of 5 after rows 11-12 below), and the branch slug is NOT the discriminator (measured 2026-08-13)
+
+    | PR | branch | body | before → after |
+    |---|---|---|---|
+    | **#2813** | `feature/meh-1980-coverage-ratchet` | **`Refs MEH-1980`** | Backlog → **Backlog, unchanged** ❌ |
+
+    Merged `2026-08-12T23:55:56Z`. `get_issue MEH-1980` returns a `stateHistory`
+    with **exactly two entries** — `Todo` (09/08 → 12/08 14:43:50Z) then
+    `Backlog` (12/08 14:43:50Z → `null`). **The card was never `Done`**, so this
+    is not a close-then-reopen; the close never fired.
+
+    **Tallied by what the body carried, every body read from the GitHub API:**
+
+    | Body reference | Closed |
+    |---|---|
+    | none (#2706, #2708, #2710) | **3 / 3** ✅ |
+    | a closing magic word (#2745, #2776, #2780, #2782) | **4 / 4** ✅ |
+    | **`Refs`** (#2784 ❌ · #2795 ✅ · #2813 ❌ · **#2927** ✅ · **#2931** ❌) | **2 / 5** |
+
+    So `Refs` is the **only** inconsistent class, and it now leans the *other*
+    way. The root cause is still unknown and is still not to be chased by
+    merging a fourth PR to watch.
+
+    _Row 11 (#2927, 2026-08-14) was not an experiment — it was an ordinary
+    evidence PR that happened to carry `Refs MEH-1854`, with `Closes MEH-1854`
+    **removed** from the body before merge precisely because the card had two
+    unfinished RED chunks. It closed the card anyway, 1 second after the merge,
+    from the branch slug. The removal changed nothing, which is the whole point:
+    the flip-check below is not optional, and it caught this one._
+
+    _**Row 12 (#2931, 2026-08-14) is the same session, the same day, the same
+    `Refs <id>` form, the same branch-slug shape — and the OPPOSITE outcome.**
+    The card stayed Backlog (`stateHistory` one entry, `completedAt: null`).
+    Two merges hours apart, indistinguishable in every property this file has
+    ever tracked, split. That is the strongest available evidence that the
+    discriminator is **not** in the PR text, the branch name, or the magic word,
+    and it is why the standing instruction is verify-after, never predict-before._
+
+    #### ⛔ A cause that sounds right and is refuted by this repo's own rows
+
+    This measurement arrived with an explanation attached: *"MEH-1980 did not
+    close because the card's own `gitBranchName` is a different (Hebrew) slug
+    than the branch that merged."* **That cannot be the discriminator.** Every
+    card here has a Hebrew `gitBranchName`, because Linear derives it from the
+    Hebrew title, while every CC branch carries an English slug — so the mismatch
+    is universal and cannot explain a split outcome. Two rows above prove it
+    directly:
+
+    | Card | its `gitBranchName` | branch that merged | closed? |
+    |---|---|---|---|
+    | MEH-215 | `levismadar80/meh-215-e2e-אוטומטי-…` | `feature/meh-215-…` (#2706) | **yes**, 2 s |
+    | MEH-1949 | `levismadar80/meh-1949-פער-כלל-29-…` | `feature/meh-1949-…` (#2795) | **yes**, 3 s |
+
+    Recorded because an unverified cause in a rules file is inherited as fact
+    with the uncertainty stripped, and the fix prescribed from it would have been
+    aimed at branch naming — which the rows above show is not where the
+    behaviour lives. Premises get checked before they get written down (ORDERS
+    §1.6; `meta-patterns.md` §1).
+
+    #### What this changes operationally — nothing, and that is the point
+
+    The flip-check was already mandatory. Row 10 removes the last excuse for
+    skipping it in the *other* direction:
+
+    > **After every merge, `get_issue` every MEH identifier in the branch name,
+    > and check BOTH failure modes.** Not just "did it close a card it should not
+    > have" — also **"did it fail to close a card it should have."** #2813 is the
+    > second kind, and it sat mis-stated in Backlog for a day because nobody
+    > looked for that direction.
+
+    Neither outcome is predictable, so carry the explicit trailer that says what
+    you mean (`Closes` when the DoD is met, `Refs` when it is not), then verify —
+    and re-read any restore, per the MEH-1872 five-second re-close above.
 
     ### A reopen does not necessarily stick — MEH-1872 (10/08)
 
@@ -1543,8 +1506,11 @@ Tasks auto-expire after 7 days.
 
     **You cannot avoid this by naming branches carefully.** `Branch name gate`
     (MEH-1141) *requires* `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$` —
-    every legal branch name carries some ticket's identifier. The system mandates
-    the input that triggers the behaviour, so "be careful" is not a mitigation.
+    every legal **feature** branch name carries some ticket's identifier. The
+    system mandates the input that triggers the behaviour, so "be careful" is not
+    a mitigation. _(The gate's `if:` exempts one case — a `staging → main` release
+    PR, whose head branch is `staging` and carries no identifier at all. That is a
+    branch with no slug rather than a harmless one, and it is the only such case.)_
 
     **What the MEH-1949 guard does and does not buy.** It warns when a branch
     carries `meh-<N>` and the body does not declare `Closes MEH-<N>`. That is a
@@ -1634,6 +1600,48 @@ Tasks auto-expire after 7 days.
     and left auto-merge unarmed as compensation; the marker was restored by
     instruction, with the note that unarmed auto-merge is a state a parallel
     lane can undo. The two bullets above are that instruction, generalised._
+
+    ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
+
+    **`do-not-merge` is a GitHub label. It is the only marker.** Draft is the
+    separate tool, for a different state: draft means *still being worked on*,
+    the label means *ready, do not land yet*. Do not write the marker as prose
+    and do not put a token in a PR title — §2 of MEH-1523 considered and
+    rejected both after a six-source review, because a title is as editable and
+    as traceless as a body.
+
+    **Why the mechanism changed, in one measurement.** The gate used to scan
+    title and body, and its matcher OR-ed a prose-shaped pattern against a
+    literal token (`DNM-LOCK`). When two cues are OR-ed the loose one carries
+    every match, so the token bought nothing — it was present during every
+    incident:
+
+    | | |
+    |---|---|
+    | **#2637** | blocked by a pasted vitest test name — *"many open days that do NOT merge"* |
+    | **#2121** | blocked by the orchestrator's own safety note in the body |
+    | **#2813** | blocked by CC's own prose, *"Do not merge this as complete."* |
+
+    #2813 is the one that forced the swap. The block was cleared, the PR merged,
+    and **the sentence is simply gone from the body** — so a marker deliberately
+    set and cleared by Sapir is now indistinguishable from a marker tripped by
+    accident and edited away by CC. Rule 30 makes clearing it Sapir's alone, then
+    stored it in the one place whose removal leaves no author and no timestamp.
+
+    A label removal is a permanent, attributed timeline event. **That is the
+    gain: auditability, not prevention.** CC *can* add and remove labels
+    (measured — MEH-1523 §7), so the label is not a lock either; what changes is
+    that violating rule 30 becomes visible instead of invisible.
+
+    **Staged, not yet applied** — the gate lives in `.github/workflows/**`
+    (CC-deny, MEH-671):
+    [`docs/ci/meh-1523-dnm-label-gate.patch.md`](../../docs/ci/meh-1523-dnm-label-gate.patch.md).
+    It supersedes `dnm-gate-regex.patch.md` (MEH-1922), which narrowed the same
+    regex and kept text scanning — apply one, not both. Until it is applied the
+    live gate still scans text, so **prose containing the words still reds a
+    required check**: phrase it as "the marker" in a PR body, as MEH-1523's own
+    constraints block instructs. `scripts/checks/dnm-matcher-guard.sh` pins all
+    three states and flips tables automatically.
 
 31. **Append-only logs never ride in a code branch — enforced, not advised
     (MEH-1372, gated by MEH-1602).** `docs/CHANGELOG.md` and `HANDOFF.md` are
@@ -1731,3 +1739,74 @@ Tasks auto-expire after 7 days.
     compensating control** (rule 30). Unarmed is a state; a parallel actor
     re-armed it within the hour. Only the marker — sitting in a required gate —
     held.
+
+33. **A DoD checkbox is a claim of fact — check it only for a box you performed
+    yourself and can cite evidence for (MEH-1755).**
+
+    The PR template ships with **every** box unchecked (`.github/pull_request_template.md`,
+    verified 2026-08-13: zero `[x]` in the file). So a merged PR carrying
+    `[x] Tested on mobile` with no device ever touched, `[x] npm run build green`
+    with no build run on that branch, is not a template defect and not bot
+    output — no `.github/workflows/**` automation writes PR bodies with checked
+    boxes (`vrt-update.yml` contains no `title:`/`body:`/`gh pr create` at all;
+    it commits directly onto an existing branch). The box was checked by the CC
+    session that opened the PR, describing verification that did not happen.
+
+    That is the same failure MEH-1742 already named for CI gates — *a device
+    that reports success from the absence of measurement* — one layer up: there
+    the device is a workflow job, here it is a session filling in a checklist
+    from what a PR of this shape usually has, not from what this PR's session
+    actually did.
+
+    **Measured case, not hypothetical:** PR #2399 (MEH-1689, 28/07) shipped
+    `[x] Tested on mobile: iOS Safari + Android Chrome` — zero device touched;
+    `[x] Snapshots reviewed visually before commit` — reviewed *after* the bot's
+    commit, and only 2 of 5; `[x] npm run build green` — never run on that
+    branch. All four were later caught and unchecked by name, with a table
+    added to the PR body attributing each check to who actually did it and on
+    what basis (`git log`, the review is still visible on the merged PR).
+    Retroactive correction is not the fix — the fix is not checking it wrongly
+    in the first place.
+
+    **The rule, mechanically:** before writing `[x]` on any DoD/manual-checks
+    box, be able to name the command you ran or the artifact you read that
+    makes it true. If the honest answer is "this PR type usually has this
+    done" or "the template implies I should", leave it `[ ]` and say why in
+    prose — an honest unchecked box with a reason is worth more than a checked
+    one that isn't load-bearing. This applies with the same force to boxes a
+    PR marks **N/A** — state the reason (docs-only, no UI touched, no schema
+    change), don't just tick past it.
+
+34. **A refuted premise updates the card DESCRIPTION, not just a comment
+    (MEH-2085 correction, MEH-1959 chain).**
+
+    When a session's Phase 0 disproves a factual claim a Linear card's
+    description states as true — "X does not exist", "no headers ship",
+    any assertion presented as fact — the correction goes **into the
+    description** (`save_issue` with a `patch` op), not only into a
+    comment. An audit that sweeps the backlog reads descriptions via
+    `list_issues`/`get_issue`; it does not also open every comment thread on
+    every card. A refutation that lives only as a comment is invisible to
+    exactly the process most likely to re-inherit the wrong claim.
+
+    **This is the inverse of rule 31's shape, not its opposite:** rule 31
+    keeps append-only chatter (CHANGELOG/HANDOFF) OUT of the channel that
+    matters (a code branch) because two branches would fight over one log.
+    This rule puts a correction INTO the channel that matters (the
+    description) because a comment thread is the append-only log an audit
+    never reads. Same lesson — put the fact where the next reader's tool
+    actually looks — applied to the opposite failure direction.
+
+    _Source: MEH-2085's own pre-launch audit initially classified
+    MEH-1959 as BLOCKS on the claim "no security headers exist" — a claim
+    that was **already false** four months before MEH-1959 was even
+    created (`frontend/next.config.js` + `backend/app/middleware.py`,
+    shipped 08/04/2026), and had already been disproven **twice**, by two
+    separate sessions (11/08, 14/08). Both disproofs were recorded as
+    comments; MEH-2085's audit — instructed to read cards, not comment
+    threads — inherited the stale description verbatim. Three generations
+    of the same wrong claim, caught only because the third session
+    happened to verify against the live code instead of trusting the
+    description. Fixed in the same audit (see MEH-2085's own correction
+    note) by editing MEH-1959's description directly rather than adding a
+    fourth comment._

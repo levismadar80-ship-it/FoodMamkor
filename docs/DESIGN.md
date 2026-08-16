@@ -214,6 +214,20 @@ Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
 
+### Address/city fields must use the canonical component
+
+A hand-rolled `<input>` for an address or city, instead of `<AddressSearch>` /
+`<CitySearch>`, has shipped two production bugs: a hand-typed city silently fell
+outside the map's city filter (MEH-1455), and a hand-typed address saved with no
+lat/lng — the pin never appeared (MEH-1766). Same mechanism as the palette rule
+above (MEH-1767, `no-restricted-syntax`, `warn`): a raw `input`/`textarea` whose
+literal `id`/`name`/`placeholder`/`aria-label` names "city"/"address"/"עיר"/
+"כתובת" is flagged; `<CitySearch id="…">` / `<AddressSearch id="…">` never match
+(component tag names aren't lowercase). Doesn't see through an i18n key
+(`placeholder={t("city")}`) — same gap `no-literal-string` already has. Legitimate
+exception (e.g. an admin raw-coordinates override)? Mark it `// address-field-ok`
++ `eslint-disable-next-line`.
+
 Two families carry the whole system. **Frank Ruhl Libre** — a Hebrew serif —
 for headlines, set at weight **900** for editorial gravitas (the canonical
 headline weight per CONTEXT.md §5 and BRAND.md §3). **DM Sans** for all body,
@@ -339,8 +353,10 @@ front matter for the normative token bindings.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
-  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or **"חדש"**
-  at zero reviews — a rating-slot fallback, not a badge] · [meta line
+  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or
+  **"אין ביקורות עדיין"** at zero reviews — a rating-slot fallback, not a badge.
+  The word "חדש" is reserved for the *tenure* claim on the card badge
+  (`badges.js`); it never appears in this slot (MEH-1746)] · [meta line
   city · category · **status** + one quiet kosher line]. The page's ONLY order
   status is colored text in the meta line — open=`primary`,
   "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
@@ -601,11 +617,24 @@ scan for literal asterisks inside `label={...}` props.
 Placeholders are exempt (a string attribute has no JSX layer); a placeholder
 showing `*` documents the expectation without being a label mechanism.
 
-**One transitional exception, named so this section does not overclaim:** the
-producer-register city marker is still visual-only (MEH-951) pending the
-MEH-2015 chunk-B verdict — the field shows the marker and gates nothing. It
-is the last surviving instance of the bug this rule bans, kept deliberately
-until the enforcement decision, and its audit-table row says so.
+**Chunk B closed the transitional exception (14.8.2026 ruling).** The
+producer-register city marker was the last surviving instance of the bug
+this rule bans — visual-only per MEH-951, gating nothing. Sapir's ruling
+revoked MEH-951: city is now gated on both sides
+(`RegisterProducerClient.jsx`'s `CROSS_STEP_REQUIRED` + `ProducerRegister.city`
+required in `schemas.py`), and the now-redundant `city_required_marker` copy
+(which said "חובה" next to a marker that didn't enforce it) is deleted. No
+row is left in the middle; the audit table's other open row
+(`experiences.new.field_city` / `sweep_tail.event_new.field_city_label`) was
+already closed by MEH-2013.
+
+**A button-group's `required` has no native attribute to carry it — `aria-required`
+on `role="group"` is invalid (axe-core `aria-allowed-attr`; that attribute is
+`radiogroup`-only).** `CategorySelector.jsx` and `ExperienceForm.jsx`'s
+location_type group instead carry the marker as `sr-only` text inside the
+element supplying the group's accessible name (the `aria-label`/
+`aria-labelledby` target) — same "(חובה)" wording as `license_required_label`,
+audible once, never announced as "star".
 
 ## References
 

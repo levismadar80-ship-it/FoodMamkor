@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_cloudinary-stub";
 
 /**
  * MEH-866 — producer-register wizard end-to-end (the rendered flow).

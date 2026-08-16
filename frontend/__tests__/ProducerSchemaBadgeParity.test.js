@@ -280,6 +280,11 @@ describe("MEH-1704 — badges survive a ProducerSchema round-trip", () => {
     has_lactose_free_products: true,
     kashrut_verified_at: "2026-07-01",
     kashrut_expires_at: "2027-07-01",
+    // MEH-2046: `delivers` is what earns the delivery badge now. The two legacy
+    // operands stay on the fixture deliberately — this file's whole subject is
+    // fields surviving the strict parse, and they are still declared in
+    // ProducerSchema for their other consumers.
+    delivers: true,
     has_delivery: true,
     delivery_count: 3,
     products_count: 12,

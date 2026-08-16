@@ -9,6 +9,7 @@ import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { geocodeCity } from "@/lib/places";
+import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -468,11 +469,14 @@ export default function MapPage() {
     sync.mapApiRef.current?.goToMyLocation(
       () => setLocationModalOpen(true),
       ({ lat, lng }) => {
-        const hasNearby = feed.allProducers.some(
-          (p) =>
-            Number.isFinite(p.lat) &&
-            Number.isFinite(p.lng) &&
-            haversineKm(lat, lng, p.lat, p.lng) <= NEAR_ME_RADIUS_KM
+        // MEH-1938 chunk 3: read through producerPoints() instead of
+        // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
+        // citation (MapClient.jsx:348-350) had already drifted to this site
+        // by the time this chunk landed; re-verified live via grep.
+        const hasNearby = feed.allProducers.some((p) =>
+          producerPoints(p).some(
+            (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
+          )
         );
         if (!hasNearby) {
           showToast.info(t("map.near_me_pill.empty"));
@@ -555,6 +559,7 @@ export default function MapPage() {
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
       activeAttributeCount={filters.activeAttributeCount}
+      cityFilter={filters.cityFilter}
     />
   );
 
@@ -564,6 +569,15 @@ export default function MapPage() {
   // selectedProducer is also the state both selection paths agree on
   // (useMapSync handleCardClick + handleMarkerClick set it together).
   const focusedProducerId = filters.selectedProducer?.id ?? null;
+
+  // MEH-2046: is the layer toggle currently costing the user businesses? Read
+  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
+  // never claim something the visible map contradicts. Short-circuits while the
+  // layer is on, which is the default and the common case.
+  const secondaryHidden = useMemo(
+    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
+    [showSecondaryLayer, filters.filteredByCategory],
+  );
 
   const mapPane = (
     <MapPane
@@ -578,6 +592,7 @@ export default function MapPage() {
       visitedIds={hints.visitedIds}
       showSecondaryLayer={showSecondaryLayer}
       onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
+      secondaryHidden={secondaryHidden}
       focusedProducerId={focusedProducerId}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}

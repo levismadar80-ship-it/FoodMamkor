@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 // MEH-999: the events card became a Link to /events/[id] (was a static div).
 import Link from "next/link";
@@ -128,9 +128,13 @@ export default function ProducerSections({
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
   const [reportOpen, setReportOpen] = useState(false);
-  // MEH-1901: which product's detail sheet is open (null = closed). The sheet
-  // is an overlay, not a route — one piece of state, no URL surface.
-  const [openProduct, setOpenProduct] = useState(null);
+  // MEH-1901: whether a product's detail sheet is open. The sheet is an
+  // overlay, not a route — one piece of state, no URL surface.
+  // MEH-2045: that state is now the POSITION in the rendered product list, not
+  // the product object. prev/next is meaningless without knowing where you
+  // are, and keeping the position here (rather than a second copy inside the
+  // sheet) leaves ProductSheet fully prop-derived. null = closed.
+  const [openIndex, setOpenIndex] = useState(null);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -152,7 +156,15 @@ export default function ProducerSections({
     };
   }, [producer?.slug]);
 
-  const hasSignature = !!(producer.top_product_name || producer.starting_price_label);
+  // MEH-1855: price_range is the canonical field (models.py:121 documents
+  // starting_price_label as its legacy alias) — read price_range first, fall
+  // back to the alias so producers who only ever filled the canonical field
+  // are no longer invisible on their own page.
+  const hasSignature = !!(
+    producer.top_product_name ||
+    producer.price_range ||
+    producer.starting_price_label
+  );
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -171,18 +183,58 @@ export default function ProducerSections({
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
 
-  // MEH-1463: when the signature product was deduped out of the grid and the
-  // free-text starting_price_label is empty, surface the matched product's own
-  // price/description on the highlight card so the info the dedup removed isn't
-  // lost. starting_price_label keeps priority when present (unchanged). Numeric
-  // price → canonical formatPriceRange (MEH-1140) with dir="ltr" bidi isolation;
-  // free-text price_range is DATA (MEH-1305 F) rendered in natural direction.
+  // MEH-2045: the list the sheet pages through — the same products this section
+  // renders, in the order it renders them: the signature highlight first (which
+  // is exactly the case where MEH-1233 B4 deduped it out of the grid), then the
+  // grid rows. Same SET as producer.products, but the VISUAL order, so "next"
+  // moves the way the page reads instead of the way the API happened to sort.
+  const sheetProducts = signatureProduct
+    ? [signatureProduct, ...gridProducts]
+    : gridProducts;
+  const sheetTotal = sheetProducts.length;
+  const openProduct = openIndex == null ? null : sheetProducts[openIndex] || null;
+
+  // Both triggers resolve the position from the product itself rather than from
+  // a hand-computed offset, so the signature card's index stays correct without
+  // the two call sites each knowing that it sits at 0.
+  //
+  // Deliberately NOT a useCallback: `sheetProducts` is a fresh array on every
+  // render, so a memo keyed on it would be recomputed every render anyway —
+  // it would read as stability while providing none. The three handlers below
+  // ARE memoized, because for them it does something.
+  const openSheetFor = (product) => {
+    const i = sheetProducts.findIndex((p) => p.id === product.id);
+    // -1 is unreachable from the two call sites below (both iterate this very
+    // list). If it ever happens the list moved under an open sheet, and closing
+    // beats silently showing whatever now sits at position 0.
+    setOpenIndex(i >= 0 ? i : null);
+  };
+  // Stable identities on purpose: ProductSheet's modal effect depends on
+  // `onClose`, and that effect moves focus and re-captures the
+  // previously-focused element every time it runs. An inline arrow would hand
+  // it a fresh identity on every parent render, so paging would re-run it and
+  // pull focus off the chevron the reader is clicking.
+  const closeSheet = useCallback(() => setOpenIndex(null), []);
+  const goPrevProduct = useCallback(() => setOpenIndex((i) => (i > 0 ? i - 1 : i)), []);
+  const goNextProduct = useCallback(
+    () => setOpenIndex((i) => (i < sheetTotal - 1 ? i + 1 : i)),
+    [sheetTotal],
+  );
+
+  // MEH-1463: when the signature product was deduped out of the grid and
+  // neither producer-level price field (MEH-1855: price_range canonical,
+  // starting_price_label legacy alias) is set, surface the matched product's
+  // own price/description on the highlight card so the info the dedup
+  // removed isn't lost. Either producer-level field keeps priority when
+  // present (unchanged). Numeric price → canonical formatPriceRange
+  // (MEH-1140) with dir="ltr" bidi isolation; free-text price_range is DATA
+  // (MEH-1305 F) rendered in natural direction.
   const signatureNumericPrice =
-    !producer.starting_price_label && signatureProduct?.price_min != null
+    !(producer.price_range || producer.starting_price_label) && signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
   const signatureFreeTextPrice =
-    !producer.starting_price_label && !signatureNumericPrice
+    !(producer.price_range || producer.starting_price_label) && !signatureNumericPrice
       ? signatureProduct?.price_range || null
       : null;
 
@@ -234,7 +286,7 @@ export default function ProducerSections({
           {hasSignature && (
             <SignatureShell
               product={signatureProduct}
-              onOpen={setOpenProduct}
+              onOpen={openSheetFor}
               ariaLabel={t("producer.detail.sections.products.sheet_open_aria", {
                 name: producer.top_product_name || "",
               })}
@@ -267,8 +319,10 @@ export default function ProducerSections({
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
-                {producer.starting_price_label ? (
-                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                {producer.price_range || producer.starting_price_label ? (
+                  <p className="text-accent font-semibold mt-0.5">
+                    {producer.price_range || producer.starting_price_label}
+                  </p>
                 ) : signatureNumericPrice ? (
                   <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
@@ -317,7 +371,7 @@ export default function ProducerSections({
                   <button
                     key={product.id}
                     type="button"
-                    onClick={() => setOpenProduct(product)}
+                    onClick={() => openSheetFor(product)}
                     aria-label={t("producer.detail.sections.products.sheet_open_aria", {
                       name: product.name,
                     })}
@@ -382,11 +436,17 @@ export default function ProducerSections({
           {/* MEH-1901: mounted inside the products section, rendered only while
               a product is open. `position: fixed` + backdrop, so the DOM
               position has no bearing on where it paints. */}
+          {/* MEH-2045: index/total/onPrev/onNext are the whole paging contract
+              — the sheet stays prop-derived and owns no copy of the list. */}
           {openProduct && (
             <ProductSheet
               product={openProduct}
               producer={producer}
-              onClose={() => setOpenProduct(null)}
+              index={openIndex}
+              total={sheetTotal}
+              onPrev={goPrevProduct}
+              onNext={goNextProduct}
+              onClose={closeSheet}
             />
           )}
         </section>

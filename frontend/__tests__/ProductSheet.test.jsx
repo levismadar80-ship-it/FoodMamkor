@@ -17,6 +17,10 @@ const pingWhatsAppBeacon = vi.fn();
 const markWhatsAppClickedLocal = vi.fn();
 
 vi.mock("next-intl", () => ({
+  // MEH-2045: the sheet reads the locale to pick the arrow-key mapping and the
+  // chevron glyphs. Hebrew here keeps every assertion below in the RTL world
+  // these tests were written for.
+  useLocale: () => "he",
   useTranslations: (ns) => (key, vars) => {
     const full = ns ? `${ns}.${key}` : key;
     if (full === "whatsapp.question_chips.source_line") return "הגעתי דרך מהמקור";
@@ -50,6 +54,10 @@ vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span data-testid="icon-instagram" />,
   FacebookLogo: () => <span data-testid="icon-facebook" />,
   Receipt: () => <span data-testid="icon-receipt" />,
+  // MEH-2045: paging chevrons. Never rendered by the specs in this file (they
+  // all pass a single product), but the module-level import must resolve.
+  CaretLeft: () => <span data-testid="icon-caret-left" />,
+  CaretRight: () => <span data-testid="icon-caret-right" />,
 }));
 
 vi.mock("@/lib/contact-tracking", () => ({

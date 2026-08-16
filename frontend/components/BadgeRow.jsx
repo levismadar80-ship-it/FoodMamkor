@@ -215,7 +215,11 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
             ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
               // surface-card backing keeps the gold glyph legible there.
               "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 group-focus-visible:ring-2 group-focus-visible:ring-accent/40"
-            : "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
+            : // MEH-2032: bg-accent/10 on the cream page background computed 4.07:1
+              // (AA fail for 12px text) — same usage-level fix as the iconOnly
+              // branch above (MEH-2025/#2825): solid bg-surface-card gets accent
+              // to 5.19:1.
+              "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
         }
       >
         <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />

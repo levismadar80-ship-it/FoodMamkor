@@ -1,5 +1,5 @@
 import "../globals.css";
-import { Frank_Ruhl_Libre, DM_Sans, Cormorant_Garamond, Heebo } from "next/font/google";
+import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
@@ -27,71 +27,16 @@ import {
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
 
-// MEH-1831: all FOUR Google-hosted families are self-hosted by next/font
-// instead of fetched from fonts.googleapis.com at runtime. Two things follow
-// from that and neither is cosmetic: there is no external request in front of
-// first text paint, and next/font emits a size-adjusted local fallback face per
-// family, so the swap from fallback to webfont no longer reflows text
-// (font CLS → 0).
-// Each family is exposed as a CSS variable on <html>; the consumers are
-// tailwind.config.js (fontFamily, which keeps the literal names behind the
-// variable as its fallback chain) and the three base rules in globals.css.
+// MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
+// files committed in this repo, and the build makes no network request for
+// them. The loader lives in app/fonts.js — next/font calls have to sit in a
+// module of their own here, because Turbopack's SWC transform serialises their
+// arguments statically and the declarations are long enough to bury this file.
+// Read app/fonts.js before changing any font: it carries the ordering rule that
+// keeps a fallback face from swallowing Hebrew, and the reason each weight
+// repeats the same path.
 // DO NOT add @font-face blocks for these families — next/font owns their
 // hosting, and a hand-written face would resolve to a different file.
-const frankRuhlLibre = Frank_Ruhl_Libre({
-  subsets: ["hebrew", "latin"],
-  weight: ["400", "700", "900"],
-  display: "swap",
-  variable: "--font-headline",
-});
-
-// `adjustFontFallback: false` is load-bearing, not a tuning preference.
-// next/font's generated "DM Sans Fallback" face is `src: local(Arial)` with NO
-// unicode-range, and Arial covers Hebrew — so with it enabled it sits between
-// DM Sans and Heebo in every body stack and captures every Hebrew glyph on the
-// site. Measured via CDP CSS.getPlatformFontsForNode: Hebrew body text
-// resolved to "Liberation Sans" (the Linux Arial metric clone) instead of
-// Heebo. DM Sans is latin-subset only here, so its swap can only ever affect
-// latin runs, and the CLS this option would buy is worth less than the Hebrew
-// typeface it silently replaces. Heebo below keeps ITS adjusted fallback —
-// that is the face Hebrew body text actually swaps from, so it is where the
-// zero-CLS win belongs on a Hebrew-first site.
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-  variable: "--font-body",
-  adjustFontFallback: false,
-});
-
-// MEH-1831: Heebo is the FOURTH Google-hosted family, and the ticket did not
-// know about it — it was loaded by `@import url(fonts.googleapis.com/...)` on
-// line 1 of globals.css, which the ticket's own removal assertion
-// (`grep --include="*.js*"`) cannot match. It is not decorative: DM Sans ships
-// latin glyphs only, so Heebo is the face that renders Hebrew body text
-// site-wide. Self-hosting it here removes the last render-blocking font
-// request without changing which typeface any glyph lands on.
-const heebo = Heebo({
-  subsets: ["hebrew", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-hebrew",
-});
-
-const cormorantGaramond = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-latin",
-});
-
-const FONT_VARIABLES = [
-  frankRuhlLibre.variable,
-  dmSans.variable,
-  cormorantGaramond.variable,
-  heebo.variable,
-].join(" ");
 
 const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
 const SITE_DESCRIPTION =

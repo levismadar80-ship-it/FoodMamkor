@@ -391,6 +391,11 @@ def valid_producer_register_payload() -> dict:
     A unique name avoids the `Category.name` UNIQUE collision when a single
     test builds two payloads. `_clean_tables` (TRUNCATE … RESTART IDENTITY)
     cleans it up between tests.
+
+    MEH-2015 chunk B: `city` is now required too (MEH-951's visual-only
+    exception was revoked), so this helper carries one for the same reason
+    it carries a category — every guard test built on it would otherwise 422
+    on a field the test isn't exercising.
     """
     seed_session = SessionLocal()
     try:
@@ -403,6 +408,7 @@ def valid_producer_register_payload() -> dict:
         "name": "יצרנית בדיקה",
         "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "חוות הבדיקה",
+        "city": "תל אביב",
         "category_ids": [cat_id],
         "primary_contact_method": "whatsapp",
         # MEH-759 (ADR-022 gate 2): binding declaration is mandatory for a

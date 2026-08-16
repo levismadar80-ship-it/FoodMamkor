@@ -87,17 +87,21 @@ const securityHeaders = [
       // (neither the <link> in layout.js nor the @import that headed
       // globals.css).
       `style-src 'self' 'unsafe-inline' https://accounts.google.com${vercelLiveStyle}`,
-      // MEH-1831: fonts.gstatic.com is DELIBERATELY KEPT here, against the
-      // ticket's acceptance criteria. It is no longer the page's font source
-      // — but StoryCardCanvas.jsx:35-36 (the admin Instagram story-card
-      // generator) constructs two `new FontFace(..., url("https://
-      // fonts.gstatic.com/..."))` objects at runtime, and font-src governs
-      // those. Dropping the entry would CSP-block both loads; the component
-      // catches the rejection and falls back to a system font, so the card
-      // would silently render in the wrong typeface with nothing failing.
-      // next/font exposes no stable URL for its hashed woff2 output, so there
-      // is no in-scope way to repoint that component. Remove this entry only
-      // together with StoryCardCanvas's own gstatic dependency.
+      // MEH-1831 kept fonts.gstatic.com here because StoryCardCanvas.jsx
+      // (the admin Instagram story-card generator) built its FontFace objects
+      // from a live Google URL at runtime — the one remaining consumer, since
+      // MEH-1831 already moved the page's own fonts off the network.
+      // MEH-2043 repointed that component at the same locally self-hosted
+      // .woff2 files app/fonts.js feeds next/font/local, via a direct static
+      // import (a URL under this origin, not through next/font/local itself
+      // — Canvas 2D's `font` property needs a FontFace it can load, not a CSS
+      // variable). font-src 'self' now covers it. Dropping this entry is left
+      // to a deliberate follow-up (MEH-2043 DoD item 4) rather than done in
+      // the same PR as the component fix — CSP-hardening ahead of the
+      // component landing would have silently broken it (rejected load,
+      // caught exception, wrong-typeface fallback with nothing failing); the
+      // same risk applies to un-hardening on unverified footing, so it stays
+      // deferred until the fix has been checked with the network blocked.
       `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
       `connect-src 'self' https://accounts.google.com https://places.googleapis.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,

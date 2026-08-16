@@ -127,15 +127,26 @@ beforeEach(() => {
 });
 
 describe("MEH-1935 config — lib/diet-pages", () => {
-  it("covers exactly the six diet slugs, in the locked MEH-1438 chip order", () => {
+  it("covers exactly the five diet slugs, in the locked MEH-1438 chip order", () => {
     expect(DIET_PAGES.map((p) => p.slug)).toEqual([
       "vegan",
       "vegetarian",
       "gluten-free",
       "lactose-free",
       "no-added-sugar",
-      "low-carb",
     ]);
+  });
+
+  /**
+   * MEH-2047 — the withdrawal has to be asserted at the ROUTE, not only in the
+   * config array above. `getDietPage` returning null is what makes the page
+   * 404 and what keeps sitemap.js from emitting the URL; a config-only check
+   * would pass against a build that still served the page from some other
+   * source.
+   */
+  it("no longer serves /producers/diet/low-carb — the claim is withdrawn, not hidden", () => {
+    expect(getDietPage("low-carb")).toBeNull();
+    expect(DIET_PAGES.map((p) => p.attribute)).not.toContain("low_carb");
   });
 
   it("routes under the static /producers/diet/ segment (MEH-1204 decision 3 stays free)", () => {
@@ -238,14 +249,15 @@ describe("MEH-1935 data gate — generateMetadata", () => {
 
   /**
    * MEH-1941 — the flip's own acceptance check, and the one most likely to be
-   * misread. Both pages still 404 today, and that is CORRECT: the migration
+   * misread. (MEH-2047 withdrew low-carb from this pair; no-added-sugar keeps
+   * the case.) The page still 404s today, and that is CORRECT: the migration
    * deliberately does no backfill, so zero products carry the flags and the
    * count gate holds. What changed is WHICH gate rejects them. Asserting the
    * count gate is now the one doing the work is what proves the flip landed;
    * a bare "still 404s" assertion would pass identically before and after.
    */
-  it("routes the two flipped slugs through the count gate, not the backed gate", async () => {
-    for (const slug of ["no-added-sugar", "low-carb"]) {
+  it("routes the flipped slug through the count gate, not the backed gate", async () => {
+    for (const slug of ["no-added-sugar"]) {
       expect(isDietPageBacked(getDietPage(slug))).toBe(true);
 
       serverFetch.mockClear();
